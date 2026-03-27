@@ -30,7 +30,18 @@ class ColmeiaBootstrap extends StatelessWidget {
         ChangeNotifierProvider<AuthController>(
           create: (_) {
             final controller = getIt<AuthController>();
-            unawaited(controller.initialize());
+            unawaited(
+              controller.initialize().catchError((Object error, StackTrace st) {
+                AppLogger.error(
+                  'Auth controller initialize failed',
+                  context: const <String, Object?>{
+                    'operation': 'initializeAuthController',
+                  },
+                  error: error,
+                  stackTrace: st,
+                );
+              }),
+            );
             return controller;
           },
         ),

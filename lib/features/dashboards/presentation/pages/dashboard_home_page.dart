@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_ai_insight.dart';
@@ -105,6 +108,32 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
     _controller = getIt<DashboardController>();
   }
 
+  void _retryUserStores(
+    BuildContext context,
+    CurrentUserContextController userContext,
+  ) {
+    unawaited(
+      userContext.reloadUserContext().catchError((Object error, StackTrace st) {
+        AppLogger.warning(
+          'Reload user context failed',
+          context: const <String, Object?>{
+            'operation': 'reloadUserContext',
+          },
+          error: error,
+          stackTrace: st,
+        );
+        if (!context.mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nao foi possivel atualizar as lojas.'),
+          ),
+        );
+      }),
+    );
+  }
+
   String _greetingFirstName(String fullName) {
     final trimmed = fullName.trim();
     if (trimmed.isEmpty) {
@@ -194,6 +223,14 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                             footer: AllowedStoreSelectorStrip(
                               stores: userContext.userScope.allowedStores,
                               selectedStoreId: selectedStore.id,
+                              isLoading: userContext.isLoading,
+                              errorMessage: userContext.errorMessage,
+                              onRetry: session == null
+                                  ? null
+                                  : () => _retryUserStores(
+                                        context,
+                                        userContext,
+                                      ),
                               onStoreSelected: (store) {
                                 userContext
                                     .selectStore(store.id)

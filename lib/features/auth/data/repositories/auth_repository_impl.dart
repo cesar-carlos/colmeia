@@ -1,3 +1,4 @@
+import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
@@ -12,11 +13,14 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
     required AuthLocalDataSource localDataSource,
     required AuthRemoteDataSource remoteDataSource,
+    required AppCacheStore appCacheStore,
   }) : _localDataSource = localDataSource,
-       _remoteDataSource = remoteDataSource;
+       _remoteDataSource = remoteDataSource,
+       _appCacheStore = appCacheStore;
 
   final AuthLocalDataSource _localDataSource;
   final AuthRemoteDataSource _remoteDataSource;
+  final AppCacheStore _appCacheStore;
 
   @override
   Future<AppResult<Unit>> register({
@@ -168,6 +172,7 @@ class AuthRepositoryImpl implements AuthRepository {
         );
       }
       await _localDataSource.clearSession();
+      await _appCacheStore.clearAll();
       AppLogger.info(
         'User session cleared',
         context: const <String, Object?>{

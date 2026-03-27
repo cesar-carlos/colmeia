@@ -20,17 +20,22 @@ class AppShellScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final userContextController = context.watch<CurrentUserContextController>();
     final visibleShellRoutes = userContextController.availableShellRoutes;
+    final showShellNav = visibleShellRoutes.length > 1;
 
     return Scaffold(
       appBar: const AppShellAppBar(),
-      drawer: AppShellDrawer(
-        currentRoute: currentRoute,
-        visibleShellRoutes: visibleShellRoutes,
-      ),
-      bottomNavigationBar: AppShellBottomNav(
-        currentRoute: currentRoute,
-        visibleShellRoutes: visibleShellRoutes,
-      ),
+      drawer: showShellNav
+          ? AppShellDrawer(
+              currentRoute: currentRoute,
+              visibleShellRoutes: visibleShellRoutes,
+            )
+          : null,
+      bottomNavigationBar: showShellNav
+          ? AppShellBottomNav(
+              currentRoute: currentRoute,
+              visibleShellRoutes: visibleShellRoutes,
+            )
+          : null,
       body: SafeArea(
         bottom: false,
         child: child,

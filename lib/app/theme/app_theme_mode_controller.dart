@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 
 class AppThemeModeController extends ChangeNotifier {
   AppThemeModeController(AppUserPreferencesStore store)
-      : _store = store,
-        _themeMode = _fromStored(store.themeModePreference);
+    : _store = store,
+      _themeMode = _fromStored(store.themeModePreference);
 
   final AppUserPreferencesStore _store;
   ThemeMode _themeMode;

@@ -10,6 +10,7 @@ class AppTextActionButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.style,
+    this.semanticsLabel,
   }) : assert(
          label != null || child != null,
          'Provide label or child',
@@ -21,6 +22,7 @@ class AppTextActionButton extends StatelessWidget {
   final Widget? icon;
   final bool isLoading;
   final ButtonStyle? style;
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +44,28 @@ class AppTextActionButton extends StatelessWidget {
           )
         : _buildLabelRow(gapSm);
 
-    return TextButton(
+    Widget button = TextButton(
       onPressed: isLoading ? null : onPressed,
       style: effectiveStyle,
       child: content,
     );
+
+    if (semanticsLabel != null) {
+      button = Semantics(
+        button: true,
+        enabled: onPressed != null && !isLoading,
+        label: semanticsLabel,
+        child: button,
+      );
+    } else if (isLoading && label == null && child == null) {
+      button = Semantics(
+        button: true,
+        label: 'Carregando',
+        child: button,
+      );
+    }
+
+    return button;
   }
 
   Widget _buildLabelRow(double iconTextGap) {

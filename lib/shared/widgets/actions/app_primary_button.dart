@@ -116,6 +116,12 @@ class AppPrimaryButton extends StatelessWidget {
         label: semanticsLabel,
         child: button,
       );
+    } else if (isLoading && label == null && child == null) {
+      button = Semantics(
+        button: true,
+        label: 'Carregando',
+        child: button,
+      );
     }
 
     return button;

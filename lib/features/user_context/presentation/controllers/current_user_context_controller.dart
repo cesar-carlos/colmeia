@@ -197,7 +197,29 @@ class CurrentUserContextController extends ChangeNotifier {
   }
 
   void _handleAuthStateChanged() {
-    unawaited(_syncAuthState());
+    unawaited(
+      _syncAuthState().catchError((Object error, StackTrace stackTrace) {
+        AppLogger.error(
+          'User context sync failed after auth change',
+          context: const <String, Object?>{
+            'operation': 'syncUserContext',
+          },
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }),
+    );
+  }
+
+  /// Forces a reload from the server (e.g. user tapped retry after an error).
+  Future<void> reloadUserContext() async {
+    final authController = _authController;
+    final session = authController?.session;
+    if (authController == null || session == null) {
+      return;
+    }
+    _syncedUserId = null;
+    await _syncAuthState();
   }
 
   Future<void> _syncAuthState() async {
@@ -339,7 +361,17 @@ class CurrentUserContextController extends ChangeNotifier {
           persistActiveStoreUseCase(
             userId: syncedUserId,
             storeId: storeId,
-          ),
+          ).catchError((Object error, StackTrace stackTrace) {
+            AppLogger.warning(
+              'Persist active store failed',
+              context: <String, Object?>{
+                'operation': 'persistActiveStore',
+                'storeId': storeId,
+              },
+              error: error,
+              stackTrace: stackTrace,
+            );
+          }),
         );
       }
     }
