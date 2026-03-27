@@ -6,11 +6,13 @@ class AppRadioOption<T> {
     required this.value,
     required this.label,
     this.subtitle,
+    this.icon,
   });
 
   final T value;
   final String label;
   final String? subtitle;
+  final IconData? icon;
 }
 
 /// Vertically stacked single-select options (radio semantics without [Radio]).
@@ -59,6 +61,14 @@ class AppRadioGroup<T extends Object?> extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
+                  if (option.icon case final IconData iconData) ...<Widget>[
+                    Icon(
+                      iconData,
+                      size: 22,
+                      color: selected ? cs.primary : cs.onSurfaceVariant,
+                    ),
+                    SizedBox(width: tokens?.gapSm ?? 8),
+                  ],
                   SizedBox(
                     width: visualSize,
                     height: visualSize,
@@ -70,7 +80,7 @@ class AppRadioGroup<T extends Object?> extends StatelessWidget {
                       color: selected ? cs.primary : cs.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens?.gapSm ?? 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

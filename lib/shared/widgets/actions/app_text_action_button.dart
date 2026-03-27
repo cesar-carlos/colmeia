@@ -33,13 +33,14 @@ class AppTextActionButton extends StatelessWidget {
           minimumSize: Size(48, minH),
         );
 
+    final gapSm = tokens?.gapSm ?? 8;
     final content = isLoading
         ? const SizedBox(
             width: 22,
             height: 22,
             child: CircularProgressIndicator(strokeWidth: 2),
           )
-        : _buildLabelRow();
+        : _buildLabelRow(gapSm);
 
     return TextButton(
       onPressed: isLoading ? null : onPressed,
@@ -48,7 +49,7 @@ class AppTextActionButton extends StatelessWidget {
     );
   }
 
-  Widget _buildLabelRow() {
+  Widget _buildLabelRow(double iconTextGap) {
     if (child != null) {
       return child!;
     }
@@ -62,7 +63,7 @@ class AppTextActionButton extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         icon!,
-        const SizedBox(width: 8),
+        SizedBox(width: iconTextGap),
         text,
       ],
     );

@@ -22,15 +22,19 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AppResult<Unit>> register({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<String> requestedStoreIds,
   }) async {
     try {
       await _remoteDataSource.register(
         fullName: fullName,
         email: email,
-        storeName: storeName,
         password: password,
+        employeeId: employeeId,
+        accessProfileLabel: accessProfileLabel,
+        requestedStoreIds: requestedStoreIds,
       );
 
       AppLogger.info(
@@ -38,7 +42,9 @@ class AuthRepositoryImpl implements AuthRepository {
         context: <String, Object?>{
           'operation': 'register',
           'email': email,
-          'storeName': storeName,
+          'employeeId': employeeId,
+          'accessProfileLabel': accessProfileLabel,
+          'requestedStoreIds': requestedStoreIds,
         },
       );
       return const Success<Unit, AppFailure>(unit);

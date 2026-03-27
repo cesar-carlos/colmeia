@@ -1,6 +1,7 @@
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
+import 'package:colmeia/features/auth/data/register_store_catalog.dart';
 import 'package:dio/dio.dart';
 
 final class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
@@ -12,16 +13,26 @@ final class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   Future<void> register({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<String> requestedStoreIds,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 400));
     try {
+      final users = await _fakeBackendStore.loadUsers();
+      final userSequence = users.length + 1;
+      final allowedStores = RegisterStoreCatalog.scopesForSelectedIds(
+        requestedStoreIds,
+        userSequence: userSequence,
+      );
       await _fakeBackendStore.register(
         fullName: fullName,
         email: email,
-        storeName: storeName,
         password: password,
+        employeeId: employeeId,
+        accessProfileLabel: accessProfileLabel,
+        allowedStores: allowedStores,
       );
     } on FakeBackendConflictException catch (error) {
       throw DioException(

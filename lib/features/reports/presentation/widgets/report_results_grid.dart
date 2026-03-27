@@ -120,10 +120,7 @@ class _SalesReportDataSource extends DataGridSource {
           .getCells()
           .map<Widget>((cell) {
             return Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: Theme.of(context).extension<AppThemeTokens>()!.gapMd,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Align(
                 alignment: cell.columnName == 'revenue'
                     ? Alignment.centerRight
@@ -154,9 +151,10 @@ class _HeaderLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     return Container(
       alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
       child: Text(
         text,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(

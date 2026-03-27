@@ -2,12 +2,11 @@ import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
 import 'package:colmeia/features/user_context/data/models/user_context_model.dart';
 import 'package:dio/dio.dart';
 
-class UserContextRemoteDataSource {
+// ignore: one_member_abstracts — explicit remote contract for fake vs API swap.
+abstract interface class UserContextRemoteDataSource {
   Future<UserContextModel> loadUserContext({
     required String userId,
-  }) {
-    throw UnimplementedError();
-  }
+  });
 }
 
 class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {

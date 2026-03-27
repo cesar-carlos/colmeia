@@ -31,7 +31,6 @@ class LoginPrimaryButton extends StatelessWidget {
       minimumHeight: minHeight,
       showLabelWhileLoading: true,
       loadingIndicatorSize: 18,
-      loadingIndicatorStrokeWidth: 2,
       loadingIndicatorColor: cs.onPrimaryContainer,
       trailing: isLoading
           ? null

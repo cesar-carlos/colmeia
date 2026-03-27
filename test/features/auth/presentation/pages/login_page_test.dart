@@ -141,8 +141,10 @@ final class _FakeAuthLoginFailureRepository implements AuthRepository {
   Future<AppResult<Unit>> register({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<String> requestedStoreIds,
   }) async {
     return const Failure<Unit, AppFailure>(
       UnknownFailure(message: 'test', userMessage: 'test'),
@@ -175,8 +177,10 @@ final class _FakeAuthRepository implements AuthRepository {
   Future<AppResult<Unit>> register({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<String> requestedStoreIds,
   }) async {
     return const Failure<Unit, AppFailure>(
       UnknownFailure(message: 'test', userMessage: 'test'),

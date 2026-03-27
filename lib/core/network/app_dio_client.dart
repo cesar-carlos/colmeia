@@ -15,6 +15,14 @@ abstract final class AppDioClient {
     );
     if (AppEnvironment.apiBaseUrl.isNotEmpty) {
       baseOptions.baseUrl = AppEnvironment.apiBaseUrl;
+    } else if (!AppEnvironment.useFakeBackend) {
+      AppLogger.warning(
+        'API_BASE_URL is empty while USE_FAKE_BACKEND is false; '
+        'relative HTTP calls may fail until a base URL is configured.',
+        context: const <String, Object?>{
+          'component': 'AppDioClient',
+        },
+      );
     }
 
     final dio = Dio(

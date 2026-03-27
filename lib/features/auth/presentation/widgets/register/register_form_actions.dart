@@ -1,3 +1,5 @@
+import 'package:colmeia/features/auth/presentation/widgets/login/login_primary_button.dart';
+import 'package:colmeia/features/auth/presentation/widgets/register/register_back_to_login_row.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -20,23 +22,14 @@ class RegisterFormActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        FilledButton.icon(
+        LoginPrimaryButton(
+          label: isLoading ? 'Enviando solicitação...' : 'Solicitar acesso',
+          isLoading: isLoading,
           onPressed: isLoading ? null : onSubmit,
-          icon: isLoading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.app_registration),
-          label: Text(
-            isLoading ? 'Enviando solicitacao...' : 'Solicitar acesso',
-          ),
         ),
-        SizedBox(height: tokens.gapMd),
-        TextButton(
-          onPressed: isLoading ? null : onBackToLogin,
-          child: const Text('Ja tenho conta'),
+        SizedBox(height: tokens.authLoginGapAfterPrimary),
+        RegisterBackToLoginRow(
+          onTap: isLoading ? null : onBackToLogin,
         ),
       ],
     );

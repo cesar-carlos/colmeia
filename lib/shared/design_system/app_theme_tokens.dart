@@ -304,8 +304,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           authLoginScrollPaddingHorizontal ??
           this.authLoginScrollPaddingHorizontal,
       authLoginScrollPaddingVertical:
-          authLoginScrollPaddingVertical ??
-          this.authLoginScrollPaddingVertical,
+          authLoginScrollPaddingVertical ?? this.authLoginScrollPaddingVertical,
       authLoginGapBrandToForm:
           authLoginGapBrandToForm ?? this.authLoginGapBrandToForm,
       authLoginGapHeroToTitle:

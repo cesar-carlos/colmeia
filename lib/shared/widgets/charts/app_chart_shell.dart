@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,7 @@ class AppChartShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
 
     return AppSectionCard(
       child: Column(
@@ -27,9 +29,9 @@ class AppChartShell extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.gapXs),
           Text(subtitle, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 16),
+          SizedBox(height: tokens.contentSpacing),
           child,
         ],
       ),

@@ -20,6 +20,14 @@ void main() {
       expect(AppFormValidators.password('123456'), isNull);
     });
 
+    test('should validate employee id format', () {
+      expect(AppFormValidators.employeeId(null), 'Informe a matrícula.');
+      expect(AppFormValidators.employeeId(''), 'Informe a matrícula.');
+      expect(AppFormValidators.employeeId('a'), 'Matrícula inválida.');
+      expect(AppFormValidators.employeeId('ab 12'), isNotNull);
+      expect(AppFormValidators.employeeId('AB-12'), isNull);
+    });
+
     test('should validate confirm password against source password', () {
       expect(
         AppFormValidators.confirmPassword(

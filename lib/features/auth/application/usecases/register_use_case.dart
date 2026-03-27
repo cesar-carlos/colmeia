@@ -10,14 +10,18 @@ class RegisterUseCase {
   Future<AppResult<Unit>> call({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<String> requestedStoreIds,
   }) {
     return _authRepository.register(
       fullName: fullName,
       email: email,
-      storeName: storeName,
       password: password,
+      employeeId: employeeId,
+      accessProfileLabel: accessProfileLabel,
+      requestedStoreIds: requestedStoreIds,
     );
   }
 }

@@ -171,15 +171,18 @@ class AuthController extends ChangeNotifier {
   Future<void> register({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<String> requestedStoreIds,
   }) async {
     AppLogger.debug(
       'Starting register flow',
       context: <String, Object?>{
         'operation': 'register',
         'email': email,
-        'storeName': storeName,
+        'accessProfileLabel': accessProfileLabel,
+        'requestedStoreCount': requestedStoreIds.length,
       },
     );
 
@@ -200,15 +203,17 @@ class AuthController extends ChangeNotifier {
     final result = await _registerUseCase(
       fullName: fullName.trim(),
       email: authEmail.value,
-      storeName: storeName.trim(),
       password: password,
+      employeeId: employeeId.trim(),
+      accessProfileLabel: accessProfileLabel,
+      requestedStoreIds: requestedStoreIds,
     );
 
     result.fold(
       (_) {
         _presentation = _presentation.copyWith(
           successMessage:
-              'Solicitacao enviada com sucesso. Aguarde a aprovacao.',
+              'Solicitação enviada com sucesso. Aguarde a aprovação.',
           clearErrorMessage: true,
         );
       },
@@ -222,7 +227,6 @@ class AuthController extends ChangeNotifier {
           context: <String, Object?>{
             'operation': 'register',
             'email': email,
-            'storeName': storeName,
           },
         );
       },

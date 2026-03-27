@@ -8,8 +8,10 @@ abstract interface class AuthRemoteDataSource {
   Future<void> register({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<String> requestedStoreIds,
   });
 
   Future<AuthSessionModel> login({
@@ -35,14 +37,18 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
   Future<void> register({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<String> requestedStoreIds,
   }) async {
     final request = RegisterRequestDto(
       fullName: fullName,
       email: email,
-      storeName: storeName,
       password: password,
+      employeeId: employeeId,
+      accessProfile: accessProfileLabel,
+      requestedStoreIds: requestedStoreIds,
     );
 
     await _dio.post<Map<String, dynamic>>(

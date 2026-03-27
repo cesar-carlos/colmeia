@@ -45,9 +45,19 @@ final class FakeIdentityBackendStore {
   Future<FakeIdentityUserRecord> register({
     required String fullName,
     required String email,
-    required String storeName,
     required String password,
+    required String employeeId,
+    required String accessProfileLabel,
+    required List<StoreScope> allowedStores,
   }) async {
+    if (allowedStores.isEmpty) {
+      throw ArgumentError.value(
+        allowedStores,
+        'allowedStores',
+        'Fake register requires at least one store scope',
+      );
+    }
+
     final users = await loadUsers();
     final normalizedEmail = email.trim().toLowerCase();
     final existingUser = users
@@ -62,10 +72,9 @@ final class FakeIdentityBackendStore {
       fullName: fullName.trim(),
       email: normalizedEmail,
       password: password,
-      roleLabel: 'Gestor de loja',
-      allowedStores: <StoreScope>[
-        StoreScope(id: 'store-${users.length + 1}', name: storeName.trim()),
-      ],
+      employeeId: employeeId.trim(),
+      roleLabel: accessProfileLabel,
+      allowedStores: allowedStores,
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
         UserPermission.viewReports,
@@ -87,7 +96,7 @@ final class FakeIdentityBackendStore {
           },
         ),
       ],
-      activeStoreId: 'store-${users.length + 1}',
+      activeStoreId: allowedStores.first.id,
     );
 
     final updatedUsers = <FakeIdentityUserRecord>[...users, createdUser];
@@ -134,6 +143,7 @@ final class FakeIdentityBackendStore {
       fullName: 'Camila Oliveira',
       email: 'camila@example.com',
       password: '123456',
+      employeeId: '',
       roleLabel: 'Gerente regional',
       allowedStores: <StoreScope>[
         StoreScope(id: '03', name: 'Loja Centro'),
@@ -177,6 +187,7 @@ final class FakeIdentityBackendStore {
       fullName: 'Bruno Martins',
       email: 'bruno@example.com',
       password: '123456',
+      employeeId: '',
       roleLabel: 'Gerente de loja',
       allowedStores: <StoreScope>[
         StoreScope(id: '08', name: 'Loja Norte'),
@@ -209,6 +220,7 @@ final class FakeIdentityBackendStore {
       fullName: 'Amanda Souza',
       email: 'amanda@example.com',
       password: '123456',
+      employeeId: '',
       roleLabel: 'Analista operacional',
       allowedStores: <StoreScope>[
         StoreScope(id: '03', name: 'Loja Centro'),
@@ -235,6 +247,7 @@ final class FakeIdentityUserRecord {
     required this.fullName,
     required this.email,
     required this.password,
+    required this.employeeId,
     required this.roleLabel,
     required this.allowedStores,
     required this.permissions,
@@ -249,6 +262,7 @@ final class FakeIdentityUserRecord {
       fullName: json['fullName'] as String,
       email: json['email'] as String,
       password: json['password'] as String,
+      employeeId: json['employeeId'] as String? ?? '',
       roleLabel: json['roleLabel'] as String,
       allowedStores: (json['allowedStores'] as List<dynamic>)
           .map(
@@ -302,6 +316,7 @@ final class FakeIdentityUserRecord {
   final String fullName;
   final String email;
   final String password;
+  final String employeeId;
   final String roleLabel;
   final List<StoreScope> allowedStores;
   final Set<UserPermission> permissions;
@@ -317,6 +332,7 @@ final class FakeIdentityUserRecord {
       fullName: fullName,
       email: email,
       password: password,
+      employeeId: employeeId,
       roleLabel: roleLabel,
       allowedStores: allowedStores,
       permissions: permissions,
@@ -332,6 +348,7 @@ final class FakeIdentityUserRecord {
       'fullName': fullName,
       'email': email,
       'password': password,
+      'employeeId': employeeId,
       'roleLabel': roleLabel,
       'allowedStores': allowedStores
           .map(

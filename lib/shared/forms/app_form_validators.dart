@@ -37,6 +37,28 @@ abstract final class AppFormValidators {
     );
   }
 
+  static String? employeeId(String? value) {
+    final requiredValidation = requiredText(
+      value,
+      message: 'Informe a matrícula.',
+    );
+    if (requiredValidation != null) {
+      return requiredValidation;
+    }
+
+    final trimmed = value!.trim();
+    if (trimmed.length < 2) {
+      return 'Matrícula inválida.';
+    }
+
+    final ok = RegExp(r'^[A-Za-z0-9\-.]+$').hasMatch(trimmed);
+    if (!ok) {
+      return 'Use apenas letras, números, hífen ou ponto.';
+    }
+
+    return null;
+  }
+
   static String? email(
     String? value, {
     String emptyMessage = 'Informe o e-mail',

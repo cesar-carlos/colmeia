@@ -1,7 +1,15 @@
 export 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 export 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 export 'package:colmeia/shared/widgets/actions/app_text_action_button.dart';
+export 'package:colmeia/shared/widgets/app_section_card.dart';
+export 'package:colmeia/shared/widgets/app_shell_scaffold.dart';
+export 'package:colmeia/shared/widgets/app_skeleton.dart';
 export 'package:colmeia/shared/widgets/backgrounds/honeycomb_hex_background.dart';
+export 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
+export 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
+export 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+export 'package:colmeia/shared/widgets/charts/app_distribution_chart.dart';
+export 'package:colmeia/shared/widgets/charts/app_time_series_chart.dart';
 export 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
 export 'package:colmeia/shared/widgets/forms/app_checkbox_field.dart';
 export 'package:colmeia/shared/widgets/forms/app_email_field.dart';
