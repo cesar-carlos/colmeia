@@ -1,6 +1,7 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_app_bar.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_bottom_nav.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,12 +22,19 @@ class AppShellScaffold extends StatelessWidget {
     final visibleShellRoutes = userContextController.availableShellRoutes;
 
     return Scaffold(
-      appBar: AppShellAppBar(currentRoute: currentRoute),
+      appBar: const AppShellAppBar(),
       drawer: AppShellDrawer(
         currentRoute: currentRoute,
         visibleShellRoutes: visibleShellRoutes,
       ),
-      body: SafeArea(child: child),
+      bottomNavigationBar: AppShellBottomNav(
+        currentRoute: currentRoute,
+        visibleShellRoutes: visibleShellRoutes,
+      ),
+      body: SafeArea(
+        bottom: false,
+        child: child,
+      ),
     );
   }
 }

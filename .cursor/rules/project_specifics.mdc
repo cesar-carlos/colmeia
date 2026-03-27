@@ -114,8 +114,8 @@ lib/
 - `package_info_plus` para metadados da app
 - `flutter_dotenv` para ambiente e configuracao por build
 - `logger` para logging estruturado quando o projeto precisar de camada propria
-- `drift` sobre SQLite quando o cache local deixar de ser trivial
-- `path` e `path_provider` para suporte a armazenamento local
+- `hive_ce` para persistencia local de cache chave-valor (mobile, desktop e web)
+- `path` e `path_provider` para diretorio de dados no VM (Hive init fora da web)
 - `uuid` para identificadores tecnicos
 - `google_fonts` para tipografia do design system quando fizer sentido
 - `intl` para moeda, data, hora e formatacao numerica
@@ -154,6 +154,9 @@ lib/
 - Comece com cache leve, focado em performance de leitura
 - Cacheie apenas sessao, loja ativa, preferencias, filtros recentes,
   dashboards, metadados e ultimos resumos relevantes
+- Exponha cache de leitura para features via contrato `AppCacheStore` (DIP);
+  a implementacao atual usa `hive_ce` (`HiveAppCacheStore`); prefira nao acoplar
+  datasources a `Box` ou detalhes do Hive
 - Use chaves logicas, `TTL` por recurso e invalidacao clara
 - Sempre permita refresh manual quando o dado puder envelhecer
 - Evite sincronizacao offline completa, merge complexo e reconciliacao avancada
@@ -209,14 +212,15 @@ lib/
 - Evite hardcodes visuais em features; consuma sempre o tema e os componentes do
   design system
 
-## Android e iOS
+## Android e iOS (e web opcional)
 
-- Este projeto nao deve carregar preocupacoes de desktop ou web sem necessidade
-  real
-- Ao criar abstractions de plataforma, foque em Android e iOS
+- O produto prioriza Android e iOS; web pode existir para preview ou entregas
+  adicionais quando fizer sentido (ex.: stack compartilhada com `hive_ce`)
+- Evite desktop ou web-specific sem necessidade real para o escopo atual
+- Ao criar abstractions de plataforma, foque primeiro em Android e iOS
 - Respeite convencoes nativas de navegacao, permissao, teclado e lifecycle
 - Antes de adicionar codigo multiplataforma extra, valide se ele traz valor para
-  o escopo mobile atual
+  o escopo que o time mantem ativo
 
 ## Erros e Resultados
 
@@ -251,13 +255,14 @@ Future<AppResult<User>> getById(String id) async {
 
 - Espelhe `lib/` em `test/` por feature ou modulo compartilhado
 - Priorize testes unitarios para regras, mapeadores e controllers/view models
-- Nao crie widget tests por padrao; faca isso apenas quando o usuario pedir ou
-  quando a mudanca atingir fluxo critico de autenticacao, permissao, navegacao
-  principal ou componente compartilhado de alto risco
+- **Widget tests (`testWidgets`):** nao adicione por iniciativa propria; implemente
+  **somente** quando o usuario pedir **explicitamente** na conversa ou na tarefa
+- Para auth, permissao, navegacao e componentes compartilhados, prefira testes
+  unitarios ou de integracao leve ate que widget test seja solicitado
 - Cubra com prioridade auth, permissoes, troca de loja, filtros e mapeamento de
   metadados dinamicos
-- Sempre que uma regressao visual ou comportamental ocorrer, adicione um teste
-  focado nela
+- Quando uma regressao ocorrer, adicione o tipo de teste mais direto (em geral
+  unitario); widget test **somente** se o usuario pedir explicitamente
 
 ## Regra de UI para Falhas
 
@@ -294,4 +299,5 @@ Future<void> main() async {
 - [ ] Tokens e componentes compartilhados sustentam a identidade visual do app
 - [ ] Nao foram introduzidas preocupacoes de desktop/web sem necessidade
 - [ ] Mensagens de erro para usuario sao claras e nao vazam detalhes internos
-- [ ] Testes relevantes cobrem regras, componentes ou regressions alteradas
+- [ ] Testes relevantes cobrem regras ou regressoes alteradas; widget tests so
+      com pedido explicito

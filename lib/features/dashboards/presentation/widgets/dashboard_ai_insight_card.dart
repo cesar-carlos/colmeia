@@ -21,10 +21,7 @@ class DashboardAiInsightCard extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return AppSectionCard(
-      color: Color.alphaBlend(
-        cs.primaryContainer.withValues(alpha: 0.35),
-        cs.surfaceContainerLowest,
-      ),
+      color: cs.secondaryContainer,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -54,11 +51,22 @@ class DashboardAiInsightCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.gapMd),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.tonal(
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
               onPressed: onApply,
-              child: Text(insight.ctaLabel),
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
+                minimumSize: Size(48, tokens.actionButtonMinHeight),
+              ),
+              child: Text(
+                insight.ctaLabel.toUpperCase(),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                ),
+              ),
             ),
           ),
         ],

@@ -214,10 +214,31 @@ abstract final class AppTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: colorScheme.surfaceContainerLow,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         indicatorColor: colorScheme.secondaryContainer,
-        labelTextStyle: const WidgetStatePropertyAll<TextStyle>(
-          TextStyle(fontWeight: FontWeight.w600),
-        ),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final base = textTheme.labelMedium ?? const TextStyle();
+          if (states.contains(WidgetState.selected)) {
+            return base.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w700,
+            );
+          }
+          return base.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          );
+        }),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          const size = 24.0;
+          if (states.contains(WidgetState.selected)) {
+            return IconThemeData(color: colorScheme.primary, size: size);
+          }
+          return IconThemeData(color: colorScheme.onSurfaceVariant, size: size);
+        }),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,

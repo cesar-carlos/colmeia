@@ -13,6 +13,8 @@ alwaysApply: true
 - Prefer modern, idiomatic Dart and Flutter constructs when they improve clarity
 - Never swallow errors silently
 - Prefer clear, actionable failures over generic error messages
+- Do not add or suggest Flutter **widget tests** (`testWidgets`) unless the user
+  explicitly asks for them; see `testing.mdc` and `testing_dart_flutter.mdc`
 
 ## Rule Categories
 

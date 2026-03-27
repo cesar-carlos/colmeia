@@ -4,6 +4,8 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:flutter/material.dart';
 
+enum DashboardSummaryCardEmphasis { standard, accent }
+
 class DashboardSummaryCard extends StatelessWidget {
   const DashboardSummaryCard({
     required this.title,
@@ -11,12 +13,14 @@ class DashboardSummaryCard extends StatelessWidget {
     required this.deltaLabel,
     required this.icon,
     super.key,
+    this.emphasis = DashboardSummaryCardEmphasis.standard,
   });
 
   final String title;
   final String value;
   final String deltaLabel;
   final DashboardSummaryMetricIcon icon;
+  final DashboardSummaryCardEmphasis emphasis;
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +31,16 @@ class DashboardSummaryCard extends StatelessWidget {
     final deltaNegative =
         trimmedDelta.startsWith('-') || trimmedDelta.startsWith('−');
     final deltaColor = deltaNegative ? cs.error : cs.tertiary;
+    final cardColor = switch (emphasis) {
+      DashboardSummaryCardEmphasis.accent => Color.alphaBlend(
+        cs.primaryContainer.withValues(alpha: 0.65),
+        cs.surfaceContainerLowest,
+      ),
+      DashboardSummaryCardEmphasis.standard => null,
+    };
 
     return AppSectionCard(
+      color: cardColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

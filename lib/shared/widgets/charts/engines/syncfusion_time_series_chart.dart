@@ -35,8 +35,8 @@ class SyncfusionTimeSeriesChart extends StatelessWidget {
           axisLine: const AxisLine(width: 0),
         ),
         zoomPanBehavior: ZoomPanBehavior(
-          enablePinching: true,
-          enablePanning: true,
+          enablePinching: chartTheme.enableSelectionZooming,
+          enablePanning: chartTheme.enableSelectionZooming,
           enableSelectionZooming: chartTheme.enableSelectionZooming,
         ),
         series: <CartesianSeries<AppChartPoint, String>>[

@@ -60,8 +60,15 @@ Para convencoes especificas de Dart/Flutter, use `testing_dart_flutter.mdc`.
 - Component/service test: valida colaboracao entre partes proximas
 - Integration test: valida fronteiras reais e contratos externos
 - UI/component visual test: valida estados e interacoes visiveis
-- Nao trate widget test como obrigatorio por padrao; use-o quando for solicitado
-  explicitamente ou quando a mudanca tocar comportamento critico de UI
+
+### Widget tests (`testWidgets`)
+
+- **Nao** escreva, adicione ou proponha testes de widget por iniciativa propria
+- Use `testWidgets` **somente** quando o usuario pedir **explicitamente** (na
+  mensagem ou na tarefa)
+- Para fluxos criticos sem pedido de widget test, prefira testes unitarios em
+  controllers, use cases, mapeadores ou integracao leve — nao substitua isso por
+  widget test automaticamente
 
 ## Cobertura
 
@@ -79,6 +86,7 @@ Para convencoes especificas de Dart/Flutter, use `testing_dart_flutter.mdc`.
 
 - [ ] Os testes espelham a estrutura principal do codigo
 - [ ] Cada teste cobre um comportamento observavel
+- [ ] Nenhum widget test foi adicionado sem pedido explicito do usuario
 - [ ] Dependencias externas foram isoladas adequadamente
 - [ ] Caminhos de falha relevantes estao cobertos
 - [ ] Casos criticos de dominio e integracao estao cobertos

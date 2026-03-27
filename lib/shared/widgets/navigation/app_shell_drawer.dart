@@ -3,6 +3,8 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_route_presentation.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_user_initials.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -66,7 +68,7 @@ class AppShellDrawer extends StatelessWidget {
                 final selected =
                     route.shellIndex != null &&
                     route.shellIndex == currentRoute.shellIndex;
-                final subtitle = _subtitleForRoute(route);
+                final subtitle = appShellRouteSubtitle(route);
                 return Padding(
                   padding: EdgeInsets.only(bottom: tokens.gapSm),
                   child: ListTile(
@@ -75,11 +77,11 @@ class AppShellDrawer extends StatelessWidget {
                     ),
                     tileColor: selected ? cs.primaryContainer : null,
                     leading: Icon(
-                      _iconForRoute(route, selected: selected),
+                      appShellRouteIcon(route, selected: selected),
                       color: selected ? cs.onPrimaryContainer : cs.onSurface,
                     ),
                     title: Text(
-                      _labelForRoute(route),
+                      appShellRouteLabel(route),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: selected
                             ? FontWeight.w700
@@ -131,7 +133,7 @@ class AppShellDrawer extends StatelessWidget {
                           backgroundColor: cs.primaryContainer,
                           foregroundColor: cs.onPrimaryContainer,
                           child: Text(
-                            _drawerUserInitials(userScope.name),
+                            appShellUserInitials(userScope.name),
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
@@ -185,73 +187,4 @@ class AppShellDrawer extends StatelessWidget {
       ),
     );
   }
-
-  String _labelForRoute(AppRoute route) {
-    switch (route) {
-      case AppRoute.dashboard:
-      case AppRoute.dashboardStore:
-        return 'Dashboard';
-      case AppRoute.reports:
-      case AppRoute.reportDetail:
-        return 'Relatórios';
-      case AppRoute.settings:
-        return 'Perfil';
-      case AppRoute.login:
-      case AppRoute.register:
-        return route.title;
-    }
-  }
-
-  String? _subtitleForRoute(AppRoute route) {
-    switch (route) {
-      case AppRoute.dashboard:
-      case AppRoute.dashboardStore:
-        return 'Resumo operacional e KPIs';
-      case AppRoute.reports:
-      case AppRoute.reportDetail:
-        return 'Consultas e relatórios dinâmicos';
-      case AppRoute.settings:
-        return 'Conta, permissões e preferências';
-      case AppRoute.login:
-      case AppRoute.register:
-        return null;
-    }
-  }
-
-  IconData _iconForRoute(AppRoute route, {required bool selected}) {
-    switch (route) {
-      case AppRoute.dashboard:
-      case AppRoute.dashboardStore:
-        return selected
-            ? Icons.space_dashboard_rounded
-            : Icons.space_dashboard_outlined;
-      case AppRoute.reports:
-      case AppRoute.reportDetail:
-        return selected ? Icons.assessment_rounded : Icons.assessment_outlined;
-      case AppRoute.settings:
-        return selected ? Icons.person_rounded : Icons.person_outline_rounded;
-      case AppRoute.login:
-      case AppRoute.register:
-        return Icons.arrow_forward_rounded;
-    }
-  }
-}
-
-String _drawerUserInitials(String name) {
-  final trimmed = name.trim();
-  if (trimmed.isEmpty) {
-    return '?';
-  }
-  final parts = trimmed.split(RegExp(r'\s+'));
-  if (parts.length == 1) {
-    final word = parts.single;
-    return word.length >= 2
-        ? word.substring(0, 2).toUpperCase()
-        : word.toUpperCase();
-  }
-  final first = parts.first;
-  final last = parts.last;
-  final a = first.runes.isEmpty ? 0x3f : first.runes.first;
-  final b = last.runes.isEmpty ? 0x3f : last.runes.first;
-  return '${String.fromCharCode(a)}${String.fromCharCode(b)}'.toUpperCase();
 }

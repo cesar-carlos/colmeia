@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/app/app.dart';
 import 'package:colmeia/app/router/app_router.dart';
+import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -35,6 +36,9 @@ class ColmeiaBootstrap extends StatelessWidget {
         ),
         ChangeNotifierProvider<CurrentUserContextController>(
           create: (_) => getIt<CurrentUserContextController>(),
+        ),
+        ChangeNotifierProvider<AppThemeModeController>(
+          create: (_) => getIt<AppThemeModeController>(),
         ),
         Provider<GoRouter>(
           create: (context) {

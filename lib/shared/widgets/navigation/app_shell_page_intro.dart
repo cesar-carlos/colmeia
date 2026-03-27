@@ -7,12 +7,16 @@ class AppShellPageIntro extends StatelessWidget {
     required this.subtitle,
     super.key,
     this.eyebrow,
+    this.sectionLabel,
     this.footer,
   });
 
   final String title;
   final String subtitle;
   final String? eyebrow;
+
+  /// Muted line under [eyebrow] (e.g. screen section name before the headline).
+  final String? sectionLabel;
   final Widget? footer;
 
   @override
@@ -34,6 +38,16 @@ class AppShellPageIntro extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.gapXs),
+        ],
+        if (sectionLabel != null) ...<Widget>[
+          Text(
+            sectionLabel!,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: tokens.sectionSpacing),
         ],
         Text(
           title,

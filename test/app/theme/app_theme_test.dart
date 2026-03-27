@@ -35,6 +35,32 @@ void main() {
 
       final bottomSheetTheme = Theme.of(captured).bottomSheetTheme;
       expect(bottomSheetTheme.elevation, 0);
+
+      final navigationBarTheme = Theme.of(captured).navigationBarTheme;
+      expect(navigationBarTheme.elevation, 0);
+      expect(navigationBarTheme.shadowColor, Colors.transparent);
+      expect(navigationBarTheme.surfaceTintColor, Colors.transparent);
+      expect(navigationBarTheme.backgroundColor, isNotNull);
+      expect(navigationBarTheme.indicatorColor, isNotNull);
+      expect(navigationBarTheme.labelTextStyle, isNotNull);
+      final selectedLabel = navigationBarTheme.labelTextStyle!.resolve(
+        <WidgetState>{WidgetState.selected},
+      );
+      final unselectedLabel = navigationBarTheme.labelTextStyle!.resolve(
+        <WidgetState>{},
+      );
+      expect(selectedLabel?.fontWeight, FontWeight.w700);
+      expect(unselectedLabel?.fontWeight, FontWeight.w600);
+      expect(selectedLabel?.color, isNot(unselectedLabel?.color));
+      expect(navigationBarTheme.iconTheme, isNotNull);
+      final selectedIcon = navigationBarTheme.iconTheme!.resolve(
+        <WidgetState>{WidgetState.selected},
+      );
+      final unselectedIcon = navigationBarTheme.iconTheme!.resolve(
+        <WidgetState>{},
+      );
+      expect(selectedIcon?.color, isNot(unselectedIcon?.color));
+      expect(selectedIcon?.size, 24);
     },
   );
 

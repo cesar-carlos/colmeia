@@ -51,6 +51,8 @@ Use these for repository-specific decisions:
   packages, platform decisions, and repository conventions
 - Prefer modern, idiomatic Dart and Flutter code when it improves clarity
 - Do not create new documentation unless explicitly requested
+- Do not add widget tests (`testWidgets`) unless the user explicitly requests
+  them; see `./.cursor/rules/testing.mdc` and `testing_dart_flutter.mdc`
 
 ## Notes
 

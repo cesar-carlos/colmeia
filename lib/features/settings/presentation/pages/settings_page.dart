@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -34,8 +35,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _persistPushNotifications(bool value) async {
     await getIt<AppUserPreferencesStore>().setPushNotificationsEnabled(
-          enabled: value,
-        );
+      enabled: value,
+    );
     if (mounted) {
       setState(() => _pushNotificationsEnabled = value);
     }
@@ -49,11 +50,95 @@ class _SettingsPageState extends State<SettingsPage> {
     messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
+  Future<void> _showThemeModePicker() async {
+    final themeCtrl = context.read<AppThemeModeController>();
+    final rootContext = context;
+    final sheetTheme = Theme.of(rootContext);
+    final tokens = sheetTheme.extension<AppThemeTokens>()!;
+    final cs = sheetTheme.colorScheme;
+
+    await showModalBottomSheet<void>(
+      context: rootContext,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        Widget option(ThemeMode mode, String title, String subtitle) {
+          final selected = themeCtrl.themeMode == mode;
+          return ListTile(
+            leading: Icon(
+              selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+              color: selected ? cs.primary : cs.onSurfaceVariant,
+            ),
+            title: Text(title),
+            subtitle: Text(subtitle),
+            onTap: () {
+              unawaited(themeCtrl.setThemeMode(mode));
+              Navigator.of(sheetContext).pop();
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: tokens.gapMd),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.contentSpacing,
+                    tokens.gapSm,
+                    tokens.contentSpacing,
+                    tokens.gapXs,
+                  ),
+                  child: Text(
+                    'Tema do app',
+                    style: sheetTheme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.contentSpacing,
+                  ),
+                  child: Text(
+                    'Escolha se o app segue o sistema ou usa um tema fixo.',
+                    style: sheetTheme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                SizedBox(height: tokens.gapSm),
+                option(
+                  ThemeMode.system,
+                  'Sistema',
+                  'Mesmo tema do dispositivo (claro ou escuro).',
+                ),
+                option(
+                  ThemeMode.light,
+                  'Claro',
+                  'Sempre interface clara.',
+                ),
+                option(
+                  ThemeMode.dark,
+                  'Escuro',
+                  'Sempre interface escura.',
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final controller = context.watch<CurrentUserContextController>();
     final authController = context.watch<AuthController>();
+    final themeMode = context.watch<AppThemeModeController>().themeMode;
     final tokens = theme.extension<AppThemeTokens>()!;
     final cs = theme.colorScheme;
     final scope = controller.userScope;
@@ -314,19 +399,22 @@ class _SettingsPageState extends State<SettingsPage> {
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(Icons.dark_mode_outlined, color: cs.primary),
                 title: Text(
-                  'Modo escuro',
+                  'Aparência',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 subtitle: Text(
-                  theme.brightness == Brightness.dark
-                      ? 'Tema escuro em uso.'
-                      : 'Tema claro em uso (acompanha o dispositivo).',
+                  _themePreferenceLabel(themeMode),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
                 ),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: cs.onSurfaceVariant,
+                ),
+                onTap: _showThemeModePicker,
               ),
             ],
           ),
@@ -398,6 +486,14 @@ class _SettingsPageState extends State<SettingsPage> {
       ],
     );
   }
+}
+
+String _themePreferenceLabel(ThemeMode mode) {
+  return switch (mode) {
+    ThemeMode.system => 'Seguindo o dispositivo.',
+    ThemeMode.light => 'Tema claro fixo.',
+    ThemeMode.dark => 'Tema escuro fixo.',
+  };
 }
 
 String _initials(String name) {

@@ -21,11 +21,11 @@ em Dart/Flutter.
 
 ## Widget Tests
 
-- Use `testWidgets` quando isso for solicitado explicitamente ou quando a
-  mudanca tocar fluxo critico, regressao visual relevante ou comportamento de UI
-  com risco alto
-- Monte o menor app shell necessario para tema, localizacao, roteamento ou
-  injecao de dependencia
+- **Padrao:** nao crie testes de widget; veja `testing.mdc` (secao Widget tests)
+- **Excecao:** use `testWidgets` **apenas** se o usuario solicitar **de forma
+  explicita** testes de widget ou `testWidgets` para aquela mudanca
+- Quando for solicitado, monte o menor app shell necessario para tema,
+  localizacao, roteamento ou injecao de dependencia
 - Valide estados de loading, empty, success e error quando o widget os expuser
 - Nao transforme widget test em snapshot grande e sem foco
 - Prefira helpers pequenos, matchers claros e setup local antes de criar
@@ -53,6 +53,8 @@ em Dart/Flutter.
 ## Checklist
 
 - [ ] O tipo de teste Dart/Flutter escolhido e o menor necessario
+- [ ] Widget tests existem somente se o usuario pediu explicitamente (caso
+  contrario nao foram adicionados)
 - [ ] O harness do teste contem apenas as dependencias visuais necessarias
 - [ ] Assertions usam `package:checks` ou `expect` de forma clara
-- [ ] Widget tests cobrem estados visiveis e interacoes relevantes
+- [ ] Se houver widget test, cobre estados visiveis e interacoes relevantes
