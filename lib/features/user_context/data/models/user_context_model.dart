@@ -15,6 +15,8 @@ class UserContextModel {
     required this.activeStoreId,
     this.dashboardGrants = const <DashboardAccessGrant>[],
     this.reportGrants = const <ReportAccessGrant>[],
+    this.corporateEmail = '',
+    this.phone = '',
   });
 
   factory UserContextModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,9 @@ class UserContextModel {
       activeStoreId: json['activeStoreId'] as String,
       dashboardGrants: dashboardGrants,
       reportGrants: reportGrants,
+      corporateEmail:
+          json['corporateEmail'] as String? ?? json['email'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
     );
   }
 
@@ -48,6 +53,8 @@ class UserContextModel {
   final List<StoreScope> allowedStores;
   final Set<UserPermission> permissions;
   final String activeStoreId;
+  final String corporateEmail;
+  final String phone;
   final List<DashboardAccessGrant> dashboardGrants;
   final List<ReportAccessGrant> reportGrants;
 
@@ -61,6 +68,8 @@ class UserContextModel {
         permissions: permissions,
         dashboardGrants: dashboardGrants,
         reportGrants: reportGrants,
+        corporateEmail: corporateEmail,
+        phone: phone,
       ),
       activeStoreId: persistedActiveStoreId ?? activeStoreId,
     );

@@ -12,11 +12,15 @@ class UserScope {
     required this.permissions,
     this.dashboardGrants = const <DashboardAccessGrant>[],
     this.reportGrants = const <ReportAccessGrant>[],
+    this.corporateEmail = '',
+    this.phone = '',
   });
 
   final String userId;
   final String name;
   final String roleLabel;
+  final String corporateEmail;
+  final String phone;
   final List<StoreScope> allowedStores;
   final Set<UserPermission> permissions;
   final List<DashboardAccessGrant> dashboardGrants;

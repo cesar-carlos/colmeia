@@ -5,6 +5,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/application/usecases/load_dashboard_overview_use_case.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_ai_insight.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_category_share.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_chart_point.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_detail_highlight.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
@@ -71,6 +73,15 @@ void main() {
                 emphasis: '2 SKUs sob monitoramento',
               ),
             ],
+            aiInsight: DashboardAiInsight(
+              title: 'Insight de IA',
+              body: 'Corpo',
+              ctaLabel: 'Aplicar',
+            ),
+            categoryShares: <DashboardCategoryShare>[
+              DashboardCategoryShare(label: 'A', percent: 50),
+              DashboardCategoryShare(label: 'B', percent: 50),
+            ],
           ),
         ),
       );
@@ -122,6 +133,15 @@ class _FakeDashboardRepository implements DashboardRepository {
             subtitle: 'Itens criticos abaixo do limite nas ultimas 24h.',
             emphasis: '2 SKUs sob monitoramento',
           ),
+        ],
+        aiInsight: DashboardAiInsight(
+          title: 'Insight de IA',
+          body: 'Corpo',
+          ctaLabel: 'Aplicar',
+        ),
+        categoryShares: <DashboardCategoryShare>[
+          DashboardCategoryShare(label: 'A', percent: 50),
+          DashboardCategoryShare(label: 'B', percent: 50),
         ],
       ),
     );

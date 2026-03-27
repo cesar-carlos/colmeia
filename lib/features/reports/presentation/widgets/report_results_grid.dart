@@ -38,6 +38,14 @@ class _ReportResultsGridState extends State<ReportResultsGrid> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final totalRevenue = widget.rows.fold<double>(
+      0,
+      (sum, row) => sum + row.revenue,
+    );
+    final totalOrders = widget.rows.fold<int>(
+      0,
+      (sum, row) => sum + row.orders,
+    );
 
     return AppSectionCard(
       child: Column(
@@ -54,6 +62,31 @@ class _ReportResultsGridState extends State<ReportResultsGrid> {
             'Base pronta para ordenacao, filtros e paginação no servidor.',
             style: theme.textTheme.bodyMedium,
           ),
+          SizedBox(height: tokens.contentSpacing),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _ResultSnapshotTile(
+                  label: 'Linhas',
+                  value: widget.rows.length.toString(),
+                ),
+              ),
+              SizedBox(width: tokens.gapSm),
+              Expanded(
+                child: _ResultSnapshotTile(
+                  label: 'Pedidos',
+                  value: totalOrders.toString(),
+                ),
+              ),
+              SizedBox(width: tokens.gapSm),
+              Expanded(
+                child: _ResultSnapshotTile(
+                  label: 'Faturamento',
+                  value: AppBrFormatters.currency(totalRevenue),
+                ),
+              ),
+            ],
+          ),
           if (widget.rows.isEmpty) ...<Widget>[
             SizedBox(height: tokens.contentSpacing),
             Text(
@@ -62,34 +95,90 @@ class _ReportResultsGridState extends State<ReportResultsGrid> {
             ),
           ] else ...<Widget>[
             SizedBox(height: tokens.contentSpacing),
-            SizedBox(
-              height: 280,
-              child: SfDataGrid(
-                source: _dataSource,
-                allowSorting: true,
-                columnWidthMode: ColumnWidthMode.fill,
-                columns: <GridColumn>[
-                  GridColumn(
-                    columnName: 'seller',
-                    label: const _HeaderLabel(text: 'Vendedor'),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(tokens.cardRadius),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(tokens.cardRadius),
+                child: SizedBox(
+                  height: 280,
+                  child: SfDataGrid(
+                    source: _dataSource,
+                    allowSorting: true,
+                    columnWidthMode: ColumnWidthMode.fill,
+                    headerGridLinesVisibility: GridLinesVisibility.none,
+                    columns: <GridColumn>[
+                      GridColumn(
+                        columnName: 'seller',
+                        label: const _HeaderLabel(text: 'Vendedor'),
+                      ),
+                      GridColumn(
+                        columnName: 'store',
+                        label: const _HeaderLabel(text: 'Loja'),
+                      ),
+                      GridColumn(
+                        columnName: 'orders',
+                        label: const _HeaderLabel(text: 'Pedidos'),
+                      ),
+                      GridColumn(
+                        columnName: 'revenue',
+                        label: const _HeaderLabel(text: 'Faturamento'),
+                      ),
+                    ],
                   ),
-                  GridColumn(
-                    columnName: 'store',
-                    label: const _HeaderLabel(text: 'Loja'),
-                  ),
-                  GridColumn(
-                    columnName: 'orders',
-                    label: const _HeaderLabel(text: 'Pedidos'),
-                  ),
-                  GridColumn(
-                    columnName: 'revenue',
-                    label: const _HeaderLabel(text: 'Faturamento'),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _ResultSnapshotTile extends StatelessWidget {
+  const _ResultSnapshotTile({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.gapMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: tokens.gapXs),
+            Text(
+              value,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }

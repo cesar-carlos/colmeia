@@ -39,6 +39,8 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
         'userId': me['id'] ?? userId,
         'name': me['name'],
         'roleLabel': me['roleLabel'] ?? me['role'] ?? 'Usuario',
+        'email': me['email'] ?? me['corporateEmail'],
+        'phone': me['phone'],
         'allowedStores': stores,
         'permissions': permissions,
         'dashboardGrants':
@@ -93,6 +95,8 @@ class FakeUserContextRemoteDataSource implements UserContextRemoteDataSource {
       activeStoreId: user.activeStoreId,
       dashboardGrants: user.dashboardGrants,
       reportGrants: user.reportGrants,
+      corporateEmail: user.email,
+      phone: user.phone,
     );
   }
 }

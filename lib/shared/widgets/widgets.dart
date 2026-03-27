@@ -17,3 +17,6 @@ export 'package:colmeia/shared/widgets/forms/app_form_builder_text_field.dart';
 export 'package:colmeia/shared/widgets/forms/app_password_field.dart';
 export 'package:colmeia/shared/widgets/forms/app_radio_group.dart';
 export 'package:colmeia/shared/widgets/forms/app_text_field.dart';
+export 'package:colmeia/shared/widgets/navigation/app_shell_app_bar.dart';
+export 'package:colmeia/shared/widgets/navigation/app_shell_drawer.dart';
+export 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';

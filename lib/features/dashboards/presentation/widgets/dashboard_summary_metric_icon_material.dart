@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 extension DashboardSummaryMetricIconMaterial on DashboardSummaryMetricIcon {
   IconData get materialIconData => switch (this) {
     DashboardSummaryMetricIcon.trendingUp => Icons.trending_up,
+    DashboardSummaryMetricIcon.trendingDown => Icons.trending_down,
     DashboardSummaryMetricIcon.receiptLong => Icons.receipt_long,
+    DashboardSummaryMetricIcon.payments => Icons.payments_outlined,
     DashboardSummaryMetricIcon.insights => Icons.insights,
   };
 }

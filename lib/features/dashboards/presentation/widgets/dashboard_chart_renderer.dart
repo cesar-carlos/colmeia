@@ -10,11 +10,15 @@ class DashboardChartRenderer extends StatelessWidget {
     required this.subtitle,
     required this.points,
     super.key,
+    this.titleTrailing,
+    this.belowSubtitle,
   });
 
   final String title;
   final String subtitle;
   final List<DashboardChartPoint> points;
+  final Widget? titleTrailing;
+  final Widget? belowSubtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +34,8 @@ class DashboardChartRenderer extends StatelessWidget {
     return AppChartShell(
       title: title,
       subtitle: subtitle,
+      titleTrailing: titleTrailing,
+      belowSubtitle: belowSubtitle,
       child: AppTimeSeriesChart(
         points: chartPoints,
       ),

@@ -1,10 +1,13 @@
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/data/models/dashboard_overview_model.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_ai_insight.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_category_share.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_chart_point.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_detail_highlight.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_summary_metric.dart';
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 
 class DashboardRemoteDataSource {
   Future<DashboardOverviewModel> fetchOverview({
@@ -89,27 +92,34 @@ class FakeDashboardRemoteDataSource implements DashboardRemoteDataSource {
     final compositeMultiplier =
         storeMultiplier * roleMultiplier * scopeMultiplier;
 
+    final marginPct = (24.5 / compositeMultiplier.clamp(0.92, 1.08)).clamp(
+      18.5,
+      29.0,
+    );
+    final marginDelta = _marginDeltaLabelForStore(storeId.value);
+    final marginIcon = marginDelta.trim().startsWith('-')
+        ? DashboardSummaryMetricIcon.trendingDown
+        : DashboardSummaryMetricIcon.trendingUp;
+
     return DashboardOverviewModel(
       summaryMetrics: <DashboardSummaryMetric>[
         DashboardSummaryMetric(
-          title: 'Faturamento do dia',
-          value: _formatCompactCurrency(128400 * compositeMultiplier),
-          deltaLabel: dashboardGrant.allowedFilterKeys.contains('referenceDate')
-              ? _deltaLabelForStore(storeId.value)
-              : 'Leitura consolidada do periodo',
-          icon: DashboardSummaryMetricIcon.trendingUp,
+          title: 'Total de vendas',
+          value: _formatWholeCurrency(142850 * compositeMultiplier),
+          deltaLabel: _salesDeltaPctForStore(storeId.value),
+          icon: DashboardSummaryMetricIcon.payments,
         ),
         DashboardSummaryMetric(
-          title: 'Ticket medio',
-          value: _formatCurrency(246.3 * compositeMultiplier),
-          deltaLabel: _ticketDeltaLabelForRole(user.roleLabel),
+          title: 'Ticket médio',
+          value: _formatDecimalCurrency(84.20 * compositeMultiplier),
+          deltaLabel: _ticketDeltaPctForRole(user.roleLabel),
           icon: DashboardSummaryMetricIcon.receiptLong,
         ),
         DashboardSummaryMetric(
-          title: 'Pedidos em andamento',
-          value: (118 * compositeMultiplier).round().toString(),
-          deltaLabel: '${selectedStore.name} em foco',
-          icon: DashboardSummaryMetricIcon.insights,
+          title: 'Rentabilidade',
+          value: '${marginPct.toStringAsFixed(1)}%',
+          deltaLabel: marginDelta,
+          icon: marginIcon,
         ),
       ],
       revenuePoints: <DashboardChartPoint>[
@@ -136,6 +146,10 @@ class FakeDashboardRemoteDataSource implements DashboardRemoteDataSource {
         DashboardChartPoint(
           label: 'Sab',
           value: 136800 * compositeMultiplier,
+        ),
+        DashboardChartPoint(
+          label: 'Dom',
+          value: 118000 * compositeMultiplier,
         ),
       ],
       sellerPerformancePoints: <DashboardChartPoint>[
@@ -181,34 +195,79 @@ class FakeDashboardRemoteDataSource implements DashboardRemoteDataSource {
           },
         ),
       ],
+      aiInsight: const DashboardAiInsight(
+        title: 'Insight de IA',
+        body:
+            'Aumentar equipe no horário de pico (11h–13h) pode reduzir a perda '
+            'de conversão em até 15%.',
+        ctaLabel: 'Aplicar estratégia',
+      ),
+      categoryShares: _categorySharesForStore(storeId.value),
     );
   }
 
-  String _deltaLabelForStore(String storeId) {
+  List<DashboardCategoryShare> _categorySharesForStore(String storeId) {
     return switch (storeId) {
-      '08' => '+10,4% vs ontem',
-      '14' => '+2,8% vs ontem',
-      _ => '+8,2% vs ontem',
+      '08' => const <DashboardCategoryShare>[
+        DashboardCategoryShare(label: 'Bebidas', percent: 44),
+        DashboardCategoryShare(label: 'Lanches', percent: 26),
+        DashboardCategoryShare(label: 'Mercearia', percent: 18),
+        DashboardCategoryShare(label: 'Outros', percent: 12),
+      ],
+      '14' => const <DashboardCategoryShare>[
+        DashboardCategoryShare(label: 'Bebidas', percent: 38),
+        DashboardCategoryShare(label: 'Lanches', percent: 31),
+        DashboardCategoryShare(label: 'Mercearia', percent: 19),
+        DashboardCategoryShare(label: 'Outros', percent: 12),
+      ],
+      _ => const <DashboardCategoryShare>[
+        DashboardCategoryShare(label: 'Bebidas', percent: 42),
+        DashboardCategoryShare(label: 'Lanches', percent: 28),
+        DashboardCategoryShare(label: 'Mercearia', percent: 18),
+        DashboardCategoryShare(label: 'Outros', percent: 12),
+      ],
     };
   }
 
-  String _ticketDeltaLabelForRole(String roleLabel) {
+  String _salesDeltaPctForStore(String storeId) {
+    return switch (storeId) {
+      '08' => '+12,4%',
+      '14' => '+6,1%',
+      _ => '+8,9%',
+    };
+  }
+
+  String _ticketDeltaPctForRole(String roleLabel) {
     return switch (roleLabel) {
-      'Gerente regional' => '+4,7% na semana',
-      'Gerente de loja' => '+2,9% na semana',
-      'Gestor de loja' => '+2,4% na semana',
-      'Analista operacional' => '+1,6% na semana',
-      _ => '+3,1% na semana',
+      'Gerente regional' => '+3,4%',
+      'Gerente de loja' => '+2,4%',
+      'Gestor de loja' => '+2,1%',
+      'Analista operacional' => '+1,2%',
+      _ => '+2,1%',
     };
   }
 
-  String _formatCompactCurrency(double value) {
-    final compactValue = (value / 1000).toStringAsFixed(1).replaceAll('.', ',');
-    return 'R\$ $compactValue mil';
+  String _marginDeltaLabelForStore(String storeId) {
+    return switch (storeId) {
+      '08' => '-0,8%',
+      '14' => '+0,4%',
+      _ => '-0,8%',
+    };
   }
 
-  String _formatCurrency(double value) {
-    final fixedValue = value.toStringAsFixed(2).replaceAll('.', ',');
-    return 'R\$ $fixedValue';
+  String _formatWholeCurrency(double value) {
+    return NumberFormat.currency(
+      locale: 'pt_BR',
+      symbol: r'R$',
+      decimalDigits: 0,
+    ).format(value);
+  }
+
+  String _formatDecimalCurrency(double value) {
+    return NumberFormat.currency(
+      locale: 'pt_BR',
+      symbol: r'R$',
+      decimalDigits: 2,
+    ).format(value);
   }
 }

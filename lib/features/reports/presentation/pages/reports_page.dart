@@ -19,6 +19,7 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -182,22 +183,53 @@ class _ReportsPageState extends State<ReportsPage> {
               return ListView(
                 padding: EdgeInsets.all(tokens.contentSpacing),
                 children: <Widget>[
-                  Text(
-                    'Relatorios liberados',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  AppShellPageIntro(
+                    eyebrow: 'Colmeia Insights',
+                    title: 'Relatórios liberados',
+                    subtitle:
+                        'Acompanhe consultas, filtros e resultados da loja '
+                        'ativa em um só fluxo.',
+                    footer: Wrap(
+                      spacing: tokens.gapSm,
+                      runSpacing: tokens.gapSm,
+                      children: <Widget>[
+                        Chip(label: Text(userContext.userScope.roleLabel)),
+                        Chip(label: Text(activeStore.name)),
+                        if (!showSkeleton)
+                          Chip(
+                            label: Text('${reports.length} rotas disponíveis'),
+                          ),
+                      ],
                     ),
                   ),
-                  SizedBox(height: tokens.gapSm),
-                  Text(
-                    '${userContext.userScope.roleLabel} • ${activeStore.name}',
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                  SizedBox(height: tokens.gapXs),
-                  Text(
-                    'A base da feature ja esta pronta para filtros, paginacao '
-                    'e ordenacao.',
-                    style: theme.textTheme.bodyMedium,
+                  SizedBox(height: tokens.sectionSpacing),
+                  AppSkeleton(
+                    enabled: showSkeleton,
+                    child: AppSectionCard(
+                      color: theme.colorScheme.surfaceContainerLow,
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: _ReportsOverviewMetric(
+                              label: 'Rotas',
+                              value: reports.length.toString(),
+                            ),
+                          ),
+                          Expanded(
+                            child: _ReportsOverviewMetric(
+                              label: 'Filtros',
+                              value: parameters.length.toString(),
+                            ),
+                          ),
+                          Expanded(
+                            child: _ReportsOverviewMetric(
+                              label: 'Linhas',
+                              value: rows.length.toString(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   SizedBox(height: tokens.sectionSpacing),
                   AppSkeleton(
@@ -207,7 +239,7 @@ class _ReportsPageState extends State<ReportsPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            'Rotas parametrizadas de relatorio',
+                            'Rotas parametrizadas de relatório',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -234,9 +266,9 @@ class _ReportsPageState extends State<ReportsPage> {
                           if (!showSkeleton && !hasGrantedReports)
                             const ListTile(
                               contentPadding: EdgeInsets.zero,
-                              title: Text('Nenhum relatorio liberado.'),
+                              title: Text('Nenhum relatório liberado.'),
                               subtitle: Text(
-                                'O seu acesso atual nao possui relatorios '
+                                'O seu acesso atual não possui relatórios '
                                 'habilitados para esta loja.',
                               ),
                             ),
@@ -293,7 +325,7 @@ class _ReportsPageState extends State<ReportsPage> {
                     enabled: showSkeleton,
                     child: AppChartShell(
                       title: 'Comparativo de faturamento por vendedor',
-                      subtitle: 'Baseado nas linhas do resultado atual.',
+                      subtitle: 'Leitura rápida baseada no resultado atual.',
                       child: AppComparisonBarChart(
                         points: _buildSellerRevenuePoints(rows),
                       ),
@@ -308,6 +340,40 @@ class _ReportsPageState extends State<ReportsPage> {
               );
             },
           ),
+    );
+  }
+}
+
+class _ReportsOverviewMetric extends StatelessWidget {
+  const _ReportsOverviewMetric({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }

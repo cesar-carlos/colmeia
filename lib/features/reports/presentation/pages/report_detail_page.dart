@@ -20,6 +20,7 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -192,21 +193,24 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
               return ListView(
                 padding: EdgeInsets.all(tokens.contentSpacing),
                 children: <Widget>[
-                  Text(
-                    detail.definition.title,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  AppShellPageIntro(
+                    eyebrow: 'Análise detalhada',
+                    title: detail.definition.title,
+                    subtitle: detail.definition.subtitle,
+                    footer: Wrap(
+                      spacing: tokens.gapSm,
+                      runSpacing: tokens.gapSm,
+                      children: <Widget>[
+                        Chip(label: Text(resolvedStore.name)),
+                        Chip(label: Text(detail.generatedAtLabel)),
+                        Chip(
+                          label: Text(
+                            'Página ${detail.pageInfo.currentPage}'
+                            '/${detail.pageInfo.totalPages}',
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  SizedBox(height: tokens.gapSm),
-                  Text(
-                    '${resolvedStore.name} • ${detail.generatedAtLabel}',
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                  SizedBox(height: tokens.gapXs),
-                  Text(
-                    detail.definition.subtitle,
-                    style: theme.textTheme.bodyMedium,
                   ),
                   if (resolvedStoreResult.exceptionOrNull()
                       case final failure?) ...<Widget>[
@@ -232,6 +236,35 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                       ),
                     ),
                   ],
+                  SizedBox(height: tokens.sectionSpacing),
+                  AppSkeleton(
+                    enabled: showSkeleton,
+                    child: AppSectionCard(
+                      color: theme.colorScheme.surfaceContainerLow,
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: _ReportDetailKpi(
+                              label: 'Métricas',
+                              value: detail.summaryMetrics.length.toString(),
+                            ),
+                          ),
+                          Expanded(
+                            child: _ReportDetailKpi(
+                              label: 'Linhas',
+                              value: detail.rows.length.toString(),
+                            ),
+                          ),
+                          Expanded(
+                            child: _ReportDetailKpi(
+                              label: 'Parâmetros',
+                              value: detail.parameters.length.toString(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   SizedBox(height: tokens.sectionSpacing),
                   AppSkeleton(
                     enabled: showSkeleton,
@@ -387,6 +420,40 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
               );
             },
           ),
+    );
+  }
+}
+
+class _ReportDetailKpi extends StatelessWidget {
+  const _ReportDetailKpi({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -22,38 +22,47 @@ class DashboardSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final cs = theme.colorScheme;
+    final trimmedDelta = deltaLabel.trim();
+    final deltaNegative =
+        trimmedDelta.startsWith('-') || trimmedDelta.startsWith('−');
+    final deltaColor = deltaNegative ? cs.error : cs.tertiary;
 
     return AppSectionCard(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: theme.colorScheme.secondaryContainer,
-            foregroundColor: theme.colorScheme.onSecondaryContainer,
-            child: Icon(icon.materialIconData),
-          ),
-          SizedBox(width: tokens.contentSpacing),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(title, style: theme.textTheme.labelLarge),
-                SizedBox(height: tokens.gapXs),
-                Text(
-                  value,
-                  style: theme.textTheme.headlineSmall?.copyWith(
+          Row(
+            children: <Widget>[
+              Icon(
+                icon.materialIconData,
+                size: 22,
+                color: cs.primary,
+              ),
+              SizedBox(width: tokens.gapSm),
+              Expanded(
+                child: Text(
+                  deltaLabel,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: deltaColor,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: tokens.gapXs),
-                Text(
-                  deltaLabel,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.tertiary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.gapMd),
+          Text(
+            title,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: tokens.gapXs),
+          Text(
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],

@@ -31,7 +31,7 @@ enum AppRoute {
   ),
   settings(
     path: '/settings',
-    title: 'Configuracoes',
+    title: 'Perfil',
     shellIndex: 2,
   )
   ;

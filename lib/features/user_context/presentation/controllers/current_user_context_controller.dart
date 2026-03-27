@@ -59,6 +59,8 @@ class CurrentUserContextController extends ChangeNotifier {
           userId: 'seeded-user',
           name: 'Camila Oliveira',
           roleLabel: 'Gerente regional',
+          corporateEmail: 'camila@example.com',
+          phone: '+55 (11) 98765-4321',
           allowedStores: <StoreScope>[
             StoreScope(id: '03', name: 'Loja Centro'),
             StoreScope(id: '08', name: 'Loja Norte'),

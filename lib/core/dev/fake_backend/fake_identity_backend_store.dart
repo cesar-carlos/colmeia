@@ -181,6 +181,7 @@ final class FakeIdentityBackendStore {
         ),
       ],
       activeStoreId: '03',
+      phone: '+55 (11) 98765-4321',
     ),
     const FakeIdentityUserRecord(
       id: 'store-manager',
@@ -214,6 +215,7 @@ final class FakeIdentityBackendStore {
         ),
       ],
       activeStoreId: '08',
+      phone: '+55 (11) 91234-5678',
     ),
     const FakeIdentityUserRecord(
       id: 'ops-analyst',
@@ -237,6 +239,7 @@ final class FakeIdentityBackendStore {
       ],
       reportGrants: <ReportAccessGrant>[],
       activeStoreId: '03',
+      phone: '+55 (21) 99876-5432',
     ),
   ];
 }
@@ -254,6 +257,7 @@ final class FakeIdentityUserRecord {
     required this.dashboardGrants,
     required this.reportGrants,
     required this.activeStoreId,
+    this.phone = '',
   });
 
   factory FakeIdentityUserRecord.fromJson(Map<String, dynamic> json) {
@@ -309,12 +313,14 @@ final class FakeIdentityUserRecord {
           )
           .toList(growable: false),
       activeStoreId: json['activeStoreId'] as String,
+      phone: json['phone'] as String? ?? '',
     );
   }
 
   final String id;
   final String fullName;
   final String email;
+  final String phone;
   final String password;
   final String employeeId;
   final String roleLabel;
@@ -326,6 +332,7 @@ final class FakeIdentityUserRecord {
 
   FakeIdentityUserRecord copyWith({
     String? activeStoreId,
+    String? phone,
   }) {
     return FakeIdentityUserRecord(
       id: id,
@@ -339,6 +346,7 @@ final class FakeIdentityUserRecord {
       dashboardGrants: dashboardGrants,
       reportGrants: reportGrants,
       activeStoreId: activeStoreId ?? this.activeStoreId,
+      phone: phone ?? this.phone,
     );
   }
 
@@ -347,6 +355,7 @@ final class FakeIdentityUserRecord {
       'id': id,
       'fullName': fullName,
       'email': email,
+      'phone': phone,
       'password': password,
       'employeeId': employeeId,
       'roleLabel': roleLabel,

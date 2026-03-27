@@ -26,25 +26,53 @@ class ReportParameterForm extends StatelessWidget {
     final formKey = GlobalKey<FormBuilderState>();
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final hasParameters = parameters.isNotEmpty;
 
     return AppSectionCard(
+      color: theme.colorScheme.surfaceContainerLow,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            'Parametros do relatorio',
+            'Parâmetros do relatório',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
+          SizedBox(height: tokens.gapXs),
+          Text(
+            'Ajuste o recorte antes de consultar o resultado consolidado.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           SizedBox(height: tokens.gapMd),
+          Wrap(
+            spacing: tokens.gapSm,
+            runSpacing: tokens.gapSm,
+            children: <Widget>[
+              Chip(label: Text('${parameters.length} filtros')),
+              if (hasParameters)
+                Chip(
+                  label: Text(
+                    '${parameters.where((p) => p.required).length} '
+                    'obrigatórios',
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: tokens.contentSpacing),
           FormBuilder(
             key: formKey,
             child: Column(
               children: <Widget>[
-                ...parameters.map((parameter) {
+                ...parameters.asMap().entries.map((entry) {
+                  final isLast = entry.key == parameters.length - 1;
+                  final parameter = entry.value;
                   return Padding(
-                    padding: EdgeInsets.only(bottom: tokens.contentSpacing),
+                    padding: EdgeInsets.only(
+                      bottom: isLast ? tokens.gapMd : tokens.contentSpacing,
+                    ),
                     child: _ReportParameterField(
                       parameter: parameter,
                       initialValues: initialValues,
@@ -104,6 +132,7 @@ class _ReportParameterField extends StatelessWidget {
   Widget build(BuildContext context) {
     final initialValue =
         initialValues[parameter.name] ?? parameter.initialValue;
+    final theme = Theme.of(context);
     final textValidator = parameter.required
         ? FormBuilderValidators.compose(<String? Function(String?)>[
             FormBuilderValidators.required(),
@@ -125,7 +154,10 @@ class _ReportParameterField extends StatelessWidget {
         return FormBuilderDropdown<String>(
           name: parameter.name,
           initialValue: initialValue as String?,
-          decoration: InputDecoration(labelText: parameter.label),
+          decoration: InputDecoration(
+            labelText: parameter.label,
+            helperText: parameter.required ? 'Obrigatório' : 'Opcional',
+          ),
           items: parameter.options.map((option) {
             return DropdownMenuItem<String>(
               value: option.value,
@@ -144,7 +176,10 @@ class _ReportParameterField extends StatelessWidget {
           initialValue: initialValue as DateTime?,
           inputType: InputType.date,
           format: AppBrFormatters.shortDateFormat,
-          decoration: InputDecoration(labelText: parameter.label),
+          decoration: InputDecoration(
+            labelText: parameter.label,
+            helperText: parameter.required ? 'Obrigatório' : 'Opcional',
+          ),
           validator: parameter.required
               ? FormBuilderValidators.compose(<String? Function(DateTime?)>[
                   FormBuilderValidators.required(),
@@ -154,7 +189,14 @@ class _ReportParameterField extends StatelessWidget {
       case ReportParameterType.toggle:
         return FormBuilderSwitch(
           name: parameter.name,
+          activeColor: theme.colorScheme.primary,
           title: Text(parameter.label),
+          subtitle: Text(
+            'Ative para restringir o recorte ao cenário desejado.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           initialValue: initialValue as bool? ?? false,
         );
     }
