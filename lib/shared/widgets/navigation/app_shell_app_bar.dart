@@ -20,39 +20,29 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       toolbarHeight: preferredSize.height,
       titleSpacing: 0,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Text(
-            'Colmeia',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          Text(
-            currentRoute.title,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        IconButton(
-          tooltip: 'Pesquisar',
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Busca global estará disponível em breve.'),
+      title: Semantics(
+        header: true,
+        label: 'Colmeia, ${currentRoute.title}',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'Colmeia',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
-            );
-          },
-          icon: const Icon(Icons.search_rounded),
+            ),
+            Text(
+              currentRoute.title,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 4),
-      ],
+      ),
     );
   }
 }

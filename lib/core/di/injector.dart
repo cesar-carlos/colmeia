@@ -2,6 +2,7 @@ import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
 import 'package:colmeia/core/network/app_dio_client.dart';
+import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/core/storage/app_database.dart';
 import 'package:colmeia/core/storage/session_storage.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
@@ -41,6 +42,7 @@ import 'package:colmeia/features/user_context/presentation/controllers/current_u
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -49,7 +51,12 @@ Future<void> setupDependencies() async {
     return;
   }
 
+  final sharedPreferences = await SharedPreferences.getInstance();
+
   getIt
+    ..registerSingleton<AppUserPreferencesStore>(
+      AppUserPreferencesStore(sharedPreferences),
+    )
     ..registerLazySingleton<Dio>(AppDioClient.create)
     ..registerLazySingleton<FlutterSecureStorage>(FlutterSecureStorage.new)
     ..registerLazySingleton<SessionStorage>(

@@ -1,6 +1,6 @@
 enum UserPermission {
   viewReports(
-    label: 'Relatorios gerenciais',
+    label: 'Relatórios gerenciais',
   ),
   viewDashboard(
     label: 'Dashboard principal',

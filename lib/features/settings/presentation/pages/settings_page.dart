@@ -1,9 +1,15 @@
 import 'dart:async';
 
+import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/profile/app_profile_interactive_field.dart';
+import 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
+import 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';
+import 'package:colmeia/shared/widgets/profile/app_profile_status_pill.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +23,23 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _pushNotificationsEnabled = true;
+  late bool _pushNotificationsEnabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _pushNotificationsEnabled =
+        getIt<AppUserPreferencesStore>().pushNotificationsEnabled;
+  }
+
+  Future<void> _persistPushNotifications(bool value) async {
+    await getIt<AppUserPreferencesStore>().setPushNotificationsEnabled(
+          enabled: value,
+        );
+    if (mounted) {
+      setState(() => _pushNotificationsEnabled = value);
+    }
+  }
 
   void _showSoonSnack(String message) {
     final messenger = ScaffoldMessenger.maybeOf(context);
@@ -35,48 +57,31 @@ class _SettingsPageState extends State<SettingsPage> {
     final tokens = theme.extension<AppThemeTokens>()!;
     final cs = theme.colorScheme;
     final scope = controller.userScope;
-    final emailDisplay = scope.corporateEmail.trim().isEmpty
+    final emailEmpty = scope.corporateEmail.trim().isEmpty;
+    final emailDisplay = emailEmpty
         ? 'Indisponível no momento'
         : scope.corporateEmail;
-    final phoneDisplay = scope.phone.trim().isEmpty
-        ? 'Toque para cadastrar'
-        : scope.phone;
+    final phoneEmpty = scope.phone.trim().isEmpty;
+    final phoneDisplay = phoneEmpty ? 'Toque para cadastrar' : scope.phone;
 
     return ListView(
       padding: EdgeInsets.all(tokens.contentSpacing),
       children: <Widget>[
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Colmeia BI',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  SizedBox(height: tokens.gapXs),
-                  Text(
-                    'Perfil',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
+        Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: TextButton(
+            onPressed: () => _showSoonSnack(
+              'Edição de perfil estará disponível em uma próxima versão.',
             ),
-            TextButton(
-              onPressed: () => _showSoonSnack(
-                'Edição de perfil estará disponível em uma próxima versão.',
-              ),
-              child: const Text('Editar'),
-            ),
-          ],
+            child: const Text('Editar perfil'),
+          ),
+        ),
+        SizedBox(height: tokens.gapSm),
+        Text(
+          'Dados da sua conta e preferências de uso.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCard(
@@ -154,12 +159,12 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const _ProfileSectionTitle(
+              const AppProfileSectionTitle(
                 icon: Icons.person_outline_rounded,
                 title: 'Dados pessoais',
               ),
               SizedBox(height: tokens.contentSpacing),
-              _ProfileInteractiveField(
+              AppProfileInteractiveField(
                 label: 'Nome completo',
                 value: scope.name,
                 onTap: () => _showSoonSnack(
@@ -167,9 +172,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               SizedBox(height: tokens.gapMd),
-              _ProfileStaticField(
+              AppProfileStaticField(
                 label: 'E-mail corporativo',
                 value: emailDisplay,
+                valueMuted: emailEmpty,
                 trailing: Icon(
                   Icons.lock_outline_rounded,
                   size: 20,
@@ -177,9 +183,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               SizedBox(height: tokens.gapMd),
-              _ProfileInteractiveField(
+              AppProfileInteractiveField(
                 label: 'Telefone',
                 value: phoneDisplay,
+                isPlaceholder: phoneEmpty,
                 onTap: () => _showSoonSnack(
                   'Cadastro de telefone ficará disponível em breve.',
                 ),
@@ -192,12 +199,12 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const _ProfileSectionTitle(
+              const AppProfileSectionTitle(
                 icon: Icons.security_rounded,
                 title: 'Segurança',
               ),
               SizedBox(height: tokens.contentSpacing),
-              _ProfileInteractiveField(
+              AppProfileInteractiveField(
                 label: 'Senha de acesso',
                 value: 'Alterar senha',
                 emphasizeValue: true,
@@ -241,7 +248,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           ],
                         ),
                       ),
-                      _StatusPill(
+                      AppProfileStatusPill(
                         label: 'ATIVO',
                         foreground: cs.onTertiaryContainer,
                         background: cs.tertiaryContainer,
@@ -258,7 +265,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              const _ProfileSectionTitle(
+              const AppProfileSectionTitle(
                 icon: Icons.tune_rounded,
                 title: 'Preferências',
               ),
@@ -294,15 +301,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 subtitle: Text(
-                  'Alertas operacionais e avisos de relatório.',
+                  'Preferência salva neste aparelho.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
                 ),
                 value: _pushNotificationsEnabled,
-                onChanged: (value) {
-                  setState(() => _pushNotificationsEnabled = value);
-                },
+                onChanged: _persistPushNotifications,
               ),
               SizedBox(height: tokens.gapMd),
               ListTile(
@@ -338,13 +343,25 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               SizedBox(height: tokens.gapMd),
-              Wrap(
-                spacing: tokens.gapSm,
-                runSpacing: tokens.gapSm,
-                children: controller.permissions
-                    .map((permission) => Chip(label: Text(permission.label)))
-                    .toList(growable: false),
-              ),
+              if (controller.permissions.isEmpty)
+                Text(
+                  'Nenhuma permissão listada para o seu perfil neste momento. '
+                  'Se precisar de acesso adicional, fale com o administrador '
+                  'da sua operação.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: tokens.gapSm,
+                  runSpacing: tokens.gapSm,
+                  children: controller.permissions
+                      .map(
+                        (permission) => Chip(label: Text(permission.label)),
+                      )
+                      .toList(growable: false),
+                ),
             ],
           ),
         ),
@@ -397,190 +414,7 @@ String _initials(String name) {
   }
   final first = parts.first;
   final last = parts.last;
-  return '${first.characters.first}${last.characters.first}'.toUpperCase();
-}
-
-class _ProfileSectionTitle extends StatelessWidget {
-  const _ProfileSectionTitle({
-    required this.icon,
-    required this.title,
-  });
-
-  final IconData icon;
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final tokens = theme.extension<AppThemeTokens>()!;
-
-    return Row(
-      children: <Widget>[
-        Icon(icon, size: 22, color: cs.primary),
-        SizedBox(width: tokens.gapSm),
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProfileInteractiveField extends StatelessWidget {
-  const _ProfileInteractiveField({
-    required this.label,
-    required this.value,
-    required this.onTap,
-    this.emphasizeValue = false,
-  });
-
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-  final bool emphasizeValue;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final cs = theme.colorScheme;
-
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      label,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: tokens.gapXs),
-                    Text(
-                      value,
-                      style: emphasizeValue
-                          ? theme.textTheme.titleSmall?.copyWith(
-                              color: cs.primary,
-                              fontWeight: FontWeight.w700,
-                            )
-                          : theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: cs.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileStaticField extends StatelessWidget {
-  const _ProfileStaticField({
-    required this.label,
-    required this.value,
-    this.trailing,
-  });
-
-  final String label;
-  final String value;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final cs = theme.colorScheme;
-    final trailingWidget = trailing;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  label,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: tokens.gapXs),
-                Text(
-                  value,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          ?trailingWidget,
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
-    required this.label,
-    required this.foreground,
-    required this.background,
-  });
-
-  final String label;
-  final Color foreground;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.gapSm,
-        vertical: tokens.gapXs,
-      ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(tokens.cardRadius),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.6,
-        ),
-      ),
-    );
-  }
+  final a = first.runes.isEmpty ? 0x3f : first.runes.first;
+  final b = last.runes.isEmpty ? 0x3f : last.runes.first;
+  return '${String.fromCharCode(a)}${String.fromCharCode(b)}'.toUpperCase();
 }

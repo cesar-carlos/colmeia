@@ -180,163 +180,179 @@ class _ReportsPageState extends State<ReportsPage> {
                 );
               }
 
-              return ListView(
-                padding: EdgeInsets.all(tokens.contentSpacing),
-                children: <Widget>[
-                  AppShellPageIntro(
-                    eyebrow: 'Colmeia Insights',
-                    title: 'Relatórios liberados',
-                    subtitle:
-                        'Acompanhe consultas, filtros e resultados da loja '
-                        'ativa em um só fluxo.',
-                    footer: Wrap(
-                      spacing: tokens.gapSm,
-                      runSpacing: tokens.gapSm,
-                      children: <Widget>[
-                        Chip(label: Text(userContext.userScope.roleLabel)),
-                        Chip(label: Text(activeStore.name)),
-                        if (!showSkeleton)
-                          Chip(
-                            label: Text('${reports.length} rotas disponíveis'),
-                          ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: AppSectionCard(
-                      color: theme.colorScheme.surfaceContainerLow,
-                      child: Row(
+              Future<void> onRefresh() async {
+                if (session == null || activeStore.id == _placeholderStoreId) {
+                  return;
+                }
+                await controller.loadOverview(
+                  userId: session.userId,
+                  activeStoreId: StoreId(activeStore.id),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: onRefresh,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.all(tokens.contentSpacing),
+                  children: <Widget>[
+                    AppShellPageIntro(
+                      eyebrow: 'Colmeia Insights',
+                      title: 'Relatórios liberados',
+                      subtitle:
+                          'Acompanhe consultas, filtros e resultados da loja '
+                          'ativa em um só fluxo.',
+                      footer: Wrap(
+                        spacing: tokens.gapSm,
+                        runSpacing: tokens.gapSm,
                         children: <Widget>[
-                          Expanded(
-                            child: _ReportsOverviewMetric(
-                              label: 'Rotas',
-                              value: reports.length.toString(),
-                            ),
-                          ),
-                          Expanded(
-                            child: _ReportsOverviewMetric(
-                              label: 'Filtros',
-                              value: parameters.length.toString(),
-                            ),
-                          ),
-                          Expanded(
-                            child: _ReportsOverviewMetric(
-                              label: 'Linhas',
-                              value: rows.length.toString(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: AppSectionCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            'Rotas parametrizadas de relatório',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(height: tokens.gapMd),
-                          ...reports.map((report) {
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(report.title),
-                              subtitle: Text(report.subtitle),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () {
-                                unawaited(
-                                  context.pushToData<void>(
-                                    ReportDetailRouteData(
-                                      reportId: ReportId(report.id),
-                                      storeId: StoreId(activeStore.id),
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          }),
-                          if (!showSkeleton && !hasGrantedReports)
-                            const ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text('Nenhum relatório liberado.'),
-                              subtitle: Text(
-                                'O seu acesso atual não possui relatórios '
-                                'habilitados para esta loja.',
+                          Chip(label: Text(userContext.userScope.roleLabel)),
+                          Chip(label: Text(activeStore.name)),
+                          if (!showSkeleton)
+                            Chip(
+                              label: Text(
+                                '${reports.length} rotas disponíveis',
                               ),
                             ),
                         ],
                       ),
                     ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  if (parameters.isNotEmpty)
+                    SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
-                      child: ReportParameterForm(
-                        parameters: parameters,
-                        onApply: (filters) {
-                          controller.applyFilters(filters).fold(
-                            (normalizedFilters) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Filtros aplicados: '
-                                    '${normalizedFilters.keys.join(', ')}',
-                                  ),
-                                ),
-                              );
-                            },
-                            (_) {},
-                          );
-                        },
-                      ),
-                    ),
-                  if (controller.errorMessage
-                      case final String errorMessage) ...<Widget>[
-                    SizedBox(height: tokens.sectionSpacing),
-                    AppSectionCard(
-                      child: Text(
-                        errorMessage,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
+                      child: AppSectionCard(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: _ReportsOverviewMetric(
+                                label: 'Rotas',
+                                value: reports.length.toString(),
+                              ),
+                            ),
+                            Expanded(
+                              child: _ReportsOverviewMetric(
+                                label: 'Filtros',
+                                value: parameters.length.toString(),
+                              ),
+                            ),
+                            Expanded(
+                              child: _ReportsOverviewMetric(
+                                label: 'Linhas',
+                                value: rows.length.toString(),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
-                  if (controller.hasAppliedFilters) ...<Widget>[
                     SizedBox(height: tokens.sectionSpacing),
-                    AppSectionCard(
-                      child: Text(
-                        'Ultimos filtros aplicados: '
-                        '${controller.lastAppliedFilters.keys.join(', ')}',
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: AppSectionCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              'Rotas parametrizadas de relatório',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: tokens.gapMd),
+                            ...reports.map((report) {
+                              return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(report.title),
+                                subtitle: Text(report.subtitle),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  unawaited(
+                                    context.pushToData<void>(
+                                      ReportDetailRouteData(
+                                        reportId: ReportId(report.id),
+                                        storeId: StoreId(activeStore.id),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            }),
+                            if (!showSkeleton && !hasGrantedReports)
+                              const ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text('Nenhum relatório liberado.'),
+                                subtitle: Text(
+                                  'O seu acesso atual não possui relatórios '
+                                  'habilitados para esta loja.',
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
+                    ),
+                    SizedBox(height: tokens.sectionSpacing),
+                    if (parameters.isNotEmpty)
+                      AppSkeleton(
+                        enabled: showSkeleton,
+                        child: ReportParameterForm(
+                          parameters: parameters,
+                          onApply: (filters) {
+                            controller.applyFilters(filters).fold(
+                              (normalizedFilters) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Filtros aplicados: '
+                                      '${normalizedFilters.keys.join(', ')}',
+                                    ),
+                                  ),
+                                );
+                              },
+                              (_) {},
+                            );
+                          },
+                        ),
+                      ),
+                    if (controller.errorMessage
+                        case final String errorMessage) ...<Widget>[
+                      SizedBox(height: tokens.sectionSpacing),
+                      AppSectionCard(
+                        child: Text(
+                          errorMessage,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (controller.hasAppliedFilters) ...<Widget>[
+                      SizedBox(height: tokens.sectionSpacing),
+                      AppSectionCard(
+                        child: Text(
+                          'Ultimos filtros aplicados: '
+                          '${controller.lastAppliedFilters.keys.join(', ')}',
+                        ),
+                      ),
+                    ],
+                    SizedBox(height: tokens.sectionSpacing),
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: AppChartShell(
+                        title: 'Comparativo de faturamento por vendedor',
+                        subtitle: 'Leitura rápida baseada no resultado atual.',
+                        child: AppComparisonBarChart(
+                          points: _buildSellerRevenuePoints(rows),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: tokens.sectionSpacing),
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: ReportResultsGrid(rows: rows),
                     ),
                   ],
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: AppChartShell(
-                      title: 'Comparativo de faturamento por vendedor',
-                      subtitle: 'Leitura rápida baseada no resultado atual.',
-                      child: AppComparisonBarChart(
-                        points: _buildSellerRevenuePoints(rows),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: ReportResultsGrid(rows: rows),
-                  ),
-                ],
+                ),
               );
             },
           ),

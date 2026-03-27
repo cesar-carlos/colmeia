@@ -161,157 +161,175 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                     userContext.userScope.name,
                   );
 
-                  return ListView(
-                    padding: EdgeInsets.all(tokens.contentSpacing),
-                    children: <Widget>[
-                      Text(
-                        'Colmeia BI',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.4,
+                  Future<void> onRefresh() async {
+                    final currentSession = authController.session;
+                    if (currentSession == null ||
+                        selectedStore.id == _placeholderStoreId) {
+                      return;
+                    }
+                    await dashboardController.loadOverview(
+                      userId: currentSession.userId,
+                      storeId: StoreId(selectedStore.id),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: onRefresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.all(tokens.contentSpacing),
+                      children: <Widget>[
+                        Text(
+                          'Colmeia BI',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: tokens.gapXs),
-                      Text(
-                        'Dashboard',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
+                        SizedBox(height: tokens.gapXs),
+                        Text(
+                          'Dashboard',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: tokens.sectionSpacing),
-                      Text(
-                        'Olá, $greetingName',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
+                        SizedBox(height: tokens.sectionSpacing),
+                        Text(
+                          'Olá, $greetingName',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: tokens.gapSm),
-                      Text(
-                        'Aqui está o resumo da sua operação hoje.',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        SizedBox(height: tokens.gapSm),
+                        Text(
+                          'Aqui está o resumo da sua operação hoje.',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: tokens.gapMd),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: userContext.userScope.allowedStores.map((
-                            store,
-                          ) {
-                            final isActive = store.id == selectedStore.id;
-                            return Padding(
-                              padding: EdgeInsets.only(right: tokens.gapSm),
-                              child: ChoiceChip(
-                                label: Text(store.name),
-                                selected: isActive,
-                                onSelected: (_) {
-                                  userContext
-                                      .selectStore(store.id)
-                                      .fold(
-                                        (_) {
-                                          context.goToData(
-                                            DashboardStoreRouteData(
-                                              storeId: StoreId(store.id),
-                                            ),
-                                          );
-                                        },
-                                        (failure) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                failure.displayMessage,
+                        SizedBox(height: tokens.gapMd),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: userContext.userScope.allowedStores.map((
+                              store,
+                            ) {
+                              final isActive = store.id == selectedStore.id;
+                              return Padding(
+                                padding: EdgeInsets.only(right: tokens.gapSm),
+                                child: ChoiceChip(
+                                  label: Text(store.name),
+                                  selected: isActive,
+                                  onSelected: (_) {
+                                    userContext
+                                        .selectStore(store.id)
+                                        .fold(
+                                          (_) {
+                                            context.goToData(
+                                              DashboardStoreRouteData(
+                                                storeId: StoreId(store.id),
                                               ),
-                                            ),
-                                          );
-                                        },
+                                            );
+                                          },
+                                          (failure) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  failure.displayMessage,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        if (selectedStoreResult.exceptionOrNull()
+                            case final failure?) ...<Widget>[
+                          SizedBox(height: tokens.gapMd),
+                          AppSectionCard(
+                            child: Text(
+                              failure.displayMessage,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (dashboardController.errorMessage
+                            case final String errorMessage) ...<Widget>[
+                          SizedBox(height: tokens.gapMd),
+                          AppSectionCard(
+                            child: Text(
+                              errorMessage,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                        SizedBox(height: tokens.sectionSpacing),
+                        if (shouldShowOverview) ...<Widget>[
+                          AppSkeleton(
+                            enabled: showSkeleton,
+                            child: DashboardAiInsightCard(
+                              insight: resolvedOverview.aiInsight,
+                              onApply: showSkeleton
+                                  ? null
+                                  : () {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Sugestão registrada para análise '
+                                            'da equipe.',
+                                          ),
+                                        ),
                                       );
-                                },
+                                    },
+                            ),
+                          ),
+                          SizedBox(height: tokens.sectionSpacing),
+                          ...resolvedOverview.summaryMetrics.map((metric) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: tokens.contentSpacing,
+                              ),
+                              child: AppSkeleton(
+                                enabled: showSkeleton,
+                                child: DashboardSummaryCard(
+                                  title: metric.title,
+                                  value: metric.value,
+                                  deltaLabel: metric.deltaLabel,
+                                  icon: metric.icon,
+                                ),
                               ),
                             );
-                          }).toList(),
-                        ),
-                      ),
-                      if (selectedStoreResult.exceptionOrNull()
-                          case final failure?) ...<Widget>[
-                        SizedBox(height: tokens.gapMd),
-                        AppSectionCard(
-                          child: Text(
-                            failure.displayMessage,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.error,
+                          }),
+                          AppSkeleton(
+                            enabled: showSkeleton,
+                            child: DashboardSalesTrendCard(
+                              points: resolvedOverview.revenuePoints,
                             ),
                           ),
-                        ),
+                          SizedBox(height: tokens.sectionSpacing),
+                          AppSkeleton(
+                            enabled: showSkeleton,
+                            child: DashboardCategoryMixCard(
+                              shares: resolvedOverview.categoryShares,
+                            ),
+                          ),
+                        ],
                       ],
-                      if (dashboardController.errorMessage
-                          case final String errorMessage) ...<Widget>[
-                        SizedBox(height: tokens.gapMd),
-                        AppSectionCard(
-                          child: Text(
-                            errorMessage,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.error,
-                            ),
-                          ),
-                        ),
-                      ],
-                      SizedBox(height: tokens.sectionSpacing),
-                      if (shouldShowOverview) ...<Widget>[
-                        AppSkeleton(
-                          enabled: showSkeleton,
-                          child: DashboardAiInsightCard(
-                            insight: resolvedOverview.aiInsight,
-                            onApply: showSkeleton
-                                ? null
-                                : () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Sugestão registrada para análise '
-                                          'da equipe.',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                          ),
-                        ),
-                        SizedBox(height: tokens.sectionSpacing),
-                        ...resolvedOverview.summaryMetrics.map((metric) {
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              bottom: tokens.contentSpacing,
-                            ),
-                            child: AppSkeleton(
-                              enabled: showSkeleton,
-                              child: DashboardSummaryCard(
-                                title: metric.title,
-                                value: metric.value,
-                                deltaLabel: metric.deltaLabel,
-                                icon: metric.icon,
-                              ),
-                            ),
-                          );
-                        }),
-                        AppSkeleton(
-                          enabled: showSkeleton,
-                          child: DashboardSalesTrendCard(
-                            points: resolvedOverview.revenuePoints,
-                          ),
-                        ),
-                        SizedBox(height: tokens.sectionSpacing),
-                        AppSkeleton(
-                          enabled: showSkeleton,
-                          child: DashboardCategoryMixCard(
-                            shares: resolvedOverview.categoryShares,
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
                   );
                 },
           ),
