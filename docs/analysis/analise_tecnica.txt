@@ -1,0 +1,624 @@
+# Arquitetura Técnica — App Flutter para Relatórios e Dashboards
+
+## 1. Visão geral da solução
+
+O projeto será um aplicativo mobile em **Flutter/Dart** para **iOS e Android**, focado em:
+
+- dashboards gerenciais
+- relatórios dinâmicos
+- autenticação de usuários
+- controle de permissões
+- segmentação por loja
+- suporte futuro a atualização em tempo real
+- performance adequada para consulta frequente de dados
+
+## Contexto operacional
+
+A solução atende uma rede com aproximadamente **60 lojas**, onde:
+
+- os dados já estão centralizados em um servidor central
+- cada loja possui um identificador próprio
+- existem usuários com diferentes níveis de acesso
+- um gerente pode responder por uma ou mais lojas
+- existe necessidade de visão individual e consolidada
+
+---
+
+## 2. Objetivos arquiteturais
+
+A arquitetura deve atender aos seguintes objetivos:
+
+- manter o app escalável
+- permitir evolução sem grande retrabalho
+- separar claramente regras de negócio, UI e integração
+- permitir cache local controlado
+- facilitar testes
+- suportar crescimento para dashboards mais dinâmicos
+- manter segurança de acesso no backend
+
+---
+
+## 3. Diretriz arquitetural principal
+
+A recomendação é usar uma arquitetura baseada em:
+
+- **Clean Architecture simplificada**
+- organização **por feature**
+- separação em camadas:
+  - Presentation
+  - Application
+  - Domain
+  - Data
+
+## Visão das camadas
+
+### Presentation
+Responsável por:
+
+- telas
+- widgets
+- navegação
+- gerenciamento de estado visual
+- interação do usuário
+
+### Application
+Responsável por:
+
+- casos de uso
+- orquestração das regras
+- coordenação entre UI e domínio
+- tratamento de fluxo da tela
+
+### Domain
+Responsável por:
+
+- entidades
+- contratos de repositórios
+- regras de negócio centrais
+- objetos de valor
+
+### Data
+Responsável por:
+
+- consumo da API REST
+- comunicação via socket
+- persistência local
+- cache
+- DTOs
+- mapeamento entre JSON e entidades
+
+---
+
+## 4. Decisões técnicas recomendadas
+
+## Stack principal
+
+### Linguagem e framework
+- Flutter
+- Dart
+
+### Estado
+- Riverpod
+
+### HTTP
+- Dio
+
+### Navegação
+- GoRouter
+
+### Persistência local
+- SQLite com Drift
+
+### Armazenamento seguro
+- flutter_secure_storage
+
+### Tempo real
+- WebSocket
+
+### Gráficos
+- fl_chart ou syncfusion_flutter_charts
+
+### Logging e observabilidade
+- logger
+- Sentry
+
+---
+
+## 5. Arquitetura lógica do app
+
+## Fluxo macro
+
+### 1. Inicialização
+- validar token salvo
+- restaurar sessão
+- carregar configurações locais
+- definir ambiente
+- carregar usuário autenticado
+
+### 2. Autenticação
+- login
+- refresh token
+- logout
+- restauração de sessão
+
+### 3. Carregamento do contexto
+- carregar dados do usuário
+- carregar lojas permitidas
+- carregar permissões
+- carregar dashboards liberados
+- definir loja ativa
+
+### 4. Operação principal
+- abrir dashboards
+- consultar relatórios
+- trocar filtros
+- trocar loja
+- comparar lojas
+- receber atualização eventual por socket
+
+---
+
+## 6. Módulos principais do app
+
+## 6.1 Auth
+Responsável por:
+
+- login
+- refresh token
+- logout
+- persistência de sessão
+- proteção de rotas
+
+## 6.2 User Context
+Responsável por:
+
+- dados do usuário logado
+- perfis
+- permissões
+- lojas vinculadas
+- loja ativa
+- escopo atual da navegação
+
+## 6.3 Dashboards
+Responsável por:
+
+- carregar dashboards disponíveis
+- carregar widgets
+- atualizar indicadores
+- aplicar filtros
+- montar visualização dinâmica
+
+## 6.4 Reports
+Responsável por:
+
+- listar relatórios disponíveis
+- obter metadados
+- aplicar filtros
+- paginação
+- ordenação
+- exportação
+
+## 6.5 Notifications / Realtime
+Responsável por:
+
+- conexão socket
+- eventos de atualização
+- invalidação de cache
+- atualização pontual de KPIs
+
+## 6.6 Settings / Profile
+Responsável por:
+
+- preferências do usuário
+- tema futuro
+- configurações de sessão
+- informações básicas do perfil
+
+---
+
+## 7. Modelo de autorização
+
+## Regra principal
+
+A autorização real deve ocorrer no backend.
+
+O app pode esconder:
+
+- telas
+- botões
+- filtros
+- relatórios
+- dashboards
+
+Mas o backend deve validar sempre:
+
+- usuário autenticado
+- recurso solicitado
+- lojas permitidas
+- escopo do perfil
+- filtros permitidos
+
+## Modelo sugerido
+
+A autorização deve considerar:
+
+- usuário
+- perfil
+- lista de lojas permitidas
+- dashboards permitidos
+- relatórios permitidos
+- ações permitidas
+- filtros permitidos
+
+## Exemplo
+
+Um gerente individual pode possuir:
+
+- perfil: gerente_loja
+- lojas permitidas: 5, 8 e 14
+- dashboards: vendas, metas, margem
+- relatórios: vendas por vendedor, fechamento diário
+
+---
+
+## 8. Estratégia de dados
+
+## 8.1 REST como principal
+REST deve ser a base para:
+
+- autenticação
+- bootstrap da sessão
+- leitura de dashboards
+- leitura de relatórios
+- filtros
+- paginação
+- exportação
+- preferências
+
+## 8.2 Socket como complementar
+Socket deve ser introduzido para:
+
+- evento de dado atualizado
+- aviso de dashboard atualizado
+- KPI alterado
+- invalidação de cache
+- alerta em tempo real
+
+## 8.3 Estratégia recomendada
+No MVP:
+
+- usar REST como padrão
+- socket opcional
+- sem depender de socket para funcionamento principal
+
+---
+
+## 9. Estratégia de cache
+
+## Objetivo
+Melhorar performance e experiência de uso sem elevar demais a complexidade.
+
+## O que cachear no MVP
+- token de sessão
+- loja ativa
+- preferências
+- filtros recentes
+- lista de dashboards
+- metadados de relatórios
+- últimos resultados resumidos de KPIs
+
+## O que não fazer no MVP
+- sincronização offline completa
+- edição offline
+- reconciliação avançada
+- atualização local complexa por merge
+
+## Regras sugeridas
+- cache por chave lógica
+- TTL por recurso
+- invalidação por evento
+- refresh manual disponível
+
+---
+
+## 10. Modelo de dashboards dinâmicos
+
+A recomendação é que o backend consiga devolver metadados suficientes para o app montar dashboards sem precisar de atualização para cada ajuste simples.
+
+## Estrutura de um dashboard
+Um dashboard pode conter:
+
+- id
+- nome
+- descrição
+- escopo permitido
+- filtros disponíveis
+- widgets
+
+## Estrutura de um widget
+Um widget pode conter:
+
+- id
+- tipo
+- título
+- subtítulo
+- fonte de dados
+- endpoint lógico
+- parâmetros aceitos
+- posição
+- tamanho
+- formato
+- regras de exibição
+
+## Tipos de widget
+- KPI card
+- gráfico de linha
+- gráfico de barra
+- gráfico de pizza
+- tabela
+- ranking
+- comparativo
+- indicador percentual
+
+---
+
+## 11. Estrutura de pastas do Flutter
+
+```text
+lib/
+  main.dart
+
+  app/
+    app.dart
+    bootstrap.dart
+    environment.dart
+
+    router/
+      app_router.dart
+      route_guards.dart
+      route_names.dart
+
+    theme/
+      app_colors.dart
+      app_text_styles.dart
+      app_theme.dart
+
+    core/
+      constants/
+        app_constants.dart
+        storage_keys.dart
+
+      error/
+        app_exception.dart
+        app_failure.dart
+        failure_mapper.dart
+
+      utils/
+        date_utils.dart
+        currency_utils.dart
+        number_utils.dart
+        debounce.dart
+
+      network/
+        dio_client.dart
+        dio_interceptors.dart
+        network_info.dart
+        api_response.dart
+
+      storage/
+        secure_storage_service.dart
+        local_storage_service.dart
+
+      realtime/
+        socket_service.dart
+        socket_event.dart
+
+      logging/
+        app_logger.dart
+
+      widgets/
+        app_loader.dart
+        app_error_view.dart
+        app_empty_view.dart
+        app_card.dart
+
+  features/
+    auth/
+      presentation/
+        pages/
+          login_page.dart
+          splash_page.dart
+        controllers/
+          auth_controller.dart
+        widgets/
+          login_form.dart
+
+      application/
+        usecases/
+          login_usecase.dart
+          logout_usecase.dart
+          refresh_session_usecase.dart
+          restore_session_usecase.dart
+
+      domain/
+        entities/
+          auth_session.dart
+          authenticated_user.dart
+        repositories/
+          auth_repository.dart
+
+      data/
+        datasources/
+          auth_remote_datasource.dart
+          auth_local_datasource.dart
+        dtos/
+          login_request_dto.dart
+          login_response_dto.dart
+          refresh_token_response_dto.dart
+        mappers/
+          auth_mapper.dart
+        repositories/
+          auth_repository_impl.dart
+
+    user_context/
+      presentation/
+        controllers/
+          current_user_controller.dart
+          current_store_controller.dart
+
+      application/
+        usecases/
+          get_current_user_usecase.dart
+          get_user_permissions_usecase.dart
+          change_active_store_usecase.dart
+
+      domain/
+        entities/
+          user.dart
+          store.dart
+          permission.dart
+          user_scope.dart
+        repositories/
+          user_context_repository.dart
+
+      data/
+        datasources/
+          user_context_remote_datasource.dart
+          user_context_local_datasource.dart
+        dtos/
+          me_response_dto.dart
+          permission_response_dto.dart
+          store_response_dto.dart
+        mappers/
+          user_context_mapper.dart
+        repositories/
+          user_context_repository_impl.dart
+
+    dashboards/
+      presentation/
+        pages/
+          dashboard_home_page.dart
+          dashboard_details_page.dart
+        controllers/
+          dashboard_controller.dart
+        widgets/
+          dashboard_grid.dart
+          dashboard_widget_renderer.dart
+          kpi_card_widget.dart
+          chart_widget.dart
+
+      application/
+        usecases/
+          get_dashboards_usecase.dart
+          get_dashboard_details_usecase.dart
+          get_dashboard_data_usecase.dart
+          refresh_dashboard_usecase.dart
+
+      domain/
+        entities/
+          dashboard.dart
+          dashboard_widget.dart
+          dashboard_filter.dart
+        repositories/
+          dashboard_repository.dart
+
+      data/
+        datasources/
+          dashboard_remote_datasource.dart
+          dashboard_local_datasource.dart
+        dtos/
+          dashboard_response_dto.dart
+          dashboard_widget_response_dto.dart
+        mappers/
+          dashboard_mapper.dart
+        repositories/
+          dashboard_repository_impl.dart
+
+    reports/
+      presentation/
+        pages/
+          reports_page.dart
+          report_details_page.dart
+        controllers/
+          reports_controller.dart
+          report_query_controller.dart
+        widgets/
+          report_filter_form.dart
+          report_table.dart
+
+      application/
+        usecases/
+          get_reports_usecase.dart
+          get_report_metadata_usecase.dart
+          execute_report_usecase.dart
+          export_report_usecase.dart
+
+      domain/
+        entities/
+          report.dart
+          report_filter.dart
+          report_metadata.dart
+          report_result.dart
+        repositories/
+          report_repository.dart
+
+      data/
+        datasources/
+          report_remote_datasource.dart
+          report_local_datasource.dart
+        dtos/
+          report_response_dto.dart
+          report_metadata_response_dto.dart
+          report_query_request_dto.dart
+        mappers/
+          report_mapper.dart
+        repositories/
+          report_repository_impl.dart
+
+    notifications/
+      presentation/
+        controllers/
+          realtime_controller.dart
+
+      application/
+        usecases/
+          connect_socket_usecase.dart
+          disconnect_socket_usecase.dart
+          handle_realtime_event_usecase.dart
+
+      domain/
+        entities/
+          realtime_event.dart
+        repositories/
+          realtime_repository.dart
+
+      data/
+        datasources/
+          realtime_socket_datasource.dart
+        repositories/
+          realtime_repository_impl.dart
+
+    settings/
+      presentation/
+        pages/
+          settings_page.dart
+          profile_page.dart
+        controllers/
+          settings_controller.dart
+
+      application/
+        usecases/
+          get_settings_usecase.dart
+          save_settings_usecase.dart
+
+      domain/
+        entities/
+          app_settings.dart
+        repositories/
+          settings_repository.dart
+
+      data/
+        datasources/
+          settings_local_datasource.dart
+        repositories/
+          settings_repository_impl.dart

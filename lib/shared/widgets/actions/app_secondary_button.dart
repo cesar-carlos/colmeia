@@ -1,0 +1,70 @@
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:flutter/material.dart';
+
+class AppSecondaryButton extends StatelessWidget {
+  const AppSecondaryButton({
+    required this.onPressed,
+    super.key,
+    this.label,
+    this.child,
+    this.icon,
+    this.isLoading = false,
+    this.style,
+  }) : assert(
+         label != null || child != null,
+         'Provide label or child',
+       );
+
+  final VoidCallback? onPressed;
+  final String? label;
+  final Widget? child;
+  final Widget? icon;
+  final bool isLoading;
+  final ButtonStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>();
+    final minH = tokens?.actionButtonMinHeight ?? 48;
+
+    final effectiveStyle =
+        style ??
+        OutlinedButton.styleFrom(
+          minimumSize: Size(48, minH),
+        );
+
+    final content = isLoading
+        ? const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : _buildLabelRow();
+
+    return OutlinedButton(
+      onPressed: isLoading ? null : onPressed,
+      style: effectiveStyle,
+      child: content,
+    );
+  }
+
+  Widget _buildLabelRow() {
+    if (child != null) {
+      return child!;
+    }
+
+    final text = Text(label!);
+    if (icon == null) {
+      return text;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        icon!,
+        const SizedBox(width: 8),
+        text,
+      ],
+    );
+  }
+}

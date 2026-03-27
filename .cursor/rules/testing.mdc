@@ -1,0 +1,84 @@
+---
+description: Universal testing patterns - structure, isolation, and behavior coverage
+globs: ["test/**/*.dart"]
+alwaysApply: true
+---
+
+# Padroes de Testes
+
+## Escopo
+
+Este arquivo e a fonte de verdade para estrategia universal de testes:
+
+- organizacao dos testes
+- isolamento e mocking
+- estilo de validacao por comportamento
+- cobertura de caminhos de sucesso e falha
+
+Para convencoes especificas de Dart/Flutter, use `testing_dart_flutter.mdc`.
+
+## Estrutura
+
+- Espelhe em `test/` a estrutura principal de `lib/`
+- Mantenha nomes de arquivo previsiveis
+- Agrupe testes por comportamento observavel, nao por detalhe interno de
+  implementacao
+
+## Regras Gerais
+
+- Cada teste deve validar um comportamento claro
+- Use AAA: Arrange, Act, Assert
+- Descreva testes no formato `should ... when ...`
+- Nao compartilhe estado entre testes
+- Use setup e teardown para preparar e limpar dependencias
+- Prefira testes pequenos, diretos e idiomaticos a harnesses excessivos
+
+## Isolamento
+
+- Testes devem ser independentes entre si
+- Mocke ou fake apenas dependencias externas ou colaboradoras
+- Nao mocke regra pura sem necessidade
+- Verifique colaboracao apenas quando isso fizer parte do comportamento esperado
+
+## Caminhos de Falha
+
+- Teste sucesso e falha para fluxos criticos
+- Em falhas, valide o comportamento esperado, nao apenas que "deu erro"
+- Cubra validacao, timeout, indisponibilidade externa, parse invalido e casos
+  extremos relevantes
+
+## Assertions
+
+- Prefira assertions locais e legiveis
+- Mantenha as verificacoes proximas do comportamento validado
+- Evite testes com muitas asserts desconexas
+- Prefira estilo conciso e moderno quando isso deixar o teste mais claro
+
+## Tipos de Teste
+
+- Unit test: valida regra pequena e isolada
+- Component/service test: valida colaboracao entre partes proximas
+- Integration test: valida fronteiras reais e contratos externos
+- UI/component visual test: valida estados e interacoes visiveis
+- Nao trate widget test como obrigatorio por padrao; use-o quando for solicitado
+  explicitamente ou quando a mudanca tocar comportamento critico de UI
+
+## Cobertura
+
+- Priorize alta cobertura no dominio e nas fronteiras de erro
+- Prefira poucos testes precisos a muitos testes redundantes
+- Quando uma regressao ocorrer, adicione um teste que a capture de forma direta
+
+## Referencias Cruzadas
+
+- Arquitetura e contracts: `clean_architecture.mdc`
+- Convencoes Dart/Flutter para testes: `testing_dart_flutter.mdc`
+- Expectativas do repositorio: `project_specifics.mdc`
+
+## Checklist
+
+- [ ] Os testes espelham a estrutura principal do codigo
+- [ ] Cada teste cobre um comportamento observavel
+- [ ] Dependencias externas foram isoladas adequadamente
+- [ ] Caminhos de falha relevantes estao cobertos
+- [ ] Casos criticos de dominio e integracao estao cobertos

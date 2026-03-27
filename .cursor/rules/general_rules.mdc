@@ -1,0 +1,103 @@
+---
+description: General rules - cross-cutting principles and code hygiene
+globs: ["lib/**/*.dart", "test/**/*.dart"]
+alwaysApply: true
+---
+
+# Regras Gerais do Projeto
+
+## Escopo
+
+Este arquivo e a fonte de verdade para principios universais de escrita,
+manutencao e colaboracao em codigo.
+
+Ele deve permanecer agnostico de linguagem e framework. Para regras de
+Dart/Flutter, use `coding_style.mdc`, `null_safety.mdc`,
+`flutter_widgets.mdc`, `ui_ux_design.mdc` e `testing_dart_flutter.mdc`.
+
+## Principios Fundamentais
+
+- Escreva codigo conciso, tecnico e facil de manter
+- Prefira composicao a heranca
+- Prefira padroes declarativos quando isso simplificar o fluxo
+- Use nomes descritivos e consistentes
+- Organize arquivos e modulos de forma previsivel
+- Prefira mensagens de erro acionaveis em vez de falhas genericas
+- Mantenha responsabilidades pequenas e fronteiras claras
+
+## Documentacao e Comentarios
+
+### Nao criar automaticamente
+
+- Nao criar `README.md`, changelog, guias ou arquivos `.md` sem solicitacao
+  explicita
+- Nao adicionar documentacao extensa por padrao
+- Evite comentarios por padrao; prefira codigo claro e autoexplicativo
+- Nao comentar o obvio
+
+### Quando comentar
+
+- Comente apenas quando o codigo sozinho nao explica o motivo da decisao
+- Antes de comentar, prefira renomear, extrair funcoes ou reorganizar o codigo
+- Use comentarios para tradeoffs, workarounds, restricoes externas ou riscos
+- Prefira explicar "por que" e "qual impacto existe", nao "o que o codigo faz"
+- Quando comentarios forem necessarios, escreva-os em ingles
+- Quando documentacao for realmente solicitada ou necessaria, escreva-a em ingles
+
+```text
+Bom:
+- Mantemos cache local porque a operacao remota custa caro e falha com frequencia
+
+Evite:
+- Busca item do cache
+```
+
+## Codigo Autoexplicativo
+
+- Prefira clareza por nomenclatura e extracao de funcoes pequenas
+- O codigo deve ser claro e autoexplicativo sem depender de comentarios
+- Remova codigo morto, comentarios desatualizados e trechos comentados
+- Se um trecho exige explicacao longa, reestruture antes de comentar
+
+## Duplicacao e Reuso
+
+- Extraia uma abstracao quando o mesmo padrao aparecer pela segunda vez com a
+  mesma intencao
+- Prefira helpers, componentes, modulos ou mapeadores reutilizaveis a copiar e
+  colar
+- Mantenha abstracoes pequenas e estaveis; nao crie "helpers genericos" vagos
+- Nao replique a mesma regra em mais de um arquivo de `.cursor/rules`
+
+```text
+Evite:
+- repetir a mesma politica de retry em varios pontos
+
+Prefira:
+- uma abstracao nomeada ou constante compartilhada para essa politica
+```
+
+## Constantes e Valores Literais
+
+- Nao use numeros, strings ou duracoes "magicas" quando representarem regra de
+  negocio, limite tecnico ou token visual
+- Promova valores repetidos para constantes nomeadas
+- Centralize limites e politicas compartilhadas no modulo adequado
+
+## Referencias Cruzadas
+
+- Arquitetura e dependencias: `clean_architecture.mdc`
+- Design de classes e interfaces: `solid_principles.mdc`
+- Testes universais: `testing.mdc`
+- Regras Dart/Flutter: `coding_style.mdc`, `null_safety.mdc`,
+  `flutter_widgets.mdc`, `ui_ux_design.mdc`, `testing_dart_flutter.mdc`
+- Decisoes especificas do repositorio: `project_specifics.mdc`
+
+## Checklist
+
+- [ ] O codigo esta claro sem depender de comentarios longos
+- [ ] Comentarios foram evitados quando uma melhoria de codigo resolveria
+- [ ] Nao foram criados docs/READMEs sem pedido explicito
+- [ ] Comentarios explicam motivo, nao a mecanica do codigo
+- [ ] Comentarios e documentacao necessarios foram escritos em ingles
+- [ ] Valores literais com significado foram nomeados
+- [ ] Padroes repetidos viraram abstracoes pequenas e reutilizaveis

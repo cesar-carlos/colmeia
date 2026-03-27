@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Colmeia BI - Secure Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-lowest": "#ffffff",
+              "tertiary-fixed-dim": "#43d6ff",
+              "secondary-container": "#fb6d00",
+              "on-secondary-fixed-variant": "#793100",
+              "surface-container-high": "#ddeaf2",
+              "on-secondary-container": "#562100",
+              "surface-container-highest": "#d7e4ec",
+              "on-tertiary-container": "#00566a",
+              "inverse-on-surface": "#e6f3fb",
+              "on-secondary-fixed": "#341100",
+              "surface-dim": "#cfdce4",
+              "inverse-surface": "#263238",
+              "error-container": "#ffdad6",
+              "on-primary-fixed": "#281900",
+              "background": "#f4faff",
+              "on-primary-container": "#6b4900",
+              "inverse-primary": "#ffba38",
+              "on-surface": "#111d23",
+              "tertiary-container": "#00d2fe",
+              "surface-container": "#e3f0f8",
+              "primary-container": "#ffb300",
+              "on-tertiary": "#ffffff",
+              "surface-variant": "#d7e4ec",
+              "secondary": "#9e4200",
+              "surface-container-low": "#e9f6fd",
+              "error": "#ba1a1a",
+              "on-tertiary-fixed-variant": "#004e60",
+              "on-secondary": "#ffffff",
+              "on-primary": "#ffffff",
+              "primary-fixed-dim": "#ffba38",
+              "on-primary-fixed-variant": "#604100",
+              "on-error": "#ffffff",
+              "outline-variant": "#d6c4ac",
+              "outline": "#847560",
+              "primary-fixed": "#ffdeac",
+              "on-background": "#111d23",
+              "on-error-container": "#93000a",
+              "primary": "#7e5700",
+              "on-surface-variant": "#514532",
+              "secondary-fixed-dim": "#ffb691",
+              "surface-tint": "#7e5700",
+              "tertiary": "#00677e",
+              "surface": "#f4faff",
+              "tertiary-fixed": "#b5ebff",
+              "surface-bright": "#f4faff",
+              "on-tertiary-fixed": "#001f28",
+              "secondary-fixed": "#ffdbcb"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hex-bg {
+            background-color: #f4faff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath fill='%23ffb300' fill-opacity='0.03' d='M28 24.72L7 36.86v24.28L28 73.28l21-12.14V36.86L28 24.72zm0 4.62l17 9.82v19.64l-17 9.82-17-9.82V39.16l17-9.82z'/%3E%3C/svg%3E");
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col items-center justify-center hex-bg px-6">
+<!-- Brand Header -->
+<header class="mb-12 flex flex-col items-center animate-fade-in">
+<div class="w-20 h-20 mb-6 flex items-center justify-center bg-primary-container rounded-xl shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined text-on-primary-container text-5xl" data-icon="hive">hive</span>
+</div>
+<h1 class="font-headline text-3xl font-black tracking-widest text-primary uppercase">Colmeia BI</h1>
+</header>
+<!-- Login Container -->
+<main class="w-full max-w-[480px]">
+<div class="glass-panel p-10 md:p-12 rounded-full shadow-2xl shadow-on-surface/5 flex flex-col gap-10">
+<!-- Welcome Message -->
+<div class="space-y-3">
+<h2 class="font-headline text-4xl font-extrabold tracking-tight text-on-surface">Welcome back</h2>
+<p class="text-on-surface-variant text-base leading-relaxed">Please enter your credentials to access the hive.</p>
+</div>
+<!-- Login Form -->
+<form action="#" class="space-y-8" method="POST">
+<!-- Email Field -->
+<div class="space-y-2">
+<label class="font-label text-sm font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-2" for="email">
+<span class="material-symbols-outlined text-lg" data-icon="alternate_email">alternate_email</span>
+                    User or Email
+                </label>
+<input class="w-full bg-surface-container-low border-0 rounded-xl px-5 py-4 text-on-surface placeholder:text-outline/50 focus:ring-2 focus:ring-primary-container transition-all outline-none" id="email" name="email" placeholder="name@company.com" type="email"/>
+</div>
+<!-- Password Field -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="font-label text-sm font-semibold uppercase tracking-wider text-on-surface-variant flex items-center gap-2" for="password">
+<span class="material-symbols-outlined text-lg" data-icon="lock">lock</span>
+                        Password
+                    </label>
+<a class="text-sm font-semibold text-secondary hover:text-secondary-container transition-colors tracking-tight" href="#">Forgot?</a>
+</div>
+<div class="relative">
+<input class="w-full bg-surface-container-low border-0 rounded-xl px-5 py-4 text-on-surface placeholder:text-outline/50 focus:ring-2 focus:ring-primary-container transition-all outline-none" id="password" name="password" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface-variant transition-colors" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center gap-3">
+<input class="w-5 h-5 rounded border-outline-variant text-primary focus:ring-primary-container cursor-pointer bg-surface-container-low" id="remember" name="remember" type="checkbox"/>
+<label class="text-sm font-medium text-on-surface-variant cursor-pointer select-none" for="remember">Keep me logged in</label>
+</div>
+<!-- Submit Button -->
+<button class="w-full group bg-primary-container text-on-primary-container font-headline font-bold text-lg py-5 rounded-full flex items-center justify-center gap-3 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all" type="submit">
+                Sign into Dashboard
+                <span class="material-symbols-outlined transition-transform group-hover:translate-x-1" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<!-- Secondary Action -->
+<div class="pt-2 text-center">
+<p class="text-on-surface-variant text-sm">
+                New to the ecosystem? 
+                <a class="ml-2 font-bold text-primary hover:text-primary-container transition-colors decoration-2 underline-offset-4" href="#">Request Access</a>
+</p>
+</div>
+</div>
+</main>
+<!-- Footer Area -->
+<footer class="mt-16 text-center space-y-2">
+<p class="font-label text-xs uppercase tracking-[0.2em] text-outline opacity-60">
+        © 2024 The Synthesized Hive. All rights reserved.
+    </p>
+<p class="font-label text-[10px] uppercase tracking-widest text-outline opacity-40">
+        Version 2.4.0-Stable // Build 8821
+    </p>
+</footer>
+<!-- Empty Placeholder for Image Integrity Policy -->
+<div class="hidden">
+<img data-alt="Close-up of a high-tech digital interface with hexagonal honeycomb patterns glowing in warm amber and gold light against a dark glass surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhPf7X0iUS6k55Sbf1WS_dXApLOxD2CfON0b5zqarqQUH2Z_1sfd1m4ausWzFGhq9a58b3l35DtNpAAGdwQ9yWS4mL0pPQO7_xRMPdrPXBAP7HDe_hwuaIv24HQQjLPRqpBxfws1YhUiFzah3G65SScZU_1Yr7CIz6LQOyfeXB7BEv0p-H0QEQg9yQQ5fTk9VNhnLMXFYiPqixbEo1vGgoUw4yWepVTtdg69SnVnWaLPY38lDG5y0AXasibb1TEvpRjLd1TXApVOFk"/>
+</div>
+</body></html>

@@ -1,0 +1,123 @@
+---
+description: UI/UX design principles for Android and iOS apps
+globs: ["lib/presentation/**/*.dart", "lib/shared/**/*.dart"]
+alwaysApply: true
+---
+
+# UI/UX Design Principles for Mobile Apps
+
+## Escopo
+
+Este arquivo e a fonte de verdade para:
+
+- design system e linguagem visual
+- navegacao e interacoes mobile
+- estados de loading, empty e error
+- acessibilidade, feedback e adaptacao entre Android e iOS
+
+Nao duplique aqui detalhes de implementacao de widgets. Para composicao,
+layout, builders e performance, use `flutter_widgets.mdc`.
+
+## Design System
+
+- Use `Material 3` customizado como base visual do app
+- Construa identidade propria com tokens centralizados de cor, tipografia,
+  spacing, radius, elevacao e motion
+- Prefira `ThemeExtension` para tokens sem encaixe claro em `ThemeData`
+- Extraia componentes de app reutilizaveis antes de repetir o mesmo padrao visual
+- Garanta suporte consistente a light e dark theme
+- Prefira composicoes visuais modernas, leves e consistentes, sem ornamentos
+  desnecessarios
+- Nao misture linguagem Material com componentes Cupertino como base visual;
+  use adaptacoes nativas apenas quando houver ganho real de UX da plataforma
+
+## Hierarquia Visual
+
+- Destaque o que e primario com tamanho, peso, contraste e espaco
+- Use whitespace para separar grupos logicos
+- Limite a paleta a um sistema coerente; evite cores "soltas"
+- Mantenha tipografia via tema e respeite escalonamento de fonte do sistema
+
+## Navegacao e Interacao Mobile
+
+- Use padroes familiares de mobile para navegacao, gestos e feedback
+- Planeje fluxos claros para bottom navigation, tabs, app bars e back navigation
+- Priorize alvos de toque confortaveis e estados pressed/disabled coerentes
+- Preserve Safe Areas, keyboard insets e scroll sem sobrepor conteudo importante
+- Reserve dialogs para decisoes criticas; prefira feedback inline ou bottom sheets
+  para estados comuns
+
+## Estados da Interface
+
+- Toda tela deve tratar loading, empty e error dentro da propria superficie
+- Use mensagens claras e acionaveis
+- Use skeletons, placeholders ou indicadores de progresso quando melhorarem a
+  percepcao de carregamento
+- Use snackbars e feedback transient apenas para eventos informativos
+
+```dart
+Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Text(
+      'Nao foi possivel carregar os dados.',
+      style: Theme.of(context).textTheme.titleMedium,
+    ),
+    const SizedBox(height: 8),
+    Text(
+      errorMessage,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        color: Theme.of(context).colorScheme.error,
+      ),
+    ),
+    const SizedBox(height: 16),
+    FilledButton(
+      onPressed: onRetry,
+      child: const Text('Tentar novamente'),
+    ),
+  ],
+)
+```
+
+## Formularios
+
+- Use validacao inline e mensagens proximas ao campo
+- Configure `textInputAction`, autofill e teclado coerentes com o campo
+- Organize formularios para leitura vertical clara
+- Nao esconda erros relevantes em toasts temporarios
+- Considere fluxos de uma mao, foco e avancos naturais entre campos
+
+## Acessibilidade
+
+- Mantenha contraste minimo WCAG 2.1 AA
+- Garanta labels semanticos, ordem de leitura coerente e anuncios de estado
+- Teste escalonamento de fonte do sistema
+- Teste com leitores de tela nos fluxos criticos
+- Elementos decorativos devem ser ignorados por leitores de tela
+
+## Responsividade Mobile
+
+- Suporte telas compactas e grandes sem quebrar hierarquia ou spacing
+- Planeje comportamento para orientacao portrait e landscape quando relevante
+- Evite componentes que dependam de largura fixa sem fallback
+- Em tablets, aproveite o espaco extra sem escalar tudo proporcionalmente
+
+## Plataforma
+
+- Respeite convencoes de Android e iOS para navegacao, feedback e permissoes
+- Use comportamentos nativos quando isso melhorar previsibilidade para o usuario
+- Mostre progresso em operacoes longas de IO, rede ou processamento
+
+## Referencias Cruzadas
+
+- Implementacao de widgets, layout e performance: `flutter_widgets.mdc`
+- Regras especificas deste repositorio: `project_specifics.mdc`
+
+## Checklist
+
+- [ ] A tela usa uma linguagem visual coerente
+- [ ] Hierarquia visual e CTAs estao claros
+- [ ] Loading, empty e error estao cobertos na propria tela
+- [ ] O design usa tokens e componentes reutilizaveis do app
+- [ ] Contraste, labels e leitura por screen reader foram considerados
+- [ ] O layout continua utilizavel em telas compactas e largas

@@ -1,0 +1,556 @@
+# Levantamento Inicial — App Flutter para Relatórios e Dashboards Dinâmicos
+
+## 1. Objetivo do projeto
+
+Desenvolver um aplicativo mobile em **Flutter/Dart** para **iOS e Android**, com foco em:
+
+- visualização de **relatórios gerenciais**
+- exibição de **dashboards dinâmicos**
+- controle de **login e autenticação**
+- controle de **permissões por usuário**
+- separação de dados por **loja**
+- suporte futuro a **atualização em tempo real**
+- boa experiência de uso mesmo com grande volume de dados
+
+O app será voltado para uma rede com aproximadamente **60 lojas**, onde os dados já estão **centralizados em um servidor central**. Cada loja possui um identificador próprio para segmentação dos dados.
+
+---
+
+## 2. Contexto de negócio
+
+### Estrutura organizacional
+
+O cenário descrito possui:
+
+- **60 lojas**
+- cada loja com seu identificador próprio
+- dados já concentrados no **servidor central**
+- usuários com diferentes níveis de acesso
+
+### Perfis de usuários previstos
+
+Os principais perfis identificados são:
+
+#### Vendedor
+- acesso restrito aos relatórios e indicadores permitidos
+- normalmente vinculado a uma loja
+- pode ter visão apenas de seus próprios resultados, dependendo da regra de negócio
+
+#### Gerente individual
+- pode ser responsável por **uma ou mais lojas**
+- precisa visualizar informações consolidadas das lojas sob sua responsabilidade
+- precisa comparar resultados entre lojas sob seu escopo
+
+#### Gerente geral
+- visão mais ampla
+- acesso consolidado de toda a rede ou de grandes grupos de lojas
+- foco em indicadores estratégicos e comparativos globais
+
+---
+
+## 3. Premissas principais
+
+As premissas iniciais do projeto são:
+
+- o app será **consumidor de uma API central**
+- a fonte oficial da verdade será o **backend central**
+- o app não deve depender diretamente dos servidores de cada loja
+- permissões e visibilidade de dados devem ser controladas principalmente no backend
+- o app poderá usar **REST** como transporte principal
+- o uso de **socket** deve ser avaliado como complemento para atualização em tempo real
+- o uso de **cache local** deve ser pensado com cuidado para evitar complexidade desnecessária no início
+
+---
+
+## 4. Problema central a resolver
+
+O objetivo não é apenas exibir relatórios. O problema real envolve:
+
+- múltiplas lojas
+- múltiplos perfis
+- múltiplos níveis de permissão
+- possibilidade de um usuário estar vinculado a várias lojas
+- segmentação correta dos dados
+- visualização de dashboards dinâmicos
+- exibição de relatórios com filtros
+- potencial necessidade de atualização mais rápida ou em tempo real
+
+Na prática, trata-se de um sistema mobile de **gestão analítica multi-loja e multi-perfil**.
+
+---
+
+## 5. Recomendação geral de arquitetura do app
+
+A recomendação inicial é construir o app com foco em:
+
+- **Flutter** no frontend mobile
+- arquitetura em camadas
+- separação clara entre apresentação, regras de negócio e acesso a dados
+- design preparado para crescimento futuro
+
+### Estrutura recomendada
+
+Uma base saudável para o projeto seria:
+
+- **Presentation**
+  - telas
+  - widgets
+  - navegação
+  - estado visual
+
+- **Application**
+  - casos de uso
+  - orquestração
+  - controle do fluxo da tela
+
+- **Domain**
+  - entidades
+  - regras de negócio
+  - contratos de repositório
+
+- **Data**
+  - integração com API REST
+  - integração com socket
+  - cache local
+  - DTOs e mapeamentos
+
+---
+
+## 6. Recomendação de transporte de dados
+
+### REST como base principal
+
+O mais seguro para iniciar é usar **REST como principal meio de comunicação**, pois ele é mais simples para:
+
+- autenticação
+- listagens
+- filtros
+- paginação
+- carregamento de dashboards
+- carregamento de relatórios
+- exportações
+- configuração do usuário
+
+### Socket como complemento
+
+O uso de **socket** faz sentido como recurso complementar, principalmente para:
+
+- avisar que determinados indicadores foram atualizados
+- invalidar cache
+- atualizar KPIs em tempo real
+- notificar eventos relevantes
+- reduzir necessidade de polling constante
+
+### Recomendação prática
+
+Para a primeira versão do projeto:
+
+- usar **REST como fluxo principal**
+- deixar **socket opcional**
+- introduzir socket apenas em módulos que realmente precisem de atualização rápida
+
+Isso reduz bastante a complexidade inicial.
+
+---
+
+## 7. Estratégia de cache
+
+O cache local pode ser útil, mas precisa ser introduzido com critério.
+
+### O que pode valer a pena armazenar localmente no início
+
+- token de sessão
+- preferências do usuário
+- loja selecionada por último
+- filtros recentes
+- dashboards já carregados
+- metadados de relatórios
+- último resultado resumido de alguns indicadores
+
+### Benefícios do cache
+
+- abertura mais rápida do app
+- menor sensação de lentidão
+- redução de chamadas repetidas
+- melhor experiência em redes instáveis
+
+### Risco do cache
+
+Quanto mais o app tentar funcionar como offline-first completo, maior a complexidade de:
+
+- sincronização
+- invalidação
+- consistência
+- tratamento de conflito
+- atualização parcial de dados
+- debugging
+
+### Recomendação prática
+
+Começar com:
+
+- **cache leve**
+- foco em **performance de leitura**
+- sem prometer operação offline completa no MVP
+
+---
+
+## 8. Segurança e permissões
+
+Esse ponto é central no projeto.
+
+### Regra principal
+
+**O backend deve ser o responsável final por autorizar o acesso aos dados.**
+
+O app pode:
+
+- esconder menus
+- esconder botões
+- esconder relatórios não permitidos
+
+Mas quem realmente decide o acesso precisa ser a API.
+
+### O login deve considerar
+
+- autenticação do usuário
+- perfil do usuário
+- lista de lojas permitidas
+- relatórios permitidos
+- dashboards permitidos
+- filtros permitidos
+- escopo consolidado de acesso
+
+### Modelo recomendado de autorização
+
+Não modelar apenas por cargo fixo.  
+O ideal é trabalhar com:
+
+- **usuário**
+- **perfil**
+- **escopo de lojas**
+- **recursos permitidos**
+
+Exemplo:
+
+- Usuário A:
+  - perfil: gerente individual
+  - lojas permitidas: 3, 8 e 10
+  - dashboards permitidos: vendas, metas e estoque
+  - relatórios permitidos: ranking de vendedores, faturamento diário
+
+---
+
+## 9. Estrutura de navegação sugerida
+
+Uma navegação inicial poderia ser:
+
+### 1. Login
+- autenticação
+- recuperação de sessão
+- carregamento das permissões
+
+### 2. Seleção de contexto
+- loja atual
+- grupo de lojas, quando aplicável
+
+### 3. Home / Dashboard principal
+- principais KPIs
+- atalhos para relatórios
+- gráficos resumidos
+
+### 4. Dashboards detalhados
+- cards
+- gráficos
+- comparativos
+- filtros por período
+- filtros por loja
+
+### 5. Relatórios
+- listagem de relatórios liberados
+- filtros dinâmicos
+- paginação
+- ordenação
+- agrupamentos
+
+### 6. Perfil / Configurações
+- dados do usuário
+- lojas vinculadas
+- preferências
+- logout
+
+---
+
+## 10. Modelagem funcional inicial
+
+### Entidades principais
+
+#### Usuário
+- id
+- nome
+- login
+- status
+- perfis
+- lojas permitidas
+
+#### Perfil
+- id
+- nome
+- tipo
+- nível de acesso
+
+#### Loja
+- id
+- código
+- nome
+- status
+
+#### Permissão
+- id
+- recurso
+- tipo de acesso
+- filtros aplicáveis
+
+#### Dashboard
+- id
+- nome
+- descrição
+- widgets
+- regras de visibilidade
+
+#### Widget de dashboard
+- id
+- tipo
+- título
+- fonte de dados
+- parâmetros
+- posição
+
+#### Relatório
+- id
+- nome
+- descrição
+- colunas
+- filtros
+- regras de acesso
+
+---
+
+## 11. Abordagem para dashboards dinâmicos
+
+Para não engessar o app, é interessante que o backend consiga enviar metadados que descrevam:
+
+- quais dashboards existem
+- quais widgets compõem o dashboard
+- quais tipos de gráfico usar
+- quais filtros estão disponíveis
+- quais colunas exibir
+- quais ações o usuário pode executar
+
+Isso ajuda a reduzir a necessidade de publicar uma nova versão do app para cada ajuste pequeno em relatório ou dashboard.
+
+### Exemplo de composição dinâmica
+
+O backend pode devolver:
+
+- tipo do widget: card, linha, barra, pizza, tabela
+- título
+- endpoint ou identificador do dataset
+- parâmetros aceitos
+- regra de exibição
+- ordem na tela
+
+---
+
+## 12. Proposta inicial de endpoints
+
+A API pode ser organizada em blocos como:
+
+### Autenticação
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
+
+### Sessão e usuário
+- `GET /me`
+- `GET /me/permissions`
+- `GET /me/stores`
+
+### Dashboards
+- `GET /dashboards`
+- `GET /dashboards/{id}`
+- `GET /dashboards/{id}/data`
+
+### Relatórios
+- `GET /reports`
+- `GET /reports/{id}`
+- `POST /reports/{id}/query`
+- `GET /reports/{id}/metadata`
+- `POST /reports/{id}/export`
+
+### Notificações / tempo real
+- canal socket do usuário
+- canal socket por loja
+- eventos como:
+  - `dashboard.updated`
+  - `kpi.updated`
+  - `report.invalidated`
+
+---
+
+## 13. Tecnologias sugeridas para o app Flutter
+
+### Base do projeto
+- Flutter
+- Dart
+
+### Gerenciamento de estado
+Sugestões viáveis:
+- Riverpod
+- Bloc
+
+#### Recomendação inicial
+Para esse tipo de projeto, **Riverpod** tende a ser uma excelente escolha por:
+
+- boa separação de dependências
+- boa testabilidade
+- controle claro do estado assíncrono
+- boa escalabilidade
+
+### HTTP
+- Dio
+
+### Rotas
+- GoRouter
+
+### Cache local / persistência
+- SQLite
+- Drift, caso se queira uma camada mais robusta sobre SQLite
+- SharedPreferences apenas para itens bem simples
+
+### Armazenamento seguro
+- `flutter_secure_storage` para tokens e dados sensíveis
+
+### Gráficos
+- `fl_chart`
+- `syncfusion_flutter_charts`
+
+### Observabilidade
+- logs estruturados
+- analytics de uso
+- monitoramento de erro com Sentry
+
+---
+
+## 14. Riscos principais do projeto
+
+Os principais riscos identificados nesta fase são:
+
+### 1. Complexidade excessiva logo no início
+Querer resolver de primeira:
+- offline completo
+- tempo real total
+- dashboards totalmente dinâmicos
+- múltiplas regras complexas de permissão
+
+Isso pode atrasar muito o MVP.
+
+### 2. Modelo de permissão mal definido
+Se o backend não tiver regras claras de:
+- escopo por loja
+- escopo por recurso
+- escopo por perfil
+
+o app ficará inconsistente.
+
+### 3. Acoplamento excessivo ao layout dos relatórios
+Se cada relatório depender de uma tela muito específica no app, o custo de evolução sobe.
+
+### 4. Performance
+Se relatórios e dashboards trouxerem dados em excesso:
+- maior uso de rede
+- maior uso de memória
+- experiência ruim no celular
+
+### 5. Complexidade do cache
+Cache mal desenhado pode gerar:
+- dados antigos na tela
+- divergência entre app e servidor
+- bugs difíceis de reproduzir
+
+---
+
+## 15. Estratégia recomendada de entrega
+
+### Fase 1 — MVP
+Entregar primeiro:
+
+- login
+- controle de sessão
+- permissões básicas
+- escolha de loja
+- dashboard principal
+- alguns KPIs
+- 2 a 5 relatórios prioritários
+- REST como integração principal
+- cache leve
+
+### Fase 2 — Evolução
+Adicionar:
+
+- filtros salvos
+- favoritos
+- comparativos entre lojas
+- melhor cache de leitura
+- socket para atualização pontual
+- melhor experiência visual dos dashboards
+
+### Fase 3 — Expansão
+Avaliar:
+
+- dashboards mais configuráveis
+- notificações
+- alertas
+- atualização em tempo real mais forte
+- suporte mais amplo a metadados dinâmicos
+
+---
+
+## 16. Conclusão
+
+A ideia do projeto é tecnicamente viável e faz bastante sentido com **Flutter/Dart**, principalmente porque:
+
+- permite entrega para **iOS e Android** com uma base única
+- atende bem cenários corporativos
+- suporta interfaces ricas para dashboards
+- permite boa integração com REST e socket
+- pode crescer de forma organizada se a arquitetura for definida corretamente
+
+### Direção recomendada
+
+A melhor direção inicial é:
+
+- **Flutter no app**
+- **arquitetura em camadas**
+- **REST como base principal**
+- **socket como complemento**
+- **cache leve no começo**
+- **autorização centralizada no backend**
+- **MVP enxuto e focado nos relatórios prioritários**
+
+---
+
+## 17. Próximos passos sugeridos
+
+Os próximos levantamentos podem detalhar:
+
+1. arquitetura técnica completa do app
+2. estrutura de pastas do Flutter
+3. contratos de API
+4. modelo de autenticação
+5. modelo de permissões
+6. backlog do MVP
+7. protótipo de navegação
+8. estratégia de cache em mais detalhe
+9. padrão dos dashboards dinâmicos
+10. plano de evolução para socket e tempo real

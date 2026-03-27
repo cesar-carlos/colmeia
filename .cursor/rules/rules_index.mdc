@@ -1,0 +1,67 @@
+---
+description: Index of available Cursor rules in this repo
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Rules Index
+
+## Behavioral Guardrails
+
+- Never commit, push, or create new documentation unless explicitly requested
+- Prefer self-explanatory code via naming, structure, and focused abstractions
+- Prefer modern, idiomatic Dart and Flutter constructs when they improve clarity
+- Never swallow errors silently
+- Prefer clear, actionable failures over generic error messages
+
+## Rule Categories
+
+### Universal Rules
+
+Use these as language-agnostic guidance that can be reused in other stacks.
+
+- **`general_rules.mdc`**: cross-cutting behavior, docs/comments policy, reuse,
+  duplication, magic numbers
+- **`clean_architecture.mdc`**: layer boundaries and dependency direction
+- **`solid_principles.mdc`**: SRP/OCP/LSP/ISP/DIP design guidance
+- **`testing.mdc`**: universal test strategy, isolation, mocking, failure-path
+  coverage
+
+### Dart and Flutter Rules
+
+Use these only when the codebase is Dart/Flutter.
+
+- **`coding_style.mdc`**: Dart syntax, naming, imports, formatting,
+  async/logging, tooling
+- **`null_safety.mdc`**: nullability modeling and safe access patterns
+- **`flutter_widgets.mdc`**: widget composition, local UI state, build/rebuild
+  performance, layout primitives
+- **`ui_ux_design.mdc`**: mobile design system, interaction patterns,
+  accessibility and responsive mobile behavior
+- **`testing_dart_flutter.mdc`**: Dart/Flutter test code, widget tests, test
+  harnesses, assertion preferences
+
+### Project-Specific Rules
+
+- **`project_specifics.mdc`**: repo-specific mobile architecture choices,
+  packages, visual identity and platform decisions
+
+## Coordination Rules
+
+- General behavior, docs/comments, reuse, duplication: `general_rules.mdc`
+- Layering and import direction: `clean_architecture.mdc`
+- Class and interface design: `solid_principles.mdc`
+- Test strategy in any stack: `testing.mdc`
+- Dart syntax/style/tooling: `coding_style.mdc`
+- Dart nullability: `null_safety.mdc`
+- Flutter widget/layout code: `flutter_widgets.mdc`
+- Mobile UX/design: `ui_ux_design.mdc`
+- Dart/Flutter test code: `testing_dart_flutter.mdc`
+- Repo-specific packages, platform decisions and app conventions:
+  `project_specifics.mdc`
+
+## Copying to Other Projects
+
+- For non-Dart projects, keep only the universal rules
+- For Dart/Flutter projects, keep the universal rules plus the Dart/Flutter rules
+- Replace `project_specifics.mdc` with one tailored to the target repository

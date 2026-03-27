@@ -1,0 +1,303 @@
+---
+description: Dart Style Guide - Effective Dart with modern best practices
+globs: ["lib/**/*.dart", "test/**/*.dart"]
+alwaysApply: true
+---
+
+# Dart Style Guide
+
+## Escopo
+
+Este arquivo e a fonte de verdade para sintaxe, naming, imports, tooling,
+async/logging e recursos modernos do Dart.
+
+Nao repita aqui:
+
+- politica de comentarios e documentacao: `general_rules.mdc`
+- widgets/build/layout: `flutter_widgets.mdc`
+- nullability: `null_safety.mdc`
+
+## Tipos e Legibilidade
+
+- Declare tipos explicitamente em APIs publicas, retornos e contratos
+- Prefira tipos concretos a `dynamic`
+- Use `final` para referencias que nao mudam
+- Use `var` apenas quando o tipo for obvio e nao reduzir clareza
+- Separe fases da funcao com poucas linhas em branco: validacao, trabalho,
+  retorno
+- Prefira early return para reduzir aninhamento
+
+```dart
+String formatUserName(User user) {
+  if (user.firstName.isEmpty && user.lastName.isEmpty) {
+    return 'Anonymous';
+  }
+
+  return '${user.firstName} ${user.lastName}'.trim();
+}
+```
+
+## Funcoes, Metodos e Classes
+
+- Mantenha funcoes pequenas e com uma responsabilidade clara
+- Use expression body para membros simples
+- Use parametros nomeados para opcoes e para melhorar legibilidade
+- Use chaves em blocos; omita apenas em `if` de uma linha quando realmente
+  couber em uma linha
+- Use construtores nomeados quando houver mais de uma forma semantica de criar
+  o objeto
+- Para widgets imutaveis, use `const` constructor; detalhes de widget ficam em
+  `flutter_widgets.mdc`
+
+```dart
+bool get isReady => _status == Status.ready;
+
+Future<Result<User>> execute({
+  required String id,
+  bool forceRefresh = false,
+}) async {
+  if (id.isEmpty) {
+    return Failure(ValidationFailure('ID cannot be empty'));
+  }
+
+  return repository.getById(id, forceRefresh: forceRefresh);
+}
+```
+
+## Naming Conventions
+
+- `UpperCamelCase` para classes, enums, typedefs, extensions
+- `lowercase_with_underscores` para arquivos e diretorios
+- `lowerCamelCase` para variaveis, metodos, parametros e constantes
+- Nomes de funcao devem comecar com verbo: `loadConfig`, `saveQuery`
+- Booleanos devem usar auxiliares: `is`, `has`, `can`, `should`, `needs`
+- Membros privados usam prefixo `_`
+- Parametros de callback nao usados devem virar `_`, `__`, `___`
+- Evite Hungarian notation
+
+```dart
+class QueryExecutor {}
+
+const defaultTimeout = Duration(seconds: 30);
+
+bool get isConnected => _connection != null;
+```
+
+## Imports e Bibliotecas
+
+- Ordem: `dart:`, `package:`, relativos
+- Ordene alfabeticamente dentro de cada bloco
+- Coloque `export` depois dos `import`
+- Use `show` quando um import amplo prejudicar a clareza
+- Nao use `library`
+
+```dart
+import 'dart:async';
+import 'dart:developer' as developer;
+
+import 'package:flutter/material.dart';
+import 'package:result_dart/result_dart.dart';
+
+import '../models/query_result.dart';
+```
+
+## Const, Final e Literais
+
+- Use `const` para valores conhecidos em compile time
+- Use `final` quando a referencia nao muda
+- Use trailing commas em estruturas multiline
+- Mantenha linhas perto de 80 caracteres quando possivel
+- Prefira interpolacao de strings a concatenacao
+
+```dart
+const retryLimit = 3;
+
+final String message = 'Query ${request.id} finished in ${metrics.elapsedMs}ms';
+```
+
+## Collections
+
+- Use literais tipados: `List<T>`, `Map<K, V>`, `Set<T>`
+- Evite colecoes sem tipo
+- Prefira APIs de colecao declarativas (`map`, `where`, `expand`) quando
+  melhorarem a leitura
+- Use `StringBuffer` quando montar strings em acumulacoes maiores, loops ou
+  concatenacoes frequentes
+
+```dart
+final List<String> activeIds = users
+    .where((User user) => user.isActive)
+    .map((User user) => user.id)
+    .toList();
+```
+
+## Tooling
+
+- Em projetos Flutter, use `flutter_lints` como baseline de lint
+- Em projetos Dart sem Flutter, use pelo menos o conjunto `recommended`
+- Rode `dart format` apos mudancas relevantes
+- Use `dart fix --apply` para correcoes seguras de lint/refactor
+- Ao concluir tarefas longas ou complexas que alterem codigo Dart, rode
+  `flutter analyze` antes de encerrar
+- Corrija erros e avisos relevantes identificados pelo analyzer antes de fechar
+  a tarefa
+- Mantenha imports e codigo sem lixo morto
+
+## Modern Dart
+
+### Pattern Matching
+
+- Use patterns quando simplificarem leitura e eliminarem casts
+
+```dart
+switch (result) {
+  case Success(value: final rows):
+    return rows.length;
+  case Failure():
+    return 0;
+}
+```
+
+### Dot Shorthand
+
+- Prefira dot shorthand quando o tipo ja estiver claro pelo contexto e isso
+  reduzir ruido visual
+- Use dot shorthand principalmente em Flutter para construtores nomeados,
+  enums e membros estaticos dentro de um contexto tipado
+- Evite dot shorthand quando ele tornar o ponto de origem ambíguo ou piorar a
+  leitura para quem esta navegando no codigo
+
+```dart
+return ThemeData(
+  colorScheme: .fromSeed(seedColor: AppColors.brandPrimary),
+);
+
+alignment: .center;
+```
+
+### Tear-offs
+
+- Use tear-offs quando eles deixarem callbacks e construtores mais diretos,
+  legiveis e idiomaticos
+- Prefira tear-off a lambda trivial que apenas repassa a mesma assinatura
+- Em Flutter, prefira tear-offs para callbacks simples, construtores de widgets
+  e transforms de colecao quando isso deixar a intencao imediata
+- Evite tear-off quando ele esconder parametros relevantes, dificultar leitura
+  ou tornar o fluxo menos obvio
+
+```dart
+items.map(UserTile.new);
+onPressed: controller.refresh;
+```
+
+### Records
+
+- Use records para retornos pequenos e coesos, quando uma classe dedicada
+  seria excesso
+
+```dart
+({int rows, Duration elapsed}) summarize(QueryMetrics metrics) {
+  return (
+    rows: metrics.rows,
+    elapsed: metrics.elapsed,
+  );
+}
+```
+
+### Switch Expressions
+
+- Prefira `switch` exaustivo para enums e sealed types
+
+```dart
+final icon = switch (status) {
+  ConnectionStatus.connected => Icons.check_circle,
+  ConnectionStatus.connecting => Icons.sync,
+  ConnectionStatus.disconnected => Icons.error,
+};
+```
+
+## JSON e Codegen
+
+- Prefira `json_serializable`/`json_annotation` quando o projeto usar models
+  serializaveis
+- Use `FieldRename.snake` quando a API usar `snake_case`
+- Reexecute `build_runner` depois de mudar modelos anotados ou qualquer codigo
+  dirigido por geracao
+- Se o arquivo gerado ainda nao existir, erros como `Target of URI hasn't been
+generated` sao esperados ate a primeira geracao
+- Para geracao pontual, rode `dart run build_runner build
+--delete-conflicting-outputs`
+- Para desenvolvimento iterativo, prefira `dart run build_runner watch
+--delete-conflicting-outputs`
+- Nao edite manualmente codigo gerado por `build_runner`; a fonte de verdade e o
+  arquivo de entrada anotado/configurado
+- Se a geracao ficar inconsistente, stale ou em conflito, faca um ciclo de
+  limpeza e gere novamente antes de depurar o codigo manualmente
+- Sempre que a tarefa depender de geracao, confirme que o codigo gerado esta
+  sincronizado antes de encerrar
+
+```shell
+dart run build_runner build --delete-conflicting-outputs
+```
+
+```shell
+dart run build_runner watch --delete-conflicting-outputs
+```
+
+## Async, Erros e Logging
+
+- Capture a excecao mais especifica que voce consegue tratar
+- Preserve `error` e `stackTrace` ao traduzir falhas
+- Prefira fronteiras explicitas de erro nas camadas de arquitetura
+- Prefira converter excecoes para `Result`/failures nas bordas do sistema em vez
+  de espalhar `try/catch` por chamadas internas e UI
+- Nao use `print`; prefira `dart:developer` `log` ou o logger padrao do
+  projeto
+
+```dart
+import 'dart:developer' as developer;
+
+Future<User> loadUser(String id) async {
+  try {
+    final Map<String, Object?> json = await api.fetchUser(id);
+    return User.fromJson(json);
+  } on SocketException catch (error, stackTrace) {
+    developer.log(
+      'Network error while loading user',
+      name: 'app.user_service',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    rethrow;
+  }
+}
+```
+
+## Streams
+
+- Use `Stream` para sequencias de eventos assincronos
+- Feche `StreamController` e recursos associados
+- Evite logica pesada dentro de listeners anonimos longos
+
+## Referencias Cruzadas
+
+- Comentarios/documentacao: `general_rules.mdc`
+- Null safety: `null_safety.mdc`
+- Widgets, `const` em UI e performance de rebuild: `flutter_widgets.mdc`
+- Convencoes de erro e dependencias do repositorio: `project_specifics.mdc`
+
+## Checklist
+
+- [ ] Tipos e contratos estao explicitos onde importa
+- [ ] Funcoes estao pequenas e com baixo aninhamento
+- [ ] Imports estao ordenados e limpos
+- [ ] `const`/`final` foram usados corretamente
+- [ ] Logs usam ferramenta apropriada e preservam contexto
+- [ ] O baseline de lint do projeto esta adequado ao stack (`flutter_lints` ou
+      `recommended`)
+- [ ] Em tarefas longas ou complexas, `flutter analyze` foi executado
+- [ ] Quando a tarefa depende de codegen, `build_runner` foi executado ou
+      validado
+- [ ] Dot shorthand foi usado apenas onde o contexto deixa o tipo obvio
+- [ ] Tear-offs foram usados apenas onde melhoram a leitura
+- [ ] Recursos modernos de Dart foram usados apenas quando melhoram a clareza

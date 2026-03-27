@@ -1,0 +1,70 @@
+---
+description: Architectural boundaries for feature-first Flutter modules
+globs: ["lib/**/*.dart"]
+alwaysApply: true
+---
+
+# Architecture Boundaries
+
+## Escopo
+
+Este arquivo e a fonte de verdade para:
+
+- separacao de responsabilidades
+- direcao permitida das dependencias
+- fronteiras entre regra de negocio, orquestracao, dados e UI
+
+Nao repita aqui regras de estilo, SOLID ou decisoes especificas do repositorio.
+Para isso, use `coding_style.mdc`, `solid_principles.mdc` e
+`project_specifics.mdc`.
+
+## Organizacao
+
+- Prefira organizacao por feature
+- Dentro de uma feature, use separacao clara entre:
+  `presentation`, `application`, `domain` e `data`
+- Nao force camadas extras em fluxos triviais, mas preserve fronteiras mentais
+- Evite classes vagas como `Helper`, `Utils` ou `Service` quando uma abstracao
+  mais especifica e idiomatica resolver melhor
+- `shared` e `core` devem servir o app inteiro sem carregar regra de negocio
+  especifica de feature
+
+## Regras de Dependencia
+
+- `domain` nao pode depender de Flutter, IO, storage, HTTP ou detalhes de API
+- `application` pode coordenar fluxos e depender de `domain`
+- `data` implementa acesso externo e adapta payloads para contratos internos
+- `presentation` pode depender de `application`, `domain`, `core` e `shared`
+- `presentation` nao deve falar direto com clients, datasources ou storage
+- Dependencias devem apontar para contratos e tipos mais estaveis sempre que
+  possivel
+
+## Regras de Fronteira
+
+- Efeitos colaterais ficam fora da UI e fora do dominio
+- Mantenha o dominio agnostico a tecnologia e a framework UI
+- Exponha contratos internamente e implemente detalhes externamente
+- Nao atravesse camadas por conveniencia com imports diretos
+- Quando uma feature crescer, extraia a responsabilidade certa antes de duplicar
+  logica ou acoplamento
+
+## Sinais de Violacao
+
+- `domain` conhecendo `BuildContext`, `Widget`, `Dio`, `SharedPreferences` ou
+  payloads crus de API
+- `presentation` chamando client HTTP, datasource ou plugin diretamente
+- `application` importando widget, provider ou classe concreta de infra
+- models de dados vazando para a UI como se fossem entidades de dominio
+
+## Referencias Cruzadas
+
+- Design de classes e DIP: `solid_principles.mdc`
+- Regras especificas do stack e da organizacao do app: `project_specifics.mdc`
+
+## Checklist
+
+- [ ] Cada tipo esta na responsabilidade correta
+- [ ] A direcao dos imports respeita a arquitetura
+- [ ] Efeitos colaterais ficaram fora de `domain` e da UI
+- [ ] `presentation` nao conhece implementacoes concretas de dados
+- [ ] Contratos vivem nas partes mais estaveis e implementacoes nas externas

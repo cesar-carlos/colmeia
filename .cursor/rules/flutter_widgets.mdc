@@ -1,0 +1,228 @@
+---
+description: Flutter widgets - composition, local state, layout, and rebuild performance
+globs: ["lib/presentation/**/*.dart", "lib/shared/**/*.dart"]
+alwaysApply: true
+---
+
+# Flutter Widgets
+
+## Escopo
+
+Este arquivo e a fonte de verdade para codigo de widgets:
+
+- estrutura de widgets
+- estado local de UI
+- layout e composicao
+- performance de build/rebuild
+
+Nao repita aqui regras de design system e UX mobile. Para isso, use
+`ui_ux_design.mdc`.
+
+## Stateless vs Stateful
+
+- Use `StatelessWidget` quando o widget nao precisa gerenciar estado local
+- Use `StatefulWidget` apenas quando houver estado efemero de UI, controle de
+  foco, animacao, controllers ou subscriptions
+- Mantenha o estado minimo necessario
+- Mantenha `setState()` o mais perto possivel da menor subarvore que realmente
+  muda
+- Separe regra de negocio de estado visual
+- Sempre descarte `FocusNode`, controllers, timers, subscriptions e streams
+
+```dart
+class CounterPanel extends StatefulWidget {
+  const CounterPanel({super.key});
+
+  @override
+  State<CounterPanel> createState() => _CounterPanelState();
+}
+
+class _CounterPanelState extends State<CounterPanel> {
+  final FocusNode _focusNode = FocusNode();
+  int _counter = 0;
+
+  void _increment() {
+    setState(() {
+      _counter++;
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text('Counter: $_counter'),
+        ElevatedButton(
+          onPressed: _increment,
+          child: const Text('Increment'),
+        ),
+      ],
+    );
+  }
+}
+```
+
+## Composicao e Estrutura
+
+- Quebre widgets grandes em widgets menores e focados
+- Prefira classes privadas pequenas a metodos `Widget _build...`
+- Se o mesmo padrao visual aparecer em mais de um lugar, extraia um
+  componente reutilizavel
+- Mantenha `build()` legivel e raso
+- Nao retorne `Widget` de funcoes auxiliares quando uma classe privada ou
+  construtor direto resolver
+
+```dart
+class UserListPage extends StatelessWidget {
+  final List<User> users;
+
+  const UserListPage({
+    super.key,
+    required this.users,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: users.length,
+      itemBuilder: (BuildContext context, int index) {
+        return _UserListItem(user: users[index]);
+      },
+    );
+  }
+}
+
+class _UserListItem extends StatelessWidget {
+  final User user;
+
+  const _UserListItem({
+    required this.user,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(user.name),
+      subtitle: Text(user.email),
+    );
+  }
+}
+```
+
+## Layout
+
+- Use `Padding`, `SizedBox`, `Expanded`, `Flexible`, `Wrap` e `LayoutBuilder`
+  de forma explicita
+- Prefira espacos consistentes e constants/tokens compartilhados
+- Use `ListView.builder` ou slivers para listas longas
+- Use `SingleChildScrollView` apenas para conteudo intrinsicamente limitado
+- Use `Stack`/`Positioned`/`Align` apenas quando layout linear nao resolver
+- Use `OverlayPortal` ou overlay equivalente para menus, dropdowns e tooltips
+  customizados
+
+```dart
+Row(
+  children: [
+    const Expanded(
+      child: Text('Query result'),
+    ),
+    const SizedBox(width: 8),
+    Flexible(
+      child: ElevatedButton(
+        onPressed: () {},
+        child: const Text('Retry'),
+      ),
+    ),
+  ],
+)
+```
+
+## Performance de Build
+
+- Use `const` em widgets e filhos imutaveis sempre que possivel
+- Nao execute trabalho caro dentro de `build()`
+- Use `compute()` ou outro isolamento para processamento pesado
+- Use `RepaintBoundary` em subarvores complexas que repintam com frequencia
+- Use `Key` apenas quando necessario: listas, reorder, animacoes
+- Prefira tear-offs e construtores diretos a wrappers desnecessarios quando a
+  leitura ficar mais simples
+- Prefira dot shorthand em codigo Flutter quando o tipo esperado ja estiver
+  obvio pelo contexto e a expressao ficar mais curta e idiomatica
+
+```dart
+Future<List<int>> _process(List<int> values) async {
+  return compute(_squareValues, values);
+}
+
+List<int> _squareValues(List<int> values) {
+  return values.map((int value) => value * value).toList();
+}
+```
+
+## Custos de Renderizacao
+
+- Use `saveLayer()` com muito cuidado; ele pode introduzir jank
+- Minimize `Opacity` e clipping quando nao forem realmente necessarios
+- Evite `Clip.antiAliasWithSaveLayer` sem justificativa forte
+- Em listas e grids, evite operacoes intrinsecas que forcam layout extra
+- Prefira tamanhos fixos ou ancoras claras quando isso eliminar passes
+  adicionais de layout
+
+## Inputs, Imagens e Acessibilidade no Codigo
+
+- Configure `textInputAction`, `keyboardType`, autofill e `onSubmitted` de forma
+  coerente com fluxos mobile
+- Mantenha validacao perto do campo
+- Forneca `loadingBuilder` e `errorBuilder` em imagens de rede
+- Adicione labels semanticos para acoes apenas com icone
+- Garanta semantica, alvos de toque adequados e comportamento correto com teclado
+  virtual
+
+```dart
+TextField(
+  textCapitalization: TextCapitalization.none,
+  keyboardType: TextInputType.emailAddress,
+  textInputAction: TextInputAction.next,
+  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+)
+```
+
+## Consumo de Tema
+
+- Consuma cores, tipografia, spacing e radius a partir do theme/tokens do app
+- Use `ThemeExtension` para tokens que nao cabem no `ThemeData` padrao
+- Nao hardcode design system em widgets compartilhados
+
+## Profiling
+
+- Para analisar performance real, use device fisico e `profile mode`
+- Nao tire conclusoes de performance a partir de `debug mode`, emulador ou
+  simulador
+- Use DevTools Performance view e Performance Overlay para investigar jank,
+  repaints, intrinsics e gargalos de frame
+
+## Referencias Cruzadas
+
+- Diretrizes de design system, paleta, tipografia e UX mobile:
+  `ui_ux_design.mdc`
+- Regras gerais de reutilizacao e duplicacao: `general_rules.mdc`
+- Estilo Dart e tooling: `coding_style.mdc`
+
+## Checklist
+
+- [ ] O widget tem uma responsabilidade clara
+- [ ] Estado local esta minimo e descartado corretamente
+- [ ] `setState()` ficou restrito a menor subarvore possivel
+- [ ] `build()` esta legivel e sem aninhamento excessivo
+- [ ] Listas longas usam builders/slivers
+- [ ] Nao ha trabalho pesado dentro de `build()`
+- [ ] Custos de renderizacao caros (`saveLayer`, clipping, opacity, intrinsics)
+      foram evitados ou justificados
+- [ ] Performance foi avaliada em `profile mode` quando a tarefa exigir isso
+- [ ] O widget consome tokens do theme em vez de hardcodes visuais

@@ -1,0 +1,86 @@
+---
+description: Null safety - modeling nullability and safe access patterns
+globs: ["lib/**/*.dart"]
+alwaysApply: true
+---
+
+# Null Safety
+
+## Escopo
+
+Este arquivo e a fonte de verdade para modelagem de nullability, inicializacao
+segura e acesso seguro a valores opcionais.
+
+Nao use este arquivo para repetir regras gerais de comentarios, estilo ou
+arquitetura.
+
+## Modelagem
+
+- Tipos devem ser non-nullable por padrao
+- Use `?` apenas quando a ausencia de valor for parte real do dominio ou da API
+- Prefira representar estados com enums, sealed types ou values dedicados quando
+  isso for mais claro que `null`
+- Nao marque um campo como nullable apenas para adiar decisao de modelagem
+
+## Inicializacao
+
+- Inicialize variaveis locais imediatamente sempre que possivel
+- Para campos obrigatorios, prefira construtor com `required`
+- Use `late` apenas quando a inicializacao tardia for real e controlada
+- Evite `late` como escape para contornar modelagem ruim
+
+## Acesso Seguro
+
+- Prefira `?.`, `??` e `??=` para acesso e fallback seguros
+- Use `!` apenas quando a garantia de nao-null estiver clara no fluxo
+- Quando usar `!`, a pre-condicao precisa ser obvia pelo contexto ou por
+  verificacao anterior
+- Evite cadeias longas de null checks se um mapeamento ou normalizacao puder
+  acontecer antes
+
+```dart
+final String displayName = user.name ?? 'Anonymous';
+
+if (currentUser == null) {
+  return Failure(SessionFailure('User is not authenticated'));
+}
+
+return Success(currentUser.id);
+```
+
+## APIs Externas e Mapeamento
+
+- Trate payloads externos como nao confiaveis
+- Normalize nulls de JSON, banco e transporte nas bordas do sistema
+- Converta modelos externos para entidades mais seguras antes de espalhar dados
+  pelo app
+- Se um campo externo pode vir ausente, defina fallback ou falha explicita no
+  mapper
+
+## Collections e Generics
+
+- Use `List<T>` por padrao; use `List<T?>` apenas se elementos nulos forem
+  validos
+- Use `Map<K, V?>` apenas quando `null` for valor legitimo do mapa
+- Para retornos genericos, escolha `T` ou `T?` conscientemente; nao deixe isso
+  ambiguo
+
+## Sinais de Problema
+
+- uso frequente de `!` espalhado pelo codigo
+- campos `late` que poderiam ser `final`
+- entidades de dominio carregando nulls tecnicos vindos de transporte
+- widgets ou services tratando o mesmo fallback nulo em varios lugares
+
+## Referencias Cruzadas
+
+- Estilo Dart e APIs: `coding_style.mdc`
+- Mapeamento de failures e bordas do sistema: `project_specifics.mdc`
+
+## Checklist
+
+- [ ] `?` foi usado apenas quando a ausencia de valor e real
+- [ ] Campos obrigatorios foram inicializados de forma segura
+- [ ] `!` aparece apenas onde a garantia de nao-null esta clara
+- [ ] Dados externos foram normalizados na borda
+- [ ] Collections nullable representam uma necessidade real

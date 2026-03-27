@@ -1,0 +1,297 @@
+---
+description: Project-specific rules for the Colmeia mobile app
+globs: ["lib/**/*.dart", "pubspec.yaml"]
+alwaysApply: true
+---
+
+# Colmeia - Project Specifics
+
+## Escopo
+
+Este arquivo registra apenas decisoes especificas deste repositorio.
+
+Para regras genericas, consulte:
+
+- `clean_architecture.mdc` para fronteiras arquiteturais
+- `solid_principles.mdc` para SRP e DIP
+- `coding_style.mdc` para estilo Dart
+- `flutter_widgets.mdc` e `ui_ux_design.mdc` para UI
+
+## Visao Geral
+
+Aplicacao Flutter nova, com foco exclusivo em Android e iOS. O projeto deve
+priorizar uma identidade visual propria, componentizada e sustentada por tokens
+de design reutilizaveis.
+
+O produto e um app corporativo de dashboards e relatorios para operacao
+multi-loja e multi-perfil. O app deve privilegiar leitura de dados,
+segmentacao por loja, controle de permissao e boa experiencia de consulta em
+rede real.
+
+## Escopo Inicial do Produto
+
+- autenticacao e restauracao de sessao
+- contexto do usuario autenticado
+- controle de permissoes por recurso e por loja
+- dashboard principal com KPIs e atalhos
+- dashboards detalhados com filtros
+- relatorios dinamicos com filtros, paginacao e ordenacao
+- escolha e troca de loja ativa
+- preparacao para atualizacao eventual em tempo real
+
+## MVP
+
+- Entregue primeiro login, sessao, permissoes basicas, escolha de loja,
+  dashboard principal e 2 a 5 relatorios prioritarios
+- Use `REST` como integracao principal no MVP
+- Mantenha cache leve e controlado
+- Nao implemente offline-first completo no MVP
+- Nao dependa de socket para o funcionamento principal do app
+
+## Estrutura de Alto Nivel
+
+```text
+lib/
+|-- core/                    # app shell, router, theme, config e utilitarios
+|-- features/
+|   `-- <feature>/
+|       |-- presentation/    # pages, widgets e controllers/view models
+|       |-- application/     # casos de uso e orquestracao
+|       |-- domain/          # entidades e contratos da feature
+|       `-- data/            # repositorios, datasources e mapeadores
+`-- shared/                  # design system, widgets e modelos reutilizaveis
+```
+
+## Organizacao Arquitetural
+
+- Prefira organizacao por feature, nao por camada global
+- Dentro de cada feature, mantenha separacao clara entre `presentation`,
+  `application`, `domain` e `data` quando a complexidade justificar
+- Em features pequenas, aceite menos arquivos, mas nao misture UI, regra de
+  negocio e acesso a dados no mesmo tipo
+- `shared/` deve conter apenas o que for realmente reutilizado entre features
+- `core/` deve concentrar shell do app, tema, roteamento e utilitarios
+  transversais, sem virar deposito generico
+- Value objects reutilizaveis podem viver em `core/value_objects/`; value
+  objects especificos de uma feature devem ficar no `domain` da propria feature
+
+## Navegacao e Estado de Apresentacao
+
+- Use `go_router` como padrao de navegacao
+- Centralize nomes, paths e metadados de rota em `lib/app/router/app_routes.dart`
+- Deixe `lib/app/router/app_router.dart` apenas como composicao da arvore final
+- Organize definicoes de rotas por feature, preferencialmente em `presentation/routes`
+- Mantenha guards e redirects junto da feature dona da regra de acesso
+- Prefira `goNamed`, `pushNamed` ou helpers centralizados sobre paths literais
+- Para rotas com ids, filtros ou escopos, prefira route data objects dedicados
+- Evite strings de rota soltas em widgets, controllers e testes
+- Use `Provider` para estado de apresentacao
+- Nao introduza outro gerenciador de estado sem decisao explicita
+- Controllers/view models devem expor estado e intencoes da tela; nao devem
+  conhecer detalhes concretos de API, storage ou plataforma
+
+## Modulos Principais
+
+- `auth`: login, refresh token, logout, restauracao de sessao e protecao de
+  rotas
+- `user_context`: usuario autenticado, perfis, permissoes, lojas permitidas e
+  loja ativa
+- `dashboards`: listagem, detalhes, filtros, widgets e atualizacao de KPIs
+- `reports`: listagem, metadados, consulta, filtros, paginacao, ordenacao e
+  exportacao
+- `notifications` ou `realtime`: eventos de atualizacao e invalidacao de cache
+- `settings` ou `profile`: preferencias, dados basicos do usuario e sessao
+
+## Dependencias Preferenciais do Projeto
+
+- `dio` para HTTP e interceptors
+- `get_it` para injecao de dependencia fora da camada de apresentacao
+- `go_router` para navegacao
+- `provider` para estado de apresentacao
+- `result_dart` para fluxos faliveis entre camadas
+- `shared_preferences` para preferencias simples e leves
+- `flutter_secure_storage` para token e dados sensiveis
+- `package_info_plus` para metadados da app
+- `flutter_dotenv` para ambiente e configuracao por build
+- `logger` para logging estruturado quando o projeto precisar de camada propria
+- `drift` sobre SQLite quando o cache local deixar de ser trivial
+- `path` e `path_provider` para suporte a armazenamento local
+- `uuid` para identificadores tecnicos
+- `google_fonts` para tipografia do design system quando fizer sentido
+- `intl` para moeda, data, hora e formatacao numerica
+- `brasil_fields` para mascaras e formatacoes brasileiras recorrentes
+- `flutter_form_builder` e `form_builder_validators` para filtros e parametros
+  dinamicos
+- `zard` para schemas pequenos de validacao e suporte a value objects
+- `syncfusion_flutter_charts` para graficos interativos de uso corporativo
+- `syncfusion_flutter_datagrid` para relatorios tabulares com sorting, filtros e
+  grid robusto
+- `flutter_local_notifications` para notificacoes locais quando o fluxo exigir
+- `sentry_flutter` para monitoramento de erro quando a observabilidade entrar
+
+## Dependencias Fora do Escopo Atual
+
+- Nao adicione `tray_manager`; o projeto atual e mobile-only
+- Nao mantenha `flutter_lints` junto com `very_good_analysis`
+- Nao adicione `syncfusion_flutter_core` diretamente sem uso explicito de APIs
+  do pacote
+- Nao adicione `protoc_plugin` sem pipeline real de protobuf
+- Evite `mailer` no app cliente; prefira backend para envio de email
+- Pacotes como `socket_io_client`, `jose` e `crypto` devem entrar apenas quando
+  houver caso de uso concreto
+
+## Estrategia de Dados
+
+- Use `REST` como fonte principal para autenticacao, bootstrap da sessao,
+  dashboards, relatorios, filtros, exportacao e preferencias
+- Trate socket ou `WebSocket` como complemento para aviso de atualizacao,
+  invalidacao de cache e refresh pontual de KPIs
+- Introduza tempo real apenas em modulos que realmente se beneficiem disso
+- O app nao deve depender de atualizacao em tempo real para funcionar
+
+## Cache Local
+
+- Comece com cache leve, focado em performance de leitura
+- Cacheie apenas sessao, loja ativa, preferencias, filtros recentes,
+  dashboards, metadados e ultimos resumos relevantes
+- Use chaves logicas, `TTL` por recurso e invalidacao clara
+- Sempre permita refresh manual quando o dado puder envelhecer
+- Evite sincronizacao offline completa, merge complexo e reconciliacao avancada
+  no inicio do projeto
+
+## Autenticacao e Autorizacao
+
+- O backend e a fonte final de verdade para autenticacao e autorizacao
+- O app pode ocultar menus, telas, botoes, dashboards e relatorios nao
+  permitidos, mas nao decide acesso real sozinho
+- Toda consulta sensivel deve considerar usuario autenticado, lojas permitidas,
+  recursos permitidos e filtros autorizados
+- Modele permissao por usuario, perfil, escopo de lojas e recursos liberados,
+  nao apenas por cargo fixo
+
+## Dashboards Dinamicos
+
+- Prefira um contrato em que o backend devolva metadados suficientes para montar
+  dashboards sem publicar nova versao para cada ajuste pequeno
+- Widgets dinamicos devem carregar identificador, tipo, titulo, fonte de dados,
+  parametros, ordem e regras de exibicao
+- Para graficos interativos, prefira contratos que descrevam serie, eixo,
+  tooltip, intervalo e comportamento de interacao
+- Evite acoplar cada relatorio ou dashboard a uma tela totalmente bespoke quando
+  um renderer configuravel resolver
+
+## Relatorios Parametrizados
+
+- Parametros devem ser descritos por metadados do backend sempre que possivel
+- Cada parametro deve carregar tipo, obrigatoriedade, valor inicial,
+  opcoes permitidas e regras de exibicao
+- Prefira filtros, ordenacao e paginação no servidor
+- Use formularios dinamicos na UI para montar a consulta sem duplicar regras
+  entre relatorios
+- Quando o parametro exigir mascara ou formato brasileiro recorrente, prefira
+  helper central com `brasil_fields`
+
+## Value Objects
+
+- Use value objects para modelar entradas com regra propria, como email,
+  documento, periodo, identificadores e filtros estruturados
+- Prefira validar value objects com schemas pequenos usando `zard`
+- Value objects devem expor valor normalizado e manter igualdade por valor
+- Nao espalhe regex e validacoes de string pela UI, controller e mapper ao
+  mesmo tempo
+
+## Design System do App
+
+- Use `Material 3` customizado como base visual do app
+- Centralize cores, tipografia, spacing, radius, elevation e motion em tokens
+- Prefira `ThemeExtension` para tokens customizados
+- Extraia componentes de app reutilizaveis para consolidar a identidade visual
+- Evite hardcodes visuais em features; consuma sempre o tema e os componentes do
+  design system
+
+## Android e iOS
+
+- Este projeto nao deve carregar preocupacoes de desktop ou web sem necessidade
+  real
+- Ao criar abstractions de plataforma, foque em Android e iOS
+- Respeite convencoes nativas de navegacao, permissao, teclado e lifecycle
+- Antes de adicionar codigo multiplataforma extra, valide se ele traz valor para
+  o escopo mobile atual
+
+## Erros e Resultados
+
+- Trate erros de rede, persistencia e plataforma nas bordas do sistema
+- Prefira `ResultDart`/`AppResult<T>` como contrato para fluxos faliveis entre
+  datasource, repository, use case e controller
+- Traduza excecoes tecnicas para failures tipadas com mensagem clara para a UI
+- Centralize o mapeamento de erro em failures reutilizaveis; evite espalhar
+  `try/catch` por controller, widget e regra de negocio
+- Preserve contexto tecnico util para log e debug
+- Nao esconda erros com `catch` vazio, fallback silencioso ou mensagens genericas
+
+```dart
+Future<AppResult<User>> getById(String id) async {
+  try {
+    final user = await repository.getById(id);
+    return Success(user);
+  } on DioException catch (error, stackTrace) {
+    return Failure(
+      NetworkFailure(
+        message: 'Unable to load user',
+        userMessage: 'Nao foi possivel carregar o usuario.',
+        cause: error,
+        stackTrace: stackTrace,
+      ),
+    );
+  }
+}
+```
+
+## Testes no Repositorio
+
+- Espelhe `lib/` em `test/` por feature ou modulo compartilhado
+- Priorize testes unitarios para regras, mapeadores e controllers/view models
+- Nao crie widget tests por padrao; faca isso apenas quando o usuario pedir ou
+  quando a mudanca atingir fluxo critico de autenticacao, permissao, navegacao
+  principal ou componente compartilhado de alto risco
+- Cubra com prioridade auth, permissoes, troca de loja, filtros e mapeamento de
+  metadados dinamicos
+- Sempre que uma regressao visual ou comportamental ocorrer, adicione um teste
+  focado nela
+
+## Regra de UI para Falhas
+
+```dart
+final result = await controller.loadUser();
+
+result.fold(
+  (user) => state = UserLoaded(user),
+  (failure) => state = UserError(
+    message: failure.displayMessage,
+    canRetry: failure.isTransient,
+  ),
+);
+```
+
+## Entry Point
+
+```dart
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(const ColmeiaApp());
+}
+```
+
+## Checklist de Revisao
+
+- [ ] A feature ficou organizada por responsabilidade sem rigidez desnecessaria
+- [ ] `Provider` e `go_router` foram usados como padrao do projeto
+- [ ] `REST` permaneceu como fluxo principal e socket ficou complementar quando
+      presente
+- [ ] O cache local permaneceu leve, com invalidacao e refresh claros
+- [ ] O backend continua como fonte final de autorizacao
+- [ ] Tokens e componentes compartilhados sustentam a identidade visual do app
+- [ ] Nao foram introduzidas preocupacoes de desktop/web sem necessidade
+- [ ] Mensagens de erro para usuario sao claras e nao vazam detalhes internos
+- [ ] Testes relevantes cobrem regras, componentes ou regressions alteradas
