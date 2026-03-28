@@ -19,6 +19,7 @@ import 'package:colmeia/features/settings/presentation/pages/app_pyramid_chart_d
 import 'package:colmeia/features/settings/presentation/pages/app_radar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_radial_bar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_range_area_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_report_viewer_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_scatter_bubble_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_section_card_heading_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_sparkline_chart_demo_page.dart';
@@ -64,6 +65,7 @@ const String appPolarChartDemoPath = 'app-polar-chart-demo';
 const String appRadialBarChartDemoPath = 'app-radial-bar-chart-demo';
 const String appSunburstChartDemoPath = 'app-sunburst-chart-demo';
 const String appTreemapChartDemoPath = 'app-treemap-chart-demo';
+const String appReportViewerDemoPath = 'app-report-viewer-demo';
 
 final String sharedComponentsDemoIndexLocation =
     '${AppRoute.settings.path}/$sharedComponentsDemoIndexPath';
@@ -157,6 +159,9 @@ final String appSunburstChartDemoLocation =
 
 final String appTreemapChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appTreemapChartDemoPath';
+
+final String appReportViewerDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appReportViewerDemoPath';
 
 List<RouteBase> buildSettingsRoutes() {
   return <RouteBase>[
@@ -351,6 +356,12 @@ List<RouteBase> buildSettingsRoutes() {
               path: appTreemapChartDemoPath,
               builder: (context, state) {
                 return const AppTreemapChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appReportViewerDemoPath,
+              builder: (context, state) {
+                return const AppReportViewerDemoPage();
               },
             ),
           ],

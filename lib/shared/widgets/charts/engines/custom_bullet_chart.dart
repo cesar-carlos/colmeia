@@ -72,37 +72,41 @@ class CustomBulletChart<T> extends StatelessWidget {
       child: SingleChildScrollView(
         padding: style.chartPadding ?? EdgeInsets.zero,
         child: Column(
-          children: items.indexed.map((entry) {
-            final index = entry.$1;
-            final item = entry.$2;
-            final child = _BulletChartRow<T>(
-              item: item,
-              labelBuilder: labelBuilder,
-              valueBuilder: valueBuilder,
-              targetValueBuilder: targetValueBuilder,
-              rangesBuilder: rangesBuilder,
-              maxValueBuilder: maxValueBuilder,
-              style: style,
-              colors: colors,
-              chartTheme: chartTheme,
-            );
+          children: items.indexed
+              .map((entry) {
+                final index = entry.$1;
+                final item = entry.$2;
+                final child = _BulletChartRow<T>(
+                  item: item,
+                  labelBuilder: labelBuilder,
+                  valueBuilder: valueBuilder,
+                  targetValueBuilder: targetValueBuilder,
+                  rangesBuilder: rangesBuilder,
+                  maxValueBuilder: maxValueBuilder,
+                  style: style,
+                  colors: colors,
+                  chartTheme: chartTheme,
+                );
 
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: index == items.length - 1 ? 0 : rowSpacing,
-              ),
-              child: onPointTap == null
-                  ? child
-                  : InkWell(
-                      borderRadius: BorderRadius.circular(tokens.cardRadius),
-                      onTap: () => onPointTap!(item, index),
-                      child: Padding(
-                        padding: EdgeInsets.all(tokens.gapXs),
-                        child: child,
-                      ),
-                    ),
-            );
-          }).toList(growable: false),
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == items.length - 1 ? 0 : rowSpacing,
+                  ),
+                  child: onPointTap == null
+                      ? child
+                      : InkWell(
+                          borderRadius: BorderRadius.circular(
+                            tokens.cardRadius,
+                          ),
+                          onTap: () => onPointTap!(item, index),
+                          child: Padding(
+                            padding: EdgeInsets.all(tokens.gapXs),
+                            child: child,
+                          ),
+                        ),
+                );
+              })
+              .toList(growable: false),
         ),
       ),
     );
@@ -136,7 +140,7 @@ class _BulletChartRow<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final rawRanges = rangesBuilder(item)
+    final rawRanges = List<AppBulletRange>.from(rangesBuilder(item))
       ..sort((a, b) => a.end.compareTo(b.end));
     final value = valueBuilder(item).toDouble();
     final target = targetValueBuilder(item).toDouble();
@@ -190,37 +194,44 @@ class _BulletChartRow<T> extends StatelessWidget {
                     final radius =
                         style.backgroundRadius ??
                         const BorderRadius.all(Radius.circular(6));
-                    final actualWidth = constraints.maxWidth *
+                    final actualWidth =
+                        constraints.maxWidth *
                         (value.clamp(0, maxValue) / maxValue);
-                    final targetPosition = constraints.maxWidth *
+                    final targetPosition =
+                        constraints.maxWidth *
                         (target.clamp(0, maxValue) / maxValue);
 
                     var previousEnd = 0.0;
-                    final rangeWidgets = rawRanges.indexed.map((entry) {
-                      final currentEnd =
-                          entry.$2.end.toDouble().clamp(0, maxValue).toDouble();
-                      final segmentLeft =
-                          constraints.maxWidth * (previousEnd / maxValue);
-                      final segmentWidth =
-                          constraints.maxWidth *
-                          ((currentEnd - previousEnd).clamp(0, maxValue) /
-                              maxValue);
-                      previousEnd = currentEnd;
+                    final rangeWidgets = rawRanges.indexed
+                        .map((entry) {
+                          final currentEnd = entry.$2.end
+                              .toDouble()
+                              .clamp(0, maxValue)
+                              .toDouble();
+                          final segmentLeft =
+                              constraints.maxWidth * (previousEnd / maxValue);
+                          final segmentWidth =
+                              constraints.maxWidth *
+                              ((currentEnd - previousEnd).clamp(0, maxValue) /
+                                  maxValue);
+                          previousEnd = currentEnd;
 
-                      return Positioned(
-                        left: segmentLeft,
-                        top: 0,
-                        bottom: 0,
-                        width: segmentWidth,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color:
-                                entry.$2.color ?? _defaultRangeColor(entry.$1),
-                            borderRadius: radius,
-                          ),
-                        ),
-                      );
-                    }).toList(growable: false);
+                          return Positioned(
+                            left: segmentLeft,
+                            top: 0,
+                            bottom: 0,
+                            width: segmentWidth,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color:
+                                    entry.$2.color ??
+                                    _defaultRangeColor(entry.$1),
+                                borderRadius: radius,
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(growable: false);
 
                     return Stack(
                       clipBehavior: Clip.none,
@@ -241,14 +252,16 @@ class _BulletChartRow<T> extends StatelessWidget {
                           width: actualWidth,
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: style.actualBarColor ??
+                              color:
+                                  style.actualBarColor ??
                                   chartTheme.primaryColor,
                               borderRadius: radius,
                             ),
                           ),
                         ),
                         Positioned(
-                          left: targetPosition -
+                          left:
+                              targetPosition -
                               ((style.targetMarkerWidth ?? 3) / 2),
                           top: -3,
                           bottom: -3,

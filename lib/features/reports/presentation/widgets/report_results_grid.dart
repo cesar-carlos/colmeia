@@ -2,50 +2,72 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/reports/domain/entities/report_result_row.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_grid.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
-class ReportResultsGrid extends StatefulWidget {
+/// Grid panel for the report detail page.
+///
+/// Delegates rendering to AppReportGrid using declarative column
+/// definitions instead of a bespoke Syncfusion DataGridSource subclass.
+class ReportResultsGrid extends StatelessWidget {
   const ReportResultsGrid({
     required this.rows,
     super.key,
+    this.onSortChanged,
+    this.onRowTap,
   });
 
   final List<ReportResultRow> rows;
+  final ValueChanged<List<AppReportSortDescriptor>>? onSortChanged;
+  final void Function(ReportResultRow row, int index)? onRowTap;
 
-  @override
-  State<ReportResultsGrid> createState() => _ReportResultsGridState();
-}
+  static Object? _getSeller(ReportResultRow r) => r.seller;
+  static Object? _getStore(ReportResultRow r) => r.store;
+  static Object? _getOrders(ReportResultRow r) => r.orders;
+  static Object? _getRevenue(ReportResultRow r) => r.revenue;
 
-class _ReportResultsGridState extends State<ReportResultsGrid> {
-  late final _SalesReportDataSource _dataSource;
-
-  @override
-  void initState() {
-    super.initState();
-    _dataSource = _SalesReportDataSource(widget.rows);
-  }
-
-  @override
-  void didUpdateWidget(covariant ReportResultsGrid oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.rows != widget.rows) {
-      _dataSource = _SalesReportDataSource(widget.rows);
-    }
-  }
+  static final List<AppReportColumn<ReportResultRow>> _columns =
+      <AppReportColumn<ReportResultRow>>[
+    const AppReportColumn<ReportResultRow>(
+      key: 'seller',
+      label: 'Vendedor',
+      valueGetter: _getSeller,
+    ),
+    const AppReportColumn<ReportResultRow>(
+      key: 'store',
+      label: 'Loja',
+      valueGetter: _getStore,
+    ),
+    const AppReportColumn<ReportResultRow>(
+      key: 'orders',
+      label: 'Pedidos',
+      valueGetter: _getOrders,
+      numeric: true,
+      aggregations: <AppReportAggregation>[AppReportAggregation.sum],
+      width: 90,
+    ),
+    AppReportColumn<ReportResultRow>(
+      key: 'revenue',
+      label: 'Faturamento',
+      valueGetter: _getRevenue,
+      formatter: (v) => AppBrFormatters.currency(v! as num),
+      numeric: true,
+      aggregations: const <AppReportAggregation>[AppReportAggregation.sum],
+      width: 140,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final totalRevenue = widget.rows.fold<double>(
-      0,
-      (sum, row) => sum + row.revenue,
-    );
-    final totalOrders = widget.rows.fold<int>(
-      0,
-      (sum, row) => sum + row.orders,
-    );
+
+    final totalRevenue = rows.fold<double>(0, (s, r) => s + r.revenue);
+    final totalOrders = rows.fold<int>(0, (s, r) => s + r.orders);
 
     return AppSectionCard(
       child: Column(
@@ -59,7 +81,7 @@ class _ReportResultsGridState extends State<ReportResultsGrid> {
           ),
           SizedBox(height: tokens.gapXs),
           Text(
-            'Base pronta para ordenacao, filtros e paginação no servidor.',
+            'Base pronta para ordenação, filtros e paginação no servidor.',
             style: theme.textTheme.bodyMedium,
           ),
           SizedBox(height: tokens.contentSpacing),
@@ -68,7 +90,7 @@ class _ReportResultsGridState extends State<ReportResultsGrid> {
               Expanded(
                 child: _ResultSnapshotTile(
                   label: 'Linhas',
-                  value: widget.rows.length.toString(),
+                  value: rows.length.toString(),
                 ),
               ),
               SizedBox(width: tokens.gapSm),
@@ -87,51 +109,21 @@ class _ReportResultsGridState extends State<ReportResultsGrid> {
               ),
             ],
           ),
-          if (widget.rows.isEmpty) ...<Widget>[
-            SizedBox(height: tokens.contentSpacing),
-            Text(
-              'Nenhum resultado encontrado para os filtros aplicados.',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ] else ...<Widget>[
-            SizedBox(height: tokens.contentSpacing),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(tokens.cardRadius),
+          SizedBox(height: tokens.contentSpacing),
+          SizedBox(
+            height: 280,
+            child: AppReportGrid<ReportResultRow>(
+              columns: _columns,
+              rows: rows,
+              style: const AppReportViewerStyle(),
+              events: AppReportEvents<ReportResultRow>(
+                onSortChanged: onSortChanged,
+                onRowTap: onRowTap,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(tokens.cardRadius),
-                child: SizedBox(
-                  height: 280,
-                  child: SfDataGrid(
-                    source: _dataSource,
-                    allowSorting: true,
-                    columnWidthMode: ColumnWidthMode.fill,
-                    headerGridLinesVisibility: GridLinesVisibility.none,
-                    columns: <GridColumn>[
-                      GridColumn(
-                        columnName: 'seller',
-                        label: const _HeaderLabel(text: 'Vendedor'),
-                      ),
-                      GridColumn(
-                        columnName: 'store',
-                        label: const _HeaderLabel(text: 'Loja'),
-                      ),
-                      GridColumn(
-                        columnName: 'orders',
-                        label: const _HeaderLabel(text: 'Pedidos'),
-                      ),
-                      GridColumn(
-                        columnName: 'revenue',
-                        label: const _HeaderLabel(text: 'Faturamento'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              emptyMessage:
+                  'Nenhum resultado encontrado para os filtros aplicados.',
             ),
-          ],
+          ),
         ],
       ),
     );
@@ -178,76 +170,6 @@ class _ResultSnapshotTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SalesReportDataSource extends DataGridSource {
-  _SalesReportDataSource(List<ReportResultRow> rows)
-    : _rows = rows.map<DataGridRow>((row) {
-        return DataGridRow(
-          cells: <DataGridCell<Object>>[
-            DataGridCell<String>(columnName: 'seller', value: row.seller),
-            DataGridCell<String>(columnName: 'store', value: row.store),
-            DataGridCell<int>(columnName: 'orders', value: row.orders),
-            DataGridCell<double>(columnName: 'revenue', value: row.revenue),
-          ],
-        );
-      }).toList();
-
-  final List<DataGridRow> _rows;
-
-  @override
-  List<DataGridRow> get rows => _rows;
-
-  @override
-  DataGridRowAdapter buildRow(DataGridRow row) {
-    return DataGridRowAdapter(
-      cells: row
-          .getCells()
-          .map<Widget>((cell) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Align(
-                alignment: cell.columnName == 'revenue'
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: Text(_formatCellValue(cell)),
-              ),
-            );
-          })
-          .toList(growable: false),
-    );
-  }
-
-  String _formatCellValue(DataGridCell<dynamic> cell) {
-    if (cell.columnName == 'revenue') {
-      return AppBrFormatters.currency(cell.value as num);
-    }
-
-    return '${cell.value}';
-  }
-}
-
-class _HeaderLabel extends StatelessWidget {
-  const _HeaderLabel({
-    required this.text,
-  });
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    return Container(
-      alignment: Alignment.centerLeft,
-      padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w700,
         ),
       ),
     );

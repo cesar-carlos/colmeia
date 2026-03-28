@@ -315,6 +315,19 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
             onTap: () => context.push(appProfileWidgetsDemoLocation),
           ),
         ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
+          title: 'Tabelas e relatorios',
+          subtitle: 'Grid ERP generico com filtros, paginacao e export.',
+          child: _DemoEntryTile(
+            icon: Icons.table_view_rounded,
+            title: 'AppReportViewer',
+            subtitle:
+                'Grid interativo com filtros, ordenacao, paginacao, '
+                'export PDF/Excel e chooser de colunas.',
+            onTap: () => context.push(appReportViewerDemoLocation),
+          ),
+        ),
       ],
     );
   }

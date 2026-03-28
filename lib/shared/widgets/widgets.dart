@@ -57,3 +57,9 @@ export 'package:colmeia/shared/widgets/profile/app_profile_interactive_field.dar
 export 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
 export 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';
 export 'package:colmeia/shared/widgets/profile/app_profile_status_pill.dart';
+export 'package:colmeia/shared/widgets/reports/app_report_column.dart';
+export 'package:colmeia/shared/widgets/reports/app_report_events.dart';
+export 'package:colmeia/shared/widgets/reports/app_report_models.dart';
+export 'package:colmeia/shared/widgets/reports/app_report_query.dart';
+export 'package:colmeia/shared/widgets/reports/app_report_style.dart';
+export 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
