@@ -6,7 +6,11 @@ import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
+import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/navigation/show_app_sign_out_dialog.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_interactive_field.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';
@@ -152,91 +156,72 @@ class _SettingsPageState extends State<SettingsPage> {
     return ListView(
       padding: EdgeInsets.all(tokens.contentSpacing),
       children: <Widget>[
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: TextButton(
-            onPressed: () => _showSoonSnack(
-              'Edição de perfil estará disponível em uma próxima versão.',
-            ),
-            child: const Text('Editar perfil'),
-          ),
-        ),
-        SizedBox(height: tokens.gapSm),
-        Text(
-          'Dados da sua conta e preferências de uso.',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: tokens.sectionSpacing),
-        AppSectionCard(
-          color: cs.surfaceContainerLow,
-          child: Column(
-            children: <Widget>[
-              CircleAvatar(
-                radius: 44,
-                backgroundColor: cs.primaryContainer,
-                foregroundColor: cs.onPrimaryContainer,
-                child: Text(
-                  _initials(scope.name),
-                  style: theme.textTheme.headlineSmall?.copyWith(
+        AppSkeleton(
+          enabled: controller.isLoading,
+          child: AppSectionCard(
+            color: cs.surfaceContainerLow,
+            child: Column(
+              children: <Widget>[
+                CircleAvatar(
+                  radius: 44,
+                  backgroundColor: cs.primaryContainer,
+                  foregroundColor: cs.onPrimaryContainer,
+                  child: Text(
+                    _initials(scope.name),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                SizedBox(height: tokens.contentSpacing),
+                Text(
+                  scope.name,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-              SizedBox(height: tokens.contentSpacing),
-              Text(
-                scope.name,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(height: tokens.gapXs),
-              Text(
-                scope.roleLabel,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-              SizedBox(height: tokens.gapMd),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: tokens.gapSm,
-                runSpacing: tokens.gapSm,
-                children: <Widget>[
-                  Chip(
-                    avatar: Icon(
-                      Icons.storefront_outlined,
-                      size: 18,
-                      color: cs.primary,
-                    ),
-                    label: Text(controller.activeStore.name),
+                SizedBox(height: tokens.gapXs),
+                Text(
+                  scope.roleLabel,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
                   ),
-                  Chip(
-                    label: Text(
-                      '${controller.permissions.length} permissões',
+                ),
+                SizedBox(height: tokens.gapMd),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: tokens.gapSm,
+                  runSpacing: tokens.gapSm,
+                  children: <Widget>[
+                    Chip(
+                      avatar: Icon(
+                        Icons.storefront_outlined,
+                        size: 18,
+                        color: cs.primary,
+                      ),
+                      label: Text(controller.activeStore.name),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    Chip(
+                      label: Text(
+                        '${controller.permissions.length} permissões',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
         if (controller.errorMessage case final String errorMessage) ...<Widget>[
           SizedBox(height: tokens.sectionSpacing),
-          AppSectionCard(
-            color: Color.alphaBlend(
-              cs.errorContainer.withValues(alpha: 0.35),
-              cs.surfaceContainerLowest,
-            ),
-            child: Text(
-              errorMessage,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onErrorContainer,
-              ),
-            ),
+          AppInlineErrorPanel(
+            title: 'Nao foi possivel carregar o perfil',
+            message: errorMessage,
+            onRetry: () {
+              unawaited(controller.reloadUserContext());
+            },
           ),
         ],
         SizedBox(height: tokens.sectionSpacing),
@@ -454,17 +439,19 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.tonalIcon(
-            onPressed: authController.isLoading
-                ? null
-                : () {
-                    unawaited(context.read<AuthController>().signOut());
-                  },
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Sair da conta'),
-          ),
+        AppFlatButton(
+          icon: const Icon(Icons.logout_rounded),
+          label: 'Sair da conta',
+          semanticsLabel: 'Sair da conta',
+          onPressed: authController.isLoading
+              ? null
+              : () async {
+                  final confirmed = await showAppSignOutConfirmDialog(context);
+                  if (!context.mounted || !confirmed) {
+                    return;
+                  }
+                  await context.read<AuthController>().signOut();
+                },
         ),
         SizedBox(height: tokens.contentSpacing),
         FutureBuilder<PackageInfo>(

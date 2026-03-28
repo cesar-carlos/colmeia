@@ -39,11 +39,13 @@ class HoneycombHexBackground extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: <Widget>[
-        CustomPaint(
-          painter: _HoneycombPainter(
-            color: lineColor ?? cs.outlineVariant,
-            patternOpacity: opacity,
-            edgeFade: edgeFade,
+        RepaintBoundary(
+          child: CustomPaint(
+            painter: _HoneycombPainter(
+              color: lineColor ?? cs.outlineVariant,
+              patternOpacity: opacity,
+              edgeFade: edgeFade,
+            ),
           ),
         ),
         child,

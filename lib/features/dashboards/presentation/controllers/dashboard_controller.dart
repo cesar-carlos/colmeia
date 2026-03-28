@@ -101,7 +101,10 @@ class DashboardController extends ChangeNotifier {
             'operation': 'loadDashboardOverview',
             'userId': userId,
             'storeId': storeId.value,
+            'technicalMessage': failure.message,
           },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
         );
       },
     );

@@ -9,12 +9,55 @@ import 'package:colmeia/features/user_context/domain/entities/user_permission.da
 final class FakeIdentityBackendStore {
   FakeIdentityBackendStore(this._sessionStorage);
 
-  static const String _usersStorageKey = 'fake_backend_users_v1';
+  static const String _usersStorageKey = 'fake_backend_users_v2';
+
+  static const String _legacyUsersStorageKey = 'fake_backend_users_v1';
+
+  static const List<DashboardAccessGrant> _migrationDefaultDashboardGrants =
+      <DashboardAccessGrant>[
+    DashboardAccessGrant(
+      dashboardId: 'dashboard_main',
+      allowedFilterKeys: <String>{'store', 'referenceDate'},
+    ),
+  ];
+
+  static const List<ReportAccessGrant> _migrationDefaultReportGrants =
+      <ReportAccessGrant>[
+    ReportAccessGrant(
+      reportId: 'sales_overview',
+      allowedFilterKeys: <String>{
+        'store',
+        'seller',
+        'referenceDate',
+        'onlyPositiveMargin',
+      },
+    ),
+    ReportAccessGrant(
+      reportId: 'margin_audit',
+      allowedFilterKeys: <String>{
+        'store',
+        'seller',
+        'referenceDate',
+        'onlyPositiveMargin',
+      },
+    ),
+  ];
 
   final SessionStorage _sessionStorage;
 
   Future<List<FakeIdentityUserRecord>> loadUsers() async {
-    final raw = await _sessionStorage.read(_usersStorageKey);
+    var raw = await _sessionStorage.read(_usersStorageKey);
+    if (raw == null || raw.isEmpty) {
+      final legacy = await _sessionStorage.read(_legacyUsersStorageKey);
+      if (legacy != null && legacy.isNotEmpty) {
+        raw = legacy;
+        await _sessionStorage.write(
+          key: _usersStorageKey,
+          value: legacy,
+        );
+        await _sessionStorage.delete(_legacyUsersStorageKey);
+      }
+    }
     if (raw == null || raw.isEmpty) {
       final defaultUsers = _defaultUsers;
       await _saveUsers(defaultUsers);
@@ -22,13 +65,56 @@ final class FakeIdentityBackendStore {
     }
 
     final decoded = jsonDecode(raw) as List<dynamic>;
-    return decoded
+    final users = decoded
         .map(
           (entry) => FakeIdentityUserRecord.fromJson(
             entry as Map<String, dynamic>,
           ),
         )
         .toList();
+
+    final migratedUsers = users.map(_migrateLegacyEmptyGrants).toList();
+    if (users.any(_needsGrantMigration)) {
+      await _saveUsers(migratedUsers);
+    }
+    return migratedUsers;
+  }
+
+  bool _needsGrantMigration(FakeIdentityUserRecord user) {
+    final needsDashboard = user.dashboardGrants.isEmpty &&
+        user.permissions.contains(UserPermission.viewDashboard);
+    final needsReports = user.reportGrants.isEmpty &&
+        user.permissions.contains(UserPermission.viewReports);
+    return needsDashboard || needsReports;
+  }
+
+  FakeIdentityUserRecord _migrateLegacyEmptyGrants(
+    FakeIdentityUserRecord user,
+  ) {
+    if (!_needsGrantMigration(user)) {
+      return user;
+    }
+
+    return FakeIdentityUserRecord(
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      password: user.password,
+      employeeId: user.employeeId,
+      roleLabel: user.roleLabel,
+      allowedStores: user.allowedStores,
+      permissions: user.permissions,
+      dashboardGrants: user.dashboardGrants.isEmpty &&
+              user.permissions.contains(UserPermission.viewDashboard)
+          ? List<DashboardAccessGrant>.from(_migrationDefaultDashboardGrants)
+          : user.dashboardGrants,
+      reportGrants: user.reportGrants.isEmpty &&
+              user.permissions.contains(UserPermission.viewReports)
+          ? List<ReportAccessGrant>.from(_migrationDefaultReportGrants)
+          : user.reportGrants,
+      activeStoreId: user.activeStoreId,
+      phone: user.phone,
+    );
   }
 
   Future<FakeIdentityUserRecord?> findByEmail(String email) async {

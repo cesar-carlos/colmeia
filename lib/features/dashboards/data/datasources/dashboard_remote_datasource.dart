@@ -6,6 +6,7 @@ import 'package:colmeia/features/dashboards/domain/entities/dashboard_category_s
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_chart_point.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_detail_highlight.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_summary_metric.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
@@ -69,10 +70,7 @@ class FakeDashboardRemoteDataSource implements DashboardRemoteDataSource {
     if (selectedStore == null) {
       throw StateError('Requested dashboard store is outside user scope');
     }
-    final dashboardGrant = user.dashboardGrants
-        .where((grant) => grant.dashboardId == _mainDashboardId)
-        .firstOrNull;
-    if (dashboardGrant == null) {
+    if (!_canAccessMainDashboard(user)) {
       throw StateError('Requested dashboard is not available for this user');
     }
 
@@ -269,5 +267,13 @@ class FakeDashboardRemoteDataSource implements DashboardRemoteDataSource {
       symbol: r'R$',
       decimalDigits: 2,
     ).format(value);
+  }
+
+  bool _canAccessMainDashboard(FakeIdentityUserRecord user) {
+    if (user.dashboardGrants.isEmpty) {
+      return user.permissions.contains(UserPermission.viewDashboard);
+    }
+    return user.dashboardGrants
+        .any((grant) => grant.dashboardId == _mainDashboardId);
   }
 }

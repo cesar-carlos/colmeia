@@ -23,7 +23,6 @@ import 'package:colmeia/features/user_context/presentation/widgets/allowed_store
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/backgrounds/honeycomb_hex_background.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -209,153 +208,149 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                     );
                   }
 
-                  return HoneycombHexBackground(
-                    child: RefreshIndicator(
-                      onRefresh: onRefresh,
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.all(tokens.contentSpacing),
-                        children: <Widget>[
-                          AppShellPageIntro(
-                            title: 'Olá, $greetingName',
-                            subtitle:
-                                'Aqui está o resumo da sua operação hoje.',
-                            footer: AllowedStoreSelectorStrip(
-                              stores: userContext.userScope.allowedStores,
-                              selectedStoreId: selectedStore.id,
-                              isLoading: userContext.isLoading,
-                              errorMessage: userContext.errorMessage,
-                              onRetry: session == null
-                                  ? null
-                                  : () => _retryUserStores(
+                  return RefreshIndicator(
+                    onRefresh: onRefresh,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.all(tokens.contentSpacing),
+                      children: <Widget>[
+                        AppShellPageIntro(
+                          title: 'Olá, $greetingName',
+                          subtitle: 'Aqui está o resumo da sua operação hoje.',
+                          footer: AllowedStoreSelectorStrip(
+                            stores: userContext.userScope.allowedStores,
+                            selectedStoreId: selectedStore.id,
+                            isLoading: userContext.isLoading,
+                            errorMessage: userContext.errorMessage,
+                            onRetry: session == null
+                                ? null
+                                : () => _retryUserStores(
+                                    context,
+                                    userContext,
+                                  ),
+                            onStoreSelected: (store) {
+                              userContext
+                                  .selectStore(store.id)
+                                  .fold(
+                                    (_) {
+                                      context.goToData(
+                                        DashboardStoreRouteData(
+                                          storeId: StoreId(store.id),
+                                        ),
+                                      );
+                                    },
+                                    (failure) {
+                                      ScaffoldMessenger.of(
                                         context,
-                                        userContext,
-                                      ),
-                              onStoreSelected: (store) {
-                                userContext
-                                    .selectStore(store.id)
-                                    .fold(
-                                      (_) {
-                                        context.goToData(
-                                          DashboardStoreRouteData(
-                                            storeId: StoreId(store.id),
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            failure.displayMessage,
                                           ),
-                                        );
-                                      },
-                                      (failure) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              failure.displayMessage,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    );
-                              },
-                            ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                            },
                           ),
-                          if (selectedStoreResult.exceptionOrNull()
-                              case final failure?) ...<Widget>[
-                            SizedBox(height: tokens.gapMd),
-                            AppSectionCard(
-                              child: Text(
-                                failure.displayMessage,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.error,
-                                ),
+                        ),
+                        if (selectedStoreResult.exceptionOrNull()
+                            case final failure?) ...<Widget>[
+                          SizedBox(height: tokens.gapMd),
+                          AppSectionCard(
+                            child: Text(
+                              failure.displayMessage,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.error,
                               ),
                             ),
-                          ],
-                          if (dashboardController.errorMessage
-                              case final String errorMessage) ...<Widget>[
-                            SizedBox(height: tokens.gapMd),
-                            AppSectionCard(
-                              child: Text(
-                                errorMessage,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.error,
+                          ),
+                        ],
+                        if (dashboardController.errorMessage
+                            case final String errorMessage) ...<Widget>[
+                          SizedBox(height: tokens.gapMd),
+                          AppSectionCard(
+                            child: Text(
+                              errorMessage,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                        SizedBox(height: tokens.sectionSpacing),
+                        if (shouldShowOverview) ...<Widget>[
+                          AppSkeleton(
+                            enabled: showSkeleton,
+                            child: DashboardAiInsightCard(
+                              insight: resolvedOverview.aiInsight,
+                              onApply: showSkeleton
+                                  ? null
+                                  : () {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Sugestão enviada para a equipe.',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                            ),
+                          ),
+                          SizedBox(height: tokens.sectionSpacing),
+                          ..._summaryMetricWidgets(
+                            metrics: resolvedOverview.summaryMetrics,
+                            showSkeleton: showSkeleton,
+                            tokens: tokens,
+                          ),
+                          if (showReportsEntry) ...<Widget>[
+                            SizedBox(height: tokens.sectionSpacing),
+                            AppSkeleton(
+                              enabled: showSkeleton,
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: FilledButton.icon(
+                                  onPressed: showSkeleton
+                                      ? null
+                                      : () => context.goTo(AppRoute.reports),
+                                  icon: const Icon(Icons.bar_chart_rounded),
+                                  label: Text(
+                                    'VER RELATÓRIO COMPLETO',
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: cs.primaryContainer,
+                                    foregroundColor: cs.onPrimaryContainer,
+                                    minimumSize: Size(
+                                      48,
+                                      tokens.actionButtonMinHeight + 4,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                           SizedBox(height: tokens.sectionSpacing),
-                          if (shouldShowOverview) ...<Widget>[
-                            AppSkeleton(
-                              enabled: showSkeleton,
-                              child: DashboardAiInsightCard(
-                                insight: resolvedOverview.aiInsight,
-                                onApply: showSkeleton
-                                    ? null
-                                    : () {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Sugestão enviada para a equipe.',
-                                            ),
-                                          ),
-                                        );
-                                      },
-                              ),
+                          AppSkeleton(
+                            enabled: showSkeleton,
+                            child: DashboardSalesTrendCard(
+                              points: resolvedOverview.revenuePoints,
                             ),
-                            SizedBox(height: tokens.sectionSpacing),
-                            ..._summaryMetricWidgets(
-                              metrics: resolvedOverview.summaryMetrics,
-                              showSkeleton: showSkeleton,
-                              tokens: tokens,
+                          ),
+                          SizedBox(height: tokens.sectionSpacing),
+                          AppSkeleton(
+                            enabled: showSkeleton,
+                            child: DashboardCategoryMixCard(
+                              shares: resolvedOverview.categoryShares,
                             ),
-                            if (showReportsEntry) ...<Widget>[
-                              SizedBox(height: tokens.sectionSpacing),
-                              AppSkeleton(
-                                enabled: showSkeleton,
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: showSkeleton
-                                        ? null
-                                        : () => context.goTo(AppRoute.reports),
-                                    icon: const Icon(Icons.bar_chart_rounded),
-                                    label: Text(
-                                      'VER RELATÓRIO COMPLETO',
-                                      style: theme.textTheme.labelLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.5,
-                                          ),
-                                    ),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: cs.primaryContainer,
-                                      foregroundColor: cs.onPrimaryContainer,
-                                      minimumSize: Size(
-                                        48,
-                                        tokens.actionButtonMinHeight + 4,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                            SizedBox(height: tokens.sectionSpacing),
-                            AppSkeleton(
-                              enabled: showSkeleton,
-                              child: DashboardSalesTrendCard(
-                                points: resolvedOverview.revenuePoints,
-                              ),
-                            ),
-                            SizedBox(height: tokens.sectionSpacing),
-                            AppSkeleton(
-                              enabled: showSkeleton,
-                              child: DashboardCategoryMixCard(
-                                shares: resolvedOverview.categoryShares,
-                              ),
-                            ),
-                          ],
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   );
                 },

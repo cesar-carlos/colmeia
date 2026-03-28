@@ -14,7 +14,7 @@ import 'package:colmeia/features/auth/presentation/widgets/login/login_remember_
 import 'package:colmeia/features/auth/presentation/widgets/login/login_request_access_row.dart';
 import 'package:colmeia/features/auth/presentation/widgets/login/login_welcome_section.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/backgrounds/honeycomb_hex_background.dart';
+import 'package:colmeia/shared/widgets/backgrounds/app_hex_screen_body.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -89,9 +89,8 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
     final isBlocked = auth.isLoading || auth.isRestoringSession;
 
     return Scaffold(
-      body: HoneycombHexBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
+      body: AppHexScreenBody(
+        child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: tokens.authLoginScrollPaddingHorizontal,
               vertical: tokens.authLoginScrollPaddingVertical,
@@ -163,7 +162,6 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
             ),
           ),
         ),
-      ),
     );
   }
 }

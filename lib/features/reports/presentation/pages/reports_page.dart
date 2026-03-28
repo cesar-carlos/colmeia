@@ -218,6 +218,19 @@ class _ReportsPageState extends State<ReportsPage> {
                         ],
                       ),
                     ),
+                    if (userContext.errorMessage
+                        case final String contextError) ...<Widget>[
+                      SizedBox(height: tokens.sectionSpacing),
+                      AppInlineErrorPanel(
+                        title: 'Nao foi possivel sincronizar',
+                        message: contextError,
+                        onRetry: session != null
+                            ? () {
+                                unawaited(userContext.reloadUserContext());
+                              }
+                            : null,
+                      ),
+                    ],
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,

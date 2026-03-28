@@ -16,7 +16,7 @@ import 'package:colmeia/features/auth/presentation/widgets/register/register_for
 import 'package:colmeia/features/auth/presentation/widgets/register/register_store_selection_section.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/forms/app_form_validators.dart';
-import 'package:colmeia/shared/widgets/backgrounds/honeycomb_hex_background.dart';
+import 'package:colmeia/shared/widgets/backgrounds/app_hex_screen_body.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -98,9 +98,8 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
     final blocked = auth.isLoading;
 
     return Scaffold(
-      body: HoneycombHexBackground(
-        child: SafeArea(
-          child: SingleChildScrollView(
+      body: AppHexScreenBody(
+        child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: tokens.authLoginScrollPaddingHorizontal,
               vertical: tokens.authLoginScrollPaddingVertical,
@@ -196,7 +195,6 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
             ),
           ),
         ),
-      ),
     );
   }
 }
