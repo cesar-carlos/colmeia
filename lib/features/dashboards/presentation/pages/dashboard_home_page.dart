@@ -29,6 +29,9 @@ import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+const Duration _dashboardCriticalSkeletonDelay = Duration.zero;
+const Duration _dashboardSecondarySkeletonDelay = Duration(milliseconds: 120);
+
 class DashboardHomePage extends StatefulWidget {
   const DashboardHomePage({
     this.storeId,
@@ -300,6 +303,9 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                         if (shouldShowOverview) ...<Widget>[
                           AppSkeleton(
                             enabled: showSkeleton,
+                            showDelay: _dashboardCriticalSkeletonDelay,
+                            loadingSemanticsLabel:
+                                'Carregando insight principal do dashboard...',
                             child: DashboardAiInsightCard(
                               insight: resolvedOverview.aiInsight,
                               onApply: showSkeleton
@@ -327,6 +333,9 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                             SizedBox(height: tokens.sectionSpacing),
                             AppSkeleton(
                               enabled: showSkeleton,
+                              showDelay: _dashboardSecondarySkeletonDelay,
+                              loadingSemanticsLabel:
+                                  'Carregando acesso ao relatório completo...',
                               child: SizedBox(
                                 width: double.infinity,
                                 child: FilledButton.icon(
@@ -356,6 +365,9 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                           SizedBox(height: tokens.sectionSpacing),
                           AppSkeleton(
                             enabled: showSkeleton,
+                            showDelay: _dashboardCriticalSkeletonDelay,
+                            loadingSemanticsLabel:
+                                'Carregando gráfico de tendência de vendas...',
                             child: DashboardSalesTrendCard(
                               points: resolvedOverview.revenuePoints,
                             ),
@@ -363,6 +375,9 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                           SizedBox(height: tokens.sectionSpacing),
                           AppSkeleton(
                             enabled: showSkeleton,
+                            showDelay: _dashboardSecondarySkeletonDelay,
+                            loadingSemanticsLabel:
+                                'Carregando mix de categorias...',
                             child: DashboardCategoryMixCard(
                               shares: resolvedOverview.categoryShares,
                             ),
@@ -391,6 +406,8 @@ List<Widget> _summaryMetricWidgets({
     return <Widget>[
       AppSkeleton(
         enabled: showSkeleton,
+        showDelay: _dashboardCriticalSkeletonDelay,
+        loadingSemanticsLabel: 'Carregando métricas do dashboard...',
         child: DashboardSummaryCard(
           title: m.title,
           value: m.value,
@@ -413,6 +430,8 @@ List<Widget> _summaryMetricWidgets({
       ..add(
         AppSkeleton(
           enabled: showSkeleton,
+          showDelay: _dashboardSecondarySkeletonDelay,
+          loadingSemanticsLabel: 'Carregando métricas do dashboard...',
           child: DashboardSummaryCard(
             title: m.title,
             value: m.value,
@@ -431,6 +450,8 @@ List<Widget> _summaryMetricWidgets({
         Expanded(
           child: AppSkeleton(
             enabled: showSkeleton,
+            showDelay: _dashboardCriticalSkeletonDelay,
+            loadingSemanticsLabel: 'Carregando métricas do dashboard...',
             child: DashboardSummaryCard(
               title: first.title,
               value: first.value,
@@ -444,6 +465,8 @@ List<Widget> _summaryMetricWidgets({
         Expanded(
           child: AppSkeleton(
             enabled: showSkeleton,
+            showDelay: _dashboardCriticalSkeletonDelay,
+            loadingSemanticsLabel: 'Carregando métricas do dashboard...',
             child: DashboardSummaryCard(
               title: second.title,
               value: second.value,

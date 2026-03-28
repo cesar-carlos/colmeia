@@ -20,8 +20,8 @@ class AppPrimaryButton extends StatelessWidget {
     this.loadingIndicatorStrokeWidth = 2,
     this.semanticsLabel,
   }) : assert(
-         label != null || child != null,
-         'Provide label or child',
+         (label != null) ^ (child != null),
+         'Provide exactly one of label or child',
        );
 
   final VoidCallback? onPressed;
@@ -115,12 +115,18 @@ class AppPrimaryButton extends StatelessWidget {
         button: true,
         enabled: onPressed != null && !isLoading,
         label: semanticsLabel,
+        excludeSemantics: isLoading,
         child: button,
       );
-    } else if (isLoading && label == null && child == null) {
+    } else if (isLoading) {
+      final loadingAnnouncement = label != null
+          ? 'Carregando: $label'
+          : 'Carregando';
       button = Semantics(
         button: true,
-        label: 'Carregando',
+        enabled: onPressed != null && !isLoading,
+        label: loadingAnnouncement,
+        excludeSemantics: true,
         child: button,
       );
     }

@@ -26,7 +26,7 @@ class AppDistributionChartDemoPage extends StatelessWidget {
               'loading e empty.',
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppDistributionChart(
+        const AppDistributionChart(
           title: '1. Mix de categorias',
           subtitle: 'Participacao por categoria no recorte atual.',
           points: _categoryMixPoints,
@@ -42,21 +42,21 @@ class AppDistributionChartDemoPage extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppSectionCardWithHeading(
+        const AppSectionCardWithHeading(
           title: '3. Compacto sem shell',
           subtitle: 'Ideal para composicoes dentro de outra secao.',
           child: AppDistributionChart(
             points: _paymentMixPoints,
             preset: AppChartPreset.compact,
-            style: const AppDistributionChartStyle(
+            style: AppDistributionChartStyle(
               showTooltip: false,
             ),
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppDistributionChart(
+        const AppDistributionChart(
           title: '4. Estado de loading',
-          points: const <AppChartPoint>[],
+          points: <AppChartPoint>[],
           isLoading: true,
         ),
         SizedBox(height: tokens.sectionSpacing),

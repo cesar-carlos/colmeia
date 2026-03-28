@@ -26,7 +26,10 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
           title: 'Graficos',
-          subtitle: 'Barras, serie temporal, distribuicao e progresso.',
+          subtitle:
+              'Barras, funnel, radar, waterfall, bullet, heatmap, '
+              'scatter/bubble, range area, step line, area, empilhado, '
+              'combo, serie temporal, sparkline, distribuicao e progresso.',
           child: Column(
             children: <Widget>[
               _DemoEntryTile(
@@ -34,6 +37,108 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 title: 'Grafico de barras (comparativo)',
                 subtitle: 'Barras verticais, cor por item, loading e empty.',
                 onTap: () => context.push(appComparisonBarChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.stacked_bar_chart_rounded,
+                title: 'Barras empilhadas',
+                subtitle:
+                    'Vertical, horizontal, 100%, onGroupTap e paleta '
+                    'automatica.',
+                onTap: () => context.push(appStackedBarChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.area_chart_rounded,
+                title: 'Tendencia de area',
+                subtitle:
+                    'Series unica e multi-series com trackball, '
+                    'gradiente e marcadores.',
+                onTap: () => context.push(appAreaTrendChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.insert_chart_outlined_rounded,
+                title: 'Grafico combinado (barra + linha)',
+                subtitle: 'Dois eixos, data labels, onBarTap e onLineTap.',
+                onTap: () => context.push(appComboChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.account_tree_outlined,
+                title: 'Waterfall',
+                subtitle:
+                    'Ponte de variacao com positivos, negativos, '
+                    'subtotal e total.',
+                onTap: () => context.push(appWaterfallChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.straighten_rounded,
+                title: 'Bullet chart',
+                subtitle:
+                    'Realizado vs meta com faixas qualitativas '
+                    'e toque por linha.',
+                onTap: () => context.push(appBulletChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.grid_on_rounded,
+                title: 'Heatmap',
+                subtitle:
+                    'Matriz de calor para dia x hora, loja x etapa '
+                    'e densidade operacional.',
+                onTap: () => context.push(appHeatmapChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.bubble_chart_rounded,
+                title: 'Scatter / Bubble',
+                subtitle: 'Correlacao entre metricas com pontos ou bolhas.',
+                onTap: () => context.push(appScatterBubbleChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.show_chart_rounded,
+                title: 'Range area',
+                subtitle:
+                    'Faixa minima/maxima para previsao, temperatura '
+                    'ou banda de confianca.',
+                onTap: () => context.push(appRangeAreaChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.filter_alt_rounded,
+                title: 'Funnel',
+                subtitle:
+                    'Conversao por etapa para pipeline comercial, onboarding '
+                    'e processos operacionais.',
+                onTap: () => context.push(appFunnelChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.stacked_line_chart_rounded,
+                title: 'Step line',
+                subtitle:
+                    'Linha em degraus para eventos discretos, mudancas de '
+                    'faixa e ocupacao.',
+                onTap: () => context.push(appStepLineChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.track_changes_rounded,
+                title: 'Radar',
+                subtitle:
+                    'Comparativo multidimensional para scorecards, maturidade '
+                    'e benchmark de lojas.',
+                onTap: () => context.push(appRadarChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.trending_up_rounded,
+                title: 'Sparkline (micro grafico)',
+                subtitle: 'Linha de tendencia inline para KPI cards e tabelas.',
+                onTap: () => context.push(appSparklineChartDemoLocation),
               ),
               const Divider(height: 1),
               _DemoEntryTile(
@@ -125,8 +230,7 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
           child: _DemoEntryTile(
             icon: Icons.notifications_active_outlined,
             title: 'Painel de erro, banner e skeleton',
-            subtitle:
-                'AppInlineErrorPanel, InlineAlertBanner e AppSkeleton.',
+            subtitle: 'AppInlineErrorPanel, InlineAlertBanner e AppSkeleton.',
             onTap: () => context.push(appFeedbackDemoLocation),
           ),
         ),

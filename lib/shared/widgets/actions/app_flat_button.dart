@@ -88,10 +88,13 @@ class AppFlatButton extends StatelessWidget {
         label: semanticsLabel,
         child: button,
       );
-    } else if (isLoading && label == null && child == null) {
+    } else if (isLoading) {
+      final loadingAnnouncement =
+          label != null ? 'Carregando: $label' : 'Carregando';
       button = Semantics(
         button: true,
-        label: 'Carregando',
+        enabled: onPressed != null && !isLoading,
+        label: loadingAnnouncement,
         child: button,
       );
     }

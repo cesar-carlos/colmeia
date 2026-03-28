@@ -632,10 +632,12 @@ class _DeterminateBar extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: FractionallySizedBox(
                   widthFactor: clampedValue,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: barGradient == null ? barColor : null,
-                      gradient: barGradient,
+                  child: SizedBox.expand(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: barGradient == null ? barColor : null,
+                        gradient: barGradient,
+                      ),
                     ),
                   ),
                 ),

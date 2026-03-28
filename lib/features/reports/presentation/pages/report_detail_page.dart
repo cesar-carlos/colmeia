@@ -29,6 +29,11 @@ import 'package:colmeia/shared/widgets/pagination/app_inline_pagination_bar.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+const Duration _reportDetailCriticalSkeletonDelay = Duration.zero;
+const Duration _reportDetailSecondarySkeletonDelay = Duration(
+  milliseconds: 120,
+);
+
 class ReportDetailPage extends StatefulWidget {
   const ReportDetailPage({
     required this.reportId,
@@ -263,6 +268,9 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportDetailCriticalSkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando indicadores do relatório...',
                       child: AppSectionCard(
                         color: theme.colorScheme.surfaceContainerLow,
                         child: Row(
@@ -292,6 +300,9 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportDetailCriticalSkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando resumo executivo do relatório...',
                       child: AppSectionCardWithHeading(
                         title: 'Resumo executivo',
                         child: Column(
@@ -311,6 +322,9 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportDetailSecondarySkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando parâmetros do relatório...',
                       child: ReportParameterForm(
                         parameters: detail.parameters,
                         initialValues: controller.filters,
@@ -346,6 +360,9 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportDetailSecondarySkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando gráfico comparativo...',
                       child: AppComparisonBarChart<ReportResultRow>(
                         title: 'Comparativo de faturamento por vendedor',
                         subtitle: 'Leitura rapida baseada no resultado atual.',
@@ -363,11 +380,16 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportDetailSecondarySkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando tabela de resultados...',
                       child: ReportResultsGrid(rows: detail.rows),
                     ),
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportDetailSecondarySkeletonDelay,
+                      loadingSemanticsLabel: 'Carregando paginação...',
                       child: AppSectionCard(
                         child: AppInlinePaginationBar(
                           centerLabel:

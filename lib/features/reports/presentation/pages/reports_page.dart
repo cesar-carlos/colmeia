@@ -26,6 +26,9 @@ import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+const Duration _reportsCriticalSkeletonDelay = Duration.zero;
+const Duration _reportsSecondarySkeletonDelay = Duration(milliseconds: 120);
+
 class ReportsPage extends StatefulWidget {
   const ReportsPage({super.key});
 
@@ -225,6 +228,9 @@ class _ReportsPageState extends State<ReportsPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportsCriticalSkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando indicadores gerais de relatórios...',
                       child: AppSectionCard(
                         color: theme.colorScheme.surfaceContainerLow,
                         child: Row(
@@ -254,6 +260,9 @@ class _ReportsPageState extends State<ReportsPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportsCriticalSkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando lista de relatórios liberados...',
                       child: AppSectionCardWithHeading(
                         title: 'Rotas parametrizadas de relatório',
                         child: Column(
@@ -294,6 +303,9 @@ class _ReportsPageState extends State<ReportsPage> {
                     if (parameters.isNotEmpty)
                       AppSkeleton(
                         enabled: showSkeleton,
+                        showDelay: _reportsSecondarySkeletonDelay,
+                        loadingSemanticsLabel:
+                            'Carregando formulário de filtros...',
                         child: ReportParameterForm(
                           parameters: parameters,
                           onApply: (filters) {
@@ -347,6 +359,9 @@ class _ReportsPageState extends State<ReportsPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportsSecondarySkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando gráfico comparativo de faturamento...',
                       child: AppComparisonBarChart<ReportResultRow>(
                         title: 'Comparativo de faturamento por vendedor',
                         subtitle: 'Leitura rapida baseada no resultado atual.',
@@ -364,6 +379,9 @@ class _ReportsPageState extends State<ReportsPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
+                      showDelay: _reportsSecondarySkeletonDelay,
+                      loadingSemanticsLabel:
+                          'Carregando grade de resultados...',
                       child: ReportResultsGrid(rows: rows),
                     ),
                   ],

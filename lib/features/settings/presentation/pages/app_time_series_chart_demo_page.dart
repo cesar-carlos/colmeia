@@ -48,7 +48,7 @@ class AppTimeSeriesChartDemoPage extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppSectionCardWithHeading(
+        const AppSectionCardWithHeading(
           title: '3. Compacto sem shell',
           subtitle: 'Uso interno dentro de outro card.',
           child: AppTimeSeriesChart(
@@ -61,9 +61,9 @@ class AppTimeSeriesChartDemoPage extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppTimeSeriesChart(
+        const AppTimeSeriesChart(
           title: '4. Estado de loading',
-          points: const <AppChartPoint>[],
+          points: <AppChartPoint>[],
           isLoading: true,
         ),
         SizedBox(height: tokens.sectionSpacing),

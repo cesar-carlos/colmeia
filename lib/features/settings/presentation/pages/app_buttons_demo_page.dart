@@ -60,6 +60,7 @@ class AppButtonsDemoPage extends StatelessWidget {
               ),
               SizedBox(height: tokens.gapSm),
               AppPrimaryButton(
+                label: 'Carregando',
                 isLoading: true,
                 onPressed: () => showTap('Primary loading'),
               ),
@@ -97,6 +98,7 @@ class AppButtonsDemoPage extends StatelessWidget {
               ),
               SizedBox(height: tokens.gapSm),
               AppSecondaryButton(
+                label: 'Carregando',
                 isLoading: true,
                 onPressed: () => showTap('Secondary loading'),
               ),
