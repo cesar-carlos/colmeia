@@ -23,6 +23,8 @@ layout, builders e performance, use `flutter_widgets.mdc`.
 - Use `Material 3` customizado como base visual do app
 - Construa identidade propria com tokens centralizados de cor, tipografia,
   spacing, radius, elevacao e motion
+- Em Colmeia, use a paleta nomeada de `AppColors` como base das decisoes
+  cromaticas reutilizaveis dos componentes
 - Prefira `ThemeExtension` para tokens sem encaixe claro em `ThemeData`
 - Extraia componentes de app reutilizaveis antes de repetir o mesmo padrao visual
 - Garanta suporte consistente a light e dark theme
@@ -36,6 +38,8 @@ layout, builders e performance, use `flutter_widgets.mdc`.
 - Destaque o que e primario com tamanho, peso, contraste e espaco
 - Use whitespace para separar grupos logicos
 - Limite a paleta a um sistema coerente; evite cores "soltas"
+- Nao introduza hex literais ou tons paralelos quando `AppColors` ja cobrir a
+  necessidade visual
 - Mantenha tipografia via tema e respeite escalonamento de fonte do sistema
 
 ## Navegacao e Interacao Mobile

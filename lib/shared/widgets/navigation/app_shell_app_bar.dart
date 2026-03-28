@@ -1,6 +1,7 @@
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_user_initials.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +15,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final colors = theme.appColors;
     final userContext = context.watch<CurrentUserContextController>();
     final userScope = userContext.userScope;
 
@@ -57,8 +58,8 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onTap: () => context.goTo(AppRoute.settings),
                 child: CircleAvatar(
                   radius: 18,
-                  backgroundColor: cs.primaryContainer,
-                  foregroundColor: cs.onPrimaryContainer,
+                  backgroundColor: colors.primaryContainer,
+                  foregroundColor: colors.onPrimaryContainer,
                   child: Text(
                     appShellUserInitials(userScope.name),
                     style: theme.textTheme.labelLarge?.copyWith(

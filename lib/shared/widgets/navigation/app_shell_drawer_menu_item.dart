@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -22,18 +23,18 @@ class AppShellDrawerMenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final cs = theme.colorScheme;
+    final colors = theme.appColors;
 
     final borderRadius = BorderRadius.circular(tokens.inlineAlertCornerRadius);
-    final iconColor = selected ? cs.onPrimaryContainer : cs.onSurface;
+    final iconColor = selected ? colors.onPrimaryContainer : colors.onSurface;
     final titleStyle = theme.textTheme.titleSmall?.copyWith(
       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-      color: selected ? cs.onPrimaryContainer : null,
+      color: selected ? colors.onPrimaryContainer : null,
     );
     final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
       color: selected
-          ? cs.onPrimaryContainer.withValues(alpha: 0.8)
-          : cs.onSurfaceVariant,
+          ? colors.onPrimaryContainer.withValues(alpha: 0.8)
+          : colors.onSurfaceVariant,
     );
 
     return Semantics(
@@ -41,7 +42,7 @@ class AppShellDrawerMenuItem extends StatelessWidget {
       selected: selected,
       label: subtitle == null ? title : '$title, $subtitle',
       child: Material(
-        color: selected ? cs.primaryContainer : Colors.transparent,
+        color: selected ? colors.primaryContainer : Colors.transparent,
         borderRadius: borderRadius,
         clipBehavior: Clip.antiAlias,
         child: InkWell(

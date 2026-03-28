@@ -34,10 +34,10 @@ flutter build apk --dart-define=SENTRY_DSN=https://...@...ingest.sentry.io/...
 
 ## Documentação adicional neste repositório
 
-| Caminho | Conteúdo (resumo) |
-|--------|-------------------|
-| `docs/analysis/` | Análises em texto |
-| `docs/design/` | Referências de design |
+| Caminho          | Conteúdo (resumo)     |
+| ---------------- | --------------------- |
+| `docs/analysis/` | Análises em texto     |
+| `docs/design/`   | Referências de design |
 
 ## CI e qualidade local
 
@@ -54,15 +54,15 @@ dart format lib test
 
 ## Pontos de entrada no código
 
-| O quê | Onde |
-|------|------|
-| `main` | `lib/main.dart` → `bootstrap()` |
-| Bootstrap (Sentry, DI, `runApp`) | `lib/app/bootstrap.dart` |
-| Tema e tokens | `lib/app/theme/` (`app_theme.dart`, `app_theme_tokens` / extensões) |
-| Rotas e nomes | `lib/app/router/app_routes.dart`, composição em `app_router.dart` |
-| Injeção de dependência | `lib/core/di/injector*.dart` |
-| Cliente HTTP | `lib/core/network/app_dio_client.dart` |
-| Cache local (Hive) e prefixos de chave | `lib/core/cache/`, datasources em `features/*/data/` |
+| O quê                                  | Onde                                                                |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| `main`                                 | `lib/main.dart` → `bootstrap()`                                     |
+| Bootstrap (Sentry, DI, `runApp`)       | `lib/app/bootstrap.dart`                                            |
+| Tema e tokens                          | `lib/app/theme/` (`app_theme.dart`, `app_theme_tokens` / extensões) |
+| Rotas e nomes                          | `lib/app/router/app_routes.dart`, composição em `app_router.dart`   |
+| Injeção de dependência                 | `lib/core/di/injector*.dart`                                        |
+| Cliente HTTP                           | `lib/core/network/app_dio_client.dart`                              |
+| Cache local (Hive) e prefixos de chave | `lib/core/cache/`, datasources em `features/*/data/`                |
 
 ## Plataformas e escopo
 
@@ -85,30 +85,30 @@ dart format lib test
 - O CI atual só valida código (`analyze` + `test`); **não** publica nas lojas — deploy é manual ou outro pipeline.
 - Completar pelo time quando o processo existir:
 
-| Item | Valor / link |
-|------|----------------|
-| Onde publicar | Play Console / App Store Connect / MDM / outro: *a definir* |
-| Canais (interno, beta, produção) | *a definir* |
-| Quem aprova release | *a definir* |
+| Item                             | Valor / link                                                |
+| -------------------------------- | ----------------------------------------------------------- |
+| Onde publicar                    | Play Console / App Store Connect / MDM / outro: _a definir_ |
+| Canais (interno, beta, produção) | _a definir_                                                 |
+| Quem aprova release              | _a definir_                                                 |
 
 ## Backend e integrações
 
 Comportamento **já implementado** no app (ver `AppEnvironment` + `AppDioClient`):
 
-| Tópico | Detalhe |
-|--------|---------|
-| Modo fake | `USE_FAKE_BACKEND` tem **padrão `true`**: usa implementações em memória (`FakeAuthRemoteDataSource`, etc.) sem rede real. |
-| API real | Definir `--dart-define=USE_FAKE_BACKEND=false` **e** `API_BASE_URL=https://...` (sem barra final desnecessária; o Dio usa como base). Se `API_BASE_URL` estiver vazio com fake desligado, o app **registra um aviso** no log e chamadas relativas podem falhar. |
-| Transporte | JSON via `dio`; timeouts de **15 s** (connect, receive, send). |
-| Sessão | Tokens em armazenamento seguro; backend é fonte de verdade para autorização (`project_specifics`). |
+| Tópico     | Detalhe                                                                                                                                                                                                                                                         |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Modo fake  | `USE_FAKE_BACKEND` tem **padrão `true`**: usa implementações em memória (`FakeAuthRemoteDataSource`, etc.) sem rede real.                                                                                                                                       |
+| API real   | Definir `--dart-define=USE_FAKE_BACKEND=false` **e** `API_BASE_URL=https://...` (sem barra final desnecessária; o Dio usa como base). Se `API_BASE_URL` estiver vazio com fake desligado, o app **registra um aviso** no log e chamadas relativas podem falhar. |
+| Transporte | JSON via `dio`; timeouts de **15 s** (connect, receive, send).                                                                                                                                                                                                  |
+| Sessão     | Tokens em armazenamento seguro; backend é fonte de verdade para autorização (`project_specifics`).                                                                                                                                                              |
 
 Anotações **externas ao repositório** (preencher):
 
-| Item | Onde anotar |
-|------|-------------|
-| URL base por ambiente (dev / homolog / prod) | Tabela ou link abaixo |
-| Contrato da API (OpenAPI, Postman, repo backend) | *link ou caminho* |
-| Auth corporativa (provedor, refresh, escopos) | *resumo* |
+| Item                                             | Onde anotar           |
+| ------------------------------------------------ | --------------------- |
+| URL base por ambiente (dev / homolog / prod)     | Tabela ou link abaixo |
+| Contrato da API (OpenAPI, Postman, repo backend) | _link ou caminho_     |
+| Auth corporativa (provedor, refresh, escopos)    | _resumo_              |
 
 ```
 Dev:        (a definir)
@@ -120,12 +120,12 @@ Produção:   (a definir)
 
 Substituir os placeholders quando o time definir donos e canais:
 
-| Papel / necessidade | Contato ou link |
-|---------------------|-----------------|
-| Owner técnico ou produto | *a definir* |
-| Canal do time (Slack, Teams, etc.) | *a definir* |
-| Incidentes em produção | *a definir* (ex.: projeto Sentry, runbook, plantão) |
-| Documentação de produto (Confluence, Notion, etc.) | *a definir* |
+| Papel / necessidade                                | Contato ou link                                     |
+| -------------------------------------------------- | --------------------------------------------------- |
+| Owner técnico ou produto                           | _a definir_                                         |
+| Canal do time (Slack, Teams, etc.)                 | _a definir_                                         |
+| Incidentes em produção                             | _a definir_ (ex.: projeto Sentry, runbook, plantão) |
+| Documentação de produto (Confluence, Notion, etc.) | _a definir_                                         |
 
 ## Ideias extras que valem anotação
 
@@ -137,4 +137,4 @@ Substituir os placeholders quando o time definir donos e canais:
 
 ---
 
-*Atualize este arquivo quando houver decisões novas (integrações, URLs, convenções de time).*
+_Atualize este arquivo quando houver decisões novas (integrações, URLs, convenções de time)._

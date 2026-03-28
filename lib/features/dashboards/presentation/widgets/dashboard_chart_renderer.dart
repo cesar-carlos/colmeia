@@ -1,7 +1,6 @@
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_chart_point.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_time_series_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -32,15 +31,13 @@ class DashboardChartRenderer extends StatelessWidget {
         )
         .toList();
 
-    return AppChartShell(
+    return AppTimeSeriesChart(
       title: title,
       subtitle: subtitle,
       titleTrailing: titleTrailing,
       belowSubtitle: belowSubtitle,
-      child: AppTimeSeriesChart(
-        points: chartPoints,
-        preset: AppChartPreset.standard,
-      ),
+      points: chartPoints,
+      preset: AppChartPreset.standard,
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/value_objects/report_id.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -12,14 +13,15 @@ import 'package:colmeia/features/reports/presentation/controllers/reports_contro
 import 'package:colmeia/features/reports/presentation/routes/report_routes.dart';
 import 'package:colmeia/features/reports/presentation/widgets/report_parameter_form.dart';
 import 'package:colmeia/features/reports/presentation/widgets/report_results_grid.dart';
+import 'package:colmeia/features/user_context/domain/user_context_placeholders.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -32,7 +34,6 @@ class ReportsPage extends StatefulWidget {
 }
 
 class _ReportsPageState extends State<ReportsPage> {
-  static const String _placeholderStoreId = 'loading-store';
   static const List<ReportDefinition> _skeletonReports = <ReportDefinition>[
     ReportDefinition(
       id: 'sales_overview',
@@ -96,17 +97,6 @@ class _ReportsPageState extends State<ReportsPage> {
 
   late final ReportsController _controller;
   String? _lastLoadSignature;
-
-  List<AppChartPoint> _buildSellerRevenuePoints(List<ReportResultRow> rows) {
-    return rows
-        .map(
-          (row) => AppChartPoint(
-            label: row.seller,
-            value: row.revenue,
-          ),
-        )
-        .toList();
-  }
 
   @override
   void initState() {
@@ -174,7 +164,7 @@ class _ReportsPageState extends State<ReportsPage> {
               final hasGrantedReports = reports.isNotEmpty;
               if (session != null &&
                   !userContext.isLoading &&
-                  activeStore.id != _placeholderStoreId) {
+                  !UserContextPlaceholders.isLoadingStoreId(activeStore.id)) {
                 _scheduleOverviewLoad(
                   userId: session.userId,
                   activeStoreId: StoreId(activeStore.id),
@@ -182,7 +172,8 @@ class _ReportsPageState extends State<ReportsPage> {
               }
 
               Future<void> onRefresh() async {
-                if (session == null || activeStore.id == _placeholderStoreId) {
+                if (session == null ||
+                    UserContextPlaceholders.isLoadingStoreId(activeStore.id)) {
                   return;
                 }
                 await controller.loadOverview(
@@ -239,19 +230,19 @@ class _ReportsPageState extends State<ReportsPage> {
                         child: Row(
                           children: <Widget>[
                             Expanded(
-                              child: _ReportsOverviewMetric(
+                              child: AppCompactKpiStat(
                                 label: 'Rotas',
                                 value: reports.length.toString(),
                               ),
                             ),
                             Expanded(
-                              child: _ReportsOverviewMetric(
+                              child: AppCompactKpiStat(
                                 label: 'Filtros',
                                 value: parameters.length.toString(),
                               ),
                             ),
                             Expanded(
-                              child: _ReportsOverviewMetric(
+                              child: AppCompactKpiStat(
                                 label: 'Linhas',
                                 value: rows.length.toString(),
                               ),
@@ -263,17 +254,11 @@ class _ReportsPageState extends State<ReportsPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
-                      child: AppSectionCard(
+                      child: AppSectionCardWithHeading(
+                        title: 'Rotas parametrizadas de relatório',
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            Text(
-                              'Rotas parametrizadas de relatório',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(height: tokens.gapMd),
                             ...reports.map((report) {
                               return ListTile(
                                 contentPadding: EdgeInsets.zero,
@@ -332,10 +317,13 @@ class _ReportsPageState extends State<ReportsPage> {
                         case final String errorMessage) ...<Widget>[
                       SizedBox(height: tokens.sectionSpacing),
                       AppInlineErrorPanel(
+                        title: 'Nao foi possivel carregar os relatorios',
                         message: errorMessage,
                         onRetry:
                             session != null &&
-                                activeStore.id != _placeholderStoreId
+                                !UserContextPlaceholders.isLoadingStoreId(
+                                  activeStore.id,
+                                )
                             ? () {
                                 unawaited(
                                   controller.loadOverview(
@@ -359,11 +347,17 @@ class _ReportsPageState extends State<ReportsPage> {
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(
                       enabled: showSkeleton,
-                      child: AppChartShell(
+                      child: AppComparisonBarChart<ReportResultRow>(
                         title: 'Comparativo de faturamento por vendedor',
-                        subtitle: 'Leitura rápida baseada no resultado atual.',
-                        child: AppComparisonBarChart(
-                          points: _buildSellerRevenuePoints(rows),
+                        subtitle: 'Leitura rapida baseada no resultado atual.',
+                        items: rows,
+                        labelBuilder: (row) => row.seller,
+                        valueBuilder: (row) => row.revenue,
+                        dataLabelBuilder: (row, value) =>
+                            AppBrFormatters.compactCurrency(value),
+                        style: AppComparisonBarChartStyle(
+                          yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+                          showDataLabels: true,
                         ),
                       ),
                     ),
@@ -377,40 +371,6 @@ class _ReportsPageState extends State<ReportsPage> {
               );
             },
           ),
-    );
-  }
-}
-
-class _ReportsOverviewMetric extends StatelessWidget {
-  const _ReportsOverviewMetric({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-        Text(
-          value,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
     );
   }
 }

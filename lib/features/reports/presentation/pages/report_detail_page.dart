@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/value_objects/report_id.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -13,15 +14,18 @@ import 'package:colmeia/features/reports/domain/entities/report_summary_metric.d
 import 'package:colmeia/features/reports/presentation/controllers/report_detail_controller.dart';
 import 'package:colmeia/features/reports/presentation/widgets/report_parameter_form.dart';
 import 'package:colmeia/features/reports/presentation/widgets/report_results_grid.dart';
+import 'package:colmeia/features/user_context/domain/user_context_placeholders.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
+import 'package:colmeia/shared/widgets/metrics/app_executive_metric_tile.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
+import 'package:colmeia/shared/widgets/pagination/app_inline_pagination_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -40,7 +44,6 @@ class ReportDetailPage extends StatefulWidget {
 }
 
 class _ReportDetailPageState extends State<ReportDetailPage> {
-  static const String _placeholderStoreId = 'loading-store';
   static final ReportDetail _skeletonDetail = ReportDetail(
     definition: const ReportDefinition(
       id: 'sales_overview',
@@ -141,17 +144,6 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     });
   }
 
-  List<AppChartPoint> _buildSellerRevenuePoints(List<ReportResultRow> rows) {
-    return rows
-        .map(
-          (row) => AppChartPoint(
-            label: row.seller,
-            value: row.revenue,
-          ),
-        )
-        .toList(growable: false);
-  }
-
   @override
   void dispose() {
     _controller.dispose();
@@ -180,7 +172,9 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
               );
               if (session != null &&
                   !userContext.isLoading &&
-                  resolvedStore.id != _placeholderStoreId) {
+                  !UserContextPlaceholders.isLoadingStoreId(
+                    resolvedStore.id,
+                  )) {
                 _scheduleLoad(
                   userId: session.userId,
                   storeId: StoreId(resolvedStore.id),
@@ -190,279 +184,231 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
               final detail = controller.detail ?? _skeletonDetail;
               final showSkeleton =
                   controller.isLoading && controller.detail == null;
+              Future<void> onRefresh() async {
+                if (session == null ||
+                    UserContextPlaceholders.isLoadingStoreId(
+                      resolvedStore.id,
+                    )) {
+                  return;
+                }
 
-              return ListView(
-                padding: EdgeInsets.all(tokens.contentSpacing),
-                children: <Widget>[
-                  AppShellPageIntro(
-                    eyebrow: 'Análise detalhada',
-                    title: detail.definition.title,
-                    subtitle: detail.definition.subtitle,
-                    footer: Wrap(
-                      spacing: tokens.gapSm,
-                      runSpacing: tokens.gapSm,
-                      children: <Widget>[
-                        Chip(label: Text(resolvedStore.name)),
-                        Chip(label: Text(detail.generatedAtLabel)),
-                        Chip(
-                          label: Text(
-                            'Página ${detail.pageInfo.currentPage}'
-                            '/${detail.pageInfo.totalPages}',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (resolvedStoreResult.exceptionOrNull()
-                      case final failure?) ...<Widget>[
-                    SizedBox(height: tokens.gapMd),
-                    AppInlineErrorPanel(
-                      message: failure.displayMessage,
-                      onRetry: session != null
-                          ? () {
-                              unawaited(userContext.reloadUserContext());
-                            }
-                          : null,
-                    ),
-                  ],
-                  if (controller.errorMessage
-                      case final String errorMessage) ...<Widget>[
-                    SizedBox(height: tokens.gapMd),
-                    AppInlineErrorPanel(
-                      message: errorMessage,
-                      onRetry:
-                          session != null &&
-                              resolvedStore.id != _placeholderStoreId
-                          ? () {
-                              unawaited(
-                                _controller.initialize(
-                                  userId: session.userId,
-                                  reportId: widget.reportId,
-                                  storeId: StoreId(resolvedStore.id),
-                                ),
-                              );
-                            }
-                          : null,
-                    ),
-                  ],
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: AppSectionCard(
-                      color: theme.colorScheme.surfaceContainerLow,
-                      child: Row(
+                await controller.initialize(
+                  userId: session.userId,
+                  reportId: widget.reportId,
+                  storeId: StoreId(resolvedStore.id),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: onRefresh,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.all(tokens.contentSpacing),
+                  children: <Widget>[
+                    AppShellPageIntro(
+                      eyebrow: 'Análise detalhada',
+                      title: detail.definition.title,
+                      subtitle: detail.definition.subtitle,
+                      footer: Wrap(
+                        spacing: tokens.gapSm,
+                        runSpacing: tokens.gapSm,
                         children: <Widget>[
-                          Expanded(
-                            child: _ReportDetailKpi(
-                              label: 'Métricas',
-                              value: detail.summaryMetrics.length.toString(),
-                            ),
-                          ),
-                          Expanded(
-                            child: _ReportDetailKpi(
-                              label: 'Linhas',
-                              value: detail.rows.length.toString(),
-                            ),
-                          ),
-                          Expanded(
-                            child: _ReportDetailKpi(
-                              label: 'Parâmetros',
-                              value: detail.parameters.length.toString(),
+                          Chip(label: Text(resolvedStore.name)),
+                          Chip(label: Text(detail.generatedAtLabel)),
+                          Chip(
+                            label: Text(
+                              'Página ${detail.pageInfo.currentPage}'
+                              '/${detail.pageInfo.totalPages}',
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: AppSectionCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            'Resumo executivo',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(height: tokens.gapMd),
-                          ...detail.summaryMetrics.map((metric) {
-                            return Padding(
-                              padding: EdgeInsets.only(bottom: tokens.gapMd),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  Text(
-                                    metric.title,
-                                    style: theme.textTheme.labelLarge,
+                    if (resolvedStoreResult.exceptionOrNull()
+                        case final failure?) ...<Widget>[
+                      SizedBox(height: tokens.gapMd),
+                      AppInlineErrorPanel(
+                        title: 'Loja indisponivel',
+                        message: failure.displayMessage,
+                        onRetry: session != null
+                            ? () {
+                                unawaited(userContext.reloadUserContext());
+                              }
+                            : null,
+                      ),
+                    ],
+                    if (controller.errorMessage
+                        case final String errorMessage) ...<Widget>[
+                      SizedBox(height: tokens.gapMd),
+                      AppInlineErrorPanel(
+                        title: 'Nao foi possivel carregar o relatorio',
+                        message: errorMessage,
+                        onRetry:
+                            session != null &&
+                                !UserContextPlaceholders.isLoadingStoreId(
+                                  resolvedStore.id,
+                                )
+                            ? () {
+                                unawaited(
+                                  _controller.initialize(
+                                    userId: session.userId,
+                                    reportId: widget.reportId,
+                                    storeId: StoreId(resolvedStore.id),
                                   ),
-                                  SizedBox(height: tokens.gapXs),
-                                  Text(
-                                    metric.value,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  SizedBox(height: tokens.gapXs),
-                                  Text(
-                                    metric.detailLabel,
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                ],
+                                );
+                              }
+                            : null,
+                      ),
+                    ],
+                    SizedBox(height: tokens.sectionSpacing),
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: AppSectionCard(
+                        color: theme.colorScheme.surfaceContainerLow,
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: AppCompactKpiStat(
+                                label: 'Métricas',
+                                value: detail.summaryMetrics.length.toString(),
                               ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: ReportParameterForm(
-                      parameters: detail.parameters,
-                      initialValues: controller.filters,
-                      onApply: (filters) {
-                        if (session == null) {
-                          return;
-                        }
-
-                        unawaited(
-                          controller.applyFilters(
-                            userId: session.userId,
-                            reportId: widget.reportId,
-                            storeId: StoreId(resolvedStore.id),
-                            filters: filters,
-                          ),
-                        );
-                      },
-                      onClear: () {
-                        if (session == null) {
-                          return;
-                        }
-
-                        unawaited(
-                          controller.clearFilters(
-                            userId: session.userId,
-                            reportId: widget.reportId,
-                            storeId: StoreId(resolvedStore.id),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: AppChartShell(
-                      title: 'Faturamento por vendedor',
-                      subtitle:
-                          'Recorte atual considerando a loja selecionada.',
-                      child: AppComparisonBarChart(
-                        points: _buildSellerRevenuePoints(detail.rows),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: ReportResultsGrid(rows: detail.rows),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    child: AppSectionCard(
-                      child: Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed:
-                                  session != null &&
-                                      controller.canLoadPreviousPage &&
-                                      !controller.isLoading
-                                  ? () {
-                                      unawaited(
-                                        controller.loadPreviousPage(
-                                          userId: session.userId,
-                                          reportId: widget.reportId,
-                                          storeId: StoreId(resolvedStore.id),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              child: const Text('Pagina anterior'),
                             ),
-                          ),
-                          SizedBox(width: tokens.gapMd),
-                          Text(
-                            'Pagina ${detail.pageInfo.currentPage} de '
-                            '${detail.pageInfo.totalPages}',
-                            style: theme.textTheme.labelLarge,
-                          ),
-                          SizedBox(width: tokens.gapMd),
-                          Expanded(
-                            child: FilledButton(
-                              onPressed:
-                                  session != null &&
-                                      controller.canLoadNextPage &&
-                                      !controller.isLoading
-                                  ? () {
-                                      unawaited(
-                                        controller.loadNextPage(
-                                          userId: session.userId,
-                                          reportId: widget.reportId,
-                                          storeId: StoreId(resolvedStore.id),
-                                        ),
-                                      );
-                                    }
-                                  : null,
-                              child: const Text('Proxima pagina'),
+                            Expanded(
+                              child: AppCompactKpiStat(
+                                label: 'Linhas',
+                                value: detail.rows.length.toString(),
+                              ),
                             ),
-                          ),
-                        ],
+                            Expanded(
+                              child: AppCompactKpiStat(
+                                label: 'Parâmetros',
+                                value: detail.parameters.length.toString(),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: tokens.sectionSpacing),
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: AppSectionCardWithHeading(
+                        title: 'Resumo executivo',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: detail.summaryMetrics
+                              .map(
+                                (metric) => AppExecutiveMetricTile(
+                                  label: metric.title,
+                                  value: metric.value,
+                                  detailLabel: metric.detailLabel,
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: tokens.sectionSpacing),
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: ReportParameterForm(
+                        parameters: detail.parameters,
+                        initialValues: controller.filters,
+                        onApply: (filters) {
+                          if (session == null) {
+                            return;
+                          }
+
+                          unawaited(
+                            controller.applyFilters(
+                              userId: session.userId,
+                              reportId: widget.reportId,
+                              storeId: StoreId(resolvedStore.id),
+                              filters: filters,
+                            ),
+                          );
+                        },
+                        onClear: () {
+                          if (session == null) {
+                            return;
+                          }
+
+                          unawaited(
+                            controller.clearFilters(
+                              userId: session.userId,
+                              reportId: widget.reportId,
+                              storeId: StoreId(resolvedStore.id),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: tokens.sectionSpacing),
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: AppComparisonBarChart<ReportResultRow>(
+                        title: 'Comparativo de faturamento por vendedor',
+                        subtitle: 'Leitura rapida baseada no resultado atual.',
+                        items: detail.rows,
+                        labelBuilder: (row) => row.seller,
+                        valueBuilder: (row) => row.revenue,
+                        dataLabelBuilder: (row, value) =>
+                            AppBrFormatters.compactCurrency(value),
+                        style: AppComparisonBarChartStyle(
+                          yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+                          showDataLabels: true,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: tokens.sectionSpacing),
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: ReportResultsGrid(rows: detail.rows),
+                    ),
+                    SizedBox(height: tokens.sectionSpacing),
+                    AppSkeleton(
+                      enabled: showSkeleton,
+                      child: AppSectionCard(
+                        child: AppInlinePaginationBar(
+                          centerLabel:
+                              'Pagina ${detail.pageInfo.currentPage} de '
+                              '${detail.pageInfo.totalPages}',
+                          onPrevious:
+                              session != null &&
+                                  controller.canLoadPreviousPage &&
+                                  !controller.isLoading
+                              ? () {
+                                  unawaited(
+                                    controller.loadPreviousPage(
+                                      userId: session.userId,
+                                      reportId: widget.reportId,
+                                      storeId: StoreId(resolvedStore.id),
+                                    ),
+                                  );
+                                }
+                              : null,
+                          onNext:
+                              session != null &&
+                                  controller.canLoadNextPage &&
+                                  !controller.isLoading
+                              ? () {
+                                  unawaited(
+                                    controller.loadNextPage(
+                                      userId: session.userId,
+                                      reportId: widget.reportId,
+                                      storeId: StoreId(resolvedStore.id),
+                                    ),
+                                  );
+                                }
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
-    );
-  }
-}
-
-class _ReportDetailKpi extends StatelessWidget {
-  const _ReportDetailKpi({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
-        ),
-        Text(
-          value,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
     );
   }
 }

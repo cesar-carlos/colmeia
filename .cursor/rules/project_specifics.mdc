@@ -210,6 +210,14 @@ lib/
 - Use `Material 3` customizado como base visual do app
 - Centralize cores, tipografia, spacing, radius, elevation e motion em tokens
 - Prefira `ThemeExtension` para tokens customizados
+- Trate `lib/shared/design_system/app_colors.dart` (`AppColors`) como a fonte de
+  verdade para a paleta nomeada do produto
+- Ao precisar de uma cor de identidade, prefira `AppColors` em vez de criar
+  novos `Color(...)`, hex literais ou variantes ad hoc em widgets/features
+- Use `ColorScheme` para papeis semanticos do Material e `AppThemeTokens` para
+  tokens complementares; nao duplique a mesma cor-base em mais de uma fonte
+- Se uma nova cor de marca ou tom reutilizavel for necessario, adicione primeiro
+  em `AppColors` e depois derive o restante do tema a partir dessa base
 - Extraia componentes de app reutilizaveis para consolidar a identidade visual
 - Evite hardcodes visuais em features; consuma sempre o tema e os componentes do
   design system

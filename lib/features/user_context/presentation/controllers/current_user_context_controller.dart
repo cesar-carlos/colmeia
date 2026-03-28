@@ -14,6 +14,7 @@ import 'package:colmeia/features/user_context/domain/entities/report_access_gran
 import 'package:colmeia/features/user_context/domain/entities/store_scope.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_scope.dart';
+import 'package:colmeia/features/user_context/domain/user_context_placeholders.dart';
 import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -38,7 +39,8 @@ class CurrentUserContextController extends ChangeNotifier {
        _persistActiveStoreUseCase = persistActiveStoreUseCase,
        _clearActiveStoreUseCase = clearActiveStoreUseCase,
        _userScope = userScope ?? _placeholderUserScope,
-       _activeStoreId = activeStoreId ?? _placeholderActiveStoreId {
+       _activeStoreId =
+           activeStoreId ?? UserContextPlaceholders.loadingStoreId {
     if (_authController != null) {
       _authController.addListener(_handleAuthStateChanged);
       _handleAuthStateChanged();
@@ -100,13 +102,15 @@ class CurrentUserContextController extends ChangeNotifier {
         activeStoreId: '03',
       );
 
-  static const String _placeholderActiveStoreId = 'loading-store';
   static const UserScope _placeholderUserScope = UserScope(
     userId: 'loading-user',
     name: 'Carregando usuario',
     roleLabel: 'Sincronizando acesso',
     allowedStores: <StoreScope>[
-      StoreScope(id: _placeholderActiveStoreId, name: 'Carregando lojas...'),
+      StoreScope(
+        id: UserContextPlaceholders.loadingStoreId,
+        name: 'Carregando lojas...',
+      ),
     ],
     permissions: <UserPermission>{
       UserPermission.viewDashboard,
@@ -237,7 +241,7 @@ class CurrentUserContextController extends ChangeNotifier {
       final previousUserId = _syncedUserId;
       _syncedUserId = null;
       _userScope = _placeholderUserScope;
-      _activeStoreId = _placeholderActiveStoreId;
+      _activeStoreId = UserContextPlaceholders.loadingStoreId;
       _errorMessage = null;
       _isLoading = false;
       notifyListeners();
@@ -265,7 +269,7 @@ class CurrentUserContextController extends ChangeNotifier {
       },
       (failure) {
         _userScope = _placeholderUserScope;
-        _activeStoreId = _placeholderActiveStoreId;
+        _activeStoreId = UserContextPlaceholders.loadingStoreId;
         _syncedUserId = session.userId;
         _errorMessage = failure.displayMessage;
       },

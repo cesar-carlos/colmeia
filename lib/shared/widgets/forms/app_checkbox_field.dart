@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -21,6 +22,7 @@ class AppCheckboxField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.appColors;
     final tokens = theme.extension<AppThemeTokens>();
     final side = tokens?.formControlCheckboxSide ?? 20;
     final gap = tokens?.formLabelToControlGap ?? 8;
@@ -50,8 +52,8 @@ class AppCheckboxField extends StatelessWidget {
                   label,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: enabled
-                        ? theme.colorScheme.onSurfaceVariant
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                        ? colors.onSurfaceVariant
+                        : colors.onSurface.withValues(alpha: 0.38),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

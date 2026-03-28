@@ -5,15 +5,15 @@ import 'package:flutter/material.dart';
 class AppChartShell extends StatelessWidget {
   const AppChartShell({
     required this.title,
-    required this.subtitle,
     required this.child,
     super.key,
+    this.subtitle,
     this.titleTrailing,
     this.belowSubtitle,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final Widget child;
 
   /// e.g. link action aligned with the title block.
@@ -44,8 +44,10 @@ class AppChartShell extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: tokens.gapXs),
-                    Text(subtitle, style: theme.textTheme.bodyMedium),
+                    if (subtitle != null) ...<Widget>[
+                      SizedBox(height: tokens.gapXs),
+                      Text(subtitle!, style: theme.textTheme.bodyMedium),
+                    ],
                   ],
                 ),
               ),

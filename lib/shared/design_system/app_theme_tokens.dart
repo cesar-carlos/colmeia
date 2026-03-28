@@ -1,5 +1,6 @@
 import 'dart:ui' show lerpDouble;
 
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
@@ -10,6 +11,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     required this.chartSeriesSecondary,
     required this.chartSeriesTertiary,
     required this.cardRadius,
+    required this.cardOutlineWidth,
     required this.gapXs,
     required this.gapSm,
     required this.gapMd,
@@ -47,6 +49,53 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     required this.actionButtonMinHeight,
   });
 
+  factory AppThemeTokens.fromColors(AppColors colors) {
+    return AppThemeTokens(
+      success: colors.tertiary,
+      warning: colors.secondary,
+      chartSeriesPrimary: colors.primary,
+      chartSeriesSecondary: colors.secondary,
+      chartSeriesTertiary: colors.tertiary,
+      cardRadius: 24,
+      cardOutlineWidth: 1,
+      gapXs: 4,
+      gapSm: 8,
+      gapMd: 12,
+      contentSpacing: 16,
+      sectionSpacing: 24,
+      chartCompactHeight: 180,
+      chartStandardHeight: 260,
+      authGlassBlurSigma: 20,
+      authGlassSurfaceOpacity: 0.88,
+      authGlassCornerRadius: 24,
+      authGlassPadding: 40,
+      authLoginContentMaxWidth: 480,
+      authHeroContainerSize: 80,
+      authHeroGlyphSize: 44,
+      authHeroCornerRadius: 12,
+      authLoginCtaMinHeight: 60,
+      authLoginScrollPaddingHorizontal: 24,
+      authLoginScrollPaddingVertical: 40,
+      authLoginGapBrandToForm: 48,
+      authLoginGapHeroToTitle: 20,
+      authLoginGapMajorSection: 32,
+      authLoginGapBetweenFields: 24,
+      authLoginGapAfterPassword: 20,
+      authLoginGapAfterPrimary: 24,
+      authLoginGapBeforeFooter: 40,
+      inlineAlertCornerRadius: 12,
+      hexGridPatternOpacity: 0.055,
+      formFieldRadius: 4,
+      formFieldPaddingHorizontal: 16,
+      formFieldPaddingVerticalComfortable: 16,
+      formFieldPaddingVerticalCompact: 12,
+      formLabelToControlGap: 8,
+      formControlCheckboxSide: 20,
+      formControlRadioOuter: 22,
+      actionButtonMinHeight: 48,
+    );
+  }
+
   final Color success;
   final Color warning;
 
@@ -55,6 +104,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
   final Color chartSeriesSecondary;
   final Color chartSeriesTertiary;
   final double cardRadius;
+
+  /// Stroke width for optional card outlines (see [cardOutlineBorderSide]).
+  final double cardOutlineWidth;
 
   /// Tight vertical/horizontal rhythm (e.g. stacked labels).
   final double gapXs;
@@ -140,93 +192,11 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
   /// Minimum height for primary/secondary action buttons.
   final double actionButtonMinHeight;
 
-  static const AppThemeTokens light = AppThemeTokens(
-    success: Color(0xFF00677E),
-    warning: Color(0xFFDC813B),
-    chartSeriesPrimary: Color(0xFF7E5700),
-    chartSeriesSecondary: Color(0xFFDC813B),
-    chartSeriesTertiary: Color(0xFF2DB6D1),
-    cardRadius: 24,
-    gapXs: 4,
-    gapSm: 8,
-    gapMd: 12,
-    contentSpacing: 16,
-    sectionSpacing: 24,
-    chartCompactHeight: 180,
-    chartStandardHeight: 260,
-    authGlassBlurSigma: 20,
-    authGlassSurfaceOpacity: 0.88,
-    authGlassCornerRadius: 24,
-    authGlassPadding: 40,
-    authLoginContentMaxWidth: 480,
-    authHeroContainerSize: 80,
-    authHeroGlyphSize: 44,
-    authHeroCornerRadius: 12,
-    authLoginCtaMinHeight: 60,
-    authLoginScrollPaddingHorizontal: 24,
-    authLoginScrollPaddingVertical: 40,
-    authLoginGapBrandToForm: 48,
-    authLoginGapHeroToTitle: 20,
-    authLoginGapMajorSection: 32,
-    authLoginGapBetweenFields: 24,
-    authLoginGapAfterPassword: 20,
-    authLoginGapAfterPrimary: 24,
-    authLoginGapBeforeFooter: 40,
-    inlineAlertCornerRadius: 12,
-    hexGridPatternOpacity: 0.055,
-    formFieldRadius: 4,
-    formFieldPaddingHorizontal: 16,
-    formFieldPaddingVerticalComfortable: 16,
-    formFieldPaddingVerticalCompact: 12,
-    formLabelToControlGap: 8,
-    formControlCheckboxSide: 20,
-    formControlRadioOuter: 22,
-    actionButtonMinHeight: 48,
+  static final AppThemeTokens light = AppThemeTokens.fromColors(
+    AppColors.light,
   );
 
-  static const AppThemeTokens dark = AppThemeTokens(
-    success: Color(0xFF43D6FF),
-    warning: Color(0xFFFFB691),
-    chartSeriesPrimary: Color(0xFFFFBA38),
-    chartSeriesSecondary: Color(0xFFFFB691),
-    chartSeriesTertiary: Color(0xFF43D6FF),
-    cardRadius: 24,
-    gapXs: 4,
-    gapSm: 8,
-    gapMd: 12,
-    contentSpacing: 16,
-    sectionSpacing: 24,
-    chartCompactHeight: 180,
-    chartStandardHeight: 260,
-    authGlassBlurSigma: 20,
-    authGlassSurfaceOpacity: 0.88,
-    authGlassCornerRadius: 24,
-    authGlassPadding: 40,
-    authLoginContentMaxWidth: 480,
-    authHeroContainerSize: 80,
-    authHeroGlyphSize: 44,
-    authHeroCornerRadius: 12,
-    authLoginCtaMinHeight: 60,
-    authLoginScrollPaddingHorizontal: 24,
-    authLoginScrollPaddingVertical: 40,
-    authLoginGapBrandToForm: 48,
-    authLoginGapHeroToTitle: 20,
-    authLoginGapMajorSection: 32,
-    authLoginGapBetweenFields: 24,
-    authLoginGapAfterPassword: 20,
-    authLoginGapAfterPrimary: 24,
-    authLoginGapBeforeFooter: 40,
-    inlineAlertCornerRadius: 12,
-    hexGridPatternOpacity: 0.055,
-    formFieldRadius: 4,
-    formFieldPaddingHorizontal: 16,
-    formFieldPaddingVerticalComfortable: 16,
-    formFieldPaddingVerticalCompact: 12,
-    formLabelToControlGap: 8,
-    formControlCheckboxSide: 20,
-    formControlRadioOuter: 22,
-    actionButtonMinHeight: 48,
-  );
+  static final AppThemeTokens dark = AppThemeTokens.fromColors(AppColors.dark);
 
   @override
   AppThemeTokens copyWith({
@@ -236,6 +206,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     Color? chartSeriesSecondary,
     Color? chartSeriesTertiary,
     double? cardRadius,
+    double? cardOutlineWidth,
     double? gapXs,
     double? gapSm,
     double? gapMd,
@@ -279,6 +250,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       chartSeriesSecondary: chartSeriesSecondary ?? this.chartSeriesSecondary,
       chartSeriesTertiary: chartSeriesTertiary ?? this.chartSeriesTertiary,
       cardRadius: cardRadius ?? this.cardRadius,
+      cardOutlineWidth: cardOutlineWidth ?? this.cardOutlineWidth,
       gapXs: gapXs ?? this.gapXs,
       gapSm: gapSm ?? this.gapSm,
       gapMd: gapMd ?? this.gapMd,
@@ -362,6 +334,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           Color.lerp(chartSeriesTertiary, other.chartSeriesTertiary, t) ??
           chartSeriesTertiary,
       cardRadius: lerpDouble(cardRadius, other.cardRadius, t) ?? cardRadius,
+      cardOutlineWidth:
+          lerpDouble(cardOutlineWidth, other.cardOutlineWidth, t) ??
+          cardOutlineWidth,
       gapXs: lerpDouble(gapXs, other.gapXs, t) ?? gapXs,
       gapSm: lerpDouble(gapSm, other.gapSm, t) ?? gapSm,
       gapMd: lerpDouble(gapMd, other.gapMd, t) ?? gapMd,
@@ -567,6 +542,13 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
             t,
           ) ??
           actionButtonMinHeight,
+    );
+  }
+
+  BorderSide cardOutlineBorderSide(ColorScheme colorScheme) {
+    return BorderSide(
+      color: colorScheme.outlineVariant,
+      width: cardOutlineWidth,
     );
   }
 }

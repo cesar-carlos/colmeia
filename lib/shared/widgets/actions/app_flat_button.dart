@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -31,7 +32,7 @@ class AppFlatButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>();
-    final cs = theme.colorScheme;
+    final colors = theme.appColors;
     final minH = tokens?.actionButtonMinHeight ?? 48;
     final gapSm = tokens?.gapSm ?? 8;
     final radius = tokens?.formFieldRadius ?? 4;
@@ -62,7 +63,7 @@ class AppFlatButton extends StatelessWidget {
       resolvedStyle = resolvedStyle.merge(style);
     }
 
-    final indicatorColor = theme.progressIndicatorTheme.color ?? cs.primary;
+    final indicatorColor = theme.progressIndicatorTheme.color ?? colors.primary;
     final content = isLoading
         ? SizedBox(
             width: 22,
@@ -72,7 +73,7 @@ class AppFlatButton extends StatelessWidget {
               color: indicatorColor,
             ),
           )
-        : _buildIdleContent(gapSm, theme);
+        : _buildIdleContent(gapSm, colors.onSecondaryContainer);
 
     Widget button = FilledButton.tonal(
       onPressed: isLoading ? null : onPressed,
@@ -98,7 +99,7 @@ class AppFlatButton extends StatelessWidget {
     return button;
   }
 
-  Widget _buildIdleContent(double iconTextGap, ThemeData theme) {
+  Widget _buildIdleContent(double iconTextGap, Color iconColor) {
     if (child != null) {
       return child!;
     }
@@ -120,7 +121,7 @@ class AppFlatButton extends StatelessWidget {
         IconTheme.merge(
           data: IconThemeData(
             size: 20,
-            color: theme.colorScheme.onSecondaryContainer,
+            color: iconColor,
           ),
           child: icon!,
         ),

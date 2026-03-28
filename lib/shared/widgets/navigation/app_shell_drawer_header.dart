@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -16,14 +17,14 @@ class AppShellDrawerHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final cs = theme.colorScheme;
+    final colors = theme.appColors;
 
     return Row(
       children: <Widget>[
         CircleAvatar(
           radius: 22,
-          backgroundColor: cs.primaryContainer,
-          foregroundColor: cs.onPrimaryContainer,
+          backgroundColor: colors.primaryContainer,
+          foregroundColor: colors.onPrimaryContainer,
           child: const Icon(Icons.hexagon_outlined),
         ),
         SizedBox(width: tokens.gapMd),
@@ -40,7 +41,7 @@ class AppShellDrawerHeader extends StatelessWidget {
               Text(
                 subtitle,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
+                  color: colors.onSurfaceVariant,
                 ),
               ),
             ],

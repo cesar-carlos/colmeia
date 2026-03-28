@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -42,7 +43,7 @@ class AppPrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>();
-    final cs = theme.colorScheme;
+    final colors = theme.appColors;
     final minH = minimumHeight ?? tokens?.actionButtonMinHeight ?? 48;
     final gapSm = tokens?.gapSm ?? 8;
     final gapMd = tokens?.gapMd ?? 12;
@@ -70,7 +71,7 @@ class AppPrimaryButton extends StatelessWidget {
       );
     }
 
-    final indicatorColor = loadingIndicatorColor ?? cs.onPrimary;
+    final indicatorColor = loadingIndicatorColor ?? colors.onPrimary;
 
     Widget content;
     if (isLoading && showLabelWhileLoading && label != null) {

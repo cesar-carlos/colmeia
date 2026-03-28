@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -26,7 +27,9 @@ class AppTextActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>();
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>();
+    final colors = theme.appColors;
     final minH = tokens?.actionButtonMinHeight ?? 48;
 
     final effectiveStyle =
@@ -37,10 +40,13 @@ class AppTextActionButton extends StatelessWidget {
 
     final gapSm = tokens?.gapSm ?? 8;
     final content = isLoading
-        ? const SizedBox(
+        ? SizedBox(
             width: 22,
             height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colors.primary,
+            ),
           )
         : _buildLabelRow(gapSm);
 

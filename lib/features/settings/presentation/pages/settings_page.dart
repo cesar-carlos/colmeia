@@ -4,18 +4,22 @@ import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_user_initials.dart';
 import 'package:colmeia/shared/widgets/navigation/show_app_sign_out_dialog.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_interactive_field.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_status_pill.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
@@ -167,7 +171,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   backgroundColor: cs.primaryContainer,
                   foregroundColor: cs.onPrimaryContainer,
                   child: Text(
-                    _initials(scope.name),
+                    appShellUserInitials(scope.name),
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -405,19 +409,10 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppSectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'Permissões liberadas',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: tokens.gapMd),
-              if (controller.permissions.isEmpty)
-                Text(
+        AppSectionCardWithHeading(
+          title: 'Permissões liberadas',
+          child: controller.permissions.isEmpty
+              ? Text(
                   'Nenhuma permissão listada para o seu perfil neste momento. '
                   'Se precisar de acesso adicional, fale com o administrador '
                   'da sua operação.',
@@ -425,8 +420,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     color: cs.onSurfaceVariant,
                   ),
                 )
-              else
-                Wrap(
+              : Wrap(
                   spacing: tokens.gapSm,
                   runSpacing: tokens.gapSm,
                   children: controller.permissions
@@ -435,7 +429,30 @@ class _SettingsPageState extends State<SettingsPage> {
                       )
                       .toList(growable: false),
                 ),
-            ],
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
+          title: 'Demos de componentes',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.widgets_outlined, color: cs.primary),
+            title: Text(
+              'Biblioteca de demos',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            subtitle: Text(
+              'Graficos, metricas, secoes e paginacao em telas separadas.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              color: cs.onSurfaceVariant,
+            ),
+            onTap: () => context.push(sharedComponentsDemoIndexLocation),
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
@@ -481,23 +498,4 @@ String _themePreferenceLabel(ThemeMode mode) {
     ThemeMode.light => 'Tema claro fixo.',
     ThemeMode.dark => 'Tema escuro fixo.',
   };
-}
-
-String _initials(String name) {
-  final trimmed = name.trim();
-  if (trimmed.isEmpty) {
-    return '?';
-  }
-  final parts = trimmed.split(RegExp(r'\s+'));
-  if (parts.length == 1) {
-    final word = parts.single;
-    return word.length >= 2
-        ? word.substring(0, 2).toUpperCase()
-        : word.toUpperCase();
-  }
-  final first = parts.first;
-  final last = parts.last;
-  final a = first.runes.isEmpty ? 0x3f : first.runes.first;
-  final b = last.runes.isEmpty ? 0x3f : last.runes.first;
-  return '${String.fromCharCode(a)}${String.fromCharCode(b)}'.toUpperCase();
 }

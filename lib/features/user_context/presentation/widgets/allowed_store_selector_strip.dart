@@ -1,5 +1,6 @@
 import 'package:colmeia/features/user_context/domain/entities/store_scope.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
 
 class AllowedStoreSelectorStrip extends StatelessWidget {
@@ -34,21 +35,10 @@ class AllowedStoreSelectorStrip extends StatelessWidget {
     }
 
     if (errorMessage != null) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            errorMessage!,
-            style: theme.textTheme.bodyMedium?.copyWith(color: cs.error),
-          ),
-          if (onRetry != null) ...<Widget>[
-            SizedBox(height: tokens.gapSm),
-            TextButton(
-              onPressed: onRetry,
-              child: const Text('Tentar novamente'),
-            ),
-          ],
-        ],
+      return AppInlineErrorPanel(
+        message: errorMessage!,
+        onRetry: onRetry,
+        variant: AppInlineErrorPanelVariant.plain,
       );
     }
 

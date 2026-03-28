@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer_header.dart';
@@ -8,7 +11,9 @@ import 'package:colmeia/shared/widgets/navigation/app_shell_drawer_menu_item.dar
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer_menu_list.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_route_presentation.dart';
 import 'package:colmeia/shared/widgets/navigation/show_app_sign_out_dialog.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class AppShellDrawer extends StatelessWidget {
@@ -60,7 +65,22 @@ class AppShellDrawer extends StatelessWidget {
                       .toList(growable: false),
                 ),
               ),
-              SizedBox(height: tokens.gapMd),
+              if (kDebugMode) ...<Widget>[
+                const Divider(),
+                AppFlatButton(
+                  icon: const Icon(Icons.widgets_outlined),
+                  label: 'Componentes (dev)',
+                  semanticsLabel:
+                      'Abrir catalogo de componentes de desenvolvimento',
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    unawaited(
+                      context.push(sharedComponentsDemoIndexLocation),
+                    );
+                  },
+                ),
+                SizedBox(height: tokens.gapMd),
+              ],
               AppFlatButton(
                 icon: const Icon(Icons.logout_rounded),
                 label: 'Sair',

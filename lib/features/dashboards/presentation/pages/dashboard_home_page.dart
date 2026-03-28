@@ -18,11 +18,13 @@ import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_ai_in
 import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_category_mix_card.dart';
 import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_sales_trend_card.dart';
 import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_summary_card.dart';
+import 'package:colmeia/features/user_context/domain/user_context_placeholders.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/features/user_context/presentation/widgets/allowed_store_selector_strip.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -40,8 +42,6 @@ class DashboardHomePage extends StatefulWidget {
 }
 
 class _DashboardHomePageState extends State<DashboardHomePage> {
-  static const String _placeholderStoreId = 'loading-store';
-
   static const DashboardOverview _skeletonOverview = DashboardOverview(
     summaryMetrics: <DashboardSummaryMetric>[
       DashboardSummaryMetric(
@@ -182,7 +182,9 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                   final shouldShowOverview = showSkeleton || overview != null;
                   if (session != null &&
                       !userContext.isLoading &&
-                      selectedStore.id != _placeholderStoreId) {
+                      !UserContextPlaceholders.isLoadingStoreId(
+                        selectedStore.id,
+                      )) {
                     dashboardController.scheduleOverviewLoadIfNeeded(
                       userId: session.userId,
                       storeId: StoreId(selectedStore.id),
@@ -195,11 +197,14 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                   final showReportsEntry = userContext.availableShellRoutes
                       .contains(AppRoute.reports);
                   final cs = theme.colorScheme;
+                  final sessionUserId = session?.userId;
 
                   Future<void> onRefresh() async {
                     final currentSession = authController.session;
                     if (currentSession == null ||
-                        selectedStore.id == _placeholderStoreId) {
+                        UserContextPlaceholders.isLoadingStoreId(
+                          selectedStore.id,
+                        )) {
                       return;
                     }
                     await dashboardController.loadOverview(
@@ -257,25 +262,38 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                         if (selectedStoreResult.exceptionOrNull()
                             case final failure?) ...<Widget>[
                           SizedBox(height: tokens.gapMd),
-                          AppSectionCard(
-                            child: Text(
-                              failure.displayMessage,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.error,
-                              ),
-                            ),
+                          AppInlineErrorPanel(
+                            title: 'Loja indisponivel',
+                            message: failure.displayMessage,
+                            onRetry: session != null
+                                ? () {
+                                    unawaited(
+                                      userContext.reloadUserContext(),
+                                    );
+                                  }
+                                : null,
                           ),
                         ],
                         if (dashboardController.errorMessage
                             case final String errorMessage) ...<Widget>[
                           SizedBox(height: tokens.gapMd),
-                          AppSectionCard(
-                            child: Text(
-                              errorMessage,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.error,
-                              ),
-                            ),
+                          AppInlineErrorPanel(
+                            title: 'Nao foi possivel carregar o dashboard',
+                            message: errorMessage,
+                            onRetry:
+                                sessionUserId != null &&
+                                    !UserContextPlaceholders.isLoadingStoreId(
+                                      selectedStore.id,
+                                    )
+                                ? () {
+                                    unawaited(
+                                      dashboardController.loadOverview(
+                                        userId: sessionUserId,
+                                        storeId: StoreId(selectedStore.id),
+                                      ),
+                                    );
+                                  }
+                                : null,
                           ),
                         ],
                         SizedBox(height: tokens.sectionSpacing),
@@ -379,6 +397,7 @@ List<Widget> _summaryMetricWidgets({
           deltaLabel: m.deltaLabel,
           icon: m.icon,
           emphasis: DashboardSummaryCardEmphasis.accent,
+          trendPlacement: AppMetricStatTrendPlacement.inlineStart,
         ),
       ),
     ];
@@ -399,6 +418,7 @@ List<Widget> _summaryMetricWidgets({
             value: m.value,
             deltaLabel: m.deltaLabel,
             icon: m.icon,
+            trendPlacement: AppMetricStatTrendPlacement.inlineStart,
           ),
         ),
       );

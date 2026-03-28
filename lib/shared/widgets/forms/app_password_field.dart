@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/forms/app_form_validators.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +41,7 @@ class AppPasswordField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final colors = Theme.of(context).appColors;
 
     return AppTextField(
       controller: controller,
@@ -64,7 +65,7 @@ class AppPasswordField extends StatelessWidget {
               : Icons.visibility_off_outlined,
           size: 20,
         ),
-        color: cs.outlineVariant,
+        color: colors.outlineVariant,
         tooltip: obscureText
             ? toggleVisibilityTooltipShow
             : toggleVisibilityTooltipHide,

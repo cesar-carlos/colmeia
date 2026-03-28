@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -33,7 +34,7 @@ class AppRadioGroup<T extends Object?> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final colors = theme.appColors;
     final tokens = theme.extension<AppThemeTokens>();
     final visualSize = tokens?.formControlRadioOuter ?? 22;
 
@@ -65,7 +66,9 @@ class AppRadioGroup<T extends Object?> extends StatelessWidget {
                     Icon(
                       iconData,
                       size: 22,
-                      color: selected ? cs.primary : cs.onSurfaceVariant,
+                      color: selected
+                          ? colors.primary
+                          : colors.onSurfaceVariant,
                     ),
                     SizedBox(width: tokens?.gapSm ?? 8),
                   ],
@@ -77,7 +80,9 @@ class AppRadioGroup<T extends Object?> extends StatelessWidget {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       size: visualSize,
-                      color: selected ? cs.primary : cs.onSurfaceVariant,
+                      color: selected
+                          ? colors.primary
+                          : colors.onSurfaceVariant,
                     ),
                   ),
                   SizedBox(width: tokens?.gapSm ?? 8),
@@ -99,7 +104,7 @@ class AppRadioGroup<T extends Object?> extends StatelessWidget {
                             child: Text(
                               subtitle,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                                color: colors.onSurfaceVariant,
                               ),
                             ),
                           ),
