@@ -134,7 +134,7 @@ class AppColors extends ThemeExtension<AppColors> {
     primaryFixed: Color(0xFFFFDEAC),
     primaryFixedDim: Color(0xFFFFBA38),
     secondary: Color(0xFF9E4200),
-    secondaryContainer: Color(0xFFFB6D00),
+    secondaryContainer: Color(0xFFFFB070),
     secondaryFixed: Color(0xFFFFDBCB),
     secondaryFixedDim: Color(0xFFFFB691),
     surface: Color(0xFFF4FAFF),

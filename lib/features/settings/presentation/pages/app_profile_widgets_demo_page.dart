@@ -62,10 +62,10 @@ class AppProfileWidgetsDemoPage extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppSectionCardWithHeading(
+        const AppSectionCardWithHeading(
           title: 'AppProfileStaticField',
           subtitle: 'Somente leitura.',
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               AppProfileStaticField(
@@ -75,7 +75,7 @@ class AppProfileWidgetsDemoPage extends StatelessWidget {
               AppProfileStaticField(
                 label: 'Ultimo acesso',
                 value: '28/03/2026 14:32',
-                trailing: const Icon(Icons.lock_clock_outlined, size: 20),
+                trailing: Icon(Icons.lock_clock_outlined, size: 20),
               ),
               AppProfileStaticField(
                 label: 'Conta em revisao',
@@ -96,18 +96,27 @@ class AppProfileWidgetsDemoPage extends StatelessWidget {
                 label: 'Telefone',
                 value: '+55 11 91234-5678',
                 emphasizeValue: true,
-                onTap: () => _showProfileDemoSnack(context, 'Abrir editor de telefone'),
+                onTap: () => _showProfileDemoSnack(
+                  context,
+                  'Abrir editor de telefone',
+                ),
               ),
               AppProfileInteractiveField(
                 label: 'Cargo',
                 value: 'Definir cargo',
                 isPlaceholder: true,
-                onTap: () => _showProfileDemoSnack(context, 'Escolher cargo'),
+                onTap: () => _showProfileDemoSnack(
+                  context,
+                  'Escolher cargo',
+                ),
               ),
               AppProfileInteractiveField(
                 label: 'Departamento',
                 value: 'Operacoes',
-                onTap: () => _showProfileDemoSnack(context, 'Trocar departamento'),
+                onTap: () => _showProfileDemoSnack(
+                  context,
+                  'Trocar departamento',
+                ),
               ),
             ],
           ),

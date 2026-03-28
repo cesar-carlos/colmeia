@@ -80,7 +80,7 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
             contentPadding: EdgeInsets.zero,
             title: const Text('Campos habilitados'),
             value: _fieldsEnabled,
-            onChanged: (bool value) {
+            onChanged: (value) {
               setState(() {
                 _fieldsEnabled = value;
               });

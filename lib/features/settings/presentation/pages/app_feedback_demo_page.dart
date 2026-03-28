@@ -40,11 +40,10 @@ class _AppFeedbackDemoPageState extends State<AppFeedbackDemoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              AppInlineErrorPanel(
+              const AppInlineErrorPanel(
                 title: 'Nao foi possivel sincronizar',
                 message: 'Verifique a conexao e tente novamente. '
                     'Codigo fake: E-204.',
-                retryLabel: 'Tentar novamente',
                 onRetry: _noopRetry,
               ),
               SizedBox(height: tokens.gapMd),
@@ -53,7 +52,7 @@ class _AppFeedbackDemoPageState extends State<AppFeedbackDemoPage> {
                 variant: AppInlineErrorPanelVariant.plain,
               ),
               SizedBox(height: tokens.gapMd),
-              AppInlineErrorPanel(
+              const AppInlineErrorPanel(
                 variant: AppInlineErrorPanelVariant.plain,
                 title: 'Titulo opcional',
                 message: 'Plain com titulo e botao de retry.',
@@ -99,7 +98,7 @@ class _AppFeedbackDemoPageState extends State<AppFeedbackDemoPage> {
             contentPadding: EdgeInsets.zero,
             title: const Text('Skeleton ativo'),
             value: _skeletonEnabled,
-            onChanged: (bool value) {
+            onChanged: (value) {
               setState(() {
                 _skeletonEnabled = value;
               });
