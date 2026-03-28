@@ -14,6 +14,7 @@ import 'package:colmeia/features/reports/presentation/widgets/report_parameter_f
 import 'package:colmeia/features/reports/presentation/widgets/report_results_grid.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
@@ -317,13 +318,20 @@ class _ReportsPageState extends State<ReportsPage> {
                     if (controller.errorMessage
                         case final String errorMessage) ...<Widget>[
                       SizedBox(height: tokens.sectionSpacing),
-                      AppSectionCard(
-                        child: Text(
-                          errorMessage,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.error,
-                          ),
-                        ),
+                      AppInlineErrorPanel(
+                        message: errorMessage,
+                        onRetry:
+                            session != null &&
+                                activeStore.id != _placeholderStoreId
+                            ? () {
+                                unawaited(
+                                  controller.loadOverview(
+                                    userId: session.userId,
+                                    activeStoreId: StoreId(activeStore.id),
+                                  ),
+                                );
+                              }
+                            : null,
                       ),
                     ],
                     if (controller.hasAppliedFilters) ...<Widget>[

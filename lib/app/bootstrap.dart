@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:colmeia/app/app.dart';
 import 'package:colmeia/app/router/app_router.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
+import 'package:colmeia/app/web_url_strategy.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/sentry_bootstrap.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:flutter/widgets.dart';
@@ -14,10 +16,13 @@ import 'package:provider/single_child_widget.dart';
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configureColmeiaWebUrlStrategy();
   AppLogger.configureForRuntime();
-  await setupDependencies();
 
-  runApp(const ColmeiaBootstrap());
+  await runAppWithOptionalSentry(() async {
+    await setupDependencies();
+    runApp(const ColmeiaBootstrap());
+  });
 }
 
 class ColmeiaBootstrap extends StatelessWidget {

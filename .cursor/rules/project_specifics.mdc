@@ -126,8 +126,10 @@ lib/
 - `syncfusion_flutter_charts` para graficos interativos de uso corporativo
 - `syncfusion_flutter_datagrid` para relatorios tabulares com sorting, filtros e
   grid robusto
-- `flutter_local_notifications` para notificacoes locais quando o fluxo exigir
-- `sentry_flutter` para monitoramento de erro quando a observabilidade entrar
+- `flutter_local_notifications` apenas quando um fluxo concreto exigir
+  notificacoes locais (nao manter como dependencia ate la)
+- `sentry_flutter` para erros e performance; DSN via `--dart-define=SENTRY_DSN=`
+  (ver `AppEnvironment` e `runAppWithOptionalSentry`)
 
 ## Dependencias Fora do Escopo Atual
 

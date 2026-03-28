@@ -1,4 +1,5 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/core/cache/app_kv_cache_key_prefixes.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/data/models/dashboard_overview_model.dart';
 
@@ -31,6 +32,7 @@ class DashboardLocalDataSource {
   }
 
   String _cacheKey(String userId, StoreId storeId) {
-    return 'dashboard_overview_${userId}_${storeId.value}';
+    return '${AppKvCacheKeyPrefixes.dashboardOverview}'
+        '${userId}_${storeId.value}';
   }
 }

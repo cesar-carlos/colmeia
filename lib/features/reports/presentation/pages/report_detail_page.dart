@@ -15,6 +15,7 @@ import 'package:colmeia/features/reports/presentation/widgets/report_parameter_f
 import 'package:colmeia/features/reports/presentation/widgets/report_results_grid.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
@@ -215,25 +216,33 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                   if (resolvedStoreResult.exceptionOrNull()
                       case final failure?) ...<Widget>[
                     SizedBox(height: tokens.gapMd),
-                    AppSectionCard(
-                      child: Text(
-                        failure.displayMessage,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
+                    AppInlineErrorPanel(
+                      message: failure.displayMessage,
+                      onRetry: session != null
+                          ? () {
+                              unawaited(userContext.reloadUserContext());
+                            }
+                          : null,
                     ),
                   ],
                   if (controller.errorMessage
                       case final String errorMessage) ...<Widget>[
                     SizedBox(height: tokens.gapMd),
-                    AppSectionCard(
-                      child: Text(
-                        errorMessage,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                      ),
+                    AppInlineErrorPanel(
+                      message: errorMessage,
+                      onRetry:
+                          session != null &&
+                              resolvedStore.id != _placeholderStoreId
+                          ? () {
+                              unawaited(
+                                _controller.initialize(
+                                  userId: session.userId,
+                                  reportId: widget.reportId,
+                                  storeId: StoreId(resolvedStore.id),
+                                ),
+                              );
+                            }
+                          : null,
                     ),
                   ],
                   SizedBox(height: tokens.sectionSpacing),

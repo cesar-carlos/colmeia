@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/core/cache/app_kv_cache_key_prefixes.dart';
 import 'package:colmeia/core/value_objects/report_id.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/reports/data/models/report_detail_model.dart';
@@ -37,7 +38,8 @@ class ReportsLocalDataSource {
   }
 
   String _cacheKey(String userId, StoreId activeStoreId) {
-    return 'reports_overview_${userId}_${activeStoreId.value}';
+    return '${AppKvCacheKeyPrefixes.reportsOverview}'
+        '${userId}_${activeStoreId.value}';
   }
 
   Future<ReportDetailModel?> readDetail({
@@ -96,7 +98,7 @@ class ReportsLocalDataSource {
     required int pageSize,
   }) {
     final encodedFilters = jsonEncode(_encodeFilters(filters));
-    return 'report_detail_'
+    return '${AppKvCacheKeyPrefixes.reportDetail}'
         '${userId}_${reportId.value}_${storeId.value}_'
         '${page}_$pageSize'
         '_$encodedFilters';
@@ -135,7 +137,8 @@ class ReportsLocalDataSource {
     ReportId reportId,
     StoreId storeId,
   ) {
-    return 'report_detail_filters_${userId}_${reportId.value}_${storeId.value}';
+    return '${AppKvCacheKeyPrefixes.reportDetailFilters}'
+        '${userId}_${reportId.value}_${storeId.value}';
   }
 
   Map<String, Object?> _encodeFilters(Map<String, Object?> filters) {

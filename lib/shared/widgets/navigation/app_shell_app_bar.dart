@@ -40,23 +40,30 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             );
           },
-          icon: const Icon(Icons.notifications_outlined),
+          icon: const Icon(
+            Icons.notifications_outlined,
+            semanticLabel: 'Notificações',
+          ),
         ),
         Padding(
           padding: const EdgeInsetsDirectional.only(end: 8),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              customBorder: const CircleBorder(),
-              onTap: () => context.goTo(AppRoute.settings),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: cs.primaryContainer,
-                foregroundColor: cs.onPrimaryContainer,
-                child: Text(
-                  appShellUserInitials(userScope.name),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
+          child: Semantics(
+            label: 'Abrir configuracoes',
+            button: true,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => context.goTo(AppRoute.settings),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: cs.primaryContainer,
+                  foregroundColor: cs.onPrimaryContainer,
+                  child: Text(
+                    appShellUserInitials(userScope.name),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),
