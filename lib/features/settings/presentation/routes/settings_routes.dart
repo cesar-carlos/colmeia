@@ -9,18 +9,24 @@ import 'package:colmeia/features/settings/presentation/pages/app_distribution_ch
 import 'package:colmeia/features/settings/presentation/pages/app_feedback_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_forms_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_funnel_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_gauge_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_heatmap_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_inline_pagination_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_metric_stat_card_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_polar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_profile_widgets_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_pyramid_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_radar_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_radial_bar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_range_area_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_scatter_bubble_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_section_card_heading_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_sparkline_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_stacked_bar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_step_line_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_sunburst_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_time_series_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_treemap_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_waterfall_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/horizontal_progress_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/settings_page.dart';
@@ -50,8 +56,14 @@ const String appHeatmapChartDemoPath = 'app-heatmap-chart-demo';
 const String appScatterBubbleChartDemoPath = 'app-scatter-bubble-chart-demo';
 const String appRangeAreaChartDemoPath = 'app-range-area-chart-demo';
 const String appFunnelChartDemoPath = 'app-funnel-chart-demo';
+const String appGaugeChartDemoPath = 'app-gauge-chart-demo';
 const String appStepLineChartDemoPath = 'app-step-line-chart-demo';
 const String appRadarChartDemoPath = 'app-radar-chart-demo';
+const String appPyramidChartDemoPath = 'app-pyramid-chart-demo';
+const String appPolarChartDemoPath = 'app-polar-chart-demo';
+const String appRadialBarChartDemoPath = 'app-radial-bar-chart-demo';
+const String appSunburstChartDemoPath = 'app-sunburst-chart-demo';
+const String appTreemapChartDemoPath = 'app-treemap-chart-demo';
 
 final String sharedComponentsDemoIndexLocation =
     '${AppRoute.settings.path}/$sharedComponentsDemoIndexPath';
@@ -122,11 +134,29 @@ final String appRangeAreaChartDemoLocation =
 final String appFunnelChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appFunnelChartDemoPath';
 
+final String appGaugeChartDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appGaugeChartDemoPath';
+
 final String appStepLineChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appStepLineChartDemoPath';
 
 final String appRadarChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appRadarChartDemoPath';
+
+final String appPyramidChartDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appPyramidChartDemoPath';
+
+final String appPolarChartDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appPolarChartDemoPath';
+
+final String appRadialBarChartDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appRadialBarChartDemoPath';
+
+final String appSunburstChartDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appSunburstChartDemoPath';
+
+final String appTreemapChartDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appTreemapChartDemoPath';
 
 List<RouteBase> buildSettingsRoutes() {
   return <RouteBase>[
@@ -276,6 +306,12 @@ List<RouteBase> buildSettingsRoutes() {
               },
             ),
             GoRoute(
+              path: appGaugeChartDemoPath,
+              builder: (context, state) {
+                return const AppGaugeChartDemoPage();
+              },
+            ),
+            GoRoute(
               path: appStepLineChartDemoPath,
               builder: (context, state) {
                 return const AppStepLineChartDemoPage();
@@ -285,6 +321,36 @@ List<RouteBase> buildSettingsRoutes() {
               path: appRadarChartDemoPath,
               builder: (context, state) {
                 return const AppRadarChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appPyramidChartDemoPath,
+              builder: (context, state) {
+                return const AppPyramidChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appPolarChartDemoPath,
+              builder: (context, state) {
+                return const AppPolarChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appRadialBarChartDemoPath,
+              builder: (context, state) {
+                return const AppRadialBarChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appSunburstChartDemoPath,
+              builder: (context, state) {
+                return const AppSunburstChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appTreemapChartDemoPath,
+              builder: (context, state) {
+                return const AppTreemapChartDemoPage();
               },
             ),
           ],

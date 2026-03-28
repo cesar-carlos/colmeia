@@ -94,9 +94,9 @@ class SyncfusionWaterfallChart<T> extends StatelessWidget {
           axisLabelFormatter: style.yAxisFormat == null
               ? null
               : (details) => ChartAxisLabel(
-                    style.yAxisFormat!.format(details.value),
-                    details.textStyle,
-                  ),
+                  style.yAxisFormat!.format(details.value),
+                  details.textStyle,
+                ),
         ),
         series: <CartesianSeries<T, String>>[
           WaterfallSeries<T, String>(
@@ -115,8 +115,7 @@ class SyncfusionWaterfallChart<T> extends StatelessWidget {
             negativePointsColor: style.negativeColor ?? colors.error,
             intermediateSumColor:
                 style.intermediateSumColor ?? chartTheme.paletteColor(1),
-            totalSumColor:
-                style.totalSumColor ?? chartTheme.paletteColor(2),
+            totalSumColor: style.totalSumColor ?? chartTheme.paletteColor(2),
             connectorLineSettings: WaterfallConnectorLineSettings(
               color:
                   style.connectorLineColor ??

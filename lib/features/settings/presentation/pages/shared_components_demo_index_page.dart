@@ -27,9 +27,10 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
         AppSectionCardWithHeading(
           title: 'Graficos',
           subtitle:
-              'Barras, funnel, radar, waterfall, bullet, heatmap, '
-              'scatter/bubble, range area, step line, area, empilhado, '
-              'combo, serie temporal, sparkline, distribuicao e progresso.',
+              'Barras, radial bar, gauge, sunburst, funnel, pyramid, polar, '
+              'treemap, radar, waterfall, bullet, heatmap, scatter/bubble, '
+              'range area, step line, area, empilhado, combo, serie temporal, '
+              'sparkline, distribuicao e progresso.',
           child: Column(
             children: <Widget>[
               _DemoEntryTile(
@@ -117,6 +118,24 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
               ),
               const Divider(height: 1),
               _DemoEntryTile(
+                icon: Icons.speed_rounded,
+                title: 'Gauge',
+                subtitle:
+                    'Leitura instrumental para SLA, ocupacao, metas e alertas '
+                    'operacionais.',
+                onTap: () => context.push(appGaugeChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.change_history_rounded,
+                title: 'Pyramid',
+                subtitle:
+                    'Hierarquia de volume para capacidade, senioridade e mix '
+                    'por faixa.',
+                onTap: () => context.push(appPyramidChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
                 icon: Icons.stacked_line_chart_rounded,
                 title: 'Step line',
                 subtitle:
@@ -126,12 +145,48 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
               ),
               const Divider(height: 1),
               _DemoEntryTile(
+                icon: Icons.radar_rounded,
+                title: 'Polar',
+                subtitle:
+                    'Leitura circular por eixo angular para intensidade e '
+                    'sazonalidade radial.',
+                onTap: () => context.push(appPolarChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.donut_small_rounded,
+                title: 'Radial bar',
+                subtitle:
+                    'Progresso por categoria em aneis concentricos para score, '
+                    'SLA e aderencia.',
+                onTap: () => context.push(appRadialBarChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
                 icon: Icons.track_changes_rounded,
                 title: 'Radar',
                 subtitle:
                     'Comparativo multidimensional para scorecards, maturidade '
                     'e benchmark de lojas.',
                 onTap: () => context.push(appRadarChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.blur_circular_rounded,
+                title: 'Sunburst',
+                subtitle:
+                    'Hierarquia radial para categorias, centros de custo e '
+                    'carteiras exploraveis.',
+                onTap: () => context.push(appSunburstChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.dashboard_customize_rounded,
+                title: 'Treemap',
+                subtitle:
+                    'Participacao por area para mix de vendas, portfolio '
+                    'e agrupamentos.',
+                onTap: () => context.push(appTreemapChartDemoLocation),
               ),
               const Divider(height: 1),
               _DemoEntryTile(

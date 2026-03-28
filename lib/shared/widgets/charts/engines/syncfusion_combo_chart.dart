@@ -89,9 +89,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           axisLabelFormatter: style.leftAxisFormat == null
               ? null
               : (details) => ChartAxisLabel(
-                    style.leftAxisFormat!.format(details.value),
-                    details.textStyle,
-                  ),
+                  style.leftAxisFormat!.format(details.value),
+                  details.textStyle,
+                ),
         ),
         axes: <ChartAxis>[
           NumericAxis(
@@ -104,9 +104,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             axisLabelFormatter: style.rightAxisFormat == null
                 ? null
                 : (details) => ChartAxisLabel(
-                      style.rightAxisFormat!.format(details.value),
-                      details.textStyle,
-                    ),
+                    style.rightAxisFormat!.format(details.value),
+                    details.textStyle,
+                  ),
           ),
         ],
         series: <CartesianSeries<T, String>>[
