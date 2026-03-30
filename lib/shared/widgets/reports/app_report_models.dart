@@ -40,6 +40,7 @@ class AppReportSortDescriptor {
 // Grouping
 // ---------------------------------------------------------------------------
 
+@immutable
 class AppReportGroupDescriptor {
   const AppReportGroupDescriptor({
     required this.columnKey,
@@ -61,6 +62,12 @@ class AppReportGroupDescriptor {
 // Pagination
 // ---------------------------------------------------------------------------
 
+/// Server- or client-provided pagination snapshot for the report viewer.
+///
+/// When [totalRows] is 0, [totalPages] should be 0 and [currentPage] is
+/// typically 1. When [totalRows] > 0, callers should keep [currentPage]
+/// within `1..totalPages` so [firstRowIndex] and [lastRowIndex] stay aligned.
+@immutable
 class AppReportPageInfo {
   const AppReportPageInfo({
     required this.currentPage,
@@ -75,13 +82,18 @@ class AppReportPageInfo {
   final int totalPages;
 
   bool get hasPreviousPage => currentPage > 1;
-  bool get hasNextPage => currentPage < totalPages;
+  bool get hasNextPage => totalPages > 0 && currentPage < totalPages;
 
   /// Index of the first row on the current page (1-based).
   int get firstRowIndex => ((currentPage - 1) * pageSize) + 1;
 
   /// Index of the last row on the current page (1-based, capped at totalRows).
   int get lastRowIndex => (currentPage * pageSize).clamp(0, totalRows);
+
+  /// True when [totalRows] is positive but [currentPage] points past the
+  /// available range (e.g. after filters shrank the result set).
+  bool get hasInvalidDisplayedRange =>
+      totalRows > 0 && firstRowIndex > lastRowIndex;
 
   AppReportPageInfo copyWith({
     int? currentPage,

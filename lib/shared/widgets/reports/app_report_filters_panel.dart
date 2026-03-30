@@ -2,6 +2,7 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -39,6 +40,19 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
   void initState() {
     super.initState();
     _expanded = widget.startExpanded;
+  }
+
+  @override
+  void didUpdateWidget(covariant AppReportFiltersPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!mapEquals(oldWidget.initialValues, widget.initialValues)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        _formKey.currentState?.patchValue(widget.initialValues);
+      });
+    }
   }
 
   @override

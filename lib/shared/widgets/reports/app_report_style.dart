@@ -40,6 +40,7 @@ class AppReportViewerStyle {
     this.availablePageSizes,
     this.emptyMessage,
     this.alternateRowColor,
+    this.trustServerRowOrder = false,
   });
 
   /// Fixed grid height. When null the grid fills the available height or
@@ -107,6 +108,11 @@ class AppReportViewerStyle {
   /// the surface color.
   final Color? alternateRowColor;
 
+  /// When true, the report grid updates sort indicators from the viewer query
+  /// but does not reorder rows locally — use when the API already returns rows
+  /// in the requested order.
+  final bool trustServerRowOrder;
+
   List<int> get resolvedPageSizes =>
       availablePageSizes ?? const <int>[5, 10, 20, 50];
 
@@ -163,6 +169,7 @@ class AppReportViewerStyle {
     List<int>? availablePageSizes,
     String? emptyMessage,
     Color? alternateRowColor,
+    bool? trustServerRowOrder,
   }) {
     return AppReportViewerStyle(
       gridHeight: gridHeight ?? this.gridHeight,
@@ -197,6 +204,7 @@ class AppReportViewerStyle {
       availablePageSizes: availablePageSizes ?? this.availablePageSizes,
       emptyMessage: emptyMessage ?? this.emptyMessage,
       alternateRowColor: alternateRowColor ?? this.alternateRowColor,
+      trustServerRowOrder: trustServerRowOrder ?? this.trustServerRowOrder,
     );
   }
 }

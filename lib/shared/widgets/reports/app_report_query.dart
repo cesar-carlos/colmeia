@@ -39,6 +39,7 @@ class AppReportQuery {
     int? pageSize,
     Set<String>? visibleColumnKeys,
     String? searchTerm,
+    bool clearSearchTerm = false,
     AppReportDensity? density,
   }) {
     return AppReportQuery(
@@ -48,7 +49,7 @@ class AppReportQuery {
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
       visibleColumnKeys: visibleColumnKeys ?? this.visibleColumnKeys,
-      searchTerm: searchTerm ?? this.searchTerm,
+      searchTerm: clearSearchTerm ? null : (searchTerm ?? this.searchTerm),
       density: density ?? this.density,
     );
   }
@@ -64,8 +65,14 @@ class AppReportQuery {
   AppReportQuery withSorts(List<AppReportSortDescriptor> newSorts) =>
       copyWith(sorts: newSorts, page: 1);
 
-  AppReportQuery withSearchTerm(String? term) =>
-      copyWith(searchTerm: term, page: 1);
+  /// Clears [searchTerm] when [term] is null or empty; otherwise sets it.
+  AppReportQuery withSearchTerm(String? term) {
+    final cleared = term == null || term.isEmpty;
+    if (cleared) {
+      return copyWith(clearSearchTerm: true, page: 1);
+    }
+    return copyWith(searchTerm: term, page: 1);
+  }
 
   AppReportQuery withDensity(AppReportDensity newDensity) =>
       copyWith(density: newDensity);

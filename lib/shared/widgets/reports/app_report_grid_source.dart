@@ -15,9 +15,10 @@ class AppReportGridSource<T> extends DataGridSource {
     required BuildContext context,
     this.onSortChanged,
     this.alternateRowColor,
-  })  : _rows = rows,
-        _columns = visibleColumns,
-        _context = context {
+    this.dataTextStyle,
+  }) : _rows = rows,
+       _columns = visibleColumns,
+       _context = context {
     _buildRows();
   }
 
@@ -29,8 +30,12 @@ class AppReportGridSource<T> extends DataGridSource {
   final ValueChanged<List<AppReportSortDescriptor>>? onSortChanged;
 
   final Color? alternateRowColor;
+  final TextStyle? dataTextStyle;
+
+  bool _suppressSortCallback = false;
 
   List<DataGridRow> _dataGridRows = <DataGridRow>[];
+  final Map<DataGridRow, int> _rowIndexByDataGridRow = <DataGridRow, int>{};
 
   @override
   List<DataGridRow> get rows => _dataGridRows;
@@ -50,49 +55,123 @@ class AppReportGridSource<T> extends DataGridSource {
   }
 
   void _buildRows() {
-    _dataGridRows = _rows.map<DataGridRow>((row) {
-      return DataGridRow(
-        cells: _columns.map<DataGridCell<Object?>>((col) {
-          return DataGridCell<Object?>(
-            columnName: col.key,
-            value: col.valueGetter(row),
-          );
-        }).toList(growable: false),
+    _rowIndexByDataGridRow.clear();
+    _dataGridRows = _rows.asMap().entries.map((entry) {
+      final index = entry.key;
+      final row = entry.value;
+      final dgRow = DataGridRow(
+        cells: _columns
+            .map<DataGridCell<Object?>>((col) {
+              return DataGridCell<Object?>(
+                columnName: col.key,
+                value: col.valueGetter(row),
+              );
+            })
+            .toList(growable: false),
       );
+      _rowIndexByDataGridRow[dgRow] = index;
+      return dgRow;
     }).toList();
+  }
+
+  ({T row, int sourceIndex})? resolveRowEntryAt(int visualRowIndex) {
+    final rows = effectiveRows;
+    if (visualRowIndex < 0 || visualRowIndex >= rows.length) {
+      return null;
+    }
+
+    return _resolveRowEntry(rows[visualRowIndex]);
+  }
+
+  List<T> resolveRows(Iterable<DataGridRow> dataGridRows) {
+    return dataGridRows
+        .map(_resolveRowEntry)
+        .whereType<({T row, int sourceIndex})>()
+        .map((entry) => entry.row)
+        .toList(growable: false);
+  }
+
+  ({T row, int sourceIndex})? _resolveRowEntry(DataGridRow dataGridRow) {
+    final sourceIndex = _rowIndexByDataGridRow[dataGridRow];
+    if (sourceIndex == null || sourceIndex < 0 || sourceIndex >= _rows.length) {
+      return null;
+    }
+
+    return (row: _rows[sourceIndex], sourceIndex: sourceIndex);
+  }
+
+  /// Aligns Syncfusion [sortedColumns] with app-level [sorts] without
+  /// notifying [onSortChanged] (avoids feedback loops).
+  ///
+  /// When [reorderRows] is false, only indicators refresh — row order stays
+  /// as built from the last [rows] list (e.g. server-sorted).
+  Future<void> applyExternalSortDescriptors(
+    List<AppReportSortDescriptor> sorts,
+    Set<String> visibleColumnKeys, {
+    bool reorderRows = true,
+  }) async {
+    _suppressSortCallback = true;
+    try {
+      sortedColumns.clear();
+      for (final s in sorts) {
+        if (!visibleColumnKeys.contains(s.columnKey)) {
+          continue;
+        }
+        sortedColumns.add(
+          SortColumnDetails(
+            name: s.columnKey,
+            sortDirection: s.direction == AppReportSortDirection.ascending
+                ? DataGridSortDirection.ascending
+                : DataGridSortDirection.descending,
+          ),
+        );
+      }
+      if (reorderRows) {
+        await sort();
+      } else {
+        notifyListeners();
+      }
+    } finally {
+      _suppressSortCallback = false;
+    }
   }
 
   @override
   DataGridRowAdapter buildRow(DataGridRow row) {
-    final index = _dataGridRows.indexOf(row);
+    final index = _rowIndexByDataGridRow[row] ?? -1;
     final sourceRow = index >= 0 && index < _rows.length ? _rows[index] : null;
     final useAltColor = alternateRowColor != null && index.isOdd;
 
     return DataGridRowAdapter(
       color: useAltColor ? alternateRowColor : null,
-      cells: row.getCells().asMap().entries.map<Widget>((entry) {
-        final colIndex = entry.key;
-        final cell = entry.value;
-        final col = colIndex < _columns.length ? _columns[colIndex] : null;
+      cells: row
+          .getCells()
+          .asMap()
+          .entries
+          .map<Widget>((entry) {
+            final colIndex = entry.key;
+            final cell = entry.value;
+            final col = colIndex < _columns.length ? _columns[colIndex] : null;
 
-        if (col != null && col.cellBuilder != null && sourceRow != null) {
-          return col.cellBuilder!(_context, sourceRow, cell.value);
-        }
+            if (col != null && col.cellBuilder != null && sourceRow != null) {
+              return col.cellBuilder!(_context, sourceRow, cell.value);
+            }
 
-        final displayText = col?.formatValue(cell.value) ?? '${cell.value}';
-        final alignment = _resolveAlignment(col?.effectiveAlignment);
+            final displayText = col?.formatValue(cell.value) ?? '${cell.value}';
+            final alignment = _resolveAlignment(col?.effectiveAlignment);
 
-        return Container(
-          alignment: alignment,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(
-            displayText,
-            style: col?.textStyle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      }).toList(growable: false),
+            return Container(
+              alignment: alignment,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Text(
+                displayText,
+                style: col?.textStyle ?? dataTextStyle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
@@ -100,15 +179,19 @@ class AppReportGridSource<T> extends DataGridSource {
   @override
   Future<void> performSorting(List<DataGridRow> rows) async {
     await super.performSorting(rows);
-    if (onSortChanged == null) return;
-    final descriptors = sortedColumns.map((sc) {
-      return AppReportSortDescriptor(
-        columnKey: sc.name,
-        direction: sc.sortDirection == DataGridSortDirection.ascending
-            ? AppReportSortDirection.ascending
-            : AppReportSortDirection.descending,
-      );
-    }).toList(growable: false);
+    if (_suppressSortCallback || onSortChanged == null) {
+      return;
+    }
+    final descriptors = sortedColumns
+        .map((sc) {
+          return AppReportSortDescriptor(
+            columnKey: sc.name,
+            direction: sc.sortDirection == DataGridSortDirection.ascending
+                ? AppReportSortDirection.ascending
+                : AppReportSortDirection.descending,
+          );
+        })
+        .toList(growable: false);
     onSortChanged!(descriptors);
   }
 
@@ -126,15 +209,12 @@ class AppReportGridSource<T> extends DataGridSource {
     if (values.isEmpty) return '';
 
     final result = switch (aggregation) {
-      AppReportAggregation.sum =>
-        values.fold<num>(0, (acc, v) => acc + v),
+      AppReportAggregation.sum => values.fold<num>(0, (acc, v) => acc + v),
       AppReportAggregation.average =>
         values.fold<num>(0, (acc, v) => acc + v) / values.length,
       AppReportAggregation.count => values.length,
-      AppReportAggregation.min =>
-        values.reduce((a, b) => a < b ? a : b),
-      AppReportAggregation.max =>
-        values.reduce((a, b) => a > b ? a : b),
+      AppReportAggregation.min => values.reduce((a, b) => a < b ? a : b),
+      AppReportAggregation.max => values.reduce((a, b) => a > b ? a : b),
     };
 
     return column.formatValue(result);

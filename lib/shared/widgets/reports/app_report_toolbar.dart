@@ -42,12 +42,17 @@ class AppReportToolbar<T> extends StatefulWidget {
 class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
   late final TextEditingController _searchController;
 
+  void _onSearchControllerUpdated() {
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(
       text: widget.searchTerm ?? '',
     );
+    _searchController.addListener(_onSearchControllerUpdated);
   }
 
   @override
@@ -61,7 +66,9 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchController
+      ..removeListener(_onSearchControllerUpdated)
+      ..dispose();
     super.dispose();
   }
 
@@ -71,7 +78,8 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
     final tokens = theme.extension<AppThemeTokens>()!;
     final style = widget.style;
 
-    final hasAnyAction = style.showRefreshAction ||
+    final hasAnyAction =
+        style.showRefreshAction ||
         style.showExportActions ||
         style.showPrintAction ||
         style.showDensityToggle ||
@@ -117,10 +125,11 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                 onChanged: widget.events.onSearchChanged,
               ),
             ),
-          if (style.showDensityToggle) _DensityToggle(
-            current: widget.currentDensity,
-            onChanged: widget.events.onDensityChanged,
-          ),
+          if (style.showDensityToggle)
+            _DensityToggle(
+              current: widget.currentDensity,
+              onChanged: widget.events.onDensityChanged,
+            ),
           if (style.showColumnChooser)
             Tooltip(
               message: 'Colunas visíveis',

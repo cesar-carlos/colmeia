@@ -131,12 +131,14 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
 
   AppReportPageInfo get _pageInfo {
     final totalFiltered = _currentRows.length;
-    final totalPages = (totalFiltered / _query.pageSize).ceil();
+    final totalPages = totalFiltered == 0
+        ? 0
+        : (totalFiltered / _query.pageSize).ceil().clamp(1, 999);
     return AppReportPageInfo(
       currentPage: _query.page,
       pageSize: _query.pageSize,
       totalRows: totalFiltered,
-      totalPages: totalPages.clamp(1, 999),
+      totalPages: totalPages,
     );
   }
 
@@ -180,6 +182,16 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       if (!mounted) return;
       setState(() {
         _query = query;
+        final total = _currentRows.length;
+        if (total == 0) {
+          _query = _query.copyWith(page: 1);
+        } else {
+          final maxPage = (total / _query.pageSize).ceil();
+          final clamped = _query.page.clamp(1, maxPage);
+          if (clamped != _query.page) {
+            _query = _query.copyWith(page: clamped);
+          }
+        }
         _isLoading = false;
       });
     });

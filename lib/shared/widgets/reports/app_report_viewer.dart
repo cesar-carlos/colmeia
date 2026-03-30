@@ -125,7 +125,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
       _applyExternalQuery(widget.query!);
     }
     if (oldWidget.columns != widget.columns) {
-      _refreshDefaultVisibleKeys();
+      _syncVisibleColumnKeysWithColumns();
     }
   }
 
@@ -146,9 +146,13 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     });
   }
 
-  void _refreshDefaultVisibleKeys() {
+  void _syncVisibleColumnKeysWithColumns() {
     setState(() {
-      _visibleColumnKeys = _defaultVisibleKeys();
+      final validKeys = widget.columns.map((column) => column.key).toSet();
+      final syncedKeys = _visibleColumnKeys.intersection(validKeys);
+      _visibleColumnKeys = syncedKeys.isNotEmpty
+          ? syncedKeys
+          : _defaultVisibleKeys();
     });
   }
 
@@ -203,16 +207,21 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     Set<String>? visibleColumnKeys,
     Map<String, Object?>? filters,
     int? page,
+    int? pageSize,
     String? searchTerm,
   }) {
     final current = widget.query ?? const AppReportQuery();
+    final normalizedSearchTerm = searchTerm?.trim();
     final updated = current.copyWith(
       sorts: sorts ?? _sorts,
       density: density ?? _density,
       visibleColumnKeys: visibleColumnKeys ?? _visibleColumnKeys,
       filters: filters ?? current.filters,
       page: page ?? current.page,
-      searchTerm: searchTerm ?? current.searchTerm,
+      pageSize: pageSize ?? current.pageSize,
+      searchTerm: normalizedSearchTerm,
+      clearSearchTerm:
+          normalizedSearchTerm != null && normalizedSearchTerm.isEmpty,
     );
     widget.events.onQueryChanged?.call(updated);
   }
@@ -224,13 +233,14 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
 
     final showHeader =
         widget.title != null ||
+        widget.subtitle != null ||
+        widget.headerTrailing != null ||
         (widget.contextChips?.isNotEmpty ?? false);
     final showFilters =
         style.showFiltersPanel && (widget.filters?.isNotEmpty ?? false);
     final showSummary =
         style.showSummaryBar && (widget.summaryItems?.isNotEmpty ?? false);
-    final showPagination =
-        style.showPagination && widget.pageInfo != null;
+    final showPagination = style.showPagination && widget.pageInfo != null;
 
     final body = ListView(
       padding: EdgeInsets.all(tokens.contentSpacing),
@@ -299,7 +309,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                   events: AppReportEvents<T>(
                     onSearchChanged: (term) {
                       widget.events.onSearchChanged?.call(term);
-                      _emitQueryChanged(searchTerm: term);
+                      _emitQueryChanged(searchTerm: term, page: 1);
                     },
                     onDensityChanged: _onDensityChanged,
                     onColumnVisibilityChanged: _onColumnVisibilityChanged,
@@ -311,6 +321,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                   visibleColumnKeys: _visibleColumnKeys,
                   currentDensity: _density,
                   isLoading: widget.isLoading,
+                  searchTerm: widget.query?.searchTerm,
                 ),
                 AppReportGrid<T>(
                   columns: _visibleColumns,
@@ -344,7 +355,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                 },
                 onPageSizeChanged: (size) {
                   widget.events.onPageSizeChanged?.call(size);
-                  _emitQueryChanged(page: 1);
+                  _emitQueryChanged(page: 1, pageSize: size);
                 },
                 availablePageSizes: style.resolvedPageSizes,
                 isLoading: widget.isLoading,

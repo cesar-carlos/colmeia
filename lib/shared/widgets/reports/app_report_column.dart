@@ -46,7 +46,7 @@ class AppReportColumn<T> {
   /// Custom widget builder for the cell content. When null the column renders
   /// [formatter](value) or value.toString().
   final Widget Function(BuildContext context, T row, Object? value)?
-      cellBuilder;
+  cellBuilder;
 
   /// Custom widget builder for the header label cell. When null the column
   /// renders [label] with [headerTextStyle] or the theme's labelLarge.
@@ -75,7 +75,11 @@ class AppReportColumn<T> {
   /// hidden to keep the grid readable on small screens.
   final double? hideBelowBreakpoint;
 
-  /// When true the column is frozen on the left edge and never scrolls.
+  /// When true, participates in the left frozen column run in the data grid.
+  /// Only a prefix of consecutive pinned columns (from the first visible
+  /// column onward) is frozen; pinning on columns after a non-pinned column
+  /// is ignored. If none are pinned, the viewer style frozen column count
+  /// applies instead.
   final bool pinned;
 
   /// Whether tapping the header toggles sort on this column.
@@ -103,8 +107,8 @@ class AppReportColumn<T> {
   /// Resolves the effective alignment taking [numeric] into account.
   AppReportColumnAlignment get effectiveAlignment =>
       alignment != AppReportColumnAlignment.start
-          ? alignment
-          : (numeric ? AppReportColumnAlignment.end : alignment);
+      ? alignment
+      : (numeric ? AppReportColumnAlignment.end : alignment);
 
   /// Returns the display string for a given value using [formatter] if
   /// provided, otherwise toString.

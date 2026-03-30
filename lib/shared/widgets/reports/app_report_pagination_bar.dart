@@ -39,15 +39,18 @@ class AppReportPaginationBar extends StatelessWidget {
       runSpacing: tokens.gapSm,
       children: <Widget>[
         _CountLabel(pageInfo: pageInfo),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            _prevButton(context),
-            SizedBox(width: tokens.gapSm),
-            _pageButtons(context),
-            SizedBox(width: tokens.gapSm),
-            _nextButton(context),
-          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _prevButton(context),
+              SizedBox(width: tokens.gapSm),
+              _pageButtons(context),
+              SizedBox(width: tokens.gapSm),
+              _nextButton(context),
+            ],
+          ),
         ),
         _PageSizeSelector(
           current: pageInfo.pageSize,
@@ -83,6 +86,15 @@ class AppReportPaginationBar extends StatelessWidget {
     final total = pageInfo.totalPages;
     final current = pageInfo.currentPage;
 
+    if (total <= 0) {
+      return Text(
+        '—',
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
     if (total <= 1) {
       return Text(
         '$current / $total',
@@ -110,25 +122,29 @@ class AppReportPaginationBar extends StatelessWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: pages.map<Widget>((page) {
-        if (page == -1) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text('...', style: theme.textTheme.bodyMedium),
-          );
-        }
-        return _PageButton(
-          page: page,
-          isCurrent: page == current,
-          isLoading: isLoading,
-          onTap: () => onPageChanged?.call(page),
-        );
-      }).toList(growable: false),
+      children: pages
+          .map<Widget>((page) {
+            if (page == -1) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text('...', style: theme.textTheme.bodyMedium),
+              );
+            }
+            return _PageButton(
+              page: page,
+              isCurrent: page == current,
+              isLoading: isLoading,
+              onTap: () => onPageChanged?.call(page),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
   static List<int> _buildCompactPages(int current, int total) {
-    final result = <int>{}..add(1)..add(total);
+    final result = <int>{}
+      ..add(1)
+      ..add(total);
     for (var i = current - 1; i <= current + 1; i++) {
       if (i >= 1 && i <= total) result.add(i);
     }
@@ -156,14 +172,23 @@ class _CountLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final first = pageInfo.firstRowIndex;
-    final last = pageInfo.lastRowIndex;
     final total = pageInfo.totalRows;
+
+    final String label;
+    if (total == 0) {
+      label = 'Nenhum registro';
+    } else if (pageInfo.hasInvalidDisplayedRange) {
+      label = 'Nenhum registro nesta página';
+    } else {
+      final first = pageInfo.firstRowIndex;
+      final last = pageInfo.lastRowIndex;
+      label = 'Exibindo $first a $last de $total registros';
+    }
 
     return Semantics(
       liveRegion: true,
       child: Text(
-        'Exibindo $first a $last de $total registros',
+        label,
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -232,9 +257,10 @@ class _PageSizeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final effectiveOptions =
-        options.contains(current) ? options : <int>[current, ...options]
-          ..sort();
+    final effectiveOptions = <int>[
+      if (!options.contains(current)) current,
+      ...options,
+    ]..sort();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -250,12 +276,14 @@ class _PageSizeSelector extends StatelessWidget {
           value: current,
           isDense: true,
           underline: const SizedBox.shrink(),
-          items: effectiveOptions.map((size) {
-            return DropdownMenuItem<int>(
-              value: size,
-              child: Text('$size'),
-            );
-          }).toList(growable: false),
+          items: effectiveOptions
+              .map((size) {
+                return DropdownMenuItem<int>(
+                  value: size,
+                  child: Text('$size'),
+                );
+              })
+              .toList(growable: false),
           onChanged: onChanged != null
               ? (v) {
                   if (v != null) onChanged!(v);

@@ -6,8 +6,12 @@ import 'package:flutter/foundation.dart';
 ///
 /// Every callback is optional. The consumer wires only the events it needs.
 /// The viewer merges interaction-driven state changes internally and fires
-/// onQueryChanged with the full updated AppReportQuery when any
+/// [onQueryChanged] with the full updated [AppReportQuery] when any
 /// query-affecting interaction occurs.
+///
+/// Prefer implementing data reloads from [onQueryChanged] alone: sort changes
+/// invoke both [onSortChanged] and [onQueryChanged], so listening to both can
+/// duplicate work.
 class AppReportEvents<T> {
   const AppReportEvents({
     this.onQueryChanged,
@@ -35,6 +39,9 @@ class AppReportEvents<T> {
   final ValueChanged<AppReportQuery>? onQueryChanged;
 
   /// Fired when the user changes column sort (tap on header).
+  ///
+  /// Also causes [onQueryChanged] with updated sorts; avoid handling both
+  /// unless you need side effects that apply only to sort.
   final ValueChanged<List<AppReportSortDescriptor>>? onSortChanged;
 
   /// Fired when the user navigates to a different page.

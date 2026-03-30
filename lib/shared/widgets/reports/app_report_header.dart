@@ -39,14 +39,15 @@ class AppReportHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                    if (title.isNotEmpty)
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
                     if (subtitle != null) ...<Widget>[
-                      SizedBox(height: tokens.gapXs),
+                      if (title.isNotEmpty) SizedBox(height: tokens.gapXs),
                       Text(
                         subtitle!,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -68,13 +69,15 @@ class AppReportHeader extends StatelessWidget {
             Wrap(
               spacing: tokens.gapSm,
               runSpacing: tokens.gapSm,
-              children: contextChips.map((label) {
-                return Chip(
-                  label: Text(label),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
-                );
-              }).toList(growable: false),
+              children: contextChips
+                  .map((label) {
+                    return Chip(
+                      label: Text(label),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+                    );
+                  })
+                  .toList(growable: false),
             ),
           ],
         ],

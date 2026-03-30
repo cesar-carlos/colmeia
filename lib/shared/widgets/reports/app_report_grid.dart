@@ -4,6 +4,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_grid_source.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
@@ -34,12 +35,23 @@ class AppReportGrid<T> extends StatefulWidget {
 
 class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   late AppReportGridSource<T> _source;
+  bool _hasBuiltSource = false;
   final DataGridController _gridController = DataGridController();
 
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasBuiltSource) {
+      return;
+    }
     _source = _buildSource();
+    _hasBuiltSource = true;
+    _scheduleSyncSortFromParent();
   }
 
   @override
@@ -49,9 +61,45 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     final rowsChanged = oldWidget.rows != widget.rows;
     final styleChanged =
         oldWidget.style.alternateRowColor != widget.style.alternateRowColor;
+    final trustOrderChanged =
+        oldWidget.style.trustServerRowOrder != widget.style.trustServerRowOrder;
+    final sortsChanged = !listEquals(
+      oldWidget.currentSorts,
+      widget.currentSorts,
+    );
     if (columnsChanged || rowsChanged || styleChanged) {
-      _source = _buildSource();
+      if (styleChanged) {
+        _source = _buildSource();
+      } else {
+        _source.update(
+          rows: widget.rows,
+          visibleColumns: _visibleColumns,
+        );
+      }
+      _hasBuiltSource = true;
     }
+    if (columnsChanged ||
+        rowsChanged ||
+        styleChanged ||
+        sortsChanged ||
+        trustOrderChanged) {
+      _scheduleSyncSortFromParent();
+    }
+  }
+
+  void _scheduleSyncSortFromParent() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+      final visible = _visibleColumns;
+      final keys = visible.map((c) => c.key).toSet();
+      await _source.applyExternalSortDescriptors(
+        widget.currentSorts,
+        keys,
+        reorderRows: !widget.style.trustServerRowOrder,
+      );
+    });
   }
 
   @override
@@ -66,17 +114,20 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       visibleColumns: _visibleColumns,
       context: context,
       alternateRowColor: widget.style.alternateRowColor,
+      dataTextStyle: widget.style.dataTextStyle,
       onSortChanged: widget.events.onSortChanged,
     );
   }
 
   List<AppReportColumn<T>> get _visibleColumns {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    return widget.columns.where((col) {
-      final breakpoint = col.hideBelowBreakpoint;
-      if (breakpoint != null && screenWidth < breakpoint) return false;
-      return true;
-    }).toList(growable: false);
+    return widget.columns
+        .where((col) {
+          final breakpoint = col.hideBelowBreakpoint;
+          if (breakpoint != null && screenWidth < breakpoint) return false;
+          return true;
+        })
+        .toList(growable: false);
   }
 
   List<GridColumn> _buildGridColumns(List<AppReportColumn<T>> visible) {
@@ -84,35 +135,39 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     final tokens = theme.extension<AppThemeTokens>()!;
     final density = widget.style.density;
     final headerHeight = widget.style.resolvedHeaderRowHeight(density);
+    final defaultHeaderTextStyle =
+        widget.style.headerTextStyle ??
+        theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+        );
 
-    return visible.map((col) {
-      final labelWidget = col.headerBuilder != null
-          ? col.headerBuilder!(context, col.label)
-          : Container(
-              alignment: _sfAlignment(col.effectiveAlignment),
-              padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
-              height: headerHeight,
-              child: Text(
-                col.label,
-                style: col.headerTextStyle ??
-                    theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            );
+    return visible
+        .map((col) {
+          final labelWidget = col.headerBuilder != null
+              ? col.headerBuilder!(context, col.label)
+              : Container(
+                  alignment: _sfAlignment(col.effectiveAlignment),
+                  padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
+                  height: headerHeight,
+                  child: Text(
+                    col.label,
+                    style: col.headerTextStyle ?? defaultHeaderTextStyle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
 
-      return GridColumn(
-        columnName: col.key,
-        minimumWidth: col.minWidth,
-        width: col.width ?? double.nan,
-        columnWidthMode: col.width != null
-            ? ColumnWidthMode.none
-            : ColumnWidthMode.fill,
-        allowSorting: widget.style.allowSorting && col.sortable,
-        label: labelWidget,
-      );
-    }).toList(growable: false);
+          return GridColumn(
+            columnName: col.key,
+            minimumWidth: col.minWidth,
+            width: col.width ?? double.nan,
+            columnWidthMode: col.width != null
+                ? ColumnWidthMode.none
+                : ColumnWidthMode.fill,
+            allowSorting: widget.style.allowSorting && col.sortable,
+            label: labelWidget,
+          );
+        })
+        .toList(growable: false);
   }
 
   List<GridTableSummaryRow> _buildSummaryRows(
@@ -146,26 +201,46 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
 
   void _handleCellTap(DataGridCellTapDetails details) {
     if (details.rowColumnIndex.rowIndex < 1) return;
-    final rowIndex = details.rowColumnIndex.rowIndex - 1;
-    if (rowIndex < 0 || rowIndex >= widget.rows.length) return;
-    final row = widget.rows[rowIndex];
-    widget.events.onRowTap?.call(row, rowIndex);
+    final entry = _source.resolveRowEntryAt(
+      details.rowColumnIndex.rowIndex - 1,
+    );
+    if (entry == null) return;
+    widget.events.onRowTap?.call(entry.row, entry.sourceIndex);
   }
 
   void _handleCellDoubleTap(DataGridCellDoubleTapDetails details) {
     if (details.rowColumnIndex.rowIndex < 1) return;
-    final rowIndex = details.rowColumnIndex.rowIndex - 1;
-    if (rowIndex < 0 || rowIndex >= widget.rows.length) return;
-    final row = widget.rows[rowIndex];
-    widget.events.onRowDoubleTap?.call(row, rowIndex);
+    final entry = _source.resolveRowEntryAt(
+      details.rowColumnIndex.rowIndex - 1,
+    );
+    if (entry == null) return;
+    widget.events.onRowDoubleTap?.call(entry.row, entry.sourceIndex);
   }
 
   void _handleCellLongPress(DataGridCellLongPressDetails details) {
     if (details.rowColumnIndex.rowIndex < 1) return;
-    final rowIndex = details.rowColumnIndex.rowIndex - 1;
-    if (rowIndex < 0 || rowIndex >= widget.rows.length) return;
-    final row = widget.rows[rowIndex];
-    widget.events.onRowLongPress?.call(row, rowIndex);
+    final entry = _source.resolveRowEntryAt(
+      details.rowColumnIndex.rowIndex - 1,
+    );
+    if (entry == null) return;
+    widget.events.onRowLongPress?.call(entry.row, entry.sourceIndex);
+  }
+
+  void _handleSelectionChanged(
+    List<DataGridRow> addedRows,
+    List<DataGridRow> removedRows,
+  ) {
+    if (widget.events.onRowSelection == null) {
+      return;
+    }
+
+    final selectedGridRows = widget.style.allowMultiSelection
+        ? _gridController.selectedRows
+        : <DataGridRow>[
+            if (_gridController.selectedRow case final DataGridRow row) row,
+          ];
+    final selectedRows = _source.resolveRows(selectedGridRows);
+    widget.events.onRowSelection?.call(selectedRows);
   }
 
   @override
@@ -177,14 +252,14 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
 
     if (widget.rows.isEmpty) {
       return _EmptyGridPlaceholder(
-        message: widget.emptyMessage ??
+        message:
+            widget.emptyMessage ??
             widget.style.emptyMessage ??
             'Nenhum resultado encontrado.',
       );
     }
 
-    final frozenCount =
-        widget.style.frozenColumnsCount.clamp(0, visible.length);
+    final frozenCount = _resolvedFrozenColumnsCount(visible);
 
     final grid = SfDataGrid(
       source: _source,
@@ -205,10 +280,13 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       selectionMode: _sfSelectionMode,
       frozenColumnsCount: frozenCount,
       rowHeight: widget.style.resolvedDataRowHeight(density),
-      headerRowHeight: widget.style.resolvedHeaderRowHeight(density),
+      headerRowHeight: widget.style.showColumnHeaders
+          ? widget.style.resolvedHeaderRowHeight(density)
+          : 0,
       onCellTap: _handleCellTap,
       onCellDoubleTap: _handleCellDoubleTap,
       onCellLongPress: _handleCellLongPress,
+      onSelectionChanged: _handleSelectionChanged,
     );
 
     return ClipRRect(
@@ -247,6 +325,21 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       AppReportAggregation.min => GridSummaryType.minimum,
       AppReportAggregation.max => GridSummaryType.maximum,
     };
+  }
+
+  int _resolvedFrozenColumnsCount(List<AppReportColumn<T>> visible) {
+    var leadingPinned = 0;
+    for (final col in visible) {
+      if (col.pinned) {
+        leadingPinned++;
+      } else {
+        break;
+      }
+    }
+    final n = leadingPinned > 0
+        ? leadingPinned
+        : widget.style.frozenColumnsCount;
+    return n.clamp(0, visible.length);
   }
 }
 
