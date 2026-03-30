@@ -129,9 +129,9 @@ class SyncfusionAreaTrendChart extends StatelessWidget {
           axisLabelFormatter: style.yAxisFormat == null
               ? null
               : (details) => ChartAxisLabel(
-                    style.yAxisFormat!.format(details.value),
-                    details.textStyle,
-                  ),
+                  style.yAxisFormat!.format(details.value),
+                  details.textStyle,
+                ),
         ),
         series: resolvedSeries,
       ),

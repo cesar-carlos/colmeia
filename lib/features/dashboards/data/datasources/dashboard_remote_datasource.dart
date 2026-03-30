@@ -273,7 +273,8 @@ class FakeDashboardRemoteDataSource implements DashboardRemoteDataSource {
     if (user.dashboardGrants.isEmpty) {
       return user.permissions.contains(UserPermission.viewDashboard);
     }
-    return user.dashboardGrants
-        .any((grant) => grant.dashboardId == _mainDashboardId);
+    return user.dashboardGrants.any(
+      (grant) => grant.dashboardId == _mainDashboardId,
+    );
   }
 }
