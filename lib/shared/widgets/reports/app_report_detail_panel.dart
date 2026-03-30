@@ -59,21 +59,51 @@ class _AppReportDetailSheet<T> extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: tokens.contentSpacing),
-              child: Row(
-                children: <Widget>[
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () => Navigator.of(context).pop(),
-                    tooltip: 'Fechar',
-                  ),
-                ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 360;
+
+                  if (isCompact) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: tokens.gapSm),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            onPressed: () => Navigator.of(context).pop(),
+                            tooltip: 'Fechar',
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.of(context).pop(),
+                        tooltip: 'Fechar',
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
             const Divider(height: 1),
@@ -91,30 +121,52 @@ class _AppReportDetailSheet<T> extends StatelessWidget {
                   final value = col.valueGetter(row);
                   final displayText = col.formatValue(value);
 
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 120,
-                        child: Text(
-                          col.label,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: tokens.gapMd),
-                      Expanded(
-                        child: col.cellBuilder != null
-                            ? col.cellBuilder!(context, row, value)
-                            : Text(
-                                displayText,
-                                style: col.textStyle ??
-                                    theme.textTheme.bodyMedium,
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 420;
+                      final valueWidget = col.cellBuilder != null
+                          ? col.cellBuilder!(context, row, value)
+                          : Text(
+                              displayText,
+                              style:
+                                  col.textStyle ?? theme.textTheme.bodyMedium,
+                            );
+
+                      if (compact) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              col.label,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
                               ),
-                      ),
-                    ],
+                            ),
+                            SizedBox(height: tokens.gapXs),
+                            valueWidget,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              col.label,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: tokens.gapMd),
+                          Expanded(child: valueWidget),
+                        ],
+                      );
+                    },
                   );
                 },
               ),

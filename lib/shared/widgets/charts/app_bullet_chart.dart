@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/custom_bullet_chart.dart';
@@ -62,6 +63,7 @@ class AppBulletChart<T> extends StatelessWidget {
     this.belowSubtitle,
     this.maxValueBuilder,
     this.onPointTap,
+    this.onPointTapEvent,
     this.style = const AppBulletChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -75,6 +77,7 @@ class AppBulletChart<T> extends StatelessWidget {
   final List<AppBulletRange> Function(T item) rangesBuilder;
   final num Function(T item)? maxValueBuilder;
   final void Function(T item, int index)? onPointTap;
+  final ValueChanged<AppChartItemTapEvent<T>>? onPointTapEvent;
 
   final String? title;
   final String? subtitle;
@@ -88,6 +91,11 @@ class AppBulletChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handlePointTap(T item, int index) {
+      onPointTap?.call(item, index);
+      onPointTapEvent?.call(AppChartItemTapEvent(item: item, index: index));
+    }
+
     final innerChart = CustomBulletChart<T>(
       items: items,
       labelBuilder: labelBuilder,
@@ -95,7 +103,9 @@ class AppBulletChart<T> extends StatelessWidget {
       targetValueBuilder: targetValueBuilder,
       rangesBuilder: rangesBuilder,
       maxValueBuilder: maxValueBuilder,
-      onPointTap: onPointTap,
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
+          ? null
+          : handlePointTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

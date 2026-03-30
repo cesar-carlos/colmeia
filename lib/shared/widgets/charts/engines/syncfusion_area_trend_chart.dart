@@ -16,6 +16,7 @@ class SyncfusionAreaTrendChart extends StatelessWidget {
     super.key,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onPointTap,
   });
 
   final List<AppAreaTrendEntry> entries;
@@ -24,6 +25,13 @@ class SyncfusionAreaTrendChart extends StatelessWidget {
   final AppChartPreset preset;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final void Function(
+    AppAreaTrendEntry entry,
+    AppChartPoint point,
+    int pointIndex,
+    int seriesIndex,
+  )?
+  onPointTap;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +60,7 @@ class SyncfusionAreaTrendChart extends StatelessWidget {
     final resolvedSeries = <CartesianSeries<AppChartPoint, String>>[];
     for (var i = 0; i < entries.length; i++) {
       final entry = entries[i];
+      final seriesIndex = i;
       final seriesColor = entry.color ?? chartTheme.paletteColor(i);
       final gradient = style.showGradientFill
           ? LinearGradient(
@@ -86,6 +95,22 @@ class SyncfusionAreaTrendChart extends StatelessWidget {
             color: seriesColor,
             borderColor: colors.surface,
           ),
+          onPointTap: onPointTap == null
+              ? null
+              : (args) {
+                  final index = args.pointIndex;
+                  if (index == null ||
+                      index < 0 ||
+                      index >= entry.points.length) {
+                    return;
+                  }
+                  onPointTap!(
+                    entry,
+                    entry.points[index],
+                    index,
+                    seriesIndex,
+                  );
+                },
         ),
       );
     }

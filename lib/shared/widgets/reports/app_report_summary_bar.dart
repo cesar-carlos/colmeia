@@ -31,27 +31,44 @@ class AppReportSummaryBar extends StatelessWidget {
         horizontal: tokens.contentSpacing,
         vertical: tokens.gapMd,
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: IntrinsicHeight(
-          child: Row(
-            children: items.indexed.expand<Widget>((entry) {
-              final i = entry.$1;
-              final item = entry.$2;
-              return <Widget>[
-                if (i > 0) ...<Widget>[
-                  SizedBox(width: tokens.gapMd),
-                  VerticalDivider(
-                    width: 1,
-                    color: theme.colorScheme.outlineVariant,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 640) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: items.indexed
+                    .expand<Widget>((entry) {
+                      final i = entry.$1;
+                      final item = entry.$2;
+                      return <Widget>[
+                        if (i > 0) SizedBox(width: tokens.gapMd),
+                        _SummaryTile(item: item),
+                      ];
+                    })
+                    .toList(growable: false),
+              ),
+            );
+          }
+
+          final tileWidth = ((constraints.maxWidth - tokens.gapMd) / 2).clamp(
+            180.0,
+            320.0,
+          );
+
+          return Wrap(
+            spacing: tokens.gapMd,
+            runSpacing: tokens.gapMd,
+            children: items
+                .map(
+                  (item) => SizedBox(
+                    width: tileWidth,
+                    child: _SummaryTile(item: item),
                   ),
-                  SizedBox(width: tokens.gapMd),
-                ],
-                _SummaryTile(item: item),
-              ];
-            }).toList(growable: false),
-          ),
-        ),
+                )
+                .toList(growable: false),
+          );
+        },
       ),
     );
   }

@@ -80,6 +80,24 @@ class AppReportQuery {
   AppReportQuery withVisibleColumns(Set<String> keys) =>
       copyWith(visibleColumnKeys: keys);
 
+  AppReportQuery withGroups(List<AppReportGroupDescriptor> newGroups) =>
+      copyWith(groups: newGroups);
+
+  AppReportQuery withGroupExpansionAtLevel({
+    required int groupLevel,
+    required bool isExpanded,
+  }) {
+    if (groupLevel < 0 || groupLevel >= groups.length) {
+      return this;
+    }
+
+    final updatedGroups = List<AppReportGroupDescriptor>.from(groups);
+    updatedGroups[groupLevel] = updatedGroups[groupLevel].copyWith(
+      expanded: isExpanded,
+    );
+    return copyWith(groups: updatedGroups);
+  }
+
   AppReportQuery clearFilters() =>
       copyWith(filters: const <String, Object?>{}, page: 1);
 }

@@ -141,6 +141,7 @@ class SyncfusionGaugeChart extends StatelessWidget {
                         angle: 90,
                         positionFactor: 0.15,
                         widget: _GaugeAnnotation(
+                          maxWidth: resolvedHeight * 0.42,
                           valueLabel:
                               valueLabelBuilder?.call(resolvedValue) ??
                               resolvedValue.toStringAsFixed(0),
@@ -171,12 +172,14 @@ class SyncfusionGaugeChart extends StatelessWidget {
 
 class _GaugeAnnotation extends StatelessWidget {
   const _GaugeAnnotation({
+    required this.maxWidth,
     required this.valueLabel,
     required this.textStyle,
     this.targetLabel,
     this.secondaryTextStyle,
   });
 
+  final double maxWidth;
   final String valueLabel;
   final String? targetLabel;
   final TextStyle? textStyle;
@@ -184,20 +187,33 @@ class _GaugeAnnotation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(valueLabel, style: textStyle, textAlign: TextAlign.center),
-        if (targetLabel != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
+    return SizedBox(
+      width: maxWidth,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          FittedBox(
+            fit: BoxFit.scaleDown,
             child: Text(
-              targetLabel!,
-              style: secondaryTextStyle,
+              valueLabel,
+              style: textStyle,
               textAlign: TextAlign.center,
             ),
           ),
-      ],
+          if (targetLabel != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  targetLabel!,
+                  style: secondaryTextStyle,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

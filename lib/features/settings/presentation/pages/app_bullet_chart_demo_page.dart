@@ -66,11 +66,13 @@ class AppBulletChartDemoPage extends StatelessWidget {
             rangesBuilder: (item) => item.ranges,
             maxValueBuilder: (_) => 100,
             preset: AppChartPreset.compact,
-            onPointTap: (item, index) {
+            onPointTapEvent: (event) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${item.label}: ${item.actual.toStringAsFixed(0)} / ${item.target.toStringAsFixed(0)}',
+                    '${event.item.label}: '
+                    '${event.item.actual.toStringAsFixed(0)} / '
+                    '${event.item.target.toStringAsFixed(0)}',
                   ),
                 ),
               );

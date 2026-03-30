@@ -35,6 +35,16 @@ class AppTreemapNode {
   final List<int> indices;
 }
 
+class AppTreemapTileSelectionEvent<T> {
+  const AppTreemapTileSelectionEvent({
+    required this.node,
+    required this.items,
+  });
+
+  final AppTreemapNode node;
+  final List<T> items;
+}
+
 class AppTreemapChartStyle {
   const AppTreemapChartStyle({
     this.height,
@@ -95,6 +105,7 @@ class AppTreemapChart<T> extends StatelessWidget {
     this.labelBuilder,
     this.tooltipLabelBuilder,
     this.onTileSelected,
+    this.onTileSelectedEvent,
     this.style = const AppTreemapChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -110,6 +121,7 @@ class AppTreemapChart<T> extends StatelessWidget {
   final String? Function(AppTreemapNode node)? labelBuilder;
   final String? Function(AppTreemapNode node)? tooltipLabelBuilder;
   final void Function(AppTreemapNode node)? onTileSelected;
+  final ValueChanged<AppTreemapTileSelectionEvent<T>>? onTileSelectedEvent;
 
   final String? title;
   final String? subtitle;
@@ -122,6 +134,18 @@ class AppTreemapChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handleTileSelected(AppTreemapNode node) {
+      onTileSelected?.call(node);
+      onTileSelectedEvent?.call(
+        AppTreemapTileSelectionEvent<T>(
+          node: node,
+          items: node.indices
+              .map((index) => items[index])
+              .toList(growable: false),
+        ),
+      );
+    }
+
     final innerChart = SyncfusionTreemapChart<T>(
       items: items,
       groupBuilder: groupBuilder,
@@ -131,7 +155,9 @@ class AppTreemapChart<T> extends StatelessWidget {
       colorRanges: colorRanges,
       labelBuilder: labelBuilder,
       tooltipLabelBuilder: tooltipLabelBuilder,
-      onTileSelected: onTileSelected,
+      onTileSelected: (onTileSelected == null && onTileSelectedEvent == null)
+          ? null
+          : handleTileSelected,
       style: style,
       preset: preset,
       isLoading: isLoading,

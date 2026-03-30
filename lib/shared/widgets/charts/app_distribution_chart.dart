@@ -30,6 +30,8 @@ class AppDistributionChart extends StatelessWidget {
     this.style = const AppDistributionChartStyle(),
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onSegmentTap,
+    this.onSegmentTapEvent,
   });
 
   final List<AppChartPoint> points;
@@ -42,14 +44,28 @@ class AppDistributionChart extends StatelessWidget {
   final bool isLoading;
   final Widget? emptyPlaceholder;
 
+  /// Called when a pie/doughnut segment is tapped.
+  final ValueChanged<AppChartPoint>? onSegmentTap;
+
+  /// Structured alternative to [onSegmentTap] with segment index.
+  final ValueChanged<AppChartItemTapEvent<AppChartPoint>>? onSegmentTapEvent;
+
   @override
   Widget build(BuildContext context) {
+    void handleSegmentTap(AppChartPoint point, int index) {
+      onSegmentTap?.call(point);
+      onSegmentTapEvent?.call(AppChartItemTapEvent(item: point, index: index));
+    }
+
     final innerChart = SyncfusionDistributionChart(
       points: points,
       preset: preset,
       style: style,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
+      onSegmentTap: (onSegmentTap == null && onSegmentTapEvent == null)
+          ? null
+          : handleSegmentTap,
     );
 
     if (title == null) {

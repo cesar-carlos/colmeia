@@ -7,6 +7,22 @@ import 'package:flutter/material.dart';
 /// When [auto], the direction is inferred from the first and last value.
 enum AppSparklineTrend { auto, up, down, flat }
 
+class AppSparklineTapEvent {
+  const AppSparklineTapEvent({
+    required this.values,
+    required this.trend,
+    required this.minValue,
+    required this.maxValue,
+    required this.delta,
+  });
+
+  final List<num> values;
+  final AppSparklineTrend trend;
+  final double minValue;
+  final double maxValue;
+  final double delta;
+}
+
 /// A micro inline chart that renders a compact line (with optional fill) for
 /// showing a trend at a glance — typically embedded inside a KPI card or table
 /// row.
@@ -32,6 +48,8 @@ class AppSparklineChart extends StatelessWidget {
     this.showFill = true,
     this.showEndDot = true,
     this.trend = AppSparklineTrend.auto,
+    this.onTap,
+    this.onTapEvent,
   });
 
   final List<num> values;
@@ -54,16 +72,22 @@ class AppSparklineChart extends StatelessWidget {
   /// [AppSparklineTrend.auto] infers the direction from the first/last value.
   final AppSparklineTrend trend;
 
+  /// Optional tap callback for inline sparkline actions (e.g. open detail).
+  final VoidCallback? onTap;
+  final ValueChanged<AppSparklineTapEvent>? onTapEvent;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final resolved = _resolveColor(theme);
+    final effectiveTrend =
+        trend == AppSparklineTrend.auto ? _inferTrend() : trend;
 
     if (values.length < 2) {
       return SizedBox(height: height);
     }
 
-    return SizedBox(
+    final painter = SizedBox(
       height: height,
       child: CustomPaint(
         painter: _SparklinePainter(
@@ -74,6 +98,25 @@ class AppSparklineChart extends StatelessWidget {
           showEndDot: showEndDot,
         ),
       ),
+    );
+
+    if (onTap == null && onTapEvent == null) return painter;
+
+    return GestureDetector(
+      onTap: () {
+        onTap?.call();
+        onTapEvent?.call(
+          AppSparklineTapEvent(
+            values: values,
+            trend: effectiveTrend,
+            minValue: values.reduce(math.min).toDouble(),
+            maxValue: values.reduce(math.max).toDouble(),
+            delta: (values.last - values.first).toDouble(),
+          ),
+        );
+      },
+      behavior: HitTestBehavior.opaque,
+      child: painter,
     );
   }
 

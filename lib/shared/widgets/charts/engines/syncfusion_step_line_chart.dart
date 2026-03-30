@@ -85,7 +85,9 @@ class SyncfusionStepLineChart extends StatelessWidget {
               ? null
               : (details) {
                   final pointIndex = details.pointIndex;
-                  if (pointIndex != null && pointIndex >= 0) {
+                  if (pointIndex != null &&
+                      pointIndex >= 0 &&
+                      pointIndex < entry.points.length) {
                     onPointTap!(entry, entry.points[pointIndex], pointIndex, i);
                   }
                 },

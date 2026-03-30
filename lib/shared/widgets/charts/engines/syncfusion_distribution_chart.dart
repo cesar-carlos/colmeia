@@ -13,6 +13,7 @@ class SyncfusionDistributionChart extends StatelessWidget {
     super.key,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onSegmentTap,
   });
 
   final List<AppChartPoint> points;
@@ -20,6 +21,7 @@ class SyncfusionDistributionChart extends StatelessWidget {
   final AppDistributionChartStyle style;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final void Function(AppChartPoint point, int index)? onSegmentTap;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,15 @@ class SyncfusionDistributionChart extends StatelessWidget {
             dataSource: points,
             xValueMapper: (point, _) => point.label,
             yValueMapper: (point, _) => point.value,
+            onPointTap: onSegmentTap == null
+                ? null
+                : (args) {
+                    final index = args.pointIndex;
+                    if (index == null || index < 0 || index >= points.length) {
+                      return;
+                    }
+                    onSegmentTap!(points[index], index);
+                  },
           ),
         ],
       ),

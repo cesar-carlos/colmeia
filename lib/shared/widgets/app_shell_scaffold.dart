@@ -1,9 +1,11 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/widgets/backgrounds/honeycomb_hex_background.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_app_bar.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_bottom_nav.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_rail.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,6 +24,30 @@ class AppShellScaffold extends StatelessWidget {
     final userContextController = context.watch<CurrentUserContextController>();
     final visibleShellRoutes = userContextController.availableShellRoutes;
     final showShellNav = visibleShellRoutes.length > 1;
+    final useRail = AppBreakpoints.useRail(context);
+
+    final body = HoneycombHexBackground(
+      child: SafeArea(
+        bottom: false,
+        child: child,
+      ),
+    );
+
+    if (useRail) {
+      return Scaffold(
+        appBar: const AppShellAppBar(),
+        body: Row(
+          children: <Widget>[
+            if (showShellNav)
+              AppShellRail(
+                currentRoute: currentRoute,
+                visibleShellRoutes: visibleShellRoutes,
+              ),
+            Expanded(child: body),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: const AppShellAppBar(),
@@ -37,12 +63,7 @@ class AppShellScaffold extends StatelessWidget {
               visibleShellRoutes: visibleShellRoutes,
             )
           : null,
-      body: HoneycombHexBackground(
-        child: SafeArea(
-          bottom: false,
-          child: child,
-        ),
-      ),
+      body: body,
     );
   }
 }

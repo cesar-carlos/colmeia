@@ -72,6 +72,18 @@ class SyncfusionRadialBarChart<T> extends StatelessWidget {
           position: LegendPosition.bottom,
           overflowMode: LegendItemOverflowMode.wrap,
         ),
+        onDataLabelRender: dataLabelBuilder == null
+            ? null
+            : (args) {
+                final index = args.pointIndex;
+                if (index >= 0 && index < items.length) {
+                  final item = items[index];
+                  final label = dataLabelBuilder!(item, valueBuilder(item));
+                  if (label?.trim().isNotEmpty ?? false) {
+                    args.text = label;
+                  }
+                }
+              },
         onTooltipRender: tooltipLabelBuilder == null
             ? null
             : (args) {

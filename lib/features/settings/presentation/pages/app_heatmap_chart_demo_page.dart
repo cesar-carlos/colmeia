@@ -49,11 +49,13 @@ class AppHeatmapChartDemoPage extends StatelessWidget {
             cells: _trafficCells,
             preset: AppChartPreset.compact,
             style: const AppHeatmapChartStyle(showLegend: false),
-            onCellTap: (cell) {
+            onCellTapEvent: (event) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${cell.yLabel} / ${cell.xLabel}: ${cell.value}',
+                    '${event.item.yLabel} / ${event.item.xLabel}: '
+                    '${event.item.value} '
+                    '[linha ${event.yIndex}, coluna ${event.xIndex}]',
                   ),
                 ),
               );

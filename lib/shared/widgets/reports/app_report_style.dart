@@ -23,6 +23,7 @@ class AppReportViewerStyle {
     this.showSearchBar = false,
     this.showDensityToggle = false,
     this.showColumnChooser = false,
+    this.showGroupingChooser = false,
     this.showExportActions = true,
     this.showPrintAction = false,
     this.showRefreshAction = true,
@@ -75,6 +76,7 @@ class AppReportViewerStyle {
   final bool showSearchBar;
   final bool showDensityToggle;
   final bool showColumnChooser;
+  final bool showGroupingChooser;
   final bool showExportActions;
   final bool showPrintAction;
   final bool showRefreshAction;
@@ -152,6 +154,7 @@ class AppReportViewerStyle {
     bool? showSearchBar,
     bool? showDensityToggle,
     bool? showColumnChooser,
+    bool? showGroupingChooser,
     bool? showExportActions,
     bool? showPrintAction,
     bool? showRefreshAction,
@@ -187,6 +190,7 @@ class AppReportViewerStyle {
       showSearchBar: showSearchBar ?? this.showSearchBar,
       showDensityToggle: showDensityToggle ?? this.showDensityToggle,
       showColumnChooser: showColumnChooser ?? this.showColumnChooser,
+      showGroupingChooser: showGroupingChooser ?? this.showGroupingChooser,
       showExportActions: showExportActions ?? this.showExportActions,
       showPrintAction: showPrintAction ?? this.showPrintAction,
       showRefreshAction: showRefreshAction ?? this.showRefreshAction,

@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_radial_bar_chart.dart';
@@ -41,6 +42,7 @@ class AppRadialBarChart<T> extends StatelessWidget {
     this.dataLabelBuilder,
     this.tooltipLabelBuilder,
     this.onSegmentTap,
+    this.onSegmentTapEvent,
     this.style = const AppRadialBarChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -55,6 +57,10 @@ class AppRadialBarChart<T> extends StatelessWidget {
   final String? Function(T item, num value)? tooltipLabelBuilder;
   final void Function(T item, int index)? onSegmentTap;
 
+  /// Structured alternative to [onSegmentTap] — carries item and index
+  /// in a single typed payload.
+  final ValueChanged<AppChartItemTapEvent<T>>? onSegmentTapEvent;
+
   final String? title;
   final String? subtitle;
   final Widget? titleTrailing;
@@ -66,6 +72,11 @@ class AppRadialBarChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handleSegmentTap(T item, int index) {
+      onSegmentTap?.call(item, index);
+      onSegmentTapEvent?.call(AppChartItemTapEvent(item: item, index: index));
+    }
+
     final innerChart = SyncfusionRadialBarChart<T>(
       items: items,
       labelBuilder: labelBuilder,
@@ -73,7 +84,9 @@ class AppRadialBarChart<T> extends StatelessWidget {
       colorBuilder: colorBuilder,
       dataLabelBuilder: dataLabelBuilder,
       tooltipLabelBuilder: tooltipLabelBuilder,
-      onSegmentTap: onSegmentTap,
+      onSegmentTap: (onSegmentTap == null && onSegmentTapEvent == null)
+          ? null
+          : handleSegmentTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

@@ -16,6 +16,7 @@ class CustomPolarChart extends StatelessWidget {
     super.key,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onPointTap,
   });
 
   final List<AppPolarChartEntry> entries;
@@ -24,6 +25,7 @@ class CustomPolarChart extends StatelessWidget {
   final AppChartPreset preset;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final void Function(String category, AppChartPoint? point)? onPointTap;
 
   @override
   Widget build(BuildContext context) {
@@ -64,16 +66,35 @@ class CustomPolarChart extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: style.chartPadding ?? const EdgeInsets.all(12),
-              child: CustomPaint(
-                painter: _PolarChartPainter(
-                  entries: entries,
-                  categories: categories,
-                  style: style,
-                  textDirection: Directionality.of(context),
-                  colors: Theme.of(context).appColors,
-                  palette: chartTheme.palette,
+              child: _PolarHitArea(
+                categories: categories,
+                style: style,
+                onPointTap: onPointTap == null
+                    ? null
+                    : (category) {
+                        AppChartPoint? match;
+                        for (final entry in entries) {
+                          for (final p in entry.points) {
+                            if (p.label == category) {
+                              match = p;
+                              break;
+                            }
+                          }
+                          if (match != null) break;
+                        }
+                        onPointTap!(category, match);
+                      },
+                child: CustomPaint(
+                  painter: _PolarChartPainter(
+                    entries: entries,
+                    categories: categories,
+                    style: style,
+                    textDirection: Directionality.of(context),
+                    colors: Theme.of(context).appColors,
+                    palette: chartTheme.palette,
+                  ),
+                  child: const SizedBox.expand(),
                 ),
-                child: const SizedBox.expand(),
               ),
             ),
           ),
@@ -109,6 +130,50 @@ class CustomPolarChart extends StatelessWidget {
       }
     }
     return labels;
+  }
+}
+
+class _PolarHitArea extends StatelessWidget {
+  const _PolarHitArea({
+    required this.categories,
+    required this.style,
+    required this.child,
+    this.onPointTap,
+  });
+
+  final List<String> categories;
+  final AppPolarChartStyle style;
+  final Widget child;
+  final ValueChanged<String>? onPointTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (onPointTap == null) return child;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapUp: (details) => _handleTap(details.localPosition),
+      child: child,
+    );
+  }
+
+  void _handleTap(Offset tapPosition) {
+    if (categories.isEmpty) return;
+    // Use a heuristic: emit the category whose axis direction (from center)
+    // is closest to the tap direction.
+    final tapAngle = math.atan2(tapPosition.dy, tapPosition.dx);
+    var best = 0;
+    var bestDelta = double.infinity;
+    for (var i = 0; i < categories.length; i++) {
+      final angle =
+          (-math.pi / 2) + ((2 * math.pi * i) / categories.length);
+      var delta = (tapAngle - angle).abs();
+      if (delta > math.pi) delta = (2 * math.pi) - delta;
+      if (delta < bestDelta) {
+        bestDelta = delta;
+        best = i;
+      }
+    }
+    onPointTap!(categories[best]);
   }
 }
 

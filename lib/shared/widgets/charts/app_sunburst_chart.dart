@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/custom_sunburst_chart.dart';
@@ -78,6 +79,7 @@ class AppSunburstChart<T> extends StatelessWidget {
     this.colorBuilder,
     this.centerLabel,
     this.onSegmentTap,
+    this.onSegmentTapEvent,
     this.style = const AppSunburstChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -92,6 +94,8 @@ class AppSunburstChart<T> extends StatelessWidget {
   final Color? Function(T item)? colorBuilder;
   final String? centerLabel;
   final void Function(AppSunburstNode<T> node)? onSegmentTap;
+  final ValueChanged<AppChartItemTapEvent<AppSunburstNode<T>>>?
+  onSegmentTapEvent;
 
   final String? title;
   final String? subtitle;
@@ -104,6 +108,13 @@ class AppSunburstChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handleSegmentTap(AppSunburstNode<T> node, int index) {
+      onSegmentTap?.call(node);
+      onSegmentTapEvent?.call(
+        AppChartItemTapEvent<AppSunburstNode<T>>(item: node, index: index),
+      );
+    }
+
     final innerChart = CustomSunburstChart<T>(
       items: items,
       idBuilder: idBuilder,
@@ -112,7 +123,10 @@ class AppSunburstChart<T> extends StatelessWidget {
       parentIdBuilder: parentIdBuilder,
       colorBuilder: colorBuilder,
       centerLabel: centerLabel,
-      onSegmentTap: onSegmentTap,
+      onSegmentTap:
+          (onSegmentTap == null && onSegmentTapEvent == null)
+              ? null
+              : handleSegmentTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

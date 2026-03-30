@@ -59,6 +59,8 @@ class AppRadarChart extends StatelessWidget {
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onPointTap,
+    this.onPointTapEvent,
   });
 
   final List<AppChartPoint> points;
@@ -72,6 +74,13 @@ class AppRadarChart extends StatelessWidget {
   final bool isLoading;
   final Widget? emptyPlaceholder;
 
+  /// Called when a category axis vertex is tapped.
+  /// category is the axis label; point is the matched data point from the
+  /// first series that contains the category (null if not found).
+  final void Function(String category, AppChartPoint? point)? onPointTap;
+  final ValueChanged<AppChartCategoryPointTapEvent<AppRadarChartEntry>>?
+  onPointTapEvent;
+
   @override
   Widget build(BuildContext context) {
     final resolvedEntries =
@@ -79,6 +88,39 @@ class AppRadarChart extends StatelessWidget {
         <AppRadarChartEntry>[
           AppRadarChartEntry(label: '', points: points),
         ];
+    final categories = _resolveCategories(resolvedEntries);
+
+    void handlePointTap(String category, AppChartPoint? _) {
+      final categoryIndex = categories.indexOf(category);
+      AppRadarChartEntry? matchedEntry;
+      AppChartPoint? matchedPoint;
+      int? matchedEntryIndex;
+
+      for (final entry in resolvedEntries.indexed) {
+        for (final point in entry.$2.points) {
+          if (point.label == category) {
+            matchedEntry = entry.$2;
+            matchedPoint = point;
+            matchedEntryIndex = entry.$1;
+            break;
+          }
+        }
+        if (matchedPoint != null) {
+          break;
+        }
+      }
+
+      onPointTap?.call(category, matchedPoint);
+      onPointTapEvent?.call(
+        AppChartCategoryPointTapEvent<AppRadarChartEntry>(
+          category: category,
+          categoryIndex: categoryIndex,
+          point: matchedPoint,
+          entry: matchedEntry,
+          entryIndex: matchedEntryIndex,
+        ),
+      );
+    }
 
     final innerChart = CustomRadarChart(
       entries: resolvedEntries,
@@ -87,6 +129,9 @@ class AppRadarChart extends StatelessWidget {
       preset: preset,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
+          ? null
+          : handlePointTap,
     );
 
     if (title == null) {
@@ -100,5 +145,17 @@ class AppRadarChart extends StatelessWidget {
       belowSubtitle: belowSubtitle,
       child: innerChart,
     );
+  }
+
+  static List<String> _resolveCategories(List<AppRadarChartEntry> entries) {
+    final labels = <String>[];
+    for (final entry in entries) {
+      for (final point in entry.points) {
+        if (!labels.contains(point.label)) {
+          labels.add(point.label);
+        }
+      }
+    }
+    return labels;
   }
 }

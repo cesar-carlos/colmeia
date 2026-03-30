@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_stacked_bar_chart.dart';
@@ -12,7 +14,7 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
     required this.style,
     required this.preset,
     super.key,
-    this.onGroupTap,
+    this.onSegmentTap,
     this.isLoading = false,
     this.emptyPlaceholder,
   });
@@ -22,7 +24,13 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
   final List<AppStackedBarSeries<G>> series;
   final AppStackedBarChartStyle style;
   final AppChartPreset preset;
-  final void Function(G group, int index)? onGroupTap;
+  final void Function(
+    G group,
+    AppStackedBarSeries<G> series,
+    int groupIndex,
+    int seriesIndex,
+    num value,
+  )? onSegmentTap;
   final bool isLoading;
   final Widget? emptyPlaceholder;
 
@@ -31,10 +39,13 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final resolvedHeight = style.height ?? chartTheme.height;
     final isHorizontal = style.orientation == Axis.horizontal;
+    final resolvedChartHeight = isHorizontal
+        ? _resolveHorizontalChartHeight(resolvedHeight)
+        : resolvedHeight;
 
     if (isLoading) {
       return SizedBox(
-        height: resolvedHeight,
+        height: resolvedChartHeight,
         child: Center(
           child: CircularProgressIndicator(color: chartTheme.primaryColor),
         ),
@@ -43,7 +54,7 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
 
     if (groups.isEmpty && emptyPlaceholder != null) {
       return SizedBox(
-        height: resolvedHeight,
+        height: resolvedChartHeight,
         child: Center(child: emptyPlaceholder),
       );
     }
@@ -53,13 +64,20 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
       final s = series[i];
       final color = s.color ?? chartTheme.paletteColor(i);
       final void Function(ChartPointDetails)? tapHandler;
-      if (onGroupTap == null) {
+      if (onSegmentTap == null) {
         tapHandler = null;
       } else {
         tapHandler = (details) {
           final idx = details.pointIndex;
           if (idx != null && idx >= 0 && idx < groups.length) {
-            onGroupTap!(groups[idx], idx);
+            final group = groups[idx];
+            onSegmentTap!(
+              group,
+              s,
+              idx,
+              i,
+              s.valueBuilder(group),
+            );
           }
         };
       }
@@ -148,39 +166,80 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
     }
 
     return SizedBox(
-      height: resolvedHeight,
-      child: SfCartesianChart(
-        margin: style.chartPadding ?? EdgeInsets.zero,
-        plotAreaBorderWidth: 0,
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
-        legend: Legend(
-          isVisible: style.showLegend,
-          position: LegendPosition.bottom,
-          textStyle: style.legendTextStyle,
-          overflowMode: LegendItemOverflowMode.wrap,
-        ),
-        primaryXAxis: CategoryAxis(
-          isVisible: style.showXAxis,
-          majorGridLines: const MajorGridLines(width: 0),
-          labelStyle: style.axisLabelTextStyle,
-        ),
-        primaryYAxis: NumericAxis(
-          isVisible: style.showYAxis,
-          axisLine: const AxisLine(width: 0),
-          majorGridLines: MajorGridLines(
-            width: style.showYGridLines ? 1 : 0,
-          ),
-          labelStyle: style.axisLabelTextStyle,
-          numberFormat: style.yAxisFormat,
-          axisLabelFormatter: style.yAxisFormat == null
-              ? null
-              : (details) => ChartAxisLabel(
-                  style.yAxisFormat!.format(details.value),
-                  details.textStyle,
+      height: resolvedChartHeight,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final availableWidth = constraints.hasBoundedWidth
+              ? constraints.maxWidth
+              : _minVerticalGroupWidth * groups.length;
+          final minChartWidth = isHorizontal
+              ? availableWidth
+              : math.max(
+                  availableWidth,
+                  groups.length * _minVerticalGroupWidth,
+                );
+          final chart = SizedBox(
+            width: minChartWidth,
+            height: resolvedChartHeight,
+            child: SfCartesianChart(
+              margin: style.chartPadding ?? EdgeInsets.zero,
+              plotAreaBorderWidth: 0,
+              tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+              legend: Legend(
+                isVisible: style.showLegend,
+                position: LegendPosition.bottom,
+                textStyle: style.legendTextStyle,
+                overflowMode: LegendItemOverflowMode.wrap,
+              ),
+              zoomPanBehavior: ZoomPanBehavior(
+                enablePinching: chartTheme.enableSelectionZooming,
+                enablePanning: chartTheme.enableSelectionZooming,
+                enableSelectionZooming: chartTheme.enableSelectionZooming,
+              ),
+              primaryXAxis: CategoryAxis(
+                isVisible: style.showXAxis,
+                majorGridLines: const MajorGridLines(width: 0),
+                labelStyle: style.axisLabelTextStyle,
+              ),
+              primaryYAxis: NumericAxis(
+                isVisible: style.showYAxis,
+                axisLine: const AxisLine(width: 0),
+                majorGridLines: MajorGridLines(
+                  width: style.showYGridLines ? 1 : 0,
                 ),
-        ),
-        series: resolvedSeries,
+                labelStyle: style.axisLabelTextStyle,
+                numberFormat: style.yAxisFormat,
+                axisLabelFormatter: style.yAxisFormat == null
+                    ? null
+                    : (details) => ChartAxisLabel(
+                        style.yAxisFormat!.format(details.value),
+                        details.textStyle,
+                      ),
+              ),
+              series: resolvedSeries,
+            ),
+          );
+
+          if (isHorizontal || minChartWidth <= availableWidth) {
+            return chart;
+          }
+
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: chart,
+          );
+        },
       ),
     );
   }
+
+  double _resolveHorizontalChartHeight(double baseHeight) {
+    final minHeight = groups.length * _minHorizontalGroupExtent;
+    final legendHeight = style.showLegend ? _legendHeightAllowance : 0.0;
+    return math.max(baseHeight, minHeight + legendHeight);
+  }
 }
+
+const double _legendHeightAllowance = 56;
+const double _minHorizontalGroupExtent = 56;
+const double _minVerticalGroupWidth = 72;

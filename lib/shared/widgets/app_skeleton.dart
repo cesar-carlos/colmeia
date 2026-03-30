@@ -102,15 +102,14 @@ class _AppSkeletonState extends State<AppSkeleton> {
       ),
     );
 
-    final semanticsWrapped =
-        widget.enabled
-            ? Semantics(
-              container: true,
-              liveRegion: true,
-              label: widget.loadingSemanticsLabel,
-              child: body,
-            )
-            : body;
+    final semanticsWrapped = widget.enabled
+        ? Semantics(
+            container: true,
+            liveRegion: true,
+            label: widget.loadingSemanticsLabel,
+            child: body,
+          )
+        : body;
 
     return AbsorbPointer(
       absorbing: widget.enabled,

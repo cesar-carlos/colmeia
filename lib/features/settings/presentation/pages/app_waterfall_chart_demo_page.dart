@@ -74,12 +74,12 @@ class AppWaterfallChartDemoPage extends StatelessWidget {
             isIntermediateSum: (item) => item.isIntermediate,
             isTotalSum: (item) => item.isTotal,
             preset: AppChartPreset.compact,
-            onPointTap: (item, index) {
+            onPointTapEvent: (event) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '${index + 1}. ${item.label}: '
-                    '${AppBrFormatters.currency(item.displayValue)}',
+                    '${event.index + 1}. ${event.item.label}: '
+                    '${AppBrFormatters.currency(event.item.displayValue)}',
                   ),
                 ),
               );

@@ -35,6 +35,8 @@ class AppTimeSeriesChart extends StatelessWidget {
     this.style = const AppTimeSeriesChartStyle(),
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onPointTap,
+    this.onPointTapEvent,
   });
 
   final List<AppChartPoint> points;
@@ -47,14 +49,32 @@ class AppTimeSeriesChart extends StatelessWidget {
   final bool isLoading;
   final Widget? emptyPlaceholder;
 
+  /// Called when a data point is tapped.
+  final ValueChanged<AppChartPoint>? onPointTap;
+
+  /// Structured alternative to [onPointTap] with item and index.
+  final ValueChanged<AppChartItemTapEvent<AppChartPoint>>? onPointTapEvent;
+
   @override
   Widget build(BuildContext context) {
+    void handlePointTap(AppChartPoint point, int index) {
+      onPointTap?.call(point);
+      onPointTapEvent?.call(AppChartItemTapEvent<AppChartPoint>(
+        item: point,
+        index: index,
+      ));
+    }
+
     final innerChart = SyncfusionTimeSeriesChart(
       points: points,
       preset: preset,
       style: style,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
+      onPointTap:
+          (onPointTap == null && onPointTapEvent == null)
+              ? null
+              : handlePointTap,
     );
 
     if (title == null) {

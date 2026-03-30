@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/horizontal_progress_chart_math.dart';
 import 'package:flutter/material.dart';
 
@@ -99,6 +100,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
     this.isLoading = false,
     this.loadingRowCount = 4,
     this.onItemTap,
+    this.onItemTapEvent,
     this.barAnimationDuration,
   });
 
@@ -124,6 +126,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
   final bool isLoading;
   final int loadingRowCount;
   final void Function(T item)? onItemTap;
+  final ValueChanged<AppChartItemTapEvent<T>>? onItemTapEvent;
   final Duration? barAnimationDuration;
 
   @override
@@ -208,6 +211,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
         rows.add(
           _AppHorizontalProgressRow<T>(
             item: item,
+            itemIndex: i,
             labelBuilder: labelBuilder,
             rowLeadingBuilder: rowLeadingBuilder,
             rowTooltipBuilder: rowTooltipBuilder,
@@ -229,6 +233,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
             leadingSpacing: leadingSpacing,
             gapSm: tokens.gapSm,
             onItemTap: onItemTap,
+            onItemTapEvent: onItemTapEvent,
             barAnimationDuration: barAnimationDuration,
           ),
         );
@@ -409,6 +414,7 @@ class _LoadingRows extends StatelessWidget {
 class _AppHorizontalProgressRow<T> extends StatelessWidget {
   const _AppHorizontalProgressRow({
     required this.item,
+    required this.itemIndex,
     required this.labelBuilder,
     required this.rowLeadingBuilder,
     required this.rowTooltipBuilder,
@@ -430,10 +436,12 @@ class _AppHorizontalProgressRow<T> extends StatelessWidget {
     this.valueLabelBuilder,
     this.valueLabelMode = AppHorizontalProgressValueLabelMode.auto,
     this.onItemTap,
+    this.onItemTapEvent,
     this.barAnimationDuration,
   });
 
   final T item;
+  final int itemIndex;
   final AppHorizontalProgressLabelBuilder<T> labelBuilder;
   final AppHorizontalProgressRowLeadingBuilder<T>? rowLeadingBuilder;
   final AppHorizontalProgressTooltipBuilder<T>? rowTooltipBuilder;
@@ -455,6 +463,7 @@ class _AppHorizontalProgressRow<T> extends StatelessWidget {
   final double leadingSpacing;
   final double gapSm;
   final void Function(T item)? onItemTap;
+  final ValueChanged<AppChartItemTapEvent<T>>? onItemTapEvent;
   final Duration? barAnimationDuration;
 
   @override
@@ -481,44 +490,78 @@ class _AppHorizontalProgressRow<T> extends StatelessWidget {
 
     final content = Padding(
       padding: rowPadding ?? EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 280;
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              if (leading != null) ...<Widget>[
-                leading,
-                SizedBox(width: leadingSpacing),
-              ],
-              Expanded(
-                child: Text(
-                  labelText,
-                  style: labelTextStyle,
-                  textAlign: labelTextAlign,
+              if (isCompact)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        if (leading != null) ...<Widget>[
+                          leading,
+                          SizedBox(width: leadingSpacing),
+                        ],
+                        Expanded(
+                          child: Text(
+                            labelText,
+                            style: labelTextStyle,
+                            textAlign: labelTextAlign,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: gapSm / 2),
+                    Text(
+                      valueLabel,
+                      style: valueTextStyle,
+                      textAlign: valueTextAlign,
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    if (leading != null) ...<Widget>[
+                      leading,
+                      SizedBox(width: leadingSpacing),
+                    ],
+                    Expanded(
+                      child: Text(
+                        labelText,
+                        style: labelTextStyle,
+                        textAlign: labelTextAlign,
+                      ),
+                    ),
+                    SizedBox(width: gapSm),
+                    Text(
+                      valueLabel,
+                      style: valueTextStyle,
+                      textAlign: valueTextAlign,
+                    ),
+                  ],
+                ),
+              SizedBox(height: gapSm),
+              ExcludeSemantics(
+                child: _AnimatedDeterminateBar(
+                  target: normalized,
+                  duration: barAnimationDuration,
+                  minHeight: barHeight,
+                  trackColor: trackColor,
+                  barColor: barColor,
+                  barGradient: barGradient,
+                  borderRadius: barRadius,
                 ),
               ),
-              SizedBox(width: gapSm),
-              Text(
-                valueLabel,
-                style: valueTextStyle,
-                textAlign: valueTextAlign,
-              ),
             ],
-          ),
-          SizedBox(height: gapSm),
-          ExcludeSemantics(
-            child: _AnimatedDeterminateBar(
-              target: normalized,
-              duration: barAnimationDuration,
-              minHeight: barHeight,
-              trackColor: trackColor,
-              barColor: barColor,
-              barGradient: barGradient,
-              borderRadius: barRadius,
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
 
@@ -527,7 +570,25 @@ class _AppHorizontalProgressRow<T> extends StatelessWidget {
       child = Material(
         type: MaterialType.transparency,
         child: InkWell(
-          onTap: () => onItemTap!(item),
+          onTap: () {
+            onItemTap?.call(item);
+            onItemTapEvent?.call(
+              AppChartItemTapEvent<T>(item: item, index: itemIndex),
+            );
+          },
+          borderRadius: BorderRadius.circular(4),
+          child: content,
+        ),
+      );
+    } else if (onItemTapEvent != null) {
+      child = Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: () {
+            onItemTapEvent?.call(
+              AppChartItemTapEvent<T>(item: item, index: itemIndex),
+            );
+          },
           borderRadius: BorderRadius.circular(4),
           child: content,
         ),

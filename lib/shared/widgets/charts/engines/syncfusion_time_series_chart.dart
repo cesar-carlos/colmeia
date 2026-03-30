@@ -15,6 +15,7 @@ class SyncfusionTimeSeriesChart extends StatelessWidget {
     super.key,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onPointTap,
   });
 
   final List<AppChartPoint> points;
@@ -22,6 +23,7 @@ class SyncfusionTimeSeriesChart extends StatelessWidget {
   final AppTimeSeriesChartStyle style;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final void Function(AppChartPoint point, int index)? onPointTap;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +81,15 @@ class SyncfusionTimeSeriesChart extends StatelessWidget {
             yValueMapper: (point, _) => point.value,
             borderWidth: style.lineWidth ?? 3,
             gradient: chartTheme.gradient,
+            onPointTap: onPointTap == null
+                ? null
+                : (args) {
+                    final index = args.pointIndex;
+                    if (index == null || index < 0 || index >= points.length) {
+                      return;
+                    }
+                    onPointTap!(points[index], index);
+                  },
           ),
         ],
       ),

@@ -117,6 +117,21 @@ class AppComparisonBarChartStyle {
   final ChartDataLabelAlignment dataLabelAlignment;
 }
 
+/// Structured payload emitted when the user taps a bar.
+class AppComparisonBarPointTapEvent<T> {
+  const AppComparisonBarPointTapEvent({
+    required this.item,
+    required this.index,
+    required this.label,
+    required this.value,
+  });
+
+  final T item;
+  final int index;
+  final String label;
+  final num value;
+}
+
 /// Generic vertical bar chart for discrete comparisons between labelled items.
 ///
 /// Usage:
@@ -149,6 +164,7 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     this.dataLabelBuilder,
     this.tooltipLabelBuilder,
     this.onPointTap,
+    this.onPointTapEvent,
     this.style = const AppComparisonBarChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -189,6 +205,9 @@ class AppComparisonBarChart<T> extends StatelessWidget {
 
   /// Called when the user taps a bar.
   final void Function(T item, int index)? onPointTap;
+
+  /// Called when the user taps a bar with a structured event payload.
+  final ValueChanged<AppComparisonBarPointTapEvent<T>>? onPointTapEvent;
 
   /// Visual overrides applied on top of the [preset]-driven defaults.
   final AppComparisonBarChartStyle style;
@@ -235,6 +254,22 @@ class AppComparisonBarChart<T> extends StatelessWidget {
               .toList(growable: false)
         : null;
 
+    void handlePointTap(int index) {
+      if (index < 0 || index >= items.length || index >= points.length) {
+        return;
+      }
+
+      final item = items[index];
+      final event = AppComparisonBarPointTapEvent<T>(
+        item: item,
+        index: index,
+        label: points[index].label,
+        value: points[index].value,
+      );
+      onPointTap?.call(item, index);
+      onPointTapEvent?.call(event);
+    }
+
     final innerChart = SyncfusionComparisonBarChart(
       points: points,
       preset: preset,
@@ -242,9 +277,9 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       pointColors: pointColors,
       dataLabels: dataLabels,
       tooltipLabels: tooltipLabels,
-      onPointTap: onPointTap == null
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
           ? null
-          : (index) => onPointTap!(items[index], index),
+          : handlePointTap,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
     );

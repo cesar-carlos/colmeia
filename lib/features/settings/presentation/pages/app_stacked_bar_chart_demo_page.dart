@@ -16,7 +16,7 @@ class AppStackedBarChartDemoPage extends StatefulWidget {
 
 class _AppStackedBarChartDemoPageState
     extends State<AppStackedBarChartDemoPage> {
-  String? _lastTappedGroup;
+  String? _lastTappedSegment;
 
   @override
   Widget build(BuildContext context) {
@@ -139,8 +139,8 @@ class _AppStackedBarChartDemoPageState
 
         // onGroupTap demo
         AppSectionCardWithHeading(
-          title: '5. onGroupTap interativo',
-          subtitle: 'Toque em um grupo de barras para ver o callback.',
+          title: '5. Interacao por segmento',
+          subtitle: 'Toque em um segmento para ver grupo, serie e valor.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -160,16 +160,20 @@ class _AppStackedBarChartDemoPageState
                 style: AppStackedBarChartStyle(
                   yAxisFormat: AppBrFormatters.compactCurrencyFormat,
                 ),
-                onGroupTap: (group, index) {
+                onSegmentTapEvent: (event) {
                   setState(() {
-                    _lastTappedGroup = '${group.month} (indice $index)';
+                    _lastTappedSegment =
+                        '${event.group.month} - ${event.series.label} '
+                        '(${AppBrFormatters.compactCurrency(event.value)}) '
+                        '[grupo ${event.groupIndex}, '
+                        'serie ${event.seriesIndex}]';
                   });
                 },
               ),
-              if (_lastTappedGroup != null) ...<Widget>[
+              if (_lastTappedSegment != null) ...<Widget>[
                 const SizedBox(height: 8),
                 Text(
-                  'Grupo tocado: $_lastTappedGroup',
+                  'Segmento tocado: $_lastTappedSegment',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: cs.primary,
                     fontWeight: FontWeight.w600,

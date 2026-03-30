@@ -32,6 +32,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
+    final colorScheme = Theme.of(context).colorScheme;
     final resolvedHeight = style.height ?? chartTheme.height;
     final resolvedBarColor = style.barColor ?? chartTheme.primaryColor;
 
@@ -55,6 +56,32 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         margin: style.chartPadding ?? EdgeInsets.zero,
         plotAreaBorderWidth: 0,
         plotAreaBackgroundColor: style.plotAreaBackgroundColor,
+        onDataLabelRender: style.showDataLabels
+            ? (args) {
+                final pointIndex = args.pointIndex;
+                if (pointIndex < 0) {
+                  return;
+                }
+
+                final baseStyle = style.dataLabelTextStyle;
+                if (baseStyle?.color != null) {
+                  return;
+                }
+
+                final isInsideBarLabel =
+                    style.dataLabelAlignment == ChartDataLabelAlignment.middle;
+                final pointColor = pointColors != null &&
+                        pointIndex < pointColors!.length
+                    ? pointColors![pointIndex]
+                    : resolvedBarColor;
+                final textColor = isInsideBarLabel
+                    ? _dataLabelTextColorForBar(pointColor ?? resolvedBarColor)
+                    : colorScheme.onSurface;
+                args.textStyle = (baseStyle ?? const TextStyle()).copyWith(
+                  color: textColor,
+                );
+              }
+            : null,
         onTooltipRender: tooltipLabels == null
             ? null
             : (args) {
@@ -111,10 +138,14 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             yValueMapper: (point, _) => point.value,
             dataLabelMapper: dataLabels == null
                 ? null
-                : (point, index) => dataLabels![index],
+                : (point, index) => index >= 0 && index < dataLabels!.length
+                    ? dataLabels![index]
+                    : null,
             color: pointColors == null ? resolvedBarColor : null,
             pointColorMapper: pointColors != null
-                ? (point, index) => pointColors![index] ?? resolvedBarColor
+                ? (point, index) => index >= 0 && index < pointColors!.length
+                    ? pointColors![index] ?? resolvedBarColor
+                    : resolvedBarColor
                 : null,
             width: style.barWidth ?? 0.7,
             spacing: style.spacing ?? 0.2,
@@ -132,7 +163,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 ? null
                 : (details) {
                     final index = details.pointIndex;
-                    if (index != null && index >= 0) {
+                    if (index != null && index >= 0 && index < points.length) {
                       onPointTap!(index);
                     }
                   },
@@ -140,5 +171,12 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _dataLabelTextColorForBar(Color backgroundColor) {
+    final brightness = ThemeData.estimateBrightnessForColor(backgroundColor);
+    return brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.92)
+        : Colors.black.withValues(alpha: 0.88);
   }
 }

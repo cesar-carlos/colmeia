@@ -2,6 +2,21 @@ import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:flutter/foundation.dart';
 
+@immutable
+class AppReportGroupToggleEvent {
+  const AppReportGroupToggleEvent({
+    required this.columnKey,
+    required this.groupKey,
+    required this.groupLevel,
+    required this.isExpanded,
+  });
+
+  final String columnKey;
+  final String groupKey;
+  final int groupLevel;
+  final bool isExpanded;
+}
+
 /// Typed callback container for all interactions the report viewer emits.
 ///
 /// Every callback is optional. The consumer wires only the events it needs.
@@ -21,6 +36,9 @@ class AppReportEvents<T> {
     this.onFiltersApplied,
     this.onFilterCleared,
     this.onGroupChanged,
+    this.onGroupStateChanged,
+    this.onGroupExpanded,
+    this.onGroupCollapsed,
     this.onRowTap,
     this.onRowDoubleTap,
     this.onRowLongPress,
@@ -58,6 +76,17 @@ class AppReportEvents<T> {
 
   /// Fired when the user changes grouping configuration.
   final ValueChanged<List<AppReportGroupDescriptor>>? onGroupChanged;
+
+  /// Fired when the visual expanded/collapsed state of grouped levels changes.
+  ///
+  /// Unlike [onGroupChanged], this should not imply a data reload by itself.
+  final ValueChanged<List<AppReportGroupDescriptor>>? onGroupStateChanged;
+
+  /// Fired after a grouped section is expanded in the grid.
+  final ValueChanged<AppReportGroupToggleEvent>? onGroupExpanded;
+
+  /// Fired after a grouped section is collapsed in the grid.
+  final ValueChanged<AppReportGroupToggleEvent>? onGroupCollapsed;
 
   /// Fired when the user taps a data row.
   final void Function(T row, int index)? onRowTap;

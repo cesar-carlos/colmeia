@@ -33,13 +33,12 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
           labelBuilder: (item) => item.name,
           valueBuilder: (item) => item.revenue,
           dataLabelBuilder: (item, value) =>
-              AppBrFormatters.compactCurrency(value),
+              AppBrFormatters.compactCurrency(value).replaceFirst(r'R$ ', ''),
           style: AppComparisonBarChartStyle(
             yAxisFormat: AppBrFormatters.compactCurrencyFormat,
             showDataLabels: true,
             dataLabelTextStyle: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: cs.onSurface,
             ),
           ),
         ),
@@ -50,6 +49,8 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
           items: _sellerRevenueSamples,
           labelBuilder: (item) => item.name,
           valueBuilder: (item) => item.revenue,
+          dataLabelBuilder: (item, value) =>
+              AppBrFormatters.compactCurrency(value).replaceFirst(r'R$ ', ''),
           colorBuilder: (item) => item.color,
           tooltipLabelBuilder: (item, value) =>
               '${item.name}: ${AppBrFormatters.currency(value)}',
@@ -64,6 +65,10 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
           },
           style: AppComparisonBarChartStyle(
             yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+            showDataLabels: true,
+            dataLabelTextStyle: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
@@ -73,8 +78,11 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
           items: _sellerRevenueSamples,
           labelBuilder: (item) => item.name,
           valueBuilder: (item) => item.revenue,
+          dataLabelBuilder: (item, value) =>
+              AppBrFormatters.compactCurrency(value).replaceFirst(r'R$ ', ''),
           style: AppComparisonBarChartStyle(
             yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+            showDataLabels: true,
             xAxisTitle: 'Vendedores',
             yAxisTitle: 'Faturamento',
             xLabelRotation: -25,
@@ -83,6 +91,9 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
             interval: 5000,
             axisLabelTextStyle: theme.textTheme.bodySmall?.copyWith(
               color: cs.onSurfaceVariant,
+            ),
+            dataLabelTextStyle: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -96,7 +107,7 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
             valueBuilder: (item) => item.revenue,
             colorBuilder: (item) => item.color,
             dataLabelBuilder: (item, value) =>
-                AppBrFormatters.compactCurrency(value),
+                AppBrFormatters.compactCurrency(value).replaceFirst(r'R$ ', ''),
             style: AppComparisonBarChartStyle(
               yAxisFormat: AppBrFormatters.compactCurrencyFormat,
               showDataLabels: true,

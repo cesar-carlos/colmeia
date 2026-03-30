@@ -47,6 +47,7 @@ class AppReportGridSource<T> extends DataGridSource {
     _rows
       ..clear()
       ..addAll(rows);
+
     _columns
       ..clear()
       ..addAll(visibleColumns);
@@ -91,6 +92,36 @@ class AppReportGridSource<T> extends DataGridSource {
         .toList(growable: false);
   }
 
+  List<DataGridRow> resolveDataGridRows(Iterable<T> rows) {
+    final remainingRows = List<T>.from(rows);
+    final matches = <DataGridRow>[];
+
+    for (
+      var visualIndex = 0;
+      visualIndex < effectiveRows.length;
+      visualIndex++
+    ) {
+      final dataGridRow = effectiveRows[visualIndex];
+      final entry = _resolveRowEntry(dataGridRow);
+      if (entry == null) {
+        continue;
+      }
+
+      final selectedIndex = remainingRows.indexOf(entry.row);
+      if (selectedIndex == -1) {
+        continue;
+      }
+
+      matches.add(dataGridRow);
+      remainingRows.removeAt(selectedIndex);
+      if (remainingRows.isEmpty) {
+        break;
+      }
+    }
+
+    return matches;
+  }
+
   ({T row, int sourceIndex})? _resolveRowEntry(DataGridRow dataGridRow) {
     final sourceIndex = _rowIndexByDataGridRow[dataGridRow];
     if (sourceIndex == null || sourceIndex < 0 || sourceIndex >= _rows.length) {
@@ -113,8 +144,22 @@ class AppReportGridSource<T> extends DataGridSource {
     _suppressSortCallback = true;
     try {
       sortedColumns.clear();
+      for (final group in groupedColumns) {
+        if (!visibleColumnKeys.contains(group.name)) {
+          continue;
+        }
+        sortedColumns.add(
+          SortColumnDetails(
+            name: group.name,
+            sortDirection: DataGridSortDirection.ascending,
+          ),
+        );
+      }
       for (final s in sorts) {
         if (!visibleColumnKeys.contains(s.columnKey)) {
+          continue;
+        }
+        if (sortedColumns.any((entry) => entry.name == s.columnKey)) {
           continue;
         }
         sortedColumns.add(
@@ -130,6 +175,29 @@ class AppReportGridSource<T> extends DataGridSource {
         await sort();
       } else {
         notifyListeners();
+      }
+    } finally {
+      _suppressSortCallback = false;
+    }
+  }
+
+  void applyExternalGroupDescriptors(
+    List<AppReportGroupDescriptor> groups,
+    Set<String> visibleColumnKeys,
+  ) {
+    _suppressSortCallback = true;
+    try {
+      clearColumnGroups();
+      for (final group in groups) {
+        if (!visibleColumnKeys.contains(group.columnKey)) {
+          continue;
+        }
+        addColumnGroup(
+          ColumnGroup(
+            name: group.columnKey,
+            sortGroupRows: true,
+          ),
+        );
       }
     } finally {
       _suppressSortCallback = false;
@@ -172,6 +240,70 @@ class AppReportGridSource<T> extends DataGridSource {
             );
           })
           .toList(growable: false),
+    );
+  }
+
+  @override
+  Widget? buildGroupCaptionCellWidget(
+    RowColumnIndex rowColumnIndex,
+    String summaryValue,
+  ) {
+    final theme = Theme.of(_context);
+    final caption = _parseGroupCaption(summaryValue);
+    final labelByKey = <String, String>{
+      for (final column in _columns) column.key: column.label,
+    };
+    final columnLabel = labelByKey[caption.columnKey] ?? caption.columnKey;
+    final itemLabel = caption.itemCount == 1
+        ? '1 item'
+        : '${caption.itemCount} itens';
+
+    return Container(
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 420;
+          final title = RichText(
+            maxLines: compact ? 3 : 2,
+            overflow: TextOverflow.ellipsis,
+            text: TextSpan(
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              children: <InlineSpan>[
+                TextSpan(
+                  text: '$columnLabel: ',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                TextSpan(
+                  text: caption.groupKey,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                title,
+                const SizedBox(height: 6),
+                _GroupCountChip(label: itemLabel),
+              ],
+            );
+          }
+
+          return Row(
+            children: <Widget>[
+              Expanded(child: title),
+              const SizedBox(width: 12),
+              _GroupCountChip(label: itemLabel),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -226,5 +358,53 @@ class AppReportGridSource<T> extends DataGridSource {
       AppReportColumnAlignment.center => Alignment.center,
       _ => Alignment.centerLeft,
     };
+  }
+
+  static ({String columnKey, String groupKey, int itemCount})
+  _parseGroupCaption(
+    String summaryValue,
+  ) {
+    final parts = summaryValue.split('|');
+    if (parts.length == 3) {
+      return (
+        columnKey: parts[0],
+        groupKey: parts[1],
+        itemCount: int.tryParse(parts[2]) ?? 0,
+      );
+    }
+
+    return (
+      columnKey: '',
+      groupKey: summaryValue,
+      itemCount: 0,
+    );
+  }
+}
+
+class _GroupCountChip extends StatelessWidget {
+  const _GroupCountChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        child: Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
   }
 }

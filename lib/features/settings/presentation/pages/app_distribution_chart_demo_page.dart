@@ -54,14 +54,32 @@ class AppDistributionChartDemoPage extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
+          title: '4. Tap estruturado',
+          subtitle: 'Retorna segmento e indice para drill-down.',
+          child: AppDistributionChart(
+            points: _categoryMixPoints,
+            onSegmentTapEvent: (event) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${event.index + 1}. ${event.item.label}: '
+                    '${event.item.value.toStringAsFixed(0)}%',
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
         const AppDistributionChart(
-          title: '4. Estado de loading',
+          title: '5. Estado de loading',
           points: <AppChartPoint>[],
           isLoading: true,
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppDistributionChart(
-          title: '5. Estado vazio',
+          title: '6. Estado vazio',
           points: const <AppChartPoint>[],
           emptyPlaceholder: Text(
             'Sem distribuicao disponivel para este recorte.',

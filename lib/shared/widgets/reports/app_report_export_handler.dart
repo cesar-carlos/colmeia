@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -29,8 +30,14 @@ abstract final class AppReportExportHandler {
     String? title,
     String? subtitle,
     List<AppReportSummaryItem>? summaryItems,
+    List<AppReportFilterDescriptor>? filters,
+    Map<String, Object?>? filterValues,
     BuildContext? context,
   }) async {
+    final effectiveTitle = request.title ?? title;
+    final effectiveSubtitle = request.subtitle ?? subtitle;
+    final resolvedFilters = _buildResolvedFilters(filters, filterValues);
+
     try {
       switch (request.format) {
         case AppReportExportFormat.pdf:
@@ -38,9 +45,10 @@ abstract final class AppReportExportHandler {
             request: request,
             columns: columns,
             rows: rows,
-            title: title,
-            subtitle: subtitle,
+            title: effectiveTitle,
+            subtitle: effectiveSubtitle,
             summaryItems: summaryItems,
+            resolvedFilters: resolvedFilters,
             context: context,
           );
         case AppReportExportFormat.excel:
@@ -48,8 +56,10 @@ abstract final class AppReportExportHandler {
             request: request,
             columns: columns,
             rows: rows,
-            title: title,
+            title: effectiveTitle,
+            subtitle: effectiveSubtitle,
             summaryItems: summaryItems,
+            resolvedFilters: resolvedFilters,
           );
       }
     } catch (error, stackTrace) {
@@ -74,11 +84,13 @@ abstract final class AppReportExportHandler {
     String? title,
     String? subtitle,
     List<AppReportSummaryItem>? summaryItems,
+    List<({String label, String value})>? resolvedFilters,
     BuildContext? context,
   }) async {
     final doc = pw.Document();
-    final pageFormat =
-        request.landscape ? PdfPageFormat.a4.landscape : PdfPageFormat.a4;
+    final pageFormat = request.landscape
+        ? PdfPageFormat.a4.landscape
+        : PdfPageFormat.a4;
 
     final headerFont = await PdfGoogleFonts.interBold();
     final bodyFont = await PdfGoogleFonts.interRegular();
@@ -91,6 +103,10 @@ abstract final class AppReportExportHandler {
             : null,
         footer: (ctx) => _buildPdfFooter(ctx, bodyFont),
         build: (ctx) => <pw.Widget>[
+          if (request.includeFilters && (resolvedFilters?.isNotEmpty ?? false))
+            _buildPdfFilters(resolvedFilters!, bodyFont, headerFont),
+          if (request.includeFilters && (resolvedFilters?.isNotEmpty ?? false))
+            pw.SizedBox(height: 8),
           if (request.includeSummary && (summaryItems?.isNotEmpty ?? false))
             _buildPdfSummary(summaryItems!, bodyFont, headerFont),
           pw.SizedBox(height: 8),
@@ -189,25 +205,61 @@ abstract final class AppReportExportHandler {
     return pw.Wrap(
       spacing: 16,
       runSpacing: 8,
-      children: items.map((item) {
-        return pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: <pw.Widget>[
-            pw.Text(
-              item.label,
-              style: pw.TextStyle(
-                font: bodyFont,
-                fontSize: 9,
-                color: PdfColors.grey700,
+      children: items
+          .map((item) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: <pw.Widget>[
+                pw.Text(
+                  item.label,
+                  style: pw.TextStyle(
+                    font: bodyFont,
+                    fontSize: 9,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+                pw.Text(
+                  item.value,
+                  style: pw.TextStyle(font: headerFont, fontSize: 13),
+                ),
+              ],
+            );
+          })
+          .toList(growable: false),
+    );
+  }
+
+  static pw.Widget _buildPdfFilters(
+    List<({String label, String value})> filters,
+    pw.Font bodyFont,
+    pw.Font headerFont,
+  ) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: <pw.Widget>[
+        pw.Text(
+          'Filtros aplicados',
+          style: pw.TextStyle(font: headerFont, fontSize: 12),
+        ),
+        pw.SizedBox(height: 6),
+        ...filters.map((filter) {
+          return pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 4),
+            child: pw.RichText(
+              text: pw.TextSpan(
+                style: pw.TextStyle(font: bodyFont, fontSize: 9),
+                children: <pw.InlineSpan>[
+                  pw.TextSpan(
+                    text: '${filter.label}: ',
+                    style: pw.TextStyle(font: headerFont, fontSize: 9),
+                  ),
+                  pw.TextSpan(text: filter.value),
+                ],
               ),
             ),
-            pw.Text(
-              item.value,
-              style: pw.TextStyle(font: headerFont, fontSize: 13),
-            ),
-          ],
-        );
-      }).toList(growable: false),
+          );
+        }),
+      ],
     );
   }
 
@@ -264,7 +316,9 @@ abstract final class AppReportExportHandler {
     required List<AppReportColumn<T>> columns,
     required List<T> rows,
     String? title,
+    String? subtitle,
     List<AppReportSummaryItem>? summaryItems,
+    List<({String label, String value})>? resolvedFilters,
   }) async {
     final workbook = xlsio.Workbook();
     final sheet = workbook.worksheets[0]
@@ -272,12 +326,38 @@ abstract final class AppReportExportHandler {
 
     var rowIndex = 1;
 
-    if (title != null) {
+    if (request.includeHeaders && title != null) {
       sheet.getRangeByIndex(rowIndex, 1, rowIndex, columns.length)
         ..merge()
         ..setText(title)
         ..cellStyle.fontSize = 14
         ..cellStyle.bold = true;
+      rowIndex++;
+    }
+
+    if (request.includeHeaders && subtitle != null) {
+      sheet.getRangeByIndex(rowIndex, 1, rowIndex, columns.length)
+        ..merge()
+        ..setText(subtitle)
+        ..cellStyle.fontSize = 10
+        ..cellStyle.fontColorRgb = const Color(0xFF666666);
+      rowIndex++;
+    }
+
+    if (request.includeHeaders && (title != null || subtitle != null)) {
+      rowIndex++;
+    }
+
+    if (request.includeFilters && (resolvedFilters?.isNotEmpty ?? false)) {
+      sheet.getRangeByIndex(rowIndex, 1).setText('Filtros aplicados');
+      sheet.getRangeByIndex(rowIndex, 1).cellStyle.bold = true;
+      rowIndex++;
+
+      for (final filter in resolvedFilters!) {
+        sheet.getRangeByIndex(rowIndex, 1).setText(filter.label);
+        sheet.getRangeByIndex(rowIndex, 2).setText(filter.value);
+        rowIndex++;
+      }
       rowIndex++;
     }
 
@@ -317,8 +397,9 @@ abstract final class AppReportExportHandler {
 
     for (var colIndex = 0; colIndex < columns.length; colIndex++) {
       final col = columns[colIndex];
-      sheet.getRangeByIndex(1, colIndex + 1).columnWidth =
-          col.width != null ? col.width! / 7 : 15;
+      sheet.getRangeByIndex(1, colIndex + 1).columnWidth = col.width != null
+          ? col.width! / 7
+          : 15;
     }
 
     sheet.autoFilters.filterRange = sheet.getRangeByIndex(
@@ -353,13 +434,86 @@ abstract final class AppReportExportHandler {
   // -------------------------------------------------------------------------
 
   static String _sanitizeFileName(String name) {
-    return name
-        .replaceAll(RegExp(r'[^\w\s-]'), '')
-        .replaceAll(' ', '_');
+    return name.replaceAll(RegExp(r'[^\w\s-]'), '').replaceAll(' ', '_');
   }
 
   static String _sanitizeSheetName(String name) {
     final clean = name.replaceAll(RegExp(r'[/\\?*\[\]:]'), '');
     return clean.length > 31 ? clean.substring(0, 31) : clean;
+  }
+
+  static List<({String label, String value})> _buildResolvedFilters(
+    List<AppReportFilterDescriptor>? filters,
+    Map<String, Object?>? filterValues,
+  ) {
+    if (filters == null || filters.isEmpty || filterValues == null) {
+      return const <({String label, String value})>[];
+    }
+
+    final result = <({String label, String value})>[];
+    for (final filter in filters) {
+      final rawValue = filterValues[filter.name];
+      final formattedValue = _formatFilterValue(filter, rawValue);
+      if (formattedValue == null || formattedValue.isEmpty) {
+        continue;
+      }
+      result.add((label: filter.label, value: formattedValue));
+    }
+    return result;
+  }
+
+  static String? _formatFilterValue(
+    AppReportFilterDescriptor filter,
+    Object? value,
+  ) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+      return _resolveFilterOptionLabel(filter, trimmed);
+    }
+
+    if (value is bool) {
+      return value ? 'Sim' : 'Não';
+    }
+
+    if (value is DateTime) {
+      return DateFormat('dd/MM/yyyy').format(value);
+    }
+
+    if (value is num) {
+      return NumberFormat.decimalPattern('pt_BR').format(value);
+    }
+
+    if (value is Iterable) {
+      final labels = value
+          .map((item) => _formatFilterValue(filter, item))
+          .whereType<String>()
+          .where((item) => item.isNotEmpty)
+          .toList(growable: false);
+      if (labels.isEmpty) {
+        return null;
+      }
+      return labels.join(', ');
+    }
+
+    return value.toString();
+  }
+
+  static String _resolveFilterOptionLabel(
+    AppReportFilterDescriptor filter,
+    String value,
+  ) {
+    for (final option in filter.options) {
+      if (option.value == value) {
+        return option.label;
+      }
+    }
+    return value;
   }
 }

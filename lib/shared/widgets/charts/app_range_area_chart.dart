@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_range_area_chart.dart';
@@ -55,6 +56,7 @@ class AppRangeAreaChart extends StatelessWidget {
     this.titleTrailing,
     this.belowSubtitle,
     this.onPointTap,
+    this.onPointTapEvent,
     this.style = const AppRangeAreaChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -67,6 +69,7 @@ class AppRangeAreaChart extends StatelessWidget {
   final Widget? titleTrailing;
   final Widget? belowSubtitle;
   final void Function(AppRangeAreaPoint point, int index)? onPointTap;
+  final ValueChanged<AppChartItemTapEvent<AppRangeAreaPoint>>? onPointTapEvent;
   final AppRangeAreaChartStyle style;
   final AppChartPreset preset;
   final bool isLoading;
@@ -74,9 +77,19 @@ class AppRangeAreaChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handlePointTap(AppRangeAreaPoint point, int index) {
+      onPointTap?.call(point, index);
+      onPointTapEvent?.call(
+        AppChartItemTapEvent<AppRangeAreaPoint>(item: point, index: index),
+      );
+    }
+
     final innerChart = SyncfusionRangeAreaChart(
       points: points,
-      onPointTap: onPointTap,
+      onPointTap:
+          (onPointTap == null && onPointTapEvent == null)
+              ? null
+              : handlePointTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

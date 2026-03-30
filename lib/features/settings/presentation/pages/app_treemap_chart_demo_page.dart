@@ -104,11 +104,12 @@ class _AppTreemapChartDemoPageState extends State<AppTreemapChartDemoPage> {
                 name: 'Alta',
               ),
             ],
-            onTileSelected: (node) {
+            onTileSelectedEvent: (event) {
               setState(() {
                 _selectionSummary =
-                    'Selecionado: ${node.group} '
-                    '(${AppBrFormatters.compactCurrency(node.weight)})';
+                    'Selecionado: ${event.node.group} '
+                    '(${AppBrFormatters.compactCurrency(event.node.weight)}) '
+                    '- ${event.items.length} item(ns)';
               });
             },
             labelBuilder: (node) =>

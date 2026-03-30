@@ -26,61 +26,80 @@ class AppReportHeader extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
 
     final hasChips = contextChips.isNotEmpty;
+    final titleSection = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (title.isNotEmpty)
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        if (subtitle != null) ...<Widget>[
+          if (title.isNotEmpty) SizedBox(height: tokens.gapXs),
+          Text(
+            subtitle!,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
 
     return AppSectionCard(
       color: color,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showStackedHeader =
+              trailing != null && constraints.maxWidth < 560;
+          final trailingWidget = trailing;
+
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: Column(
+              if (showStackedHeader) ...<Widget>[
+                titleSection,
+                SizedBox(height: tokens.gapMd),
+                if (trailingWidget != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: trailingWidget,
+                  ),
+              ] else
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    if (title.isNotEmpty)
-                      Text(
-                        title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    if (subtitle != null) ...<Widget>[
-                      if (title.isNotEmpty) SizedBox(height: tokens.gapXs),
-                      Text(
-                        subtitle!,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
+                    Expanded(child: titleSection),
+                    if (trailingWidget != null) ...<Widget>[
+                      SizedBox(width: tokens.gapMd),
+                      Flexible(child: trailingWidget),
                     ],
                   ],
                 ),
-              ),
-              if (trailing != null) ...<Widget>[
-                SizedBox(width: tokens.gapMd),
-                trailing!,
+              if (hasChips) ...<Widget>[
+                SizedBox(height: tokens.gapSm),
+                Wrap(
+                  spacing: tokens.gapSm,
+                  runSpacing: tokens.gapSm,
+                  children: contextChips
+                      .map((label) {
+                        return Chip(
+                          label: Text(label),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tokens.gapSm,
+                          ),
+                        );
+                      })
+                      .toList(growable: false),
+                ),
               ],
             ],
-          ),
-          if (hasChips) ...<Widget>[
-            SizedBox(height: tokens.gapSm),
-            Wrap(
-              spacing: tokens.gapSm,
-              runSpacing: tokens.gapSm,
-              children: contextChips
-                  .map((label) {
-                    return Chip(
-                      label: Text(label),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
-                    );
-                  })
-                  .toList(growable: false),
-            ),
-          ],
-        ],
+          );
+        },
       ),
     );
   }

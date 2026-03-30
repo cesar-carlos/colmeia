@@ -53,6 +53,17 @@ class AppPolarChartDemoPage extends StatelessWidget {
           style: const AppPolarChartStyle(
             maxValue: 100,
           ),
+          onPointTapEvent: (event) {
+            final seriesLabel = event.entry?.label ?? 'Serie';
+            final valueLabel = event.point?.value.toStringAsFixed(0) ?? '-';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '$seriesLabel / ${event.category}: $valueLabel',
+                ),
+              ),
+            );
+          },
         ),
         SizedBox(height: tokens.sectionSpacing),
         const AppSectionCardWithHeading(

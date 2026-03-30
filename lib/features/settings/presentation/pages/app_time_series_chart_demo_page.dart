@@ -23,17 +23,19 @@ class AppTimeSeriesChartDemoPage extends StatelessWidget {
           eyebrow: 'Serie temporal',
           title: 'AppTimeSeriesChart',
           subtitle:
-              'Grafico de serie temporal com shell opcional, preset, estilo, '
-              'loading e empty.',
+              'Grafico de serie temporal com shell opcional, tap estruturado '
+              'por ponto, preset, estilo, loading e empty.',
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppTimeSeriesChart(
           title: '1. Serie principal',
-          subtitle: 'Receita diaria do recorte atual.',
+          subtitle: 'Receita diaria do recorte atual com toque por ponto.',
           points: _dailyRevenuePoints,
           style: AppTimeSeriesChartStyle(
             yAxisFormat: AppBrFormatters.compactCurrencyFormat,
           ),
+          onPointTapEvent: (event) =>
+              _showTimeSeriesTapFeedback(context, event),
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppTimeSeriesChart(
@@ -80,6 +82,21 @@ class AppTimeSeriesChartDemoPage extends StatelessWidget {
       ],
     );
   }
+}
+
+void _showTimeSeriesTapFeedback(
+  BuildContext context,
+  AppChartItemTapEvent<AppChartPoint> event,
+) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          'Serie temporal: ${event.item.label} = ${event.item.value}',
+        ),
+      ),
+    );
 }
 
 const List<AppChartPoint> _dailyRevenuePoints = <AppChartPoint>[

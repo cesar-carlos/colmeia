@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_scatter_bubble_chart.dart';
@@ -63,6 +64,7 @@ class AppScatterBubbleChart<T> extends StatelessWidget {
     this.colorBuilder,
     this.tooltipLabelBuilder,
     this.onPointTap,
+    this.onPointTapEvent,
     this.style = const AppScatterBubbleChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -78,6 +80,10 @@ class AppScatterBubbleChart<T> extends StatelessWidget {
   final String? Function(T item)? tooltipLabelBuilder;
   final void Function(T item, int index)? onPointTap;
 
+  /// Structured alternative to [onPointTap] — carries item and index
+  /// in a single typed payload.
+  final ValueChanged<AppChartItemTapEvent<T>>? onPointTapEvent;
+
   final String? title;
   final String? subtitle;
   final Widget? titleTrailing;
@@ -89,6 +95,11 @@ class AppScatterBubbleChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handlePointTap(T item, int index) {
+      onPointTap?.call(item, index);
+      onPointTapEvent?.call(AppChartItemTapEvent(item: item, index: index));
+    }
+
     final innerChart = SyncfusionScatterBubbleChart<T>(
       items: items,
       xValueBuilder: xValueBuilder,
@@ -97,7 +108,9 @@ class AppScatterBubbleChart<T> extends StatelessWidget {
       bubbleSizeBuilder: bubbleSizeBuilder,
       colorBuilder: colorBuilder,
       tooltipLabelBuilder: tooltipLabelBuilder,
-      onPointTap: onPointTap,
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
+          ? null
+          : handlePointTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

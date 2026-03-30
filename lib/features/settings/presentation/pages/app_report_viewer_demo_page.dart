@@ -57,6 +57,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
 
   late List<_SaleRow> _allRows;
   late AppReportQuery _query;
+  List<_SaleRow> _selectedRows = <_SaleRow>[];
   bool _isLoading = false;
 
   @override
@@ -182,6 +183,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       if (!mounted) return;
       setState(() {
         _query = query;
+        _selectedRows = <_SaleRow>[];
         final total = _currentRows.length;
         if (total == 0) {
           _query = _query.copyWith(page: 1);
@@ -203,19 +205,28 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
     if (!mounted) return;
     setState(() {
       _allRows = _generateFakeRows();
+      _selectedRows = <_SaleRow>[];
       _isLoading = false;
     });
   }
 
   Future<void> _onExportRequested(AppReportExportRequest request) async {
+    final rows = switch (request.scope) {
+      AppReportExportScope.allPages => _currentRows,
+      AppReportExportScope.currentPage => _pageRows,
+      AppReportExportScope.selection => _selectedRows,
+    };
+
     try {
       await AppReportExportHandler.export<_SaleRow>(
         request: request,
         columns: _columns,
-        rows: _pageRows,
+        rows: rows,
         title: 'Vendas por vendedor',
         subtitle: 'Demo — dados gerados automaticamente',
         summaryItems: _summaries,
+        filters: _filters,
+        filterValues: _query.filters,
         context: context,
       );
     } on Exception {
@@ -250,6 +261,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       label: 'Vendedor',
       valueGetter: _getSeller,
       aggregations: <AppReportAggregation>[AppReportAggregation.count],
+      groupable: true,
     ),
     const AppReportColumn<_SaleRow>(
       key: 'store',
@@ -275,6 +287,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       ),
       width: 120,
       sortable: false,
+      groupable: true,
       hideBelowBreakpoint: 480,
     ),
     const AppReportColumn<_SaleRow>(
@@ -374,8 +387,8 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
               eyebrow: 'Componentes compartilhados',
               title: 'Report Viewer',
               subtitle:
-                  'Tabela ERP genérica com filtros, paginação, export e '
-                  'seleção de colunas.',
+                  'Tabela ERP genérica com filtros, paginação, export, '
+                  'agrupamento e seleção de colunas.',
             ),
           ),
           Expanded(
@@ -386,6 +399,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
                 'Loja: Todas',
                 'Período: 2025',
                 '${_currentRows.length} registros',
+                _describeGroups(_query.groups),
               ],
               columns: _columns,
               rows: _pageRows,
@@ -393,11 +407,47 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
               summaryItems: _summaries,
               filters: _filters,
               filterValues: _query.filters,
+              selectedRows: _selectedRows,
               query: _query,
               events: AppReportEvents<_SaleRow>(
                 onQueryChanged: _onQueryChanged,
                 onRefresh: _onRefresh,
                 onExportRequested: _onExportRequested,
+                onGroupChanged: (groups) {
+                  setState(() {
+                    _query = _query.withGroups(groups);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_groupChangeMessage(groups)),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                onGroupStateChanged: (groups) {
+                  setState(() {
+                    _query = _query.withGroups(groups);
+                  });
+                },
+                onGroupExpanded: (event) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_groupToggleMessage(event)),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                onGroupCollapsed: (event) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_groupToggleMessage(event)),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                onRowSelection: (rows) {
+                  setState(() => _selectedRows = rows);
+                },
                 onRowTap: (row, _) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -409,9 +459,11 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
               ),
               style: const AppReportViewerStyle(
                 showColumnChooser: true,
+                showGroupingChooser: true,
                 showDensityToggle: true,
                 showSearchBar: true,
                 showRowDetailOnTap: true,
+                allowMultiSelection: true,
                 filtersStartExpanded: false,
               ),
               isLoading: _isLoading,
@@ -483,6 +535,41 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       _OrderStatus.shipped => 'Enviado',
       _OrderStatus.delivered => 'Entregue',
       _OrderStatus.cancelled => 'Cancelado',
+    };
+  }
+
+  static String _describeGroups(List<AppReportGroupDescriptor> groups) {
+    if (groups.isEmpty) {
+      return 'Agrupamento: Nenhum';
+    }
+
+    final labels = groups.map((group) => _groupLabel(group.columnKey)).join(' / ');
+    return 'Agrupamento: $labels';
+  }
+
+  static String _groupChangeMessage(List<AppReportGroupDescriptor> groups) {
+    if (groups.isEmpty) {
+      return 'Agrupamento removido';
+    }
+
+    final labels = groups
+        .map((group) => _groupLabel(group.columnKey))
+        .join(', ');
+    return 'Agrupado por $labels';
+  }
+
+  static String _groupToggleMessage(AppReportGroupToggleEvent event) {
+    final action = event.isExpanded ? 'expandido' : 'recolhido';
+    final label = _groupLabel(event.columnKey);
+    return '$label: ${event.groupKey} $action';
+  }
+
+  static String _groupLabel(String key) {
+    return switch (key) {
+      'seller' => 'Vendedor',
+      'store' => 'Loja',
+      'status' => 'Status',
+      _ => key,
     };
   }
 }

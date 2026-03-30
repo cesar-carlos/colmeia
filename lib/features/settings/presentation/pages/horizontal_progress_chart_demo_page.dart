@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart';
 import 'package:colmeia/shared/widgets/charts/horizontal_progress_chart_math.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -20,8 +21,8 @@ class HorizontalProgressChartDemoPage extends StatelessWidget {
           eyebrow: 'Graficos',
           title: 'AppHorizontalProgressChart',
           subtitle:
-              'Percentual, valor absoluto, metas, estilo customizado, '
-              'loading e empty.',
+              'Percentual, valor absoluto, metas, estilo customizado, toque '
+              'estruturado, loading e empty.',
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppHorizontalProgressChart<_CategoryShareSample>(
@@ -107,13 +108,8 @@ class HorizontalProgressChartDemoPage extends StatelessWidget {
               labelTextAlign: TextAlign.left,
               valueTextAlign: TextAlign.right,
             ),
-            onItemTap: (item) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Selecionado: ${item.label}'),
-                ),
-              );
-            },
+            onItemTapEvent: (event) =>
+                _showHorizontalProgressTapFeedback(context, event),
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
@@ -141,6 +137,23 @@ class HorizontalProgressChartDemoPage extends StatelessWidget {
       ],
     );
   }
+}
+
+void _showHorizontalProgressTapFeedback(
+  BuildContext context,
+  AppChartItemTapEvent<_ServiceLevelSample> event,
+) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          'Selecionado: ${event.item.label} '
+          '(linha ${event.index + 1}, '
+          'nota ${event.item.score.toStringAsFixed(1)})',
+        ),
+      ),
+    );
 }
 
 class _CategoryShareSample {

@@ -31,7 +31,8 @@ class _AppStepLineChartDemoPageState extends State<AppStepLineChartDemoPage> {
           title: 'AppStepLineChart',
           subtitle:
               'Linha em degraus para eventos discretos, mudancas de faixa, '
-              'estoque, SLA e ocupacao por janela.',
+              'estoque, SLA e ocupacao por janela, com evento estruturado por '
+              'serie e ponto.',
         ),
         SizedBox(height: tokens.sectionSpacing),
         const AppStepLineChart(
@@ -72,11 +73,12 @@ class _AppStepLineChartDemoPageState extends State<AppStepLineChartDemoPage> {
                 color: cs.tertiary,
               ),
             ],
-            onPointTap: (entry, point, pointIndex, seriesIndex) {
+            onPointTapEvent: (event) {
               setState(() {
                 _lastTap =
-                    'Toque: serie ${seriesIndex + 1} (${entry.label}), '
-                    'ponto ${pointIndex + 1} (${point.label}) = ${point.value}';
+                    'Toque: serie ${event.seriesIndex + 1} '
+                    '(${event.entry.label}), ponto ${event.pointIndex + 1} '
+                    '(${event.point.label}) = ${event.point.value}';
               });
             },
             style: const AppStepLineChartStyle(

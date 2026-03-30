@@ -24,16 +24,17 @@ class AppAreaTrendChartDemoPage extends StatelessWidget {
           title: 'AppAreaTrendChart',
           subtitle:
               'Tendencia temporal com area preenchida: gradiente, marcadores, '
-              'zoom e variantes de estilo.',
+              'zoom, variantes de estilo e evento estruturado por serie/ponto.',
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppAreaTrendChart(
           title: '1. Faturamento semanal',
-          subtitle: 'Area com gradiente, eixo formatado e tooltip.',
+          subtitle: 'Area com gradiente, eixo formatado, tooltip e tap.',
           points: _weeklyRevenueSamples,
           style: AppAreaTrendChartStyle(
             yAxisFormat: AppBrFormatters.compactCurrencyFormat,
           ),
+          onPointTapEvent: (event) => _showAreaTrendTapFeedback(context, event),
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppAreaTrendChart(
@@ -121,6 +122,7 @@ class AppAreaTrendChartDemoPage extends StatelessWidget {
             yAxisFormat: AppBrFormatters.compactCurrencyFormat,
             showMarkers: true,
           ),
+          onPointTapEvent: (event) => _showAreaTrendTapFeedback(context, event),
         ),
         SizedBox(height: tokens.sectionSpacing),
 
@@ -152,6 +154,23 @@ class AppAreaTrendChartDemoPage extends StatelessWidget {
       ],
     );
   }
+}
+
+void _showAreaTrendTapFeedback(
+  BuildContext context,
+  AppChartSeriesPointTapEvent<AppAreaTrendEntry> event,
+) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          'Area: '
+          '${event.entry.label.isEmpty ? 'serie principal' : event.entry.label}'
+          ' • ${event.point.label} = ${event.point.value}',
+        ),
+      ),
+    );
 }
 
 class _TrackballCalloutDemo extends StatefulWidget {

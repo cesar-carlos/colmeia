@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
@@ -26,6 +27,7 @@ class AppHeatmapChartStyle {
   const AppHeatmapChartStyle({
     this.height,
     this.cellHeight,
+    this.cellMinWidth,
     this.chartPadding,
     this.cellBorderRadius,
     this.axisLabelTextStyle,
@@ -44,6 +46,7 @@ class AppHeatmapChartStyle {
 
   final double? height;
   final double? cellHeight;
+  final double? cellMinWidth;
   final EdgeInsets? chartPadding;
   final BorderRadius? cellBorderRadius;
   final TextStyle? axisLabelTextStyle;
@@ -69,6 +72,7 @@ class AppHeatmapChart extends StatelessWidget {
     this.titleTrailing,
     this.belowSubtitle,
     this.onCellTap,
+    this.onCellTapEvent,
     this.style = const AppHeatmapChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -81,6 +85,7 @@ class AppHeatmapChart extends StatelessWidget {
   final Widget? titleTrailing;
   final Widget? belowSubtitle;
   final void Function(AppHeatmapCell cell)? onCellTap;
+  final ValueChanged<AppChartMatrixTapEvent<AppHeatmapCell>>? onCellTapEvent;
   final AppHeatmapChartStyle style;
   final AppChartPreset preset;
   final bool isLoading;
@@ -91,6 +96,7 @@ class AppHeatmapChart extends StatelessWidget {
     final innerChart = _HeatmapGrid(
       cells: cells,
       onCellTap: onCellTap,
+      onCellTapEvent: onCellTapEvent,
       style: style,
       preset: preset,
       isLoading: isLoading,
@@ -117,12 +123,14 @@ class _HeatmapGrid extends StatelessWidget {
     required this.style,
     required this.preset,
     this.onCellTap,
+    this.onCellTapEvent,
     this.isLoading = false,
     this.emptyPlaceholder,
   });
 
   final List<AppHeatmapCell> cells;
   final void Function(AppHeatmapCell cell)? onCellTap;
+  final ValueChanged<AppChartMatrixTapEvent<AppHeatmapCell>>? onCellTapEvent;
   final AppHeatmapChartStyle style;
   final AppChartPreset preset;
   final bool isLoading;
@@ -220,127 +228,162 @@ class _HeatmapGrid extends StatelessWidget {
 
     return SizedBox(
       height: resolvedHeight,
-      child: SingleChildScrollView(
-        padding: style.chartPadding ?? EdgeInsets.zero,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                SizedBox(width: style.yLabelWidth ?? 72),
-                SizedBox(width: tokens.gapSm),
-                ...xLabels.map((label) {
-                  return Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: tokens.gapSm),
-                      child: Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        style: axisLabelTextStyle,
-                      ),
-                    ),
-                  );
-                }),
-              ],
-            ),
-            ...yLabels.map((yLabel) {
-              return Padding(
-                padding: EdgeInsets.only(bottom: tokens.gapSm),
-                child: Row(
-                  children: <Widget>[
-                    SizedBox(
-                      width: style.yLabelWidth ?? 72,
-                      child: Text(yLabel, style: axisLabelTextStyle),
-                    ),
-                    SizedBox(width: tokens.gapSm),
-                    ...xLabels.map((xLabel) {
-                      final cell = lookup['$yLabel|$xLabel'];
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final yLabelWidth = style.yLabelWidth ?? 72;
+          final cellMinWidth = style.cellMinWidth ?? 56;
+          final minContentWidth =
+              yLabelWidth +
+              tokens.gapSm +
+              (xLabels.length * cellMinWidth);
 
-                      return Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.gapXs / 2,
-                          ),
-                          child: AspectRatio(
-                            aspectRatio: 1.15,
-                            child: cell == null
-                                ? DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: emptyCellColor,
-                                      borderRadius: borderRadius,
-                                    ),
-                                  )
-                                : Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      borderRadius: borderRadius,
-                                      onTap: onCellTap == null
-                                          ? null
-                                          : () => onCellTap!(cell),
-                                      child: DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: resolveColor(cell),
-                                          borderRadius: borderRadius,
-                                        ),
-                                        child: Center(
-                                          child: style.showCellValues
-                                              ? Padding(
-                                                  padding: EdgeInsets.all(
-                                                    tokens.gapXs,
-                                                  ),
-                                                  child: Text(
-                                                    resolveLabel(cell),
-                                                    textAlign: TextAlign.center,
-                                                    style: cellTextStyle,
-                                                  ),
-                                                )
-                                              : null,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              );
-            }),
-            if (style.showLegend) ...<Widget>[
-              SizedBox(height: tokens.gapSm),
-              Row(
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: style.chartPadding ?? EdgeInsets.zero,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: math.max(constraints.maxWidth, minContentWidth),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    style.numberFormat?.format(minValue) ??
-                        minValue.toStringAsFixed(0),
-                    style: legendTextStyle,
+                  Row(
+                    children: <Widget>[
+                      SizedBox(width: yLabelWidth),
+                      SizedBox(width: tokens.gapSm),
+                      ...xLabels.map((label) {
+                        return Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: tokens.gapSm),
+                            child: Text(
+                              label,
+                              textAlign: TextAlign.center,
+                              style: axisLabelTextStyle,
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
                   ),
-                  SizedBox(width: tokens.gapSm),
-                  Expanded(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: <Color>[lowColor, highColor],
-                        ),
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(999),
-                        ),
+                  ...yLabels.indexed.map((yEntry) {
+                    final yIndex = yEntry.$1;
+                    final yLabel = yEntry.$2;
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: tokens.gapSm),
+                      child: Row(
+                        children: <Widget>[
+                          SizedBox(
+                            width: yLabelWidth,
+                            child: Text(yLabel, style: axisLabelTextStyle),
+                          ),
+                          SizedBox(width: tokens.gapSm),
+                          ...xLabels.indexed.map((xEntry) {
+                            final xIndex = xEntry.$1;
+                            final xLabel = xEntry.$2;
+                            final cell = lookup['$yLabel|$xLabel'];
+
+                            return Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: tokens.gapXs / 2,
+                                ),
+                                child: AspectRatio(
+                                  aspectRatio: 1.15,
+                                  child: cell == null
+                                      ? DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: emptyCellColor,
+                                            borderRadius: borderRadius,
+                                          ),
+                                        )
+                                      : Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            borderRadius: borderRadius,
+                                            onTap:
+                                                onCellTap == null &&
+                                                    onCellTapEvent == null
+                                                ? null
+                                                : () {
+                                                    onCellTap?.call(cell);
+                                                    onCellTapEvent?.call(
+                                                      AppChartMatrixTapEvent<
+                                                        AppHeatmapCell
+                                                      >(
+                                                        item: cell,
+                                                        xIndex: xIndex,
+                                                        yIndex: yIndex,
+                                                      ),
+                                                    );
+                                                  },
+                                            child: DecoratedBox(
+                                              decoration: BoxDecoration(
+                                                color: resolveColor(cell),
+                                                borderRadius: borderRadius,
+                                              ),
+                                              child: Center(
+                                                child: style.showCellValues
+                                                    ? Padding(
+                                                        padding: EdgeInsets.all(
+                                                          tokens.gapXs,
+                                                        ),
+                                                        child: Text(
+                                                          resolveLabel(cell),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: cellTextStyle,
+                                                        ),
+                                                      )
+                                                    : null,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
                       ),
-                      child: const SizedBox(height: 10),
+                    );
+                  }),
+                  if (style.showLegend) ...<Widget>[
+                    SizedBox(height: tokens.gapSm),
+                    Row(
+                      children: <Widget>[
+                        Text(
+                          style.numberFormat?.format(minValue) ??
+                              minValue.toStringAsFixed(0),
+                          style: legendTextStyle,
+                        ),
+                        SizedBox(width: tokens.gapSm),
+                        Expanded(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: <Color>[lowColor, highColor],
+                              ),
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(999),
+                              ),
+                            ),
+                            child: const SizedBox(height: 10),
+                          ),
+                        ),
+                        SizedBox(width: tokens.gapSm),
+                        Text(
+                          style.numberFormat?.format(maxValue) ??
+                              maxValue.toStringAsFixed(0),
+                          style: legendTextStyle,
+                        ),
+                      ],
                     ),
-                  ),
-                  SizedBox(width: tokens.gapSm),
-                  Text(
-                    style.numberFormat?.format(maxValue) ??
-                        maxValue.toStringAsFixed(0),
-                    style: legendTextStyle,
-                  ),
+                  ],
                 ],
               ),
-            ],
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }

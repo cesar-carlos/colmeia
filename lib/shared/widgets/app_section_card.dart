@@ -46,8 +46,7 @@ class AppSectionCard extends StatelessWidget {
           )
         : null;
 
-    final resolvedPadding =
-        padding ?? EdgeInsets.all(tokens.contentSpacing);
+    final resolvedPadding = padding ?? EdgeInsets.all(tokens.contentSpacing);
 
     final paddedChild = Padding(
       padding: resolvedPadding,

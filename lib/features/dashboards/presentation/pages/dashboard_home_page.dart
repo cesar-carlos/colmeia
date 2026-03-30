@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/layout/app_content_constraint.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -218,9 +219,10 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
 
                   return RefreshIndicator(
                     onRefresh: onRefresh,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.all(tokens.contentSpacing),
+                    child: AppContentConstraint(
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: EdgeInsets.all(tokens.contentSpacing),
                       children: <Widget>[
                         AppShellPageIntro(
                           title: 'Olá, $greetingName',
@@ -384,6 +386,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                           ),
                         ],
                       ],
+                      ),
                     ),
                   );
                 },

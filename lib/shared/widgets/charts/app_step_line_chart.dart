@@ -57,6 +57,7 @@ class AppStepLineChart extends StatelessWidget {
     this.titleTrailing,
     this.belowSubtitle,
     this.onPointTap,
+    this.onPointTapEvent,
     this.style = const AppStepLineChartStyle(),
     this.preset = AppChartPreset.explorable,
     this.isLoading = false,
@@ -76,6 +77,8 @@ class AppStepLineChart extends StatelessWidget {
     int seriesIndex,
   )?
   onPointTap;
+  final ValueChanged<AppChartSeriesPointTapEvent<AppStepLineEntry>>?
+  onPointTapEvent;
   final AppStepLineChartStyle style;
   final AppChartPreset preset;
   final bool isLoading;
@@ -89,10 +92,30 @@ class AppStepLineChart extends StatelessWidget {
           AppStepLineEntry(label: '', points: points),
         ];
 
+    void handlePointTap(
+      AppStepLineEntry entry,
+      AppChartPoint point,
+      int pointIndex,
+      int seriesIndex,
+    ) {
+      onPointTap?.call(entry, point, pointIndex, seriesIndex);
+      onPointTapEvent?.call(
+        AppChartSeriesPointTapEvent<AppStepLineEntry>(
+          entry: entry,
+          seriesIndex: seriesIndex,
+          point: point,
+          pointIndex: pointIndex,
+        ),
+      );
+    }
+
     final innerChart = SyncfusionStepLineChart(
       entries: resolvedEntries,
       isMultiSeries: entries != null,
-      onPointTap: onPointTap,
+      onPointTap:
+          (onPointTap == null && onPointTapEvent == null)
+              ? null
+              : handlePointTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

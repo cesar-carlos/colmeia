@@ -22,31 +22,38 @@ class AppSparklineChartDemoPage extends StatelessWidget {
           title: 'AppSparklineChart',
           subtitle:
               'Linha de tendencia compacta para KPI cards, tabelas e listas. '
-              'Detecta direcao automaticamente e suporta gradiente de area.',
+              'Detecta direcao automaticamente, suporta gradiente de area e '
+              'agora expone evento estruturado de toque.',
         ),
         SizedBox(height: tokens.sectionSpacing),
 
         // Trend directions
-        const AppSectionCardWithHeading(
+        AppSectionCardWithHeading(
           title: '1. Direcao automatica',
           subtitle:
               'AppSparklineTrend.auto infere a cor pelo primeiro e ultimo '
-              'valor.',
+              'valor. Toque nas linhas para ver o evento estruturado.',
           child: Column(
             children: <Widget>[
               _SparklineRow(
                 label: 'Alta (up)',
                 values: _upTrend,
+                onTapEvent: (event) =>
+                    _showSparklineTapFeedback(context, event),
               ),
-              Divider(height: 24),
+              const Divider(height: 24),
               _SparklineRow(
                 label: 'Queda (down)',
                 values: _downTrend,
+                onTapEvent: (event) =>
+                    _showSparklineTapFeedback(context, event),
               ),
-              Divider(height: 24),
+              const Divider(height: 24),
               _SparklineRow(
                 label: 'Estavel (flat)',
                 values: _flatTrend,
+                onTapEvent: (event) =>
+                    _showSparklineTapFeedback(context, event),
               ),
             ],
           ),
@@ -140,15 +147,16 @@ class AppSparklineChartDemoPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
 
         // Embedded in KPI cards
-        const AppSectionCardWithHeading(
+        AppSectionCardWithHeading(
           title: '5. Incorporado em KPI cards',
           subtitle:
               'Sparkline como trendWidget de AppMetricStatCard — '
-              'padrao tipico de dashboard.',
+              'padrao tipico de dashboard. Os minis graficos tambem respondem '
+              'a toque.',
           child: Column(
             children: <Widget>[
               AppMetricStatCard(
-                leading: Icon(Icons.attach_money_rounded),
+                leading: const Icon(Icons.attach_money_rounded),
                 trendLabel: '+12,4%',
                 label: 'Faturamento',
                 value: r'R$ 148,6 mil',
@@ -157,12 +165,14 @@ class AppSparklineChartDemoPage extends StatelessWidget {
                   child: AppSparklineChart(
                     values: _upTrend,
                     height: 36,
+                    onTapEvent: (event) =>
+                        _showSparklineTapFeedback(context, event),
                   ),
                 ),
               ),
-              Divider(height: 1),
+              const Divider(height: 1),
               AppMetricStatCard(
-                leading: Icon(Icons.assignment_return_outlined),
+                leading: const Icon(Icons.assignment_return_outlined),
                 trendLabel: '+0,8 p.p.',
                 label: 'Devolucoes',
                 value: '3,2%',
@@ -171,12 +181,14 @@ class AppSparklineChartDemoPage extends StatelessWidget {
                   child: AppSparklineChart(
                     values: _downTrend,
                     height: 36,
+                    onTapEvent: (event) =>
+                        _showSparklineTapFeedback(context, event),
                   ),
                 ),
               ),
-              Divider(height: 1),
+              const Divider(height: 1),
               AppMetricStatCard(
-                leading: Icon(Icons.star_border_rounded),
+                leading: const Icon(Icons.star_border_rounded),
                 trendLabel: '=',
                 label: 'NPS',
                 value: '72 pts',
@@ -185,6 +197,8 @@ class AppSparklineChartDemoPage extends StatelessWidget {
                   child: AppSparklineChart(
                     values: _flatTrend,
                     height: 36,
+                    onTapEvent: (event) =>
+                        _showSparklineTapFeedback(context, event),
                   ),
                 ),
               ),
@@ -230,6 +244,7 @@ class _SparklineRow extends StatelessWidget {
     this.showFill = true,
     this.showEndDot = true,
     this.color,
+    this.onTapEvent,
   });
 
   final String label;
@@ -239,33 +254,49 @@ class _SparklineRow extends StatelessWidget {
   final bool showFill;
   final bool showEndDot;
   final Color? color;
+  final ValueChanged<AppSparklineTapEvent>? onTapEvent;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Row(
-      children: <Widget>[
-        SizedBox(
-          width: 150,
-          child: Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 280;
+        final labelWidget = Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
-        ),
-        Expanded(
-          child: AppSparklineChart(
-            values: values,
-            height: height,
-            lineWidth: lineWidth,
-            showFill: showFill,
-            showEndDot: showEndDot,
-            color: color,
-          ),
-        ),
-      ],
+        );
+        final chartWidget = AppSparklineChart(
+          values: values,
+          height: height,
+          lineWidth: lineWidth,
+          showFill: showFill,
+          showEndDot: showEndDot,
+          color: color,
+          onTapEvent: onTapEvent,
+        );
+
+        if (isCompact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              labelWidget,
+              const SizedBox(height: 8),
+              chartWidget,
+            ],
+          );
+        }
+
+        return Row(
+          children: <Widget>[
+            SizedBox(width: 150, child: labelWidget),
+            Expanded(child: chartWidget),
+          ],
+        );
+      },
     );
   }
 }
@@ -289,3 +320,24 @@ const List<num> _flatTrend = <num>[
 const List<num> _zigzag = <num>[
   40, 80, 35, 75, 45, 85, 50, 70, 40, 78,
 ];
+
+void _showSparklineTapFeedback(
+  BuildContext context,
+  AppSparklineTapEvent event,
+) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+    SnackBar(
+      content: Text(
+        'Sparkline ${event.trend.name}: '
+        'min ${event.minValue.toStringAsFixed(0)}, '
+        'max ${event.maxValue.toStringAsFixed(0)}, '
+        'delta ${_formatSparklineDelta(event.delta)}',
+        ),
+      ),
+    );
+}
+
+String _formatSparklineDelta(double delta) =>
+    '${delta >= 0 ? '+' : ''}${delta.toStringAsFixed(0)}';

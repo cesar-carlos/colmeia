@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_stacked_bar_chart.dart';
@@ -74,6 +75,23 @@ class AppStackedBarSeries<G> {
   final Color? color;
 }
 
+/// Structured payload emitted when a stacked bar segment is tapped.
+class AppStackedBarSegmentTapEvent<G> {
+  const AppStackedBarSegmentTapEvent({
+    required this.group,
+    required this.groupIndex,
+    required this.series,
+    required this.seriesIndex,
+    required this.value,
+  });
+
+  final G group;
+  final int groupIndex;
+  final AppStackedBarSeries<G> series;
+  final int seriesIndex;
+  final num value;
+}
+
 /// Stacked vertical bar chart for comparing composition across groups.
 ///
 /// Usage:
@@ -101,6 +119,9 @@ class AppStackedBarChart<G> extends StatelessWidget {
     this.titleTrailing,
     this.belowSubtitle,
     this.onGroupTap,
+    this.onGroupTapEvent,
+    this.onSegmentTap,
+    this.onSegmentTapEvent,
     this.style = const AppStackedBarChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -119,6 +140,21 @@ class AppStackedBarChart<G> extends StatelessWidget {
   /// Called when the user taps a group bar segment.
   final void Function(G group, int index)? onGroupTap;
 
+  /// Structured alternative to [onGroupTap] — carries group and index
+  /// in a single typed payload.
+  final ValueChanged<AppChartItemTapEvent<G>>? onGroupTapEvent;
+
+  /// Called when the user taps a specific stacked segment within a group.
+  final void Function(
+    G group,
+    AppStackedBarSeries<G> series,
+    int groupIndex,
+    int seriesIndex,
+  )? onSegmentTap;
+
+  /// Structured alternative to [onSegmentTap] with group, series and value.
+  final ValueChanged<AppStackedBarSegmentTapEvent<G>>? onSegmentTapEvent;
+
   final AppStackedBarChartStyle style;
   final AppChartPreset preset;
   final bool isLoading;
@@ -126,13 +162,42 @@ class AppStackedBarChart<G> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handleSegmentTap(
+      G group,
+      AppStackedBarSeries<G> segmentSeries,
+      int groupIndex,
+      int seriesIndex,
+      num value,
+    ) {
+      onGroupTap?.call(group, groupIndex);
+      onGroupTapEvent?.call(
+        AppChartItemTapEvent(item: group, index: groupIndex),
+      );
+      onSegmentTap?.call(group, segmentSeries, groupIndex, seriesIndex);
+      onSegmentTapEvent?.call(
+        AppStackedBarSegmentTapEvent(
+          group: group,
+          groupIndex: groupIndex,
+          series: segmentSeries,
+          seriesIndex: seriesIndex,
+          value: value,
+        ),
+      );
+    }
+
     final innerChart = SyncfusionStackedBarChart<G>(
       groups: groups,
       groupLabelBuilder: groupLabelBuilder,
       series: series,
       style: style,
       preset: preset,
-      onGroupTap: onGroupTap,
+      onSegmentTap:
+          (onGroupTap == null &&
+              onGroupTapEvent == null &&
+              onSegmentTap == null &&
+              onSegmentTapEvent == null)
+          ? null
+          : handleSegmentTap,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
     );

@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_pyramid_chart.dart';
@@ -37,6 +38,7 @@ class AppPyramidChart<T> extends StatelessWidget {
     this.dataLabelBuilder,
     this.tooltipLabelBuilder,
     this.onSegmentTap,
+    this.onSegmentTapEvent,
     this.style = const AppPyramidChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -51,6 +53,10 @@ class AppPyramidChart<T> extends StatelessWidget {
   final String? Function(T item, num value)? tooltipLabelBuilder;
   final void Function(T item, int index)? onSegmentTap;
 
+  /// Structured alternative to [onSegmentTap] — carries item and index
+  /// in a single typed payload.
+  final ValueChanged<AppChartItemTapEvent<T>>? onSegmentTapEvent;
+
   final String? title;
   final String? subtitle;
   final Widget? titleTrailing;
@@ -62,6 +68,11 @@ class AppPyramidChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handleSegmentTap(T item, int index) {
+      onSegmentTap?.call(item, index);
+      onSegmentTapEvent?.call(AppChartItemTapEvent(item: item, index: index));
+    }
+
     final innerChart = SyncfusionPyramidChart<T>(
       items: items,
       labelBuilder: labelBuilder,
@@ -69,7 +80,9 @@ class AppPyramidChart<T> extends StatelessWidget {
       colorBuilder: colorBuilder,
       dataLabelBuilder: dataLabelBuilder,
       tooltipLabelBuilder: tooltipLabelBuilder,
-      onSegmentTap: onSegmentTap,
+      onSegmentTap: (onSegmentTap == null && onSegmentTapEvent == null)
+          ? null
+          : handleSegmentTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

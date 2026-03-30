@@ -101,7 +101,7 @@ class SyncfusionRangeAreaChart extends StatelessWidget {
                 ? null
                 : (details) {
                     final index = details.pointIndex;
-                    if (index != null && index >= 0) {
+                    if (index != null && index >= 0 && index < points.length) {
                       onPointTap!(points[index], index);
                     }
                   },

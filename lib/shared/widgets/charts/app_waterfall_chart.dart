@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_waterfall_chart.dart';
@@ -61,6 +62,7 @@ class AppWaterfallChart<T> extends StatelessWidget {
     this.dataLabelBuilder,
     this.tooltipLabelBuilder,
     this.onPointTap,
+    this.onPointTapEvent,
     this.style = const AppWaterfallChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -75,6 +77,7 @@ class AppWaterfallChart<T> extends StatelessWidget {
   final String? Function(T item, num value)? dataLabelBuilder;
   final String? Function(T item, num value)? tooltipLabelBuilder;
   final void Function(T item, int index)? onPointTap;
+  final ValueChanged<AppChartItemTapEvent<T>>? onPointTapEvent;
 
   final String? title;
   final String? subtitle;
@@ -107,6 +110,16 @@ class AppWaterfallChart<T> extends StatelessWidget {
               )
               .toList(growable: false);
 
+    void handlePointTap(int index) {
+      if (index < 0 || index >= items.length) {
+        return;
+      }
+
+      final item = items[index];
+      onPointTap?.call(item, index);
+      onPointTapEvent?.call(AppChartItemTapEvent(item: item, index: index));
+    }
+
     final innerChart = SyncfusionWaterfallChart<T>(
       items: items,
       labelBuilder: labelBuilder,
@@ -115,9 +128,9 @@ class AppWaterfallChart<T> extends StatelessWidget {
       isTotalSum: isTotalSum,
       dataLabels: dataLabels,
       tooltipLabels: tooltipLabels,
-      onPointTap: onPointTap == null
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
           ? null
-          : (index) => onPointTap!(items[index], index),
+          : handlePointTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

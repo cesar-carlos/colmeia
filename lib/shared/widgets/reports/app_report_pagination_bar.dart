@@ -32,14 +32,9 @@ class AppReportPaginationBar extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
 
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: tokens.gapMd,
-      runSpacing: tokens.gapSm,
-      children: <Widget>[
-        _CountLabel(pageInfo: pageInfo),
-        SingleChildScrollView(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final controls = SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -51,13 +46,38 @@ class AppReportPaginationBar extends StatelessWidget {
               _nextButton(context),
             ],
           ),
-        ),
-        _PageSizeSelector(
+        );
+        final pageSizeSelector = _PageSizeSelector(
           current: pageInfo.pageSize,
           options: availablePageSizes,
           onChanged: isLoading ? null : onPageSizeChanged,
-        ),
-      ],
+        );
+
+        if (constraints.maxWidth < 720) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _CountLabel(pageInfo: pageInfo),
+              SizedBox(height: tokens.gapSm),
+              controls,
+              SizedBox(height: tokens.gapSm),
+              pageSizeSelector,
+            ],
+          );
+        }
+
+        return Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: tokens.gapMd,
+          runSpacing: tokens.gapSm,
+          children: <Widget>[
+            _CountLabel(pageInfo: pageInfo),
+            controls,
+            pageSizeSelector,
+          ],
+        );
+      },
     );
   }
 

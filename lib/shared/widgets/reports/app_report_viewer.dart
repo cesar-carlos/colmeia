@@ -16,6 +16,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_summary_bar.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_toolbar.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Generic, interactive ERP-style report viewer.
@@ -54,6 +55,7 @@ class AppReportViewer<T> extends StatefulWidget {
     this.headerTrailing,
     this.filters,
     this.filterValues,
+    this.selectedRows,
     this.summaryItems,
     this.pageInfo,
     this.query,
@@ -86,6 +88,9 @@ class AppReportViewer<T> extends StatefulWidget {
   /// Current filter values applied by the consumer.
   final Map<String, Object?>? filterValues;
 
+  /// Currently selected rows, used by toolbar actions such as export selection.
+  final List<T>? selectedRows;
+
   /// KPI tiles shown in the summary bar.
   final List<AppReportSummaryItem>? summaryItems;
 
@@ -111,10 +116,13 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   late Set<String> _visibleColumnKeys;
   late AppReportDensity _density;
   late List<AppReportSortDescriptor> _sorts;
+  late List<AppReportGroupDescriptor> _groups;
+  late final AppReportGroupController _groupController;
 
   @override
   void initState() {
     super.initState();
+    _groupController = AppReportGroupController();
     _initFromQuery();
   }
 
@@ -133,6 +141,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     final query = widget.query;
     _density = query?.density ?? widget.style.density;
     _sorts = query?.sorts ?? <AppReportSortDescriptor>[];
+    _groups = query?.groups ?? <AppReportGroupDescriptor>[];
     _visibleColumnKeys = query?.visibleColumnKeys ?? _defaultVisibleKeys();
   }
 
@@ -140,6 +149,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     setState(() {
       _density = query.density;
       _sorts = query.sorts;
+      _groups = query.groups;
       if (query.visibleColumnKeys != null) {
         _visibleColumnKeys = Set<String>.from(query.visibleColumnKeys!);
       }
@@ -150,6 +160,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     setState(() {
       final validKeys = widget.columns.map((column) => column.key).toSet();
       final syncedKeys = _visibleColumnKeys.intersection(validKeys);
+      _groups = _groups
+          .where((group) => validKeys.contains(group.columnKey))
+          .toList(growable: false);
       _visibleColumnKeys = syncedKeys.isNotEmpty
           ? syncedKeys
           : _defaultVisibleKeys();
@@ -182,9 +195,46 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   }
 
   void _onColumnVisibilityChanged(Set<String> keys) {
-    setState(() => _visibleColumnKeys = keys);
+    final visibleGroups = _groups
+        .where((group) => keys.contains(group.columnKey))
+        .toList(growable: false);
+    final groupsChanged = !listEquals(visibleGroups, _groups);
+    setState(() {
+      _visibleColumnKeys = keys;
+      _groups = visibleGroups;
+    });
     widget.events.onColumnVisibilityChanged?.call(keys);
-    _emitQueryChanged(visibleColumnKeys: keys);
+    if (groupsChanged) {
+      widget.events.onGroupChanged?.call(visibleGroups);
+    }
+    _emitQueryChanged(
+      visibleColumnKeys: keys,
+      groups: visibleGroups,
+      page: groupsChanged ? 1 : null,
+    );
+  }
+
+  void _onGroupChanged(List<AppReportGroupDescriptor> groups) {
+    setState(() => _groups = groups);
+    widget.events.onGroupChanged?.call(groups);
+    _emitQueryChanged(groups: groups, page: 1);
+  }
+
+  void _onGroupStateChanged(List<AppReportGroupDescriptor> groups) {
+    setState(() => _groups = groups);
+    widget.events.onGroupStateChanged?.call(groups);
+  }
+
+  void _onGroupToggle(AppReportGroupToggleEvent event) {
+    if (event.groupLevel < 0 || event.groupLevel >= _groups.length) {
+      return;
+    }
+
+    final updatedGroups = List<AppReportGroupDescriptor>.from(_groups);
+    updatedGroups[event.groupLevel] = updatedGroups[event.groupLevel].copyWith(
+      expanded: event.isExpanded,
+    );
+    _onGroupStateChanged(updatedGroups);
   }
 
   void _onRowTap(T row, int index) {
@@ -203,6 +253,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
 
   void _emitQueryChanged({
     List<AppReportSortDescriptor>? sorts,
+    List<AppReportGroupDescriptor>? groups,
     AppReportDensity? density,
     Set<String>? visibleColumnKeys,
     Map<String, Object?>? filters,
@@ -214,6 +265,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     final normalizedSearchTerm = searchTerm?.trim();
     final updated = current.copyWith(
       sorts: sorts ?? _sorts,
+      groups: groups ?? _groups,
       density: density ?? _density,
       visibleColumnKeys: visibleColumnKeys ?? _visibleColumnKeys,
       filters: filters ?? current.filters,
@@ -230,6 +282,12 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final style = widget.style;
+    final groupableColumns = widget.columns
+        .where(
+          (column) =>
+              column.groupable && _visibleColumnKeys.contains(column.key),
+        )
+        .toList(growable: false);
 
     final showHeader =
         widget.title != null ||
@@ -271,7 +329,10 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
             loadingSemanticsLabel: 'Carregando filtros...',
             child: AppReportFiltersPanel(
               filters: widget.filters!,
-              initialValues: widget.filterValues ?? <String, Object?>{},
+              initialValues:
+                  widget.filterValues ??
+                  widget.query?.filters ??
+                  <String, Object?>{},
               onApply: (values) {
                 widget.events.onFiltersApplied?.call(values);
                 _emitQueryChanged(filters: values, page: 1);
@@ -312,20 +373,33 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                       _emitQueryChanged(searchTerm: term, page: 1);
                     },
                     onDensityChanged: _onDensityChanged,
+                    onGroupChanged: _onGroupChanged,
+                    onGroupStateChanged: _onGroupStateChanged,
                     onColumnVisibilityChanged: _onColumnVisibilityChanged,
                     onExportRequested: widget.events.onExportRequested,
                     onPrintRequested: widget.events.onPrintRequested,
                     onRefresh: widget.events.onRefresh,
                   ),
                   columns: widget.columns,
+                  groupableColumns: groupableColumns,
                   visibleColumnKeys: _visibleColumnKeys,
                   currentDensity: _density,
+                  currentGroups: _groups,
                   isLoading: widget.isLoading,
+                  groupController: _groupController,
                   searchTerm: widget.query?.searchTerm,
+                  selectedRowCount: widget.selectedRows?.length ?? 0,
+                  onClearSelection: widget.events.onRowSelection != null
+                      ? () =>
+                            widget.events.onRowSelection?.call(List<T>.empty())
+                      : null,
                 ),
                 AppReportGrid<T>(
                   columns: _visibleColumns,
                   rows: widget.rows,
+                  currentGroups: _groups,
+                  selectedRows: widget.selectedRows ?? List<T>.empty(),
+                  groupController: _groupController,
                   style: style.copyWith(density: _density),
                   events: AppReportEvents<T>(
                     onSortChanged: _onSortChanged,
@@ -333,6 +407,14 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                     onRowDoubleTap: widget.events.onRowDoubleTap,
                     onRowLongPress: widget.events.onRowLongPress,
                     onRowSelection: widget.events.onRowSelection,
+                    onGroupExpanded: (event) {
+                      _onGroupToggle(event);
+                      widget.events.onGroupExpanded?.call(event);
+                    },
+                    onGroupCollapsed: (event) {
+                      _onGroupToggle(event);
+                      widget.events.onGroupCollapsed?.call(event);
+                    },
                   ),
                   currentSorts: _sorts,
                   emptyMessage: widget.emptyMessage,

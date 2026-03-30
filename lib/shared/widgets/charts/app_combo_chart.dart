@@ -62,6 +62,25 @@ class AppComboChartStyle {
   final TextStyle? dataLabelTextStyle;
 }
 
+enum AppComboChartSeriesType {
+  bar,
+  line,
+}
+
+class AppComboChartPointTapEvent<T> {
+  const AppComboChartPointTapEvent({
+    required this.item,
+    required this.index,
+    required this.seriesType,
+    required this.value,
+  });
+
+  final T item;
+  final int index;
+  final AppComboChartSeriesType seriesType;
+  final num value;
+}
+
 /// Mixed bar + line chart for scenarios where two metrics share the same
 /// X-axis but have different scales or visual emphasis.
 ///
@@ -98,6 +117,8 @@ class AppComboChart<T> extends StatelessWidget {
     this.belowSubtitle,
     this.onBarTap,
     this.onLineTap,
+    this.onBarTapEvent,
+    this.onLineTapEvent,
     this.style = const AppComboChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -128,6 +149,10 @@ class AppComboChart<T> extends StatelessWidget {
   /// Called when the user taps a line data point.
   final void Function(T item, int index)? onLineTap;
 
+  final ValueChanged<AppComboChartPointTapEvent<T>>? onBarTapEvent;
+
+  final ValueChanged<AppComboChartPointTapEvent<T>>? onLineTapEvent;
+
   final AppComboChartStyle style;
   final AppChartPreset preset;
   final bool isLoading;
@@ -135,6 +160,30 @@ class AppComboChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void handleBarTap(T item, int index) {
+      onBarTap?.call(item, index);
+      onBarTapEvent?.call(
+        AppComboChartPointTapEvent(
+          item: item,
+          index: index,
+          seriesType: AppComboChartSeriesType.bar,
+          value: barValueBuilder(item),
+        ),
+      );
+    }
+
+    void handleLineTap(T item, int index) {
+      onLineTap?.call(item, index);
+      onLineTapEvent?.call(
+        AppComboChartPointTapEvent(
+          item: item,
+          index: index,
+          seriesType: AppComboChartSeriesType.line,
+          value: lineValueBuilder(item),
+        ),
+      );
+    }
+
     final innerChart = SyncfusionComboChart<T>(
       items: items,
       xLabelBuilder: xLabelBuilder,
@@ -144,8 +193,10 @@ class AppComboChart<T> extends StatelessWidget {
       lineSeriesLabel: lineSeriesLabel,
       style: style,
       preset: preset,
-      onBarTap: onBarTap,
-      onLineTap: onLineTap,
+      onBarTap:
+          (onBarTap == null && onBarTapEvent == null) ? null : handleBarTap,
+      onLineTap:
+          (onLineTap == null && onLineTapEvent == null) ? null : handleLineTap,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
     );

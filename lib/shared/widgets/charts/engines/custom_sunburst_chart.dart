@@ -29,7 +29,7 @@ class CustomSunburstChart<T> extends StatelessWidget {
   final String? Function(T item) parentIdBuilder;
   final Color? Function(T item)? colorBuilder;
   final String? centerLabel;
-  final void Function(AppSunburstNode<T> node)? onSegmentTap;
+  final void Function(AppSunburstNode<T> node, int index)? onSegmentTap;
   final AppSunburstChartStyle style;
   final AppChartPreset preset;
   final bool isLoading;
@@ -95,7 +95,7 @@ class CustomSunburstChart<T> extends StatelessWidget {
                                     details.localPosition,
                                   );
                                   if (hit != null) {
-                                    onSegmentTap!(hit.node);
+                                    onSegmentTap!(hit.node, hit.index);
                                   }
                                 },
                           child: CustomPaint(
@@ -503,6 +503,7 @@ class _SunburstLayout<T> {
       final adjustedStart = cursor + (gapAngle / 2);
 
       final segment = _SunburstSegment<T>(
+        index: segments.length,
         node: node.publicNode,
         startAngle: adjustedStart,
         sweepAngle: adjustedSweep,
@@ -532,6 +533,7 @@ class _SunburstLayout<T> {
 
 class _SunburstSegment<T> {
   const _SunburstSegment({
+    required this.index,
     required this.node,
     required this.startAngle,
     required this.sweepAngle,
@@ -539,6 +541,7 @@ class _SunburstSegment<T> {
     required this.outerRadius,
   });
 
+  final int index;
   final AppSunburstNode<T> node;
   final double startAngle;
   final double sweepAngle;

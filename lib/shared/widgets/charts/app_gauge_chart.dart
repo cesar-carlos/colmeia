@@ -17,6 +17,24 @@ class AppGaugeRange {
   final String? label;
 }
 
+class AppGaugeTapEvent {
+  const AppGaugeTapEvent({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.normalizedValue,
+    required this.ranges,
+    this.targetValue,
+  });
+
+  final double value;
+  final double min;
+  final double max;
+  final double? targetValue;
+  final double normalizedValue;
+  final List<AppGaugeRange> ranges;
+}
+
 class AppGaugeChartStyle {
   const AppGaugeChartStyle({
     this.height,
@@ -69,6 +87,8 @@ class AppGaugeChart extends StatelessWidget {
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onTap,
+    this.onTapEvent,
   });
 
   final double value;
@@ -86,9 +106,32 @@ class AppGaugeChart extends StatelessWidget {
   final AppChartPreset preset;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final VoidCallback? onTap;
+  final ValueChanged<AppGaugeTapEvent>? onTapEvent;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedMin = min < max ? min : max;
+    final resolvedMax = min > max ? min : max;
+    final safeRange = resolvedMax - resolvedMin;
+    final normalizedValue = safeRange <= 0
+        ? 0.0
+        : (value.clamp(resolvedMin, resolvedMax) - resolvedMin) / safeRange;
+
+    void handleTap() {
+      onTap?.call();
+      onTapEvent?.call(
+        AppGaugeTapEvent(
+          value: value.clamp(resolvedMin, resolvedMax),
+          min: resolvedMin,
+          max: resolvedMax,
+          targetValue: targetValue?.clamp(resolvedMin, resolvedMax),
+          normalizedValue: normalizedValue,
+          ranges: ranges,
+        ),
+      );
+    }
+
     final innerChart = SyncfusionGaugeChart(
       value: value,
       min: min,
@@ -103,8 +146,17 @@ class AppGaugeChart extends StatelessWidget {
       emptyPlaceholder: emptyPlaceholder,
     );
 
+    final interactiveChart =
+        onTap == null && onTapEvent == null
+            ? innerChart
+            : GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: handleTap,
+                child: innerChart,
+              );
+
     if (title == null) {
-      return innerChart;
+      return interactiveChart;
     }
 
     return AppChartShell(
@@ -112,7 +164,7 @@ class AppGaugeChart extends StatelessWidget {
       subtitle: subtitle,
       titleTrailing: titleTrailing,
       belowSubtitle: belowSubtitle,
-      child: innerChart,
+      child: interactiveChart,
     );
   }
 }

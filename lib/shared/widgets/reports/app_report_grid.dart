@@ -11,6 +11,40 @@ import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 /// Grid widget backed by [SfDataGrid] that consumes [AppReportColumn]
 /// definitions and handles responsive column visibility, sorting callbacks,
 /// and row interaction events.
+class AppReportGroupController {
+  VoidCallback? _expandAll;
+  VoidCallback? _collapseAll;
+  ValueChanged<int>? _expandToLevel;
+  ValueChanged<int>? _collapseToLevel;
+
+  void _bind({
+    required VoidCallback expandAll,
+    required VoidCallback collapseAll,
+    required ValueChanged<int> expandToLevel,
+    required ValueChanged<int> collapseToLevel,
+  }) {
+    _expandAll = expandAll;
+    _collapseAll = collapseAll;
+    _expandToLevel = expandToLevel;
+    _collapseToLevel = collapseToLevel;
+  }
+
+  void _unbind() {
+    _expandAll = null;
+    _collapseAll = null;
+    _expandToLevel = null;
+    _collapseToLevel = null;
+  }
+
+  void expandAll() => _expandAll?.call();
+
+  void collapseAll() => _collapseAll?.call();
+
+  void expandToLevel(int level) => _expandToLevel?.call(level);
+
+  void collapseToLevel(int level) => _collapseToLevel?.call(level);
+}
+
 class AppReportGrid<T> extends StatefulWidget {
   const AppReportGrid({
     required this.columns,
@@ -19,6 +53,9 @@ class AppReportGrid<T> extends StatefulWidget {
     super.key,
     this.events = const AppReportEvents(),
     this.currentSorts = const <AppReportSortDescriptor>[],
+    this.currentGroups = const <AppReportGroupDescriptor>[],
+    this.selectedRows = const [],
+    this.groupController,
     this.emptyMessage,
   });
 
@@ -27,6 +64,9 @@ class AppReportGrid<T> extends StatefulWidget {
   final AppReportViewerStyle style;
   final AppReportEvents<T> events;
   final List<AppReportSortDescriptor> currentSorts;
+  final List<AppReportGroupDescriptor> currentGroups;
+  final List<T> selectedRows;
+  final AppReportGroupController? groupController;
   final String? emptyMessage;
 
   @override
@@ -37,6 +77,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   late AppReportGridSource<T> _source;
   bool _hasBuiltSource = false;
   final DataGridController _gridController = DataGridController();
+  bool _suppressSelectionCallback = false;
 
   @override
   void initState() {
@@ -51,12 +92,19 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     }
     _source = _buildSource();
     _hasBuiltSource = true;
+    _bindGroupController();
+    _scheduleSyncGroupingFromParent();
     _scheduleSyncSortFromParent();
+    _scheduleSyncSelectionFromParent();
   }
 
   @override
   void didUpdateWidget(covariant AppReportGrid<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.groupController != widget.groupController) {
+      oldWidget.groupController?._unbind();
+      _bindGroupController();
+    }
     final columnsChanged = oldWidget.columns != widget.columns;
     final rowsChanged = oldWidget.rows != widget.rows;
     final styleChanged =
@@ -66,6 +114,14 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     final sortsChanged = !listEquals(
       oldWidget.currentSorts,
       widget.currentSorts,
+    );
+    final groupsChanged = !listEquals(
+      oldWidget.currentGroups,
+      widget.currentGroups,
+    );
+    final selectionChanged = !listEquals(
+      oldWidget.selectedRows,
+      widget.selectedRows,
     );
     if (columnsChanged || rowsChanged || styleChanged) {
       if (styleChanged) {
@@ -78,12 +134,19 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       }
       _hasBuiltSource = true;
     }
+    if (columnsChanged || rowsChanged || groupsChanged) {
+      _scheduleSyncGroupingFromParent();
+    }
     if (columnsChanged ||
         rowsChanged ||
         styleChanged ||
         sortsChanged ||
+        groupsChanged ||
         trustOrderChanged) {
       _scheduleSyncSortFromParent();
+    }
+    if (columnsChanged || rowsChanged || selectionChanged) {
+      _scheduleSyncSelectionFromParent();
     }
   }
 
@@ -102,10 +165,109 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     });
   }
 
+  void _scheduleSyncGroupingFromParent() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final visibleKeys = _visibleColumns.map((column) => column.key).toSet();
+      _source.applyExternalGroupDescriptors(widget.currentGroups, visibleKeys);
+      _syncGroupExpansionFromParent();
+    });
+  }
+
+  void _syncGroupExpansionFromParent() {
+    for (var i = 0; i < widget.currentGroups.length; i++) {
+      final level = i + 1;
+      final descriptor = widget.currentGroups[i];
+      if (descriptor.expanded) {
+        _gridController.expandGroupsAtLevel(level);
+      } else {
+        _gridController.collapseGroupsAtLevel(level);
+      }
+    }
+  }
+
+  void _expandAllGroups() {
+    if (widget.currentGroups.isEmpty) {
+      return;
+    }
+    _gridController.expandAllGroup();
+  }
+
+  void _collapseAllGroups() {
+    if (widget.currentGroups.isEmpty) {
+      return;
+    }
+    _gridController.collapseAllGroup();
+  }
+
+  void _expandGroupsToLevel(int level) {
+    if (widget.currentGroups.isEmpty) {
+      return;
+    }
+    _gridController.expandGroupsAtLevel(level);
+  }
+
+  void _collapseGroupsToLevel(int level) {
+    if (widget.currentGroups.isEmpty) {
+      return;
+    }
+    _gridController.collapseGroupsAtLevel(level);
+  }
+
+  void _scheduleSyncSelectionFromParent() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      _suppressSelectionCallback = true;
+      try {
+        if (widget.selectedRows.isEmpty ||
+            (!widget.style.allowSelection &&
+                !widget.style.allowMultiSelection)) {
+          _gridController.selectedRows = <DataGridRow>[];
+          _gridController.selectedIndex = -1;
+          return;
+        }
+
+        final selectedGridRows = _source.resolveDataGridRows(
+          widget.selectedRows,
+        );
+
+        if (widget.style.allowMultiSelection) {
+          _gridController.selectedRows = selectedGridRows;
+          return;
+        }
+
+        if (selectedGridRows.isEmpty) {
+          _gridController.selectedRows = <DataGridRow>[];
+          _gridController.selectedIndex = -1;
+          return;
+        }
+
+        _gridController.selectedRow = selectedGridRows.first;
+      } finally {
+        _suppressSelectionCallback = false;
+      }
+    });
+  }
+
   @override
   void dispose() {
+    widget.groupController?._unbind();
     _gridController.dispose();
     super.dispose();
+  }
+
+  void _bindGroupController() {
+    widget.groupController?._bind(
+      expandAll: _expandAllGroups,
+      collapseAll: _collapseAllGroups,
+      expandToLevel: _expandGroupsToLevel,
+      collapseToLevel: _collapseGroupsToLevel,
+    );
   }
 
   AppReportGridSource<T> _buildSource() {
@@ -230,7 +392,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     List<DataGridRow> addedRows,
     List<DataGridRow> removedRows,
   ) {
-    if (widget.events.onRowSelection == null) {
+    if (_suppressSelectionCallback || widget.events.onRowSelection == null) {
       return;
     }
 
@@ -241,6 +403,39 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
           ];
     final selectedRows = _source.resolveRows(selectedGridRows);
     widget.events.onRowSelection?.call(selectedRows);
+  }
+
+  void _handleGroupExpanded(DataGridGroupChangedDetails details) {
+    final event = _resolveGroupToggleEvent(details);
+    if (event == null) {
+      return;
+    }
+    widget.events.onGroupExpanded?.call(event);
+  }
+
+  void _handleGroupCollapsed(DataGridGroupChangedDetails details) {
+    final event = _resolveGroupToggleEvent(details);
+    if (event == null) {
+      return;
+    }
+    widget.events.onGroupCollapsed?.call(event);
+  }
+
+  AppReportGroupToggleEvent? _resolveGroupToggleEvent(
+    DataGridGroupChangedDetails details,
+  ) {
+    if (details.groupLevel < 0 ||
+        details.groupLevel >= widget.currentGroups.length) {
+      return null;
+    }
+
+    final descriptor = widget.currentGroups[details.groupLevel];
+    return AppReportGroupToggleEvent(
+      columnKey: descriptor.columnKey,
+      groupKey: details.key,
+      groupLevel: details.groupLevel,
+      isExpanded: details.isExpanded,
+    );
   }
 
   @override
@@ -266,6 +461,8 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       controller: _gridController,
       columns: _buildGridColumns(visible),
       tableSummaryRows: _buildSummaryRows(visible),
+      allowExpandCollapseGroup: widget.currentGroups.isNotEmpty,
+      groupCaptionTitleFormat: '{ColumnName}|{Key}|{ItemsCount}',
       allowSorting: widget.style.allowSorting,
       allowMultiColumnSorting: widget.style.allowMultiSort,
       allowColumnsResizing: true,
@@ -287,6 +484,8 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       onCellDoubleTap: _handleCellDoubleTap,
       onCellLongPress: _handleCellLongPress,
       onSelectionChanged: _handleSelectionChanged,
+      groupExpanded: _handleGroupExpanded,
+      groupCollapsed: _handleGroupCollapsed,
     );
 
     return ClipRRect(

@@ -1,6 +1,7 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_range_area_chart.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -23,7 +24,8 @@ class AppRangeAreaChartDemoPage extends StatelessWidget {
           title: 'AppRangeAreaChart',
           subtitle:
               'Mostra faixa minima/maxima, banda de confianca ou variacao '
-              'esperada ao longo do tempo.',
+              'esperada ao longo do tempo, com tap estruturado e preset '
+              'compacto.',
         ),
         SizedBox(height: tokens.sectionSpacing),
         const AppRangeAreaChart(
@@ -35,12 +37,14 @@ class AppRangeAreaChartDemoPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
         AppRangeAreaChart(
           title: '2. Faixa de faturamento esperado',
-          subtitle: 'Minimo e maximo previstos para a semana.',
+          subtitle:
+              'Minimo e maximo previstos para a semana com tap por faixa.',
           points: _revenueBand,
           style: AppRangeAreaChartStyle(
             yAxisFormat: AppBrFormatters.compactCurrencyFormat,
             showTrackball: true,
           ),
+          onPointTapEvent: (event) => _showRangeAreaTapFeedback(context, event),
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
@@ -53,15 +57,8 @@ class AppRangeAreaChartDemoPage extends StatelessWidget {
               yAxisFormat: AppBrFormatters.compactCurrencyFormat,
               showYGridLines: false,
             ),
-            onPointTap: (point, index) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${point.label}: ${point.low} - ${point.high}',
-                  ),
-                ),
-              );
-            },
+            onPointTapEvent: (event) =>
+                _showRangeAreaTapFeedback(context, event),
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
@@ -84,6 +81,20 @@ class AppRangeAreaChartDemoPage extends StatelessWidget {
       ],
     );
   }
+}
+
+void _showRangeAreaTapFeedback(
+  BuildContext context,
+  AppChartItemTapEvent<AppRangeAreaPoint> event,
+) {
+  final point = event.item;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text('${point.label}: ${point.low} - ${point.high}'),
+      ),
+    );
 }
 
 const List<AppRangeAreaPoint> _temperatureRange = <AppRangeAreaPoint>[

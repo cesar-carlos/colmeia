@@ -144,17 +144,18 @@ class _AppComboChartDemoPageState extends State<AppComboChartDemoPage> {
                   rightAxisFormat: AppBrFormatters.compactCurrencyFormat,
                   showDataLabels: true,
                 ),
-                onBarTap: (item, index) {
+                onBarTapEvent: (event) {
                   setState(() {
                     _lastTapInfo =
-                        'Barra: ${item.label} — ${item.orders} pedidos';
+                        'Barra: ${event.item.label} — '
+                        '${event.value.toStringAsFixed(0)} pedidos';
                   });
                 },
-                onLineTap: (item, index) {
+                onLineTapEvent: (event) {
                   setState(() {
                     _lastTapInfo =
-                        'Linha: ${item.label}'
-                        ' — R\$ ${item.avgTicket.toStringAsFixed(2)}';
+                        'Linha: ${event.item.label}'
+                        ' — R\$ ${event.value.toStringAsFixed(2)}';
                   });
                 },
               ),

@@ -135,7 +135,7 @@ class SyncfusionWaterfallChart<T> extends StatelessWidget {
                 ? null
                 : (details) {
                     final index = details.pointIndex;
-                    if (index != null && index >= 0) {
+                    if (index != null && index >= 0 && index < items.length) {
                       onPointTap!(index);
                     }
                   },

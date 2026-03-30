@@ -102,6 +102,8 @@ class AppAreaTrendChart extends StatelessWidget {
     this.preset = AppChartPreset.explorable,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.onPointTap,
+    this.onPointTapEvent,
   });
 
   /// Data for a single-series chart. Ignored when [entries] is provided.
@@ -120,6 +122,13 @@ class AppAreaTrendChart extends StatelessWidget {
   final bool isLoading;
   final Widget? emptyPlaceholder;
 
+  /// Called when a data point is tapped.
+  /// seriesIndex identifies the series (always 0 for single-series).
+  /// point carries the label and value.
+  final void Function(int seriesIndex, AppChartPoint point)? onPointTap;
+  final ValueChanged<AppChartSeriesPointTapEvent<AppAreaTrendEntry>>?
+  onPointTapEvent;
+
   @override
   Widget build(BuildContext context) {
     final resolvedEntries =
@@ -128,6 +137,23 @@ class AppAreaTrendChart extends StatelessWidget {
           AppAreaTrendEntry(label: '', points: points),
         ];
 
+    void handlePointTap(
+      AppAreaTrendEntry entry,
+      AppChartPoint point,
+      int pointIndex,
+      int seriesIndex,
+    ) {
+      onPointTap?.call(seriesIndex, point);
+      onPointTapEvent?.call(
+        AppChartSeriesPointTapEvent<AppAreaTrendEntry>(
+          entry: entry,
+          seriesIndex: seriesIndex,
+          point: point,
+          pointIndex: pointIndex,
+        ),
+      );
+    }
+
     final innerChart = SyncfusionAreaTrendChart(
       entries: resolvedEntries,
       isMultiSeries: entries != null,
@@ -135,6 +161,10 @@ class AppAreaTrendChart extends StatelessWidget {
       preset: preset,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
+      onPointTap:
+          (onPointTap == null && onPointTapEvent == null)
+              ? null
+              : handlePointTap,
     );
 
     if (title == null) {

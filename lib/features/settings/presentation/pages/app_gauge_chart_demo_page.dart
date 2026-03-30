@@ -23,17 +23,21 @@ class AppGaugeChartDemoPage extends StatelessWidget {
           title: 'AppGaugeChart',
           subtitle:
               'Mostra valor atual, faixas de referencia e meta em leitura '
-              'instrumental, ideal para SLA, ocupacao, temperatura operacional '
-              'e indicadores executivos.',
+              'instrumental, com toque estruturado, anotacao adaptada e uso '
+              'em SLA, ocupacao, temperatura operacional e indicadores '
+              'executivos.',
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppGaugeChart(
           title: '1. SLA medio de atendimento',
-          subtitle: 'Faixas de risco, atencao e saudavel com meta destacada.',
+          subtitle:
+              'Faixas de risco, atencao e saudavel com meta destacada. '
+              'Toque para inspecionar o payload.',
           value: 87,
           targetValue: 92,
           valueLabelBuilder: (value) => '${value.toStringAsFixed(0)}%',
           targetLabelBuilder: (value) => 'Meta ${value.toStringAsFixed(0)}%',
+          onTapEvent: (event) => _showGaugeTapFeedback(context, event),
           ranges: const <AppGaugeRange>[
             AppGaugeRange(start: 0, end: 70, color: Color(0xFFD9485F)),
             AppGaugeRange(start: 70, end: 85, color: Color(0xFFF6B93B)),
@@ -43,12 +47,15 @@ class AppGaugeChartDemoPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
         AppGaugeChart(
           title: '2. Ocupacao por capacidade',
-          subtitle: 'Gauge com pointer de faixa para uma leitura mais densa.',
+          subtitle:
+              'Gauge com pointer de faixa para uma leitura mais densa. '
+              'Tambem responde a toque.',
           value: 61,
           max: 80,
           targetValue: 68,
           valueLabelBuilder: (value) => '${_compactNumber.format(value)} vagas',
           targetLabelBuilder: (value) => 'Meta ${_compactNumber.format(value)}',
+          onTapEvent: (event) => _showGaugeTapFeedback(context, event),
           ranges: <AppGaugeRange>[
             AppGaugeRange(start: 0, end: 36, color: cs.tertiary),
             AppGaugeRange(start: 36, end: 56, color: cs.primary),
@@ -102,3 +109,23 @@ class AppGaugeChartDemoPage extends StatelessWidget {
 String _compactGaugeLabel(double value) => '${value.toStringAsFixed(0)}%';
 
 final NumberFormat _compactNumber = NumberFormat.compact(locale: 'pt_BR');
+
+void _showGaugeTapFeedback(BuildContext context, AppGaugeTapEvent event) {
+  final targetLabel =
+      event.targetValue == null ? '' : _formatGaugeTarget(event.targetValue!);
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          'Gauge: ${event.value.toStringAsFixed(0)}'
+          ' de ${event.max.toStringAsFixed(0)}'
+          ' (${(event.normalizedValue * 100).toStringAsFixed(0)}%)'
+          '$targetLabel',
+        ),
+      ),
+    );
+}
+
+String _formatGaugeTarget(double value) =>
+    ' • meta ${value.toStringAsFixed(0)}';

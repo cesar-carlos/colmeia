@@ -46,13 +46,18 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
   void didUpdateWidget(covariant AppReportFiltersPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!mapEquals(oldWidget.initialValues, widget.initialValues)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        _formKey.currentState?.patchValue(widget.initialValues);
-      });
+      _scheduleSyncFormValues();
     }
+  }
+
+  void _scheduleSyncFormValues() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _formKey.currentState?.reset();
+      _formKey.currentState?.patchValue(widget.initialValues);
+    });
   }
 
   @override
@@ -61,6 +66,14 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
     final tokens = theme.extension<AppThemeTokens>()!;
     final hasFilters = widget.filters.isNotEmpty;
     final requiredCount = widget.filters.where((f) => f.required).length;
+    final activeCount = widget.filters
+        .where(
+          (filter) => _hasActiveValue(
+            filter: filter,
+            values: widget.initialValues,
+          ),
+        )
+        .length;
 
     return AppSectionCard(
       color: theme.colorScheme.surfaceContainerLow,
@@ -97,6 +110,12 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                           if (requiredCount > 0)
                             Chip(
                               label: Text('$requiredCount obrigatórios'),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          if (activeCount > 0)
+                            Chip(
+                              label: Text('$activeCount ativos'),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -170,6 +189,28 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
       ),
     );
   }
+
+  static bool _hasActiveValue({
+    required AppReportFilterDescriptor filter,
+    required Map<String, Object?> values,
+  }) {
+    bool hasObjectValue(Object? value) {
+      return switch (value) {
+        null => false,
+        final String text => text.trim().isNotEmpty,
+        final Iterable<Object?> list => list.isNotEmpty,
+        final bool enabled => enabled,
+        _ => true,
+      };
+    }
+
+    if (filter.type == AppReportFilterType.numericRange) {
+      return hasObjectValue(values['${filter.name}_min']) ||
+          hasObjectValue(values['${filter.name}_max']);
+    }
+
+    return hasObjectValue(values[filter.name]);
+  }
 }
 
 class _FilterField extends StatelessWidget {
@@ -229,7 +270,9 @@ class _FilterField extends StatelessWidget {
       case AppReportFilterType.multiSelect:
         return FormBuilderFilterChips<String>(
           name: descriptor.name,
-          initialValue: initialValue is List<String> ? initialValue : null,
+          initialValue: initialValue is List
+              ? initialValue.whereType<String>().toList(growable: false)
+              : null,
           decoration: InputDecoration(
             labelText: descriptor.label,
             helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
@@ -301,6 +344,8 @@ class _FilterField extends StatelessWidget {
                 Expanded(
                   child: FormBuilderTextField(
                     name: '${descriptor.name}_min',
+                    initialValue:
+                        initialValues['${descriptor.name}_min']?.toString(),
                     decoration: InputDecoration(
                       labelText: 'De',
                       hintText: descriptor.minValue?.toString(),
@@ -314,6 +359,8 @@ class _FilterField extends StatelessWidget {
                 Expanded(
                   child: FormBuilderTextField(
                     name: '${descriptor.name}_max',
+                    initialValue:
+                        initialValues['${descriptor.name}_max']?.toString(),
                     decoration: InputDecoration(
                       labelText: 'Até',
                       hintText: descriptor.maxValue?.toString(),
