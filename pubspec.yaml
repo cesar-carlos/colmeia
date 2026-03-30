@@ -67,6 +67,7 @@ dependencies:
   skeletonizer: ^2.1.3
   syncfusion_flutter_charts: ^33.1.45
   syncfusion_flutter_datagrid: ^33.1.45
+  syncfusion_flutter_datepicker: ^33.1.45
   syncfusion_flutter_gauges: ^33.1.45
   syncfusion_flutter_treemap: ^33.1.45
   syncfusion_flutter_xlsio: ^33.1.45

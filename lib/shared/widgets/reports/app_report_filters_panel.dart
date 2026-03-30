@@ -1,6 +1,6 @@
-import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_builder_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -250,15 +250,14 @@ class _FilterField extends StatelessWidget {
         );
 
       case AppReportFilterType.date:
-        return FormBuilderDateTimePicker(
+        return AppFormBuilderDatePickerField(
           name: descriptor.name,
+          label: descriptor.label,
+          helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
+          pickerTitle: descriptor.label,
           initialValue: initialValue as DateTime?,
-          inputType: InputType.date,
-          format: AppBrFormatters.shortDateFormat,
-          decoration: InputDecoration(
-            labelText: descriptor.label,
-            helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
-          ),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
           validator: descriptor.required
               ? FormBuilderValidators.compose(
                   <String? Function(DateTime?)>[
@@ -269,15 +268,21 @@ class _FilterField extends StatelessWidget {
         );
 
       case AppReportFilterType.dateRange:
-        return FormBuilderDateRangePicker(
+        return AppFormBuilderDateRangePickerField(
           name: descriptor.name,
+          label: descriptor.label,
+          helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
+          pickerTitle: descriptor.label,
+          initialValue: initialValue as DateTimeRange?,
           firstDate: DateTime(2000),
           lastDate: DateTime(2100),
-          format: AppBrFormatters.shortDateFormat,
-          decoration: InputDecoration(
-            labelText: descriptor.label,
-            helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
-          ),
+          validator: descriptor.required
+              ? FormBuilderValidators.compose(
+                  <String? Function(DateTimeRange?)>[
+                    FormBuilderValidators.required(),
+                  ],
+                )
+              : null,
         );
 
       case AppReportFilterType.numericRange:

@@ -2,6 +2,7 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/reports/domain/entities/report_parameter_descriptor.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_builder_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -171,15 +172,14 @@ class _ReportParameterField extends StatelessWidget {
               : null,
         );
       case ReportParameterType.date:
-        return FormBuilderDateTimePicker(
+        return AppFormBuilderDatePickerField(
           name: parameter.name,
+          label: parameter.label,
+          helperText: parameter.required ? 'Obrigatório' : 'Opcional',
+          pickerTitle: parameter.label,
           initialValue: initialValue as DateTime?,
-          inputType: InputType.date,
-          format: AppBrFormatters.shortDateFormat,
-          decoration: InputDecoration(
-            labelText: parameter.label,
-            helperText: parameter.required ? 'Obrigatório' : 'Opcional',
-          ),
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
           validator: parameter.required
               ? FormBuilderValidators.compose(<String? Function(DateTime?)>[
                   FormBuilderValidators.required(),
