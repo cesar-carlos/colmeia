@@ -27,16 +27,16 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
         AppSectionCardWithHeading(
           title: 'Graficos',
           subtitle:
-              'Barras, radial bar, gauge, sunburst, funnel, pyramid, polar, '
-              'treemap, radar, waterfall, bullet, heatmap, scatter/bubble, '
-              'range area, step line, area, empilhado, combo, serie temporal, '
-              'sparkline, distribuicao e progresso.',
+              'Catalogo com callbacks estruturados, presets compactos, estados '
+              'de loading/empty e variacoes responsivas para leitura analitica.',
           child: Column(
             children: <Widget>[
               _DemoEntryTile(
                 icon: Icons.bar_chart_rounded,
                 title: 'Grafico de barras (comparativo)',
-                subtitle: 'Barras verticais, cor por item, loading e empty.',
+                subtitle:
+                    'Barras verticais com toque estruturado por item, loading '
+                    'e empty.',
                 onTap: () => context.push(appComparisonBarChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -44,8 +44,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.stacked_bar_chart_rounded,
                 title: 'Barras empilhadas',
                 subtitle:
-                    'Vertical, horizontal, 100%, onGroupTap e paleta '
-                    'automatica.',
+                    'Vertical, horizontal e 100% com eventos estruturados por '
+                    'grupo/segmento e paleta automatica.',
                 onTap: () => context.push(appStackedBarChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -53,15 +53,17 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.area_chart_rounded,
                 title: 'Tendencia de area',
                 subtitle:
-                    'Series unica e multi-series com trackball, '
-                    'gradiente e marcadores.',
+                    'Series unica e multi-series com trackball, gradiente, '
+                    'marcadores e tap estruturado por serie.',
                 onTap: () => context.push(appAreaTrendChartDemoLocation),
               ),
               const Divider(height: 1),
               _DemoEntryTile(
                 icon: Icons.insert_chart_outlined_rounded,
                 title: 'Grafico combinado (barra + linha)',
-                subtitle: 'Dois eixos, data labels, onBarTap e onLineTap.',
+                subtitle:
+                    'Dois eixos, data labels e eventos estruturados para barra '
+                    'e linha.',
                 onTap: () => context.push(appComboChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -69,8 +71,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.account_tree_outlined,
                 title: 'Waterfall',
                 subtitle:
-                    'Ponte de variacao com positivos, negativos, '
-                    'subtotal e total.',
+                    'Ponte de variacao com positivos, negativos, subtotal, '
+                    'total e callback estruturado por etapa.',
                 onTap: () => context.push(appWaterfallChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -78,8 +80,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.straighten_rounded,
                 title: 'Bullet chart',
                 subtitle:
-                    'Realizado vs meta com faixas qualitativas '
-                    'e toque por linha.',
+                    'Realizado vs meta com faixas qualitativas e toque '
+                    'estruturado por linha.',
                 onTap: () => context.push(appBulletChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -87,15 +89,17 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.grid_on_rounded,
                 title: 'Heatmap',
                 subtitle:
-                    'Matriz de calor para dia x hora, loja x etapa '
-                    'e densidade operacional.',
+                    'Matriz de calor com evento estruturado por celula, '
+                    'scroll horizontal e leitura em cenarios compactos.',
                 onTap: () => context.push(appHeatmapChartDemoLocation),
               ),
               const Divider(height: 1),
               _DemoEntryTile(
                 icon: Icons.bubble_chart_rounded,
                 title: 'Scatter / Bubble',
-                subtitle: 'Correlacao entre metricas com pontos ou bolhas.',
+                subtitle:
+                    'Correlacao entre metricas com pontos ou bolhas e toque '
+                    'estruturado por item.',
                 onTap: () => context.push(appScatterBubbleChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -103,8 +107,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.show_chart_rounded,
                 title: 'Range area',
                 subtitle:
-                    'Faixa minima/maxima para previsao, temperatura '
-                    'ou banda de confianca.',
+                    'Faixa minima/maxima para previsao com trackball, preset '
+                    'compacto e tap estruturado.',
                 onTap: () => context.push(appRangeAreaChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -112,8 +116,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.filter_alt_rounded,
                 title: 'Funnel',
                 subtitle:
-                    'Conversao por etapa para pipeline comercial, onboarding '
-                    'e processos operacionais.',
+                    'Conversao por etapa com toque estruturado para pipeline, '
+                    'onboarding e processos.',
                 onTap: () => context.push(appFunnelChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -121,8 +125,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.speed_rounded,
                 title: 'Gauge',
                 subtitle:
-                    'Leitura instrumental para SLA, ocupacao, metas e alertas '
-                    'operacionais.',
+                    'Leitura instrumental com toque no gauge, payload '
+                    'estruturado e anotacao adaptada a layouts compactos.',
                 onTap: () => context.push(appGaugeChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -130,8 +134,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.change_history_rounded,
                 title: 'Pyramid',
                 subtitle:
-                    'Hierarquia de volume para capacidade, senioridade e mix '
-                    'por faixa.',
+                    'Hierarquia de volume com toque estruturado por segmento e '
+                    'uso compacto em cards.',
                 onTap: () => context.push(appPyramidChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -139,8 +143,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.stacked_line_chart_rounded,
                 title: 'Step line',
                 subtitle:
-                    'Linha em degraus para eventos discretos, mudancas de '
-                    'faixa e ocupacao.',
+                    'Linha em degraus com eventos estruturados por serie/ponto '
+                    'e presets compactos.',
                 onTap: () => context.push(appStepLineChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -148,8 +152,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.radar_rounded,
                 title: 'Polar',
                 subtitle:
-                    'Leitura circular por eixo angular para intensidade e '
-                    'sazonalidade radial.',
+                    'Leitura circular por eixo angular com evento estruturado '
+                    'por categoria e serie.',
                 onTap: () => context.push(appPolarChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -157,8 +161,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.donut_small_rounded,
                 title: 'Radial bar',
                 subtitle:
-                    'Progresso por categoria em aneis concentricos para score, '
-                    'SLA e aderencia.',
+                    'Progresso por categoria em aneis concentricos com toque '
+                    'estruturado e leitura resumida.',
                 onTap: () => context.push(appRadialBarChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -166,8 +170,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.track_changes_rounded,
                 title: 'Radar',
                 subtitle:
-                    'Comparativo multidimensional para scorecards, maturidade '
-                    'e benchmark de lojas.',
+                    'Comparativo multidimensional com evento estruturado por '
+                    'categoria e boa leitura em cards.',
                 onTap: () => context.push(appRadarChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -175,8 +179,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.blur_circular_rounded,
                 title: 'Sunburst',
                 subtitle:
-                    'Hierarquia radial para categorias, centros de custo e '
-                    'carteiras exploraveis.',
+                    'Hierarquia radial com tap estruturado por segmento e '
+                    'resumo central adaptado.',
                 onTap: () => context.push(appSunburstChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -184,29 +188,35 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.dashboard_customize_rounded,
                 title: 'Treemap',
                 subtitle:
-                    'Participacao por area para mix de vendas, portfolio '
-                    'e agrupamentos.',
+                    'Participacao por area com selecao estruturada e variacoes '
+                    'de layout para agrupamentos.',
                 onTap: () => context.push(appTreemapChartDemoLocation),
               ),
               const Divider(height: 1),
               _DemoEntryTile(
                 icon: Icons.trending_up_rounded,
                 title: 'Sparkline (micro grafico)',
-                subtitle: 'Linha de tendencia inline para KPI cards e tabelas.',
+                subtitle:
+                    'Linha inline com evento estruturado, uso em KPI cards e '
+                    'layout responsivo nas demos.',
                 onTap: () => context.push(appSparklineChartDemoLocation),
               ),
               const Divider(height: 1),
               _DemoEntryTile(
                 icon: Icons.show_chart_rounded,
                 title: 'Serie temporal',
-                subtitle: 'Curva temporal com preset, estilo, loading e empty.',
+                subtitle:
+                    'Curva temporal com tap estruturado por ponto, preset, '
+                    'loading e empty.',
                 onTap: () => context.push(appTimeSeriesChartDemoLocation),
               ),
               const Divider(height: 1),
               _DemoEntryTile(
                 icon: Icons.donut_large_rounded,
                 title: 'Distribuicao',
-                subtitle: 'Donut chart com legenda, tooltip, loading e empty.',
+                subtitle:
+                    'Donut chart com evento estruturado por segmento, legenda, '
+                    'tooltip, loading e empty.',
                 onTap: () => context.push(appDistributionChartDemoLocation),
               ),
               const Divider(height: 1),
@@ -214,7 +224,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 icon: Icons.waterfall_chart_rounded,
                 title: 'Grafico horizontal de progresso',
                 subtitle:
-                    'Percentual, valores absolutos, metas, loading e empty.',
+                    'Percentual, valores absolutos, metas, toque estruturado e '
+                    'layout adaptado para largura curta.',
                 onTap: () => context.push(horizontalProgressChartDemoLocation),
               ),
             ],
@@ -292,14 +303,27 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
           title: 'Formularios',
-          subtitle: 'Campos e escolhas.',
-          child: _DemoEntryTile(
-            icon: Icons.edit_note_rounded,
-            title: 'Campos compartilhados',
-            subtitle:
-                'AppTextField, AppEmailField, AppPasswordField, '
-                'AppCheckboxField e AppRadioGroup.',
-            onTap: () => context.push(appFormsDemoLocation),
+          subtitle: 'Campos de texto, datas e FormBuilder.',
+          child: Column(
+            children: <Widget>[
+              _DemoEntryTile(
+                icon: Icons.edit_note_rounded,
+                title: 'Campos de texto e escolhas',
+                subtitle:
+                    'AppTextField, AppEmailField, AppPasswordField, '
+                    'AppCheckboxField e AppRadioGroup.',
+                onTap: () => context.push(appFormsDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.calendar_month_rounded,
+                title: 'Date pickers',
+                subtitle:
+                    'Data unica e intervalo (Syncfusion), validacao no form e '
+                    'campos FormBuilder como nos relatorios.',
+                onTap: () => context.push(appFormsDemoLocation),
+              ),
+            ],
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
