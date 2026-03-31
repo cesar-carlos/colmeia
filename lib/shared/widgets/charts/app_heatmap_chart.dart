@@ -9,6 +9,39 @@ import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+const double _kHeatmapCellAspectRatio = 1.15;
+
+double _estimateHeatmapMinHeight({
+  required double contentWidth,
+  required double yLabelWidth,
+  required double gapSm,
+  required double gapXs,
+  required int xColumnCount,
+  required int yRowCount,
+  required bool showLegend,
+  required double chartPaddingVertical,
+  required double chartThemeMinHeight,
+}) {
+  if (xColumnCount == 0 || yRowCount == 0) {
+    return math.max(chartThemeMinHeight, 160);
+  }
+
+  final chartBodyWidth = contentWidth - yLabelWidth - gapSm;
+  final cellColumnWidth = chartBodyWidth / xColumnCount;
+  final innerCellWidth = math.max(0, cellColumnWidth - gapXs);
+  final cellRowHeight = innerCellWidth / _kHeatmapCellAspectRatio;
+
+  const xAxisHeaderHeight = 28;
+  final dataRowsHeight = yRowCount * (gapSm + cellRowHeight);
+  final legendHeight = showLegend ? (gapSm + 18) : 0;
+
+  final innerContent = xAxisHeaderHeight + dataRowsHeight + legendHeight;
+  return math.max(
+    chartThemeMinHeight,
+    innerContent + chartPaddingVertical + 4,
+  );
+}
+
 class AppHeatmapCell {
   const AppHeatmapCell({
     required this.xLabel,
@@ -157,16 +190,15 @@ class _HeatmapGrid extends StatelessWidget {
       lookup['${cell.yLabel}|${cell.xLabel}'] = cell;
     }
 
-    final resolvedHeight =
-        style.height ??
-        math.max(
-          chartTheme.height,
-          ((style.cellHeight ?? 38) * (yLabels.length + 2)) + tokens.gapMd,
-        );
-
     if (isLoading) {
+      final loadingHeight =
+          style.height ??
+          math.max(
+            chartTheme.height,
+            ((style.cellHeight ?? 38) * 6) + tokens.gapMd,
+          );
       return SizedBox(
-        height: resolvedHeight,
+        height: loadingHeight,
         child: Center(
           child: CircularProgressIndicator(color: chartTheme.primaryColor),
         ),
@@ -174,8 +206,14 @@ class _HeatmapGrid extends StatelessWidget {
     }
 
     if (cells.isEmpty && emptyPlaceholder != null) {
+      final emptyHeight =
+          style.height ??
+          math.max(
+            chartTheme.height,
+            ((style.cellHeight ?? 38) * 6) + tokens.gapMd,
+          );
       return SizedBox(
-        height: resolvedHeight,
+        height: emptyHeight,
         child: Center(child: emptyPlaceholder),
       );
     }
@@ -226,24 +264,37 @@ class _HeatmapGrid extends StatelessWidget {
     String resolveLabel(AppHeatmapCell cell) =>
         style.numberFormat?.format(cell.value) ?? cell.value.toStringAsFixed(0);
 
-    return SizedBox(
-      height: resolvedHeight,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final yLabelWidth = style.yLabelWidth ?? 72;
-          final cellMinWidth = style.cellMinWidth ?? 56;
-          final minContentWidth =
-              yLabelWidth +
-              tokens.gapSm +
-              (xLabels.length * cellMinWidth);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final yLabelWidth = style.yLabelWidth ?? 72;
+        final cellMinWidth = style.cellMinWidth ?? 56;
+        final minContentWidth =
+            yLabelWidth + tokens.gapSm + (xLabels.length * cellMinWidth);
+        final availableWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : minContentWidth;
+        final contentWidth = math.max(availableWidth, minContentWidth);
+        final chartPadding = style.chartPadding ?? EdgeInsets.zero;
+        final resolvedHeight = style.height ??
+            _estimateHeatmapMinHeight(
+              contentWidth: contentWidth,
+              yLabelWidth: yLabelWidth,
+              gapSm: tokens.gapSm,
+              gapXs: tokens.gapXs,
+              xColumnCount: xLabels.length,
+              yRowCount: yLabels.length,
+              showLegend: style.showLegend,
+              chartPaddingVertical: chartPadding.vertical,
+              chartThemeMinHeight: chartTheme.height,
+            );
 
-          return SingleChildScrollView(
+        return SizedBox(
+          height: resolvedHeight,
+          child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: style.chartPadding ?? EdgeInsets.zero,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minWidth: math.max(constraints.maxWidth, minContentWidth),
-              ),
+            padding: chartPadding,
+            child: SizedBox(
+              width: contentWidth,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -288,7 +339,7 @@ class _HeatmapGrid extends StatelessWidget {
                                   horizontal: tokens.gapXs / 2,
                                 ),
                                 child: AspectRatio(
-                                  aspectRatio: 1.15,
+                                  aspectRatio: _kHeatmapCellAspectRatio,
                                   child: cell == null
                                       ? DecoratedBox(
                                           decoration: BoxDecoration(
@@ -382,9 +433,9 @@ class _HeatmapGrid extends StatelessWidget {
                 ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

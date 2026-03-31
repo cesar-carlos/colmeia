@@ -384,12 +384,12 @@ class _DataDensityArtwork extends StatelessWidget {
             ),
             SizedBox(height: tokens.contentSpacing),
             Container(
-              height: 82,
               decoration: BoxDecoration(
                 color: cs.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(tokens.formFieldRadius),
               ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   _DataDensityRow(
                     label: 'ENTITY',
