@@ -50,6 +50,8 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     required this.formControlCheckboxSide,
     required this.formControlRadioOuter,
     required this.actionButtonMinHeight,
+    required this.actionButtonLoadingIndicatorSize,
+    required this.actionButtonLoadingIndicatorStrokeWidth,
   });
 
   factory AppThemeTokens.fromColors(AppColors colors) {
@@ -99,6 +101,8 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       formControlCheckboxSide: 20,
       formControlRadioOuter: 22,
       actionButtonMinHeight: 48,
+      actionButtonLoadingIndicatorSize: 22,
+      actionButtonLoadingIndicatorStrokeWidth: 2,
     );
   }
 
@@ -207,6 +211,12 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
   /// Minimum height for primary/secondary action buttons.
   final double actionButtonMinHeight;
 
+  /// Default width/height for [CircularProgressIndicator] in action buttons.
+  final double actionButtonLoadingIndicatorSize;
+
+  /// Default stroke width for loading [CircularProgressIndicator] in buttons.
+  final double actionButtonLoadingIndicatorStrokeWidth;
+
   static final AppThemeTokens light = AppThemeTokens.fromColors(
     AppColors.light,
   );
@@ -260,6 +270,8 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     double? formControlCheckboxSide,
     double? formControlRadioOuter,
     double? actionButtonMinHeight,
+    double? actionButtonLoadingIndicatorSize,
+    double? actionButtonLoadingIndicatorStrokeWidth,
   }) {
     return AppThemeTokens(
       success: success ?? this.success,
@@ -336,6 +348,11 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           formControlRadioOuter ?? this.formControlRadioOuter,
       actionButtonMinHeight:
           actionButtonMinHeight ?? this.actionButtonMinHeight,
+      actionButtonLoadingIndicatorSize: actionButtonLoadingIndicatorSize ??
+          this.actionButtonLoadingIndicatorSize,
+      actionButtonLoadingIndicatorStrokeWidth:
+          actionButtonLoadingIndicatorStrokeWidth ??
+              this.actionButtonLoadingIndicatorStrokeWidth,
     );
   }
 
@@ -584,6 +601,20 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
             t,
           ) ??
           actionButtonMinHeight,
+      actionButtonLoadingIndicatorSize:
+          lerpDouble(
+            actionButtonLoadingIndicatorSize,
+            other.actionButtonLoadingIndicatorSize,
+            t,
+          ) ??
+          actionButtonLoadingIndicatorSize,
+      actionButtonLoadingIndicatorStrokeWidth:
+          lerpDouble(
+            actionButtonLoadingIndicatorStrokeWidth,
+            other.actionButtonLoadingIndicatorStrokeWidth,
+            t,
+          ) ??
+          actionButtonLoadingIndicatorStrokeWidth,
     );
   }
 

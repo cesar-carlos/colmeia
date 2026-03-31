@@ -23,12 +23,12 @@ Nao repita aqui regras de design system e UX mobile. Para isso, use
 Toda UI do app segue uma hierarquia de quatro niveis. Saber em qual nivel um
 componente pertence define onde ele fica e quando extrair para `lib/shared/`:
 
-| Nivel     | Descricao                                      | Exemplos no projeto                        |
-|-----------|------------------------------------------------|--------------------------------------------|
-| Token     | Valor de design sem widget proprio             | `AppColors`, `AppThemeTokens`              |
-| Atomo     | Widget de responsabilidade unica               | `AppTextField`, `AppSectionCard`           |
+| Nivel     | Descricao                                      | Exemplos no projeto                          |
+| --------- | ---------------------------------------------- | -------------------------------------------- |
+| Token     | Valor de design sem widget proprio             | `AppColors`, `AppThemeTokens`                |
+| Atomo     | Widget de responsabilidade unica               | `AppTextField`, `AppSectionCard`             |
 | Molecula  | Composicao de atomos com comportamento proprio | `AppEmailField`, `AppSectionCardWithHeading` |
-| Organismo | Superficie completa de uma funcionalidade      | `AppReportViewer`, `AppShellPageIntro`     |
+| Organismo | Superficie completa de uma funcionalidade      | `AppReportViewer`, `AppShellPageIntro`       |
 
 - Atomos e moleculas reutilizaveis entre features vivem em `lib/shared/widgets/`
 - Organismos especificos de uma feature ficam em
@@ -115,18 +115,18 @@ Antes de criar qualquer widget de UI, verifique se ja existe um componente em
 
 ### Catalogo principal
 
-| Componente                    | Uso correto                                          |
-|-------------------------------|------------------------------------------------------|
-| `AppSectionCard`              | Toda superficie de conteudo em card                  |
-| `AppSectionCardWithHeading`   | Card com titulo, subtitulo e trailing opcionals      |
-| `AppInlineErrorPanel`         | Todo estado de erro inline (card ou plain)           |
-| `AppSkeleton`                 | Todo estado de loading com placeholder               |
-| `AppShellPageIntro`           | Cabecalho de pagina com eyebrow, titulo e footer     |
-| `AppPrimaryButton`            | Acao primaria de confirmacao ou navegacao            |
-| `AppSecondaryButton`          | Acao secundaria ou alternativa                       |
-| `AppFlatButton`               | Acao terciaria / link-style                          |
-| `AppMetricStatCard`           | KPI com valor, delta e icone                         |
-| `AppCompactKpiStat`           | KPI compacto para uso em grids ou resumos            |
+| Componente                  | Uso correto                                      |
+| --------------------------- | ------------------------------------------------ |
+| `AppSectionCard`            | Toda superficie de conteudo em card              |
+| `AppSectionCardWithHeading` | Card com titulo, subtitulo e trailing opcionals  |
+| `AppInlineErrorPanel`       | Todo estado de erro inline (card ou plain)       |
+| `AppSkeleton`               | Todo estado de loading com placeholder           |
+| `AppShellPageIntro`         | Cabecalho de pagina com eyebrow, titulo e footer |
+| `AppPrimaryButton`          | Acao primaria de confirmacao ou navegacao        |
+| `AppSecondaryButton`        | Acao secundaria ou alternativa                   |
+| `AppFlatButton`             | Acao terciaria / link-style                      |
+| `AppMetricStatCard`         | KPI com valor, delta e icone                     |
+| `AppCompactKpiStat`         | KPI compacto para uso em grids ou resumos        |
 
 ### Regras de uso e evolucao
 
@@ -159,10 +159,12 @@ AppTextField          <- base: teclado, formatters, densidade, decoration
 ```
 
 **Quando adicionar parametro no base:**
+
 - A variacao e generica e util para qualquer chamador
 - Nao carrega logica de dominio ou estado proprio
 
 **Quando criar wrapper por composicao:**
+
 - Ha validators ou formatters especificos de dominio (email, CNPJ, senha)
 - Ha estado interno novo (toggle visibilidade, contador de caracteres)
 - Ha configuracoes fixas de UX que nunca devem variar (autofill, keyboardType)
@@ -212,6 +214,7 @@ class _ReportsPageState extends State<ReportsPage> with ScrollToTopMixin {
 ```
 
 Use mixin quando:
+
 - O mesmo comportamento aparece em dois ou mais `State` sem relacao
 - Ha `initState`/`dispose` que precisam ser reutilizados de forma limpa
 - O comportamento nao e parte da arvore visual (nao e um widget filho)
@@ -466,11 +469,11 @@ AppTextField(
 
 ### Quando usar cada abordagem
 
-| Tipo | Quando usar | Exemplos |
-|---|---|---|
-| Animacao implicita | Mudanca de valor simples, sem controle externo | `AnimatedContainer`, `AnimatedOpacity`, `AnimatedSwitcher` |
-| `TweenAnimationBuilder` | Transicao pontual com controle de curva, sem `AnimationController` | Fade de card, expansao de altura |
-| Animacao explicita | Sequencias, loops, controle externo, sincronizacao | `AnimationController` + `AnimatedBuilder` |
+| Tipo                    | Quando usar                                                        | Exemplos                                                   |
+| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Animacao implicita      | Mudanca de valor simples, sem controle externo                     | `AnimatedContainer`, `AnimatedOpacity`, `AnimatedSwitcher` |
+| `TweenAnimationBuilder` | Transicao pontual com controle de curva, sem `AnimationController` | Fade de card, expansao de altura                           |
+| Animacao explicita      | Sequencias, loops, controle externo, sincronizacao                 | `AnimationController` + `AnimatedBuilder`                  |
 
 - Prefira animacoes implicitas para transicoes de estado visivel — sao mais
   simples, nao precisam de `dispose` e cobrem a maioria dos casos
@@ -520,19 +523,19 @@ class _AnimatedCardState extends State<AnimatedCard>
 Refatore quando encontrar qualquer um destes sinais. Para a estrategia geral
 de refatoracao (quando, como, o que nao fazer), veja `general_rules.mdc`.
 
-| Sinal encontrado | Refatoracao recomendada |
-|---|---|
-| Metodo `Widget _buildX()` em vez de classe privada | Extraia para classe `_X extends StatelessWidget` |
-| `build()` com calculos, formatacao ou logica de negocio | Mova para getter, funcao pura ou controller |
-| `StatefulWidget` sem `FocusNode`, controller ou lifecycle real | Substitua por `ValueNotifier` + `ValueListenableBuilder` |
-| `setState()` com async, validacao ou multiplas variaveis | Mova logica para controller ou use case |
-| `Card` inline em pagina ou feature | Substitua por `AppSectionCard` ou `AppSectionCardWithHeading` |
-| `SizedBox(height/width: N)` ou padding numerico literal | Substitua pelo token correspondente (`tokens.gapSm`, `tokens.contentSpacing`) |
-| `Column` + `Text` montando estado de erro manualmente | Substitua por `AppInlineErrorPanel` |
-| `TextField` ou `TextFormField` diretamente em feature | Substitua por `AppTextField` ou molecula especializada |
-| Widget com `build()` acima de ~80 linhas | Extraia subwidgets privados focados |
-| Mesmo padrao visual em dois arquivos diferentes | Extraia para `lib/shared/widgets/` |
-| Provider ou `Consumer` em nivel alto causando rebuild amplo | Mova para `Selector` ou `ValueListenableBuilder` na menor subarvore |
+| Sinal encontrado                                               | Refatoracao recomendada                                                       |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Metodo `Widget _buildX()` em vez de classe privada             | Extraia para classe `_X extends StatelessWidget`                              |
+| `build()` com calculos, formatacao ou logica de negocio        | Mova para getter, funcao pura ou controller                                   |
+| `StatefulWidget` sem `FocusNode`, controller ou lifecycle real | Substitua por `ValueNotifier` + `ValueListenableBuilder`                      |
+| `setState()` com async, validacao ou multiplas variaveis       | Mova logica para controller ou use case                                       |
+| `Card` inline em pagina ou feature                             | Substitua por `AppSectionCard` ou `AppSectionCardWithHeading`                 |
+| `SizedBox(height/width: N)` ou padding numerico literal        | Substitua pelo token correspondente (`tokens.gapSm`, `tokens.contentSpacing`) |
+| `Column` + `Text` montando estado de erro manualmente          | Substitua por `AppInlineErrorPanel`                                           |
+| `TextField` ou `TextFormField` diretamente em feature          | Substitua por `AppTextField` ou molecula especializada                        |
+| Widget com `build()` acima de ~80 linhas                       | Extraia subwidgets privados focados                                           |
+| Mesmo padrao visual em dois arquivos diferentes                | Extraia para `lib/shared/widgets/`                                            |
+| Provider ou `Consumer` em nivel alto causando rebuild amplo    | Mova para `Selector` ou `ValueListenableBuilder` na menor subarvore           |
 
 ## Referencias Cruzadas
 

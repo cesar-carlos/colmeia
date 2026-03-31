@@ -1,5 +1,5 @@
-import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
 import 'package:flutter/material.dart';
 
 class AppSecondaryButton extends StatelessWidget {
@@ -11,10 +11,14 @@ class AppSecondaryButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.style,
+    this.loadingIndicatorColor,
+    this.loadingIndicatorSize,
+    this.loadingIndicatorStrokeWidth,
     this.semanticsLabel,
+    this.fillWidth = false,
   }) : assert(
-         label != null || child != null,
-         'Provide label or child',
+         (label != null) ^ (child != null),
+         'Provide exactly one of label or child',
        );
 
   final VoidCallback? onPressed;
@@ -23,76 +27,96 @@ class AppSecondaryButton extends StatelessWidget {
   final Widget? icon;
   final bool isLoading;
   final ButtonStyle? style;
+
+  /// Defaults to [ColorScheme.primary] when null.
+  final Color? loadingIndicatorColor;
+
+  /// Defaults to [AppThemeTokens.actionButtonLoadingIndicatorSize].
+  final double? loadingIndicatorSize;
+
+  /// Defaults to [AppThemeTokens.actionButtonLoadingIndicatorStrokeWidth].
+  final double? loadingIndicatorStrokeWidth;
   final String? semanticsLabel;
+
+  /// When true, expands to the maximum width offered by the parent row.
+  final bool fillWidth;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>();
-    final colors = theme.appColors;
     final minH = tokens?.actionButtonMinHeight ?? 48;
+    final loadingSize =
+        loadingIndicatorSize ?? tokens?.actionButtonLoadingIndicatorSize ?? 22;
+    final loadingStroke =
+        loadingIndicatorStrokeWidth ??
+        tokens?.actionButtonLoadingIndicatorStrokeWidth ??
+        2;
+    final indicatorColor = loadingIndicatorColor ?? theme.colorScheme.primary;
 
-    final effectiveStyle =
+    var effectiveStyle =
         style ??
         OutlinedButton.styleFrom(
           minimumSize: Size(48, minH),
         );
 
-    final gapSm = tokens?.gapSm ?? 8;
-    final content = isLoading
-        ? SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: colors.primary,
-            ),
-          )
-        : _buildLabelRow(gapSm);
-
-    Widget button = OutlinedButton(
-      onPressed: isLoading ? null : onPressed,
-      style: effectiveStyle,
-      child: content,
-    );
-
-    if (semanticsLabel != null) {
-      button = Semantics(
-        button: true,
-        enabled: onPressed != null && !isLoading,
-        label: semanticsLabel,
-        child: button,
-      );
-    } else if (isLoading) {
-      final loadingAnnouncement =
-          label != null ? 'Carregando: $label' : 'Carregando';
-      button = Semantics(
-        button: true,
-        enabled: onPressed != null && !isLoading,
-        label: loadingAnnouncement,
-        child: button,
+    if (fillWidth) {
+      effectiveStyle = effectiveStyle.merge(
+        OutlinedButton.styleFrom(
+          minimumSize: Size(double.infinity, minH),
+          maximumSize: Size(double.infinity, minH),
+        ),
       );
     }
 
-    return button;
+    final gapSm = tokens?.gapSm ?? 8;
+    final content = isLoading
+        ? buildAppActionButtonProgressIndicator(
+            color: indicatorColor,
+            size: loadingSize,
+            strokeWidth: loadingStroke,
+          )
+        : _buildLabelRow(context, gapSm);
+
+    return wrapAppActionButtonSemantics(
+      child: OutlinedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: effectiveStyle,
+        child: content,
+      ),
+      isLoading: isLoading,
+      onPressed: onPressed,
+      semanticsLabel: semanticsLabel,
+      labelForLoadingAnnouncement: label,
+    );
   }
 
-  Widget _buildLabelRow(double iconTextGap) {
+  Widget _buildLabelRow(BuildContext context, double iconTextGap) {
     if (child != null) {
       return child!;
     }
 
-    final text = Text(label!);
+    final iconColor = Theme.of(context).colorScheme.primary;
+    final text = Text(
+      label!,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+    );
     if (icon == null) {
       return text;
     }
 
     return Row(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        icon!,
+        IconTheme.merge(
+          data: IconThemeData(size: 20, color: iconColor),
+          child: icon!,
+        ),
         SizedBox(width: iconTextGap),
-        text,
+        Flexible(child: text),
       ],
     );
   }

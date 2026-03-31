@@ -302,6 +302,14 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                 subtitle: 'AppInlinePaginationBar com centro customizavel.',
                 onTap: () => context.push(appInlinePaginationDemoLocation),
               ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.table_rows_outlined,
+                title: 'Rodape de tabela (paginacao)',
+                subtitle:
+                    'Itens por pagina, resumo e numeros com estilo de grid.',
+                onTap: () => context.push(appTablePaginationFooterDemoLocation),
+              ),
             ],
           ),
         ),

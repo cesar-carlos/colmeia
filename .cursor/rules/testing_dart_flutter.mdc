@@ -80,7 +80,7 @@ setUpAll(() => registerFallbackValue(const LoginParams.empty()));
 
 - [ ] O tipo de teste Dart/Flutter escolhido e o menor necessario
 - [ ] Widget tests existem somente se o usuario pediu explicitamente (caso
-  contrario nao foram adicionados)
+      contrario nao foram adicionados)
 - [ ] O harness do teste contem apenas as dependencias visuais necessarias
 - [ ] Mocks usam `mocktail`; fakes foram preferidos quando o contrato e simples
 - [ ] Assertions usam `package:checks` ou `expect` de forma clara

@@ -29,6 +29,8 @@ void main() {
       expect(tokens, isNotNull);
       expect(tokens!.gapSm, 8);
       expect(tokens.gapXs, 4);
+      expect(tokens.actionButtonLoadingIndicatorSize, 22);
+      expect(tokens.actionButtonLoadingIndicatorStrokeWidth, 2);
 
       final dividerTheme = Theme.of(captured).dividerTheme;
       expect(dividerTheme.thickness, 1);

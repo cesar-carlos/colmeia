@@ -400,6 +400,9 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                           centerLabel:
                               'Pagina ${detail.pageInfo.currentPage} de '
                               '${detail.pageInfo.totalPages}',
+                          style: const AppInlinePaginationBarStyle(
+                            centerLiveRegion: true,
+                          ),
                           onPrevious:
                               session != null &&
                                   controller.canLoadPreviousPage &&

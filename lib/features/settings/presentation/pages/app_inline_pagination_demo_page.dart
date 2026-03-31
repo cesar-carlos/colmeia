@@ -26,6 +26,7 @@ class AppInlinePaginationDemoPage extends StatelessWidget {
         AppSectionCardWithHeading(
           title: 'Exemplo',
           child: AppInlinePaginationBar(
+            centerSemanticsLabel: 'Pagina 2 de 8, 152 resultados',
             center: Column(
               children: <Widget>[
                 Text(

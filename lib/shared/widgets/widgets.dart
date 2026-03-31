@@ -58,6 +58,7 @@ export 'package:colmeia/shared/widgets/navigation/app_shell_drawer_header.dart';
 export 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 export 'package:colmeia/shared/widgets/navigation/show_app_sign_out_dialog.dart';
 export 'package:colmeia/shared/widgets/pagination/app_inline_pagination_bar.dart';
+export 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
 export 'package:colmeia/shared/widgets/profile/app_profile_interactive_field.dart';
 export 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
 export 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';

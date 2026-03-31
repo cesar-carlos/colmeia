@@ -28,6 +28,7 @@ import 'package:colmeia/features/settings/presentation/pages/app_sparkline_chart
 import 'package:colmeia/features/settings/presentation/pages/app_stacked_bar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_step_line_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_sunburst_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_table_pagination_footer_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_time_series_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_treemap_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_waterfall_chart_demo_page.dart';
@@ -44,6 +45,8 @@ const String appDistributionChartDemoPath = 'app-distribution-chart-demo';
 const String appMetricStatCardDemoPath = 'app-metric-stat-card-demo';
 const String appSectionCardHeadingDemoPath = 'app-section-card-heading-demo';
 const String appInlinePaginationDemoPath = 'app-inline-pagination-demo';
+const String appTablePaginationFooterDemoPath =
+    'app-table-pagination-footer-demo';
 const String appCompactKpiExecutiveDemoPath = 'app-compact-kpi-executive-demo';
 const String appButtonsDemoPath = 'app-buttons-demo';
 const String appFeedbackDemoPath = 'app-feedback-demo';
@@ -94,6 +97,9 @@ final String appSectionCardHeadingDemoLocation =
 
 final String appInlinePaginationDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appInlinePaginationDemoPath';
+
+final String appTablePaginationFooterDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appTablePaginationFooterDemoPath';
 
 final String appCompactKpiExecutiveDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appCompactKpiExecutiveDemoPath';
@@ -228,6 +234,12 @@ List<RouteBase> buildSettingsRoutes() {
               path: appInlinePaginationDemoPath,
               builder: (context, state) {
                 return const AppInlinePaginationDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appTablePaginationFooterDemoPath,
+              builder: (context, state) {
+                return const AppTablePaginationFooterDemoPage();
               },
             ),
             GoRoute(

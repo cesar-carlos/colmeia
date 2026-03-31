@@ -178,25 +178,22 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
     ];
   }
 
+  /// Applies query immediately. Local fake data — no artificial delay so the
+  /// viewer skeleton does not flash on every search keystroke.
   void _onQueryChanged(AppReportQuery query) {
-    setState(() => _isLoading = true);
-    Future<void>.delayed(const Duration(milliseconds: 300), () {
-      if (!mounted) return;
-      setState(() {
-        _query = query;
-        _selectedRows = <_SaleRow>[];
-        final total = _currentRows.length;
-        if (total == 0) {
-          _query = _query.copyWith(page: 1);
-        } else {
-          final maxPage = (total / _query.pageSize).ceil();
-          final clamped = _query.page.clamp(1, maxPage);
-          if (clamped != _query.page) {
-            _query = _query.copyWith(page: clamped);
-          }
+    setState(() {
+      _query = query;
+      _selectedRows = <_SaleRow>[];
+      final total = _currentRows.length;
+      if (total == 0) {
+        _query = _query.copyWith(page: 1);
+      } else {
+        final maxPage = (total / _query.pageSize).ceil();
+        final clamped = _query.page.clamp(1, maxPage);
+        if (clamped != _query.page) {
+          _query = _query.copyWith(page: clamped);
         }
-        _isLoading = false;
-      });
+      }
     });
   }
 

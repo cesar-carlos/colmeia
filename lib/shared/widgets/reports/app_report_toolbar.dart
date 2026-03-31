@@ -54,17 +54,12 @@ class AppReportToolbar<T> extends StatefulWidget {
 class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
   late final TextEditingController _searchController;
 
-  void _onSearchControllerUpdated() {
-    setState(() {});
-  }
-
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(
       text: widget.searchTerm ?? '',
     );
-    _searchController.addListener(_onSearchControllerUpdated);
   }
 
   @override
@@ -78,9 +73,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
 
   @override
   void dispose() {
-    _searchController
-      ..removeListener(_onSearchControllerUpdated)
-      ..dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -142,32 +135,42 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                 SizedBox(
                   width: searchWidth,
                   height: 40,
-                  child: TextField(
-                    controller: _searchController,
-                    enabled: !widget.isLoading,
-                    decoration: InputDecoration(
-                      hintText: 'Buscar...',
-                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          tokens.formFieldRadius,
+                  child: ListenableBuilder(
+                    listenable: _searchController,
+                    builder: (context, _) {
+                      return TextField(
+                        controller: _searchController,
+                        enabled: !widget.isLoading,
+                        decoration: InputDecoration(
+                          hintText: 'Buscar...',
+                          prefixIcon:
+                              const Icon(Icons.search_rounded, size: 20),
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              tokens.formFieldRadius,
+                            ),
+                          ),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear_rounded,
+                                    size: 18,
+                                  ),
+                                  onPressed: widget.isLoading
+                                      ? null
+                                      : () {
+                                          _searchController.clear();
+                                          widget.events.onSearchChanged
+                                              ?.call('');
+                                        },
+                                )
+                              : null,
                         ),
-                      ),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded, size: 18),
-                              onPressed: widget.isLoading
-                                  ? null
-                                  : () {
-                                      _searchController.clear();
-                                      widget.events.onSearchChanged?.call('');
-                                    },
-                            )
-                          : null,
-                    ),
-                    onChanged: widget.events.onSearchChanged,
+                        onChanged: widget.events.onSearchChanged,
+                      );
+                    },
                   ),
                 ),
               if (showSelectionStatus)

@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
 import 'package:flutter/material.dart';
 
 /// Low-elevation filled tonal button for dense toolbars, drawers, and footers.
@@ -13,10 +14,13 @@ class AppFlatButton extends StatelessWidget {
     this.isLoading = false,
     this.fillWidth = true,
     this.style,
+    this.loadingIndicatorColor,
+    this.loadingIndicatorSize,
+    this.loadingIndicatorStrokeWidth,
     this.semanticsLabel,
   }) : assert(
-         label != null || child != null,
-         'Provide label or child',
+         (label != null) ^ (child != null),
+         'Provide exactly one of label or child',
        );
 
   final VoidCallback? onPressed;
@@ -26,6 +30,15 @@ class AppFlatButton extends StatelessWidget {
   final bool isLoading;
   final bool fillWidth;
   final ButtonStyle? style;
+
+  /// Defaults to the ambient progress indicator color, then app primary.
+  final Color? loadingIndicatorColor;
+
+  /// Defaults to [AppThemeTokens.actionButtonLoadingIndicatorSize].
+  final double? loadingIndicatorSize;
+
+  /// Defaults to [AppThemeTokens.actionButtonLoadingIndicatorStrokeWidth].
+  final double? loadingIndicatorStrokeWidth;
   final String? semanticsLabel;
 
   @override
@@ -36,6 +49,14 @@ class AppFlatButton extends StatelessWidget {
     final minH = tokens?.actionButtonMinHeight ?? 48;
     final gapSm = tokens?.gapSm ?? 8;
     final radius = tokens?.formFieldRadius ?? 4;
+    final loadingSize =
+        loadingIndicatorSize ?? tokens?.actionButtonLoadingIndicatorSize ?? 22;
+    final loadingStroke = loadingIndicatorStrokeWidth ??
+        tokens?.actionButtonLoadingIndicatorStrokeWidth ??
+        2;
+    final indicatorColor = loadingIndicatorColor ??
+        theme.progressIndicatorTheme.color ??
+        colors.primary;
 
     var resolvedStyle = FilledButton.styleFrom(
       elevation: 0,
@@ -63,43 +84,25 @@ class AppFlatButton extends StatelessWidget {
       resolvedStyle = resolvedStyle.merge(style);
     }
 
-    final indicatorColor = theme.progressIndicatorTheme.color ?? colors.primary;
     final content = isLoading
-        ? SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: indicatorColor,
-            ),
+        ? buildAppActionButtonProgressIndicator(
+            color: indicatorColor,
+            size: loadingSize,
+            strokeWidth: loadingStroke,
           )
         : _buildIdleContent(gapSm, colors.onSecondaryContainer);
 
-    Widget button = FilledButton.tonal(
-      onPressed: isLoading ? null : onPressed,
-      style: resolvedStyle,
-      child: content,
+    return wrapAppActionButtonSemantics(
+      child: FilledButton.tonal(
+        onPressed: isLoading ? null : onPressed,
+        style: resolvedStyle,
+        child: content,
+      ),
+      isLoading: isLoading,
+      onPressed: onPressed,
+      semanticsLabel: semanticsLabel,
+      labelForLoadingAnnouncement: label,
     );
-
-    if (semanticsLabel != null) {
-      button = Semantics(
-        button: true,
-        enabled: onPressed != null && !isLoading,
-        label: semanticsLabel,
-        child: button,
-      );
-    } else if (isLoading) {
-      final loadingAnnouncement =
-          label != null ? 'Carregando: $label' : 'Carregando';
-      button = Semantics(
-        button: true,
-        enabled: onPressed != null && !isLoading,
-        label: loadingAnnouncement,
-        child: button,
-      );
-    }
-
-    return button;
   }
 
   Widget _buildIdleContent(double iconTextGap, Color iconColor) {

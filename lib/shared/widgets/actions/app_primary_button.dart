@@ -1,7 +1,13 @@
-import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
 import 'package:flutter/material.dart';
 
+/// Filled primary action. Inherits colors from [Theme]'s [FilledButtonTheme]
+/// and [ColorScheme] unless [style] overrides them.
+///
+/// When [style] uses a non-default fill (e.g. [ColorScheme.primaryContainer]),
+/// set [loadingIndicatorColor] so the loading spinner stays legible on that
+/// background.
 class AppPrimaryButton extends StatelessWidget {
   const AppPrimaryButton({
     required this.onPressed,
@@ -16,8 +22,8 @@ class AppPrimaryButton extends StatelessWidget {
     this.minimumHeight,
     this.showLabelWhileLoading = false,
     this.loadingIndicatorColor,
-    this.loadingIndicatorSize = 22,
-    this.loadingIndicatorStrokeWidth = 2,
+    this.loadingIndicatorSize,
+    this.loadingIndicatorStrokeWidth,
     this.semanticsLabel,
   }) : assert(
          (label != null) ^ (child != null),
@@ -35,18 +41,26 @@ class AppPrimaryButton extends StatelessWidget {
   final double? minimumHeight;
   final bool showLabelWhileLoading;
   final Color? loadingIndicatorColor;
-  final double loadingIndicatorSize;
-  final double loadingIndicatorStrokeWidth;
+
+  /// Defaults to [AppThemeTokens.actionButtonLoadingIndicatorSize].
+  final double? loadingIndicatorSize;
+
+  /// Defaults to [AppThemeTokens.actionButtonLoadingIndicatorStrokeWidth].
+  final double? loadingIndicatorStrokeWidth;
   final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>();
-    final colors = theme.appColors;
     final minH = minimumHeight ?? tokens?.actionButtonMinHeight ?? 48;
     final gapSm = tokens?.gapSm ?? 8;
     final gapMd = tokens?.gapMd ?? 12;
+    final loadingSize =
+        loadingIndicatorSize ?? tokens?.actionButtonLoadingIndicatorSize ?? 22;
+    final loadingStroke = loadingIndicatorStrokeWidth ??
+        tokens?.actionButtonLoadingIndicatorStrokeWidth ??
+        2;
 
     var resolvedStyle =
         style ??
@@ -71,7 +85,8 @@ class AppPrimaryButton extends StatelessWidget {
       );
     }
 
-    final indicatorColor = loadingIndicatorColor ?? colors.onPrimary;
+    final indicatorColor =
+        loadingIndicatorColor ?? theme.colorScheme.onPrimary;
 
     Widget content;
     if (isLoading && showLabelWhileLoading && label != null) {
@@ -79,59 +94,36 @@ class AppPrimaryButton extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          SizedBox(
-            width: loadingIndicatorSize,
-            height: loadingIndicatorSize,
-            child: CircularProgressIndicator(
-              strokeWidth: loadingIndicatorStrokeWidth,
-              color: indicatorColor,
-            ),
+          buildAppActionButtonProgressIndicator(
+            color: indicatorColor,
+            size: loadingSize,
+            strokeWidth: loadingStroke,
           ),
           SizedBox(width: gapMd),
           Text(label!),
         ],
       );
     } else if (isLoading) {
-      content = SizedBox(
-        width: loadingIndicatorSize,
-        height: loadingIndicatorSize,
-        child: CircularProgressIndicator(
-          strokeWidth: loadingIndicatorStrokeWidth,
-          color: indicatorColor,
-        ),
+      content = buildAppActionButtonProgressIndicator(
+        color: indicatorColor,
+        size: loadingSize,
+        strokeWidth: loadingStroke,
       );
     } else {
       content = _buildIdleContent(context, gapSm);
     }
 
-    Widget button = FilledButton(
-      onPressed: isLoading ? null : onPressed,
-      style: resolvedStyle,
-      child: content,
+    return wrapAppActionButtonSemantics(
+      child: FilledButton(
+        onPressed: isLoading ? null : onPressed,
+        style: resolvedStyle,
+        child: content,
+      ),
+      isLoading: isLoading,
+      onPressed: onPressed,
+      semanticsLabel: semanticsLabel,
+      labelForLoadingAnnouncement: label,
     );
-
-    if (semanticsLabel != null) {
-      button = Semantics(
-        button: true,
-        enabled: onPressed != null && !isLoading,
-        label: semanticsLabel,
-        excludeSemantics: isLoading,
-        child: button,
-      );
-    } else if (isLoading) {
-      final loadingAnnouncement = label != null
-          ? 'Carregando: $label'
-          : 'Carregando';
-      button = Semantics(
-        button: true,
-        enabled: onPressed != null && !isLoading,
-        label: loadingAnnouncement,
-        excludeSemantics: true,
-        child: button,
-      );
-    }
-
-    return button;
   }
 
   Widget _buildIdleContent(BuildContext context, double iconTextGap) {

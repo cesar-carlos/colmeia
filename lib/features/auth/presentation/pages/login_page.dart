@@ -91,77 +91,77 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
     return Scaffold(
       body: AppHexScreenBody(
         child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.authLoginScrollPaddingHorizontal,
-              vertical: tokens.authLoginScrollPaddingVertical,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: tokens.authLoginContentMaxWidth,
-                ),
-                child: Column(
-                  children: <Widget>[
-                    const LoginBrandHeader(),
-                    SizedBox(height: tokens.authLoginGapBrandToForm),
-                    LoginGlassCard(
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            const LoginWelcomeSection(),
-                            SizedBox(height: tokens.authLoginGapMajorSection),
-                            LoginEmailFormField(
-                              controller: _emailController,
-                              enabled: !isBlocked,
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.authLoginScrollPaddingHorizontal,
+            vertical: tokens.authLoginScrollPaddingVertical,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: tokens.authLoginContentMaxWidth,
+              ),
+              child: Column(
+                children: <Widget>[
+                  const LoginBrandHeader(),
+                  SizedBox(height: tokens.authLoginGapBrandToForm),
+                  LoginGlassCard(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          const LoginWelcomeSection(),
+                          SizedBox(height: tokens.authLoginGapMajorSection),
+                          LoginEmailFormField(
+                            controller: _emailController,
+                            enabled: !isBlocked,
+                          ),
+                          SizedBox(height: tokens.authLoginGapBetweenFields),
+                          LoginPasswordFormField(
+                            controller: _passwordController,
+                            obscure: page.obscurePassword,
+                            enabled: !isBlocked,
+                            onToggleObscure: page.toggleObscurePassword,
+                            onSubmitted: () => _submit(auth),
+                          ),
+                          SizedBox(height: tokens.authLoginGapAfterPassword),
+                          LoginRememberMeRow(
+                            value: page.rememberMe,
+                            onChanged: (v) => page.setRememberMe(
+                              value: v ?? false,
                             ),
-                            SizedBox(height: tokens.authLoginGapBetweenFields),
-                            LoginPasswordFormField(
-                              controller: _passwordController,
-                              obscure: page.obscurePassword,
-                              enabled: !isBlocked,
-                              onToggleObscure: page.toggleObscurePassword,
-                              onSubmitted: () => _submit(auth),
-                            ),
-                            SizedBox(height: tokens.authLoginGapAfterPassword),
-                            LoginRememberMeRow(
-                              value: page.rememberMe,
-                              onChanged: (v) => page.setRememberMe(
-                                value: v ?? false,
-                              ),
-                            ),
-                            if (auth.errorMessage
-                                case final String message) ...<Widget>[
-                              SizedBox(height: tokens.contentSpacing),
-                              InlineAlertBanner(message: message),
-                            ],
-                            SizedBox(height: tokens.authLoginGapMajorSection),
-                            LoginPrimaryButton(
-                              label: auth.isRestoringSession
-                                  ? 'Restaurando sessão...'
-                                  : 'Entrar no Dashboard',
-                              isLoading: isBlocked,
-                              onPressed: () => _submit(auth),
-                            ),
-                            SizedBox(height: tokens.authLoginGapAfterPrimary),
-                            LoginRequestAccessRow(
-                              onTap: auth.isLoading
-                                  ? null
-                                  : () => context.goTo(AppRoute.register),
-                            ),
+                          ),
+                          if (auth.errorMessage
+                              case final String message) ...<Widget>[
+                            SizedBox(height: tokens.contentSpacing),
+                            InlineAlertBanner(message: message),
                           ],
-                        ),
+                          SizedBox(height: tokens.authLoginGapMajorSection),
+                          LoginPrimaryButton(
+                            label: auth.isRestoringSession
+                                ? 'Restaurando sessão...'
+                                : 'Entrar no Dashboard',
+                            isLoading: isBlocked,
+                            onPressed: () => _submit(auth),
+                          ),
+                          SizedBox(height: tokens.authLoginGapAfterPrimary),
+                          LoginRequestAccessRow(
+                            onTap: auth.isLoading
+                                ? null
+                                : () => context.goTo(AppRoute.register),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: tokens.authLoginGapBeforeFooter),
-                    const LoginFooter(),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: tokens.authLoginGapBeforeFooter),
+                  const LoginFooter(),
+                ],
               ),
             ),
           ),
         ),
+      ),
     );
   }
 }

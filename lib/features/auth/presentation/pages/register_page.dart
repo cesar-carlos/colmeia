@@ -100,101 +100,98 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
     return Scaffold(
       body: AppHexScreenBody(
         child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.authLoginScrollPaddingHorizontal,
-              vertical: tokens.authLoginScrollPaddingVertical,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: tokens.authLoginContentMaxWidth,
-                ),
-                child: Column(
-                  children: <Widget>[
-                    const LoginBrandHeader(),
-                    SizedBox(height: tokens.authLoginGapBrandToForm),
-                    LoginGlassCard(
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            const RegisterCorporateHeroSection(),
-                            SizedBox(height: tokens.authLoginGapMajorSection),
-                            const RegisterFormSectionTitle(
-                              title: 'Informações pessoais',
-                            ),
-                            AuthFormTextField(
-                              controller: _nameController,
-                              label: 'Nome completo',
-                              icon: Icons.badge_outlined,
-                              enabled: !blocked,
-                              validator: AppFormValidators.fullName,
-                            ),
-                            SizedBox(height: tokens.authLoginGapBetweenFields),
-                            AuthEmailTextField(
-                              controller: _emailController,
-                              label: 'E-mail corporativo',
-                              icon: Icons.alternate_email,
-                              enabled: !blocked,
-                              emptyMessage: 'Informe o e-mail corporativo.',
-                            ),
-                            SizedBox(height: tokens.authLoginGapBetweenFields),
-                            AuthFormTextField(
-                              controller: _employeeIdController,
-                              label: 'Matrícula (Employee ID)',
-                              icon: Icons.numbers_rounded,
-                              enabled: !blocked,
-                              validator: AppFormValidators.employeeId,
-                            ),
-                            SizedBox(height: tokens.sectionSpacing),
-                            RegisterAccessProfileSection(
-                              groupValue: page.selectedProfile,
-                              enabled: !blocked,
-                              onChanged: page.setProfile,
-                            ),
-                            RegisterStoreSelectionSection(
-                              selectedIds: page.selectedStoreIds,
-                              showSelectionError:
-                                  page.storeSelectionErrorVisible,
-                              enabled: !blocked,
-                              onToggle: page.toggleStoreSelection,
-                            ),
-                            RegisterCredentialsSection(
-                              passwordController: _passwordController,
-                              confirmPasswordController:
-                                  _confirmPasswordController,
-                              obscurePassword: page.obscurePassword,
-                              obscureConfirmPassword:
-                                  page.obscureConfirmPassword,
-                              onToggleObscurePassword:
-                                  page.toggleObscurePassword,
-                              onToggleObscureConfirmPassword:
-                                  page.toggleObscureConfirmPassword,
-                              onConfirmSubmitted: (_) => _submit(auth, page),
-                            ),
-                            if (auth.errorMessage
-                                case final String errorMessage) ...<Widget>[
-                              InlineAlertBanner(message: errorMessage),
-                              SizedBox(height: tokens.contentSpacing),
-                            ],
-                            RegisterFormActions(
-                              isLoading: blocked,
-                              onSubmit: () => _submit(auth, page),
-                              onBackToLogin: () => context.goTo(AppRoute.login),
-                            ),
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.authLoginScrollPaddingHorizontal,
+            vertical: tokens.authLoginScrollPaddingVertical,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: tokens.authLoginContentMaxWidth,
+              ),
+              child: Column(
+                children: <Widget>[
+                  const LoginBrandHeader(),
+                  SizedBox(height: tokens.authLoginGapBrandToForm),
+                  LoginGlassCard(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          const RegisterCorporateHeroSection(),
+                          SizedBox(height: tokens.authLoginGapMajorSection),
+                          const RegisterFormSectionTitle(
+                            title: 'Informações pessoais',
+                          ),
+                          AuthFormTextField(
+                            controller: _nameController,
+                            label: 'Nome completo',
+                            icon: Icons.badge_outlined,
+                            enabled: !blocked,
+                            validator: AppFormValidators.fullName,
+                          ),
+                          SizedBox(height: tokens.authLoginGapBetweenFields),
+                          AuthEmailTextField(
+                            controller: _emailController,
+                            label: 'E-mail corporativo',
+                            icon: Icons.alternate_email,
+                            enabled: !blocked,
+                            emptyMessage: 'Informe o e-mail corporativo.',
+                          ),
+                          SizedBox(height: tokens.authLoginGapBetweenFields),
+                          AuthFormTextField(
+                            controller: _employeeIdController,
+                            label: 'Matrícula (Employee ID)',
+                            icon: Icons.numbers_rounded,
+                            enabled: !blocked,
+                            validator: AppFormValidators.employeeId,
+                          ),
+                          SizedBox(height: tokens.sectionSpacing),
+                          RegisterAccessProfileSection(
+                            groupValue: page.selectedProfile,
+                            enabled: !blocked,
+                            onChanged: page.setProfile,
+                          ),
+                          RegisterStoreSelectionSection(
+                            selectedIds: page.selectedStoreIds,
+                            showSelectionError: page.storeSelectionErrorVisible,
+                            enabled: !blocked,
+                            onToggle: page.toggleStoreSelection,
+                          ),
+                          RegisterCredentialsSection(
+                            passwordController: _passwordController,
+                            confirmPasswordController:
+                                _confirmPasswordController,
+                            obscurePassword: page.obscurePassword,
+                            obscureConfirmPassword: page.obscureConfirmPassword,
+                            onToggleObscurePassword: page.toggleObscurePassword,
+                            onToggleObscureConfirmPassword:
+                                page.toggleObscureConfirmPassword,
+                            onConfirmSubmitted: (_) => _submit(auth, page),
+                          ),
+                          if (auth.errorMessage
+                              case final String errorMessage) ...<Widget>[
+                            InlineAlertBanner(message: errorMessage),
+                            SizedBox(height: tokens.contentSpacing),
                           ],
-                        ),
+                          RegisterFormActions(
+                            isLoading: blocked,
+                            onSubmit: () => _submit(auth, page),
+                            onBackToLogin: () => context.goTo(AppRoute.login),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: tokens.authLoginGapBeforeFooter),
-                    const LoginFooter(),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: tokens.authLoginGapBeforeFooter),
+                  const LoginFooter(),
+                ],
               ),
             ),
           ),
         ),
+      ),
     );
   }
 }
