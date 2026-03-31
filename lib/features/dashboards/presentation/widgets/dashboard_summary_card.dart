@@ -3,14 +3,18 @@ import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_summa
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:flutter/material.dart';
 
-enum DashboardSummaryCardEmphasis { standard, accent }
+enum DashboardSummaryCardEmphasis {
+  standard,
+  accent,
+  hero,
+}
 
 class DashboardSummaryCard extends StatelessWidget {
   const DashboardSummaryCard({
     required this.title,
     required this.value,
-    required this.deltaLabel,
     super.key,
+    this.deltaLabel,
     this.icon,
     this.leading,
     this.emphasis = DashboardSummaryCardEmphasis.standard,
@@ -22,7 +26,7 @@ class DashboardSummaryCard extends StatelessWidget {
 
   final String title;
   final String value;
-  final String deltaLabel;
+  final String? deltaLabel;
   final DashboardSummaryMetricIcon? icon;
   final Widget? leading;
   final DashboardSummaryCardEmphasis emphasis;
@@ -31,12 +35,17 @@ class DashboardSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final iconColor = switch (emphasis) {
+      DashboardSummaryCardEmphasis.hero => cs.onPrimaryContainer,
+      DashboardSummaryCardEmphasis.accent => cs.onPrimaryContainer,
+      DashboardSummaryCardEmphasis.standard => cs.primary,
+    };
     final resolvedLeading =
         leading ??
         Icon(
           icon!.materialIconData,
           size: 22,
-          color: cs.primary,
+          color: iconColor,
         );
     return AppMetricStatCard(
       leading: resolvedLeading,
@@ -44,6 +53,7 @@ class DashboardSummaryCard extends StatelessWidget {
       label: title,
       value: value,
       emphasis: switch (emphasis) {
+        DashboardSummaryCardEmphasis.hero => AppMetricStatCardEmphasis.hero,
         DashboardSummaryCardEmphasis.accent => AppMetricStatCardEmphasis.accent,
         DashboardSummaryCardEmphasis.standard =>
           AppMetricStatCardEmphasis.standard,

@@ -50,6 +50,7 @@ export 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 export 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
 export 'package:colmeia/shared/widgets/metrics/app_executive_metric_tile.dart';
 export 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
+export 'package:colmeia/shared/widgets/metrics/app_metric_stat_delta.dart';
 export 'package:colmeia/shared/widgets/navigation/app_shell_app_bar.dart';
 export 'package:colmeia/shared/widgets/navigation/app_shell_bottom_nav.dart';
 export 'package:colmeia/shared/widgets/navigation/app_shell_drawer.dart';

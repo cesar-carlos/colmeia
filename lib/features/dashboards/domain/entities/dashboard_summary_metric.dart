@@ -29,12 +29,12 @@ class DashboardSummaryMetric {
   const DashboardSummaryMetric({
     required this.title,
     required this.value,
-    required this.deltaLabel,
     required this.icon,
+    this.deltaLabel,
   });
 
   final String title;
   final String value;
-  final String deltaLabel;
+  final String? deltaLabel;
   final DashboardSummaryMetricIcon icon;
 }

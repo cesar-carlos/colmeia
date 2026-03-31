@@ -42,7 +42,8 @@ class _AppFeedbackDemoPageState extends State<AppFeedbackDemoPage> {
             children: <Widget>[
               const AppInlineErrorPanel(
                 title: 'Nao foi possivel sincronizar',
-                message: 'Verifique a conexao e tente novamente. '
+                message:
+                    'Verifique a conexao e tente novamente. '
                     'Codigo fake: E-204.',
                 onRetry: _noopRetry,
               ),

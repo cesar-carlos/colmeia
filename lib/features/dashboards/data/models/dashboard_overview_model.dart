@@ -52,7 +52,7 @@ class DashboardOverviewModel {
               return DashboardSummaryMetric(
                 title: metricJson['title'] as String,
                 value: metricJson['value'] as String,
-                deltaLabel: metricJson['deltaLabel'] as String,
+                deltaLabel: metricJson['deltaLabel'] as String?,
                 icon: DashboardSummaryMetricIcon.fromWireName(
                   metricJson['icon'] as String,
                 ),

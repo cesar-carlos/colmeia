@@ -306,19 +306,55 @@ class _SparklineRow extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 const List<num> _upTrend = <num>[
-  42, 48, 45, 52, 58, 55, 63, 68, 72, 78,
+  42,
+  48,
+  45,
+  52,
+  58,
+  55,
+  63,
+  68,
+  72,
+  78,
 ];
 
 const List<num> _downTrend = <num>[
-  78, 72, 75, 68, 63, 67, 59, 55, 50, 44,
+  78,
+  72,
+  75,
+  68,
+  63,
+  67,
+  59,
+  55,
+  50,
+  44,
 ];
 
 const List<num> _flatTrend = <num>[
-  60, 63, 58, 62, 60, 64, 59, 61, 62, 60,
+  60,
+  63,
+  58,
+  62,
+  60,
+  64,
+  59,
+  61,
+  62,
+  60,
 ];
 
 const List<num> _zigzag = <num>[
-  40, 80, 35, 75, 45, 85, 50, 70, 40, 78,
+  40,
+  80,
+  35,
+  75,
+  45,
+  85,
+  50,
+  70,
+  40,
+  78,
 ];
 
 void _showSparklineTapFeedback(
@@ -328,12 +364,12 @@ void _showSparklineTapFeedback(
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
-    SnackBar(
-      content: Text(
-        'Sparkline ${event.trend.name}: '
-        'min ${event.minValue.toStringAsFixed(0)}, '
-        'max ${event.maxValue.toStringAsFixed(0)}, '
-        'delta ${_formatSparklineDelta(event.delta)}',
+      SnackBar(
+        content: Text(
+          'Sparkline ${event.trend.name}: '
+          'min ${event.minValue.toStringAsFixed(0)}, '
+          'max ${event.maxValue.toStringAsFixed(0)}, '
+          'delta ${_formatSparklineDelta(event.delta)}',
         ),
       ),
     );

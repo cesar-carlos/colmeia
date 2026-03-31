@@ -85,8 +85,7 @@ class _AppStackedBarChartDemoPageState
         // Horizontal orientation
         AppStackedBarChart<_StoreCategory>(
           title: '3. Horizontal — categorias por loja',
-          subtitle:
-              'orientation: Axis.horizontal facilita rotulos longos.',
+          subtitle: 'orientation: Axis.horizontal facilita rotulos longos.',
           groups: _storeCategorySamples,
           groupLabelBuilder: (s) => s.store,
           series: <AppStackedBarSeries<_StoreCategory>>[
