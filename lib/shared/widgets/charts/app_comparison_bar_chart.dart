@@ -36,7 +36,7 @@ class AppComparisonBarChartStyle {
     this.showYGridLines = true,
     this.showDataLabels = false,
     this.dataLabelTextStyle,
-    this.dataLabelAlignment = ChartDataLabelAlignment.top,
+    this.dataLabelAlignment = ChartDataLabelAlignment.outer,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -114,6 +114,9 @@ class AppComparisonBarChartStyle {
   final TextStyle? dataLabelTextStyle;
 
   /// Position of the data labels relative to the bar.
+  ///
+  /// Syncfusion [ColumnSeries]: [ChartDataLabelAlignment.outer] places labels
+  /// above the bar; [ChartDataLabelAlignment.top] is inside the bar's top edge.
   final ChartDataLabelAlignment dataLabelAlignment;
 }
 

@@ -57,6 +57,7 @@ class AppReportGrid<T> extends StatefulWidget {
     this.selectedRows = const [],
     this.groupController,
     this.emptyMessage,
+    this.isLoading = false,
   });
 
   final List<AppReportColumn<T>> columns;
@@ -65,9 +66,19 @@ class AppReportGrid<T> extends StatefulWidget {
   final AppReportEvents<T> events;
   final List<AppReportSortDescriptor> currentSorts;
   final List<AppReportGroupDescriptor> currentGroups;
+
+  /// Rows currently selected in the grid.
+  ///
+  /// Selection resolution matches [DataGridRow] instances to [rows] by **object
+  /// identity** after sort/group. Prefer the same [T] instances as in [rows]
+  /// (or stable references the grid can resolve) so selection stays correct.
   final List<T> selectedRows;
   final AppReportGroupController? groupController;
   final String? emptyMessage;
+
+  /// When [rows] is empty and this is true, shows a loading surface instead of
+  /// the empty state (avoids "no results" while data is still fetching).
+  final bool isLoading;
 
   @override
   State<AppReportGrid<T>> createState() => _AppReportGridState<T>();
@@ -80,11 +91,6 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   bool _suppressSelectionCallback = false;
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_hasBuiltSource) {
@@ -93,9 +99,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     _source = _buildSource();
     _hasBuiltSource = true;
     _bindGroupController();
-    _scheduleSyncGroupingFromParent();
-    _scheduleSyncSortFromParent();
-    _scheduleSyncSelectionFromParent();
+    _scheduleSyncGridStateFromParent();
   }
 
   @override
@@ -107,8 +111,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     }
     final columnsChanged = oldWidget.columns != widget.columns;
     final rowsChanged = oldWidget.rows != widget.rows;
-    final styleChanged =
-        oldWidget.style.alternateRowColor != widget.style.alternateRowColor;
+    final styleChanged = _sourceStyleChanged(oldWidget.style, widget.style);
     final trustOrderChanged =
         oldWidget.style.trustServerRowOrder != widget.style.trustServerRowOrder;
     final sortsChanged = !listEquals(
@@ -134,45 +137,62 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       }
       _hasBuiltSource = true;
     }
-    if (columnsChanged || rowsChanged || groupsChanged) {
-      _scheduleSyncGroupingFromParent();
-    }
-    if (columnsChanged ||
+    final gridStateChanged =
+        columnsChanged ||
         rowsChanged ||
         styleChanged ||
         sortsChanged ||
         groupsChanged ||
-        trustOrderChanged) {
-      _scheduleSyncSortFromParent();
-    }
-    if (columnsChanged || rowsChanged || selectionChanged) {
-      _scheduleSyncSelectionFromParent();
+        trustOrderChanged ||
+        selectionChanged;
+    if (gridStateChanged) {
+      _scheduleSyncGridStateFromParent();
     }
   }
 
-  void _scheduleSyncSortFromParent() {
+  /// [AppReportGridSource] stores [AppReportViewerStyle.alternateRowColor] and
+  /// [AppReportViewerStyle.dataTextStyle] at construction; recreate when either
+  /// changes so cell rendering matches the theme.
+  static bool _sourceStyleChanged(
+    AppReportViewerStyle oldStyle,
+    AppReportViewerStyle newStyle,
+  ) {
+    return oldStyle.alternateRowColor != newStyle.alternateRowColor ||
+        oldStyle.dataTextStyle != newStyle.dataTextStyle;
+  }
+
+  /// Syncfusion wires [DataGridSource] to grid state only while [SfDataGrid] is
+  /// mounted. With no rows we render [_EmptyGridPlaceholder] instead, so APIs
+  /// like [DataGridSource.clearColumnGroups] must not run (they force-unwrap
+  /// internal grid state).
+  bool get _hasSfDataGrid => widget.rows.isNotEmpty;
+
+  /// One post-frame pass: sort → column groups + expansion → selection.
+  ///
+  /// Order matters: grouping builds on [DataGridSource.sortedColumns]; applying
+  /// selection last avoids transient indices while the grid rebuilds.
+  void _scheduleSyncGridStateFromParent() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) {
         return;
       }
-      final visible = _visibleColumns;
-      final keys = visible.map((c) => c.key).toSet();
-      await _source.applyExternalSortDescriptors(
-        widget.currentSorts,
-        keys,
-        reorderRows: !widget.style.trustServerRowOrder,
-      );
-    });
-  }
-
-  void _scheduleSyncGroupingFromParent() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_hasSfDataGrid) {
+        final keys = _visibleColumns.map((c) => c.key).toSet();
+        await _source.applyExternalSortDescriptors(
+          widget.currentSorts,
+          keys,
+          reorderRows: !widget.style.trustServerRowOrder,
+        );
+        if (!mounted) {
+          return;
+        }
+        _source.applyExternalGroupDescriptors(widget.currentGroups, keys);
+        _syncGroupExpansionFromParent();
+      }
       if (!mounted) {
         return;
       }
-      final visibleKeys = _visibleColumns.map((column) => column.key).toSet();
-      _source.applyExternalGroupDescriptors(widget.currentGroups, visibleKeys);
-      _syncGroupExpansionFromParent();
+      _applySelectionFromParent();
     });
   }
 
@@ -216,42 +236,35 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     _gridController.collapseGroupsAtLevel(level);
   }
 
-  void _scheduleSyncSelectionFromParent() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
+  void _applySelectionFromParent() {
+    _suppressSelectionCallback = true;
+    try {
+      if (widget.selectedRows.isEmpty ||
+          (!widget.style.allowSelection && !widget.style.allowMultiSelection)) {
+        _gridController.selectedRows = <DataGridRow>[];
+        _gridController.selectedIndex = -1;
         return;
       }
 
-      _suppressSelectionCallback = true;
-      try {
-        if (widget.selectedRows.isEmpty ||
-            (!widget.style.allowSelection &&
-                !widget.style.allowMultiSelection)) {
-          _gridController.selectedRows = <DataGridRow>[];
-          _gridController.selectedIndex = -1;
-          return;
-        }
+      final selectedGridRows = _source.resolveDataGridRows(
+        widget.selectedRows,
+      );
 
-        final selectedGridRows = _source.resolveDataGridRows(
-          widget.selectedRows,
-        );
-
-        if (widget.style.allowMultiSelection) {
-          _gridController.selectedRows = selectedGridRows;
-          return;
-        }
-
-        if (selectedGridRows.isEmpty) {
-          _gridController.selectedRows = <DataGridRow>[];
-          _gridController.selectedIndex = -1;
-          return;
-        }
-
-        _gridController.selectedRow = selectedGridRows.first;
-      } finally {
-        _suppressSelectionCallback = false;
+      if (widget.style.allowMultiSelection) {
+        _gridController.selectedRows = selectedGridRows;
+        return;
       }
-    });
+
+      if (selectedGridRows.isEmpty) {
+        _gridController.selectedRows = <DataGridRow>[];
+        _gridController.selectedIndex = -1;
+        return;
+      }
+
+      _gridController.selectedRow = selectedGridRows.first;
+    } finally {
+      _suppressSelectionCallback = false;
+    }
   }
 
   @override
@@ -446,6 +459,9 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     final visible = _visibleColumns;
 
     if (widget.rows.isEmpty) {
+      if (widget.isLoading) {
+        return _LoadingGridPlaceholder(style: widget.style);
+      }
       return _EmptyGridPlaceholder(
         message:
             widget.emptyMessage ??
@@ -543,8 +559,124 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
 }
 
 // ---------------------------------------------------------------------------
-// Empty placeholder
+// Empty / loading placeholders
 // ---------------------------------------------------------------------------
+
+class _LoadingGridPlaceholder extends StatelessWidget {
+  const _LoadingGridPlaceholder({required this.style});
+
+  final AppReportViewerStyle style;
+
+  static const int _skeletonRowCount = 6;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    final density = style.density;
+    final headerHeight = style.showColumnHeaders
+        ? style.resolvedHeaderRowHeight(density)
+        : 0.0;
+
+    final shell = ClipRRect(
+      borderRadius: BorderRadius.circular(tokens.cardRadius),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(tokens.cardRadius),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.gapMd),
+          child: style.gridHeight != null
+              ? _fixedHeightSkeleton(
+                  tokens,
+                  theme,
+                  headerHeight,
+                )
+              : _intrinsicSkeleton(
+                  tokens,
+                  theme,
+                  headerHeight,
+                  density,
+                ),
+        ),
+      ),
+    );
+
+    return shell;
+  }
+
+  Widget _bar(AppThemeTokens tokens, ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+      ),
+    );
+  }
+
+  Widget _fixedHeightSkeleton(
+    AppThemeTokens tokens,
+    ThemeData theme,
+    double headerHeight,
+  ) {
+    return SizedBox(
+      height: style.gridHeight,
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (headerHeight > 0) ...<Widget>[
+            SizedBox(height: headerHeight, child: _bar(tokens, theme)),
+            SizedBox(height: tokens.gapSm),
+          ],
+          Expanded(
+            child: Column(
+              children: List<Widget>.generate(_skeletonRowCount, (i) {
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: i < _skeletonRowCount - 1 ? tokens.gapXs : 0,
+                    ),
+                    child: _bar(tokens, theme),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _intrinsicSkeleton(
+    AppThemeTokens tokens,
+    ThemeData theme,
+    double headerHeight,
+    AppReportDensity density,
+  ) {
+    final rowHeight = style.resolvedDataRowHeight(density);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (headerHeight > 0) ...<Widget>[
+          SizedBox(height: headerHeight, child: _bar(tokens, theme)),
+          SizedBox(height: tokens.gapSm),
+        ],
+        ...List<Widget>.generate(_skeletonRowCount, (i) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: i < _skeletonRowCount - 1 ? tokens.gapXs : 0,
+            ),
+            child: SizedBox(height: rowHeight, child: _bar(tokens, theme)),
+          );
+        }),
+      ],
+    );
+  }
+}
 
 class _EmptyGridPlaceholder extends StatelessWidget {
   const _EmptyGridPlaceholder({required this.message});

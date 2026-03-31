@@ -73,8 +73,15 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                   return;
                 }
 
-                final isInsideBarLabel =
-                    style.dataLabelAlignment == ChartDataLabelAlignment.middle;
+                final isInsideBarLabel = switch (style.dataLabelAlignment) {
+                  ChartDataLabelAlignment.middle ||
+                  ChartDataLabelAlignment.top ||
+                  ChartDataLabelAlignment.bottom =>
+                    true,
+                  ChartDataLabelAlignment.auto ||
+                  ChartDataLabelAlignment.outer =>
+                    false,
+                };
                 final pointColor = pointColors != null &&
                         pointIndex < pointColors!.length
                     ? pointColors![pointIndex]

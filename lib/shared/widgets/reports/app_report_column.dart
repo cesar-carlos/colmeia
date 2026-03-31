@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 
 enum AppReportColumnAlignment { start, center, end }
 
+/// Aggregations for the table summary row
+/// (`AppReportGridSource.buildSummaryValue`).
+///
+/// `count` counts non-null values from the column value getter for the current
+/// page (not only numeric cells).
 enum AppReportAggregation { sum, average, count, min, max }
 
 /// Declarative column definition for the report viewer (AppReportViewer).

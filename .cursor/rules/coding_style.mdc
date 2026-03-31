@@ -133,12 +133,15 @@ final List<String> activeIds = users
 
 ## Tooling
 
-- Em projetos Flutter, use `flutter_lints` como baseline de lint
-- Em projetos Dart sem Flutter, use pelo menos o conjunto `recommended`
+- Use o conjunto de lints definido no projeto; em Colmeia, o projeto usa
+  `very_good_analysis` — nao adicione `flutter_lints` junto com ele
+- Em novos projetos Flutter sem escolha definida, `flutter_lints` e um bom
+  ponto de partida; em projetos Dart puro, use pelo menos `recommended`
 - Rode `dart format` apos mudancas relevantes
 - Use `dart fix --apply` para correcoes seguras de lint/refactor
-- Ao concluir tarefas longas ou complexas que alterem codigo Dart, rode
-  `flutter analyze` antes de encerrar
+- Rode `flutter analyze` antes de encerrar **qualquer** tarefa que altere
+  codigo Dart — nao apenas tarefas longas; erros de analyzer bloqueiam CI e
+  revelam problemas que o compilador nao detecta imediatamente
 - Corrija erros e avisos relevantes identificados pelo analyzer antes de fechar
   a tarefa
 - Mantenha imports e codigo sem lixo morto
@@ -214,6 +217,66 @@ final icon = switch (status) {
   ConnectionStatus.connecting => Icons.sync,
   ConnectionStatus.disconnected => Icons.error,
 };
+```
+
+### Sealed Classes
+
+- Use `sealed class` para modelar tipos com variantes fixas e exaustivas:
+  estados de UI, failures tipados, eventos e respostas de dominio
+- O compilador garante exaustividade no `switch` — nao use `default` em
+  switches sobre sealed types; deixe o compilador avisar quando uma variante
+  estiver faltando
+- Prefira sealed class a enum quando as variantes carregam dados diferentes
+- Mantenha sealed classes proximas do dominio ou do contrato que elas modelam;
+  nao as coloque em camadas de infraestrutura
+
+```dart
+// Modelagem de estado de UI com dados por variante
+sealed class ReportState {}
+class ReportLoading extends ReportState {}
+class ReportLoaded extends ReportState {
+  ReportLoaded(this.rows);
+  final List<ReportRow> rows;
+}
+class ReportError extends ReportState {
+  ReportError(this.failure);
+  final AppFailure failure;
+}
+
+// Switch exaustivo — nao precisa de default
+Widget build(BuildContext context) => switch (state) {
+  ReportLoading() => const AppSkeleton(child: SizedBox.expand()),
+  ReportLoaded(:final rows) => ReportTable(rows: rows),
+  ReportError(:final failure) => AppInlineErrorPanel(failure: failure),
+};
+```
+
+### Extension Methods
+
+- Use extensions para adicionar comportamento a tipos existentes quando isso
+  melhorar a legibilidade no ponto de uso e o metodo fizer sentido semantico
+  no tipo receptor
+- Prefira extensoes em `BuildContext` para helpers de tema e responsividade
+  (ex: `context.pageHorizontalPadding`) — o contexto e o receptor natural
+- Evite extensoes que adicionam logica de negocio ou side effects a tipos
+  primitivos (`String`, `int`, `List`) — prefira funcoes nomeadas ou value
+  objects nessa situacao
+- Nao use extensao como substituto de funcao top-level; se o metodo nao se
+  beneficia sintaticamente do receiver, use funcao comum
+- Coloque extensoes reutilizaveis em `lib/core/extensions/` ou proximo do
+  tipo que estendem; evite espalha-las por features
+
+```dart
+// Bom: extensao em BuildContext — receptor semanticamente correto
+extension AppThemeContext on BuildContext {
+  AppThemeTokens get tokens =>
+      Theme.of(this).extension<AppThemeTokens>()!;
+}
+
+// Evite: logica de negocio em extensao de primitivo
+extension StringValidation on String {
+  bool get isValidCnpj => /* regra de negocio */; // prefira value object
+}
 ```
 
 ## JSON e Codegen
@@ -293,11 +356,12 @@ Future<User> loadUser(String id) async {
 - [ ] Imports estao ordenados e limpos
 - [ ] `const`/`final` foram usados corretamente
 - [ ] Logs usam ferramenta apropriada e preservam contexto
-- [ ] O baseline de lint do projeto esta adequado ao stack (`flutter_lints` ou
-      `recommended`)
-- [ ] Em tarefas longas ou complexas, `flutter analyze` foi executado
+- [ ] O conjunto de lints do projeto foi respeitado (em Colmeia: `very_good_analysis`)
+- [ ] `flutter analyze` foi executado antes de encerrar a tarefa
 - [ ] Quando a tarefa depende de codegen, `build_runner` foi executado ou
       validado
 - [ ] Dot shorthand foi usado apenas onde o contexto deixa o tipo obvio
 - [ ] Tear-offs foram usados apenas onde melhoram a leitura
 - [ ] Recursos modernos de Dart foram usados apenas quando melhoram a clareza
+- [ ] Sealed classes foram usadas onde variantes fixas e exaustivas modelam melhor o dominio
+- [ ] Extensions foram criadas apenas quando o receptor e semanticamente correto

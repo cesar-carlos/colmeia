@@ -76,6 +76,41 @@ Prefira:
 - uma abstracao nomeada ou constante compartilhada para essa politica
 ```
 
+## Refatoracao
+
+### Quando refatorar
+
+- **Regra do escoteiro**: ao tocar um arquivo, deixe-o um pouco mais limpo do
+  que encontrou — sem precisar de tarefa dedicada para isso
+- **Antes de adicionar feature**: quando a area a modificar tem design confuso
+  ou duplicacao, refatore primeiro e adicione a feature depois; nao construa
+  sobre codigo que precisa de limpeza
+- **Regra de dois**: na segunda vez que escrever o mesmo padrao com a mesma
+  intencao, extraia — nao espere uma terceira ocorrencia
+- **Sinais de violacao**: funcao longa, classe com multiplas responsabilidades,
+  parametros em excesso, condicionais aninhados, comentarios explicando o que o
+  codigo faz (quando renomear resolveria)
+
+### Como refatorar com seguranca
+
+- Faca passos pequenos e comportamentalmente equivalentes; nunca mude logica e
+  estrutura no mesmo passo
+- Nunca misture refatoracao com adicao de feature no mesmo commit ou PR; o
+  revisor precisa distinguir o que muda comportamento do que so limpa
+- Rode o analyzer e os testes existentes apos cada passo significativo
+- Prefira renomear e mover em operacoes separadas; nao renomeie e mude logica
+  ao mesmo tempo
+- Se a area a refatorar nao tem testes, escreva os testes minimos necessarios
+  antes de mexer na estrutura
+
+### O que nao fazer
+
+- Nao faca big bang refactor: reescrita completa sem passos intermediarios
+  funcionais e inrevisavel e tende a introduzir regressoes ocultas
+- Nao refatore por antecipacao especulativa de necessidade futura
+- Nao misture limpeza cosmetica (renomear, formatar) com mudanca estrutural no
+  mesmo passo; isso dificulta revisao e rollback
+
 ## Constantes e Valores Literais
 
 - Nao use numeros, strings ou duracoes "magicas" quando representarem regra de
@@ -94,6 +129,7 @@ Prefira:
 
 ## Checklist
 
+- [ ] Refatoracao e adicao de feature foram separadas em passos/commits distintos
 - [ ] O codigo esta claro sem depender de comentarios longos
 - [ ] Comentarios foram evitados quando uma melhoria de codigo resolveria
 - [ ] Nao foram criados docs/READMEs sem pedido explicito

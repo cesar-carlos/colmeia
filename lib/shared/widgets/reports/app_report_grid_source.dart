@@ -329,10 +329,21 @@ class AppReportGridSource<T> extends DataGridSource {
 
   /// Builds a summary value string for a given [AppReportAggregation] on the
   /// provided column. Used by the grid summary row.
+  ///
+  /// `count` uses non-null valueGetter results only; `sum`, `average`, `min`,
+  /// and `max` use numeric values only.
   String buildSummaryValue(
     AppReportColumn<T> column,
     AppReportAggregation aggregation,
   ) {
+    if (aggregation == AppReportAggregation.count) {
+      final nonNullCount = _rows
+          .map(column.valueGetter)
+          .where((v) => v != null)
+          .length;
+      return column.formatValue(nonNullCount);
+    }
+
     final values = _rows
         .map(column.valueGetter)
         .whereType<num>()
@@ -344,9 +355,11 @@ class AppReportGridSource<T> extends DataGridSource {
       AppReportAggregation.sum => values.fold<num>(0, (acc, v) => acc + v),
       AppReportAggregation.average =>
         values.fold<num>(0, (acc, v) => acc + v) / values.length,
-      AppReportAggregation.count => values.length,
       AppReportAggregation.min => values.reduce((a, b) => a < b ? a : b),
       AppReportAggregation.max => values.reduce((a, b) => a > b ? a : b),
+      AppReportAggregation.count => throw StateError(
+        'count is handled before numeric aggregation',
+      ),
     };
 
     return column.formatValue(result);

@@ -19,11 +19,16 @@ class ReportResultsGrid extends StatelessWidget {
     super.key,
     this.onSortChanged,
     this.onRowTap,
+    this.isLoading = false,
   });
 
   final List<ReportResultRow> rows;
   final ValueChanged<List<AppReportSortDescriptor>>? onSortChanged;
   final void Function(ReportResultRow row, int index)? onRowTap;
+
+  /// When [rows] is empty and true, [AppReportGrid] shows the loading skeleton
+  /// instead of the empty state.
+  final bool isLoading;
 
   static Object? _getSeller(ReportResultRow r) => r.seller;
   static Object? _getStore(ReportResultRow r) => r.store;
@@ -32,34 +37,34 @@ class ReportResultsGrid extends StatelessWidget {
 
   static final List<AppReportColumn<ReportResultRow>> _columns =
       <AppReportColumn<ReportResultRow>>[
-    const AppReportColumn<ReportResultRow>(
-      key: 'seller',
-      label: 'Vendedor',
-      valueGetter: _getSeller,
-    ),
-    const AppReportColumn<ReportResultRow>(
-      key: 'store',
-      label: 'Loja',
-      valueGetter: _getStore,
-    ),
-    const AppReportColumn<ReportResultRow>(
-      key: 'orders',
-      label: 'Pedidos',
-      valueGetter: _getOrders,
-      numeric: true,
-      aggregations: <AppReportAggregation>[AppReportAggregation.sum],
-      width: 90,
-    ),
-    AppReportColumn<ReportResultRow>(
-      key: 'revenue',
-      label: 'Faturamento',
-      valueGetter: _getRevenue,
-      formatter: (v) => AppBrFormatters.currency(v! as num),
-      numeric: true,
-      aggregations: const <AppReportAggregation>[AppReportAggregation.sum],
-      width: 140,
-    ),
-  ];
+        const AppReportColumn<ReportResultRow>(
+          key: 'seller',
+          label: 'Vendedor',
+          valueGetter: _getSeller,
+        ),
+        const AppReportColumn<ReportResultRow>(
+          key: 'store',
+          label: 'Loja',
+          valueGetter: _getStore,
+        ),
+        const AppReportColumn<ReportResultRow>(
+          key: 'orders',
+          label: 'Pedidos',
+          valueGetter: _getOrders,
+          numeric: true,
+          aggregations: <AppReportAggregation>[AppReportAggregation.sum],
+          width: 90,
+        ),
+        AppReportColumn<ReportResultRow>(
+          key: 'revenue',
+          label: 'Faturamento',
+          valueGetter: _getRevenue,
+          formatter: (v) => AppBrFormatters.currency(v! as num),
+          numeric: true,
+          aggregations: const <AppReportAggregation>[AppReportAggregation.sum],
+          width: 140,
+        ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -110,19 +115,17 @@ class ReportResultsGrid extends StatelessWidget {
             ],
           ),
           SizedBox(height: tokens.contentSpacing),
-          SizedBox(
-            height: 280,
-            child: AppReportGrid<ReportResultRow>(
-              columns: _columns,
-              rows: rows,
-              style: const AppReportViewerStyle(),
-              events: AppReportEvents<ReportResultRow>(
-                onSortChanged: onSortChanged,
-                onRowTap: onRowTap,
-              ),
-              emptyMessage:
-                  'Nenhum resultado encontrado para os filtros aplicados.',
+          AppReportGrid<ReportResultRow>(
+            columns: _columns,
+            rows: rows,
+            style: const AppReportViewerStyle(gridHeight: 280),
+            isLoading: isLoading,
+            events: AppReportEvents<ReportResultRow>(
+              onSortChanged: onSortChanged,
+              onRowTap: onRowTap,
             ),
+            emptyMessage:
+                'Nenhum resultado encontrado para os filtros aplicados.',
           ),
         ],
       ),

@@ -383,7 +383,11 @@ class _ReportsPageState extends State<ReportsPage> {
                       showDelay: _reportsSecondarySkeletonDelay,
                       loadingSemanticsLabel:
                           'Carregando grade de resultados...',
-                      child: ReportResultsGrid(rows: rows),
+                      child: ReportResultsGrid(
+                        rows: rows,
+                        isLoading:
+                            controller.isLoading && controller.rows.isEmpty,
+                      ),
                     ),
                   ],
                 ),

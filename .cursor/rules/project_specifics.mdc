@@ -90,6 +90,44 @@ lib/
 - Controllers/view models devem expor estado e intencoes da tela; nao devem
   conhecer detalhes concretos de API, storage ou plataforma
 
+## Injecao de Dependencia com get_it
+
+- Use `get_it` para registrar e resolver dependencias fora da camada de
+  apresentacao (datasources, repositories, use cases, services)
+- Organize o registro por feature em arquivos dedicados (ex:
+  `lib/features/auth/auth_module.dart`); chame todos a partir de um
+  `AppDependencies.setup()` centralizado em `lib/core/`
+- Use `registerLazySingleton` para servicos stateless que vivem enquanto o app
+  estiver aberto (repositorios, datasources, clientes HTTP)
+- Use `registerFactory` para use cases e objetos que podem ter estado proprio
+  por execucao
+- Use `registerSingleton` apenas quando a inicializacao sincrona e obrigatoria
+  na subida do app; prefira `registerLazySingleton` para evitar atrasos no startup
+- Nunca chame `GetIt.instance` ou `sl()` dentro de widgets, controllers de
+  apresentacao ou regras de dominio; injete via construtor
+- Em testes, use `GetIt.instance.reset()` no `tearDown` para evitar vazamento
+  de estado entre testes
+
+```dart
+// lib/features/auth/auth_module.dart
+void setupAuthDependencies(GetIt sl) {
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(sl(), sl()),
+  );
+  sl.registerFactory<LoginUseCase>(
+    () => LoginUseCase(sl()),
+  );
+}
+
+// lib/core/app_dependencies.dart
+Future<void> setupDependencies() async {
+  final sl = GetIt.instance;
+  setupAuthDependencies(sl);
+  setupReportsDependencies(sl);
+  // ...
+}
+```
+
 ## Modulos Principais
 
 - `auth`: login, refresh token, logout, restauracao de sessao e protecao de
@@ -130,6 +168,7 @@ lib/
   notificacoes locais (nao manter como dependencia ate la)
 - `sentry_flutter` para erros e performance; DSN via `--dart-define=SENTRY_DSN=`
   (ver `AppEnvironment` e `runAppWithOptionalSentry`)
+- `mocktail` como padrao para mocks em testes (dev dependency)
 
 ## Dependencias Fora do Escopo Atual
 
@@ -196,6 +235,37 @@ lib/
 - Quando o parametro exigir mascara ou formato brasileiro recorrente, prefira
   helper central com `brasil_fields`
 
+## Formularios com flutter_form_builder
+
+- Use `flutter_form_builder` + `form_builder_validators` para todos os
+  formularios de filtro, parametros de relatorio e entrada de dados
+- Mantenha um `GlobalKey<FormBuilderState>` no controller ou no widget pai;
+  nunca acesse o estado do form diretamente de um widget filho
+- Valide antes de submeter via `_formKey.currentState?.saveAndValidate()`
+- Prefira `FormBuilderTextField`, `FormBuilderDropdown`, `FormBuilderDateRangePicker`
+  em vez de construir campos manualmente; crie wrappers de molecula quando a
+  configuracao for repetida entre formularios
+- Para campos de dominio (periodo, CNPJ, valor monetario), envolva o campo
+  do form_builder em uma molecula que ja configura validators, formatters e
+  teclado — nao repita essa configuracao em cada tela
+- Resete o form apos submissao bem-sucedida ou navegacao de saida para evitar
+  estado residual
+
+## Strings e Localizacao
+
+- No MVP, strings de UI podem ser escritas diretamente em Portugues nos
+  widgets — nao e obrigatorio ARB/l10n neste momento
+- Strings de mensagens de erro para o usuario devem vir de `AppFailure.userMessage`
+  ou equivalente — nunca hardcode de mensagem de erro tecnica na UI
+- Strings que representam labels de campo, titulos de tela e textos de
+  confirmacao ficam no proprio widget ou page; evite arquivos de constantes
+  globais de string sem estrutura clara
+- Quando o projeto evoluir para multiplos idiomas, prefira `flutter_localizations`
+  + ARB files gerados por `flutter_gen` ou similar; nao introduza i18n
+  prematuramente antes de haver necessidade real de um segundo idioma
+- Formatacao de datas, moedas e numeros usa `intl` via helpers centralizados
+  em `lib/core/formatters/`; nunca formate diretamente nos widgets
+
 ## Value Objects
 
 - Use value objects para modelar entradas com regra propria, como email,
@@ -207,20 +277,17 @@ lib/
 
 ## Design System do App
 
-- Use `Material 3` customizado como base visual do app
-- Centralize cores, tipografia, spacing, radius, elevation e motion em tokens
-- Prefira `ThemeExtension` para tokens customizados
-- Trate `lib/shared/design_system/app_colors.dart` (`AppColors`) como a fonte de
-  verdade para a paleta nomeada do produto
+Para principios gerais de design system, tokens e composicao visual, veja
+`ui_ux_design.mdc`. As decisoes especificas deste repositorio sao:
+
+- `lib/shared/design_system/app_colors.dart` (`AppColors`) e a fonte de verdade
+  para a paleta nomeada do produto
 - Ao precisar de uma cor de identidade, prefira `AppColors` em vez de criar
   novos `Color(...)`, hex literais ou variantes ad hoc em widgets/features
 - Use `ColorScheme` para papeis semanticos do Material e `AppThemeTokens` para
   tokens complementares; nao duplique a mesma cor-base em mais de uma fonte
 - Se uma nova cor de marca ou tom reutilizavel for necessario, adicione primeiro
   em `AppColors` e depois derive o restante do tema a partir dessa base
-- Extraia componentes de app reutilizaveis para consolidar a identidade visual
-- Evite hardcodes visuais em features; consuma sempre o tema e os componentes do
-  design system
 
 ## Android e iOS (e web opcional)
 
@@ -261,18 +328,35 @@ Future<AppResult<User>> getById(String id) async {
 }
 ```
 
+## Monitoramento de Erros com Sentry
+
+- Capture apenas erros nao tratados e failures inesperados; nao capture
+  failures de negocio esperados (ex: login invalido, campo obrigatorio vazio)
+- Nunca inclua PII nos eventos do Sentry: sem CPF, CNPJ, email, nome completo,
+  senha, token de sessao ou dados bancarios em mensagens, breadcrumbs ou
+  contexto adicional
+- Adicione contexto util ao capturar: loja ativa, modulo/feature, acao que
+  o usuario estava executando — sem dados pessoais
+- Classifique severidade corretamente: `fatal` para crashes que impedem uso,
+  `error` para falhas de integracao nao tratadas, `warning` para degradacao
+  silenciosa (cache miss critico, timeout recuperavel)
+- Nao use Sentry para logging de debug ou fluxo normal do app; use
+  `dart:developer` `log` para isso
+- Valide que o DSN esta configurado antes de habilitar captura; em builds
+  sem DSN, o SDK deve operar em modo silencioso (ver `runAppWithOptionalSentry`)
+
 ## Testes no Repositorio
+
+Para estrategia universal de testes e a proibicao de widget tests por
+iniciativa propria, veja `testing.mdc` e `testing_dart_flutter.mdc`.
+Prioridades especificas deste repositorio:
 
 - Espelhe `lib/` em `test/` por feature ou modulo compartilhado
 - Priorize testes unitarios para regras, mapeadores e controllers/view models
-- **Widget tests (`testWidgets`):** nao adicione por iniciativa propria; implemente
-  **somente** quando o usuario pedir **explicitamente** na conversa ou na tarefa
+- Cubra com prioridade: auth, permissoes, troca de loja, filtros e mapeamento
+  de metadados dinamicos
 - Para auth, permissao, navegacao e componentes compartilhados, prefira testes
-  unitarios ou de integracao leve ate que widget test seja solicitado
-- Cubra com prioridade auth, permissoes, troca de loja, filtros e mapeamento de
-  metadados dinamicos
-- Quando uma regressao ocorrer, adicione o tipo de teste mais direto (em geral
-  unitario); widget test **somente** se o usuario pedir explicitamente
+  unitarios ou de integracao leve
 
 ## Regra de UI para Falhas
 
@@ -306,6 +390,8 @@ Future<void> main() async {
       presente
 - [ ] O cache local permaneceu leve, com invalidacao e refresh claros
 - [ ] O backend continua como fonte final de autorizacao
+- [ ] O catalogo `lib/shared/widgets/` foi consultado antes de criar novo widget
+- [ ] Componentes existentes foram evoluidos em vez de duplicados ou substituidos
 - [ ] Tokens e componentes compartilhados sustentam a identidade visual do app
 - [ ] Nao foram introduzidas preocupacoes de desktop/web sem necessidade
 - [ ] Mensagens de erro para usuario sao claras e nao vazam detalhes internos

@@ -1,6 +1,6 @@
 ---
 description: UI/UX design principles for Android and iOS apps
-globs: ["lib/presentation/**/*.dart", "lib/shared/**/*.dart"]
+globs: ["lib/**/*.dart"]
 alwaysApply: true
 ---
 
@@ -53,35 +53,38 @@ layout, builders e performance, use `flutter_widgets.mdc`.
 
 ## Estados da Interface
 
-- Toda tela deve tratar loading, empty e error dentro da propria superficie
-- Use mensagens claras e acionaveis
-- Use skeletons, placeholders ou indicadores de progresso quando melhorarem a
-  percepcao de carregamento
-- Use snackbars e feedback transient apenas para eventos informativos
+Toda tela deve cobrir os quatro estados dentro da propria superficie:
 
-```dart
-Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Text(
-      'Nao foi possivel carregar os dados.',
-      style: Theme.of(context).textTheme.titleMedium,
-    ),
-    const SizedBox(height: 8),
-    Text(
-      errorMessage,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: Theme.of(context).colorScheme.error,
-      ),
-    ),
-    const SizedBox(height: 16),
-    FilledButton(
-      onPressed: onRetry,
-      child: const Text('Tentar novamente'),
-    ),
-  ],
-)
-```
+### Loading
+- Use `AppSkeleton` com o formato aproximado do conteudo final — nao use um
+  spinner centralizado generico como substituto para layouts com estrutura
+  conhecida
+- Reserve `CircularProgressIndicator` para operacoes pontuais sem estrutura
+  previsivel (submissao de form, exportacao)
+
+### Empty
+- Diferencie "ainda nao ha dados" de "nenhum resultado para este filtro":
+  - **Sem dados**: mensagem encorajadora + CTA primario quando cabivel
+    (ex: "Nenhum relatorio ainda. Configure o primeiro.")
+  - **Sem resultados de filtro**: mensagem descritiva + acao para limpar filtros
+    (ex: "Nenhum resultado para este periodo.")
+- Nao mostre lista vazia sem explicacao; o usuario precisa saber o que fazer
+- Evite ilustracoes pesadas em estados vazios de telas corporativas; prefira
+  icone simples + texto claro
+
+### Error
+- Use `AppInlineErrorPanel` para erros inline; inclua botao de retry quando
+  a operacao for repetivel
+- Erros de rede/timeout: mensagem clara + retry
+- Erros de permissao: explique o que o usuario nao pode ver, sem detalhes
+  tecnicos; nao mostre tela vazia sem explicacao
+- Nunca exiba stack trace ou mensagem tecnica de excecao ao usuario
+
+### Feedback de acao
+- Use `SnackBar` apenas para confirmacao de acoes que o usuario iniciou
+  (salvo, exportado, copiado) — nao para estados de tela
+- Prefira feedback inline (icone, badge, texto) para mudancas de estado
+  visiveis na propria superficie
 
 ## Formularios
 
@@ -148,7 +151,9 @@ O projeto define breakpoints em `AppBreakpoints` (`lib/core/layout/`):
 
 - [ ] A tela usa uma linguagem visual coerente
 - [ ] Hierarquia visual e CTAs estao claros
-- [ ] Loading, empty e error estao cobertos na propria tela
+- [ ] Loading usa `AppSkeleton` com forma aproximada do conteudo
+- [ ] Empty state diferencia "sem dados" de "sem resultados de filtro"
+- [ ] Error usa `AppInlineErrorPanel` com retry quando aplicavel; sem mensagens tecnicas ao usuario
 - [ ] O design usa tokens e componentes reutilizaveis do app
 - [ ] Contraste, labels e leitura por screen reader foram considerados
 - [ ] `context.pageScrollPadding(tokens)` foi usado no ListView principal

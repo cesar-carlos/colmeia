@@ -402,6 +402,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                   selectedRows: widget.selectedRows ?? List<T>.empty(),
                   groupController: _groupController,
                   style: style.copyWith(density: _density),
+                  isLoading: widget.isLoading,
                   events: AppReportEvents<T>(
                     onSortChanged: _onSortChanged,
                     onRowTap: _onRowTap,

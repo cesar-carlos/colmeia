@@ -384,7 +384,11 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                       showDelay: _reportDetailSecondarySkeletonDelay,
                       loadingSemanticsLabel:
                           'Carregando tabela de resultados...',
-                      child: ReportResultsGrid(rows: detail.rows),
+                      child: ReportResultsGrid(
+                        rows: detail.rows,
+                        isLoading: controller.isLoading &&
+                            (controller.detail?.rows.isEmpty ?? false),
+                      ),
                     ),
                     SizedBox(height: tokens.sectionSpacing),
                     AppSkeleton(

@@ -37,6 +37,32 @@ em Dart/Flutter.
 - Nao esconda problemas de sincronizacao com `pumpAndSettle()` indiscriminado
 - Em streams, animacoes e timers, deixe explicito o que esta sendo aguardado
 
+## Mocks e Fakes
+
+- Use `mocktail` como padrao para mocks neste projeto — nao requer codegen e
+  tem API idiomatica compativel com `package:test`
+- Nao adicione `mockito` junto com `mocktail`; escolha um e mantenha
+- Prefira **fakes** (implementacoes reais minimas) a mocks quando o contrato
+  for simples e o fake for mais legivel que o setup de mock
+- Use mocks apenas para dependencias externas ou colaboradoras — nunca para
+  logica pura ou value objects
+- Configure `registerFallbackValue` para tipos customizados antes de usar
+  `any()` em argumentos desses tipos
+
+```dart
+// Fake simples — preferivel quando o contrato e pequeno
+class FakeAuthRepository implements AuthRepository {
+  @override
+  Future<AppResult<User>> login(String email, String password) async =>
+      Success(User.fixture());
+}
+
+// Mock com mocktail — para verificar colaboracao
+class MockAuthRepository extends Mock implements AuthRepository {}
+
+setUpAll(() => registerFallbackValue(const LoginParams.empty()));
+```
+
 ## Harness e Dependencias
 
 - Forneca wrappers minimos para `Theme`, `MediaQuery`, `Directionality`,
@@ -56,5 +82,6 @@ em Dart/Flutter.
 - [ ] Widget tests existem somente se o usuario pediu explicitamente (caso
   contrario nao foram adicionados)
 - [ ] O harness do teste contem apenas as dependencias visuais necessarias
+- [ ] Mocks usam `mocktail`; fakes foram preferidos quando o contrato e simples
 - [ ] Assertions usam `package:checks` ou `expect` de forma clara
 - [ ] Se houver widget test, cobre estados visiveis e interacoes relevantes

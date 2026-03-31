@@ -1,6 +1,6 @@
 ---
 description: Flutter widgets - composition, local state, layout, and rebuild performance
-globs: ["lib/presentation/**/*.dart", "lib/shared/**/*.dart"]
+globs: ["lib/**/*.dart"]
 alwaysApply: true
 ---
 
@@ -18,34 +18,74 @@ Este arquivo e a fonte de verdade para codigo de widgets:
 Nao repita aqui regras de design system e UX mobile. Para isso, use
 `ui_ux_design.mdc`.
 
-## Stateless vs Stateful
+## Hierarquia de Componentes (Atomic Design)
+
+Toda UI do app segue uma hierarquia de quatro niveis. Saber em qual nivel um
+componente pertence define onde ele fica e quando extrair para `lib/shared/`:
+
+| Nivel     | Descricao                                      | Exemplos no projeto                        |
+|-----------|------------------------------------------------|--------------------------------------------|
+| Token     | Valor de design sem widget proprio             | `AppColors`, `AppThemeTokens`              |
+| Atomo     | Widget de responsabilidade unica               | `AppTextField`, `AppSectionCard`           |
+| Molecula  | Composicao de atomos com comportamento proprio | `AppEmailField`, `AppSectionCardWithHeading` |
+| Organismo | Superficie completa de uma funcionalidade      | `AppReportViewer`, `AppShellPageIntro`     |
+
+- Atomos e moleculas reutilizaveis entre features vivem em `lib/shared/widgets/`
+- Organismos especificos de uma feature ficam em
+  `lib/features/<feature>/presentation/widgets/`
+- Nao crie moleculas ou organismos dentro de pages; extraia antes
+
+## Stateless vs Stateful vs ValueNotifier
 
 - Use `StatelessWidget` quando o widget nao precisa gerenciar estado local
-- Use `StatefulWidget` apenas quando houver estado efemero de UI, controle de
-  foco, animacao, controllers ou subscriptions
-- Mantenha o estado minimo necessario
-- Mantenha `setState()` o mais perto possivel da menor subarvore que realmente
-  muda
+- Use `ValueNotifier` + `ValueListenableBuilder` para estado local simples de UI
+  (toggle visivel/oculto, contador, selecao pontual) — reduz rebuild ao menor
+  subarvore possivel sem precisar de `StatefulWidget`
+- Use `StatefulWidget` apenas quando houver controle de foco, animacao,
+  controllers de scroll/texto ou subscriptions que exijam `initState`/`dispose`
+- Mantenha `setState()` restrito a menor subarvore que realmente muda
 - Separe regra de negocio de estado visual
 - Sempre descarte `FocusNode`, controllers, timers, subscriptions e streams
 
 ```dart
-class CounterPanel extends StatefulWidget {
-  const CounterPanel({super.key});
+// Prefira ValueNotifier para toggle simples
+class _PasswordField extends StatelessWidget {
+  _PasswordField({required this.controller});
+
+  final TextEditingController controller;
+  final ValueNotifier<bool> _obscure = ValueNotifier(true);
 
   @override
-  State<CounterPanel> createState() => _CounterPanelState();
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _obscure,
+      builder: (context, obscure, _) {
+        return AppTextField(
+          controller: controller,
+          obscureText: obscure,
+          suffix: IconButton(
+            icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
+            onPressed: () => _obscure.value = !obscure,
+          ),
+        );
+      },
+    );
+  }
+}
+```
+
+```dart
+// StatefulWidget quando ha FocusNode, AnimationController ou initState real
+class _CounterPanel extends StatefulWidget {
+  const _CounterPanel();
+
+  @override
+  State<_CounterPanel> createState() => _CounterPanelState();
 }
 
-class _CounterPanelState extends State<CounterPanel> {
+class _CounterPanelState extends State<_CounterPanel> {
   final FocusNode _focusNode = FocusNode();
   int _counter = 0;
-
-  void _increment() {
-    setState(() {
-      _counter++;
-    });
-  }
 
   @override
   void dispose() {
@@ -57,10 +97,10 @@ class _CounterPanelState extends State<CounterPanel> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text('Counter: $_counter'),
+        Text('$_counter'),
         ElevatedButton(
-          onPressed: _increment,
-          child: const Text('Increment'),
+          onPressed: () => setState(() => _counter++),
+          child: const Text('Incrementar'),
         ),
       ],
     );
@@ -132,9 +172,154 @@ AppTextField          <- base: teclado, formatters, densidade, decoration
 ou `StatefulWidget` nao e idiomatico em Flutter e quebra o modelo de composicao
 do framework. Use sempre um novo widget que constroi o base como filho.
 
+### Mixins para comportamento de State
+
+Quando dois ou mais `State` precisam do **mesmo comportamento** (scroll listener,
+keep-alive, ticker) mas nao tem relacao hierarquica, use **mixin** em vez de
+duplicar o codigo ou criar heranca forcada. O Flutter ja adota esse padrao
+nativamente (`SingleTickerProviderStateMixin`, `AutomaticKeepAliveClientMixin`).
+
+```dart
+// Comportamento reutilizavel sem heranca de widget
+mixin ScrollToTopMixin<T extends StatefulWidget> on State<T> {
+  late final ScrollController scrollController;
+
+  void scrollToTop() {
+    scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+}
+
+// Uso: aplica o mixin a qualquer State sem heranca de widget
+class _ReportsPageState extends State<ReportsPage> with ScrollToTopMixin {
+  // scrollController e scrollToTop() disponiveis aqui
+}
+```
+
+Use mixin quando:
+- O mesmo comportamento aparece em dois ou mais `State` sem relacao
+- Ha `initState`/`dispose` que precisam ser reutilizados de forma limpa
+- O comportamento nao e parte da arvore visual (nao e um widget filho)
+
+### Slot pattern para zonas visuais nomeadas
+
+Quando um componente tem multiplas regioes visuais independentes, use
+**parametros `Widget?` nomeados** em vez de um unico `child`. Isso e o slot
+pattern — o chamador controla o que vai em cada zona sem precisar conhecer a
+estrutura interna.
+
+O projeto ja usa esse padrao em `AppSectionCardWithHeading`:
+`titleWidget`, `subtitleWidget`, `headingTrailing`, `headingBottom`.
+
+```dart
+// Bom: zonas nomeadas — o chamador monta cada parte independentemente
+class AppDashboardCard extends StatelessWidget {
+  const AppDashboardCard({
+    required this.body,
+    super.key,
+    this.header,
+    this.footer,
+    this.actions,
+  });
+
+  final Widget body;
+  final Widget? header;
+  final Widget? footer;
+  final Widget? actions;
+
+  @override
+  Widget build(BuildContext context) { ... }
+}
+
+// Evite: unico child obriga o chamador a montar toda estrutura externa
+class AppDashboardCard extends StatelessWidget {
+  const AppDashboardCard({required this.child, super.key});
+  final Widget child; // chamador tem que adivinhar a estrutura interna
+}
+```
+
+### Style objects para variantes de aparencia
+
+Quando um componente tem mais de 3 parametros de aparencia (`TextStyle`,
+`Color`, `double`, alinhamentos), agrupe-os em um **style object** com
+construtor `const` e valores padrao. Isso mantem a API principal limpa e
+permite variantes pre-definidas reutilizaveis.
+
+O projeto ja usa esse padrao: `AppSectionCardWithHeadingStyle`,
+`AppReportViewerStyle`, `AppComparisonBarChartStyle`.
+
+```dart
+class AppAlertBannerStyle {
+  const AppAlertBannerStyle({
+    this.titleStyle,
+    this.messageStyle,
+    this.iconSize = 20,
+    this.crossAxisAlignment = CrossAxisAlignment.start,
+  });
+
+  final TextStyle? titleStyle;
+  final TextStyle? messageStyle;
+  final double iconSize;
+  final CrossAxisAlignment crossAxisAlignment;
+}
+
+class AppAlertBanner extends StatelessWidget {
+  const AppAlertBanner({
+    required this.message,
+    super.key,
+    this.style = const AppAlertBannerStyle(),
+  });
+
+  final String message;
+  final AppAlertBannerStyle style;
+}
+```
+
+### Builder callbacks para conteudo variavel
+
+Quando o conteudo interno precisa de `BuildContext` do filho, construcao lazy,
+ou quando o chamador precisa montar o conteudo com dados que so o componente
+conhece, use **`Widget Function(BuildContext context, ...)` como parametro**
+em vez de passar o widget diretamente.
+
+```dart
+// Uso de builder: o componente passa dados que o chamador usa para montar o filho
+class AppLoadingOrContent<T> extends StatelessWidget {
+  const AppLoadingOrContent({
+    required this.value,
+    required this.builder,
+    super.key,
+  });
+
+  final T? value;
+  final Widget Function(BuildContext context, T value) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved = value;
+    if (resolved == null) return const AppSkeleton(child: SizedBox.expand());
+    return builder(context, resolved);
+  }
+}
+```
+
 ## Composicao e Estrutura
 
-- Antes de criar um novo widget, verifique o catalogo em `lib/shared/widgets/`
 - Quebre widgets grandes em widgets menores e focados
 - Prefira classes privadas pequenas a metodos `Widget _build...`
 - Quando o mesmo padrao visual surgir pela segunda vez com a mesma intencao,
@@ -184,7 +369,8 @@ class _UserListItem extends StatelessWidget {
 
 - Use `Padding`, `SizedBox`, `Expanded`, `Flexible`, `Wrap` e `LayoutBuilder`
   de forma explicita
-- Prefira espacos consistentes e constants/tokens compartilhados
+- Prefira espacos consistentes via tokens (`AppThemeTokens.gapSm`, `gapMd`,
+  `contentSpacing`); evite `SizedBox` com valores numericos literais
 - Use `ListView.builder` ou slivers para listas longas
 - Use `SingleChildScrollView` apenas para conteudo intrinsicamente limitado
 - Use `Stack`/`Positioned`/`Align` apenas quando layout linear nao resolver
@@ -192,12 +378,11 @@ class _UserListItem extends StatelessWidget {
   customizados
 
 ```dart
+// Use tokens em vez de valores numericos literais para espacamento
 Row(
   children: [
-    const Expanded(
-      child: Text('Query result'),
-    ),
-    const SizedBox(width: 8),
+    const Expanded(child: Text('Query result')),
+    SizedBox(width: tokens.gapSm),
     Flexible(
       child: ElevatedButton(
         onPressed: () {},
@@ -241,8 +426,12 @@ List<int> _squareValues(List<int> values) {
 
 ## Inputs, Imagens e Acessibilidade no Codigo
 
+- Use `AppTextField` como base para todos os campos de texto; nunca use
+  `TextField` ou `TextFormField` diretamente em paginas e features
 - Configure `textInputAction`, `keyboardType`, autofill e `onSubmitted` de forma
   coerente com fluxos mobile
+- Para campos especializados (email, senha, CNPJ), crie uma molecula por
+  composicao sobre `AppTextField` — veja "Especializacao de componentes"
 - Mantenha validacao perto do campo
 - Forneca `loadingBuilder` e `errorBuilder` em imagens de rede
 - Adicione labels semanticos para acoes apenas com icone
@@ -250,8 +439,9 @@ List<int> _squareValues(List<int> values) {
   virtual
 
 ```dart
-TextField(
-  textCapitalization: TextCapitalization.none,
+// Use AppTextField como base; configure keyboardType, action e onSubmitted
+AppTextField(
+  controller: controller,
   keyboardType: TextInputType.emailAddress,
   textInputAction: TextInputAction.next,
   onSubmitted: (_) => FocusScope.of(context).nextFocus(),
@@ -272,24 +462,105 @@ TextField(
 - Use DevTools Performance view e Performance Overlay para investigar jank,
   repaints, intrinsics e gargalos de frame
 
+## Animacoes
+
+### Quando usar cada abordagem
+
+| Tipo | Quando usar | Exemplos |
+|---|---|---|
+| Animacao implicita | Mudanca de valor simples, sem controle externo | `AnimatedContainer`, `AnimatedOpacity`, `AnimatedSwitcher` |
+| `TweenAnimationBuilder` | Transicao pontual com controle de curva, sem `AnimationController` | Fade de card, expansao de altura |
+| Animacao explicita | Sequencias, loops, controle externo, sincronizacao | `AnimationController` + `AnimatedBuilder` |
+
+- Prefira animacoes implicitas para transicoes de estado visivel — sao mais
+  simples, nao precisam de `dispose` e cobrem a maioria dos casos
+- Use `TweenAnimationBuilder` quando precisar de controle de curva sem o custo
+  de um `AnimationController` completo
+- Use `AnimationController` apenas quando: a animacao precisa de loop,
+  controle externo (pausar/retomar), sincronizacao com outras animacoes, ou
+  sequencias encadeadas
+- Sempre descarte `AnimationController` no `dispose()`
+- Nao anime em `build()` com logica manual de `setState`; use os widgets de
+  animacao existentes
+- Prefira duracao e curvas via tokens ou constantes nomeadas; evite
+  `Duration(milliseconds: 300)` espalhado pelo codigo
+
+```dart
+// Bom: animacao implicita para mudanca de opacidade
+AnimatedOpacity(
+  opacity: isVisible ? 1.0 : 0.0,
+  duration: AppMotionTokens.fadeShort,
+  child: child,
+)
+
+// Quando precisar de controle: AnimationController com dispose
+class _AnimatedCardState extends State<AnimatedCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppMotionTokens.expandMedium,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+}
+```
+
+## Sinais de Refatoracao em Widgets
+
+Refatore quando encontrar qualquer um destes sinais. Para a estrategia geral
+de refatoracao (quando, como, o que nao fazer), veja `general_rules.mdc`.
+
+| Sinal encontrado | Refatoracao recomendada |
+|---|---|
+| Metodo `Widget _buildX()` em vez de classe privada | Extraia para classe `_X extends StatelessWidget` |
+| `build()` com calculos, formatacao ou logica de negocio | Mova para getter, funcao pura ou controller |
+| `StatefulWidget` sem `FocusNode`, controller ou lifecycle real | Substitua por `ValueNotifier` + `ValueListenableBuilder` |
+| `setState()` com async, validacao ou multiplas variaveis | Mova logica para controller ou use case |
+| `Card` inline em pagina ou feature | Substitua por `AppSectionCard` ou `AppSectionCardWithHeading` |
+| `SizedBox(height/width: N)` ou padding numerico literal | Substitua pelo token correspondente (`tokens.gapSm`, `tokens.contentSpacing`) |
+| `Column` + `Text` montando estado de erro manualmente | Substitua por `AppInlineErrorPanel` |
+| `TextField` ou `TextFormField` diretamente em feature | Substitua por `AppTextField` ou molecula especializada |
+| Widget com `build()` acima de ~80 linhas | Extraia subwidgets privados focados |
+| Mesmo padrao visual em dois arquivos diferentes | Extraia para `lib/shared/widgets/` |
+| Provider ou `Consumer` em nivel alto causando rebuild amplo | Mova para `Selector` ou `ValueListenableBuilder` na menor subarvore |
+
 ## Referencias Cruzadas
 
 - Diretrizes de design system, paleta, tipografia e UX mobile:
   `ui_ux_design.mdc`
 - Regras gerais de reutilizacao e duplicacao: `general_rules.mdc`
 - Estilo Dart e tooling: `coding_style.mdc`
+- Catalogo de componentes, gerenciamento de estado (`Provider`) e decisoes de
+  pacotes do projeto: `project_specifics.mdc`
 
 ## Checklist
 
+- [ ] O nivel do componente (atomo/molecula/organismo) foi identificado e ele
+      foi colocado no local correto (`shared/` ou `features/`)
 - [ ] O catalogo `lib/shared/widgets/` foi consultado antes de criar novo widget
 - [ ] Componentes existentes foram evoluidos com parametros opcionais em vez de
       duplicados ou substituidos por versoes paralelas
 - [ ] Superficies de conteudo usam `AppSectionCard` ou `AppSectionCardWithHeading`
 - [ ] Estados de erro usam `AppInlineErrorPanel`
 - [ ] Estados de loading usam `AppSkeleton`
+- [ ] `ValueNotifier` foi preferido sobre `StatefulWidget` para estado local simples
+- [ ] `StatefulWidget` foi usado somente quando ha controllers, foco ou lifecycle real
+- [ ] Comportamento compartilhado entre `State` classes usa mixin, nao duplicacao
+- [ ] Componente com multiplas zonas visuais usa slot pattern (parametros Widget? nomeados)
+- [ ] Componente com mais de 3 parametros visuais usa style object com const constructor
+- [ ] Builder callback foi usado quando o conteudo precisa de contexto ou dados do componente
+- [ ] Sinais de refatoracao (helper methods, build() longo, Card nu, spacing literal) foram corrigidos ao tocar o arquivo
 - [ ] O widget tem uma responsabilidade clara
-- [ ] Estado local esta minimo e descartado corretamente
-- [ ] `setState()` ficou restrito a menor subarvore possivel
 - [ ] `build()` esta legivel e sem aninhamento excessivo
 - [ ] Listas longas usam builders/slivers
 - [ ] Nao ha trabalho pesado dentro de `build()`
