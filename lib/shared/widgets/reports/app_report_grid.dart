@@ -294,6 +294,10 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     );
   }
 
+  /// Columns visible at the current breakpoint; non-growable for stable layout.
+  ///
+  /// `AppReportGridSource` copies this list internally so grid source updates
+  /// are not limited by fixed-length lists.
   List<AppReportColumn<T>> get _visibleColumns {
     final screenWidth = MediaQuery.sizeOf(context).width;
     return widget.columns

@@ -261,8 +261,8 @@ Future<void> setupDependencies() async {
   confirmacao ficam no proprio widget ou page; evite arquivos de constantes
   globais de string sem estrutura clara
 - Quando o projeto evoluir para multiplos idiomas, prefira `flutter_localizations`
-  + ARB files gerados por `flutter_gen` ou similar; nao introduza i18n
-  prematuramente antes de haver necessidade real de um segundo idioma
+  - ARB files gerados por `flutter_gen` ou similar; nao introduza i18n
+    prematuramente antes de haver necessidade real de um segundo idioma
 - Formatacao de datas, moedas e numeros usa `intl` via helpers centralizados
   em `lib/core/formatters/`; nunca formate diretamente nos widgets
 

@@ -56,6 +56,7 @@ layout, builders e performance, use `flutter_widgets.mdc`.
 Toda tela deve cobrir os quatro estados dentro da propria superficie:
 
 ### Loading
+
 - Use `AppSkeleton` com o formato aproximado do conteudo final — nao use um
   spinner centralizado generico como substituto para layouts com estrutura
   conhecida
@@ -63,6 +64,7 @@ Toda tela deve cobrir os quatro estados dentro da propria superficie:
   previsivel (submissao de form, exportacao)
 
 ### Empty
+
 - Diferencie "ainda nao ha dados" de "nenhum resultado para este filtro":
   - **Sem dados**: mensagem encorajadora + CTA primario quando cabivel
     (ex: "Nenhum relatorio ainda. Configure o primeiro.")
@@ -73,6 +75,7 @@ Toda tela deve cobrir os quatro estados dentro da propria superficie:
   icone simples + texto claro
 
 ### Error
+
 - Use `AppInlineErrorPanel` para erros inline; inclua botao de retry quando
   a operacao for repetivel
 - Erros de rede/timeout: mensagem clara + retry
@@ -81,6 +84,7 @@ Toda tela deve cobrir os quatro estados dentro da propria superficie:
 - Nunca exiba stack trace ou mensagem tecnica de excecao ao usuario
 
 ### Feedback de acao
+
 - Use `SnackBar` apenas para confirmacao de acoes que o usuario iniciou
   (salvo, exportado, copiado) — nao para estados de tela
 - Prefira feedback inline (icone, badge, texto) para mudancas de estado
@@ -108,11 +112,11 @@ Toda tela deve cobrir os quatro estados dentro da propria superficie:
 
 O projeto define breakpoints em `AppBreakpoints` (`lib/core/layout/`):
 
-| Tier    | Largura    | Navegacao                     |
-|---------|------------|-------------------------------|
-| Mobile  | < 600px    | Drawer + BottomNavigationBar  |
-| Tablet  | 600–1199px | NavigationRail compacto       |
-| Desktop | >= 1200px  | NavigationRail com labels     |
+| Tier    | Largura    | Navegacao                    |
+| ------- | ---------- | ---------------------------- |
+| Mobile  | < 600px    | Drawer + BottomNavigationBar |
+| Tablet  | 600–1199px | NavigationRail compacto      |
+| Desktop | >= 1200px  | NavigationRail com labels    |
 
 - Use `AppBreakpoints.isMobile`, `isTablet`, `isDesktop` para adaptar layout
 - Use `AppBreakpoints.isLandscape` para orientacao quando relevante

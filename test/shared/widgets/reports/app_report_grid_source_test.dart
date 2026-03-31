@@ -115,6 +115,83 @@ void main() {
       );
     },
   );
+
+  group('fixed-length input lists', () {
+    testWidgets(
+      'constructor should not throw when rows and columns are growable: false',
+      (tester) async {
+        late BuildContext context;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (ctx) {
+                context = ctx;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        const col = AppReportColumn<int>(
+          key: 'n',
+          label: 'N',
+          valueGetter: _rowValue,
+          numeric: true,
+        );
+        final fixedRows = <int>[1, 2, 3].toList(growable: false);
+        final fixedColumns = <AppReportColumn<int>>[col].toList(
+          growable: false,
+        );
+
+        final source = AppReportGridSource<int>(
+          rows: fixedRows,
+          visibleColumns: fixedColumns,
+          context: context,
+        );
+
+        expect(source.rows, hasLength(3));
+      },
+    );
+
+    testWidgets(
+      'update should not throw when passed growable: false lists',
+      (tester) async {
+        late BuildContext context;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (ctx) {
+                context = ctx;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        const col = AppReportColumn<int>(
+          key: 'n',
+          label: 'N',
+          valueGetter: _rowValue,
+          numeric: true,
+        );
+
+        final source = AppReportGridSource<int>(
+          rows: <int>[0].toList(growable: false),
+          visibleColumns: <AppReportColumn<int>>[col].toList(growable: false),
+          context: context,
+        );
+
+        expect(source.rows, hasLength(1));
+
+        source.update(
+          rows: <int>[7, 8, 9, 10].toList(growable: false),
+          visibleColumns: <AppReportColumn<int>>[col].toList(growable: false),
+        );
+
+        expect(source.rows, hasLength(4));
+      },
+    );
+  });
 }
 
 Object? _stringRow(String row) => row;

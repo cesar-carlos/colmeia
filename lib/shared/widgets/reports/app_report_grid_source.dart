@@ -8,6 +8,10 @@ import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 ///
 /// Converts rows into DataGridRow objects using each column's valueGetter,
 /// cellBuilder, and formatter.
+///
+/// Rows and visible columns are copied with `List.from` so `update` can mutate
+/// internal buffers. Callers often pass fixed-length lists (for example
+/// `Iterable.toList(growable: false)` from the report grid).
 class AppReportGridSource<T> extends DataGridSource {
   AppReportGridSource({
     required List<T> rows,
@@ -16,8 +20,8 @@ class AppReportGridSource<T> extends DataGridSource {
     this.onSortChanged,
     this.alternateRowColor,
     this.dataTextStyle,
-  }) : _rows = rows,
-       _columns = visibleColumns,
+  }) : _rows = List<T>.from(rows),
+       _columns = List<AppReportColumn<T>>.from(visibleColumns),
        _context = context {
     _buildRows();
   }
