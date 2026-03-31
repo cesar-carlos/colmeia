@@ -41,21 +41,35 @@ class AppShellScaffold extends StatelessWidget {
           .withValues(alpha: 0.22);
 
       return Scaffold(
-        appBar: const AppShellAppBar(),
-        body: Row(
-          children: <Widget>[
-            if (showShellNav) ...<Widget>[
-              AppShellRail(
-                currentRoute: currentRoute,
-                visibleShellRoutes: visibleShellRoutes,
-              ),
-              SizedBox(
-                width: 1,
-                child: ColoredBox(color: railDividerColor),
+        body: SafeArea(
+          bottom: false,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (showShellNav) ...<Widget>[
+                AppShellRail(
+                  currentRoute: currentRoute,
+                  visibleShellRoutes: visibleShellRoutes,
+                ),
+                SizedBox(
+                  width: 1,
+                  child: ColoredBox(color: railDividerColor),
+                ),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    const AppShellAppBar(
+                      primary: false,
+                      showBrandTitle: false,
+                    ),
+                    Expanded(child: body),
+                  ],
+                ),
               ),
             ],
-            Expanded(child: body),
-          ],
+          ),
         ),
       );
     }

@@ -14,12 +14,20 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.showSearchPill = true,
     this.searchHint = 'Buscar componentes...',
+    this.primary = true,
+    this.showBrandTitle = true,
   });
 
   /// Hidden on narrow ([AppBreakpoints.isMobile]) to avoid crowding the title.
   final bool showSearchPill;
 
   final String searchHint;
+
+  /// When `false`, use next to [NavigationRail] inside the body (no duplicate
+  /// top status-bar padding). When `true` (default), used as [Scaffold.appBar].
+  final bool primary;
+
+  final bool showBrandTitle;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -49,19 +57,26 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
 
     final title = showSearch
-        ? Row(
-            children: <Widget>[
-              brandTitle,
-              SizedBox(width: tokens.gapMd),
-              Expanded(
-                child: _ShellSearchPill(hintText: searchHint),
-              ),
-            ],
-          )
-        : brandTitle;
+        ? showBrandTitle
+              ? Row(
+                  children: <Widget>[
+                    brandTitle,
+                    SizedBox(width: tokens.gapMd),
+                    Expanded(
+                      child: _ShellSearchPill(hintText: searchHint),
+                    ),
+                  ],
+                )
+              : _ShellSearchPill(hintText: searchHint)
+        : showBrandTitle
+        ? brandTitle
+        : null;
 
     return AppBar(
-      titleSpacing: showSearch ? 16 : 0,
+      primary: primary,
+      titleSpacing: showBrandTitle
+          ? (showSearch ? 16 : 0)
+          : tokens.contentSpacing,
       title: title,
       actions: <Widget>[
         IconButton(
@@ -117,45 +132,55 @@ class _ShellSearchPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final colors = theme.appColors;
     final tokens = theme.extension<AppThemeTokens>()!;
+
+    final hintStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+    );
 
     return Semantics(
       label: 'Busca',
       hint: hintText,
+      button: true,
       child: Material(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(999),
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(999),
+          customBorder: const StadiumBorder(),
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Busca global em breve.')),
             );
           },
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.gapMd,
-              vertical: tokens.gapXs + 2,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: colors.primary),
             ),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  Icons.search_rounded,
-                  size: 22,
-                  color: scheme.onSurfaceVariant,
-                ),
-                SizedBox(width: tokens.gapSm),
-                Expanded(
-                  child: Text(
-                    hintText,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.gapMd,
+                vertical: 10,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
+                  ),
+                  SizedBox(width: tokens.gapSm),
+                  Expanded(
+                    child: Text(
+                      hintText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: hintStyle,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
