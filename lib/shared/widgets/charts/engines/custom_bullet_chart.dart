@@ -1,10 +1,10 @@
 import 'dart:math' as math;
-
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_bullet_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 
 class CustomBulletChart<T> extends StatelessWidget {
@@ -50,18 +50,20 @@ class CustomBulletChart<T> extends StatelessWidget {
         }.toDouble();
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedHeight,
-        child: Center(
-          child: CircularProgressIndicator(color: chartTheme.primaryColor),
-        ),
+        indicatorColor: chartTheme.primaryColor,
+        label: 'Carregando metas...',
       );
     }
 
-    if (items.isEmpty && emptyPlaceholder != null) {
-      return SizedBox(
+    if (items.isEmpty) {
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        message: 'Sem metas disponiveis para exibir.',
+        placeholder: emptyPlaceholder,
       );
     }
 

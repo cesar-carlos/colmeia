@@ -23,6 +23,13 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 /// );
 /// ```
 abstract final class AppReportExportHandler {
+  // Automatically switch to landscape when visible column count exceeds this.
+  static const int _autoLandscapeColumnThreshold = 6;
+
+  // When scaling fixed-width columns to fit the page, reserve this fraction
+  // of the available width for flex columns so they are never squeezed to zero.
+  static const double _minFlexFraction = 0.20;
+
   static Future<void> export<T>({
     required AppReportExportRequest request,
     required List<AppReportColumn<T>> columns,
@@ -88,9 +95,11 @@ abstract final class AppReportExportHandler {
     BuildContext? context,
   }) async {
     final doc = pw.Document();
-    final pageFormat = request.landscape
-        ? PdfPageFormat.a4.landscape
-        : PdfPageFormat.a4;
+    final useLandscape = request.landscape ||
+        (request.autoLandscape &&
+            columns.length > _autoLandscapeColumnThreshold);
+    final pageFormat =
+        useLandscape ? PdfPageFormat.a4.landscape : PdfPageFormat.a4;
 
     final headerFont = await PdfGoogleFonts.interBold();
     final bodyFont = await PdfGoogleFonts.interRegular();
@@ -115,6 +124,7 @@ abstract final class AppReportExportHandler {
             rows: rows,
             headerFont: headerFont,
             bodyFont: bodyFont,
+            pageFormat: pageFormat,
           ),
         ],
       ),
@@ -268,6 +278,7 @@ abstract final class AppReportExportHandler {
     required List<T> rows,
     required pw.Font headerFont,
     required pw.Font bodyFont,
+    required PdfPageFormat pageFormat,
   }) {
     final headers = columns.map((c) => c.label).toList(growable: false);
     final data = rows.map<List<String>>((row) {
@@ -286,18 +297,39 @@ abstract final class AppReportExportHandler {
         ),
       ),
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      columnWidths: _pdfColumnWidths(columns),
+      columnWidths: _pdfColumnWidths(columns, pageFormat),
     );
   }
 
   static Map<int, pw.TableColumnWidth> _pdfColumnWidths<T>(
     List<AppReportColumn<T>> columns,
+    PdfPageFormat pageFormat,
   ) {
+    final available = pageFormat.availableWidth;
+
+    // Sum of all explicitly fixed widths (Syncfusion px → PDF pt via 0.75).
+    var totalFixed = 0.0;
+    var flexCount = 0;
+    for (final col in columns) {
+      if (col.width != null) {
+        totalFixed += col.width! * 0.75;
+      } else {
+        flexCount++;
+      }
+    }
+
+    // Reserve a share of the page for flex columns so they are never zero.
+    final fixedBudget =
+        flexCount > 0 ? available * (1 - _minFlexFraction) : available;
+    final scale = totalFixed > fixedBudget && totalFixed > 0
+        ? fixedBudget / totalFixed
+        : 1.0;
+
     final result = <int, pw.TableColumnWidth>{};
     for (var i = 0; i < columns.length; i++) {
       final col = columns[i];
       if (col.width != null) {
-        result[i] = pw.FixedColumnWidth(col.width! * 0.75);
+        result[i] = pw.FixedColumnWidth(col.width! * 0.75 * scale);
       } else if (col.flex != null) {
         result[i] = pw.FlexColumnWidth(col.flex!.toDouble());
       } else {

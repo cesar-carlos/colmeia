@@ -2,7 +2,8 @@ import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:flutter/material.dart';
 
 /// Constrains page-level content to [AppBreakpoints.pageContentMaxWidth]
-/// and centers it on tablet/desktop. On mobile it renders transparently.
+/// and centers it when the navigation rail is shown ([AppBreakpoints.useRail]).
+/// Applied globally by the authenticated app shell for routed content.
 class AppContentConstraint extends StatelessWidget {
   const AppContentConstraint({required this.child, super.key});
 

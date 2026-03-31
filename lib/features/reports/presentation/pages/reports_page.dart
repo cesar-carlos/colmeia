@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/core/layout/app_content_constraint.dart';
+import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/value_objects/report_id.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -188,10 +188,9 @@ class _ReportsPageState extends State<ReportsPage> {
 
               return RefreshIndicator(
                 onRefresh: onRefresh,
-                child: AppContentConstraint(
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.all(tokens.contentSpacing),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: context.pageScrollPadding(tokens),
                   children: <Widget>[
                     AppShellPageIntro(
                       eyebrow: 'Colmeia Insights',
@@ -387,7 +386,6 @@ class _ReportsPageState extends State<ReportsPage> {
                       child: ReportResultsGrid(rows: rows),
                     ),
                   ],
-                  ),
                 ),
               );
             },

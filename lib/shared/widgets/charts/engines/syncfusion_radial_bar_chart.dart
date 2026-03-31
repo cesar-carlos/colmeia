@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_radial_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -41,18 +41,20 @@ class SyncfusionRadialBarChart<T> extends StatelessWidget {
     final resolvedHeight = style.height ?? chartTheme.height;
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedHeight,
-        child: Center(
-          child: CircularProgressIndicator(color: chartTheme.primaryColor),
-        ),
+        indicatorColor: chartTheme.primaryColor,
+        label: 'Carregando distribuicao radial...',
       );
     }
 
-    if (items.isEmpty && emptyPlaceholder != null) {
-      return SizedBox(
+    if (items.isEmpty) {
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        message: 'Sem distribuicao radial para este recorte.',
+        placeholder: emptyPlaceholder,
       );
     }
 

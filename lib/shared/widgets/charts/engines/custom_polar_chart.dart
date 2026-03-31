@@ -1,10 +1,10 @@
 import 'dart:math' as math;
-
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_polar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 
 class CustomPolarChart extends StatelessWidget {
@@ -34,26 +34,30 @@ class CustomPolarChart extends StatelessWidget {
     final allEmpty = entries.every((entry) => entry.points.isEmpty);
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedHeight,
-        child: Center(
-          child: CircularProgressIndicator(color: chartTheme.primaryColor),
-        ),
+        indicatorColor: chartTheme.primaryColor,
+        label: 'Carregando grafico polar...',
       );
     }
 
-    if (allEmpty && emptyPlaceholder != null) {
-      return SizedBox(
+    if (allEmpty) {
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        message: 'Sem dados disponiveis para o grafico polar.',
+        placeholder: emptyPlaceholder,
       );
     }
 
     final categories = _resolveCategories(entries);
     if (categories.isEmpty) {
-      return SizedBox(
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder ?? const SizedBox.shrink()),
+        message: 'Sem dados disponiveis para o grafico polar.',
+        placeholder: emptyPlaceholder,
       );
     }
 

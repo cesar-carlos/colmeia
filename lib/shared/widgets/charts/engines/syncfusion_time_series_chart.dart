@@ -4,6 +4,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_time_series_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -36,18 +37,20 @@ class SyncfusionTimeSeriesChart extends StatelessWidget {
     final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedHeight,
-        child: Center(
-          child: CircularProgressIndicator(color: chartTheme.primaryColor),
-        ),
+        indicatorColor: chartTheme.primaryColor,
+        label: 'Carregando serie temporal...',
       );
     }
 
-    if (points.isEmpty && emptyPlaceholder != null) {
-      return SizedBox(
+    if (points.isEmpty) {
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        message: 'Sem dados disponiveis para este periodo.',
+        placeholder: emptyPlaceholder,
       );
     }
 

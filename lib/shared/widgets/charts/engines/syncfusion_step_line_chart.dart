@@ -36,30 +36,69 @@ class SyncfusionStepLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
-    final colors = Theme.of(context).appColors;
+    final theme = Theme.of(context);
+    final colors = theme.appColors;
     final resolvedHeight = style.height ?? chartTheme.height;
     final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
+    final visibleEntries = entries
+        .map(
+          (entry) => AppStepLineEntry(
+            label: entry.label,
+            color: entry.color,
+            points: entry.points
+                .where(_hasRenderableValue)
+                .toList(growable: false),
+          ),
+        )
+        .toList(growable: false);
 
     if (isLoading) {
       return SizedBox(
         height: resolvedHeight,
         child: Center(
-          child: CircularProgressIndicator(color: chartTheme.primaryColor),
+          child: Semantics(
+            container: true,
+            liveRegion: true,
+            label: 'Carregando serie temporal...',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                CircularProgressIndicator(color: chartTheme.primaryColor),
+                const SizedBox(height: 12),
+                Text(
+                  'Carregando serie temporal...',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
 
-    final allEmpty = entries.every((entry) => entry.points.isEmpty);
-    if (allEmpty && emptyPlaceholder != null) {
+    final allEmpty = visibleEntries.every((entry) => entry.points.isEmpty);
+    if (allEmpty) {
       return SizedBox(
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        child: Center(
+          child:
+              emptyPlaceholder ??
+              Text(
+                'Sem dados disponiveis para este periodo.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+        ),
       );
     }
 
     final series = <CartesianSeries<AppChartPoint, String>>[];
-    for (var i = 0; i < entries.length; i++) {
-      final entry = entries[i];
+    for (var i = 0; i < visibleEntries.length; i++) {
+      final entry = visibleEntries[i];
       final seriesColor = entry.color ?? chartTheme.paletteColor(i);
       series.add(
         StepLineSeries<AppChartPoint, String>(
@@ -141,5 +180,9 @@ class SyncfusionStepLineChart extends StatelessWidget {
         series: series,
       ),
     );
+  }
+
+  bool _hasRenderableValue(AppChartPoint point) {
+    return point.value.toDouble().isFinite;
   }
 }

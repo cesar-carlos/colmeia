@@ -35,8 +35,7 @@ class AppWaterfallChartDemoPage extends StatelessWidget {
           valueBuilder: (item) => item.delta,
           isIntermediateSum: (item) => item.isIntermediate,
           isTotalSum: (item) => item.isTotal,
-          dataLabelBuilder: (item, value) =>
-              item.isIntermediate || item.isTotal
+          dataLabelBuilder: (item, value) => item.isIntermediate || item.isTotal
               ? AppBrFormatters.compactCurrency(item.displayValue)
               : AppBrFormatters.compactCurrency(value),
           tooltipLabelBuilder: (item, value) =>

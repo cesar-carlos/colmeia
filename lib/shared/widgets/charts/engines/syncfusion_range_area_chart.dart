@@ -2,6 +2,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_range_area_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -33,18 +34,20 @@ class SyncfusionRangeAreaChart extends StatelessWidget {
     final borderColor = style.borderColor ?? chartTheme.primaryColor;
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedHeight,
-        child: Center(
-          child: CircularProgressIndicator(color: chartTheme.primaryColor),
-        ),
+        indicatorColor: chartTheme.primaryColor,
+        label: 'Carregando faixa de variacao...',
       );
     }
 
-    if (points.isEmpty && emptyPlaceholder != null) {
-      return SizedBox(
+    if (points.isEmpty) {
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        message: 'Sem faixa de variacao para este periodo.',
+        placeholder: emptyPlaceholder,
       );
     }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/value_objects/report_id.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -208,7 +209,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                 onRefresh: onRefresh,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.all(tokens.contentSpacing),
+                  padding: context.pageScrollPadding(tokens),
                   children: <Widget>[
                     AppShellPageIntro(
                       eyebrow: 'Análise detalhada',

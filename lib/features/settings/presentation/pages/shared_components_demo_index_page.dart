@@ -233,6 +233,35 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
+          title: 'Mapas',
+          subtitle:
+              'Mapas territoriais para navegacao analitica por regiao e '
+              'integracao com dashboards.',
+          child: Column(
+            children: <Widget>[
+              _DemoEntryTile(
+                icon: Icons.map_rounded,
+                title: 'Mapa territorial interativo',
+                subtitle:
+                    'Navegacao por regiao com troca de metrica, selecao '
+                    'estruturada e integracao com dashboards.',
+                onTap: () => context.push(appRegionMapChartDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.layers_rounded,
+                title: 'Mapa com drill-down (simulado)',
+                subtitle:
+                    'Exemplo de navegacao entre niveis territoriais '
+                    '(regiao -> estado) com eventos tipados.',
+                badgeText: 'Novo',
+                onTap: () => context.push(appRegionMapDrilldownDemoLocation),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
           title: 'Metricas',
           subtitle: 'KPIs e faixas compactas.',
           child: Column(
@@ -363,12 +392,14 @@ class _DemoEntryTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.badgeText,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final String? badgeText;
 
   @override
   Widget build(BuildContext context) {
@@ -378,11 +409,32 @@ class _DemoEntryTile extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: cs.primary),
-      title: Text(
-        title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+      title: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (badgeText != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                badgeText!,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: cs.onPrimaryContainer,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
       ),
       subtitle: Text(
         subtitle,

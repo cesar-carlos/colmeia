@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
-import 'package:colmeia/core/layout/app_content_constraint.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -219,10 +220,9 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
 
                   return RefreshIndicator(
                     onRefresh: onRefresh,
-                    child: AppContentConstraint(
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.all(tokens.contentSpacing),
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: context.pageScrollPadding(tokens),
                       children: <Widget>[
                         AppShellPageIntro(
                           title: 'Olá, $greetingName',
@@ -327,6 +327,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                           ),
                           SizedBox(height: tokens.sectionSpacing),
                           ..._summaryMetricWidgets(
+                            context: context,
                             metrics: resolvedOverview.summaryMetrics,
                             showSkeleton: showSkeleton,
                             tokens: tokens,
@@ -386,7 +387,6 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                           ),
                         ],
                       ],
-                      ),
                     ),
                   );
                 },
@@ -396,6 +396,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
 }
 
 List<Widget> _summaryMetricWidgets({
+  required BuildContext context,
   required List<DashboardSummaryMetric> metrics,
   required bool showSkeleton,
   required AppThemeTokens tokens,
@@ -446,40 +447,72 @@ List<Widget> _summaryMetricWidgets({
       );
   }
 
+  final pairRow = Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: <Widget>[
+      Expanded(
+        child: AppSkeleton(
+          enabled: showSkeleton,
+          showDelay: _dashboardCriticalSkeletonDelay,
+          loadingSemanticsLabel: 'Carregando métricas do dashboard...',
+          child: DashboardSummaryCard(
+            title: first.title,
+            value: first.value,
+            deltaLabel: first.deltaLabel,
+            icon: first.icon,
+            emphasis: DashboardSummaryCardEmphasis.accent,
+          ),
+        ),
+      ),
+      SizedBox(width: tokens.gapSm),
+      Expanded(
+        child: AppSkeleton(
+          enabled: showSkeleton,
+          showDelay: _dashboardCriticalSkeletonDelay,
+          loadingSemanticsLabel: 'Carregando métricas do dashboard...',
+          child: DashboardSummaryCard(
+            title: second.title,
+            value: second.value,
+            deltaLabel: second.deltaLabel,
+            icon: second.icon,
+          ),
+        ),
+      ),
+    ],
+  );
+
+  final pairColumn = Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: <Widget>[
+      AppSkeleton(
+        enabled: showSkeleton,
+        showDelay: _dashboardCriticalSkeletonDelay,
+        loadingSemanticsLabel: 'Carregando métricas do dashboard...',
+        child: DashboardSummaryCard(
+          title: first.title,
+          value: first.value,
+          deltaLabel: first.deltaLabel,
+          icon: first.icon,
+          emphasis: DashboardSummaryCardEmphasis.accent,
+        ),
+      ),
+      SizedBox(height: tokens.contentSpacing),
+      AppSkeleton(
+        enabled: showSkeleton,
+        showDelay: _dashboardCriticalSkeletonDelay,
+        loadingSemanticsLabel: 'Carregando métricas do dashboard...',
+        child: DashboardSummaryCard(
+          title: second.title,
+          value: second.value,
+          deltaLabel: second.deltaLabel,
+          icon: second.icon,
+        ),
+      ),
+    ],
+  );
+
   return <Widget>[
-    Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(
-          child: AppSkeleton(
-            enabled: showSkeleton,
-            showDelay: _dashboardCriticalSkeletonDelay,
-            loadingSemanticsLabel: 'Carregando métricas do dashboard...',
-            child: DashboardSummaryCard(
-              title: first.title,
-              value: first.value,
-              deltaLabel: first.deltaLabel,
-              icon: first.icon,
-              emphasis: DashboardSummaryCardEmphasis.accent,
-            ),
-          ),
-        ),
-        SizedBox(width: tokens.gapSm),
-        Expanded(
-          child: AppSkeleton(
-            enabled: showSkeleton,
-            showDelay: _dashboardCriticalSkeletonDelay,
-            loadingSemanticsLabel: 'Carregando métricas do dashboard...',
-            child: DashboardSummaryCard(
-              title: second.title,
-              value: second.value,
-              deltaLabel: second.deltaLabel,
-              icon: second.icon,
-            ),
-          ),
-        ),
-      ],
-    ),
+    if (AppBreakpoints.isMobile(context)) pairColumn else pairRow,
     ...rest,
   ];
 }

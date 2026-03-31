@@ -17,6 +17,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     required this.gapMd,
     required this.contentSpacing,
     required this.sectionSpacing,
+    required this.pagePaddingHorizontalCompact,
+    required this.pagePaddingHorizontalComfortable,
+    required this.pagePaddingHorizontalSpacious,
     required this.chartCompactHeight,
     required this.chartStandardHeight,
     required this.authGlassBlurSigma,
@@ -63,6 +66,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       gapMd: 12,
       contentSpacing: 16,
       sectionSpacing: 24,
+      pagePaddingHorizontalCompact: 16,
+      pagePaddingHorizontalComfortable: 20,
+      pagePaddingHorizontalSpacious: 24,
       chartCompactHeight: 180,
       chartStandardHeight: 260,
       authGlassBlurSigma: 20,
@@ -119,6 +125,15 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
 
   final double contentSpacing;
   final double sectionSpacing;
+
+  /// Horizontal inset for shell pages on narrow widths (typically phones).
+  final double pagePaddingHorizontalCompact;
+
+  /// Horizontal inset for shell pages on tablet widths.
+  final double pagePaddingHorizontalComfortable;
+
+  /// Horizontal inset for shell pages on desktop widths.
+  final double pagePaddingHorizontalSpacious;
   final double chartCompactHeight;
   final double chartStandardHeight;
 
@@ -212,6 +227,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     double? gapMd,
     double? contentSpacing,
     double? sectionSpacing,
+    double? pagePaddingHorizontalCompact,
+    double? pagePaddingHorizontalComfortable,
+    double? pagePaddingHorizontalSpacious,
     double? chartCompactHeight,
     double? chartStandardHeight,
     double? authGlassBlurSigma,
@@ -256,6 +274,12 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       gapMd: gapMd ?? this.gapMd,
       contentSpacing: contentSpacing ?? this.contentSpacing,
       sectionSpacing: sectionSpacing ?? this.sectionSpacing,
+      pagePaddingHorizontalCompact:
+          pagePaddingHorizontalCompact ?? this.pagePaddingHorizontalCompact,
+      pagePaddingHorizontalComfortable: pagePaddingHorizontalComfortable ??
+          this.pagePaddingHorizontalComfortable,
+      pagePaddingHorizontalSpacious:
+          pagePaddingHorizontalSpacious ?? this.pagePaddingHorizontalSpacious,
       chartCompactHeight: chartCompactHeight ?? this.chartCompactHeight,
       chartStandardHeight: chartStandardHeight ?? this.chartStandardHeight,
       authGlassBlurSigma: authGlassBlurSigma ?? this.authGlassBlurSigma,
@@ -344,6 +368,24 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           lerpDouble(contentSpacing, other.contentSpacing, t) ?? contentSpacing,
       sectionSpacing:
           lerpDouble(sectionSpacing, other.sectionSpacing, t) ?? sectionSpacing,
+      pagePaddingHorizontalCompact: lerpDouble(
+            pagePaddingHorizontalCompact,
+            other.pagePaddingHorizontalCompact,
+            t,
+          ) ??
+          pagePaddingHorizontalCompact,
+      pagePaddingHorizontalComfortable: lerpDouble(
+            pagePaddingHorizontalComfortable,
+            other.pagePaddingHorizontalComfortable,
+            t,
+          ) ??
+          pagePaddingHorizontalComfortable,
+      pagePaddingHorizontalSpacious: lerpDouble(
+            pagePaddingHorizontalSpacious,
+            other.pagePaddingHorizontalSpacious,
+            t,
+          ) ??
+          pagePaddingHorizontalSpacious,
       chartCompactHeight:
           lerpDouble(
             chartCompactHeight,

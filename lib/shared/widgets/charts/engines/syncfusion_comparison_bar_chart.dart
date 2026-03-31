@@ -2,6 +2,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -37,16 +38,20 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
     final resolvedBarColor = style.barColor ?? chartTheme.primaryColor;
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedHeight,
-        child: const Center(child: CircularProgressIndicator()),
+        indicatorColor: chartTheme.primaryColor,
+        label: 'Carregando comparativo...',
       );
     }
 
-    if (points.isEmpty && emptyPlaceholder != null) {
-      return SizedBox(
+    if (points.isEmpty) {
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        message: 'Sem dados comparativos para exibir.',
+        placeholder: emptyPlaceholder,
       );
     }
 

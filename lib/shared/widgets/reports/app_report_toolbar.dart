@@ -1,3 +1,4 @@
+import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column_chooser.dart';
@@ -129,7 +130,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
       padding: EdgeInsets.only(bottom: tokens.gapSm),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 640;
+          final isCompact = constraints.maxWidth < AppBreakpoints.mobile;
           final searchWidth = isCompact ? constraints.maxWidth : 220.0;
 
           return Wrap(

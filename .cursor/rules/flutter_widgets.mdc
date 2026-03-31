@@ -68,12 +68,77 @@ class _CounterPanelState extends State<CounterPanel> {
 }
 ```
 
+## Componentes Compartilhados e Identidade Visual
+
+Antes de criar qualquer widget de UI, verifique se ja existe um componente em
+`lib/shared/widgets/` que cobre ou pode ser evoluido para cobrir a necessidade.
+
+### Catalogo principal
+
+| Componente                    | Uso correto                                          |
+|-------------------------------|------------------------------------------------------|
+| `AppSectionCard`              | Toda superficie de conteudo em card                  |
+| `AppSectionCardWithHeading`   | Card com titulo, subtitulo e trailing opcionals      |
+| `AppInlineErrorPanel`         | Todo estado de erro inline (card ou plain)           |
+| `AppSkeleton`                 | Todo estado de loading com placeholder               |
+| `AppShellPageIntro`           | Cabecalho de pagina com eyebrow, titulo e footer     |
+| `AppPrimaryButton`            | Acao primaria de confirmacao ou navegacao            |
+| `AppSecondaryButton`          | Acao secundaria ou alternativa                       |
+| `AppFlatButton`               | Acao terciaria / link-style                          |
+| `AppMetricStatCard`           | KPI com valor, delta e icone                         |
+| `AppCompactKpiStat`           | KPI compacto para uso em grids ou resumos            |
+
+### Regras de uso e evolucao
+
+- **Consulte antes de criar**: nunca crie um `Card` + `Column` inline quando
+  `AppSectionCard` resolve; nunca monte um estado de erro sem `AppInlineErrorPanel`
+- **Evolua, nao duplique**: se um componente compartilhado quase atende, adicione
+  um parametro opcional a ele — nao crie um paralelo na feature
+- **Onde fica o novo componente**: padrao visual reutilizavel entre features vai
+  para `lib/shared/widgets/`; padrao especifico de uma feature fica em
+  `lib/features/<feature>/presentation/widgets/` como classe privada ou widget
+  dedicado, nunca repetido em outra feature
+- **Sem `Card` nu em paginas**: use sempre `AppSectionCard` para garantir radius,
+  elevation, padding e suporte a dark/light theme corretos do design system
+
+### Especializacao de componentes por composicao
+
+Em Flutter, **composicao e a estrategia correta para especializar widgets**,
+nao heranca de classes widget. Quando um componente base nao pode receber o
+comportamento especifico como parametro (validators proprios, estado interno,
+configuracoes fixas de dominio, UX opinionated), crie um novo widget que
+**envolve e configura o base**.
+
+O projeto ja usa esse padrao nos campos de formulario:
+
+```
+AppTextField          <- base: teclado, formatters, densidade, decoration
+  AppEmailField       <- composicao: keyboardType fixo, validator de email, autofill
+  AppPasswordField    <- composicao: toggle de visibilidade (StatefulWidget), validator de senha
+  AppCnpjField        <- composicao: inputFormatters de mascara, validator de CNPJ
+```
+
+**Quando adicionar parametro no base:**
+- A variacao e generica e util para qualquer chamador
+- Nao carrega logica de dominio ou estado proprio
+
+**Quando criar wrapper por composicao:**
+- Ha validators ou formatters especificos de dominio (email, CNPJ, senha)
+- Ha estado interno novo (toggle visibilidade, contador de caracteres)
+- Ha configuracoes fixas de UX que nunca devem variar (autofill, keyboardType)
+- O componente base ficaria com muitos parametros condicionais sem uso claro
+
+**Nao use heranca de widget para especializacao.** Estender `StatelessWidget`
+ou `StatefulWidget` nao e idiomatico em Flutter e quebra o modelo de composicao
+do framework. Use sempre um novo widget que constroi o base como filho.
+
 ## Composicao e Estrutura
 
+- Antes de criar um novo widget, verifique o catalogo em `lib/shared/widgets/`
 - Quebre widgets grandes em widgets menores e focados
 - Prefira classes privadas pequenas a metodos `Widget _build...`
-- Se o mesmo padrao visual aparecer em mais de um lugar, extraia um
-  componente reutilizavel
+- Quando o mesmo padrao visual surgir pela segunda vez com a mesma intencao,
+  extraia para `lib/shared/widgets/` — nao espere uma terceira ocorrencia
 - Mantenha `build()` legivel e raso
 - Nao retorne `Widget` de funcoes auxiliares quando uma classe privada ou
   construtor direto resolver
@@ -216,6 +281,12 @@ TextField(
 
 ## Checklist
 
+- [ ] O catalogo `lib/shared/widgets/` foi consultado antes de criar novo widget
+- [ ] Componentes existentes foram evoluidos com parametros opcionais em vez de
+      duplicados ou substituidos por versoes paralelas
+- [ ] Superficies de conteudo usam `AppSectionCard` ou `AppSectionCardWithHeading`
+- [ ] Estados de erro usam `AppInlineErrorPanel`
+- [ ] Estados de loading usam `AppSkeleton`
 - [ ] O widget tem uma responsabilidade clara
 - [ ] Estado local esta minimo e descartado corretamente
 - [ ] `setState()` ficou restrito a menor subarvore possivel

@@ -2,6 +2,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -45,18 +46,20 @@ class SyncfusionComboChart<T> extends StatelessWidget {
     final resolvedLineColor = style.lineColor ?? colors.secondary;
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedHeight,
-        child: Center(
-          child: CircularProgressIndicator(color: resolvedBarColor),
-        ),
+        indicatorColor: resolvedBarColor,
+        label: 'Carregando comparativo combinado...',
       );
     }
 
-    if (items.isEmpty && emptyPlaceholder != null) {
-      return SizedBox(
+    if (items.isEmpty) {
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        message: 'Sem dados combinados para este recorte.',
+        placeholder: emptyPlaceholder,
       );
     }
 

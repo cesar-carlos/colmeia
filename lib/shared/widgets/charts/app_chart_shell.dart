@@ -31,28 +31,53 @@ class AppChartShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Column(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final headerText = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (subtitle != null) ...<Widget>[
+                    SizedBox(height: tokens.gapXs),
+                    Text(subtitle!, style: theme.textTheme.bodyMedium),
+                  ],
+                ],
+              );
+
+              final trailing = titleTrailing;
+              if (trailing == null) {
+                return headerText;
+              }
+
+              final useCompactHeader = constraints.maxWidth < 420;
+              if (useCompactHeader) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    headerText,
+                    SizedBox(height: tokens.gapSm),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: trailing,
                     ),
-                    if (subtitle != null) ...<Widget>[
-                      SizedBox(height: tokens.gapXs),
-                      Text(subtitle!, style: theme.textTheme.bodyMedium),
-                    ],
                   ],
-                ),
-              ),
-              ?titleTrailing,
-            ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: headerText),
+                  SizedBox(width: tokens.gapSm),
+                  Flexible(child: trailing),
+                ],
+              );
+            },
           ),
           SizedBox(height: tokens.contentSpacing),
           ...switch (belowSubtitle) {

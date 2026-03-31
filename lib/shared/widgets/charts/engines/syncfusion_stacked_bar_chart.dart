@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_stacked_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -44,18 +44,20 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
         : resolvedHeight;
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedChartHeight,
-        child: Center(
-          child: CircularProgressIndicator(color: chartTheme.primaryColor),
-        ),
+        indicatorColor: chartTheme.primaryColor,
+        label: 'Carregando comparativo empilhado...',
       );
     }
 
-    if (groups.isEmpty && emptyPlaceholder != null) {
-      return SizedBox(
+    if (groups.isEmpty) {
+      return buildChartEmptyState(
+        context: context,
         height: resolvedChartHeight,
-        child: Center(child: emptyPlaceholder),
+        message: 'Sem grupos disponiveis para comparacao.',
+        placeholder: emptyPlaceholder,
       );
     }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
@@ -158,7 +159,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final phoneDisplay = phoneEmpty ? 'Toque para cadastrar' : scope.phone;
 
     return ListView(
-      padding: EdgeInsets.all(tokens.contentSpacing),
+      padding: context.pageScrollPadding(tokens),
       children: <Widget>[
         AppSkeleton(
           enabled: controller.isLoading,

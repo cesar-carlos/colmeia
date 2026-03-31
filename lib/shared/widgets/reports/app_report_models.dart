@@ -156,6 +156,7 @@ class AppReportExportRequest {
     this.includeSummary = true,
     this.includeFilters = false,
     this.landscape = false,
+    this.autoLandscape = true,
   });
 
   final AppReportExportFormat format;
@@ -165,7 +166,14 @@ class AppReportExportRequest {
   final bool includeHeaders;
   final bool includeSummary;
   final bool includeFilters;
+
+  /// Force landscape orientation. Overrides [autoLandscape].
   final bool landscape;
+
+  /// When [landscape] is false, automatically switch to landscape when the
+  /// column count exceeds the export handler's internal threshold. Applies to
+  /// PDF only; Excel orientation is not affected by this flag.
+  final bool autoLandscape;
 }
 
 // ---------------------------------------------------------------------------

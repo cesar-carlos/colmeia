@@ -1,3 +1,4 @@
+import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
@@ -254,7 +255,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       label: 'Nº',
       valueGetter: _getId,
       width: 60,
-      hideBelowBreakpoint: 480,
+      hideBelowBreakpoint: AppBreakpoints.reportColumnHideNarrow,
     ),
     const AppReportColumn<_SaleRow>(
       key: 'seller',
@@ -268,13 +269,13 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       label: 'Loja',
       valueGetter: _getStore,
       groupable: true,
-      hideBelowBreakpoint: 360,
+      hideBelowBreakpoint: AppBreakpoints.reportColumnHideExtraNarrow,
     ),
     const AppReportColumn<_SaleRow>(
       key: 'product',
       label: 'Produto',
       valueGetter: _getProduct,
-      hideBelowBreakpoint: 600,
+      hideBelowBreakpoint: AppBreakpoints.reportColumnHideWide,
     ),
     AppReportColumn<_SaleRow>(
       key: 'status',
@@ -288,7 +289,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       width: 120,
       sortable: false,
       groupable: true,
-      hideBelowBreakpoint: 480,
+      hideBelowBreakpoint: AppBreakpoints.reportColumnHideNarrow,
     ),
     const AppReportColumn<_SaleRow>(
       key: 'orders',
@@ -318,7 +319,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       numeric: true,
       aggregations: <AppReportAggregation>[AppReportAggregation.average],
       width: 90,
-      hideBelowBreakpoint: 540,
+      hideBelowBreakpoint: AppBreakpoints.reportColumnHideMedium,
     ),
     AppReportColumn<_SaleRow>(
       key: 'date',
@@ -326,7 +327,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       valueGetter: _getDate,
       formatter: (v) => _dateFmt.format(v! as DateTime),
       width: 100,
-      hideBelowBreakpoint: 600,
+      hideBelowBreakpoint: AppBreakpoints.reportColumnHideWide,
     ),
   ];
 
@@ -543,7 +544,9 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       return 'Agrupamento: Nenhum';
     }
 
-    final labels = groups.map((group) => _groupLabel(group.columnKey)).join(' / ');
+    final labels = groups
+        .map((group) => _groupLabel(group.columnKey))
+        .join(' / ');
     return 'Agrupamento: $labels';
   }
 

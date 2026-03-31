@@ -344,8 +344,8 @@ class _FilterField extends StatelessWidget {
                 Expanded(
                   child: FormBuilderTextField(
                     name: '${descriptor.name}_min',
-                    initialValue:
-                        initialValues['${descriptor.name}_min']?.toString(),
+                    initialValue: initialValues['${descriptor.name}_min']
+                        ?.toString(),
                     decoration: InputDecoration(
                       labelText: 'De',
                       hintText: descriptor.minValue?.toString(),
@@ -359,8 +359,8 @@ class _FilterField extends StatelessWidget {
                 Expanded(
                   child: FormBuilderTextField(
                     name: '${descriptor.name}_max',
-                    initialValue:
-                        initialValues['${descriptor.name}_max']?.toString(),
+                    initialValue: initialValues['${descriptor.name}_max']
+                        ?.toString(),
                     decoration: InputDecoration(
                       labelText: 'Até',
                       hintText: descriptor.maxValue?.toString(),

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
@@ -301,7 +302,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     final showPagination = style.showPagination && widget.pageInfo != null;
 
     final body = ListView(
-      padding: EdgeInsets.all(tokens.contentSpacing),
+      padding: context.pageScrollPadding(tokens),
       physics: style.enablePullToRefresh
           ? const AlwaysScrollableScrollPhysics()
           : null,

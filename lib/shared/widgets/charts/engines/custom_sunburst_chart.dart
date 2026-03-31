@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_sunburst_chart.dart';
@@ -39,6 +40,7 @@ class CustomSunburstChart<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final theme = Theme.of(context);
+    final colors = theme.appColors;
     final colorScheme = theme.colorScheme;
     final resolvedHeight = style.height ?? chartTheme.height;
 
@@ -46,7 +48,24 @@ class CustomSunburstChart<T> extends StatelessWidget {
       return SizedBox(
         height: resolvedHeight,
         child: Center(
-          child: CircularProgressIndicator(color: chartTheme.primaryColor),
+          child: Semantics(
+            container: true,
+            liveRegion: true,
+            label: 'Carregando distribuicao hierarquica...',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                CircularProgressIndicator(color: chartTheme.primaryColor),
+                const SizedBox(height: 12),
+                Text(
+                  'Carregando distribuicao hierarquica...',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -61,10 +80,20 @@ class CustomSunburstChart<T> extends StatelessWidget {
       chartTheme: chartTheme,
     );
 
-    if (tree.roots.isEmpty && emptyPlaceholder != null) {
+    if (tree.roots.isEmpty) {
       return SizedBox(
         height: resolvedHeight,
-        child: Center(child: emptyPlaceholder),
+        child: Center(
+          child:
+              emptyPlaceholder ??
+              Text(
+                'Sem distribuicao hierarquica para este recorte.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+        ),
       );
     }
 
