@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 
 /// Single navigation row for the app shell drawer (compact corners, M3 colors).
@@ -23,17 +24,19 @@ class AppShellDrawerMenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
     final colors = theme.appColors;
 
     final borderRadius = BorderRadius.circular(tokens.inlineAlertCornerRadius);
-    final iconColor = selected ? colors.onPrimaryContainer : colors.onSurface;
-    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+    final iconColor = selected ? colors.primary : colors.onSurface;
+    final titleStyle = typography.sectionHeaderH2.copyWith(
+      fontSize: theme.textTheme.titleSmall?.fontSize,
       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-      color: selected ? colors.onPrimaryContainer : null,
+      color: selected ? colors.primary : null,
     );
-    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+    final subtitleStyle = typography.caption.copyWith(
       color: selected
-          ? colors.onPrimaryContainer.withValues(alpha: 0.8)
+          ? colors.primary.withValues(alpha: 0.85)
           : colors.onSurfaceVariant,
     );
 
@@ -48,41 +51,58 @@ class AppShellDrawerMenuItem extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: borderRadius,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.gapMd,
-              vertical: tokens.gapSm + 2,
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Icon(
-                  icon,
-                  size: 22,
-                  color: iconColor,
+          child: Stack(
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.gapMd,
+                  vertical: tokens.gapSm + 2,
                 ),
-                SizedBox(width: tokens.gapMd),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        title,
-                        style: titleStyle,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      icon,
+                      size: 22,
+                      color: iconColor,
+                    ),
+                    SizedBox(width: tokens.gapMd),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            title,
+                            style: titleStyle,
+                          ),
+                          if (subtitle != null) ...<Widget>[
+                            SizedBox(height: tokens.gapXs),
+                            Text(
+                              subtitle!,
+                              style: subtitleStyle,
+                            ),
+                          ],
+                        ],
                       ),
-                      if (subtitle != null) ...<Widget>[
-                        SizedBox(height: tokens.gapXs),
-                        Text(
-                          subtitle!,
-                          style: subtitleStyle,
-                        ),
-                      ],
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                PositionedDirectional(
+                  top: 8,
+                  bottom: 8,
+                  end: 0,
+                  child: Container(
+                    width: 3,
+                    decoration: BoxDecoration(
+                      color: colors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

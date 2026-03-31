@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 
 class AppProfileStaticField extends StatelessWidget {
@@ -20,6 +21,7 @@ class AppProfileStaticField extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final cs = theme.colorScheme;
+    final typography = theme.appTypography;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
@@ -32,7 +34,7 @@ class AppProfileStaticField extends StatelessWidget {
               children: <Widget>[
                 Text(
                   label,
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: typography.utilityOverline.copyWith(
                     color: cs.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
@@ -40,7 +42,8 @@ class AppProfileStaticField extends StatelessWidget {
                 SizedBox(height: tokens.gapXs),
                 Text(
                   value,
-                  style: theme.textTheme.titleSmall?.copyWith(
+                  style: typography.sectionHeaderH2.copyWith(
+                    fontSize: theme.textTheme.titleSmall?.fontSize,
                     fontWeight: FontWeight.w600,
                     color: valueMuted
                         ? cs.onSurfaceVariant.withValues(alpha: 0.8)

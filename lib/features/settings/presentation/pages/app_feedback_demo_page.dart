@@ -1,9 +1,14 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
+import 'package:colmeia/shared/widgets/app_dialog.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
+import 'package:colmeia/shared/widgets/forms/app_switch_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 
@@ -17,6 +22,42 @@ class AppFeedbackDemoPage extends StatefulWidget {
 
 class _AppFeedbackDemoPageState extends State<AppFeedbackDemoPage> {
   bool _skeletonEnabled = true;
+
+  Future<void> _showDialogDemo() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AppConfirmDialog(
+          title: 'Confirm Deployment?',
+          confirmLabel: 'Confirm',
+          message:
+              'This will push Hive_Alpha config to production clusters. '
+              'This action cannot be undone.',
+          onConfirm: () => Navigator.of(dialogContext).pop(),
+          onCancel: () => Navigator.of(dialogContext).pop(),
+          onClose: () => Navigator.of(dialogContext).pop(),
+        );
+      },
+    );
+  }
+
+  Future<void> _showDestructiveDialogDemo() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AppDestructiveDialog(
+          title: 'Delete Deployment?',
+          confirmLabel: 'Delete',
+          message:
+              'This will permanently remove the Hive_Alpha deployment metadata '
+              'from the workspace.',
+          onConfirm: () => Navigator.of(dialogContext).pop(),
+          onCancel: () => Navigator.of(dialogContext).pop(),
+          onClose: () => Navigator.of(dialogContext).pop(),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +73,15 @@ class _AppFeedbackDemoPageState extends State<AppFeedbackDemoPage> {
           title: 'Erros, alertas e skeleton',
           subtitle:
               'Variantes de painel de erro, banner e estado de carregamento.',
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        _FeedbackShowcaseCard(
+          skeletonEnabled: _skeletonEnabled,
+          onChanged: (value) {
+            setState(() {
+              _skeletonEnabled = value;
+            });
+          },
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
@@ -93,11 +143,54 @@ class _AppFeedbackDemoPageState extends State<AppFeedbackDemoPage> {
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
+          title: 'AppDialog',
+          subtitle:
+              'Dialog compartilhado para confirmacoes, alertas e acoes '
+              'sensiveis no mesmo padrao visual do app.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              const AppDialogSurface(
+                title: 'Confirm Deployment?',
+                message:
+                    'This will push Hive_Alpha config to production clusters. '
+                    'This action cannot be undone.',
+                actions: <Widget>[
+                  _FeedbackDialogGhostButton(label: 'Cancel'),
+                  _FeedbackDialogPrimaryButton(label: 'Confirm'),
+                ],
+                onClose: _noopRetry,
+              ),
+              SizedBox(height: tokens.gapMd),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: AppPrimaryButton(
+                      onPressed: _showDialogDemo,
+                      label: 'Abrir confirm',
+                    ),
+                  ),
+                  SizedBox(width: tokens.gapMd),
+                  Expanded(
+                    child: AppSecondaryButton(
+                      variant: AppSecondaryButtonVariant.tonal,
+                      onPressed: _showDestructiveDialogDemo,
+                      label: 'Abrir destructive',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
           title: 'AppSkeleton',
           subtitle: 'Ative ou desative o efeito para comparar.',
-          headingBottom: SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Skeleton ativo'),
+          headingBottom: AppSwitchField(
+            label: 'Skeleton ativo',
+            helperText:
+                'Liga ou desliga o placeholder mantendo o mesmo layout.',
             value: _skeletonEnabled,
             onChanged: (value) {
               setState(() {
@@ -177,3 +270,202 @@ class _AppFeedbackDemoPageState extends State<AppFeedbackDemoPage> {
 }
 
 void _noopRetry() {}
+
+class _FeedbackDialogGhostButton extends StatelessWidget {
+  const _FeedbackDialogGhostButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AppSecondaryButton(
+        onPressed: () {},
+        label: label,
+      ),
+    );
+  }
+}
+
+class _FeedbackDialogPrimaryButton extends StatelessWidget {
+  const _FeedbackDialogPrimaryButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AppPrimaryButton(
+        onPressed: () {},
+        label: label,
+      ),
+    );
+  }
+}
+
+class _FeedbackShowcaseCard extends StatelessWidget {
+  const _FeedbackShowcaseCard({
+    required this.skeletonEnabled,
+    required this.onChanged,
+  });
+
+  final bool skeletonEnabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return AppSectionCardWithHeading(
+      padding: EdgeInsets.fromLTRB(
+        tokens.contentSpacing,
+        tokens.contentSpacing,
+        tokens.contentSpacing,
+        tokens.contentSpacing + tokens.gapSm,
+      ),
+      titleWidget: _FeedbackShowcaseHeading(theme: theme, tokens: tokens),
+      subtitle:
+          'Superficies de erro, aviso, dialog e loading para estados inline do '
+          'produto.',
+      headingTrailing: const _FeedbackShowcaseBadge(),
+      headingBottom: const _FeedbackShowcaseLegend(),
+      style: AppSectionCardWithHeadingStyle(
+        headerBottomSpacing: tokens.sectionSpacing,
+      ),
+      child: AppSwitchField(
+        label: 'Skeleton ativo',
+        helperText: 'Liga ou desliga o placeholder mantendo o mesmo layout.',
+        value: skeletonEnabled,
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _FeedbackShowcaseHeading extends StatelessWidget {
+  const _FeedbackShowcaseHeading({required this.theme, required this.tokens});
+
+  final ThemeData theme;
+  final AppThemeTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'State Surfaces',
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.primary,
+          ),
+        ),
+        SizedBox(height: tokens.gapXs),
+        Row(
+          children: <Widget>[
+            Icon(
+              Icons.notifications_active_outlined,
+              color: cs.primary,
+              size: 18,
+            ),
+            SizedBox(width: tokens.gapSm),
+            Expanded(
+              child: Text(
+                'Feedback Patterns',
+                style: theme.appTypography.sectionHeaderH2.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _FeedbackShowcaseBadge extends StatelessWidget {
+  const _FeedbackShowcaseBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final cs = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 6),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          'Preview',
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.primary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeedbackShowcaseLegend extends StatelessWidget {
+  const _FeedbackShowcaseLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return Wrap(
+      spacing: tokens.gapSm,
+      runSpacing: tokens.gapSm,
+      children: const <Widget>[
+        _FeedbackLegendChip(label: 'Error'),
+        _FeedbackLegendChip(label: 'Banner'),
+        _FeedbackLegendChip(label: 'Dialog'),
+        _FeedbackLegendChip(label: 'Skeleton'),
+      ],
+    );
+  }
+}
+
+class _FeedbackLegendChip extends StatelessWidget {
+  const _FeedbackLegendChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final cs = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 4),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          label,
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}

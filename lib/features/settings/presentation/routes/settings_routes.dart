@@ -1,11 +1,13 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_area_trend_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_badges_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_bullet_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_buttons_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_combo_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_compact_kpi_and_executive_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_comparison_bar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_distribution_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_editorial_media_card_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_feedback_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_forms_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_funnel_chart_demo_page.dart';
@@ -24,13 +26,16 @@ import 'package:colmeia/features/settings/presentation/pages/app_region_map_dril
 import 'package:colmeia/features/settings/presentation/pages/app_report_viewer_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_scatter_bubble_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_section_card_heading_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_segmented_control_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_sparkline_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_stacked_bar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_step_line_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_sunburst_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_tab_view_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_table_pagination_footer_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_time_series_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_treemap_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_typography_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_waterfall_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/horizontal_progress_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/settings_page.dart';
@@ -40,13 +45,18 @@ import 'package:go_router/go_router.dart';
 const String sharedComponentsDemoIndexPath = 'component-demos';
 const String horizontalProgressChartDemoPath = 'horizontal-progress-chart-demo';
 const String appComparisonBarChartDemoPath = 'app-comparison-bar-chart-demo';
+const String appBadgesDemoPath = 'app-badges-demo';
 const String appTimeSeriesChartDemoPath = 'app-time-series-chart-demo';
 const String appDistributionChartDemoPath = 'app-distribution-chart-demo';
+const String appEditorialMediaCardDemoPath = 'app-editorial-media-card-demo';
 const String appMetricStatCardDemoPath = 'app-metric-stat-card-demo';
 const String appSectionCardHeadingDemoPath = 'app-section-card-heading-demo';
 const String appInlinePaginationDemoPath = 'app-inline-pagination-demo';
+const String appSegmentedControlDemoPath = 'app-segmented-control-demo';
+const String appTabViewDemoPath = 'app-tab-view-demo';
 const String appTablePaginationFooterDemoPath =
     'app-table-pagination-footer-demo';
+const String appTypographyDemoPath = 'app-typography-demo';
 const String appCompactKpiExecutiveDemoPath = 'app-compact-kpi-executive-demo';
 const String appButtonsDemoPath = 'app-buttons-demo';
 const String appFeedbackDemoPath = 'app-feedback-demo';
@@ -83,11 +93,17 @@ final String horizontalProgressChartDemoLocation =
 final String appComparisonBarChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appComparisonBarChartDemoPath';
 
+final String appBadgesDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appBadgesDemoPath';
+
 final String appTimeSeriesChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appTimeSeriesChartDemoPath';
 
 final String appDistributionChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appDistributionChartDemoPath';
+
+final String appEditorialMediaCardDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appEditorialMediaCardDemoPath';
 
 final String appMetricStatCardDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appMetricStatCardDemoPath';
@@ -98,8 +114,17 @@ final String appSectionCardHeadingDemoLocation =
 final String appInlinePaginationDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appInlinePaginationDemoPath';
 
+final String appSegmentedControlDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appSegmentedControlDemoPath';
+
+final String appTabViewDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appTabViewDemoPath';
+
 final String appTablePaginationFooterDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appTablePaginationFooterDemoPath';
+
+final String appTypographyDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appTypographyDemoPath';
 
 final String appCompactKpiExecutiveDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appCompactKpiExecutiveDemoPath';
@@ -207,6 +232,12 @@ List<RouteBase> buildSettingsRoutes() {
               },
             ),
             GoRoute(
+              path: appBadgesDemoPath,
+              builder: (context, state) {
+                return const AppBadgesDemoPage();
+              },
+            ),
+            GoRoute(
               path: appTimeSeriesChartDemoPath,
               builder: (context, state) {
                 return const AppTimeSeriesChartDemoPage();
@@ -216,6 +247,12 @@ List<RouteBase> buildSettingsRoutes() {
               path: appDistributionChartDemoPath,
               builder: (context, state) {
                 return const AppDistributionChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appEditorialMediaCardDemoPath,
+              builder: (context, state) {
+                return const AppEditorialMediaCardDemoPage();
               },
             ),
             GoRoute(
@@ -237,9 +274,27 @@ List<RouteBase> buildSettingsRoutes() {
               },
             ),
             GoRoute(
+              path: appSegmentedControlDemoPath,
+              builder: (context, state) {
+                return const AppSegmentedControlDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appTabViewDemoPath,
+              builder: (context, state) {
+                return const AppTabViewDemoPage();
+              },
+            ),
+            GoRoute(
               path: appTablePaginationFooterDemoPath,
               builder: (context, state) {
                 return const AppTablePaginationFooterDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appTypographyDemoPath,
+              builder: (context, state) {
+                return const AppTypographyDemoPage();
               },
             ),
             GoRoute(

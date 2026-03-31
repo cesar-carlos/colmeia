@@ -1,4 +1,9 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
+import 'package:colmeia/shared/widgets/app_status_badge.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
@@ -375,13 +380,20 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+
     return Scaffold(
       appBar: AppBar(title: const Text('AppReportViewer — Demo')),
       body: Column(
         children: <Widget>[
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: AppShellPageIntro(
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.contentSpacing,
+              tokens.contentSpacing,
+              tokens.contentSpacing,
+              0,
+            ),
+            child: const AppShellPageIntro(
               eyebrow: 'Componentes compartilhados',
               title: 'Report Viewer',
               subtitle:
@@ -389,83 +401,99 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
                   'agrupamento e seleção de colunas.',
             ),
           ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.contentSpacing,
+              tokens.sectionSpacing,
+              tokens.contentSpacing,
+              0,
+            ),
+            child: _ReportViewerShowcaseCard(
+              totalRows: _currentRows.length,
+              selectedRows: _selectedRows.length,
+              groupingDescription: _describeGroups(_query.groups),
+            ),
+          ),
           Expanded(
-            child: AppReportViewer<_SaleRow>(
-              title: 'Vendas por vendedor',
-              subtitle: 'Demonstração com dados sintéticos',
-              contextChips: <String>[
-                'Loja: Todas',
-                'Período: 2025',
-                '${_currentRows.length} registros',
-                _describeGroups(_query.groups),
-              ],
-              columns: _columns,
-              rows: _pageRows,
-              pageInfo: _pageInfo,
-              summaryItems: _summaries,
-              filters: _filters,
-              filterValues: _query.filters,
-              selectedRows: _selectedRows,
-              query: _query,
-              events: AppReportEvents<_SaleRow>(
-                onQueryChanged: _onQueryChanged,
-                onRefresh: _onRefresh,
-                onExportRequested: _onExportRequested,
-                onGroupChanged: (groups) {
-                  setState(() {
-                    _query = _query.withGroups(groups);
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(_groupChangeMessage(groups)),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
-                onGroupStateChanged: (groups) {
-                  setState(() {
-                    _query = _query.withGroups(groups);
-                  });
-                },
-                onGroupExpanded: (event) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(_groupToggleMessage(event)),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
-                onGroupCollapsed: (event) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(_groupToggleMessage(event)),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
-                onRowSelection: (rows) {
-                  setState(() => _selectedRows = rows);
-                },
-                onRowTap: (row, _) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Selecionado: ${row.seller}'),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
+            child: Padding(
+              padding: EdgeInsets.only(top: tokens.sectionSpacing),
+              child: AppReportViewer<_SaleRow>(
+                title: 'Vendas por vendedor',
+                subtitle: 'Demonstração com dados sintéticos',
+                contextChips: <String>[
+                  'Loja: Todas',
+                  'Período: 2025',
+                  '${_currentRows.length} registros',
+                  _describeGroups(_query.groups),
+                ],
+                columns: _columns,
+                rows: _pageRows,
+                pageInfo: _pageInfo,
+                summaryItems: _summaries,
+                filters: _filters,
+                filterValues: _query.filters,
+                selectedRows: _selectedRows,
+                query: _query,
+                events: AppReportEvents<_SaleRow>(
+                  onQueryChanged: _onQueryChanged,
+                  onRefresh: _onRefresh,
+                  onExportRequested: _onExportRequested,
+                  onGroupChanged: (groups) {
+                    setState(() {
+                      _query = _query.withGroups(groups);
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(_groupChangeMessage(groups)),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  onGroupStateChanged: (groups) {
+                    setState(() {
+                      _query = _query.withGroups(groups);
+                    });
+                  },
+                  onGroupExpanded: (event) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(_groupToggleMessage(event)),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  onGroupCollapsed: (event) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(_groupToggleMessage(event)),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                  onRowSelection: (rows) {
+                    setState(() => _selectedRows = rows);
+                  },
+                  onRowTap: (row, _) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Selecionado: ${row.seller}'),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                  },
+                ),
+                style: const AppReportViewerStyle(
+                  showColumnChooser: true,
+                  showGroupingChooser: true,
+                  showDensityToggle: true,
+                  showSearchBar: true,
+                  showRowDetailOnTap: true,
+                  allowMultiSelection: true,
+                  filtersStartExpanded: false,
+                ),
+                isLoading: _isLoading,
+                emptyMessage: 'Nenhum resultado para os filtros aplicados.',
               ),
-              style: const AppReportViewerStyle(
-                showColumnChooser: true,
-                showGroupingChooser: true,
-                showDensityToggle: true,
-                showSearchBar: true,
-                showRowDetailOnTap: true,
-                allowMultiSelection: true,
-                filtersStartExpanded: false,
-              ),
-              isLoading: _isLoading,
-              emptyMessage: 'Nenhum resultado para os filtros aplicados.',
             ),
           ),
         ],
@@ -574,6 +602,182 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
   }
 }
 
+class _ReportViewerShowcaseCard extends StatelessWidget {
+  const _ReportViewerShowcaseCard({
+    required this.totalRows,
+    required this.selectedRows,
+    required this.groupingDescription,
+  });
+
+  final int totalRows;
+  final int selectedRows;
+  final String groupingDescription;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return AppSectionCardWithHeading(
+      padding: EdgeInsets.fromLTRB(
+        tokens.contentSpacing,
+        tokens.contentSpacing,
+        tokens.contentSpacing,
+        tokens.contentSpacing + tokens.gapSm,
+      ),
+      titleWidget: _ReportViewerShowcaseHeading(theme: theme, tokens: tokens),
+      subtitle:
+          'Viewer completo para cenários tabulares com filtros, resumo, '
+          'agrupamento e exportação em uma única superfície.',
+      headingTrailing: const _ReportViewerShowcaseBadge(),
+      headingBottom: const _ReportViewerShowcaseLegend(),
+      style: AppSectionCardWithHeadingStyle(
+        titleTextStyle: theme.appTypography.sectionHeaderH2.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+        subtitleTextStyle: theme.appTypography.caption.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      child: Wrap(
+        spacing: tokens.gapSm,
+        runSpacing: tokens.gapSm,
+        children: <Widget>[
+          AppTagChip(label: '$totalRows registros'),
+          if (selectedRows > 0) AppTagChip(label: '$selectedRows selecionados'),
+          AppTagChip(label: groupingDescription),
+          const AppTagChip(label: 'Filtros + toolbar + grid'),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReportViewerShowcaseHeading extends StatelessWidget {
+  const _ReportViewerShowcaseHeading({
+    required this.theme,
+    required this.tokens,
+  });
+
+  final ThemeData theme;
+  final AppThemeTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(tokens.gapSm),
+            child: Icon(
+              Icons.table_rows_rounded,
+              size: 18,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.gapMd),
+        Expanded(
+          child: Text(
+            'Superfície tabular compartilhada',
+            style: theme.appTypography.sectionHeaderH2.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReportViewerShowcaseBadge extends StatelessWidget {
+  const _ReportViewerShowcaseBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 10),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          'ERP',
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            letterSpacing: 0.4,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportViewerShowcaseLegend extends StatelessWidget {
+  const _ReportViewerShowcaseLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+
+    return Wrap(
+      spacing: tokens.gapSm,
+      runSpacing: tokens.gapSm,
+      children: const <Widget>[
+        _ReportViewerLegendChip(label: 'Toolbar contextual'),
+        _ReportViewerLegendChip(label: 'Filtros colapsáveis'),
+        _ReportViewerLegendChip(label: 'Grid com agrupamento'),
+      ],
+    );
+  }
+}
+
+class _ReportViewerLegendChip extends StatelessWidget {
+  const _ReportViewerLegendChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 8),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          label,
+          style: theme.appTypography.caption.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Status chip
 // ---------------------------------------------------------------------------
@@ -585,36 +789,17 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (status) {
-      _OrderStatus.pending => ('Pendente', Colors.orange),
-      _OrderStatus.approved => ('Aprovado', Colors.blue),
-      _OrderStatus.shipped => ('Enviado', Colors.purple),
-      _OrderStatus.delivered => ('Entregue', Colors.green),
-      _OrderStatus.cancelled => ('Cancelado', Colors.red),
+    final (label, variant) = switch (status) {
+      _OrderStatus.pending => ('Pendente', AppStatusBadgeVariant.warning),
+      _OrderStatus.approved => ('Aprovado', AppStatusBadgeVariant.info),
+      _OrderStatus.shipped => ('Enviado', AppStatusBadgeVariant.info),
+      _OrderStatus.delivered => ('Entregue', AppStatusBadgeVariant.success),
+      _OrderStatus.cancelled => ('Cancelado', AppStatusBadgeVariant.error),
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withAlpha(30),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withAlpha(100)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: _darken(color, 0.1),
-        ),
-      ),
+    return AppStatusBadge(
+      label: label,
+      variant: variant,
     );
-  }
-
-  static Color _darken(Color color, double amount) {
-    final hsl = HSLColor.fromColor(color);
-    return hsl
-        .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
-        .toColor();
   }
 }

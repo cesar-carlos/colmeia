@@ -123,6 +123,9 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
                           SizedBox(height: tokens.authLoginGapMajorSection),
                           const RegisterFormSectionTitle(
                             title: 'Informações pessoais',
+                            subtitle:
+                                'Preencha seus dados corporativos para iniciar '
+                                'a solicitacao de acesso.',
                           ),
                           AuthFormTextField(
                             controller: _nameController,

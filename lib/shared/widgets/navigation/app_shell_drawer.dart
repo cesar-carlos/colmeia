@@ -66,7 +66,7 @@ class AppShellDrawer extends StatelessWidget {
                 ),
               ),
               if (kDebugMode) ...<Widget>[
-                const Divider(),
+                SizedBox(height: tokens.gapMd),
                 AppFlatButton(
                   icon: const Icon(Icons.widgets_outlined),
                   label: 'Componentes (dev)',

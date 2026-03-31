@@ -1,4 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_destructive_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
@@ -31,9 +33,11 @@ class AppButtonsDemoPage extends StatelessWidget {
               'Estados habilitado, desabilitado, loading e com/sem icone.',
         ),
         SizedBox(height: tokens.sectionSpacing),
+        _ButtonShowcaseCard(onTap: showTap),
+        SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
           title: 'AppPrimaryButton',
-          subtitle: 'Filled principal.',
+          subtitle: 'CTA principal — âmbar sólido (primary / onPrimary).',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -77,19 +81,20 @@ class AppButtonsDemoPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
           title: 'AppSecondaryButton',
-          subtitle: 'Outlined.',
+          subtitle:
+              'Outline (padrão) e variante tonal para superfícies ocupadas.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               AppSecondaryButton(
                 label: 'Cancelar',
-                onPressed: () => showTap('Secondary padrao'),
+                onPressed: () => showTap('Secondary outline padrao'),
               ),
               SizedBox(height: tokens.gapSm),
               AppSecondaryButton(
                 label: 'Exportar',
                 icon: const Icon(Icons.ios_share_outlined),
-                onPressed: () => showTap('Secondary com icone'),
+                onPressed: () => showTap('Secondary outline com icone'),
               ),
               SizedBox(height: tokens.gapSm),
               const AppSecondaryButton(
@@ -100,7 +105,39 @@ class AppButtonsDemoPage extends StatelessWidget {
               AppSecondaryButton(
                 label: 'Carregando',
                 isLoading: true,
-                onPressed: () => showTap('Secondary loading'),
+                onPressed: () => showTap('Secondary outline loading'),
+              ),
+              SizedBox(height: tokens.gapMd),
+              AppSecondaryButton(
+                variant: AppSecondaryButtonVariant.tonal,
+                label: 'Tonal',
+                onPressed: () => showTap('Secondary tonal'),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
+          title: 'AppDestructiveButton',
+          subtitle: 'Exclusão ou reversão irreversível — error / onError.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              AppDestructiveButton(
+                label: 'Excluir',
+                icon: const Icon(Icons.delete_outline_rounded),
+                onPressed: () => showTap('Destructive padrao'),
+              ),
+              SizedBox(height: tokens.gapSm),
+              const AppDestructiveButton(
+                label: 'Desabilitado',
+                onPressed: null,
+              ),
+              SizedBox(height: tokens.gapSm),
+              AppDestructiveButton(
+                label: 'Carregando',
+                isLoading: true,
+                onPressed: () => showTap('Destructive loading'),
               ),
             ],
           ),
@@ -108,18 +145,18 @@ class AppButtonsDemoPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
           title: 'AppFlatButton',
-          subtitle: 'Tonal, bom para drawer e barras densas.',
+          subtitle: 'Ghost/flat para açoes de baixa ênfase.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               AppFlatButton(
-                label: 'Acao secundaria',
+                label: 'Ghost Button',
                 onPressed: () => showTap('Flat padrao'),
               ),
               SizedBox(height: tokens.gapSm),
               AppFlatButton(
-                label: 'Com icone',
-                icon: const Icon(Icons.widgets_outlined),
+                label: 'Ghost com icone',
+                icon: const Icon(Icons.close_rounded),
                 onPressed: () => showTap('Flat com icone'),
               ),
               SizedBox(height: tokens.gapSm),
@@ -161,6 +198,200 @@ class AppButtonsDemoPage extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ButtonShowcaseCard extends StatelessWidget {
+  const _ButtonShowcaseCard({required this.onTap});
+
+  final void Function(String name) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return AppSectionCardWithHeading(
+      padding: EdgeInsets.fromLTRB(
+        tokens.contentSpacing,
+        tokens.contentSpacing,
+        tokens.contentSpacing,
+        tokens.contentSpacing + tokens.gapSm,
+      ),
+      titleWidget: _ButtonShowcaseHeading(theme: theme, tokens: tokens),
+      subtitle:
+          'Combinacao recomendada para CTA principal, acao secundaria, ghost e '
+          'estado critico.',
+      headingTrailing: const _ButtonShowcaseBadge(),
+      headingBottom: const _ButtonShowcaseLegend(),
+      style: AppSectionCardWithHeadingStyle(
+        headerBottomSpacing: tokens.sectionSpacing,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppPrimaryButton(
+            label: 'Primary Action',
+            fillWidth: true,
+            icon: const Icon(Icons.rocket_launch_outlined, size: 18),
+            onPressed: () => onTap('Primary showcase'),
+          ),
+          SizedBox(height: tokens.gapSm),
+          AppSecondaryButton(
+            label: 'Secondary Outline',
+            fillWidth: true,
+            onPressed: () => onTap('Secondary showcase'),
+          ),
+          SizedBox(height: tokens.gapSm),
+          AppFlatButton(
+            label: 'Ghost Button',
+            icon: const Icon(Icons.close_rounded, size: 18),
+            onPressed: () => onTap('Ghost showcase'),
+          ),
+          SizedBox(height: tokens.gapMd),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppDestructiveButton(
+                  label: 'Destructive',
+                  onPressed: () => onTap('Destructive showcase'),
+                ),
+              ),
+              SizedBox(width: tokens.gapSm),
+              const Expanded(
+                child: AppFlatButton(
+                  label: 'Disabled',
+                  onPressed: null,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ButtonShowcaseHeading extends StatelessWidget {
+  const _ButtonShowcaseHeading({required this.theme, required this.tokens});
+
+  final ThemeData theme;
+  final AppThemeTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Recommended Stack',
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.primary,
+          ),
+        ),
+        SizedBox(height: tokens.gapXs),
+        Row(
+          children: <Widget>[
+            Icon(Icons.ads_click_outlined, color: cs.primary, size: 18),
+            SizedBox(width: tokens.gapSm),
+            Expanded(
+              child: Text(
+                'Action Buttons',
+                style: theme.appTypography.sectionHeaderH2.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ButtonShowcaseBadge extends StatelessWidget {
+  const _ButtonShowcaseBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final cs = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 6),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          'Preview',
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.primary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ButtonShowcaseLegend extends StatelessWidget {
+  const _ButtonShowcaseLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return Wrap(
+      spacing: tokens.gapSm,
+      runSpacing: tokens.gapSm,
+      children: const <Widget>[
+        _ButtonShowcaseLegendChip(label: 'Solid'),
+        _ButtonShowcaseLegendChip(label: 'Outline'),
+        _ButtonShowcaseLegendChip(label: 'Ghost'),
+        _ButtonShowcaseLegendChip(label: 'Critical'),
+      ],
+    );
+  }
+}
+
+class _ButtonShowcaseLegendChip extends StatelessWidget {
+  const _ButtonShowcaseLegendChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final cs = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 4),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          label,
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+      ),
     );
   }
 }

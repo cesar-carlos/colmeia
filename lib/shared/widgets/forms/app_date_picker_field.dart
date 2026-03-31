@@ -1,5 +1,7 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
@@ -449,7 +451,7 @@ class _AppPickerSheetScaffold extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(height: 1),
+            SizedBox(height: tokens.gapSm),
             Expanded(
               child: ListView(
                 controller: scrollController,
@@ -464,16 +466,18 @@ class _AppPickerSheetScaffold extends StatelessWidget {
               child: Row(
                 children: <Widget>[
                   Expanded(
-                    child: OutlinedButton(
+                    child: AppSecondaryButton(
+                      fillWidth: true,
+                      label: removeSelectionLabel,
                       onPressed: onRemoveSelection,
-                      child: Text(removeSelectionLabel),
                     ),
                   ),
                   SizedBox(width: tokens.gapMd),
                   Expanded(
-                    child: FilledButton(
+                    child: AppPrimaryButton(
+                      fillWidth: true,
+                      label: 'Aplicar',
                       onPressed: canApply ? onApply : null,
-                      child: const Text('Aplicar'),
                     ),
                   ),
                 ],

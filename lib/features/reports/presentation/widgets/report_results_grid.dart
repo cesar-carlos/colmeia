@@ -1,6 +1,7 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/reports/domain/entities/report_result_row.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
@@ -70,6 +71,7 @@ class ReportResultsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
 
     final totalRevenue = rows.fold<double>(0, (s, r) => s + r.revenue);
     final totalOrders = rows.fold<int>(0, (s, r) => s + r.orders);
@@ -80,33 +82,36 @@ class ReportResultsGrid extends StatelessWidget {
         children: <Widget>[
           Text(
             'Resultado tabular',
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: typography.sectionHeaderH2.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           SizedBox(height: tokens.gapXs),
           Text(
             'Base pronta para ordenação, filtros e paginação no servidor.',
-            style: theme.textTheme.bodyMedium,
+            style: typography.body,
           ),
           SizedBox(height: tokens.contentSpacing),
-          Row(
+          Wrap(
+            spacing: tokens.gapSm,
+            runSpacing: tokens.gapSm,
             children: <Widget>[
-              Expanded(
+              SizedBox(
+                width: 180,
                 child: _ResultSnapshotTile(
                   label: 'Linhas',
                   value: rows.length.toString(),
                 ),
               ),
-              SizedBox(width: tokens.gapSm),
-              Expanded(
+              SizedBox(
+                width: 180,
                 child: _ResultSnapshotTile(
                   label: 'Pedidos',
                   value: totalOrders.toString(),
                 ),
               ),
-              SizedBox(width: tokens.gapSm),
-              Expanded(
+              SizedBox(
+                width: 220,
                 child: _ResultSnapshotTile(
                   label: 'Faturamento',
                   value: AppBrFormatters.currency(totalRevenue),
@@ -118,7 +123,10 @@ class ReportResultsGrid extends StatelessWidget {
           AppReportGrid<ReportResultRow>(
             columns: _columns,
             rows: rows,
-            style: const AppReportViewerStyle(gridHeight: 280),
+            style: AppReportViewerStyle(
+              gridHeight: 280,
+              alternateRowColor: theme.colorScheme.surfaceContainerLowest,
+            ),
             isLoading: isLoading,
             events: AppReportEvents<ReportResultRow>(
               onSortChanged: onSortChanged,
@@ -146,11 +154,15 @@ class _ResultSnapshotTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.gapMd),
@@ -159,14 +171,15 @@ class _ResultSnapshotTile extends StatelessWidget {
           children: <Widget>[
             Text(
               label,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: typography.utilityOverline.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: tokens.gapXs),
             Text(
               value,
-              style: theme.textTheme.titleSmall?.copyWith(
+              style: typography.sectionHeaderH2.copyWith(
+                fontSize: theme.textTheme.titleSmall?.fontSize,
                 fontWeight: FontWeight.w700,
               ),
               maxLines: 1,

@@ -1,5 +1,11 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column_chooser.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
@@ -81,6 +87,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
     final style = widget.style;
     final activeGroups = widget.currentGroups;
     final groupLabels = <String, String>{
@@ -121,207 +128,237 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
 
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.gapSm),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < AppBreakpoints.mobile;
-          final searchWidth = isCompact ? constraints.maxWidth : 220.0;
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(tokens.cardRadius),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.gapSm),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < AppBreakpoints.mobile;
+              final searchWidth = isCompact ? constraints.maxWidth : 260.0;
 
-          return Wrap(
-            spacing: tokens.gapSm,
-            runSpacing: tokens.gapSm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              if (style.showSearchBar)
-                SizedBox(
-                  width: searchWidth,
-                  height: 40,
-                  child: ListenableBuilder(
-                    listenable: _searchController,
-                    builder: (context, _) {
-                      return TextField(
-                        controller: _searchController,
-                        enabled: !widget.isLoading,
-                        decoration: InputDecoration(
-                          hintText: 'Buscar...',
-                          prefixIcon:
-                              const Icon(Icons.search_rounded, size: 20),
-                          contentPadding: EdgeInsets.zero,
-                          isDense: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              tokens.formFieldRadius,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  if (style.showSearchBar || hasAnyAction)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: tokens.gapSm),
+                      child: Text(
+                        'Ferramentas da tabela',
+                        style: typography.utilityOverline.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  Wrap(
+                    spacing: tokens.gapSm,
+                    runSpacing: tokens.gapSm,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      if (style.showSearchBar)
+                        SizedBox(
+                          width: searchWidth,
+                          child: ListenableBuilder(
+                            listenable: _searchController,
+                            builder: (context, _) {
+                              return AppTextField(
+                                controller: _searchController,
+                                enabled: !widget.isLoading,
+                                hintText: 'Buscar vendedor, loja ou produto',
+                                prefixIcon: Icons.search_rounded,
+                                density: AppTextFieldDensity.compact,
+                                suffix: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(
+                                          Icons.close_rounded,
+                                          size: 18,
+                                        ),
+                                        tooltip: 'Limpar busca',
+                                        onPressed: widget.isLoading
+                                            ? null
+                                            : () {
+                                                _searchController.clear();
+                                                widget.events.onSearchChanged
+                                                    ?.call(
+                                                      '',
+                                                    );
+                                              },
+                                      )
+                                    : null,
+                                onChanged: widget.events.onSearchChanged,
+                              );
+                            },
+                          ),
+                        ),
+                      if (showSelectionStatus)
+                        _ToolbarPill(
+                          icon: Icons.checklist_rounded,
+                          label: widget.selectedRowCount == 1
+                              ? '1 selecionado'
+                              : '${widget.selectedRowCount} selecionados',
+                          tooltip: 'Linhas selecionadas na grade',
+                          onRemove: widget.isLoading
+                              ? null
+                              : widget.onClearSelection,
+                        ),
+                      ...activeGroups.map((group) {
+                        final label =
+                            groupLabels[group.columnKey] ?? group.columnKey;
+                        return _ToolbarPill(
+                          icon: Icons.layers_outlined,
+                          label: 'Agrupado: $label',
+                          tooltip: 'Agrupado por $label',
+                          onRemove: widget.isLoading
+                              ? null
+                              : () {
+                                  final updatedGroups = activeGroups
+                                      .where((entry) => entry != group)
+                                      .toList(growable: false);
+                                  widget.events.onGroupChanged?.call(
+                                    updatedGroups,
+                                  );
+                                },
+                        );
+                      }),
+                      if (style.showDensityToggle)
+                        _DensityToggle(
+                          current: widget.currentDensity,
+                          onChanged: widget.events.onDensityChanged,
+                        ),
+                      if (style.showGroupingChooser)
+                        _GroupButton<T>(
+                          enabled: canGroup,
+                          currentGroups: activeGroups,
+                          groupableColumns: widget.groupableColumns,
+                          onChanged: widget.events.onGroupChanged,
+                        ),
+                      if (activeGroups.isNotEmpty)
+                        _GroupStateButton(
+                          icon: Icons.unfold_more_rounded,
+                          tooltip: 'Expandir grupos',
+                          onPressed: widget.isLoading
+                              ? null
+                              : () {
+                                  widget.events.onGroupStateChanged?.call(
+                                    activeGroups
+                                        .map(
+                                          (group) =>
+                                              group.copyWith(expanded: true),
+                                        )
+                                        .toList(growable: false),
+                                  );
+                                  widget.groupController?.expandAll();
+                                },
+                        ),
+                      if (activeGroups.isNotEmpty)
+                        _GroupStateButton(
+                          icon: Icons.unfold_less_rounded,
+                          tooltip: 'Recolher grupos',
+                          onPressed: widget.isLoading
+                              ? null
+                              : () {
+                                  widget.events.onGroupStateChanged?.call(
+                                    activeGroups
+                                        .map(
+                                          (group) =>
+                                              group.copyWith(expanded: false),
+                                        )
+                                        .toList(growable: false),
+                                  );
+                                  widget.groupController?.collapseAll();
+                                },
+                        ),
+                      if (activeGroups.length > 1)
+                        _GroupLevelButton(
+                          currentGroups: activeGroups,
+                          levelCount: activeGroups.length,
+                          controller: widget.groupController,
+                          enabled: !widget.isLoading,
+                          onGroupStateChanged:
+                              widget.events.onGroupStateChanged,
+                        ),
+                      if (style.showColumnChooser)
+                        Tooltip(
+                          message: 'Colunas visíveis',
+                          child: AppSecondaryButton(
+                            onPressed: canChooseColumns
+                                ? () async {
+                                    final result =
+                                        await showAppReportColumnChooser<T>(
+                                          context: context,
+                                          columns: widget.columns,
+                                          currentlyVisible:
+                                              widget.visibleColumnKeys,
+                                        );
+                                    if (result != null) {
+                                      widget.events.onColumnVisibilityChanged
+                                          ?.call(
+                                            result,
+                                          );
+                                    }
+                                  }
+                                : null,
+                            label: 'Colunas',
+                            icon: const Icon(
+                              Icons.view_column_outlined,
+                              size: 18,
                             ),
                           ),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.clear_rounded,
-                                    size: 18,
-                                  ),
-                                  onPressed: widget.isLoading
-                                      ? null
-                                      : () {
-                                          _searchController.clear();
-                                          widget.events.onSearchChanged
-                                              ?.call('');
-                                        },
-                                )
-                              : null,
                         ),
-                        onChanged: widget.events.onSearchChanged,
-                      );
-                    },
+                      if (style.showExportActions)
+                        _ExportButton(
+                          enabled: canExport,
+                          selectedRowCount: widget.selectedRowCount,
+                          onExportRequested: (request) =>
+                              widget.events.onExportRequested?.call(request),
+                        ),
+                      if (style.showPrintAction)
+                        Tooltip(
+                          message: 'Imprimir',
+                          child: AppSecondaryButton(
+                            onPressed: canPrint
+                                ? widget.events.onPrintRequested
+                                : null,
+                            label: 'Imprimir',
+                            icon: const Icon(Icons.print_outlined, size: 18),
+                          ),
+                        ),
+                      if (style.showRefreshAction)
+                        Tooltip(
+                          message: 'Atualizar',
+                          child: AppFlatButton(
+                            onPressed: canRefresh
+                                ? () => widget.events.onRefresh?.call()
+                                : null,
+                            fillWidth: false,
+                            child: widget.isLoading
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.refresh_rounded,
+                                    size: 20,
+                                  ),
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-              if (showSelectionStatus)
-                Tooltip(
-                  message: 'Linhas selecionadas na grade',
-                  child: InputChip(
-                    avatar: const Icon(Icons.checklist_rounded, size: 18),
-                    label: Text(
-                      widget.selectedRowCount == 1
-                          ? '1 selecionado'
-                          : '${widget.selectedRowCount} selecionados',
-                    ),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    onDeleted: widget.isLoading
-                        ? null
-                        : widget.onClearSelection,
-                    deleteIcon: const Icon(Icons.close_rounded, size: 18),
-                  ),
-                ),
-              ...activeGroups.map((group) {
-                final label = groupLabels[group.columnKey] ?? group.columnKey;
-                return Tooltip(
-                  message: 'Agrupado por $label',
-                  child: InputChip(
-                    avatar: const Icon(Icons.layers_outlined, size: 18),
-                    label: Text(label),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    onDeleted: widget.isLoading
-                        ? null
-                        : () {
-                            final updatedGroups = activeGroups
-                                .where((entry) => entry != group)
-                                .toList(growable: false);
-                            widget.events.onGroupChanged?.call(updatedGroups);
-                          },
-                    deleteIcon: const Icon(Icons.close_rounded, size: 18),
-                  ),
-                );
-              }),
-              if (style.showDensityToggle)
-                _DensityToggle(
-                  current: widget.currentDensity,
-                  onChanged: widget.events.onDensityChanged,
-                ),
-              if (style.showGroupingChooser)
-                _GroupButton<T>(
-                  enabled: canGroup,
-                  currentGroups: activeGroups,
-                  groupableColumns: widget.groupableColumns,
-                  onChanged: widget.events.onGroupChanged,
-                ),
-              if (activeGroups.isNotEmpty)
-                _GroupStateButton(
-                  icon: Icons.unfold_more_rounded,
-                  tooltip: 'Expandir grupos',
-                  onPressed: widget.isLoading
-                      ? null
-                      : () {
-                          widget.events.onGroupStateChanged?.call(
-                            activeGroups
-                                .map(
-                                  (group) => group.copyWith(expanded: true),
-                                )
-                                .toList(growable: false),
-                          );
-                          widget.groupController?.expandAll();
-                        },
-                ),
-              if (activeGroups.isNotEmpty)
-                _GroupStateButton(
-                  icon: Icons.unfold_less_rounded,
-                  tooltip: 'Recolher grupos',
-                  onPressed: widget.isLoading
-                      ? null
-                      : () {
-                          widget.events.onGroupStateChanged?.call(
-                            activeGroups
-                                .map(
-                                  (group) => group.copyWith(expanded: false),
-                                )
-                                .toList(growable: false),
-                          );
-                          widget.groupController?.collapseAll();
-                        },
-                ),
-              if (activeGroups.length > 1)
-                _GroupLevelButton(
-                  currentGroups: activeGroups,
-                  levelCount: activeGroups.length,
-                  controller: widget.groupController,
-                  enabled: !widget.isLoading,
-                  onGroupStateChanged: widget.events.onGroupStateChanged,
-                ),
-              if (style.showColumnChooser)
-                Tooltip(
-                  message: 'Colunas visíveis',
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.view_column_outlined, size: 18),
-                    label: const Text('Colunas'),
-                    onPressed: canChooseColumns
-                        ? () async {
-                            final result = await showAppReportColumnChooser<T>(
-                              context: context,
-                              columns: widget.columns,
-                              currentlyVisible: widget.visibleColumnKeys,
-                            );
-                            if (result != null) {
-                              widget.events.onColumnVisibilityChanged?.call(
-                                result,
-                              );
-                            }
-                          }
-                        : null,
-                  ),
-                ),
-              if (style.showExportActions)
-                _ExportButton(
-                  enabled: canExport,
-                  selectedRowCount: widget.selectedRowCount,
-                  onExportRequested: (request) =>
-                      widget.events.onExportRequested?.call(request),
-                ),
-              if (style.showPrintAction)
-                Tooltip(
-                  message: 'Imprimir',
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.print_outlined, size: 18),
-                    label: const Text('Imprimir'),
-                    onPressed: canPrint ? widget.events.onPrintRequested : null,
-                  ),
-                ),
-              if (style.showRefreshAction)
-                Tooltip(
-                  message: 'Atualizar',
-                  child: IconButton.outlined(
-                    icon: widget.isLoading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.refresh_rounded, size: 20),
-                    onPressed: canRefresh
-                        ? () => widget.events.onRefresh?.call()
-                        : null,
-                    tooltip: 'Atualizar dados',
-                  ),
-                ),
-            ],
-          );
-        },
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -346,12 +383,140 @@ class _GroupStateButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: IconButton.outlined(
+      child: AppFlatButton(
         onPressed: onPressed,
-        icon: Icon(icon, size: 18),
+        fillWidth: false,
+        child: Icon(icon, size: 18),
       ),
     );
   }
+}
+
+class _ToolbarPill extends StatelessWidget {
+  const _ToolbarPill({
+    required this.icon,
+    required this.label,
+    required this.tooltip,
+    this.onRemove,
+  });
+
+  final IconData icon;
+  final String label;
+  final String tooltip;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return Tooltip(
+      message: tooltip,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(tokens.formFieldRadius + 10),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: tokens.gapSm,
+            right: onRemove == null ? tokens.gapSm : tokens.gapXs,
+            top: tokens.gapXs,
+            bottom: tokens.gapXs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              AppTagChip(
+                label: label,
+                icon: icon,
+                backgroundColor: Colors.transparent,
+                foregroundColor: theme.colorScheme.onSurfaceVariant,
+              ),
+              if (onRemove != null) ...<Widget>[
+                SizedBox(width: tokens.gapXs),
+                InkWell(
+                  onTap: onRemove,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+MenuStyle _buildReportMenuStyle(BuildContext context) {
+  final theme = Theme.of(context);
+  final tokens = theme.extension<AppThemeTokens>()!;
+
+  return MenuStyle(
+    backgroundColor: WidgetStatePropertyAll(
+      theme.colorScheme.surfaceContainerLow,
+    ),
+    surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+    shadowColor: WidgetStatePropertyAll(
+      theme.colorScheme.shadow.withValues(alpha: 0.12),
+    ),
+    side: WidgetStatePropertyAll(
+      BorderSide(
+        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+      ),
+    ),
+    shape: WidgetStatePropertyAll(
+      RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.cardRadius),
+      ),
+    ),
+    padding: WidgetStatePropertyAll(
+      EdgeInsets.symmetric(vertical: tokens.gapXs),
+    ),
+  );
+}
+
+ButtonStyle _buildReportMenuItemStyle(BuildContext context) {
+  final theme = Theme.of(context);
+  final tokens = theme.extension<AppThemeTokens>()!;
+  final typography = theme.appTypography;
+
+  return ButtonStyle(
+    padding: WidgetStatePropertyAll(
+      EdgeInsets.symmetric(
+        horizontal: tokens.gapMd,
+        vertical: tokens.gapSm,
+      ),
+    ),
+    textStyle: WidgetStatePropertyAll(
+      typography.caption.copyWith(
+        fontWeight: FontWeight.w600,
+        color: theme.colorScheme.onSurface,
+      ),
+    ),
+    foregroundColor: WidgetStatePropertyAll(theme.colorScheme.onSurface),
+    iconColor: WidgetStatePropertyAll(theme.colorScheme.onSurfaceVariant),
+    overlayColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.pressed)) {
+        return theme.colorScheme.primary.withValues(alpha: 0.08);
+      }
+      if (states.contains(WidgetState.hovered)) {
+        return theme.colorScheme.primary.withValues(alpha: 0.04);
+      }
+      return null;
+    }),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -376,10 +541,11 @@ class _GroupLevelButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MenuAnchor(
+      style: _buildReportMenuStyle(context),
       builder: (context, menuController, child) {
         return Tooltip(
           message: 'Controlar níveis de agrupamento',
-          child: IconButton.outlined(
+          child: AppFlatButton(
             onPressed: enabled
                 ? () {
                     if (menuController.isOpen) {
@@ -389,13 +555,15 @@ class _GroupLevelButton extends StatelessWidget {
                     }
                   }
                 : null,
-            icon: const Icon(Icons.account_tree_outlined, size: 18),
+            fillWidth: false,
+            child: const Icon(Icons.account_tree_outlined, size: 18),
           ),
         );
       },
       menuChildren: <Widget>[
         for (var level = 1; level <= levelCount; level++) ...<Widget>[
           MenuItemButton(
+            style: _buildReportMenuItemStyle(context),
             onPressed: enabled
                 ? () {
                     onGroupStateChanged?.call(
@@ -413,6 +581,7 @@ class _GroupLevelButton extends StatelessWidget {
             child: Text('Expandir até nível $level'),
           ),
           MenuItemButton(
+            style: _buildReportMenuItemStyle(context),
             onPressed: enabled
                 ? () {
                     onGroupStateChanged?.call(
@@ -456,10 +625,9 @@ class _GroupButton<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MenuAnchor(
+      style: _buildReportMenuStyle(context),
       builder: (context, controller, child) {
-        return OutlinedButton.icon(
-          icon: const Icon(Icons.layers_outlined, size: 18),
-          label: const Text('Agrupar'),
+        return AppSecondaryButton(
           onPressed: enabled
               ? () {
                   if (controller.isOpen) {
@@ -469,10 +637,13 @@ class _GroupButton<T> extends StatelessWidget {
                   }
                 }
               : null,
+          label: 'Agrupar',
+          icon: const Icon(Icons.layers_outlined, size: 18),
         );
       },
       menuChildren: <Widget>[
         MenuItemButton(
+          style: _buildReportMenuItemStyle(context),
           leadingIcon: const Icon(Icons.clear_all_rounded),
           onPressed: currentGroups.isEmpty
               ? null
@@ -485,6 +656,7 @@ class _GroupButton<T> extends StatelessWidget {
             (group) => group.columnKey == column.key,
           );
           return MenuItemButton(
+            style: _buildReportMenuItemStyle(context),
             leadingIcon: Icon(
               isActive ? Icons.check_rounded : Icons.add_rounded,
               size: 18,
@@ -523,38 +695,26 @@ class _DensityToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<AppReportDensity>(
-      segments: const <ButtonSegment<AppReportDensity>>[
-        ButtonSegment(
+    return AppSegmentedControl<AppReportDensity>(
+      options: const <AppSegmentedControlOption<AppReportDensity>>[
+        AppSegmentedControlOption(
           value: AppReportDensity.compact,
-          icon: Tooltip(
-            message: 'Compacto',
-            child: Icon(Icons.density_small_rounded, size: 18),
-          ),
+          label: 'Compacto',
+          tooltip: 'Linhas mais densas',
         ),
-        ButtonSegment(
+        AppSegmentedControlOption(
           value: AppReportDensity.comfortable,
-          icon: Tooltip(
-            message: 'Confortável',
-            child: Icon(Icons.density_medium_rounded, size: 18),
-          ),
+          label: 'Conforto',
+          tooltip: 'Equilibrio entre leitura e densidade',
         ),
-        ButtonSegment(
+        AppSegmentedControlOption(
           value: AppReportDensity.expanded,
-          icon: Tooltip(
-            message: 'Expandido',
-            child: Icon(Icons.density_large_rounded, size: 18),
-          ),
+          label: 'Expandido',
+          tooltip: 'Mais respiro vertical',
         ),
       ],
-      selected: <AppReportDensity>{current},
-      onSelectionChanged: (sel) => onChanged?.call(sel.first),
-      showSelectedIcon: false,
-      style: ButtonStyle(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        minimumSize: WidgetStateProperty.all(const Size(36, 36)),
-        padding: WidgetStateProperty.all(EdgeInsets.zero),
-      ),
+      value: current,
+      onChanged: onChanged ?? (_) {},
     );
   }
 }
@@ -577,10 +737,9 @@ class _ExportButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MenuAnchor(
+      style: _buildReportMenuStyle(context),
       builder: (ctx, controller, child) {
-        return OutlinedButton.icon(
-          icon: const Icon(Icons.download_outlined, size: 18),
-          label: const Text('Exportar'),
+        return AppSecondaryButton(
           onPressed: enabled
               ? () {
                   if (controller.isOpen) {
@@ -590,24 +749,39 @@ class _ExportButton extends StatelessWidget {
                   }
                 }
               : null,
+          label: 'Exportar',
+          icon: const Icon(Icons.download_outlined, size: 18),
         );
       },
       menuChildren: <Widget>[
         SubmenuButton(
+          menuStyle: _buildReportMenuStyle(context),
+          style: _buildReportMenuItemStyle(context),
           leadingIcon: const Icon(Icons.picture_as_pdf_outlined),
-          menuChildren: _buildFormatMenuChildren(AppReportExportFormat.pdf),
+          menuChildren: _buildFormatMenuChildren(
+            context,
+            AppReportExportFormat.pdf,
+          ),
           child: const Text('PDF'),
         ),
         SubmenuButton(
+          menuStyle: _buildReportMenuStyle(context),
+          style: _buildReportMenuItemStyle(context),
           leadingIcon: const Icon(Icons.table_chart_outlined),
-          menuChildren: _buildFormatMenuChildren(AppReportExportFormat.excel),
+          menuChildren: _buildFormatMenuChildren(
+            context,
+            AppReportExportFormat.excel,
+          ),
           child: const Text('Excel'),
         ),
       ],
     );
   }
 
-  List<Widget> _buildFormatMenuChildren(AppReportExportFormat format) {
+  List<Widget> _buildFormatMenuChildren(
+    BuildContext context,
+    AppReportExportFormat format,
+  ) {
     final scopeLabel = switch (format) {
       AppReportExportFormat.pdf => 'PDF',
       AppReportExportFormat.excel => 'Excel',
@@ -615,29 +789,34 @@ class _ExportButton extends StatelessWidget {
 
     return <Widget>[
       _buildExportMenuItem(
+        context: context,
         format: format,
         scope: AppReportExportScope.currentPage,
         label: '$scopeLabel da página atual',
       ),
       _buildExportMenuItem(
+        context: context,
         format: format,
         scope: AppReportExportScope.allPages,
         label: '$scopeLabel de todas as páginas',
       ),
       if (selectedRowCount > 0)
         _buildExportMenuItem(
+          context: context,
           format: format,
           scope: AppReportExportScope.selection,
           label: '$scopeLabel da seleção ($selectedRowCount)',
         ),
       const Divider(height: 1),
       _buildExportMenuItem(
+        context: context,
         format: format,
         scope: AppReportExportScope.currentPage,
         includeFilters: true,
         label: '$scopeLabel da página atual + filtros',
       ),
       _buildExportMenuItem(
+        context: context,
         format: format,
         scope: AppReportExportScope.allPages,
         includeFilters: true,
@@ -645,6 +824,7 @@ class _ExportButton extends StatelessWidget {
       ),
       if (selectedRowCount > 0)
         _buildExportMenuItem(
+          context: context,
           format: format,
           scope: AppReportExportScope.selection,
           includeFilters: true,
@@ -654,12 +834,14 @@ class _ExportButton extends StatelessWidget {
   }
 
   Widget _buildExportMenuItem({
+    required BuildContext context,
     required AppReportExportFormat format,
     required AppReportExportScope scope,
     required String label,
     bool includeFilters = false,
   }) {
     return MenuItemButton(
+      style: _buildReportMenuItemStyle(context),
       onPressed: () {
         onExportRequested(
           AppReportExportRequest(

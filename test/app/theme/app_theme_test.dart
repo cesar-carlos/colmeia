@@ -24,7 +24,8 @@ void main() {
       final tokens = Theme.of(captured).extension<AppThemeTokens>();
       final colors = Theme.of(captured).extension<AppColors>();
       expect(colors, isNotNull);
-      expect(colors!.primaryContainer, const Color(0xFFFFB300));
+      expect(colors!.primary, const Color(0xFFFFB300));
+      expect(colors.primaryContainer, const Color(0xFFFFDEAC));
       expect(colors.background, const Color(0xFFF4FAFF));
       expect(tokens, isNotNull);
       expect(tokens!.gapSm, 8);
@@ -82,12 +83,16 @@ void main() {
     final light = AppTheme.light().extension<AppColors>()!;
     final dark = AppTheme.dark().extension<AppColors>()!;
 
-    expect(light.primary, const Color(0xFF7E5700));
-    expect(light.secondary, const Color(0xFF9E4200));
+    expect(light.primary, const Color(0xFFFFB300));
+    expect(light.secondary, const Color(0xFFF4A261));
     expect(light.tertiary, const Color(0xFF00677E));
-    expect(dark.surface, const Color(0xFF263238));
-    expect(dark.surfaceContainerHighest, const Color(0xFF313D45));
+    expect(light.error, const Color(0xFFBC2020));
+    expect(dark.surface, const Color(0xFF1C252B));
+    expect(dark.surfaceContainerHighest, const Color(0xFF323C46));
     expect(dark.primaryFixed, light.primaryFixed);
+    expect(dark.error, const Color(0xFFF2B8B5));
+    expect(dark.inversePrimary, light.primary);
+    expect(dark.secondary, const Color(0xFF6B381F));
   });
 
   test('theme tokens derive color aliases from AppColors', () {

@@ -27,19 +27,16 @@ class RegisterCredentialsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final cs = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const RegisterFormSectionTitle(title: 'Senha de acesso'),
-        Text(
-          'Defina uma senha para acessar o app após aprovação da solicitação.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: cs.onSurfaceVariant,
-          ),
+        const RegisterFormSectionTitle(
+          title: 'Senha de acesso',
+          subtitle:
+              'Defina uma senha para acessar o app após aprovação da '
+              'solicitação.',
         ),
-        SizedBox(height: tokens.gapMd),
         AuthPasswordTextField(
           controller: passwordController,
           label: 'Senha',

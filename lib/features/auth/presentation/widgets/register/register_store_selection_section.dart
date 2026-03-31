@@ -1,6 +1,7 @@
 import 'package:colmeia/features/auth/data/register_store_catalog.dart';
 import 'package:colmeia/features/auth/presentation/widgets/register/register_form_section_title.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:flutter/material.dart';
 
 class RegisterStoreSelectionSection extends StatelessWidget {
@@ -26,7 +27,22 @@ class RegisterStoreSelectionSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const RegisterFormSectionTitle(title: 'Solicitar acesso por loja'),
+        const RegisterFormSectionTitle(
+          title: 'Solicitar acesso por loja',
+          subtitle:
+              'Selecione as unidades que precisam ser vinculadas ao seu '
+              'cadastro inicial.',
+        ),
+        if (selectedIds.isNotEmpty) ...<Widget>[
+          Wrap(
+            spacing: tokens.gapSm,
+            runSpacing: tokens.gapSm,
+            children: <Widget>[
+              AppTagChip(label: '${selectedIds.length} lojas selecionadas'),
+            ],
+          ),
+          SizedBox(height: tokens.gapMd),
+        ],
         if (showSelectionError) ...<Widget>[
           Text(
             'Selecione pelo menos uma unidade.',

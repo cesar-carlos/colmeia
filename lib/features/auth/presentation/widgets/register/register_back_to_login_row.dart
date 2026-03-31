@@ -1,3 +1,6 @@
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_text_action_button.dart';
 import 'package:flutter/material.dart';
 
 class RegisterBackToLoginRow extends StatelessWidget {
@@ -7,32 +10,26 @@ class RegisterBackToLoginRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
 
     return Center(
-      child: RichText(
-        text: TextSpan(
-          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          children: <InlineSpan>[
-            const TextSpan(text: 'Já tem conta? '),
-            WidgetSpan(
-              alignment: PlaceholderAlignment.middle,
-              child: GestureDetector(
-                onTap: onTap,
-                child: Text(
-                  'Entrar',
-                  style: tt.bodySmall?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.w700,
-                    decoration: TextDecoration.underline,
-                    decorationColor: cs.primary,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: tokens.gapXs,
+        children: <Widget>[
+          Text(
+            'Ja tem conta?',
+            style: typography.caption.copyWith(color: cs.onSurfaceVariant),
+          ),
+          AppTextActionButton(
+            label: 'Entrar',
+            onPressed: onTap,
+            semanticsLabel: 'Voltar para entrar',
+          ),
+        ],
       ),
     );
   }

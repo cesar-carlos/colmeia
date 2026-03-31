@@ -2,6 +2,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_heatmap_chart.dart';
+import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -158,46 +159,42 @@ class _SalesHeatmapFilters extends StatelessWidget {
           children: <Widget>[
             Text('Filtros de vendas', style: theme.textTheme.titleSmall),
             SizedBox(height: tokens.gapSm),
-            SegmentedButton<_SalesPeriod>(
-              segments: const <ButtonSegment<_SalesPeriod>>[
-                ButtonSegment<_SalesPeriod>(
+            AppSegmentedControl<_SalesPeriod>(
+              options: const <AppSegmentedControlOption<_SalesPeriod>>[
+                AppSegmentedControlOption<_SalesPeriod>(
                   value: _SalesPeriod.month,
-                  label: Text('Mes'),
+                  label: 'Mes',
                 ),
-                ButtonSegment<_SalesPeriod>(
+                AppSegmentedControlOption<_SalesPeriod>(
                   value: _SalesPeriod.quarter,
-                  label: Text('Trimestre'),
+                  label: 'Trimestre',
                 ),
-                ButtonSegment<_SalesPeriod>(
+                AppSegmentedControlOption<_SalesPeriod>(
                   value: _SalesPeriod.year,
-                  label: Text('Ano'),
+                  label: 'Ano',
                 ),
               ],
-              selected: <_SalesPeriod>{period},
-              onSelectionChanged: (selection) {
-                onPeriodChanged(selection.first);
-              },
+              value: period,
+              onChanged: onPeriodChanged,
             ),
             SizedBox(height: tokens.gapSm),
-            SegmentedButton<_SalesChannel>(
-              segments: const <ButtonSegment<_SalesChannel>>[
-                ButtonSegment<_SalesChannel>(
+            AppSegmentedControl<_SalesChannel>(
+              options: const <AppSegmentedControlOption<_SalesChannel>>[
+                AppSegmentedControlOption<_SalesChannel>(
                   value: _SalesChannel.all,
-                  label: Text('Todos canais'),
+                  label: 'Todos canais',
                 ),
-                ButtonSegment<_SalesChannel>(
+                AppSegmentedControlOption<_SalesChannel>(
                   value: _SalesChannel.store,
-                  label: Text('Loja fisica'),
+                  label: 'Loja fisica',
                 ),
-                ButtonSegment<_SalesChannel>(
+                AppSegmentedControlOption<_SalesChannel>(
                   value: _SalesChannel.digital,
-                  label: Text('Digital'),
+                  label: 'Digital',
                 ),
               ],
-              selected: <_SalesChannel>{channel},
-              onSelectionChanged: (selection) {
-                onChannelChanged(selection.first);
-              },
+              value: channel,
+              onChanged: onChannelChanged,
             ),
           ],
         ),

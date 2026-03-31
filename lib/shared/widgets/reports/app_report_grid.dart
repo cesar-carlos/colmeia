@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_grid_source.dart';
@@ -312,11 +313,13 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   List<GridColumn> _buildGridColumns(List<AppReportColumn<T>> visible) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
     final density = widget.style.density;
     final headerHeight = widget.style.resolvedHeaderRowHeight(density);
     final defaultHeaderTextStyle =
         widget.style.headerTextStyle ??
-        theme.textTheme.labelLarge?.copyWith(
+        typography.utilityOverline.copyWith(
+          letterSpacing: 0.2,
           fontWeight: FontWeight.w700,
         );
 
@@ -324,14 +327,26 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
         .map((col) {
           final labelWidget = col.headerBuilder != null
               ? col.headerBuilder!(context, col.label)
-              : Container(
-                  alignment: _sfAlignment(col.effectiveAlignment),
-                  padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
-                  height: headerHeight,
-                  child: Text(
-                    col.label,
-                    style: col.headerTextStyle ?? defaultHeaderTextStyle,
-                    overflow: TextOverflow.ellipsis,
+              : DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHigh,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.48,
+                        ),
+                      ),
+                    ),
+                  ),
+                  child: Container(
+                    alignment: _sfAlignment(col.effectiveAlignment),
+                    padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
+                    height: headerHeight,
+                    child: Text(
+                      col.label,
+                      style: col.headerTextStyle ?? defaultHeaderTextStyle,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 );
 
@@ -512,8 +527,11 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       borderRadius: BorderRadius.circular(tokens.cardRadius),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(tokens.cardRadius),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.48),
+          ),
         ),
         child: widget.style.gridHeight != null
             ? SizedBox(height: widget.style.gridHeight, child: grid)
@@ -587,8 +605,11 @@ class _LoadingGridPlaceholder extends StatelessWidget {
       borderRadius: BorderRadius.circular(tokens.cardRadius),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(tokens.cardRadius),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.48),
+          ),
         ),
         child: Padding(
           padding: EdgeInsets.all(tokens.gapMd),
@@ -691,27 +712,40 @@ class _EmptyGridPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
 
-    return Padding(
-      padding: EdgeInsets.all(tokens.contentSpacing),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.table_rows_outlined,
-              size: 40,
-              color: theme.colorScheme.onSurfaceVariant,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(tokens.cardRadius),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(tokens.cardRadius),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.48),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.contentSpacing),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  Icons.table_rows_outlined,
+                  size: 40,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                SizedBox(height: tokens.gapMd),
+                Text(
+                  message,
+                  style: typography.body.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            SizedBox(height: tokens.gapMd),
-            Text(
-              message,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+          ),
         ),
       ),
     );

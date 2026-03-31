@@ -1,3 +1,6 @@
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
@@ -213,6 +216,7 @@ class AppReportGridSource<T> extends DataGridSource {
     final index = _rowIndexByDataGridRow[row] ?? -1;
     final sourceRow = index >= 0 && index < _rows.length ? _rows[index] : null;
     final useAltColor = alternateRowColor != null && index.isOdd;
+    final tokens = Theme.of(_context).extension<AppThemeTokens>()!;
 
     return DataGridRowAdapter(
       color: useAltColor ? alternateRowColor : null,
@@ -234,7 +238,10 @@ class AppReportGridSource<T> extends DataGridSource {
 
             return Container(
               alignment: alignment,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.gapMd,
+                vertical: tokens.gapSm,
+              ),
               child: Text(
                 displayText,
                 style: col?.textStyle ?? dataTextStyle,
@@ -253,6 +260,8 @@ class AppReportGridSource<T> extends DataGridSource {
     String summaryValue,
   ) {
     final theme = Theme.of(_context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
     final caption = _parseGroupCaption(summaryValue);
     final labelByKey = <String, String>{
       for (final column in _columns) column.key: column.label,
@@ -264,7 +273,10 @@ class AppReportGridSource<T> extends DataGridSource {
 
     return Container(
       alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.contentSpacing,
+        vertical: tokens.gapSm,
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 420;
@@ -272,8 +284,9 @@ class AppReportGridSource<T> extends DataGridSource {
             maxLines: compact ? 3 : 2,
             overflow: TextOverflow.ellipsis,
             text: TextSpan(
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: typography.caption.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
+                height: 1.35,
               ),
               children: <InlineSpan>[
                 TextSpan(
@@ -287,13 +300,24 @@ class AppReportGridSource<T> extends DataGridSource {
               ],
             ),
           );
+          final header = Row(
+            children: <Widget>[
+              Icon(
+                Icons.unfold_more_rounded,
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
+              SizedBox(width: tokens.gapXs),
+              Expanded(child: title),
+            ],
+          );
 
           if (compact) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                title,
-                const SizedBox(height: 6),
+                header,
+                SizedBox(height: tokens.gapXs),
                 _GroupCountChip(label: itemLabel),
               ],
             );
@@ -301,8 +325,8 @@ class AppReportGridSource<T> extends DataGridSource {
 
           return Row(
             children: <Widget>[
-              Expanded(child: title),
-              const SizedBox(width: 12),
+              Expanded(child: header),
+              SizedBox(width: tokens.gapSm),
               _GroupCountChip(label: itemLabel),
             ],
           );
@@ -406,22 +430,11 @@ class _GroupCountChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        child: Text(
-          label,
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
+    return AppTagChip(
+      label: label,
+      foregroundColor: theme.colorScheme.onSurfaceVariant,
+      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+      borderColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
     );
   }
 }

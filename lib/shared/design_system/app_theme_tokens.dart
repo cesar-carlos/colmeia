@@ -61,7 +61,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       chartSeriesPrimary: colors.primary,
       chartSeriesSecondary: colors.secondary,
       chartSeriesTertiary: colors.tertiary,
-      cardRadius: 24,
+      cardRadius: 20,
       cardOutlineWidth: 1,
       gapXs: 4,
       gapSm: 8,
@@ -92,8 +92,8 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       authLoginGapAfterPrimary: 24,
       authLoginGapBeforeFooter: 40,
       inlineAlertCornerRadius: 12,
-      hexGridPatternOpacity: 0.055,
-      formFieldRadius: 4,
+      hexGridPatternOpacity: 0.048,
+      formFieldRadius: 8,
       formFieldPaddingHorizontal: 16,
       formFieldPaddingVerticalComfortable: 16,
       formFieldPaddingVerticalCompact: 12,
@@ -187,7 +187,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
   final double hexGridPatternOpacity;
 
   /// Text fields, [InputDecoration] borders, and themed button corners.
-  /// Stitch `ROUND_FOUR` → 4 logical pixels.
+  /// Aligned with Stitch control roundness (8dp) for a softer Hive look.
   final double formFieldRadius;
 
   /// Horizontal padding inside text fields (`InputDecoration.contentPadding`).
@@ -288,7 +288,8 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       sectionSpacing: sectionSpacing ?? this.sectionSpacing,
       pagePaddingHorizontalCompact:
           pagePaddingHorizontalCompact ?? this.pagePaddingHorizontalCompact,
-      pagePaddingHorizontalComfortable: pagePaddingHorizontalComfortable ??
+      pagePaddingHorizontalComfortable:
+          pagePaddingHorizontalComfortable ??
           this.pagePaddingHorizontalComfortable,
       pagePaddingHorizontalSpacious:
           pagePaddingHorizontalSpacious ?? this.pagePaddingHorizontalSpacious,
@@ -348,11 +349,12 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           formControlRadioOuter ?? this.formControlRadioOuter,
       actionButtonMinHeight:
           actionButtonMinHeight ?? this.actionButtonMinHeight,
-      actionButtonLoadingIndicatorSize: actionButtonLoadingIndicatorSize ??
+      actionButtonLoadingIndicatorSize:
+          actionButtonLoadingIndicatorSize ??
           this.actionButtonLoadingIndicatorSize,
       actionButtonLoadingIndicatorStrokeWidth:
           actionButtonLoadingIndicatorStrokeWidth ??
-              this.actionButtonLoadingIndicatorStrokeWidth,
+          this.actionButtonLoadingIndicatorStrokeWidth,
     );
   }
 
@@ -385,19 +387,22 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           lerpDouble(contentSpacing, other.contentSpacing, t) ?? contentSpacing,
       sectionSpacing:
           lerpDouble(sectionSpacing, other.sectionSpacing, t) ?? sectionSpacing,
-      pagePaddingHorizontalCompact: lerpDouble(
+      pagePaddingHorizontalCompact:
+          lerpDouble(
             pagePaddingHorizontalCompact,
             other.pagePaddingHorizontalCompact,
             t,
           ) ??
           pagePaddingHorizontalCompact,
-      pagePaddingHorizontalComfortable: lerpDouble(
+      pagePaddingHorizontalComfortable:
+          lerpDouble(
             pagePaddingHorizontalComfortable,
             other.pagePaddingHorizontalComfortable,
             t,
           ) ??
           pagePaddingHorizontalComfortable,
-      pagePaddingHorizontalSpacious: lerpDouble(
+      pagePaddingHorizontalSpacious:
+          lerpDouble(
             pagePaddingHorizontalSpacious,
             other.pagePaddingHorizontalSpacious,
             t,

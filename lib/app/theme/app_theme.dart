@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -15,9 +16,16 @@ abstract final class AppTheme {
   static ThemeData _buildTheme(AppColors colors, AppThemeTokens tokens) {
     final colorScheme = colors.toColorScheme();
     final textTheme = _buildTextTheme(colorScheme);
+    final typography = AppTypographyTokens.fromTheme(
+      textTheme: textTheme,
+      colorScheme: colorScheme,
+    );
     final fieldRadius = BorderRadius.circular(tokens.formFieldRadius);
     final controlShape = RoundedRectangleBorder(
       borderRadius: fieldRadius,
+    );
+    final segmentedControlShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(tokens.formFieldRadius + 4),
     );
     final ghostBorderSide = BorderSide(
       color: colorScheme.outlineVariant.withValues(alpha: 0.15),
@@ -29,7 +37,7 @@ abstract final class AppTheme {
       textTheme: textTheme,
       primaryTextTheme: textTheme,
       scaffoldBackgroundColor: colors.background,
-      extensions: <ThemeExtension<dynamic>>[colors, tokens],
+      extensions: <ThemeExtension<dynamic>>[colors, tokens, typography],
       appBarTheme: AppBarTheme(
         centerTitle: false,
         backgroundColor: colorScheme.surface,
@@ -73,9 +81,13 @@ abstract final class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          foregroundColor: colorScheme.primary,
           minimumSize: Size(48, tokens.actionButtonMinHeight),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: controlShape,
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -83,6 +95,70 @@ abstract final class AppTheme {
           minimumSize: Size(48, tokens.actionButtonMinHeight),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: controlShape,
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          textStyle: WidgetStateProperty.resolveWith((states) {
+            return typography.caption.copyWith(
+              fontSize: 14,
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.w700
+                  : FontWeight.w600,
+              color: states.contains(WidgetState.selected)
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurfaceVariant,
+            );
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.onSurfaceVariant.withValues(alpha: 0.48);
+            }
+            if (states.contains(WidgetState.selected)) {
+              return colorScheme.onPrimaryContainer;
+            }
+            return colorScheme.onSurfaceVariant;
+          }),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+            }
+            if (states.contains(WidgetState.selected)) {
+              return Color.alphaBlend(
+                colorScheme.primary.withValues(alpha: 0.12),
+                colorScheme.primaryContainer,
+              );
+            }
+            return colorScheme.surfaceContainerLowest;
+          }),
+          side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return BorderSide(
+                color: colorScheme.primary.withValues(alpha: 0.32),
+              );
+            }
+            return BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+            );
+          }),
+          shadowColor: WidgetStateProperty.all(Colors.transparent),
+          surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return colorScheme.primary.withValues(alpha: 0.08);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return colorScheme.primary.withValues(alpha: 0.04);
+            }
+            return null;
+          }),
+          minimumSize: WidgetStateProperty.all(const Size(0, 40)),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          ),
+          shape: WidgetStateProperty.all(segmentedControlShape),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
         ),
       ),
       checkboxTheme: CheckboxThemeData(
@@ -103,12 +179,63 @@ abstract final class AppTheme {
         }),
         side: BorderSide(color: colorScheme.outlineVariant),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        ),
+      ),
+      drawerTheme: DrawerThemeData(
+        backgroundColor: colorScheme.surfaceContainerLow,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: colorScheme.surfaceContainerLow,
+        elevation: 0,
+        indicatorColor: colorScheme.primaryContainer,
+        minWidth: 72,
+        useIndicator: true,
+        selectedIconTheme: IconThemeData(
+          color: colorScheme.primary,
+          size: 24,
+        ),
+        unselectedIconTheme: IconThemeData(
+          color: colorScheme.onSurfaceVariant,
+          size: 24,
+        ),
+        selectedLabelTextStyle: textTheme.labelMedium?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w700,
+        ),
+        unselectedLabelTextStyle: textTheme.labelMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: colorScheme.surfaceContainerLowest,
+        labelStyle: textTheme.labelMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+        floatingLabelStyle: textTheme.labelMedium?.copyWith(
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w700,
+        ),
+        hintStyle: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.82),
+        ),
+        helperStyle: textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+        errorStyle: textTheme.bodySmall?.copyWith(
+          color: colorScheme.error,
+          fontWeight: FontWeight.w600,
+        ),
+        prefixIconColor: colorScheme.onSurfaceVariant,
+        suffixIconColor: colorScheme.onSurfaceVariant,
+        alignLabelWithHint: true,
+        errorMaxLines: 3,
+        helperMaxLines: 3,
         contentPadding: EdgeInsets.symmetric(
           horizontal: tokens.formFieldPaddingHorizontal,
           vertical: tokens.formFieldPaddingVerticalComfortable,
@@ -119,7 +246,10 @@ abstract final class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: fieldRadius,
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+          borderSide: BorderSide(
+            color: colorScheme.primary.withValues(alpha: 0.92),
+            width: 1.5,
+          ),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: fieldRadius,
@@ -139,7 +269,7 @@ abstract final class AppTheme {
         elevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: colorScheme.secondaryContainer,
+        indicatorColor: colorScheme.primaryContainer,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final base = textTheme.labelMedium ?? const TextStyle();
           if (states.contains(WidgetState.selected)) {
@@ -165,6 +295,32 @@ abstract final class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: colorScheme.inverseSurface,
         contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return colorScheme.onSurface.withValues(alpha: 0.38);
+          }
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.onPrimary;
+          }
+          return colorScheme.outline;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return colorScheme.onSurface.withValues(alpha: 0.12);
+          }
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.primary;
+          }
+          return colorScheme.surfaceContainerHighest;
+        }),
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.transparent;
+          }
+          return colorScheme.outlineVariant;
+        }),
       ),
     );
   }

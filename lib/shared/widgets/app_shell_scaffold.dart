@@ -35,15 +35,25 @@ class AppShellScaffold extends StatelessWidget {
     );
 
     if (useRail) {
+      final railDividerColor = Theme.of(context)
+          .colorScheme
+          .outlineVariant
+          .withValues(alpha: 0.22);
+
       return Scaffold(
         appBar: const AppShellAppBar(),
         body: Row(
           children: <Widget>[
-            if (showShellNav)
+            if (showShellNav) ...<Widget>[
               AppShellRail(
                 currentRoute: currentRoute,
                 visibleShellRoutes: visibleShellRoutes,
               ),
+              SizedBox(
+                width: 1,
+                child: ColoredBox(color: railDividerColor),
+              ),
+            ],
             Expanded(child: body),
           ],
         ),

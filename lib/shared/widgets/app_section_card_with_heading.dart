@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:flutter/material.dart';
 
@@ -59,17 +60,15 @@ class AppSectionCardWithHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
     final colors = theme.appColors;
     final crossAxisAlignment =
         style.crossAxisAlignment ?? CrossAxisAlignment.start;
     final resolvedTitleStyle =
-        style.titleTextStyle ??
-        theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-        );
+        style.titleTextStyle ?? typography.sectionHeaderH2;
     final resolvedSubtitleStyle =
         style.subtitleTextStyle ??
-        theme.textTheme.bodySmall?.copyWith(
+        typography.caption.copyWith(
           color: colors.onSurfaceVariant,
         );
     final headerBottomSpacing = style.headerBottomSpacing ?? tokens.gapMd;

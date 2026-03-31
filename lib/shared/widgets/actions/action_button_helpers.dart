@@ -1,3 +1,5 @@
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 
 /// Shared [CircularProgressIndicator] sizing for action buttons (loading).
@@ -48,4 +50,24 @@ Widget wrapAppActionButtonSemantics({
     );
   }
   return child;
+}
+
+double resolveAppActionButtonRadius(AppThemeTokens? tokens) {
+  return (tokens?.formFieldRadius ?? 8) + 2;
+}
+
+TextStyle resolveAppActionButtonTextStyle(ThemeData theme) {
+  return theme.appTypography.sectionHeaderH2.copyWith(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.1,
+  );
+}
+
+Color resolveAppActionButtonDisabledBackground(ColorScheme scheme) {
+  return scheme.surfaceContainerHighest;
+}
+
+Color resolveAppActionButtonDisabledForeground(ColorScheme scheme) {
+  return scheme.onSurfaceVariant.withValues(alpha: 0.72);
 }

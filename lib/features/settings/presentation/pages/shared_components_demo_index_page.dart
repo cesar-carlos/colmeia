@@ -25,6 +25,19 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
+          title: 'Foundations',
+          subtitle: 'Tokens base para linguagem visual e consistencia do app.',
+          child: _DemoEntryTile(
+            icon: Icons.text_fields_rounded,
+            title: 'Typography',
+            subtitle:
+                'Display H1, Section Header H2, Body, Caption e Utility '
+                'Overline em light/dark.',
+            onTap: () => context.push(appTypographyDemoLocation),
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
           title: 'Graficos',
           subtitle:
               'Catalogo com callbacks estruturados, presets compactos, estados '
@@ -297,6 +310,26 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
               ),
               const Divider(height: 1),
               _DemoEntryTile(
+                icon: Icons.photo_library_outlined,
+                title: 'Card editorial com midia',
+                subtitle:
+                    'Hero visual no topo com bloco editorial abaixo para '
+                    'storytelling e destaques de produto.',
+                badgeText: 'Novo',
+                onTap: () => context.push(appEditorialMediaCardDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.tab_rounded,
+                title: 'Tab view',
+                subtitle:
+                    'Navegacao horizontal com indicador slim, conteudo inline '
+                    'e suporte a overflow.',
+                badgeText: 'Novo',
+                onTap: () => context.push(appTabViewDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
                 icon: Icons.swap_horiz_rounded,
                 title: 'Paginacao inline',
                 subtitle: 'AppInlinePaginationBar com centro customizavel.',
@@ -321,7 +354,8 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
             icon: Icons.smart_button_outlined,
             title: 'Biblioteca de botoes',
             subtitle:
-                'AppPrimaryButton, AppSecondaryButton, AppFlatButton, '
+                'AppPrimaryButton, AppSecondaryButton, AppDestructiveButton, '
+                'AppFlatButton, '
                 'AppTextActionButton.',
             onTap: () => context.push(appButtonsDemoLocation),
           ),
@@ -330,11 +364,26 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
         AppSectionCardWithHeading(
           title: 'Feedback e estados',
           subtitle: 'Erros, alertas e skeleton.',
-          child: _DemoEntryTile(
-            icon: Icons.notifications_active_outlined,
-            title: 'Painel de erro, banner e skeleton',
-            subtitle: 'AppInlineErrorPanel, InlineAlertBanner e AppSkeleton.',
-            onTap: () => context.push(appFeedbackDemoLocation),
+          child: Column(
+            children: <Widget>[
+              _DemoEntryTile(
+                icon: Icons.notifications_active_outlined,
+                title: 'Painel de erro, banner e skeleton',
+                subtitle:
+                    'AppInlineErrorPanel, InlineAlertBanner e AppSkeleton.',
+                onTap: () => context.push(appFeedbackDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.label_rounded,
+                title: 'Tags e status',
+                subtitle:
+                    'AppTagChip e AppStatusBadge para metadata e estados '
+                    'semanticos.',
+                badgeText: 'Novo',
+                onTap: () => context.push(appBadgesDemoLocation),
+              ),
+            ],
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
@@ -350,6 +399,16 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
                     'AppTextField, AppEmailField, AppPasswordField, '
                     'AppCheckboxField e AppRadioGroup.',
                 onTap: () => context.push(appFormsDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
+                icon: Icons.tune_rounded,
+                title: 'Segmented control',
+                subtitle:
+                    'AppSegmentedControl para filtros inline de selecao unica '
+                    'com labels curtas ou longas.',
+                badgeText: 'Novo',
+                onTap: () => context.push(appSegmentedControlDemoLocation),
               ),
               const Divider(height: 1),
               _DemoEntryTile(

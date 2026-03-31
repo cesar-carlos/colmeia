@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 
 class AppProfileInteractiveField extends StatelessWidget {
@@ -22,21 +23,25 @@ class AppProfileInteractiveField extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final cs = theme.colorScheme;
+    final typography = theme.appTypography;
 
     final TextStyle? valueStyle;
     if (isPlaceholder) {
-      valueStyle = theme.textTheme.titleSmall?.copyWith(
+      valueStyle = typography.sectionHeaderH2.copyWith(
+        fontSize: theme.textTheme.titleSmall?.fontSize,
         fontWeight: FontWeight.w500,
         color: cs.onSurfaceVariant.withValues(alpha: 0.72),
         fontStyle: FontStyle.italic,
       );
     } else if (emphasizeValue) {
-      valueStyle = theme.textTheme.titleSmall?.copyWith(
+      valueStyle = typography.sectionHeaderH2.copyWith(
+        fontSize: theme.textTheme.titleSmall?.fontSize,
         color: cs.primary,
         fontWeight: FontWeight.w700,
       );
     } else {
-      valueStyle = theme.textTheme.titleSmall?.copyWith(
+      valueStyle = typography.sectionHeaderH2.copyWith(
+        fontSize: theme.textTheme.titleSmall?.fontSize,
         fontWeight: FontWeight.w600,
       );
     }
@@ -57,7 +62,7 @@ class AppProfileInteractiveField extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       label,
-                      style: theme.textTheme.bodySmall?.copyWith(
+                      style: typography.utilityOverline.copyWith(
                         color: cs.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
                       ),

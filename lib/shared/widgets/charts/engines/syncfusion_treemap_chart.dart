@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_treemap_chart.dart';
@@ -43,6 +44,7 @@ class SyncfusionTreemapChart<T> extends StatelessWidget {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final theme = Theme.of(context);
     final colors = theme.appColors;
+    final typography = theme.appTypography;
     final resolvedHeight = style.height ?? chartTheme.height;
 
     if (isLoading) {
@@ -92,7 +94,8 @@ class SyncfusionTreemapChart<T> extends StatelessWidget {
                     label,
                     style:
                         style.labelTextStyle ??
-                        theme.textTheme.labelMedium?.copyWith(
+                        typography.utilityOverline.copyWith(
+                          letterSpacing: 0.2,
                           color: colors.onPrimary,
                           fontWeight: FontWeight.w700,
                         ),
@@ -117,7 +120,7 @@ class SyncfusionTreemapChart<T> extends StatelessWidget {
                       label,
                       style:
                           style.tooltipTextStyle ??
-                          theme.textTheme.bodySmall?.copyWith(
+                          typography.caption.copyWith(
                             color: colors.inverseOnSurface,
                           ),
                     ),
@@ -154,7 +157,9 @@ class SyncfusionTreemapChart<T> extends StatelessWidget {
                       label,
                       style:
                           style.labelTextStyle ??
-                          theme.textTheme.labelSmall?.copyWith(
+                          typography.utilityOverline.copyWith(
+                            fontSize: theme.textTheme.labelSmall?.fontSize,
+                            letterSpacing: 0.2,
                             color: colors.onPrimary,
                             fontWeight: FontWeight.w700,
                           ),
@@ -179,7 +184,7 @@ class SyncfusionTreemapChart<T> extends StatelessWidget {
                         label,
                         style:
                             style.tooltipTextStyle ??
-                            theme.textTheme.bodySmall?.copyWith(
+                            typography.caption.copyWith(
                               color: colors.inverseOnSurface,
                             ),
                       ),

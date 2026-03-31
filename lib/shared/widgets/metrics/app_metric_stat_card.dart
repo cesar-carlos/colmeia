@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_delta.dart';
 import 'package:flutter/material.dart';
@@ -130,20 +131,22 @@ class AppMetricStatCard extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
+    final typography = theme.appTypography;
     final leadingSpacing = style.leadingSpacing ?? tokens.gapSm;
     final topRowBottomSpacing = style.topRowBottomSpacing ?? tokens.gapMd;
     final labelBottomSpacing = style.labelBottomSpacing ?? tokens.gapXs;
 
     final labelStyle =
         style.labelTextStyle ??
-        theme.textTheme.bodyMedium?.copyWith(
+        typography.body.copyWith(
           color: _useOnPrimaryContainer
               ? colors.onPrimaryContainer
               : colors.onSurfaceVariant,
         );
     final valueStyle =
         style.valueTextStyle ??
-        theme.textTheme.headlineSmall?.copyWith(
+        typography.displayH1.copyWith(
+          fontSize: theme.textTheme.headlineSmall?.fontSize,
           fontWeight: FontWeight.w800,
           color: _useOnPrimaryContainer ? colors.onPrimaryContainer : null,
         );
@@ -189,7 +192,8 @@ class AppMetricStatCard extends StatelessWidget {
                     : TextAlign.start),
             style:
                 style.trendTextStyle ??
-                theme.textTheme.labelLarge?.copyWith(
+                typography.utilityOverline.copyWith(
+                  letterSpacing: 0.2,
                   color: metricDeltaForeground(
                     colors,
                     parseMetricDeltaSign(trimmedTrend),
@@ -201,37 +205,39 @@ class AppMetricStatCard extends StatelessWidget {
     final resolvedTrend = hasCustomTrend ? trendWidget : builtTextTrend;
 
     final Widget topRow = switch (trendPlacement) {
-      AppMetricStatTrendPlacement.end => showTrendRegion
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                leading,
-                SizedBox(width: leadingSpacing),
-                Expanded(
-                  child: Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: resolvedTrend ?? const SizedBox.shrink(),
+      AppMetricStatTrendPlacement.end =>
+        showTrendRegion
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  leading,
+                  SizedBox(width: leadingSpacing),
+                  Expanded(
+                    child: Align(
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: resolvedTrend ?? const SizedBox.shrink(),
+                    ),
                   ),
-                ),
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[leading],
-            ),
-      AppMetricStatTrendPlacement.inlineStart => showTrendRegion
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                leading,
-                SizedBox(width: leadingSpacing),
-                ?resolvedTrend,
-              ],
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[leading],
-            ),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[leading],
+              ),
+      AppMetricStatTrendPlacement.inlineStart =>
+        showTrendRegion
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  leading,
+                  SizedBox(width: leadingSpacing),
+                  ?resolvedTrend,
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[leading],
+              ),
     };
 
     final body = Column(
@@ -314,7 +320,8 @@ class _MetricTrendPill extends StatelessWidget {
     final sign = parseMetricDeltaSign(text);
     final fg = metricDeltaPillForeground(colors, sign);
     final bg = metricDeltaPillBackground(colors, sign);
-    final baseStyle = theme.textTheme.labelLarge?.copyWith(
+    final baseStyle = theme.appTypography.utilityOverline.copyWith(
+      letterSpacing: 0.2,
       color: fg,
       fontWeight: FontWeight.w700,
     );

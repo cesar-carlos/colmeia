@@ -23,7 +23,12 @@ class RegisterAccessProfileSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const RegisterFormSectionTitle(title: 'Perfil de acesso'),
+        const RegisterFormSectionTitle(
+          title: 'Perfil de acesso',
+          subtitle:
+              'Escolha o papel inicial solicitado para direcionar permissões '
+              'e dashboards.',
+        ),
         AppRadioGroup<RegisterAccessProfile>(
           groupValue: groupValue,
           onChanged: onChanged,

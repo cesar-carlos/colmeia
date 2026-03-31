@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 
 class AppShellPageIntro extends StatelessWidget {
@@ -23,6 +24,7 @@ class AppShellPageIntro extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
     final cs = theme.colorScheme;
 
     return Column(
@@ -31,10 +33,8 @@ class AppShellPageIntro extends StatelessWidget {
         if (eyebrow != null) ...<Widget>[
           Text(
             eyebrow!,
-            style: theme.textTheme.labelLarge?.copyWith(
+            style: typography.utilityOverline.copyWith(
               color: cs.primary,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
             ),
           ),
           SizedBox(height: tokens.gapXs),
@@ -42,23 +42,20 @@ class AppShellPageIntro extends StatelessWidget {
         if (sectionLabel != null) ...<Widget>[
           Text(
             sectionLabel!,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: typography.sectionHeaderH2.copyWith(
               color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
             ),
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],
         Text(
           title,
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: typography.displayH1,
         ),
         SizedBox(height: tokens.gapSm),
         Text(
           subtitle,
-          style: theme.textTheme.bodyLarge?.copyWith(
+          style: typography.body.copyWith(
             color: cs.onSurfaceVariant,
           ),
         ),

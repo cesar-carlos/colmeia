@@ -44,19 +44,39 @@ class AppTextActionButton extends StatelessWidget {
     final minH = tokens?.actionButtonMinHeight ?? 48;
     final loadingSize =
         loadingIndicatorSize ?? tokens?.actionButtonLoadingIndicatorSize ?? 22;
-    final loadingStroke = loadingIndicatorStrokeWidth ??
+    final loadingStroke =
+        loadingIndicatorStrokeWidth ??
         tokens?.actionButtonLoadingIndicatorStrokeWidth ??
         2;
-    final indicatorColor =
-        loadingIndicatorColor ?? theme.colorScheme.primary;
-
-    final effectiveStyle =
-        style ??
-        TextButton.styleFrom(
-          minimumSize: Size(48, minH),
-        );
+    final indicatorColor = loadingIndicatorColor ?? theme.colorScheme.primary;
 
     final gapSm = tokens?.gapSm ?? 8;
+    final radius = resolveAppActionButtonRadius(tokens);
+    final labelStyle = resolveAppActionButtonTextStyle(theme).copyWith(
+      fontSize: 15,
+      fontWeight: FontWeight.w600,
+    );
+    final base = theme.textButtonTheme.style ?? const ButtonStyle();
+    final effectiveStyle =
+        style ??
+        base.merge(
+          TextButton.styleFrom(
+            minimumSize: Size(48, minH),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens?.gapMd ?? 12,
+              vertical: gapSm,
+            ),
+            foregroundColor: theme.colorScheme.primary,
+            disabledForegroundColor: resolveAppActionButtonDisabledForeground(
+              theme.colorScheme,
+            ),
+            textStyle: labelStyle,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
+          ),
+        );
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
             color: indicatorColor,

@@ -21,6 +21,7 @@ import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -202,13 +203,11 @@ class _ReportsPageState extends State<ReportsPage> {
                         spacing: tokens.gapSm,
                         runSpacing: tokens.gapSm,
                         children: <Widget>[
-                          Chip(label: Text(userContext.userScope.roleLabel)),
-                          Chip(label: Text(activeStore.name)),
+                          AppTagChip(label: userContext.userScope.roleLabel),
+                          AppTagChip(label: activeStore.name),
                           if (!showSkeleton)
-                            Chip(
-                              label: Text(
-                                '${reports.length} rotas disponíveis',
-                              ),
+                            AppTagChip(
+                              label: '${reports.length} rotas disponíveis',
                             ),
                         ],
                       ),

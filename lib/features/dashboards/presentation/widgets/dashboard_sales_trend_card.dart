@@ -2,6 +2,7 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_chart_point.dart';
 import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_chart_renderer.dart';
+import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 
 enum DashboardSalesTrendRange {
@@ -61,21 +62,20 @@ class _DashboardSalesTrendCardState extends State<DashboardSalesTrendCard> {
       ),
       belowSubtitle: SizedBox(
         width: double.infinity,
-        child: SegmentedButton<DashboardSalesTrendRange>(
-          segments: const <ButtonSegment<DashboardSalesTrendRange>>[
-            ButtonSegment<DashboardSalesTrendRange>(
+        child: AppSegmentedControl<DashboardSalesTrendRange>(
+          expandToFill: true,
+          options: const <AppSegmentedControlOption<DashboardSalesTrendRange>>[
+            AppSegmentedControlOption<DashboardSalesTrendRange>(
               value: DashboardSalesTrendRange.lastWeek,
-              label: Text('Última semana'),
+              label: 'Última semana',
             ),
-            ButtonSegment<DashboardSalesTrendRange>(
+            AppSegmentedControlOption<DashboardSalesTrendRange>(
               value: DashboardSalesTrendRange.lastMonth,
-              label: Text('Último mês'),
+              label: 'Último mês',
             ),
           ],
-          selected: <DashboardSalesTrendRange>{_range},
-          onSelectionChanged: (selection) {
-            setState(() => _range = selection.first);
-          },
+          value: _range,
+          onChanged: (selection) => setState(() => _range = selection),
         ),
       ),
     );

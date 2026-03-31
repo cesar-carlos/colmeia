@@ -22,6 +22,7 @@ import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
 import 'package:colmeia/shared/widgets/metrics/app_executive_metric_tile.dart';
@@ -219,13 +220,12 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                         spacing: tokens.gapSm,
                         runSpacing: tokens.gapSm,
                         children: <Widget>[
-                          Chip(label: Text(resolvedStore.name)),
-                          Chip(label: Text(detail.generatedAtLabel)),
-                          Chip(
-                            label: Text(
-                              'Página ${detail.pageInfo.currentPage}'
-                              '/${detail.pageInfo.totalPages}',
-                            ),
+                          AppTagChip(label: resolvedStore.name),
+                          AppTagChip(label: detail.generatedAtLabel),
+                          AppTagChip(
+                            label:
+                                'Página ${detail.pageInfo.currentPage}'
+                                '/${detail.pageInfo.totalPages}',
                           ),
                         ],
                       ),
@@ -386,7 +386,8 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
                           'Carregando tabela de resultados...',
                       child: ReportResultsGrid(
                         rows: detail.rows,
-                        isLoading: controller.isLoading &&
+                        isLoading:
+                            controller.isLoading &&
                             (controller.detail?.rows.isEmpty ?? false),
                       ),
                     ),

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
+
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
@@ -168,8 +170,7 @@ class _PolarHitArea extends StatelessWidget {
     var best = 0;
     var bestDelta = double.infinity;
     for (var i = 0; i < categories.length; i++) {
-      final angle =
-          (-math.pi / 2) + ((2 * math.pi * i) / categories.length);
+      final angle = (-math.pi / 2) + ((2 * math.pi * i) / categories.length);
       var delta = (tapAngle - angle).abs();
       if (delta > math.pi) delta = (2 * math.pi) - delta;
       if (delta < bestDelta) {
@@ -194,6 +195,7 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).appTypography;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -206,7 +208,7 @@ class _LegendItem extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(label, style: textStyle ?? Theme.of(context).textTheme.bodySmall),
+        Text(label, style: textStyle ?? typography.caption),
       ],
     );
   }

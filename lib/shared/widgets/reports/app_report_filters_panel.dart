@@ -1,6 +1,12 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_date_picker_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_builder_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +70,7 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
     final hasFilters = widget.filters.isNotEmpty;
     final requiredCount = widget.filters.where((f) => f.required).length;
     final activeCount = widget.filters
@@ -77,6 +84,9 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
 
     return AppSectionCard(
       color: theme.colorScheme.surfaceContainerLow,
+      borderSide: BorderSide(
+        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -93,32 +103,28 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                     children: <Widget>[
                       Text(
                         'Filtros',
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: typography.sectionHeaderH2.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       SizedBox(height: tokens.gapXs),
+                      Text(
+                        'Ajuste a consulta e aplique somente os recortes que '
+                        'fazem sentido para esta analise.',
+                        style: typography.caption.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: tokens.gapSm),
                       Wrap(
                         spacing: tokens.gapSm,
                         runSpacing: tokens.gapSm,
                         children: <Widget>[
-                          Chip(
-                            label: Text('${widget.filters.length} campos'),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                          ),
+                          AppTagChip(label: '${widget.filters.length} campos'),
                           if (requiredCount > 0)
-                            Chip(
-                              label: Text('$requiredCount obrigatórios'),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                            ),
+                            AppTagChip(label: '$requiredCount obrigatórios'),
                           if (activeCount > 0)
-                            Chip(
-                              label: Text('$activeCount ativos'),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                            ),
+                            AppTagChip(label: '$activeCount ativos'),
                         ],
                       ),
                     ],
@@ -155,17 +161,17 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                   Row(
                     children: <Widget>[
                       Expanded(
-                        child: OutlinedButton(
+                        child: AppSecondaryButton(
                           onPressed: () {
                             _formKey.currentState?.reset();
                             widget.onClear?.call();
                           },
-                          child: const Text('Limpar'),
+                          label: 'Limpar',
                         ),
                       ),
                       SizedBox(width: tokens.gapMd),
                       Expanded(
-                        child: FilledButton(
+                        child: AppPrimaryButton(
                           onPressed: () {
                             final valid =
                                 _formKey.currentState?.saveAndValidate() ??
@@ -176,7 +182,7 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                                   <String, Object?>{},
                             );
                           },
-                          child: const Text('Aplicar filtros'),
+                          label: 'Aplicar filtros',
                         ),
                       ),
                     ],
@@ -225,6 +231,7 @@ class _FilterField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final typography = theme.appTypography;
     final initialValue =
         initialValues[descriptor.name] ?? descriptor.initialValue;
     final requiredValidator = descriptor.required
@@ -251,38 +258,40 @@ class _FilterField extends StatelessWidget {
         );
 
       case AppReportFilterType.singleSelect:
-        return FormBuilderDropdown<String>(
+        return AppFormBuilderDropdownField<String>(
           name: descriptor.name,
+          label: descriptor.label,
+          hintText: 'Selecione uma opção',
+          helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
           initialValue: initialValue as String?,
-          decoration: InputDecoration(
-            labelText: descriptor.label,
-            helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
-          ),
-          items: descriptor.options.map((o) {
-            return DropdownMenuItem<String>(
-              value: o.value,
-              child: Text(o.label),
-            );
-          }).toList(),
+          options: descriptor.options
+              .map(
+                (o) => AppDropdownOption<String>(
+                  value: o.value,
+                  label: o.label,
+                ),
+              )
+              .toList(growable: false),
           validator: requiredValidator,
         );
 
       case AppReportFilterType.multiSelect:
-        return FormBuilderFilterChips<String>(
+        return AppFormBuilderMultiSelectSearchField<String>(
           name: descriptor.name,
           initialValue: initialValue is List
               ? initialValue.whereType<String>().toList(growable: false)
               : null,
-          decoration: InputDecoration(
-            labelText: descriptor.label,
-            helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
-          ),
-          options: descriptor.options.map((o) {
-            return FormBuilderChipOption<String>(
-              value: o.value,
-              child: Text(o.label),
-            );
-          }).toList(),
+          label: descriptor.label,
+          helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
+          searchHintText: 'Buscar tags...',
+          options: descriptor.options
+              .map(
+                (o) => AppDropdownOption<String>(
+                  value: o.value,
+                  label: o.label,
+                ),
+              )
+              .toList(growable: false),
           validator: descriptor.required
               ? FormBuilderValidators.compose(
                   <String? Function(List<String>?)>[
@@ -334,7 +343,7 @@ class _FilterField extends StatelessWidget {
           children: <Widget>[
             Text(
               descriptor.label,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: typography.utilityOverline.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),

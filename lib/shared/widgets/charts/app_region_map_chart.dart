@@ -5,6 +5,8 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_chart.dart';
+import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
+import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -387,42 +389,40 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
           spacing: tokens.gapSm,
           runSpacing: tokens.gapSm,
           children: <Widget>[
-            Tooltip(
-              message: 'Ver mapa completo ($rootLabel)',
-              child: ChoiceChip(
-                label: Text(rootLabel),
-                selected: widget.activeScopeKey == null,
-                onSelected: (_) {
-                  if (widget.activeScopeKey == null) {
+            AppChoiceChip(
+              label: rootLabel,
+              selected: widget.activeScopeKey == null,
+              tooltip: 'Ver mapa completo ($rootLabel)',
+              semanticLabel: 'Ver mapa completo $rootLabel',
+              onSelected: () {
+                if (widget.activeScopeKey == null) {
+                  return;
+                }
+                callback(
+                  AppMapScopeChangedEvent(
+                    previousScopeKey: widget.activeScopeKey,
+                    currentScopeKey: null,
+                  ),
+                );
+              },
+            ),
+            for (final option in widget.scopeOptions)
+              AppChoiceChip(
+                label: option.label,
+                selected: option.key == widget.activeScopeKey,
+                tooltip: 'Focar em ${option.label}',
+                semanticLabel: 'Focar em ${option.label}',
+                onSelected: () {
+                  if (option.key == widget.activeScopeKey) {
                     return;
                   }
                   callback(
                     AppMapScopeChangedEvent(
                       previousScopeKey: widget.activeScopeKey,
-                      currentScopeKey: null,
+                      currentScopeKey: option.key,
                     ),
                   );
                 },
-              ),
-            ),
-            for (final option in widget.scopeOptions)
-              Tooltip(
-                message: 'Focar em ${option.label}',
-                child: ChoiceChip(
-                  label: Text(option.label),
-                  selected: option.key == widget.activeScopeKey,
-                  onSelected: (_) {
-                    if (option.key == widget.activeScopeKey) {
-                      return;
-                    }
-                    callback(
-                      AppMapScopeChangedEvent(
-                        previousScopeKey: widget.activeScopeKey,
-                        currentScopeKey: option.key,
-                      ),
-                    );
-                  },
-                ),
               ),
           ],
         ),
@@ -450,31 +450,27 @@ class _MetricSelector<T> extends StatelessWidget {
       padding: style.metricSelectorPadding ?? EdgeInsets.zero,
       child: Semantics(
         label: 'Métrica do mapa',
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SegmentedButton<String>(
-            segments: metrics
-                .map(
-                  (metric) => ButtonSegment<String>(
-                    value: metric.key,
-                    label: Text(metric.label),
-                  ),
-                )
-                .toList(growable: false),
-            selected: <String>{selectedMetricKey},
-            onSelectionChanged: (selection) {
-              final nextMetricKey = selection.first;
-              if (nextMetricKey == selectedMetricKey) {
-                return;
-              }
-              onMetricChanged(
-                AppMapMetricChangedEvent(
-                  metricKey: nextMetricKey,
-                  previousMetricKey: selectedMetricKey,
+        child: AppSegmentedControl<String>(
+          options: metrics
+              .map(
+                (metric) => AppSegmentedControlOption<String>(
+                  value: metric.key,
+                  label: metric.label,
                 ),
-              );
-            },
-          ),
+              )
+              .toList(growable: false),
+          value: selectedMetricKey,
+          onChanged: (nextMetricKey) {
+            if (nextMetricKey == selectedMetricKey) {
+              return;
+            }
+            onMetricChanged(
+              AppMapMetricChangedEvent(
+                metricKey: nextMetricKey,
+                previousMetricKey: selectedMetricKey,
+              ),
+            );
+          },
         ),
       ),
     );

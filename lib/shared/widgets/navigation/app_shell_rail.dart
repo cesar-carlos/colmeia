@@ -4,6 +4,45 @@ import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_route_presentation.dart';
 import 'package:flutter/material.dart';
 
+class _RailDestinationIcon extends StatelessWidget {
+  const _RailDestinationIcon({
+    required this.icon,
+    required this.selected,
+  });
+
+  final IconData icon;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: <Widget>[
+        Icon(
+          icon,
+          size: 24,
+          color: selected ? scheme.primary : scheme.onSurfaceVariant,
+        ),
+        if (selected)
+          PositionedDirectional(
+            end: -2,
+            child: Container(
+              width: 3,
+              height: 26,
+              decoration: BoxDecoration(
+                color: scheme.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class AppShellRail extends StatelessWidget {
   const AppShellRail({
     required this.currentRoute,
@@ -28,6 +67,7 @@ class AppShellRail extends StatelessWidget {
 
     return NavigationRail(
       extended: extended,
+      useIndicator: false,
       selectedIndex: safeIndex,
       onDestinationSelected: (index) {
         final target = visibleShellRoutes[index];
@@ -37,8 +77,14 @@ class AppShellRail extends StatelessWidget {
       destinations: <NavigationRailDestination>[
         for (final route in visibleShellRoutes)
           NavigationRailDestination(
-            icon: Icon(appShellRouteIcon(route, selected: false)),
-            selectedIcon: Icon(appShellRouteIcon(route, selected: true)),
+            icon: _RailDestinationIcon(
+              icon: appShellRouteIcon(route, selected: false),
+              selected: false,
+            ),
+            selectedIcon: _RailDestinationIcon(
+              icon: appShellRouteIcon(route, selected: true),
+              selected: true,
+            ),
             label: Text(appShellRouteLabel(route)),
           ),
       ],

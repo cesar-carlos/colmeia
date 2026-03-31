@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:flutter/material.dart';
 
@@ -33,6 +34,7 @@ class AppInlineErrorPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
+    final typography = theme.appTypography;
 
     final hasTitle = title?.trim().isNotEmpty ?? false;
 
@@ -43,7 +45,7 @@ class AppInlineErrorPanel extends StatelessWidget {
         if (hasTitle) ...<Widget>[
           Text(
             title!,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: typography.sectionHeaderH2.copyWith(
               color: colors.error,
               fontWeight: FontWeight.w700,
             ),
@@ -52,7 +54,7 @@ class AppInlineErrorPanel extends StatelessWidget {
         ],
         Text(
           message,
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: typography.body.copyWith(
             color: colors.onSurface,
           ),
         ),

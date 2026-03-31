@@ -2,12 +2,11 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
 import 'package:flutter/material.dart';
 
-/// Filled primary action. Inherits colors from [Theme]'s [FilledButtonTheme]
-/// and [ColorScheme] unless [style] overrides them.
+/// Filled primary action using solid [ColorScheme.primary] and
+/// [ColorScheme.onPrimary] (brand CTA). Override [style] for special cases.
 ///
-/// When [style] uses a non-default fill (e.g. [ColorScheme.primaryContainer]),
-/// set [loadingIndicatorColor] so the loading spinner stays legible on that
-/// background.
+/// Set [loadingIndicatorColor] when [style] changes the fill so the spinner
+/// stays legible.
 class AppPrimaryButton extends StatelessWidget {
   const AppPrimaryButton({
     required this.onPressed,
@@ -58,14 +57,32 @@ class AppPrimaryButton extends StatelessWidget {
     final gapMd = tokens?.gapMd ?? 12;
     final loadingSize =
         loadingIndicatorSize ?? tokens?.actionButtonLoadingIndicatorSize ?? 22;
-    final loadingStroke = loadingIndicatorStrokeWidth ??
+    final loadingStroke =
+        loadingIndicatorStrokeWidth ??
         tokens?.actionButtonLoadingIndicatorStrokeWidth ??
         2;
 
+    final radius = resolveAppActionButtonRadius(tokens);
+    final scheme = theme.colorScheme;
+    final labelStyle = resolveAppActionButtonTextStyle(theme);
     var resolvedStyle =
         style ??
         FilledButton.styleFrom(
+          backgroundColor: scheme.primary,
+          foregroundColor: scheme.onPrimary,
+          disabledBackgroundColor: resolveAppActionButtonDisabledBackground(
+            scheme,
+          ),
+          disabledForegroundColor: resolveAppActionButtonDisabledForeground(
+            scheme,
+          ),
+          elevation: 0,
+          shadowColor: Colors.transparent,
           minimumSize: Size(48, minH),
+          textStyle: labelStyle,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radius),
+          ),
         );
 
     final targetHeight = minimumHeight ?? minH;
@@ -85,8 +102,7 @@ class AppPrimaryButton extends StatelessWidget {
       );
     }
 
-    final indicatorColor =
-        loadingIndicatorColor ?? theme.colorScheme.onPrimary;
+    final indicatorColor = loadingIndicatorColor ?? theme.colorScheme.onPrimary;
 
     Widget content;
     if (isLoading && showLabelWhileLoading && label != null) {

@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -80,20 +81,74 @@ class AppTextField extends StatelessWidget {
     );
   }
 
+  Widget? _buildPrefixWidget(BuildContext context) {
+    if (prefix != null) {
+      return prefix;
+    }
+    if (prefixIcon == null) {
+      return null;
+    }
+
+    final theme = Theme.of(context);
+    final colors = theme.appColors;
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
+      child: Align(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            prefixIcon,
+            size: 18,
+            color: enabled
+                ? colors.onSurfaceVariant
+                : colors.onSurface.withValues(alpha: 0.38),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget? _buildSuffixWidget() {
+    if (suffix == null) {
+      return null;
+    }
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(end: 4),
+      child: Align(
+        widthFactor: 1,
+        heightFactor: 1,
+        child: suffix,
+      ),
+    );
+  }
+
   InputDecoration _resolveDecoration(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>();
     final densityPadding = _contentPaddingForDensity(tokens);
-
-    final prefixWidget =
-        prefix ?? (prefixIcon != null ? Icon(prefixIcon) : null);
+    final prefixWidget = _buildPrefixWidget(context);
+    final suffixWidget = _buildSuffixWidget();
+    const iconConstraints = BoxConstraints(minWidth: 52);
 
     if (decoration != null) {
       return decoration!.copyWith(
         labelText: decoration!.labelText ?? label,
         hintText: decoration!.hintText ?? hintText,
         prefixIcon: decoration!.prefixIcon ?? prefixWidget,
-        suffixIcon: decoration!.suffixIcon ?? suffix,
+        suffixIcon: decoration!.suffixIcon ?? suffixWidget,
         contentPadding: decoration!.contentPadding ?? densityPadding,
+        prefixIconConstraints:
+            decoration!.prefixIconConstraints ?? iconConstraints,
+        suffixIconConstraints:
+            decoration!.suffixIconConstraints ?? iconConstraints,
       );
     }
 
@@ -101,8 +156,10 @@ class AppTextField extends StatelessWidget {
       labelText: label,
       hintText: hintText,
       prefixIcon: prefixWidget,
-      suffixIcon: suffix,
+      suffixIcon: suffixWidget,
       contentPadding: densityPadding,
+      prefixIconConstraints: iconConstraints,
+      suffixIconConstraints: iconConstraints,
     );
   }
 

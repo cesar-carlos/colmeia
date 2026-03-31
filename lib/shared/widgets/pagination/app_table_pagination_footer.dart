@@ -1,5 +1,6 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -43,7 +44,7 @@ class AppTablePaginationFooterStyle {
   const AppTablePaginationFooterStyle({
     this.iconButtonSize = 32,
     this.pageNumberMinSize = 32,
-    this.cornerRadius = 6,
+    this.cornerRadius = 10,
     this.showTopBorder = true,
   });
 
@@ -222,11 +223,11 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bodySmall = Theme.of(context).textTheme.bodySmall;
-    final labelStyle = bodySmall?.copyWith(
+    final typography = Theme.of(context).appTypography;
+    final labelStyle = typography.caption.copyWith(
       color: scheme.onSurfaceVariant,
     );
-    final emphasisStyle = bodySmall?.copyWith(
+    final emphasisStyle = typography.caption.copyWith(
       color: scheme.onSurface,
       fontWeight: FontWeight.w700,
     );
@@ -301,31 +302,40 @@ class _PageSizeDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).appTypography;
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border.all(color: scheme.outlineVariant),
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius / 2),
+        color: scheme.surfaceContainerLow,
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: tokens.gapXs),
-        child: DropdownButton<int>(
-          value: value,
-          underline: const SizedBox.shrink(),
-          isDense: true,
-          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-          items: options
-              .map(
-                (n) => DropdownMenuItem<int>(
-                  value: n,
-                  child: Text('$n'),
-                ),
-              )
-              .toList(),
-          onChanged: (v) {
-            if (v != null) {
-              onChanged(v);
-            }
-          },
+        padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<int>(
+            value: value,
+            isDense: true,
+            iconSize: 18,
+            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+            dropdownColor: scheme.surfaceContainerLow,
+            style: typography.caption.copyWith(
+              color: scheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+            items: options
+                .map(
+                  (n) => DropdownMenuItem<int>(
+                    value: n,
+                    child: Text('$n'),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              if (v != null) {
+                onChanged(v);
+              }
+            },
+          ),
         ),
       ),
     );
@@ -355,6 +365,7 @@ class _PaginationControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typography = Theme.of(context).appTypography;
     final slots = buildPaginationPageSlots(
       currentPage: currentPage,
       totalPages: totalPages,
@@ -371,7 +382,7 @@ class _PaginationControls extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: tokens.gapXs),
             child: Text(
               '...',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              style: typography.body.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
             ),
@@ -447,14 +458,29 @@ class _PaginationIconButton extends StatelessWidget {
         width: size,
         height: size,
         child: Material(
-          color: scheme.surface,
+          color: enabled
+              ? scheme.surfaceContainerLow
+              : scheme.surfaceContainerHighest.withValues(alpha: 0.48),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(cornerRadius),
-            side: BorderSide(color: scheme.outlineVariant),
+            side: BorderSide(
+              color: scheme.outlineVariant.withValues(
+                alpha: enabled ? 0.72 : 0.4,
+              ),
+            ),
           ),
           child: InkWell(
             onTap: onPressed,
             borderRadius: BorderRadius.circular(cornerRadius),
+            overlayColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.pressed)) {
+                return scheme.primary.withValues(alpha: 0.08);
+              }
+              if (states.contains(WidgetState.hovered)) {
+                return scheme.primary.withValues(alpha: 0.04);
+              }
+              return null;
+            }),
             child: Icon(
               icon,
               size: 20,
@@ -489,21 +515,39 @@ class _PageNumberCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = '$page';
-    final textStyle = Theme.of(context).textTheme.labelLarge?.copyWith(
+    final textStyle = Theme.of(context).appTypography.utilityOverline.copyWith(
+      letterSpacing: 0.2,
       color: selected ? scheme.onPrimaryContainer : scheme.onSurface,
       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
     );
+    final borderColor = selected
+        ? scheme.primary.withValues(alpha: 0.22)
+        : scheme.outlineVariant.withValues(alpha: 0.56);
 
     return Semantics(
       button: true,
       selected: selected,
       label: 'Pagina $page',
       child: Material(
-        color: selected ? scheme.primaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(cornerRadius),
+        color: selected
+            ? scheme.primaryContainer
+            : scheme.surfaceContainerLowest,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(cornerRadius),
+          side: BorderSide(color: borderColor),
+        ),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(cornerRadius),
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return scheme.primary.withValues(alpha: 0.08);
+            }
+            if (states.contains(WidgetState.hovered)) {
+              return scheme.primary.withValues(alpha: 0.04);
+            }
+            return null;
+          }),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minWidth: minSize,

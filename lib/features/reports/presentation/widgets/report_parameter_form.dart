@@ -2,7 +2,10 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/reports/domain/entities/report_parameter_descriptor.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_date_picker_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_builder_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -52,13 +55,12 @@ class ReportParameterForm extends StatelessWidget {
             spacing: tokens.gapSm,
             runSpacing: tokens.gapSm,
             children: <Widget>[
-              Chip(label: Text('${parameters.length} filtros')),
+              AppTagChip(label: '${parameters.length} filtros'),
               if (hasParameters)
-                Chip(
-                  label: Text(
-                    '${parameters.where((p) => p.required).length} '
-                    'obrigatórios',
-                  ),
+                AppTagChip(
+                  label:
+                      '${parameters.where((p) => p.required).length} '
+                      'obrigatórios',
                 ),
             ],
           ),
@@ -152,19 +154,20 @@ class _ReportParameterField extends StatelessWidget {
           validator: textValidator,
         );
       case ReportParameterType.singleSelect:
-        return FormBuilderDropdown<String>(
+        return AppFormBuilderDropdownField<String>(
           name: parameter.name,
+          label: parameter.label,
+          hintText: 'Selecione uma opção',
+          helperText: parameter.required ? 'Obrigatório' : 'Opcional',
           initialValue: initialValue as String?,
-          decoration: InputDecoration(
-            labelText: parameter.label,
-            helperText: parameter.required ? 'Obrigatório' : 'Opcional',
-          ),
-          items: parameter.options.map((option) {
-            return DropdownMenuItem<String>(
-              value: option.value,
-              child: Text(option.label),
-            );
-          }).toList(),
+          options: parameter.options
+              .map(
+                (option) => AppDropdownOption<String>(
+                  value: option.value,
+                  label: option.label,
+                ),
+              )
+              .toList(growable: false),
           validator: parameter.required
               ? FormBuilderValidators.compose(<String? Function(String?)>[
                   FormBuilderValidators.required(),

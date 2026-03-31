@@ -1,4 +1,5 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/features/settings/presentation/pages/chart_demo_showcase_card.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_area_trend_chart.dart';
@@ -25,6 +26,20 @@ class AppAreaTrendChartDemoPage extends StatelessWidget {
           subtitle:
               'Tendencia temporal com area preenchida: gradiente, marcadores, '
               'zoom, variantes de estilo e evento estruturado por serie/ponto.',
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        const ChartDemoShowcaseCard(
+          icon: Icons.show_chart_rounded,
+          title: 'Tendencia temporal com preenchimento',
+          subtitle:
+              'Grafico de area para volume, crescimento e comparativos no '
+              'tempo, com boa leitura de massa e intensidade.',
+          badgeLabel: 'Trend',
+          highlights: <String>[
+            'Serie temporal',
+            'Gradiente e markers',
+            'Multiseries',
+          ],
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppAreaTrendChart(

@@ -1,6 +1,8 @@
 import 'dart:math' as math;
+
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_bullet_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
@@ -142,6 +144,7 @@ class _BulletChartRow<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
     final rawRanges = List<AppBulletRange>.from(rangesBuilder(item))
       ..sort((a, b) => a.end.compareTo(b.end));
     final value = valueBuilder(item).toDouble();
@@ -155,17 +158,18 @@ class _BulletChartRow<T> extends StatelessWidget {
     );
     final labelTextStyle =
         style.labelTextStyle ??
-        theme.textTheme.bodyMedium?.copyWith(
+        typography.body.copyWith(
           fontWeight: FontWeight.w600,
         );
     final valueTextStyle =
         style.valueTextStyle ??
-        theme.textTheme.labelLarge?.copyWith(
+        typography.utilityOverline.copyWith(
+          letterSpacing: 0.2,
           fontWeight: FontWeight.w700,
         );
     final captionTextStyle =
         style.captionTextStyle ??
-        theme.textTheme.bodySmall?.copyWith(
+        typography.caption.copyWith(
           color: colors.onSurfaceVariant,
         );
     final actualLabel =

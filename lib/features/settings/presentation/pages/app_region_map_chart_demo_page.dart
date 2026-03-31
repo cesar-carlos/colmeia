@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/features/settings/presentation/pages/chart_demo_showcase_card.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -44,6 +45,20 @@ class _AppRegionMapChartDemoPageState extends State<AppRegionMapChartDemoPage> {
               'Mapa interativo para dashboards de gestao com troca de metrica, '
               'selecao territorial e eventos tipados para sincronizar '
               'cards, grids e outros graficos.',
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        const ChartDemoShowcaseCard(
+          icon: Icons.public_rounded,
+          title: 'Exploracao territorial com selecao',
+          subtitle:
+              'Mapa interativo para correlacionar territorio, metrica ativa e '
+              'navegacao analitica em dashboards operacionais.',
+          badgeLabel: 'Map',
+          highlights: <String>[
+            'Metrica alternavel',
+            'Selecao por regiao',
+            'Preset exploravel',
+          ],
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppRegionMapChart<_RegionMetric>(

@@ -71,7 +71,7 @@ final class _HoneycombPainter extends CustomPainter {
   static const double _vert = 1.5 * _radius;
   static const double _edgeFadeDistance = 220;
 
-  static const double _opacityGain = 3.2;
+  static const double _opacityGain = 2.75;
 
   @override
   void paint(Canvas canvas, Size size) {

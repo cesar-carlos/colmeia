@@ -1,4 +1,5 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/features/settings/presentation/pages/chart_demo_showcase_card.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
@@ -26,6 +27,20 @@ class AppRangeAreaChartDemoPage extends StatelessWidget {
               'Mostra faixa minima/maxima, banda de confianca ou variacao '
               'esperada ao longo do tempo, com tap estruturado e preset '
               'compacto.',
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        const ChartDemoShowcaseCard(
+          icon: Icons.area_chart_rounded,
+          title: 'Bandas de variacao e previsao',
+          subtitle:
+              'Visual para faixa minima e maxima ao longo do tempo, util para '
+              'previsao, confianca e variacao operacional.',
+          badgeLabel: 'Range',
+          highlights: <String>[
+            'Minimo e maximo',
+            'Faixa temporal',
+            'Uso analitico',
+          ],
         ),
         SizedBox(height: tokens.sectionSpacing),
         const AppRangeAreaChart(

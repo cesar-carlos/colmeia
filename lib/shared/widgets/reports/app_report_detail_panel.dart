@@ -1,5 +1,8 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:flutter/material.dart';
 
@@ -39,6 +42,7 @@ class _AppReportDetailSheet<T> extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
+    final typography = theme.appTypography;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -46,132 +50,174 @@ class _AppReportDetailSheet<T> extends StatelessWidget {
       minChildSize: 0.35,
       maxChildSize: 0.92,
       builder: (ctx, scrollController) {
-        return Column(
-          children: <Widget>[
-            Container(
-              width: 40,
-              height: 4,
-              margin: EdgeInsets.symmetric(vertical: tokens.gapSm),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(tokens.cardRadius + 4),
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: tokens.contentSpacing),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isCompact = constraints.maxWidth < 360;
-
-                  if (isCompact) {
-                    return Column(
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Column(
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 4,
+                margin: EdgeInsets.symmetric(vertical: tokens.gapSm),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.contentSpacing,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 360;
+                    final heading = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
                           title,
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          style: typography.sectionHeaderH2.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        SizedBox(height: tokens.gapSm),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: IconButton(
-                            icon: const Icon(Icons.close_rounded),
-                            onPressed: () => Navigator.of(context).pop(),
-                            tooltip: 'Fechar',
-                          ),
+                        SizedBox(height: tokens.gapXs),
+                        Wrap(
+                          spacing: tokens.gapSm,
+                          runSpacing: tokens.gapSm,
+                          children: <Widget>[
+                            AppTagChip(label: '${columns.length} campos'),
+                            const AppTagChip(label: 'Detalhe da linha'),
+                          ],
                         ),
                       ],
                     );
-                  }
 
-                  return Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded),
-                        onPressed: () => Navigator.of(context).pop(),
-                        tooltip: 'Fechar',
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.separated(
-                controller: scrollController,
-                padding: EdgeInsets.all(tokens.contentSpacing),
-                itemCount: columns.length,
-                separatorBuilder: (_, _) => Divider(
-                  height: tokens.gapMd * 2,
-                  color: theme.colorScheme.outlineVariant,
-                ),
-                itemBuilder: (_, index) {
-                  final col = columns[index];
-                  final value = col.valueGetter(row);
-                  final displayText = col.formatValue(value);
-
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final compact = constraints.maxWidth < 420;
-                      final valueWidget = col.cellBuilder != null
-                          ? col.cellBuilder!(context, row, value)
-                          : Text(
-                              displayText,
-                              style:
-                                  col.textStyle ?? theme.textTheme.bodyMedium,
-                            );
-
-                      if (compact) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              col.label,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colors.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            SizedBox(height: tokens.gapXs),
-                            valueWidget,
-                          ],
-                        );
-                      }
-
-                      return Row(
+                    if (isCompact) {
+                      return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          SizedBox(
-                            width: 120,
-                            child: Text(
-                              col.label,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colors.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          heading,
+                          SizedBox(height: tokens.gapSm),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: AppFlatButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              fillWidth: false,
+                              child: const Icon(Icons.close_rounded),
                             ),
                           ),
-                          SizedBox(width: tokens.gapMd),
-                          Expanded(child: valueWidget),
                         ],
                       );
-                    },
-                  );
-                },
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(child: heading),
+                        SizedBox(width: tokens.gapMd),
+                        AppFlatButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          fillWidth: false,
+                          child: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+              SizedBox(height: tokens.gapMd),
+              Divider(
+                height: 1,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollController,
+                  padding: EdgeInsets.all(tokens.contentSpacing),
+                  itemCount: columns.length,
+                  separatorBuilder: (_, _) => SizedBox(height: tokens.gapSm),
+                  itemBuilder: (_, index) {
+                    final col = columns[index];
+                    final value = col.valueGetter(row);
+                    final displayText = col.formatValue(value);
+
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 420;
+                        final valueWidget = col.cellBuilder != null
+                            ? col.cellBuilder!(context, row, value)
+                            : Text(
+                                displayText,
+                                style: col.textStyle ?? typography.body,
+                              );
+
+                        return DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerLowest,
+                            borderRadius: BorderRadius.circular(
+                              tokens.formFieldRadius,
+                            ),
+                            border: Border.all(
+                              color: theme.colorScheme.outlineVariant
+                                  .withValues(
+                                    alpha: 0.32,
+                                  ),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(tokens.gapMd),
+                            child: compact
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      Text(
+                                        col.label,
+                                        style: typography.utilityOverline
+                                            .copyWith(
+                                              color: colors.onSurfaceVariant,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      SizedBox(height: tokens.gapXs),
+                                      valueWidget,
+                                    ],
+                                  )
+                                : Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: <Widget>[
+                                      SizedBox(
+                                        width: 132,
+                                        child: Text(
+                                          col.label,
+                                          style: typography.utilityOverline
+                                              .copyWith(
+                                                color: colors.onSurfaceVariant,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ),
+                                      SizedBox(width: tokens.gapMd),
+                                      Expanded(child: valueWidget),
+                                    ],
+                                  ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

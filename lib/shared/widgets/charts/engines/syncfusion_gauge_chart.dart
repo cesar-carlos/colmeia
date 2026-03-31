@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_gauge_chart.dart';
@@ -41,10 +42,12 @@ class SyncfusionGaugeChart extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.appColors;
     final colorScheme = theme.colorScheme;
+    final typography = theme.appTypography;
     final resolvedHeight = style.height ?? chartTheme.height;
     final resolvedMin = math.min(min, max);
     final resolvedMax = math.max(min, max);
-    final hasRenderableRange = resolvedMin.isFinite &&
+    final hasRenderableRange =
+        resolvedMin.isFinite &&
         resolvedMax.isFinite &&
         resolvedMax > resolvedMin;
     final resolvedValue = hasRenderableRange && value.isFinite
@@ -52,8 +55,8 @@ class SyncfusionGaugeChart extends StatelessWidget {
         : resolvedMin;
     final resolvedTarget =
         hasRenderableRange && (targetValue?.isFinite ?? false)
-            ? targetValue!.clamp(resolvedMin, resolvedMax)
-            : null;
+        ? targetValue!.clamp(resolvedMin, resolvedMax)
+        : null;
 
     if (isLoading) {
       return SizedBox(
@@ -70,7 +73,7 @@ class SyncfusionGaugeChart extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'Carregando indicador...',
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: typography.body.copyWith(
                     color: colors.onSurfaceVariant,
                   ),
                 ),
@@ -90,7 +93,7 @@ class SyncfusionGaugeChart extends StatelessWidget {
               Text(
                 'Sem faixa valida para exibir este indicador.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: typography.body.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
               ),
@@ -188,13 +191,13 @@ class SyncfusionGaugeChart extends StatelessWidget {
                                     'Meta ${resolvedTarget.toStringAsFixed(0)}',
                           textStyle:
                               style.valueTextStyle ??
-                              theme.textTheme.titleMedium?.copyWith(
+                              typography.sectionHeaderH2.copyWith(
+                                fontSize: theme.textTheme.titleMedium?.fontSize,
                                 fontWeight: FontWeight.w700,
                               ),
-                          secondaryTextStyle: theme.textTheme.bodySmall
-                              ?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                          secondaryTextStyle: typography.caption.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ]

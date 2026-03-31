@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
@@ -84,49 +85,62 @@ class _SummaryTile extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
+    final typography = theme.appTypography;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Row(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.gapMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (item.icon != null) ...<Widget>[
-              Icon(
-                item.icon,
-                size: 14,
-                color: colors.onSurfaceVariant,
-              ),
-              SizedBox(width: tokens.gapXs),
-            ],
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (item.icon != null) ...<Widget>[
+                  Icon(
+                    item.icon,
+                    size: 14,
+                    color: colors.onSurfaceVariant,
+                  ),
+                  SizedBox(width: tokens.gapXs),
+                ],
+                Text(
+                  item.label,
+                  style: typography.utilityOverline.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: tokens.gapXs),
             Text(
-              item.label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
+              item.value,
+              style: typography.sectionHeaderH2.copyWith(
+                fontWeight: FontWeight.w700,
+                color: item.valueColor,
               ),
             ),
+            if (item.detailLabel != null) ...<Widget>[
+              SizedBox(height: tokens.gapXs / 2),
+              Text(
+                item.detailLabel!,
+                style: typography.caption.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontSize: 10,
+                ),
+              ),
+            ],
           ],
         ),
-        SizedBox(height: tokens.gapXs),
-        Text(
-          item.value,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: item.valueColor,
-          ),
-        ),
-        if (item.detailLabel != null) ...<Widget>[
-          SizedBox(height: tokens.gapXs / 2),
-          Text(
-            item.detailLabel!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
-              fontSize: 10,
-            ),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }

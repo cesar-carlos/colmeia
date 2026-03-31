@@ -1,3 +1,4 @@
+import 'package:colmeia/features/settings/presentation/pages/chart_demo_showcase_card.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -26,6 +27,20 @@ class AppGaugeChartDemoPage extends StatelessWidget {
               'instrumental, com toque estruturado, anotacao adaptada e uso '
               'em SLA, ocupacao, temperatura operacional e indicadores '
               'executivos.',
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        const ChartDemoShowcaseCard(
+          icon: Icons.speed_rounded,
+          title: 'Leitura instrumental e metas',
+          subtitle:
+              'Gauge para SLA, ocupacao e operacao com faixas, meta destacada '
+              'e boa leitura em visoes executivas.',
+          badgeLabel: 'Gauge',
+          highlights: <String>[
+            'Faixas de referencia',
+            'Meta destacada',
+            'Tap estruturado',
+          ],
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppGaugeChart(
@@ -111,8 +126,9 @@ String _compactGaugeLabel(double value) => '${value.toStringAsFixed(0)}%';
 final NumberFormat _compactNumber = NumberFormat.compact(locale: 'pt_BR');
 
 void _showGaugeTapFeedback(BuildContext context, AppGaugeTapEvent event) {
-  final targetLabel =
-      event.targetValue == null ? '' : _formatGaugeTarget(event.targetValue!);
+  final targetLabel = event.targetValue == null
+      ? ''
+      : _formatGaugeTarget(event.targetValue!);
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(

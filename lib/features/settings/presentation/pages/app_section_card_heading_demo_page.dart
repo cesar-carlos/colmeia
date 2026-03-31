@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 
@@ -45,8 +46,8 @@ class AppSectionCardHeadingDemoPage extends StatelessWidget {
             spacing: tokens.gapSm,
             runSpacing: tokens.gapSm,
             children: const <Widget>[
-              Chip(label: Text('Filtros ativos')),
-              Chip(label: Text('Atualizado agora')),
+              AppTagChip(label: 'Filtros ativos'),
+              AppTagChip(label: 'Atualizado agora'),
             ],
           ),
           child: Text(

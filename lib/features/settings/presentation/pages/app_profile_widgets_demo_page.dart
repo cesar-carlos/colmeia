@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
+import 'package:colmeia/shared/widgets/app_status_badge.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_interactive_field.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
@@ -15,7 +16,6 @@ class AppProfileWidgetsDemoPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final cs = theme.colorScheme;
 
     return ListView(
       padding: EdgeInsets.all(tokens.contentSpacing),
@@ -38,25 +38,26 @@ class AppProfileWidgetsDemoPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
           title: 'AppProfileStatusPill',
-          subtitle: 'Cores de exemplo; backend define semantica real.',
+          subtitle: 'Variantes semanticas para info, sucesso, alerta e erro.',
           child: Wrap(
             spacing: tokens.gapSm,
             runSpacing: tokens.gapSm,
-            children: <Widget>[
+            children: const <Widget>[
               AppProfileStatusPill(
                 label: 'ATIVO',
-                foreground: cs.onPrimaryContainer,
-                background: cs.primaryContainer,
+                variant: AppStatusBadgeVariant.success,
               ),
               AppProfileStatusPill(
                 label: 'PENDENTE',
-                foreground: cs.onTertiaryContainer,
-                background: cs.tertiaryContainer,
+                variant: AppStatusBadgeVariant.warning,
               ),
               AppProfileStatusPill(
                 label: 'BLOQUEADO',
-                foreground: cs.onErrorContainer,
-                background: cs.errorContainer,
+                variant: AppStatusBadgeVariant.error,
+              ),
+              AppProfileStatusPill(
+                label: 'EM ANALISE',
+                variant: AppStatusBadgeVariant.info,
               ),
             ],
           ),
@@ -124,7 +125,6 @@ class AppProfileWidgetsDemoPage extends StatelessWidget {
       ],
     );
   }
-
 }
 
 void _showProfileDemoSnack(BuildContext context, String message) {

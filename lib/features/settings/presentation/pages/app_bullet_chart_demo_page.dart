@@ -1,4 +1,5 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/features/settings/presentation/pages/chart_demo_showcase_card.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_bullet_chart.dart';
@@ -25,6 +26,20 @@ class AppBulletChartDemoPage extends StatelessWidget {
           subtitle:
               'Compara realizado vs meta com faixas qualitativas. Ideal para '
               'SLA, vendas, conversao e metas operacionais.',
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        const ChartDemoShowcaseCard(
+          icon: Icons.stacked_bar_chart_rounded,
+          title: 'Comparacao entre realizado e meta',
+          subtitle:
+              'Indicador linear para leitura executiva de desempenho, faixas '
+              'qualitativas e alvo em uma unica linha.',
+          badgeLabel: 'Bullet',
+          highlights: <String>[
+            'Meta vs realizado',
+            'Faixas qualitativas',
+            'Preset compacto',
+          ],
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppBulletChart<_PerformanceMetric>(

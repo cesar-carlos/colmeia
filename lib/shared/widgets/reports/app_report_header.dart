@@ -1,5 +1,7 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:flutter/material.dart';
 
 /// Report header card with title, subtitle, context chips and optional
@@ -24,6 +26,7 @@ class AppReportHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
 
     final hasChips = contextChips.isNotEmpty;
     final titleSection = Column(
@@ -32,7 +35,7 @@ class AppReportHeader extends StatelessWidget {
         if (title.isNotEmpty)
           Text(
             title,
-            style: theme.textTheme.titleMedium?.copyWith(
+            style: typography.sectionHeaderH2.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -40,7 +43,7 @@ class AppReportHeader extends StatelessWidget {
           if (title.isNotEmpty) SizedBox(height: tokens.gapXs),
           Text(
             subtitle!,
-            style: theme.textTheme.bodyMedium?.copyWith(
+            style: typography.body.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
@@ -85,14 +88,7 @@ class AppReportHeader extends StatelessWidget {
                   runSpacing: tokens.gapSm,
                   children: contextChips
                       .map((label) {
-                        return Chip(
-                          label: Text(label),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.gapSm,
-                          ),
-                        );
+                        return AppTagChip(label: label);
                       })
                       .toList(growable: false),
                 ),

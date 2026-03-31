@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_formatters.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -38,6 +39,7 @@ class SyncfusionStepLineChart extends StatelessWidget {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final theme = Theme.of(context);
     final colors = theme.appColors;
+    final typography = theme.appTypography;
     final resolvedHeight = style.height ?? chartTheme.height;
     final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
     final visibleEntries = entries
@@ -67,7 +69,7 @@ class SyncfusionStepLineChart extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'Carregando serie temporal...',
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: typography.body.copyWith(
                     color: colors.onSurfaceVariant,
                   ),
                 ),
@@ -88,7 +90,7 @@ class SyncfusionStepLineChart extends StatelessWidget {
               Text(
                 'Sem dados disponiveis para este periodo.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: typography.body.copyWith(
                   color: colors.onSurfaceVariant,
                 ),
               ),

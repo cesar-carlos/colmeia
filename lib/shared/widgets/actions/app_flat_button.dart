@@ -46,23 +46,36 @@ class AppFlatButton extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>();
     final colors = theme.appColors;
+    final scheme = theme.colorScheme;
     final minH = tokens?.actionButtonMinHeight ?? 48;
     final gapSm = tokens?.gapSm ?? 8;
-    final radius = tokens?.formFieldRadius ?? 4;
+    final radius = resolveAppActionButtonRadius(tokens);
     final loadingSize =
         loadingIndicatorSize ?? tokens?.actionButtonLoadingIndicatorSize ?? 22;
-    final loadingStroke = loadingIndicatorStrokeWidth ??
+    final loadingStroke =
+        loadingIndicatorStrokeWidth ??
         tokens?.actionButtonLoadingIndicatorStrokeWidth ??
         2;
-    final indicatorColor = loadingIndicatorColor ??
+    final indicatorColor =
+        loadingIndicatorColor ??
         theme.progressIndicatorTheme.color ??
-        colors.primary;
+        colors.onSurfaceVariant;
+    final ghostFill = Color.alphaBlend(
+      scheme.primaryContainer.withValues(alpha: 0.08),
+      scheme.surfaceContainerHigh,
+    );
+    final labelStyle = resolveAppActionButtonTextStyle(theme);
 
     var resolvedStyle = FilledButton.styleFrom(
+      backgroundColor: ghostFill,
+      foregroundColor: colors.onSurfaceVariant,
+      disabledBackgroundColor: resolveAppActionButtonDisabledBackground(scheme),
+      disabledForegroundColor: resolveAppActionButtonDisabledForeground(scheme),
       elevation: 0,
       shadowColor: Colors.transparent,
       minimumSize: Size(48, minH),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      textStyle: labelStyle,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radius),
       ),
@@ -90,7 +103,7 @@ class AppFlatButton extends StatelessWidget {
             size: loadingSize,
             strokeWidth: loadingStroke,
           )
-        : _buildIdleContent(gapSm, colors.onSecondaryContainer);
+        : _buildIdleContent(gapSm, colors.onSurfaceVariant);
 
     return wrapAppActionButtonSemantics(
       child: FilledButton.tonal(

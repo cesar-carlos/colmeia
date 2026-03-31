@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 
 class AppProfileSectionTitle extends StatelessWidget {
@@ -16,6 +17,7 @@ class AppProfileSectionTitle extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
 
     return Row(
       children: <Widget>[
@@ -23,9 +25,7 @@ class AppProfileSectionTitle extends StatelessWidget {
         SizedBox(width: tokens.gapSm),
         Text(
           title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: typography.sectionHeaderH2,
         ),
       ],
     );

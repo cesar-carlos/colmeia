@@ -1,6 +1,7 @@
 import 'package:colmeia/features/user_context/domain/entities/store_scope.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:flutter/material.dart';
 
 class AllowedStoreSelectorStrip extends StatelessWidget {
@@ -58,10 +59,11 @@ class AllowedStoreSelectorStrip extends StatelessWidget {
           final isActive = store.id == selectedStoreId;
           return Padding(
             padding: EdgeInsets.only(right: tokens.gapSm),
-            child: ChoiceChip(
-              label: Text(store.name),
+            child: AppChoiceChip(
+              label: store.name,
               selected: isActive,
-              onSelected: (_) => onStoreSelected(store),
+              onSelected: () => onStoreSelected(store),
+              semanticLabel: 'Selecionar loja ${store.name}',
             ),
           );
         }).toList(),

@@ -1,12 +1,19 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/forms/app_checkbox_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_email_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_date_picker_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_builder_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_password_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_radio_group.dart';
+import 'package:colmeia/shared/widgets/forms/app_switch_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +46,9 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
   bool _newsletter = true;
   bool _fieldsEnabled = true;
   String _period = 'mensal';
+  String _storeScope = 'matriz';
+  String? _selectedHiveNode = 'alpha_core';
+  List<String> _selectedTags = <String>['analytics', 'cloud'];
 
   @override
   void initState() {
@@ -68,11 +78,10 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
     }
     final refDate = _referenceDateFieldKey.currentState?.value;
     final range = _rangeFieldKey.currentState?.value;
-    final refLabel =
-        refDate != null ? AppBrFormatters.shortDate(refDate) : '-';
+    final refLabel = refDate != null ? AppBrFormatters.shortDate(refDate) : '-';
     final rangeLabel = range != null
         ? '${AppBrFormatters.shortDate(range.start)} a '
-            '${AppBrFormatters.shortDate(range.end)}'
+              '${AppBrFormatters.shortDate(range.end)}'
         : '-';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -100,7 +109,7 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
     final dLabel = d != null ? AppBrFormatters.shortDate(d) : '-';
     final rLabel = r != null
         ? '${AppBrFormatters.shortDate(r.start)} a '
-            '${AppBrFormatters.shortDate(r.end)}'
+              '${AppBrFormatters.shortDate(r.end)}'
         : '-';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -114,7 +123,8 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
 
     return ListView(
       padding: EdgeInsets.all(tokens.contentSpacing),
@@ -127,12 +137,21 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
               'Form, FormBuilder como nos relatorios e agrupamentos.',
         ),
         SizedBox(height: tokens.sectionSpacing),
+        _FormsShowcaseCard(
+          fieldsEnabled: _fieldsEnabled,
+          onChanged: (value) {
+            setState(() {
+              _fieldsEnabled = value;
+            });
+          },
+        ),
+        SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
           title: 'Estado do formulario',
           subtitle: 'Desligue para inspecionar campos desabilitados.',
-          child: SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Campos habilitados'),
+          child: AppSwitchField(
+            label: 'Campos habilitados',
+            helperText: 'Aplica o estado disabled em todos os exemplos abaixo.',
             value: _fieldsEnabled,
             onChanged: (value) {
               setState(() {
@@ -274,6 +293,7 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
             value: _newsletter,
             enabled: _fieldsEnabled,
             label: 'Receber resumo semanal por e-mail',
+            helperText: 'Envia alertas, resumos e atualizacoes de indicadores.',
             onChanged: (value) {
               setState(() {
                 _newsletter = value ?? false;
@@ -283,11 +303,12 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
-          title: 'AppRadioGroup',
-          subtitle: 'Frequencia de relatorio fake.',
+          title: 'AppRadioGroup compacto',
+          subtitle: 'Selecao unica no padrao inline do design system.',
           child: AppRadioGroup<String>(
             groupValue: _period,
             enabled: _fieldsEnabled,
+            variant: AppRadioGroupVariant.compact,
             onChanged: (value) {
               setState(() {
                 if (value != null) {
@@ -299,13 +320,11 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
               AppRadioOption<String>(
                 value: 'diario',
                 label: 'Diario',
-                subtitle: 'Atualizado todo dia as 08h',
                 icon: Icons.today_outlined,
               ),
               AppRadioOption<String>(
                 value: 'mensal',
                 label: 'Mensal',
-                subtitle: 'Fechamento no ultimo dia util',
                 icon: Icons.calendar_month_outlined,
               ),
               AppRadioOption<String>(
@@ -318,15 +337,165 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
-          title: 'FormBuilder + date pickers',
+          title: 'AppChoiceChip',
+          subtitle: 'Selecao pontual em chips para contexto, loja ou escopo.',
+          child: Wrap(
+            spacing: tokens.gapSm,
+            runSpacing: tokens.gapSm,
+            children: <Widget>[
+              AppChoiceChip(
+                label: 'Matriz',
+                selected: _storeScope == 'matriz',
+                onSelected: _fieldsEnabled
+                    ? () {
+                        setState(() => _storeScope = 'matriz');
+                      }
+                    : null,
+              ),
+              AppChoiceChip(
+                label: 'Loja Centro',
+                selected: _storeScope == 'centro',
+                onSelected: _fieldsEnabled
+                    ? () {
+                        setState(() => _storeScope = 'centro');
+                      }
+                    : null,
+              ),
+              AppChoiceChip(
+                label: 'Loja Sul',
+                selected: _storeScope == 'sul',
+                onSelected: _fieldsEnabled
+                    ? () {
+                        setState(() => _storeScope = 'sul');
+                      }
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
+          title: 'Dropdown menus',
           subtitle:
-              'Mesmos wrappers usados em relatorios parametrizados '
-              '(AppFormBuilderDatePickerField).',
+              'Selecao unica e multi-select search no mesmo padrao visual das '
+              'referencias light/dark.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              AppDropdownField<String>(
+                value: _selectedHiveNode,
+                enabled: _fieldsEnabled,
+                label: 'Standard Select',
+                hintText: 'Select Hive Node...',
+                options: const <AppDropdownOption<String>>[
+                  AppDropdownOption(
+                    value: 'alpha_core',
+                    label: 'Alpha Core',
+                  ),
+                  AppDropdownOption(
+                    value: 'delta_node',
+                    label: 'Delta Node',
+                  ),
+                  AppDropdownOption(
+                    value: 'sigma_grid',
+                    label: 'Sigma Grid',
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() => _selectedHiveNode = value);
+                },
+              ),
+              SizedBox(height: tokens.gapMd),
+              AppMultiSelectSearchField<String>(
+                selectedValues: _selectedTags,
+                enabled: _fieldsEnabled,
+                label: 'Multi-Select Search',
+                options: const <AppDropdownOption<String>>[
+                  AppDropdownOption(
+                    value: 'analytics',
+                    label: 'Analytics',
+                  ),
+                  AppDropdownOption(
+                    value: 'cloud',
+                    label: 'Cloud',
+                  ),
+                  AppDropdownOption(
+                    value: 'automation',
+                    label: 'Automation',
+                  ),
+                  AppDropdownOption(
+                    value: 'security',
+                    label: 'Security',
+                  ),
+                ],
+                onChanged: (values) {
+                  setState(() => _selectedTags = values);
+                },
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
+          title: 'FormBuilder + dropdowns e datas',
+          subtitle:
+              'Mesmos wrappers usados em relatorios parametrizados, agora com '
+              'dropdown compartilhado.',
           child: FormBuilder(
             key: _formBuilderKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
+                AppFormBuilderDropdownField<String>(
+                  name: 'fb_node',
+                  label: 'Select node (FormBuilder)',
+                  hintText: 'Select Hive Node...',
+                  helperText: 'Selecao unica com o wrapper compartilhado.',
+                  initialValue: 'delta_node',
+                  enabled: _fieldsEnabled,
+                  options: const <AppDropdownOption<String>>[
+                    AppDropdownOption(
+                      value: 'alpha_core',
+                      label: 'Alpha Core',
+                    ),
+                    AppDropdownOption(
+                      value: 'delta_node',
+                      label: 'Delta Node',
+                    ),
+                    AppDropdownOption(
+                      value: 'sigma_grid',
+                      label: 'Sigma Grid',
+                    ),
+                  ],
+                  validator: FormBuilderValidators.required(),
+                ),
+                SizedBox(height: tokens.gapMd),
+                AppFormBuilderMultiSelectSearchField<String>(
+                  name: 'fb_tags',
+                  label: 'Tags (FormBuilder)',
+                  helperText: 'Busca inline com chips removiveis.',
+                  initialValue: const <String>['analytics'],
+                  enabled: _fieldsEnabled,
+                  options: const <AppDropdownOption<String>>[
+                    AppDropdownOption(
+                      value: 'analytics',
+                      label: 'Analytics',
+                    ),
+                    AppDropdownOption(
+                      value: 'cloud',
+                      label: 'Cloud',
+                    ),
+                    AppDropdownOption(
+                      value: 'automation',
+                      label: 'Automation',
+                    ),
+                    AppDropdownOption(
+                      value: 'security',
+                      label: 'Security',
+                    ),
+                  ],
+                ),
+                SizedBox(height: tokens.gapMd),
                 AppFormBuilderDatePickerField(
                   name: 'fb_date',
                   label: 'Data obrigatoria (FormBuilder)',
@@ -353,20 +522,184 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
                   enabled: _fieldsEnabled,
                 ),
                 SizedBox(height: tokens.gapMd),
-                FilledButton.tonal(
+                AppSecondaryButton(
+                  variant: AppSecondaryButtonVariant.tonal,
                   onPressed: _fieldsEnabled ? _submitFormBuilder : null,
-                  child: const Text('Validar FormBuilder'),
+                  label: 'Validar FormBuilder',
                 ),
               ],
             ),
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        FilledButton(
+        AppPrimaryButton(
           onPressed: _fieldsEnabled ? _submit : null,
-          child: const Text('Validar envio (Form)'),
+          label: 'Validar envio (Form)',
         ),
       ],
+    );
+  }
+}
+
+class _FormsShowcaseCard extends StatelessWidget {
+  const _FormsShowcaseCard({
+    required this.fieldsEnabled,
+    required this.onChanged,
+  });
+
+  final bool fieldsEnabled;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return AppSectionCardWithHeading(
+      padding: EdgeInsets.fromLTRB(
+        tokens.contentSpacing,
+        tokens.contentSpacing,
+        tokens.contentSpacing,
+        tokens.contentSpacing + tokens.gapSm,
+      ),
+      titleWidget: _FormsShowcaseHeading(theme: theme, tokens: tokens),
+      subtitle:
+          'Campos base, seletores e wrappers de calendario no mesmo ritmo '
+          'visual do sistema.',
+      headingTrailing: const _FormsShowcaseBadge(),
+      headingBottom: const _FormsShowcaseLegend(),
+      style: AppSectionCardWithHeadingStyle(
+        headerBottomSpacing: tokens.sectionSpacing,
+      ),
+      child: AppSwitchField(
+        label: 'Campos habilitados',
+        helperText: 'Ativa ou desativa toda a superficie de exemplos abaixo.',
+        value: fieldsEnabled,
+        onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _FormsShowcaseHeading extends StatelessWidget {
+  const _FormsShowcaseHeading({required this.theme, required this.tokens});
+
+  final ThemeData theme;
+  final AppThemeTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Field Library',
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.primary,
+          ),
+        ),
+        SizedBox(height: tokens.gapXs),
+        Row(
+          children: <Widget>[
+            Icon(Icons.tune_rounded, color: cs.primary, size: 18),
+            SizedBox(width: tokens.gapSm),
+            Expanded(
+              child: Text(
+                'Shared Form Controls',
+                style: theme.appTypography.sectionHeaderH2.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _FormsShowcaseBadge extends StatelessWidget {
+  const _FormsShowcaseBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final cs = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.52),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 6),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          'Preview',
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.primary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FormsShowcaseLegend extends StatelessWidget {
+  const _FormsShowcaseLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return Wrap(
+      spacing: tokens.gapSm,
+      runSpacing: tokens.gapSm,
+      children: const <Widget>[
+        _FormsShowcaseLegendChip(label: 'Input'),
+        _FormsShowcaseLegendChip(label: 'Selection'),
+        _FormsShowcaseLegendChip(label: 'Date'),
+        _FormsShowcaseLegendChip(label: 'FormBuilder'),
+      ],
+    );
+  }
+}
+
+class _FormsShowcaseLegendChip extends StatelessWidget {
+  const _FormsShowcaseLegendChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final cs = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 4),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          label,
+          style: theme.appTypography.utilityOverline.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
+        ),
+      ),
     );
   }
 }
