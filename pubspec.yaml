@@ -69,7 +69,7 @@ dependencies:
   syncfusion_flutter_datagrid: ^33.1.45
   syncfusion_flutter_datepicker: ^33.1.45
   syncfusion_flutter_gauges: ^33.1.45
-  syncfusion_flutter_maps: ^33.1.45
+  syncfusion_flutter_maps: ^33.1.46
   syncfusion_flutter_treemap: ^33.1.45
   syncfusion_flutter_xlsio: ^33.1.45
   uuid: ^4.5.3
