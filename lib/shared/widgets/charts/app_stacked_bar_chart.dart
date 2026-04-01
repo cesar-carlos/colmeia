@@ -150,7 +150,8 @@ class AppStackedBarChart<G> extends StatelessWidget {
     AppStackedBarSeries<G> series,
     int groupIndex,
     int seriesIndex,
-  )? onSegmentTap;
+  )?
+  onSegmentTap;
 
   /// Structured alternative to [onSegmentTap] with group, series and value.
   final ValueChanged<AppStackedBarSegmentTapEvent<G>>? onSegmentTapEvent;

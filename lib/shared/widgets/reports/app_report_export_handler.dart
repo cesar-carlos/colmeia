@@ -95,11 +95,13 @@ abstract final class AppReportExportHandler {
     BuildContext? context,
   }) async {
     final doc = pw.Document();
-    final useLandscape = request.landscape ||
+    final useLandscape =
+        request.landscape ||
         (request.autoLandscape &&
             columns.length > _autoLandscapeColumnThreshold);
-    final pageFormat =
-        useLandscape ? PdfPageFormat.a4.landscape : PdfPageFormat.a4;
+    final pageFormat = useLandscape
+        ? PdfPageFormat.a4.landscape
+        : PdfPageFormat.a4;
 
     final headerFont = await PdfGoogleFonts.interBold();
     final bodyFont = await PdfGoogleFonts.interRegular();
@@ -319,8 +321,9 @@ abstract final class AppReportExportHandler {
     }
 
     // Reserve a share of the page for flex columns so they are never zero.
-    final fixedBudget =
-        flexCount > 0 ? available * (1 - _minFlexFraction) : available;
+    final fixedBudget = flexCount > 0
+        ? available * (1 - _minFlexFraction)
+        : available;
     final scale = totalFixed > fixedBudget && totalFixed > 0
         ? fixedBudget / totalFixed
         : 1.0;

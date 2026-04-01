@@ -36,7 +36,7 @@ void main() {
       check(
         resolveAuthRedirect(
           isAuthenticated: true,
-          matchedRoute: AppRoute.reportDetail,
+          matchedRoute: AppRoute.settings,
         ),
       ).isNull();
     });

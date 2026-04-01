@@ -19,10 +19,7 @@ MetricDeltaSign parseMetricDeltaSign(String raw) {
   if (trimmed.isEmpty) {
     return MetricDeltaSign.neutral;
   }
-  if (trimmed == '—' ||
-      trimmed == '–' ||
-      trimmed == '=' ||
-      trimmed == '≈') {
+  if (trimmed == '—' || trimmed == '–' || trimmed == '=' || trimmed == '≈') {
     return MetricDeltaSign.neutral;
   }
   if (isZeroDeltaString(trimmed)) {

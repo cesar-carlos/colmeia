@@ -112,10 +112,9 @@ class AppStepLineChart extends StatelessWidget {
     final innerChart = SyncfusionStepLineChart(
       entries: resolvedEntries,
       isMultiSeries: entries != null,
-      onPointTap:
-          (onPointTap == null && onPointTapEvent == null)
-              ? null
-              : handlePointTap,
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
+          ? null
+          : handlePointTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

@@ -1,5 +1,3 @@
-import 'package:colmeia/app/router/app_navigation.dart';
-import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_chart_point.dart';
 import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_chart_renderer.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
@@ -10,7 +8,7 @@ enum DashboardSalesTrendRange {
   lastMonth,
 }
 
-/// Weekly / monthly toggle and reports shortcut around the revenue time series.
+/// Weekly / monthly toggle around the revenue time series.
 class DashboardSalesTrendCard extends StatefulWidget {
   const DashboardSalesTrendCard({
     required this.points,
@@ -43,23 +41,10 @@ class _DashboardSalesTrendCardState extends State<DashboardSalesTrendCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
     return DashboardChartRenderer(
       title: 'Tendência de vendas diárias',
       subtitle: 'Panorama do faturamento no período selecionado.',
       points: _chartPoints,
-      titleTrailing: TextButton(
-        onPressed: () => context.goTo(AppRoute.reports),
-        child: Text(
-          'Ver relatório completo',
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: cs.primary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
       belowSubtitle: SizedBox(
         width: double.infinity,
         child: AppSegmentedControl<DashboardSalesTrendRange>(

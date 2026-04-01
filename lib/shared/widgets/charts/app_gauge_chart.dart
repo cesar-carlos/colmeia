@@ -146,14 +146,13 @@ class AppGaugeChart extends StatelessWidget {
       emptyPlaceholder: emptyPlaceholder,
     );
 
-    final interactiveChart =
-        onTap == null && onTapEvent == null
-            ? innerChart
-            : GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: handleTap,
-                child: innerChart,
-              );
+    final interactiveChart = onTap == null && onTapEvent == null
+        ? innerChart
+        : GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: handleTap,
+            child: innerChart,
+          );
 
     if (title == null) {
       return interactiveChart;

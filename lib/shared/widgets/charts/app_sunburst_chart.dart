@@ -123,10 +123,9 @@ class AppSunburstChart<T> extends StatelessWidget {
       parentIdBuilder: parentIdBuilder,
       colorBuilder: colorBuilder,
       centerLabel: centerLabel,
-      onSegmentTap:
-          (onSegmentTap == null && onSegmentTapEvent == null)
-              ? null
-              : handleSegmentTap,
+      onSegmentTap: (onSegmentTap == null && onSegmentTapEvent == null)
+          ? null
+          : handleSegmentTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

@@ -1,8 +1,10 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
-import 'package:colmeia/features/user_context/domain/entities/store_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/access/store_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/current_user_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_access_scope.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
-import 'package:colmeia/features/user_context/domain/entities/user_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -34,17 +36,21 @@ void main() {
 
     test('should update active store when selection is valid', () {
       final controller = CurrentUserContextController(
-        userScope: const UserScope(
-          userId: 'test-user',
-          name: 'Camila Nunes',
-          roleLabel: 'Gerente regional',
-          allowedStores: <StoreScope>[
-            StoreScope(id: '03', name: 'Loja Centro'),
-            StoreScope(id: '08', name: 'Loja Norte'),
-          ],
-          permissions: <UserPermission>{
-            UserPermission.viewDashboard,
-          },
+        userScope: const CurrentUserScope(
+          profile: UserProfile(
+            id: 'test-user',
+            name: 'Camila Nunes',
+            roleLabel: 'Gerente regional',
+          ),
+          access: UserAccessScope(
+            allowedStores: <StoreScope>[
+              StoreScope(id: '03', name: 'Loja Centro'),
+              StoreScope(id: '08', name: 'Loja Norte'),
+            ],
+            permissions: <UserPermission>{
+              UserPermission.viewDashboard,
+            },
+          ),
         ),
         activeStoreId: '03',
       );

@@ -86,10 +86,9 @@ class AppRangeAreaChart extends StatelessWidget {
 
     final innerChart = SyncfusionRangeAreaChart(
       points: points,
-      onPointTap:
-          (onPointTap == null && onPointTapEvent == null)
-              ? null
-              : handlePointTap,
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
+          ? null
+          : handlePointTap,
       style: style,
       preset: preset,
       isLoading: isLoading,

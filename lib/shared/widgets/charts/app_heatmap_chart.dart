@@ -275,7 +275,8 @@ class _HeatmapGrid extends StatelessWidget {
             : minContentWidth;
         final contentWidth = math.max(availableWidth, minContentWidth);
         final chartPadding = style.chartPadding ?? EdgeInsets.zero;
-        final resolvedHeight = style.height ??
+        final resolvedHeight =
+            style.height ??
             _estimateHeatmapMinHeight(
               contentWidth: contentWidth,
               yLabelWidth: yLabelWidth,

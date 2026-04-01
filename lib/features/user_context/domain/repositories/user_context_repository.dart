@@ -1,8 +1,8 @@
 import 'package:colmeia/core/errors/app_result.dart';
-import 'package:colmeia/features/user_context/domain/entities/user_context_snapshot.dart';
+import 'package:colmeia/features/user_context/domain/entities/current_user_context.dart';
 
 abstract interface class UserContextRepository {
-  Future<AppResult<UserContextSnapshot>> loadUserContext({
+  Future<AppResult<CurrentUserContext>> loadUserContext({
     required String userId,
   });
 

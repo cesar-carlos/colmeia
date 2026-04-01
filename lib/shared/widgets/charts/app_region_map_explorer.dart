@@ -166,7 +166,8 @@ class _AppRegionMapExplorerState<TItem, TFilters>
             titleTrailing: widget.titleTrailing,
             belowSubtitle: widget.belowSubtitle,
             items: List<TItem>.empty(),
-            mapDefinition: widget.initialMapDefinition ??
+            mapDefinition:
+                widget.initialMapDefinition ??
                 const AppMapDefinition.network(
                   url:
                       'https://raw.githubusercontent.com/luizpedone/'

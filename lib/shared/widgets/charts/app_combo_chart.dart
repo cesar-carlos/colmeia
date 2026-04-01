@@ -193,10 +193,12 @@ class AppComboChart<T> extends StatelessWidget {
       lineSeriesLabel: lineSeriesLabel,
       style: style,
       preset: preset,
-      onBarTap:
-          (onBarTap == null && onBarTapEvent == null) ? null : handleBarTap,
-      onLineTap:
-          (onLineTap == null && onLineTapEvent == null) ? null : handleLineTap,
+      onBarTap: (onBarTap == null && onBarTapEvent == null)
+          ? null
+          : handleBarTap,
+      onLineTap: (onLineTap == null && onLineTapEvent == null)
+          ? null
+          : handleLineTap,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
     );

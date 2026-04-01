@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_navigation.dart';
-import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -199,9 +198,6 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                   final greetingName = _greetingFirstName(
                     userContext.userScope.name,
                   );
-                  final showReportsEntry = userContext.availableShellRoutes
-                      .contains(AppRoute.reports);
-                  final cs = theme.colorScheme;
                   final sessionUserId = session?.userId;
 
                   Future<void> onRefresh() async {
@@ -332,39 +328,6 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                             showSkeleton: showSkeleton,
                             tokens: tokens,
                           ),
-                          if (showReportsEntry) ...<Widget>[
-                            SizedBox(height: tokens.sectionSpacing),
-                            AppSkeleton(
-                              enabled: showSkeleton,
-                              showDelay: _dashboardSecondarySkeletonDelay,
-                              loadingSemanticsLabel:
-                                  'Carregando acesso ao relatório completo...',
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: FilledButton.icon(
-                                  onPressed: showSkeleton
-                                      ? null
-                                      : () => context.goTo(AppRoute.reports),
-                                  icon: const Icon(Icons.bar_chart_rounded),
-                                  label: Text(
-                                    'VER RELATÓRIO COMPLETO',
-                                    style: theme.textTheme.labelLarge?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: cs.primaryContainer,
-                                    foregroundColor: cs.onPrimaryContainer,
-                                    minimumSize: Size(
-                                      48,
-                                      tokens.actionButtonMinHeight + 4,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
                           SizedBox(height: tokens.sectionSpacing),
                           AppSkeleton(
                             enabled: showSkeleton,

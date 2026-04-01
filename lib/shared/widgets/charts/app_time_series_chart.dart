@@ -59,10 +59,12 @@ class AppTimeSeriesChart extends StatelessWidget {
   Widget build(BuildContext context) {
     void handlePointTap(AppChartPoint point, int index) {
       onPointTap?.call(point);
-      onPointTapEvent?.call(AppChartItemTapEvent<AppChartPoint>(
-        item: point,
-        index: index,
-      ));
+      onPointTapEvent?.call(
+        AppChartItemTapEvent<AppChartPoint>(
+          item: point,
+          index: index,
+        ),
+      );
     }
 
     final innerChart = SyncfusionTimeSeriesChart(
@@ -71,10 +73,9 @@ class AppTimeSeriesChart extends StatelessWidget {
       style: style,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
-      onPointTap:
-          (onPointTap == null && onPointTapEvent == null)
-              ? null
-              : handlePointTap,
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
+          ? null
+          : handlePointTap,
     );
 
     if (title == null) {

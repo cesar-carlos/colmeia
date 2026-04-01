@@ -161,10 +161,9 @@ class AppAreaTrendChart extends StatelessWidget {
       preset: preset,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
-      onPointTap:
-          (onPointTap == null && onPointTapEvent == null)
-              ? null
-              : handlePointTap,
+      onPointTap: (onPointTap == null && onPointTapEvent == null)
+          ? null
+          : handlePointTap,
     );
 
     if (title == null) {

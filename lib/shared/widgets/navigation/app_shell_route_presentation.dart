@@ -6,9 +6,6 @@ String appShellRouteLabel(AppRoute route) {
     case AppRoute.dashboard:
     case AppRoute.dashboardStore:
       return 'Dashboard';
-    case AppRoute.reports:
-    case AppRoute.reportDetail:
-      return 'Relatórios';
     case AppRoute.settings:
       return 'Perfil';
     case AppRoute.login:
@@ -22,9 +19,6 @@ String? appShellRouteSubtitle(AppRoute route) {
     case AppRoute.dashboard:
     case AppRoute.dashboardStore:
       return 'Resumo operacional e KPIs';
-    case AppRoute.reports:
-    case AppRoute.reportDetail:
-      return 'Consultas e relatórios dinâmicos';
     case AppRoute.settings:
       return 'Conta, permissões e preferências';
     case AppRoute.login:
@@ -40,9 +34,6 @@ IconData appShellRouteIcon(AppRoute route, {required bool selected}) {
       return selected
           ? Icons.space_dashboard_rounded
           : Icons.space_dashboard_outlined;
-    case AppRoute.reports:
-    case AppRoute.reportDetail:
-      return selected ? Icons.assessment_rounded : Icons.assessment_outlined;
     case AppRoute.settings:
       return selected ? Icons.person_rounded : Icons.person_outline_rounded;
     case AppRoute.login:

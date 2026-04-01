@@ -80,8 +80,9 @@ class AppSparklineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final resolved = _resolveColor(theme);
-    final effectiveTrend =
-        trend == AppSparklineTrend.auto ? _inferTrend() : trend;
+    final effectiveTrend = trend == AppSparklineTrend.auto
+        ? _inferTrend()
+        : trend;
 
     if (values.length < 2) {
       return SizedBox(height: height);
@@ -173,7 +174,8 @@ class _SparklinePainter extends CustomPainter {
     Offset pointAt(int i) {
       final x = i * xStep;
       final normalized = (values[i].toDouble() - minVal) / safeRange;
-      final y = size.height -
+      final y =
+          size.height -
           verticalPadding -
           normalized * (size.height - verticalPadding * 2);
       return Offset(x, y);

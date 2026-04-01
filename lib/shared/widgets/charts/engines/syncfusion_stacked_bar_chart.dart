@@ -30,7 +30,8 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
     int groupIndex,
     int seriesIndex,
     num value,
-  )? onSegmentTap;
+  )?
+  onSegmentTap;
   final bool isLoading;
   final Widget? emptyPlaceholder;
 

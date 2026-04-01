@@ -1,10 +1,12 @@
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
-import 'package:colmeia/features/user_context/data/models/user_context_model.dart';
+import 'package:colmeia/features/user_context/data/models/current_user_context_model.dart';
+import 'package:colmeia/features/user_context/data/models/user_access_scope_model.dart';
+import 'package:colmeia/features/user_context/data/models/user_profile_model.dart';
 import 'package:dio/dio.dart';
 
 // ignore: one_member_abstracts — explicit remote contract for fake vs API swap.
 abstract interface class UserContextRemoteDataSource {
-  Future<UserContextModel> loadUserContext({
+  Future<CurrentUserContextModel> loadUserContext({
     required String userId,
   });
 }
@@ -15,7 +17,7 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
   final Dio _dio;
 
   @override
-  Future<UserContextModel> loadUserContext({
+  Future<CurrentUserContextModel> loadUserContext({
     required String userId,
   }) async {
     final meResponse = await _dio.get<Map<String, dynamic>>('/me');
@@ -34,7 +36,7 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
 
     final defaultStore = stores.first as Map<String, dynamic>;
 
-    return UserContextModel.fromJson(
+    return CurrentUserContextModel.fromJson(
       <String, dynamic>{
         'userId': me['id'] ?? userId,
         'name': me['name'],
@@ -54,17 +56,6 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
                         },
                       )
                       .toList(growable: false)),
-        'reportGrants':
-            me['reportGrants'] ??
-            (me['allowedReportIds'] == null
-                ? null
-                : (me['allowedReportIds'] as List<dynamic>)
-                      .map(
-                        (reportId) => <String, Object?>{
-                          'reportId': reportId,
-                        },
-                      )
-                      .toList(growable: false)),
         'activeStoreId': me['activeStoreId'] ?? defaultStore['id'],
       },
     );
@@ -77,7 +68,7 @@ class FakeUserContextRemoteDataSource implements UserContextRemoteDataSource {
   final FakeIdentityBackendStore _fakeBackendStore;
 
   @override
-  Future<UserContextModel> loadUserContext({
+  Future<CurrentUserContextModel> loadUserContext({
     required String userId,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -86,17 +77,20 @@ class FakeUserContextRemoteDataSource implements UserContextRemoteDataSource {
       throw const FormatException('Fake user context not found');
     }
 
-    return UserContextModel(
-      userId: user.id,
-      name: user.fullName,
-      roleLabel: user.roleLabel,
-      allowedStores: user.allowedStores,
-      permissions: user.permissions,
+    return CurrentUserContextModel(
+      profile: UserProfileModel(
+        id: user.id,
+        name: user.fullName,
+        roleLabel: user.roleLabel,
+        corporateEmail: user.email,
+        phone: user.phone,
+      ),
+      access: UserAccessScopeModel(
+        allowedStores: user.allowedStores,
+        permissions: user.permissions,
+        dashboardGrants: user.dashboardGrants,
+      ),
       activeStoreId: user.activeStoreId,
-      dashboardGrants: user.dashboardGrants,
-      reportGrants: user.reportGrants,
-      corporateEmail: user.email,
-      phone: user.phone,
     );
   }
 }

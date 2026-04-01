@@ -9,11 +9,12 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/user_context/application/usecases/clear_active_store_use_case.dart';
 import 'package:colmeia/features/user_context/application/usecases/load_current_user_context_use_case.dart';
 import 'package:colmeia/features/user_context/application/usecases/persist_active_store_use_case.dart';
-import 'package:colmeia/features/user_context/domain/entities/dashboard_access_grant.dart';
-import 'package:colmeia/features/user_context/domain/entities/report_access_grant.dart';
-import 'package:colmeia/features/user_context/domain/entities/store_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/access/dashboard_access_grant.dart';
+import 'package:colmeia/features/user_context/domain/entities/access/store_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/current_user_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_access_scope.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
-import 'package:colmeia/features/user_context/domain/entities/user_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
 import 'package:colmeia/features/user_context/domain/user_context_placeholders.dart';
 import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart';
@@ -24,7 +25,7 @@ class CurrentUserContextController extends ChangeNotifier {
     LoadCurrentUserContextUseCase? loadCurrentUserContextUseCase,
     PersistActiveStoreUseCase? persistActiveStoreUseCase,
     ClearActiveStoreUseCase? clearActiveStoreUseCase,
-    UserScope? userScope,
+    CurrentUserScope? userScope,
     String? activeStoreId,
   }) : assert(
          (authController != null &&
@@ -48,7 +49,7 @@ class CurrentUserContextController extends ChangeNotifier {
   }
 
   CurrentUserContextController.testing({
-    required UserScope userScope,
+    required CurrentUserScope userScope,
     required String activeStoreId,
   }) : this(
          userScope: userScope,
@@ -57,77 +58,57 @@ class CurrentUserContextController extends ChangeNotifier {
 
   CurrentUserContextController.seeded()
     : this.testing(
-        userScope: const UserScope(
-          userId: 'seeded-user',
-          name: 'Camila Oliveira',
-          roleLabel: 'Gerente regional',
-          corporateEmail: 'camila@example.com',
-          phone: '+55 (11) 98765-4321',
-          allowedStores: <StoreScope>[
-            StoreScope(id: '03', name: 'Loja Centro'),
-            StoreScope(id: '08', name: 'Loja Norte'),
-            StoreScope(id: '14', name: 'Loja Sul'),
-          ],
-          permissions: <UserPermission>{
-            UserPermission.viewDashboard,
-            UserPermission.viewReports,
-          },
-          dashboardGrants: <DashboardAccessGrant>[
-            DashboardAccessGrant(
-              dashboardId: 'dashboard_main',
-              allowedFilterKeys: <String>{'store', 'referenceDate'},
-            ),
-          ],
-          reportGrants: <ReportAccessGrant>[
-            ReportAccessGrant(
-              reportId: 'sales_overview',
-              allowedFilterKeys: <String>{
-                'store',
-                'seller',
-                'referenceDate',
-                'onlyPositiveMargin',
-              },
-            ),
-            ReportAccessGrant(
-              reportId: 'margin_audit',
-              allowedFilterKeys: <String>{
-                'store',
-                'seller',
-                'referenceDate',
-                'onlyPositiveMargin',
-              },
-            ),
-          ],
+        userScope: const CurrentUserScope(
+          profile: UserProfile(
+            id: 'seeded-user',
+            name: 'Camila Oliveira',
+            roleLabel: 'Gerente regional',
+            corporateEmail: 'camila@example.com',
+            phone: '+55 (11) 98765-4321',
+          ),
+          access: UserAccessScope(
+            allowedStores: <StoreScope>[
+              StoreScope(id: '03', name: 'Loja Centro'),
+              StoreScope(id: '08', name: 'Loja Norte'),
+              StoreScope(id: '14', name: 'Loja Sul'),
+            ],
+            permissions: <UserPermission>{
+              UserPermission.viewDashboard,
+            },
+            dashboardGrants: <DashboardAccessGrant>[
+              DashboardAccessGrant(
+                dashboardId: 'dashboard_main',
+                allowedFilterKeys: <String>{'store', 'referenceDate'},
+              ),
+            ],
+          ),
         ),
         activeStoreId: '03',
       );
 
-  static const UserScope _placeholderUserScope = UserScope(
-    userId: 'loading-user',
-    name: 'Carregando usuario',
-    roleLabel: 'Sincronizando acesso',
-    allowedStores: <StoreScope>[
-      StoreScope(
-        id: UserContextPlaceholders.loadingStoreId,
-        name: 'Carregando lojas...',
-      ),
-    ],
-    permissions: <UserPermission>{
-      UserPermission.viewDashboard,
-      UserPermission.viewReports,
-    },
-    dashboardGrants: <DashboardAccessGrant>[
-      DashboardAccessGrant(
-        dashboardId: 'dashboard_main',
-        allowedFilterKeys: <String>{'store'},
-      ),
-    ],
-    reportGrants: <ReportAccessGrant>[
-      ReportAccessGrant(
-        reportId: 'sales_overview',
-        allowedFilterKeys: <String>{'store'},
-      ),
-    ],
+  static const CurrentUserScope _placeholderUserScope = CurrentUserScope(
+    profile: UserProfile(
+      id: 'loading-user',
+      name: 'Carregando usuario',
+      roleLabel: 'Sincronizando acesso',
+    ),
+    access: UserAccessScope(
+      allowedStores: <StoreScope>[
+        StoreScope(
+          id: UserContextPlaceholders.loadingStoreId,
+          name: 'Carregando lojas...',
+        ),
+      ],
+      permissions: <UserPermission>{
+        UserPermission.viewDashboard,
+      },
+      dashboardGrants: <DashboardAccessGrant>[
+        DashboardAccessGrant(
+          dashboardId: 'dashboard_main',
+          allowedFilterKeys: <String>{'store'},
+        ),
+      ],
+    ),
   );
 
   final AuthController? _authController;
@@ -135,13 +116,13 @@ class CurrentUserContextController extends ChangeNotifier {
   final PersistActiveStoreUseCase? _persistActiveStoreUseCase;
   final ClearActiveStoreUseCase? _clearActiveStoreUseCase;
 
-  UserScope _userScope;
+  CurrentUserScope _userScope;
   String _activeStoreId;
   String? _errorMessage;
   bool _isLoading = false;
   String? _syncedUserId;
 
-  UserScope get userScope => _userScope;
+  CurrentUserScope get userScope => _userScope;
   Set<UserPermission> get permissions => _userScope.permissions;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
@@ -159,9 +140,6 @@ class CurrentUserContextController extends ChangeNotifier {
 
   bool canAccessRoute(AppRoute route) {
     switch (route) {
-      case AppRoute.reports:
-      case AppRoute.reportDetail:
-        return hasAnyReportAccess();
       case AppRoute.dashboard:
       case AppRoute.dashboardStore:
         return hasAnyDashboardAccess();
@@ -172,24 +150,12 @@ class CurrentUserContextController extends ChangeNotifier {
     }
   }
 
-  bool hasAnyReportAccess() {
-    return _userScope.hasAnyReportAccess();
-  }
-
   bool hasAnyDashboardAccess() {
     return _userScope.hasAnyDashboardAccess();
   }
 
-  bool canAccessReport(String reportId) {
-    return _userScope.canAccessReport(reportId);
-  }
-
   bool canAccessDashboard(String dashboardId) {
     return _userScope.canAccessDashboard(dashboardId);
-  }
-
-  Set<String> allowedReportFilterKeys(String reportId) {
-    return _userScope.allowedReportFilterKeys(reportId);
   }
 
   Set<String> allowedDashboardFilterKeys(String dashboardId) {
@@ -262,7 +228,7 @@ class CurrentUserContextController extends ChangeNotifier {
     final result = await loadCurrentUserContextUseCase(userId: session.userId);
     result.fold(
       (snapshot) {
-        _userScope = snapshot.userScope;
+        _userScope = snapshot.scope;
         _activeStoreId = snapshot.activeStoreId;
         _syncedUserId = session.userId;
         _errorMessage = null;

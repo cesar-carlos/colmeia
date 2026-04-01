@@ -35,14 +35,23 @@ rede real.
 - controle de permissoes por recurso e por loja
 - dashboard principal com KPIs e atalhos
 - dashboards detalhados com filtros
-- relatorios dinamicos com filtros, paginacao e ordenacao
+- relatorios dinamicos com filtros, paginacao e ordenacao (quando o modulo for integrado)
 - escolha e troca de loja ativa
 - preparacao para atualizacao eventual em tempo real
+
+## Estado atual (roteiro)
+
+- Modulo de **relatorios** nao esta na navegacao nem em rotas ativas; URLs antigas
+  `/reports` redirecionam para o dashboard (ver `AppFeatureFlags` e
+  `redirectRemovedReportRoutes`). Widgets de visualizacao tabular permanecem em
+  `shared/widgets/reports/` para demos e reuso futuro.
+- O backend pode ainda enviar chaves legadas (ex.: `viewReports`, `reportGrants`);
+  o app ignora valores que nao mapeiam para `UserPermission` atuais.
 
 ## MVP
 
 - Entregue primeiro login, sessao, permissoes basicas, escolha de loja,
-  dashboard principal e 2 a 5 relatorios prioritarios
+  dashboard principal; relatorios prioritarios quando o modulo for ligado a API
 - Use `REST` como integracao principal no MVP
 - Mantenha cache leve e controlado
 - Nao implemente offline-first completo no MVP
@@ -123,7 +132,7 @@ void setupAuthDependencies(GetIt sl) {
 Future<void> setupDependencies() async {
   final sl = GetIt.instance;
   setupAuthDependencies(sl);
-  setupReportsDependencies(sl);
+  registerInjectorDashboards(sl);
   // ...
 }
 ```
@@ -135,8 +144,8 @@ Future<void> setupDependencies() async {
 - `user_context`: usuario autenticado, perfis, permissoes, lojas permitidas e
   loja ativa
 - `dashboards`: listagem, detalhes, filtros, widgets e atualizacao de KPIs
-- `reports`: listagem, metadados, consulta, filtros, paginacao, ordenacao e
-  exportacao
+- `reports` (futuro): listagem, metadados, consulta, filtros, paginacao,
+  ordenacao e exportacao — componentes base em `shared/widgets/reports/`
 - `notifications` ou `realtime`: eventos de atualizacao e invalidacao de cache
 - `settings` ou `profile`: preferencias, dados basicos do usuario e sessao
 

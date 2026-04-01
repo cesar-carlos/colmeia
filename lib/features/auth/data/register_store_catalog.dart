@@ -1,4 +1,4 @@
-import 'package:colmeia/features/user_context/domain/entities/store_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/access/store_scope.dart';
 
 /// Demo store rows for access requests (Stitch-aligned). Shared by UI and fake.
 class RegisterStoreOption {

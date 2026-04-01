@@ -3,7 +3,7 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/user_context/data/datasources/user_context_local_datasource.dart';
 import 'package:colmeia/features/user_context/data/datasources/user_context_remote_datasource.dart';
-import 'package:colmeia/features/user_context/domain/entities/user_context_snapshot.dart';
+import 'package:colmeia/features/user_context/domain/entities/current_user_context.dart';
 import 'package:colmeia/features/user_context/domain/repositories/user_context_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -18,7 +18,7 @@ class UserContextRepositoryImpl implements UserContextRepository {
   final UserContextRemoteDataSource _remoteDataSource;
 
   @override
-  Future<AppResult<UserContextSnapshot>> loadUserContext({
+  Future<AppResult<CurrentUserContext>> loadUserContext({
     required String userId,
   }) async {
     try {
@@ -26,8 +26,10 @@ class UserContextRepositoryImpl implements UserContextRepository {
         userId,
       );
       final model = await _remoteDataSource.loadUserContext(userId: userId);
-      return Success<UserContextSnapshot, AppFailure>(
-        model.toSnapshot(persistedActiveStoreId: persistedActiveStoreId),
+      return Success<CurrentUserContext, AppFailure>(
+        model.toEntity(
+          persistedActiveStoreId: persistedActiveStoreId,
+        ),
       );
     } on Object catch (error, stackTrace) {
       AppLogger.error(
@@ -39,7 +41,7 @@ class UserContextRepositoryImpl implements UserContextRepository {
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure<UserContextSnapshot, AppFailure>(
+      return Failure<CurrentUserContext, AppFailure>(
         mapToAppFailure(
           error,
           stackTrace: stackTrace,

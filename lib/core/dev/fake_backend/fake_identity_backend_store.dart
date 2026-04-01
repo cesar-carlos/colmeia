@@ -1,9 +1,8 @@
 import 'dart:convert';
 
 import 'package:colmeia/core/storage/session_storage.dart';
-import 'package:colmeia/features/user_context/domain/entities/dashboard_access_grant.dart';
-import 'package:colmeia/features/user_context/domain/entities/report_access_grant.dart';
-import 'package:colmeia/features/user_context/domain/entities/store_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/access/dashboard_access_grant.dart';
+import 'package:colmeia/features/user_context/domain/entities/access/store_scope.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
 
 final class FakeIdentityBackendStore {
@@ -15,33 +14,11 @@ final class FakeIdentityBackendStore {
 
   static const List<DashboardAccessGrant> _migrationDefaultDashboardGrants =
       <DashboardAccessGrant>[
-    DashboardAccessGrant(
-      dashboardId: 'dashboard_main',
-      allowedFilterKeys: <String>{'store', 'referenceDate'},
-    ),
-  ];
-
-  static const List<ReportAccessGrant> _migrationDefaultReportGrants =
-      <ReportAccessGrant>[
-    ReportAccessGrant(
-      reportId: 'sales_overview',
-      allowedFilterKeys: <String>{
-        'store',
-        'seller',
-        'referenceDate',
-        'onlyPositiveMargin',
-      },
-    ),
-    ReportAccessGrant(
-      reportId: 'margin_audit',
-      allowedFilterKeys: <String>{
-        'store',
-        'seller',
-        'referenceDate',
-        'onlyPositiveMargin',
-      },
-    ),
-  ];
+        DashboardAccessGrant(
+          dashboardId: 'dashboard_main',
+          allowedFilterKeys: <String>{'store', 'referenceDate'},
+        ),
+      ];
 
   final SessionStorage _sessionStorage;
 
@@ -81,11 +58,8 @@ final class FakeIdentityBackendStore {
   }
 
   bool _needsGrantMigration(FakeIdentityUserRecord user) {
-    final needsDashboard = user.dashboardGrants.isEmpty &&
+    return user.dashboardGrants.isEmpty &&
         user.permissions.contains(UserPermission.viewDashboard);
-    final needsReports = user.reportGrants.isEmpty &&
-        user.permissions.contains(UserPermission.viewReports);
-    return needsDashboard || needsReports;
   }
 
   FakeIdentityUserRecord _migrateLegacyEmptyGrants(
@@ -104,14 +78,11 @@ final class FakeIdentityBackendStore {
       roleLabel: user.roleLabel,
       allowedStores: user.allowedStores,
       permissions: user.permissions,
-      dashboardGrants: user.dashboardGrants.isEmpty &&
+      dashboardGrants:
+          user.dashboardGrants.isEmpty &&
               user.permissions.contains(UserPermission.viewDashboard)
           ? List<DashboardAccessGrant>.from(_migrationDefaultDashboardGrants)
           : user.dashboardGrants,
-      reportGrants: user.reportGrants.isEmpty &&
-              user.permissions.contains(UserPermission.viewReports)
-          ? List<ReportAccessGrant>.from(_migrationDefaultReportGrants)
-          : user.reportGrants,
       activeStoreId: user.activeStoreId,
       phone: user.phone,
     );
@@ -163,23 +134,11 @@ final class FakeIdentityBackendStore {
       allowedStores: allowedStores,
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
-        UserPermission.viewReports,
       },
       dashboardGrants: const <DashboardAccessGrant>[
         DashboardAccessGrant(
           dashboardId: 'dashboard_main',
           allowedFilterKeys: <String>{'store', 'referenceDate'},
-        ),
-      ],
-      reportGrants: const <ReportAccessGrant>[
-        ReportAccessGrant(
-          reportId: 'sales_overview',
-          allowedFilterKeys: <String>{
-            'store',
-            'seller',
-            'referenceDate',
-            'onlyPositiveMargin',
-          },
         ),
       ],
       activeStoreId: allowedStores.first.id,
@@ -224,7 +183,7 @@ final class FakeIdentityBackendStore {
   }
 
   List<FakeIdentityUserRecord> get _defaultUsers => <FakeIdentityUserRecord>[
-    const FakeIdentityUserRecord(
+    FakeIdentityUserRecord(
       id: 'demo-user',
       fullName: 'Camila Oliveira',
       email: 'camila@example.com',
@@ -232,44 +191,23 @@ final class FakeIdentityBackendStore {
       employeeId: '',
       roleLabel: 'Gerente regional',
       allowedStores: <StoreScope>[
-        StoreScope(id: '03', name: 'Loja Centro'),
-        StoreScope(id: '08', name: 'Loja Norte'),
-        StoreScope(id: '14', name: 'Loja Sul'),
+        const StoreScope(id: '03', name: 'Loja Centro'),
+        const StoreScope(id: '08', name: 'Loja Norte'),
+        const StoreScope(id: '14', name: 'Loja Sul'),
       ],
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
-        UserPermission.viewReports,
       },
       dashboardGrants: <DashboardAccessGrant>[
-        DashboardAccessGrant(
+        const DashboardAccessGrant(
           dashboardId: 'dashboard_main',
           allowedFilterKeys: <String>{'store', 'referenceDate'},
-        ),
-      ],
-      reportGrants: <ReportAccessGrant>[
-        ReportAccessGrant(
-          reportId: 'sales_overview',
-          allowedFilterKeys: <String>{
-            'store',
-            'seller',
-            'referenceDate',
-            'onlyPositiveMargin',
-          },
-        ),
-        ReportAccessGrant(
-          reportId: 'margin_audit',
-          allowedFilterKeys: <String>{
-            'store',
-            'seller',
-            'referenceDate',
-            'onlyPositiveMargin',
-          },
         ),
       ],
       activeStoreId: '03',
       phone: '+55 (11) 98765-4321',
     ),
-    const FakeIdentityUserRecord(
+    FakeIdentityUserRecord(
       id: 'store-manager',
       fullName: 'Bruno Martins',
       email: 'bruno@example.com',
@@ -277,33 +215,21 @@ final class FakeIdentityBackendStore {
       employeeId: '',
       roleLabel: 'Gerente de loja',
       allowedStores: <StoreScope>[
-        StoreScope(id: '08', name: 'Loja Norte'),
+        const StoreScope(id: '08', name: 'Loja Norte'),
       ],
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
-        UserPermission.viewReports,
       },
       dashboardGrants: <DashboardAccessGrant>[
-        DashboardAccessGrant(
+        const DashboardAccessGrant(
           dashboardId: 'dashboard_main',
           allowedFilterKeys: <String>{'store', 'referenceDate'},
-        ),
-      ],
-      reportGrants: <ReportAccessGrant>[
-        ReportAccessGrant(
-          reportId: 'sales_overview',
-          allowedFilterKeys: <String>{
-            'store',
-            'seller',
-            'referenceDate',
-            'onlyPositiveMargin',
-          },
         ),
       ],
       activeStoreId: '08',
       phone: '+55 (11) 91234-5678',
     ),
-    const FakeIdentityUserRecord(
+    FakeIdentityUserRecord(
       id: 'ops-analyst',
       fullName: 'Amanda Souza',
       email: 'amanda@example.com',
@@ -311,19 +237,18 @@ final class FakeIdentityBackendStore {
       employeeId: '',
       roleLabel: 'Analista operacional',
       allowedStores: <StoreScope>[
-        StoreScope(id: '03', name: 'Loja Centro'),
-        StoreScope(id: '14', name: 'Loja Sul'),
+        const StoreScope(id: '03', name: 'Loja Centro'),
+        const StoreScope(id: '14', name: 'Loja Sul'),
       ],
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
       },
       dashboardGrants: <DashboardAccessGrant>[
-        DashboardAccessGrant(
+        const DashboardAccessGrant(
           dashboardId: 'dashboard_main',
           allowedFilterKeys: <String>{'store', 'referenceDate'},
         ),
       ],
-      reportGrants: <ReportAccessGrant>[],
       activeStoreId: '03',
       phone: '+55 (21) 99876-5432',
     ),
@@ -331,29 +256,153 @@ final class FakeIdentityBackendStore {
 }
 
 final class FakeIdentityUserRecord {
-  const FakeIdentityUserRecord({
+  FakeIdentityUserRecord({
+    required String id,
+    required String fullName,
+    required String email,
+    required String password,
+    required String employeeId,
+    required String roleLabel,
+    required List<StoreScope> allowedStores,
+    required Set<UserPermission> permissions,
+    required List<DashboardAccessGrant> dashboardGrants,
+    required String activeStoreId,
+    String phone = '',
+  }) : this._(
+         id: id,
+         profile: FakeIdentityUserProfileRecord(
+           fullName: fullName,
+           email: email,
+           employeeId: employeeId,
+           roleLabel: roleLabel,
+           phone: phone,
+         ),
+         access: FakeIdentityUserAccessRecord(
+           allowedStores: allowedStores,
+           permissions: permissions,
+           dashboardGrants: dashboardGrants,
+         ),
+         password: password,
+         activeStoreId: activeStoreId,
+       );
+
+  FakeIdentityUserRecord._({
     required this.id,
-    required this.fullName,
-    required this.email,
+    required this.profile,
+    required this.access,
     required this.password,
-    required this.employeeId,
-    required this.roleLabel,
-    required this.allowedStores,
-    required this.permissions,
-    required this.dashboardGrants,
-    required this.reportGrants,
     required this.activeStoreId,
-    this.phone = '',
   });
 
   factory FakeIdentityUserRecord.fromJson(Map<String, dynamic> json) {
+    final profile = FakeIdentityUserProfileRecord.fromJson(json);
+    final access = FakeIdentityUserAccessRecord.fromJson(json);
+
     return FakeIdentityUserRecord(
       id: json['id'] as String,
+      fullName: profile.fullName,
+      email: profile.email,
+      password: json['password'] as String,
+      employeeId: profile.employeeId,
+      roleLabel: profile.roleLabel,
+      allowedStores: access.allowedStores,
+      permissions: access.permissions,
+      dashboardGrants: access.dashboardGrants,
+      activeStoreId: json['activeStoreId'] as String,
+      phone: profile.phone,
+    );
+  }
+
+  final String id;
+  final FakeIdentityUserProfileRecord profile;
+  final FakeIdentityUserAccessRecord access;
+  final String password;
+  final String activeStoreId;
+
+  String get fullName => profile.fullName;
+  String get email => profile.email;
+  String get phone => profile.phone;
+  String get employeeId => profile.employeeId;
+  String get roleLabel => profile.roleLabel;
+  List<StoreScope> get allowedStores => access.allowedStores;
+  Set<UserPermission> get permissions => access.permissions;
+  List<DashboardAccessGrant> get dashboardGrants => access.dashboardGrants;
+
+  FakeIdentityUserRecord copyWith({
+    String? activeStoreId,
+    String? phone,
+  }) {
+    return FakeIdentityUserRecord(
+      id: id,
+      fullName: fullName,
+      email: email,
+      password: password,
+      employeeId: employeeId,
+      roleLabel: roleLabel,
+      allowedStores: allowedStores,
+      permissions: permissions,
+      dashboardGrants: dashboardGrants,
+      activeStoreId: activeStoreId ?? this.activeStoreId,
+      phone: phone ?? this.phone,
+    );
+  }
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'id': id,
+      ...profile.toJson(),
+      'password': password,
+      ...access.toJson(),
+      'activeStoreId': activeStoreId,
+    };
+  }
+}
+
+final class FakeIdentityUserProfileRecord {
+  const FakeIdentityUserProfileRecord({
+    required this.fullName,
+    required this.email,
+    required this.employeeId,
+    required this.roleLabel,
+    this.phone = '',
+  });
+
+  factory FakeIdentityUserProfileRecord.fromJson(Map<String, dynamic> json) {
+    return FakeIdentityUserProfileRecord(
       fullName: json['fullName'] as String,
       email: json['email'] as String,
-      password: json['password'] as String,
       employeeId: json['employeeId'] as String? ?? '',
       roleLabel: json['roleLabel'] as String,
+      phone: json['phone'] as String? ?? '',
+    );
+  }
+
+  final String fullName;
+  final String email;
+  final String employeeId;
+  final String roleLabel;
+  final String phone;
+
+  Map<String, Object?> toJson() {
+    return <String, Object?>{
+      'fullName': fullName,
+      'email': email,
+      'phone': phone,
+      'employeeId': employeeId,
+      'roleLabel': roleLabel,
+    };
+  }
+}
+
+final class FakeIdentityUserAccessRecord {
+  const FakeIdentityUserAccessRecord({
+    required this.allowedStores,
+    required this.permissions,
+    required this.dashboardGrants,
+  });
+
+  factory FakeIdentityUserAccessRecord.fromJson(Map<String, dynamic> json) {
+    return FakeIdentityUserAccessRecord(
       allowedStores: (json['allowedStores'] as List<dynamic>)
           .map(
             (store) => StoreScope(
@@ -362,11 +411,9 @@ final class FakeIdentityUserRecord {
             ),
           )
           .toList(),
-      permissions: (json['permissions'] as List<dynamic>)
-          .map(
-            (permission) => UserPermission.values.byName(permission as String),
-          )
-          .toSet(),
+      permissions: parseUserPermissionNameSet(
+        (json['permissions'] as List<dynamic>).map((entry) => entry as String),
+      ),
       dashboardGrants:
           (json['dashboardGrants'] as List<dynamic>? ?? <dynamic>[])
               .map(
@@ -384,67 +431,15 @@ final class FakeIdentityUserRecord {
                 },
               )
               .toList(growable: false),
-      reportGrants: (json['reportGrants'] as List<dynamic>? ?? <dynamic>[])
-          .map(
-            (grant) {
-              final grantJson = grant as Map<String, dynamic>;
-              return ReportAccessGrant(
-                reportId: grantJson['reportId'] as String,
-                allowedFilterKeys: _parseStringSet(
-                  grantJson['allowedFilterKeys'],
-                ),
-                allowedActions: _parseStringSet(grantJson['allowedActions']),
-              );
-            },
-          )
-          .toList(growable: false),
-      activeStoreId: json['activeStoreId'] as String,
-      phone: json['phone'] as String? ?? '',
     );
   }
 
-  final String id;
-  final String fullName;
-  final String email;
-  final String phone;
-  final String password;
-  final String employeeId;
-  final String roleLabel;
   final List<StoreScope> allowedStores;
   final Set<UserPermission> permissions;
   final List<DashboardAccessGrant> dashboardGrants;
-  final List<ReportAccessGrant> reportGrants;
-  final String activeStoreId;
-
-  FakeIdentityUserRecord copyWith({
-    String? activeStoreId,
-    String? phone,
-  }) {
-    return FakeIdentityUserRecord(
-      id: id,
-      fullName: fullName,
-      email: email,
-      password: password,
-      employeeId: employeeId,
-      roleLabel: roleLabel,
-      allowedStores: allowedStores,
-      permissions: permissions,
-      dashboardGrants: dashboardGrants,
-      reportGrants: reportGrants,
-      activeStoreId: activeStoreId ?? this.activeStoreId,
-      phone: phone ?? this.phone,
-    );
-  }
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
-      'id': id,
-      'fullName': fullName,
-      'email': email,
-      'phone': phone,
-      'password': password,
-      'employeeId': employeeId,
-      'roleLabel': roleLabel,
       'allowedStores': allowedStores
           .map(
             (store) => <String, Object?>{
@@ -463,16 +458,6 @@ final class FakeIdentityUserRecord {
             },
           )
           .toList(growable: false),
-      'reportGrants': reportGrants
-          .map(
-            (grant) => <String, Object?>{
-              'reportId': grant.reportId,
-              'allowedFilterKeys': grant.allowedFilterKeys.toList(),
-              'allowedActions': grant.allowedActions.toList(),
-            },
-          )
-          .toList(growable: false),
-      'activeStoreId': activeStoreId,
     };
   }
 

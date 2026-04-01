@@ -110,7 +110,8 @@ class _SyncfusionRegionMapChartState<T>
     _zoomPanBehavior
       ..enablePanning = _isZoomPanEnabled
       ..enablePinching = _isZoomPanEnabled
-      ..enableDoubleTapZooming = _isZoomPanEnabled &&
+      ..enableDoubleTapZooming =
+          _isZoomPanEnabled &&
           (widget.style.enableDoubleTapZooming ||
               widget.preset == AppChartPreset.explorable)
       ..minZoomLevel = widget.style.minZoomLevel
@@ -187,8 +188,7 @@ class _SyncfusionRegionMapChartState<T>
                       child: Text(
                         loadingLabel,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium
-                            ?.copyWith(
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colors.onSurfaceVariant,
                         ),
                       ),
@@ -525,7 +525,8 @@ class _SyncfusionRegionMapChartState<T>
     return MapZoomPanBehavior(
       enablePanning: _isZoomPanEnabled,
       enablePinching: _isZoomPanEnabled,
-      enableDoubleTapZooming: _isZoomPanEnabled &&
+      enableDoubleTapZooming:
+          _isZoomPanEnabled &&
           (widget.style.enableDoubleTapZooming ||
               widget.preset == AppChartPreset.explorable),
       minZoomLevel: widget.style.minZoomLevel,

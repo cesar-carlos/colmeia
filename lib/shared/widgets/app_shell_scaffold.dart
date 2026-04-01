@@ -35,10 +35,9 @@ class AppShellScaffold extends StatelessWidget {
     );
 
     if (useRail) {
-      final railDividerColor = Theme.of(context)
-          .colorScheme
-          .outlineVariant
-          .withValues(alpha: 0.22);
+      final railDividerColor = Theme.of(
+        context,
+      ).colorScheme.outlineVariant.withValues(alpha: 0.22);
 
       return Scaffold(
         body: SafeArea(

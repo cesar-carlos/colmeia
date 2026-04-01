@@ -10,11 +10,6 @@ void main() {
       expect(appShellRouteLabel(AppRoute.dashboardStore), 'Dashboard');
     });
 
-    test('should map reports variants to Relatórios', () {
-      expect(appShellRouteLabel(AppRoute.reports), 'Relatórios');
-      expect(appShellRouteLabel(AppRoute.reportDetail), 'Relatórios');
-    });
-
     test('should map settings to Perfil', () {
       expect(appShellRouteLabel(AppRoute.settings), 'Perfil');
     });
@@ -34,14 +29,6 @@ void main() {
       expect(
         appShellRouteSubtitle(AppRoute.dashboardStore),
         'Resumo operacional e KPIs',
-      );
-      expect(
-        appShellRouteSubtitle(AppRoute.reports),
-        'Consultas e relatórios dinâmicos',
-      );
-      expect(
-        appShellRouteSubtitle(AppRoute.reportDetail),
-        'Consultas e relatórios dinâmicos',
       );
       expect(
         appShellRouteSubtitle(AppRoute.settings),
@@ -64,17 +51,6 @@ void main() {
       expect(
         appShellRouteIcon(AppRoute.dashboardStore, selected: true),
         Icons.space_dashboard_rounded,
-      );
-    });
-
-    test('should switch outlined vs filled for reports', () {
-      expect(
-        appShellRouteIcon(AppRoute.reports, selected: false),
-        Icons.assessment_outlined,
-      );
-      expect(
-        appShellRouteIcon(AppRoute.reportDetail, selected: true),
-        Icons.assessment_rounded,
       );
     });
 

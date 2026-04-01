@@ -1,4 +1,4 @@
-import 'package:colmeia/features/user_context/domain/entities/store_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/access/store_scope.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';

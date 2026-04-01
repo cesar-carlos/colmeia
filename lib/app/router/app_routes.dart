@@ -19,20 +19,10 @@ enum AppRoute {
     title: 'Dashboard principal',
     shellIndex: 0,
   ),
-  reportDetail(
-    path: '/reports/:reportId',
-    title: 'Detalhes do relatorio',
-    shellIndex: 1,
-  ),
-  reports(
-    path: '/reports',
-    title: 'Relatorios',
-    shellIndex: 1,
-  ),
   settings(
     path: '/settings',
     title: 'Perfil',
-    shellIndex: 2,
+    shellIndex: 1,
   )
   ;
 
@@ -49,9 +39,6 @@ enum AppRoute {
   bool get isShellRoute => shellIndex != null;
   UserPermission? get requiredPermission {
     switch (this) {
-      case AppRoute.reports:
-      case AppRoute.reportDetail:
-        return UserPermission.viewReports;
       case AppRoute.dashboard:
       case AppRoute.dashboardStore:
         return UserPermission.viewDashboard;
@@ -64,7 +51,6 @@ enum AppRoute {
 
   static const List<AppRoute> shellRoutes = <AppRoute>[
     dashboard,
-    reports,
     settings,
   ];
 
