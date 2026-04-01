@@ -13,7 +13,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   const AppShellAppBar({
     super.key,
     this.showSearchPill = true,
-    this.searchHint = 'Buscar componentes...',
+    this.searchHint = 'Buscar metricas, lojas ou relatorios...',
     this.primary = true,
     this.showBrandTitle = true,
   });
@@ -30,7 +30,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBrandTitle;
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(72);
 
   @override
   Widget build(BuildContext context) {
@@ -42,18 +42,49 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     final userScope = userContext.userScope;
 
     final showSearch = showSearchPill && !AppBreakpoints.isMobile(context);
+    final showUserDetails = !AppBreakpoints.isMobile(context);
+    final titleSpacing = showBrandTitle
+        ? (showSearch ? 16.0 : 0.0)
+        : tokens.contentSpacing;
 
-    final brandTitle = Semantics(
-      header: true,
-      label: 'Colmeia',
-      child: Text(
-        'Colmeia',
-        style: typography.sectionHeaderH2.copyWith(
-          fontSize: theme.textTheme.titleLarge?.fontSize,
-          fontWeight: FontWeight.w800,
-          color: colors.primary,
+    final brandTitle = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colors.primary,
+            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: colors.primary.withValues(alpha: 0.2),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: const SizedBox(
+            width: 28,
+            height: 28,
+            child: Icon(
+              Icons.hexagon_rounded,
+              size: 18,
+            ),
+          ),
         ),
-      ),
+        SizedBox(width: tokens.gapSm),
+        Semantics(
+          header: true,
+          label: 'Colmeia',
+          child: Text(
+            'Colmeia',
+            style: typography.sectionHeaderH2.copyWith(
+              fontSize: theme.textTheme.titleMedium?.fontSize,
+              fontWeight: FontWeight.w800,
+              color: colors.onSurface,
+            ),
+          ),
+        ),
+      ],
     );
 
     final title = showSearch
@@ -74,48 +105,54 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     return AppBar(
       primary: primary,
-      titleSpacing: showBrandTitle
-          ? (showSearch ? 16 : 0)
-          : tokens.contentSpacing,
+      toolbarHeight: preferredSize.height,
+      titleSpacing: titleSpacing,
       title: title,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
       actions: <Widget>[
-        IconButton(
-          tooltip: 'Notificações',
+        _ShellAppBarIconButton(
+          tooltip: 'Notificacoes',
+          icon: Icons.notifications_none_rounded,
           onPressed: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Notificações em breve.'),
+                content: Text('Notificacoes em breve.'),
               ),
             );
           },
-          icon: const Icon(
-            Icons.notifications_outlined,
-            semanticLabel: 'Notificações',
-          ),
         ),
-        Padding(
-          padding: const EdgeInsetsDirectional.only(end: 8),
-          child: Semantics(
-            label: 'Abrir configuracoes',
-            button: true,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                customBorder: const CircleBorder(),
-                onTap: () => context.goTo(AppRoute.settings),
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: colors.primaryContainer,
-                  foregroundColor: colors.onPrimaryContainer,
-                  child: Text(
-                    appShellUserInitials(userScope.name),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+        if (!AppBreakpoints.isMobile(context)) ...<Widget>[
+          SizedBox(width: tokens.gapSm),
+          _ShellAppBarIconButton(
+            tooltip: 'Ajuda',
+            icon: Icons.help_outline_rounded,
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Central de ajuda em breve.'),
                 ),
-              ),
+              );
+            },
+          ),
+          SizedBox(width: tokens.gapMd),
+          SizedBox(
+            height: 24,
+            child: VerticalDivider(
+              color: colors.outlineVariant.withValues(alpha: 0.55),
             ),
+          ),
+        ] else
+          SizedBox(width: tokens.gapSm),
+        Padding(
+          padding: EdgeInsetsDirectional.only(
+            end: tokens.contentSpacing,
+            start: tokens.gapSm,
+          ),
+          child: _ShellUserChip(
+            name: userScope.name,
+            subtitle: showUserDetails ? userScope.roleLabel : null,
+            onTap: () => context.goTo(AppRoute.settings),
           ),
         ),
       ],
@@ -136,7 +173,7 @@ class _ShellSearchPill extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
 
     final hintStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+      color: scheme.onSurfaceVariant.withValues(alpha: 0.82),
     );
 
     return Semantics(
@@ -154,14 +191,16 @@ class _ShellSearchPill extends StatelessWidget {
           },
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow,
+              color: colors.surfaceContainerLow,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: colors.primary),
+              border: Border.all(
+                color: colors.outlineVariant.withValues(alpha: 0.7),
+              ),
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: tokens.gapMd,
-                vertical: 10,
+                horizontal: tokens.gapMd + 2,
+                vertical: tokens.gapSm + 4,
               ),
               child: Row(
                 children: <Widget>[
@@ -181,6 +220,138 @@ class _ShellSearchPill extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShellAppBarIconButton extends StatelessWidget {
+  const _ShellAppBarIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.appColors;
+    final tokens = theme.extension<AppThemeTokens>()!;
+
+    return Padding(
+      padding: EdgeInsetsDirectional.only(start: tokens.gapSm),
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: colors.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.formFieldRadius + 4),
+            side: BorderSide(
+              color: colors.outlineVariant.withValues(alpha: 0.55),
+            ),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(tokens.formFieldRadius + 4),
+            onTap: onPressed,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Icon(
+                icon,
+                size: 20,
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShellUserChip extends StatelessWidget {
+  const _ShellUserChip({
+    required this.name,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  final String name;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.appColors;
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final showSubtitle = subtitle != null && subtitle!.trim().isNotEmpty;
+
+    return Semantics(
+      label: 'Abrir configuracoes',
+      button: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(tokens.cardRadius),
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: showSubtitle ? tokens.gapSm : 0,
+              vertical: tokens.gapXs,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: colors.primaryContainer,
+                  foregroundColor: colors.onPrimaryContainer,
+                  child: Text(
+                    appShellUserInitials(name),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                if (showSubtitle) ...<Widget>[
+                  SizedBox(width: tokens.gapSm),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 148),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colors.onSurface,
+                          ),
+                        ),
+                        SizedBox(height: tokens.gapXs / 2),
+                        Text(
+                          subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),

@@ -221,8 +221,11 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                       padding: context.pageScrollPadding(tokens),
                       children: <Widget>[
                         AppShellPageIntro(
-                          title: 'Olá, $greetingName',
-                          subtitle: 'Aqui está o resumo da sua operação hoje.',
+                          eyebrow: 'Ola, $greetingName',
+                          title: 'Dashboard Executivo',
+                          subtitle:
+                              'Resumo operacional das ultimas horas para a '
+                              'loja selecionada.',
                           footer: AllowedStoreSelectorStrip(
                             stores: userContext.userScope.allowedStores,
                             selectedStoreId: selectedStore.id,
@@ -299,29 +302,6 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                         ],
                         SizedBox(height: tokens.sectionSpacing),
                         if (shouldShowOverview) ...<Widget>[
-                          AppSkeleton(
-                            enabled: showSkeleton,
-                            showDelay: _dashboardCriticalSkeletonDelay,
-                            loadingSemanticsLabel:
-                                'Carregando insight principal do dashboard...',
-                            child: DashboardAiInsightCard(
-                              insight: resolvedOverview.aiInsight,
-                              onApply: showSkeleton
-                                  ? null
-                                  : () {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Sugestão enviada para a equipe.',
-                                          ),
-                                        ),
-                                      );
-                                    },
-                            ),
-                          ),
-                          SizedBox(height: tokens.sectionSpacing),
                           ..._summaryMetricWidgets(
                             context: context,
                             metrics: resolvedOverview.summaryMetrics,
@@ -343,9 +323,12 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                             enabled: showSkeleton,
                             showDelay: _dashboardSecondarySkeletonDelay,
                             loadingSemanticsLabel:
-                                'Carregando mix de categorias...',
-                            child: DashboardCategoryMixCard(
-                              shares: resolvedOverview.categoryShares,
+                                'Carregando destaques secundarios '
+                                'do dashboard...',
+                            child: _buildOverviewSecondarySection(
+                              context: context,
+                              overview: resolvedOverview,
+                              showSkeleton: showSkeleton,
                             ),
                           ),
                         ],
@@ -384,6 +367,60 @@ List<Widget> _summaryMetricWidgets({
           trendPlacement: AppMetricStatTrendPlacement.inlineStart,
         ),
       ),
+    ];
+  }
+
+  if (!AppBreakpoints.isMobile(context) && metrics.length >= 3) {
+    final primaryMetrics = metrics.take(3).toList(growable: false);
+    final remainingMetrics = metrics.skip(3).toList(growable: false);
+
+    return <Widget>[
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          for (
+            var index = 0;
+            index < primaryMetrics.length;
+            index++
+          ) ...<Widget>[
+            Expanded(
+              child: AppSkeleton(
+                enabled: showSkeleton,
+                showDelay: _dashboardCriticalSkeletonDelay,
+                loadingSemanticsLabel: 'Carregando metricas do dashboard...',
+                child: DashboardSummaryCard(
+                  title: primaryMetrics[index].title,
+                  value: primaryMetrics[index].value,
+                  deltaLabel: primaryMetrics[index].deltaLabel,
+                  icon: primaryMetrics[index].icon,
+                  emphasis: index == 0
+                      ? DashboardSummaryCardEmphasis.hero
+                      : DashboardSummaryCardEmphasis.standard,
+                ),
+              ),
+            ),
+            if (index < primaryMetrics.length - 1)
+              SizedBox(width: tokens.gapSm),
+          ],
+        ],
+      ),
+      ...remainingMetrics.expand((metric) {
+        return <Widget>[
+          SizedBox(height: tokens.contentSpacing),
+          AppSkeleton(
+            enabled: showSkeleton,
+            showDelay: _dashboardSecondarySkeletonDelay,
+            loadingSemanticsLabel: 'Carregando metricas do dashboard...',
+            child: DashboardSummaryCard(
+              title: metric.title,
+              value: metric.value,
+              deltaLabel: metric.deltaLabel,
+              icon: metric.icon,
+              trendPlacement: AppMetricStatTrendPlacement.inlineStart,
+            ),
+          ),
+        ];
+      }),
     ];
   }
 
@@ -478,4 +515,55 @@ List<Widget> _summaryMetricWidgets({
     if (AppBreakpoints.isMobile(context)) pairColumn else pairRow,
     ...rest,
   ];
+}
+
+Widget _buildOverviewSecondarySection({
+  required BuildContext context,
+  required DashboardOverview overview,
+  required bool showSkeleton,
+}) {
+  final insightCard = DashboardAiInsightCard(
+    insight: overview.aiInsight,
+    onApply: showSkeleton
+        ? null
+        : () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Sugestao enviada para a equipe.'),
+              ),
+            );
+          },
+  );
+  final categoryCard = DashboardCategoryMixCard(
+    shares: overview.categoryShares,
+  );
+
+  if (AppBreakpoints.isMobile(context)) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        categoryCard,
+        SizedBox(
+          height: Theme.of(context).extension<AppThemeTokens>()!.sectionSpacing,
+        ),
+        insightCard,
+      ],
+    );
+  }
+
+  final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: <Widget>[
+      Expanded(
+        flex: 5,
+        child: categoryCard,
+      ),
+      SizedBox(width: tokens.gapMd),
+      Expanded(
+        flex: 4,
+        child: insightCard,
+      ),
+    ],
+  );
 }
