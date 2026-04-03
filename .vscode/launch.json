@@ -27,25 +27,37 @@
         {
             "name": "colmeia",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
         },
         {
             "name": "colmeia (Chrome)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "chrome"
+            "deviceId": "chrome",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
         },
         {
             "name": "colmeia (profile mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
         },
         {
             "name": "colmeia (release mode)",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "release"
+            "flutterMode": "release",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
         }
     ]
 }

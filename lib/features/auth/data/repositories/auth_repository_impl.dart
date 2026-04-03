@@ -166,9 +166,17 @@ class AuthRepositoryImpl implements AuthRepository {
         error,
         stackTrace: stackTrace,
         fallbackMessage: 'Unable to sign in client',
-        fallbackUserMessage: statusCode == 401
-            ? 'Nao foi possivel entrar com as credenciais informadas.'
-            : 'Nao foi possivel autenticar sua conta agora.',
+        fallbackUserMessage: switch (statusCode) {
+          401 => 'Nao foi possivel entrar com as credenciais informadas.',
+          403 =>
+            'Sua conta ainda nao foi aprovada ou nao pode acessar no momento.',
+          423 =>
+            'Sua conta esta bloqueada. Fale com o responsavel pela aprovacao.',
+          429 =>
+            'Voce excedeu o limite de tentativas. Aguarde para tentar '
+                'novamente.',
+          _ => 'Nao foi possivel autenticar sua conta agora.',
+        },
         context: <String, Object?>{
           'operation': 'login',
           'email': email,
@@ -221,6 +229,41 @@ class AuthRepositoryImpl implements AuthRepository {
         token: token,
       );
       return Success<ClientRegistrationStatus, AppFailure>(status);
+    } on DioException catch (error, stackTrace) {
+      final statusCode = error.response?.statusCode;
+      final failure = switch (statusCode) {
+        400 || 404 => ValidationFailure(
+          message: 'Client registration token not found',
+          userMessage: 'O token de cadastro informado e invalido.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: const <String, Object?>{
+            'operation': 'readRegistrationStatus',
+          },
+        ),
+        410 => ValidationFailure(
+          message: 'Client registration token expired',
+          userMessage:
+              'O token de cadastro expirou. Solicite um novo cadastro.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: const <String, Object?>{
+            'operation': 'readRegistrationStatus',
+          },
+        ),
+        _ => mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to read registration status',
+          fallbackUserMessage:
+              'Nao foi possivel consultar o status da solicitacao.',
+          context: <String, Object?>{
+            'operation': 'readRegistrationStatus',
+            'statusCode': statusCode,
+          },
+        ),
+      };
+      return Failure<ClientRegistrationStatus, AppFailure>(failure);
     } on Object catch (error, stackTrace) {
       AppLogger.error(
         'Unable to read client registration status',
@@ -450,6 +493,11 @@ class AuthRepositoryImpl implements AuthRepository {
       if (statusCode == 404) {
         return const Success<ClientPasswordRecoveryStatus, AppFailure>(
           ClientPasswordRecoveryStatus.invalid,
+        );
+      }
+      if (statusCode == 410) {
+        return const Success<ClientPasswordRecoveryStatus, AppFailure>(
+          ClientPasswordRecoveryStatus.expired,
         );
       }
       return Failure<ClientPasswordRecoveryStatus, AppFailure>(

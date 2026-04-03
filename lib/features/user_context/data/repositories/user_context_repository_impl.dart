@@ -5,6 +5,7 @@ import 'package:colmeia/features/user_context/data/datasources/user_context_loca
 import 'package:colmeia/features/user_context/data/datasources/user_context_remote_datasource.dart';
 import 'package:colmeia/features/user_context/domain/entities/current_user_context.dart';
 import 'package:colmeia/features/user_context/domain/repositories/user_context_repository.dart';
+import 'package:dio/dio.dart';
 import 'package:result_dart/result_dart.dart';
 
 class UserContextRepositoryImpl implements UserContextRepository {
@@ -31,6 +32,28 @@ class UserContextRepositoryImpl implements UserContextRepository {
       return Success<CurrentUserContext, AppFailure>(
         model.toEntity(
           persistedActiveStoreId: persistedActiveStoreId,
+        ),
+      );
+    } on DioException catch (error, stackTrace) {
+      final statusCode = error.response?.statusCode;
+      return Failure<CurrentUserContext, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to load user context',
+          fallbackUserMessage: switch (statusCode) {
+            401 =>
+              'Sua sessao expirou. Entre novamente para carregar seu contexto.',
+            403 =>
+              'Sua conta nao possui acesso ao contexto solicitado no momento.',
+            404 => 'Nao foi possivel encontrar os dados da sua conta.',
+            _ => 'Nao foi possivel carregar permissoes e lojas do usuario.',
+          },
+          context: <String, Object?>{
+            'operation': 'loadUserContext',
+            'userId': userId,
+            'statusCode': statusCode,
+          },
         ),
       );
     } on Object catch (error, stackTrace) {

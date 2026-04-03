@@ -6,6 +6,7 @@ import 'package:colmeia/features/dashboards/data/datasources/dashboard_local_dat
 import 'package:colmeia/features/dashboards/data/datasources/dashboard_remote_datasource.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/repositories/dashboard_repository.dart';
+import 'package:dio/dio.dart';
 import 'package:result_dart/result_dart.dart';
 
 class DashboardRepositoryImpl implements DashboardRepository {
@@ -44,6 +45,61 @@ class DashboardRepositoryImpl implements DashboardRepository {
       );
 
       return Success<DashboardOverview, AppFailure>(overviewModel.toEntity());
+    } on DioException catch (error, stackTrace) {
+      final cachedOverview = await _localDataSource.readOverview(
+        userId: userId,
+        storeId: storeId,
+      );
+      if (cachedOverview != null) {
+        AppLogger.warning(
+          'Dashboard overview fallback to cached data',
+          context: <String, Object?>{
+            'operation': 'loadDashboardOverview',
+            'userId': userId,
+            'storeId': storeId.value,
+            'source': 'cache',
+          },
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return Success<DashboardOverview, AppFailure>(
+          cachedOverview.toEntity(),
+        );
+      }
+
+      final statusCode = error.response?.statusCode;
+      AppLogger.error(
+        'Unable to load dashboard overview',
+        context: <String, Object?>{
+          'operation': 'loadDashboardOverview',
+          'userId': userId,
+          'storeId': storeId.value,
+          'statusCode': statusCode,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Failure<DashboardOverview, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to load dashboard overview',
+          fallbackUserMessage: switch (statusCode) {
+            401 => 'Sua sessao expirou. Entre novamente para ver o dashboard.',
+            403 =>
+              'Sua conta nao tem permissao para visualizar este dashboard.',
+            404 =>
+              'O dashboard solicitado nao esta disponivel para esta conta.',
+            _ => 'Nao foi possivel carregar o dashboard.',
+          },
+          context: <String, Object?>{
+            'operation': 'loadDashboardOverview',
+            'userId': userId,
+            'storeId': storeId.value,
+            'statusCode': statusCode,
+          },
+        ),
+      );
     } on Object catch (error, stackTrace) {
       final cachedOverview = await _localDataSource.readOverview(
         userId: userId,

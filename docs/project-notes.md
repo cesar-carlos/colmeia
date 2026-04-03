@@ -11,7 +11,7 @@ Caderno vivo para decisões, integrações e lembretes operacionais. As regras c
 
 - Flags úteis via `--dart-define` (ver `lib/core/config/app_environment.dart`):
   - `API_BASE_URL` — base da API (quando aplicável).
-  - `USE_FAKE_BACKEND` — backend fake para desenvolvimento (padrão atual conforme código).
+  - `USE_FAKE_BACKEND` — `true` usa backend em memória (`FakeAuthRemoteDataSource`); `false` usa API HTTP real. O bundle `assets/env/default.env` vem com API real e `USE_FAKE_BACKEND=false`.
   - `SENTRY_DSN` — DSN do Sentry; vazio desativa o SDK.
   - `SENTRY_DEBUG` — com DSN definido, habilita Sentry em builds **debug**.
   - `SENTRY_TRACES_SAMPLE_RATE` — taxa de traces (string, ex.: `0.2`; inválido usa fallback).
@@ -95,12 +95,12 @@ dart format lib test
 
 Comportamento **já implementado** no app (ver `AppEnvironment` + `AppDioClient`):
 
-| Tópico     | Detalhe                                                                                                                                                                                                                                                         |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Modo fake  | `USE_FAKE_BACKEND` tem **padrão `true`**: usa implementações em memória (`FakeAuthRemoteDataSource`, etc.) sem rede real.                                                                                                                                       |
-| API real   | Definir `--dart-define=USE_FAKE_BACKEND=false` **e** `API_BASE_URL=https://...` (sem barra final desnecessária; o Dio usa como base). Se `API_BASE_URL` estiver vazio com fake desligado, o app **registra um aviso** no log e chamadas relativas podem falhar. |
-| Transporte | JSON via `dio`; timeouts de **15 s** (connect, receive, send).                                                                                                                                                                                                  |
-| Sessão     | Tokens em armazenamento seguro; backend é fonte de verdade para autorização (`project_specifics`).                                                                                                                                                              |
+| Tópico     | Detalhe                                                                                                                                                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Modo fake  | `USE_FAKE_BACKEND=true` (ex.: `local.env`): usa `FakeAuthRemoteDataSource` sem rede real.                                                                                                                                                            |
+| API real   | Padrão no bundle: `default.env` com `USE_FAKE_BACKEND=false` e `API_BASE_URL` do servidor. `--dart-define` tem precedência sobre o dotenv. Com fake desligado e `API_BASE_URL` vazio, o app **registra um aviso** e chamadas relativas podem falhar. |
+| Transporte | JSON via `dio`; timeouts de **15 s** (connect, receive, send).                                                                                                                                                                                       |
+| Sessão     | Tokens em armazenamento seguro; backend é fonte de verdade para autorização (`project_specifics`).                                                                                                                                                   |
 
 Anotações **externas ao repositório** (preencher):
 
