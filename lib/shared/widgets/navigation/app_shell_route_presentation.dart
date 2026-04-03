@@ -10,6 +10,9 @@ String appShellRouteLabel(AppRoute route) {
       return 'Perfil';
     case AppRoute.login:
     case AppRoute.register:
+    case AppRoute.registrationStatus:
+    case AppRoute.passwordRecovery:
+    case AppRoute.passwordRecoveryReset:
       return route.title;
   }
 }
@@ -23,6 +26,9 @@ String? appShellRouteSubtitle(AppRoute route) {
       return 'Conta, permissões e preferências';
     case AppRoute.login:
     case AppRoute.register:
+    case AppRoute.registrationStatus:
+    case AppRoute.passwordRecovery:
+    case AppRoute.passwordRecoveryReset:
       return null;
   }
 }
@@ -38,6 +44,9 @@ IconData appShellRouteIcon(AppRoute route, {required bool selected}) {
       return selected ? Icons.person_rounded : Icons.person_outline_rounded;
     case AppRoute.login:
     case AppRoute.register:
+    case AppRoute.registrationStatus:
+    case AppRoute.passwordRecovery:
+    case AppRoute.passwordRecoveryReset:
       return Icons.arrow_forward_rounded;
   }
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
+import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 
 class AuthSessionModel {
   const AuthSessionModel({
@@ -10,6 +11,8 @@ class AuthSessionModel {
     required this.accessToken,
     required this.refreshToken,
     required this.expiresAt,
+    this.role,
+    this.accountStatus = ClientAccountStatus.unknown,
   });
 
   factory AuthSessionModel.fromJson(Map<String, dynamic> json) {
@@ -19,6 +22,10 @@ class AuthSessionModel {
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
       expiresAt: DateTime.parse(json['expiresAt'] as String),
+      role: json['role'] as String?,
+      accountStatus: ClientAccountStatusParsing.fromRaw(
+        json['accountStatus'] as String?,
+      ),
     );
   }
 
@@ -33,6 +40,8 @@ class AuthSessionModel {
   final String accessToken;
   final String refreshToken;
   final DateTime expiresAt;
+  final String? role;
+  final ClientAccountStatus accountStatus;
 
   AuthSession toEntity() {
     return AuthSession(
@@ -41,6 +50,8 @@ class AuthSessionModel {
       accessToken: accessToken,
       refreshToken: refreshToken,
       expiresAt: expiresAt,
+      role: role,
+      accountStatus: accountStatus,
     );
   }
 
@@ -51,6 +62,8 @@ class AuthSessionModel {
       'accessToken': accessToken,
       'refreshToken': refreshToken,
       'expiresAt': expiresAt.toIso8601String(),
+      'role': role,
+      'accountStatus': accountStatus.wireValue,
     };
   }
 

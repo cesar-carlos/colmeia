@@ -25,7 +25,9 @@ class UserContextRepositoryImpl implements UserContextRepository {
       final persistedActiveStoreId = await _localDataSource.readActiveStoreId(
         userId,
       );
-      final model = await _remoteDataSource.loadUserContext(userId: userId);
+      final model = await _remoteDataSource.loadUserContext(
+        userId: userId,
+      );
       return Success<CurrentUserContext, AppFailure>(
         model.toEntity(
           persistedActiveStoreId: persistedActiveStoreId,

@@ -18,6 +18,9 @@ class CurrentUserScope {
   String get roleLabel => profile.roleLabel;
   String get corporateEmail => profile.corporateEmail;
   String get phone => profile.phone;
+  String get firstName => profile.firstName;
+  String get lastName => profile.lastName;
+  String? get thumbnailUrl => profile.thumbnailUrl;
   List<StoreScope> get allowedStores => access.allowedStores;
   Set<UserPermission> get permissions => access.permissions;
   List<DashboardAccessGrant> get dashboardGrants => access.dashboardGrants;

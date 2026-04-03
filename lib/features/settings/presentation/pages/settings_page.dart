@@ -4,11 +4,18 @@ import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
+import 'package:colmeia/features/auth/application/usecases/change_password_use_case.dart';
+import 'package:colmeia/features/auth/application/usecases/update_current_user_profile_use_case.dart';
+import 'package:colmeia/features/auth/application/usecases/upload_client_thumbnail_use_case.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/auth/presentation/widgets/auth_form_text_field.dart';
+import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_field.dart';
+import 'package:colmeia/features/settings/presentation/controllers/client_account_settings_controller.dart';
 import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/forms/app_form_validators.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/app_editorial_media_card.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
@@ -25,6 +32,7 @@ import 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_status_pill.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
@@ -38,12 +46,25 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late bool _pushNotificationsEnabled;
+  late final ClientAccountSettingsController _accountSettingsController;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _pushNotificationsEnabled =
         getIt<AppUserPreferencesStore>().pushNotificationsEnabled;
+    _accountSettingsController = ClientAccountSettingsController(
+      updateCurrentUserProfileUseCase: getIt<UpdateCurrentUserProfileUseCase>(),
+      uploadClientThumbnailUseCase: getIt<UploadClientThumbnailUseCase>(),
+      changePasswordUseCase: getIt<ChangePasswordUseCase>(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _accountSettingsController.dispose();
+    super.dispose();
   }
 
   Future<void> _persistPushNotifications(bool value) async {
@@ -61,6 +82,318 @@ class _SettingsPageState extends State<SettingsPage> {
       return;
     }
     messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showEditProfileSheet(
+    CurrentUserContextController userContextController,
+  ) async {
+    final scope = userContextController.userScope;
+    final firstNameController = TextEditingController(text: scope.firstName);
+    final lastNameController = TextEditingController(text: scope.lastName);
+    final phoneController = TextEditingController(text: scope.phone);
+    final formKey = GlobalKey<FormState>();
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.contentSpacing,
+            0,
+            tokens.contentSpacing,
+            MediaQuery.viewInsetsOf(sheetContext).bottom +
+                tokens.contentSpacing,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                AuthFormTextField(
+                  controller: firstNameController,
+                  label: 'Nome',
+                  icon: Icons.person_outline_rounded,
+                  validator: (value) => AppFormValidators.requiredText(
+                    value,
+                    message: 'Informe seu nome.',
+                  ),
+                ),
+                SizedBox(height: tokens.gapMd),
+                AuthFormTextField(
+                  controller: lastNameController,
+                  label: 'Sobrenome',
+                  icon: Icons.badge_outlined,
+                  validator: (value) => AppFormValidators.requiredText(
+                    value,
+                    message: 'Informe seu sobrenome.',
+                  ),
+                ),
+                SizedBox(height: tokens.gapMd),
+                AuthFormTextField(
+                  controller: phoneController,
+                  label: 'Telefone',
+                  icon: Icons.phone_android_outlined,
+                  keyboardType: TextInputType.phone,
+                ),
+                SizedBox(height: tokens.contentSpacing),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) {
+                        return;
+                      }
+                      final success = await _accountSettingsController
+                          .updateProfile(
+                            firstName: firstNameController.text.trim(),
+                            lastName: lastNameController.text.trim(),
+                            mobile: phoneController.text.trim(),
+                          );
+                      if (!mounted || !sheetContext.mounted) {
+                        return;
+                      }
+                      if (!success) {
+                        _showSoonSnack(
+                          _accountSettingsController.errorMessage ??
+                              'Nao foi possivel atualizar a conta.',
+                        );
+                        return;
+                      }
+
+                      Navigator.of(sheetContext).pop();
+                      await userContextController.reloadUserContext();
+                      _showSoonSnack(
+                        _accountSettingsController.successMessage ??
+                            'Conta atualizada com sucesso.',
+                      );
+                    },
+                    child: const Text('Salvar alteracoes'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    firstNameController.dispose();
+    lastNameController.dispose();
+    phoneController.dispose();
+  }
+
+  Future<void> _showChangePasswordSheet() async {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    var obscureCurrent = true;
+    var obscureNext = true;
+    var obscureConfirm = true;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.contentSpacing,
+                0,
+                tokens.contentSpacing,
+                MediaQuery.viewInsetsOf(sheetContext).bottom +
+                    tokens.contentSpacing,
+              ),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    AuthPasswordTextField(
+                      controller: currentPasswordController,
+                      obscureText: obscureCurrent,
+                      onToggleObscure: () {
+                        setSheetState(() {
+                          obscureCurrent = !obscureCurrent;
+                        });
+                      },
+                      label: 'Senha atual',
+                      icon: Icons.lock_clock_outlined,
+                    ),
+                    SizedBox(height: tokens.gapMd),
+                    AuthPasswordTextField(
+                      controller: newPasswordController,
+                      obscureText: obscureNext,
+                      onToggleObscure: () {
+                        setSheetState(() {
+                          obscureNext = !obscureNext;
+                        });
+                      },
+                      label: 'Nova senha',
+                      icon: Icons.lock_outline_rounded,
+                      validator: (value) =>
+                          AppFormValidators.password(value, minLength: 8),
+                    ),
+                    SizedBox(height: tokens.gapMd),
+                    AuthPasswordTextField(
+                      controller: confirmPasswordController,
+                      obscureText: obscureConfirm,
+                      onToggleObscure: () {
+                        setSheetState(() {
+                          obscureConfirm = !obscureConfirm;
+                        });
+                      },
+                      label: 'Confirmar nova senha',
+                      icon: Icons.lock_reset_outlined,
+                      validator: (value) => AppFormValidators.confirmPassword(
+                        value,
+                        password: newPasswordController.text,
+                      ),
+                    ),
+                    SizedBox(height: tokens.contentSpacing),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () async {
+                          if (!formKey.currentState!.validate()) {
+                            return;
+                          }
+                          final success = await _accountSettingsController
+                              .changePassword(
+                                currentPassword:
+                                    currentPasswordController.text,
+                                newPassword: newPasswordController.text,
+                              );
+                          if (!mounted || !sheetContext.mounted) {
+                            return;
+                          }
+                          if (!success) {
+                            _showSoonSnack(
+                              _accountSettingsController.errorMessage ??
+                                  'Nao foi possivel alterar a senha.',
+                            );
+                            return;
+                          }
+
+                          Navigator.of(sheetContext).pop();
+                          _showSoonSnack(
+                            _accountSettingsController.successMessage ??
+                                'Senha alterada com sucesso.',
+                          );
+                        },
+                        child: const Text('Atualizar senha'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    currentPasswordController.dispose();
+    newPasswordController.dispose();
+    confirmPasswordController.dispose();
+  }
+
+  Future<void> _showThumbnailActions(
+    CurrentUserContextController userContextController,
+  ) async {
+    final scope = userContextController.userScope;
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: tokens.gapMd),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: Text(
+                    scope.thumbnailUrl == null
+                        ? 'Adicionar foto'
+                        : 'Atualizar foto',
+                  ),
+                  onTap: () async {
+                    Navigator.of(sheetContext).pop();
+                    final file = await _imagePicker.pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 85,
+                      maxWidth: 1200,
+                    );
+                    if (file == null || !mounted) {
+                      return;
+                    }
+                    final success = await _accountSettingsController
+                        .uploadThumbnail(filePath: file.path);
+                    if (!mounted) {
+                      return;
+                    }
+                    if (!success) {
+                      _showSoonSnack(
+                        _accountSettingsController.errorMessage ??
+                            'Nao foi possivel enviar a foto.',
+                      );
+                      return;
+                    }
+
+                    await userContextController.reloadUserContext();
+                    _showSoonSnack(
+                      _accountSettingsController.successMessage ??
+                          'Foto atualizada com sucesso.',
+                    );
+                  },
+                ),
+                if (scope.thumbnailUrl != null)
+                  ListTile(
+                    leading: const Icon(Icons.delete_outline_rounded),
+                    title: const Text('Remover foto'),
+                    onTap: () async {
+                      Navigator.of(sheetContext).pop();
+                      final success = await _accountSettingsController
+                          .updateProfile(
+                            firstName: scope.firstName,
+                            lastName: scope.lastName,
+                            mobile: scope.phone,
+                            removeThumbnail: true,
+                          );
+                      if (!mounted) {
+                        return;
+                      }
+                      if (!success) {
+                        _showSoonSnack(
+                          _accountSettingsController.errorMessage ??
+                              'Nao foi possivel remover a foto.',
+                        );
+                        return;
+                      }
+
+                      await userContextController.reloadUserContext();
+                      _showSoonSnack(
+                        _accountSettingsController.successMessage ??
+                            'Foto removida com sucesso.',
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _showThemeModePicker() async {
@@ -163,7 +496,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ? 'Indisponível no momento'
         : scope.corporateEmail;
     final phoneEmpty = scope.phone.trim().isEmpty;
-    final phoneDisplay = phoneEmpty ? 'Toque para cadastrar' : scope.phone;
+    final phoneDisplay = phoneEmpty ? 'Não informado' : scope.phone;
 
     return ListView(
       padding: context.pageScrollPadding(tokens),
@@ -175,15 +508,15 @@ class _SettingsPageState extends State<SettingsPage> {
             heroBackgroundColor: cs.surfaceContainerLowest,
             title: scope.name,
             description:
-                '${scope.roleLabel}. Gerencie seus dados pessoais, segurança e '
-                'preferências em um único lugar.',
+                '${scope.roleLabel}. Consulte os dados da sua conta, segurança '
+                'e preferências em um único lugar.',
             footer: Wrap(
               spacing: tokens.gapSm,
               runSpacing: tokens.gapSm,
               children: <Widget>[
                 AppTagChip(
-                  icon: Icons.storefront_outlined,
-                  label: controller.activeStore.name,
+                  icon: Icons.verified_user_outlined,
+                  label: scope.roleLabel,
                   foregroundColor: cs.primary,
                   backgroundColor: cs.primaryContainer.withValues(
                     alpha: 0.58,
@@ -191,13 +524,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   borderColor: cs.primary.withValues(alpha: 0.16),
                 ),
                 AppTagChip(
-                  label: '${controller.permissions.length} permissões',
+                  label: authController.isAuthenticated
+                      ? 'Sessão ativa'
+                      : 'Sessão indisponível',
                 ),
               ],
             ),
             hero: _SettingsProfileHeroArtwork(
               initials: appShellUserInitials(scope.name),
               roleLabel: scope.roleLabel,
+              thumbnailUrl: scope.thumbnailUrl,
             ),
           ),
         ),
@@ -227,22 +563,20 @@ class _SettingsPageState extends State<SettingsPage> {
                   emailEmpty: emailEmpty,
                   phoneDisplay: phoneDisplay,
                   phoneEmpty: phoneEmpty,
-                  onNameTap: () => _showSoonSnack(
-                    'Alteração de nome será habilitada após integração com RH.',
-                  ),
-                  onPhoneTap: () => _showSoonSnack(
-                    'Cadastro de telefone ficará disponível em breve.',
-                  ),
+                  thumbnailActionLabel: scope.thumbnailUrl == null
+                      ? 'Adicionar foto'
+                      : 'Atualizar foto',
+                  onNameTap: () => _showEditProfileSheet(controller),
+                  onPhoneTap: () => _showEditProfileSheet(controller),
+                  onThumbnailTap: () => _showThumbnailActions(controller),
                 ),
               ),
               AppTabViewItem(
                 label: 'Seguranca',
                 child: _SettingsSecurityTab(
-                  onPasswordTap: () => _showSoonSnack(
-                    'Fluxo de redefinição de senha será integrado ao IAM.',
-                  ),
+                  onPasswordTap: _showChangePasswordSheet,
                   onTwoFactorTap: () => _showSoonSnack(
-                    'Gerencie o 2FA pelo portal corporativo de segurança.',
+                    'O Client Auth ainda não expõe configuração de 2FA.',
                   ),
                 ),
               ),
@@ -260,12 +594,12 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
-          title: 'Permissões liberadas',
+          title: 'Estado da conta',
           child: controller.permissions.isEmpty
               ? Text(
-                  'Nenhuma permissão listada para o seu perfil neste momento. '
-                  'Se precisar de acesso adicional, fale com o administrador '
-                  'da sua operação.',
+                  'Esta conta cliente não utiliza o catálogo atual de '
+                  'permissões e lojas do fluxo corporativo. O acesso liberado '
+                  'virá das integrações específicas de cliente e agentes.',
                   style: typography.body.copyWith(
                     color: cs.onSurfaceVariant,
                   ),
@@ -350,8 +684,10 @@ class _SettingsProfileTab extends StatelessWidget {
     required this.emailEmpty,
     required this.phoneDisplay,
     required this.phoneEmpty,
+    required this.thumbnailActionLabel,
     required this.onNameTap,
     required this.onPhoneTap,
+    required this.onThumbnailTap,
   });
 
   final String name;
@@ -359,8 +695,10 @@ class _SettingsProfileTab extends StatelessWidget {
   final bool emailEmpty;
   final String phoneDisplay;
   final bool phoneEmpty;
+  final String thumbnailActionLabel;
   final VoidCallback onNameTap;
   final VoidCallback onPhoneTap;
+  final VoidCallback onThumbnailTap;
 
   @override
   Widget build(BuildContext context) {
@@ -399,6 +737,13 @@ class _SettingsProfileTab extends StatelessWidget {
           isPlaceholder: phoneEmpty,
           onTap: onPhoneTap,
         ),
+        SizedBox(height: tokens.gapMd),
+        AppProfileInteractiveField(
+          label: 'Foto da conta',
+          value: thumbnailActionLabel,
+          emphasizeValue: true,
+          onTap: onThumbnailTap,
+        ),
       ],
     );
   }
@@ -408,10 +753,12 @@ class _SettingsProfileHeroArtwork extends StatelessWidget {
   const _SettingsProfileHeroArtwork({
     required this.initials,
     required this.roleLabel,
+    this.thumbnailUrl,
   });
 
   final String initials;
   final String roleLabel;
+  final String? thumbnailUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -461,13 +808,18 @@ class _SettingsProfileHeroArtwork extends StatelessWidget {
                 radius: 42,
                 backgroundColor: cs.primaryContainer,
                 foregroundColor: cs.onPrimaryContainer,
-                child: Text(
-                  initials,
-                  style: typography.displayH1.copyWith(
-                    fontSize: theme.textTheme.headlineSmall?.fontSize,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                foregroundImage: thumbnailUrl?.trim().isNotEmpty == true
+                    ? NetworkImage(thumbnailUrl!.trim())
+                    : null,
+                child: thumbnailUrl?.trim().isNotEmpty == true
+                    ? null
+                    : Text(
+                        initials,
+                        style: typography.displayH1.copyWith(
+                          fontSize: theme.textTheme.headlineSmall?.fontSize,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
               ),
               SizedBox(height: tokens.gapSm),
               Text(

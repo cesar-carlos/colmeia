@@ -7,7 +7,19 @@ enum AppRoute {
   ),
   register(
     path: '/register',
-    title: 'Solicitar acesso',
+    title: 'Criar conta',
+  ),
+  registrationStatus(
+    path: '/register/status',
+    title: 'Status do cadastro',
+  ),
+  passwordRecovery(
+    path: '/password-recovery',
+    title: 'Recuperar acesso',
+  ),
+  passwordRecoveryReset(
+    path: '/password-recovery/reset',
+    title: 'Redefinir senha',
   ),
   dashboardStore(
     path: '/dashboard/store/:storeId',
@@ -44,6 +56,9 @@ enum AppRoute {
         return UserPermission.viewDashboard;
       case AppRoute.login:
       case AppRoute.register:
+      case AppRoute.registrationStatus:
+      case AppRoute.passwordRecovery:
+      case AppRoute.passwordRecoveryReset:
       case AppRoute.settings:
         return null;
     }
@@ -55,10 +70,17 @@ enum AppRoute {
   ];
 
   static AppRoute fromLocation(String location) {
-    return AppRoute.values.firstWhere(
-      (route) => route.matches(location),
-      orElse: () => login,
+    final matchedRoutes = AppRoute.values
+        .where((route) => route.matches(location))
+        .toList(growable: false);
+    if (matchedRoutes.isEmpty) {
+      return login;
+    }
+
+    matchedRoutes.sort(
+      (left, right) => right.path.length.compareTo(left.path.length),
     );
+    return matchedRoutes.first;
   }
 
   bool matches(String location) {

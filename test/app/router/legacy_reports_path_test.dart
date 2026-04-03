@@ -12,4 +12,39 @@ void main() {
       check(shouldRedirectLegacyReportsPath('/settings')).isFalse();
     });
   });
+
+  group('external auth review redirects', () {
+    test('should match external client registration review paths', () {
+      check(
+        isExternalClientRegistrationReviewPath(
+          '/client-auth/registration/review',
+        ),
+      ).isTrue();
+      check(
+        isExternalClientRegistrationReviewPath(
+          '/api/v1/client-auth/registration/review',
+        ),
+      ).isTrue();
+      check(isExternalClientRegistrationReviewPath('/client-auth/register'))
+          .isFalse();
+    });
+
+    test('should match external client password recovery review paths', () {
+      check(
+        isExternalClientPasswordRecoveryReviewPath(
+          '/client-auth/password-recovery/review',
+        ),
+      ).isTrue();
+      check(
+        isExternalClientPasswordRecoveryReviewPath(
+          '/api/v1/client-auth/password-recovery/review',
+        ),
+      ).isTrue();
+      check(
+        isExternalClientPasswordRecoveryReviewPath(
+          '/client-auth/password-recovery/status',
+        ),
+      ).isFalse();
+    });
+  });
 }

@@ -1,11 +1,14 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/logout_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/register_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/restore_session_use_case.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
+import 'package:colmeia/features/auth/domain/entities/client_registration_status.dart';
+import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/auth/presentation/pages/login_page.dart';
@@ -30,6 +33,7 @@ void main() {
       logoutUseCase: LogoutUseCase(repo),
       registerUseCase: RegisterUseCase(repo),
       restoreSessionUseCase: RestoreSessionUseCase(repo),
+      authSessionEvents: AuthSessionEvents(),
     );
   }
 
@@ -53,7 +57,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(0), '');
     await tester.enterText(find.byType(TextFormField).at(1), 'secret');
 
-    final submitButton = find.text('Entrar no Dashboard');
+    final submitButton = find.text('Entrar na conta');
     await tester.ensureVisible(submitButton);
     await tester.tap(submitButton);
     await tester.pumpAndSettle();
@@ -92,6 +96,7 @@ void main() {
       logoutUseCase: LogoutUseCase(_FakeAuthRepository()),
       registerUseCase: RegisterUseCase(_FakeAuthRepository()),
       restoreSessionUseCase: RestoreSessionUseCase(_FakeAuthRepository()),
+      authSessionEvents: AuthSessionEvents(),
     );
 
     await tester.pumpWidget(
@@ -109,7 +114,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(0), 'user@corp.com');
     await tester.enterText(find.byType(TextFormField).at(1), 'secret');
 
-    final submitButton = find.text('Entrar no Dashboard');
+    final submitButton = find.text('Entrar na conta');
     await tester.ensureVisible(submitButton);
     await tester.tap(submitButton);
     await tester.pumpAndSettle();
@@ -138,15 +143,24 @@ final class _FakeAuthLoginFailureRepository implements AuthRepository {
   Future<AppResult<Unit>> logout() async => const Success(unit);
 
   @override
-  Future<AppResult<Unit>> register({
-    required String fullName,
+  Future<AppResult<ClientRegistrationSubmission>> register({
+    required String ownerEmail,
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
-    required String employeeId,
-    required String accessProfileLabel,
-    required List<String> requestedStoreIds,
+    String? mobile,
   }) async {
-    return const Failure<Unit, AppFailure>(
+    return const Failure<ClientRegistrationSubmission, AppFailure>(
+      UnknownFailure(message: 'test', userMessage: 'test'),
+    );
+  }
+
+  @override
+  Future<AppResult<ClientRegistrationStatus>> readRegistrationStatus({
+    required String token,
+  }) async {
+    return const Failure<ClientRegistrationStatus, AppFailure>(
       UnknownFailure(message: 'test', userMessage: 'test'),
     );
   }
@@ -157,6 +171,9 @@ final class _FakeAuthLoginFailureRepository implements AuthRepository {
       SessionFailure(message: 'none', userMessage: 'none'),
     );
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _FakeAuthRepository implements AuthRepository {
@@ -174,15 +191,24 @@ final class _FakeAuthRepository implements AuthRepository {
   Future<AppResult<Unit>> logout() async => const Success(unit);
 
   @override
-  Future<AppResult<Unit>> register({
-    required String fullName,
+  Future<AppResult<ClientRegistrationSubmission>> register({
+    required String ownerEmail,
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
-    required String employeeId,
-    required String accessProfileLabel,
-    required List<String> requestedStoreIds,
+    String? mobile,
   }) async {
-    return const Failure<Unit, AppFailure>(
+    return const Failure<ClientRegistrationSubmission, AppFailure>(
+      UnknownFailure(message: 'test', userMessage: 'test'),
+    );
+  }
+
+  @override
+  Future<AppResult<ClientRegistrationStatus>> readRegistrationStatus({
+    required String token,
+  }) async {
+    return const Failure<ClientRegistrationStatus, AppFailure>(
       UnknownFailure(message: 'test', userMessage: 'test'),
     );
   }
@@ -193,4 +219,7 @@ final class _FakeAuthRepository implements AuthRepository {
       SessionFailure(message: 'none', userMessage: 'none'),
     );
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

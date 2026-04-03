@@ -4,6 +4,10 @@ import 'package:colmeia/core/cache/hive_app_cache_store.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
 import 'package:colmeia/core/network/app_dio_client.dart';
+import 'package:colmeia/core/network/auth_interceptor.dart';
+import 'package:colmeia/core/network/auth_refresh_coordinator.dart';
+import 'package:colmeia/core/network/auth_session_accessor.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/core/storage/app_hive.dart';
 import 'package:colmeia/core/storage/app_secure_storage_factory.dart';
@@ -33,7 +37,6 @@ Future<void> registerInjectorCore(GetIt getIt) async {
     ..registerLazySingleton<AppThemeModeController>(
       () => AppThemeModeController(getIt<AppUserPreferencesStore>()),
     )
-    ..registerLazySingleton<Dio>(AppDioClient.create)
     ..registerLazySingleton<FlutterSecureStorage>(createAppSecureStorage)
     ..registerLazySingleton<SessionStorage>(
       () => SessionStorage(getIt<FlutterSecureStorage>()),
@@ -46,9 +49,40 @@ Future<void> registerInjectorCore(GetIt getIt) async {
         sessionStorage: getIt<SessionStorage>(),
       ),
     )
+    ..registerLazySingleton<AuthSessionAccessor>(
+      () => AuthSessionAccessor(getIt<AuthLocalDataSource>()),
+    )
+    ..registerLazySingleton<AuthSessionEvents>(AuthSessionEvents.new)
+    ..registerLazySingleton<Dio>(
+      AppDioClient.create,
+      instanceName: 'refresh_dio',
+    )
+    ..registerLazySingleton<AuthRefreshCoordinator>(
+      () => AuthRefreshCoordinator(
+        refreshDio: getIt<Dio>(instanceName: 'refresh_dio'),
+        sessionAccessor: getIt<AuthSessionAccessor>(),
+        sessionEvents: getIt<AuthSessionEvents>(),
+      ),
+    )
+    ..registerLazySingleton<Dio>(
+      () {
+        final dio = AppDioClient.create();
+        dio.interceptors.add(
+          AuthInterceptor(
+            dio: dio,
+            sessionAccessor: getIt<AuthSessionAccessor>(),
+            refreshCoordinator: getIt<AuthRefreshCoordinator>(),
+          ),
+        );
+        return dio;
+      },
+    )
     ..registerLazySingleton<AuthRemoteDataSource>(
       () => AppEnvironment.useFakeBackend
-          ? FakeAuthRemoteDataSource(getIt<FakeIdentityBackendStore>())
+          ? FakeAuthRemoteDataSource(
+              getIt<FakeIdentityBackendStore>(),
+              getIt<AuthSessionAccessor>(),
+            )
           : ApiAuthRemoteDataSource(getIt<Dio>()),
     )
     ..registerLazySingleton<UserContextLocalDataSource>(

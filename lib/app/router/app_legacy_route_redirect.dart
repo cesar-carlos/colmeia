@@ -8,6 +8,16 @@ bool shouldRedirectLegacyReportsPath(String path) {
   return path == '/reports' || path.startsWith('/reports/');
 }
 
+bool isExternalClientRegistrationReviewPath(String path) {
+  return path == '/client-auth/registration/review' ||
+      path == '/api/v1/client-auth/registration/review';
+}
+
+bool isExternalClientPasswordRecoveryReviewPath(String path) {
+  return path == '/client-auth/password-recovery/review' ||
+      path == '/api/v1/client-auth/password-recovery/review';
+}
+
 /// Sends users away from removed report URLs (e.g. saved links). Runs before
 /// auth guards so unauthenticated visitors are forwarded to `/dashboard` and
 /// then to login by the existing auth redirect.
@@ -17,6 +27,21 @@ String? redirectRemovedReportRoutes(GoRouterState state) {
   }
   if (shouldRedirectLegacyReportsPath(state.uri.path)) {
     return AppRoute.dashboard.path;
+  }
+  final token = state.uri.queryParameters['token']?.trim();
+  if (token != null && token.isNotEmpty) {
+    if (isExternalClientRegistrationReviewPath(state.uri.path)) {
+      return Uri(
+        path: AppRoute.registrationStatus.path,
+        queryParameters: <String, String>{'token': token},
+      ).toString();
+    }
+    if (isExternalClientPasswordRecoveryReviewPath(state.uri.path)) {
+      return Uri(
+        path: AppRoute.passwordRecoveryReset.path,
+        queryParameters: <String, String>{'token': token},
+      ).toString();
+    }
   }
   return null;
 }

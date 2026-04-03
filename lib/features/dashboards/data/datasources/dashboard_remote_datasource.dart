@@ -1,4 +1,5 @@
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
+import 'package:colmeia/core/network/api_routes.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/data/models/dashboard_overview_model.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_ai_insight.dart';
@@ -30,7 +31,7 @@ class ApiDashboardRemoteDataSource implements DashboardRemoteDataSource {
     required StoreId storeId,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/dashboards/overview',
+      ApiRoutes.dashboardsOverview,
       queryParameters: <String, Object?>{
         'userId': userId,
         'storeId': storeId.value,

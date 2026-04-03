@@ -1,10 +1,21 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/network/auth_interceptor.dart';
 import 'package:dio/dio.dart';
 
 abstract final class AppDioClient {
-  static Dio create() {
-    final baseOptions = BaseOptions(
+  static const Set<String> _sensitiveQueryKeys = <String>{
+    'token',
+    'accesstoken',
+    'refreshtoken',
+    'authorization',
+    'password',
+    'currentpassword',
+    'newpassword',
+  };
+
+  static BaseOptions createBaseOptions() {
+    final options = BaseOptions(
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),
@@ -14,7 +25,7 @@ abstract final class AppDioClient {
       },
     );
     if (AppEnvironment.apiBaseUrl.isNotEmpty) {
-      baseOptions.baseUrl = AppEnvironment.apiBaseUrl;
+      options.baseUrl = AppEnvironment.apiBaseUrl;
     } else if (!AppEnvironment.useFakeBackend) {
       AppLogger.warning(
         'API_BASE_URL is empty while USE_FAKE_BACKEND is false; '
@@ -24,11 +35,21 @@ abstract final class AppDioClient {
         },
       );
     }
+    return options;
+  }
 
-    final dio = Dio(
-      baseOptions,
-    );
+  static Dio create({
+    AuthInterceptor? authInterceptor,
+  }) {
+    final dio = Dio(createBaseOptions());
+    _addLoggingInterceptor(dio);
+    if (authInterceptor != null) {
+      dio.interceptors.add(authInterceptor);
+    }
+    return dio;
+  }
 
+  static void _addLoggingInterceptor(Dio dio) {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
@@ -37,7 +58,7 @@ abstract final class AppDioClient {
             context: <String, Object?>{
               'method': options.method,
               'path': options.uri.path,
-              'query': options.uri.query,
+              'query': _sanitizeQueryParameters(options.uri.queryParametersAll),
             },
           );
           handler.next(options);
@@ -68,7 +89,21 @@ abstract final class AppDioClient {
         },
       ),
     );
+  }
 
-    return dio;
+  static Map<String, Object?>? _sanitizeQueryParameters(
+    Map<String, List<String>> queryParameters,
+  ) {
+    if (queryParameters.isEmpty) {
+      return null;
+    }
+
+    return queryParameters.map<String, Object?>((key, values) {
+      final normalizedKey = key.trim().toLowerCase();
+      final sanitizedValue = _sensitiveQueryKeys.contains(normalizedKey)
+          ? const <String>['***']
+          : values;
+      return MapEntry<String, Object?>(key, sanitizedValue);
+    });
   }
 }

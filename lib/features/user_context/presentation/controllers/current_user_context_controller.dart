@@ -96,18 +96,10 @@ class CurrentUserContextController extends ChangeNotifier {
       allowedStores: <StoreScope>[
         StoreScope(
           id: UserContextPlaceholders.loadingStoreId,
-          name: 'Carregando lojas...',
+          name: 'Conta do cliente',
         ),
       ],
-      permissions: <UserPermission>{
-        UserPermission.viewDashboard,
-      },
-      dashboardGrants: <DashboardAccessGrant>[
-        DashboardAccessGrant(
-          dashboardId: 'dashboard_main',
-          allowedFilterKeys: <String>{'store'},
-        ),
-      ],
+      permissions: <UserPermission>{},
     ),
   );
 
@@ -145,6 +137,9 @@ class CurrentUserContextController extends ChangeNotifier {
         return hasAnyDashboardAccess();
       case AppRoute.login:
       case AppRoute.register:
+      case AppRoute.registrationStatus:
+      case AppRoute.passwordRecovery:
+      case AppRoute.passwordRecoveryReset:
       case AppRoute.settings:
         return true;
     }
@@ -225,7 +220,9 @@ class CurrentUserContextController extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final result = await loadCurrentUserContextUseCase(userId: session.userId);
+    final result = await loadCurrentUserContextUseCase(
+      userId: session.userId,
+    );
     result.fold(
       (snapshot) {
         _userScope = snapshot.scope;

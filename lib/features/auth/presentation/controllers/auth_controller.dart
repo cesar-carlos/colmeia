@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/logout_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/register_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/restore_session_use_case.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
+import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
 import 'package:colmeia/features/auth/presentation/state/auth_presentation_state.dart';
 import 'package:flutter/foundation.dart';
 
@@ -15,18 +19,27 @@ class AuthController extends ChangeNotifier {
     required LogoutUseCase logoutUseCase,
     required RegisterUseCase registerUseCase,
     required RestoreSessionUseCase restoreSessionUseCase,
+    required AuthSessionEvents authSessionEvents,
   }) : _loginUseCase = loginUseCase,
        _logoutUseCase = logoutUseCase,
        _registerUseCase = registerUseCase,
-       _restoreSessionUseCase = restoreSessionUseCase;
+       _restoreSessionUseCase = restoreSessionUseCase,
+       _authSessionEvents = authSessionEvents {
+    _authSessionEventsSubscription = _authSessionEvents.stream.listen(
+      _handleAuthSessionEvent,
+    );
+  }
 
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
   final RegisterUseCase _registerUseCase;
   final RestoreSessionUseCase _restoreSessionUseCase;
+  final AuthSessionEvents _authSessionEvents;
 
   AuthPresentationState _presentation = const AuthPresentationState();
   Future<void>? _restoreSessionFuture;
+  late final StreamSubscription<AuthSessionEvent>
+  _authSessionEventsSubscription;
 
   AuthPresentationState get presentation => _presentation;
 
@@ -36,12 +49,36 @@ class AuthController extends ChangeNotifier {
   bool get isRestoringSession => _presentation.isRestoringSession;
   String? get errorMessage => _presentation.errorMessage;
   String? get successMessage => _presentation.successMessage;
+  ClientRegistrationSubmission? get registrationSubmission =>
+      _presentation.registrationSubmission;
+
+  void _handleAuthSessionEvent(AuthSessionEvent event) {
+    if (event.type != AuthSessionEventType.invalidated ||
+        !_presentation.isAuthenticated) {
+      return;
+    }
+
+    _presentation = _presentation.copyWith(
+      clearSession: true,
+      isLoading: false,
+      isRestoringSession: false,
+      errorMessage: 'Sua sessao expirou. Entre novamente.',
+      clearSuccessMessage: true,
+      clearRegistrationSubmission: true,
+    );
+    notifyListeners();
+  }
 
   void clearTransientFeedback() {
     _presentation = _presentation.copyWith(
       clearErrorMessage: true,
       clearSuccessMessage: true,
     );
+    notifyListeners();
+  }
+
+  void clearRegistrationSubmission() {
+    _presentation = _presentation.copyWith(clearRegistrationSubmission: true);
     notifyListeners();
   }
 
@@ -118,6 +155,7 @@ class AuthController extends ChangeNotifier {
       isLoading: true,
       clearErrorMessage: true,
       clearSuccessMessage: true,
+      clearRegistrationSubmission: true,
     );
     notifyListeners();
 
@@ -139,6 +177,7 @@ class AuthController extends ChangeNotifier {
           session: session,
           clearErrorMessage: true,
           clearSuccessMessage: true,
+          clearRegistrationSubmission: true,
         );
         AppLogger.info(
           'User authenticated in controller',
@@ -153,6 +192,7 @@ class AuthController extends ChangeNotifier {
           clearSession: true,
           errorMessage: failure.displayMessage,
           clearSuccessMessage: true,
+          clearRegistrationSubmission: true,
         );
         AppLogger.warning(
           'Sign in failed in controller',
@@ -169,20 +209,19 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> register({
-    required String fullName,
+    required String ownerEmail,
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
-    required String employeeId,
-    required String accessProfileLabel,
-    required List<String> requestedStoreIds,
+    String? mobile,
   }) async {
     AppLogger.debug(
       'Starting register flow',
       context: <String, Object?>{
         'operation': 'register',
+        'ownerEmail': ownerEmail,
         'email': email,
-        'accessProfileLabel': accessProfileLabel,
-        'requestedStoreCount': requestedStoreIds.length,
       },
     );
 
@@ -190,6 +229,7 @@ class AuthController extends ChangeNotifier {
       isLoading: true,
       clearErrorMessage: true,
       clearSuccessMessage: true,
+      clearRegistrationSubmission: true,
     );
     notifyListeners();
 
@@ -201,31 +241,35 @@ class AuthController extends ChangeNotifier {
     }
 
     final result = await _registerUseCase(
-      fullName: fullName.trim(),
+      ownerEmail: ownerEmail.trim(),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
       email: authEmail.value,
       password: password,
-      employeeId: employeeId.trim(),
-      accessProfileLabel: accessProfileLabel,
-      requestedStoreIds: requestedStoreIds,
+      mobile: mobile?.trim(),
     );
 
     result.fold(
-      (_) {
+      (submission) {
         _presentation = _presentation.copyWith(
           successMessage:
-              'Solicitação enviada com sucesso. Aguarde a aprovação.',
+              submission.message ??
+              'Cadastro enviado com sucesso. Aguarde a aprovacao.',
           clearErrorMessage: true,
+          registrationSubmission: submission,
         );
       },
       (failure) {
         _presentation = _presentation.copyWith(
           clearSuccessMessage: true,
           errorMessage: failure.displayMessage,
+          clearRegistrationSubmission: true,
         );
         AppLogger.warning(
           'Register flow failed in controller',
           context: <String, Object?>{
             'operation': 'register',
+            'ownerEmail': ownerEmail,
             'email': email,
           },
         );
@@ -246,6 +290,7 @@ class AuthController extends ChangeNotifier {
     _presentation = _presentation.copyWith(
       isLoading: true,
       clearSuccessMessage: true,
+      clearRegistrationSubmission: true,
     );
     notifyListeners();
 
@@ -280,6 +325,12 @@ class AuthController extends ChangeNotifier {
     );
 
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_authSessionEventsSubscription.cancel());
+    super.dispose();
   }
 
   EmailAddress? _parseEmailAddress(String email) {

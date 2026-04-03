@@ -30,6 +30,7 @@ class AppRouter {
       }
       return redirectWithAuthGuard(
         authController: _authController,
+        userContextController: _userContextController,
         state: state,
       );
     },

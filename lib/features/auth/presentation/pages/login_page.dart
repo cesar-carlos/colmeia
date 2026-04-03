@@ -16,7 +16,6 @@ import 'package:colmeia/features/auth/presentation/widgets/login/login_welcome_s
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/backgrounds/app_hex_screen_body.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -41,12 +40,8 @@ class _LoginPageBody extends StatefulWidget {
 
 class _LoginPageBodyState extends State<_LoginPageBody> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController(
-    text: kDebugMode ? 'camila@example.com' : '',
-  );
-  final TextEditingController _passwordController = TextEditingController(
-    text: kDebugMode ? '123456' : '',
-  );
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -140,7 +135,7 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
                           LoginPrimaryButton(
                             label: auth.isRestoringSession
                                 ? 'Restaurando sessão...'
-                                : 'Entrar no Dashboard',
+                                : 'Entrar na conta',
                             isLoading: isBlocked,
                             onPressed: () => _submit(auth),
                           ),
@@ -149,6 +144,27 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
                             onTap: auth.isLoading
                                 ? null
                                 : () => context.goTo(AppRoute.register),
+                          ),
+                          SizedBox(height: tokens.gapXs),
+                          Center(
+                            child: TextButton(
+                              onPressed: auth.isLoading
+                                  ? null
+                                  : () => context.goTo(
+                                      AppRoute.registrationStatus,
+                                    ),
+                              child: const Text('Consultar status do cadastro'),
+                            ),
+                          ),
+                          Center(
+                            child: TextButton(
+                              onPressed: auth.isLoading
+                                  ? null
+                                  : () => context.goTo(
+                                      AppRoute.passwordRecovery,
+                                    ),
+                              child: const Text('Esqueci minha senha'),
+                            ),
                           ),
                         ],
                       ),

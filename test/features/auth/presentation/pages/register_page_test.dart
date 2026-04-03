@@ -2,11 +2,14 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/logout_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/register_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/restore_session_use_case.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
+import 'package:colmeia/features/auth/domain/entities/client_registration_status.dart';
+import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/auth/presentation/pages/register_page.dart';
@@ -17,7 +20,7 @@ import 'package:provider/provider.dart';
 import 'package:result_dart/result_dart.dart';
 
 void main() {
-  testWidgets('should show store selection error when no unit selected', (
+  testWidgets('should validate required owner e-mail', (
     tester,
   ) async {
     final auth = AuthController(
@@ -27,6 +30,7 @@ void main() {
       restoreSessionUseCase: RestoreSessionUseCase(
         _RegisterTestAuthRepository(),
       ),
+      authSessionEvents: AuthSessionEvents(),
     );
 
     final router = GoRouter(
@@ -43,10 +47,12 @@ void main() {
           },
         ),
         GoRoute(
-          path: AppRoute.login.path,
-          name: AppRoute.login.name,
+          path: AppRoute.registrationStatus.path,
+          name: AppRoute.registrationStatus.name,
           builder: (context, state) {
-            return const Scaffold(body: Text('login_route_marker'));
+            return const Scaffold(
+              body: Text('registration_status_route_marker'),
+            );
           },
         ),
       ],
@@ -60,28 +66,33 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'Maria Silva');
+    await tester.enterText(find.byType(TextFormField).at(0), '');
+    await tester.enterText(find.byType(TextFormField).at(1), 'Maria');
     await tester.enterText(
-      find.byType(TextFormField).at(1),
+      find.byType(TextFormField).at(2),
+      'Silva',
+    );
+    await tester.enterText(
+      find.byType(TextFormField).at(3),
       'maria@example.com',
     );
-    await tester.enterText(find.byType(TextFormField).at(2), 'AB-99');
-    await tester.enterText(find.byType(TextFormField).at(3), '123456');
-    await tester.enterText(find.byType(TextFormField).at(4), '123456');
+    await tester.enterText(
+      find.byType(TextFormField).at(4),
+      'maria+conta@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).at(5), '12345678');
+    await tester.enterText(find.byType(TextFormField).at(6), '12345678');
 
-    final submit = find.text('Solicitar acesso');
+    final submit = find.text('Solicitar cadastro');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Selecione pelo menos uma unidade.'),
-      findsOneWidget,
-    );
+    expect(find.text('Informe o e-mail do responsavel.'), findsOneWidget);
     auth.dispose();
   });
 
-  testWidgets('should submit when form valid and one store selected', (
+  testWidgets('should submit when form valid and go to status route', (
     tester,
   ) async {
     final auth = AuthController(
@@ -91,6 +102,7 @@ void main() {
       restoreSessionUseCase: RestoreSessionUseCase(
         _RegisterSuccessAuthRepository(),
       ),
+      authSessionEvents: AuthSessionEvents(),
     );
 
     final router = GoRouter(
@@ -107,10 +119,12 @@ void main() {
           },
         ),
         GoRoute(
-          path: AppRoute.login.path,
-          name: AppRoute.login.name,
+          path: AppRoute.registrationStatus.path,
+          name: AppRoute.registrationStatus.name,
           builder: (context, state) {
-            return const Scaffold(body: Text('login_route_marker'));
+            return const Scaffold(
+              body: Text('registration_status_route_marker'),
+            );
           },
         ),
       ],
@@ -124,41 +138,52 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'Maria Silva');
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'owner@example.com',
+    );
     await tester.enterText(
       find.byType(TextFormField).at(1),
+      'Maria',
+    );
+    await tester.enterText(
+      find.byType(TextFormField).at(2),
+      'Silva',
+    );
+    await tester.enterText(
+      find.byType(TextFormField).at(3),
       'maria2@example.com',
     );
-    await tester.enterText(find.byType(TextFormField).at(2), 'AB-99');
-    await tester.enterText(find.byType(TextFormField).at(3), '123456');
-    await tester.enterText(find.byType(TextFormField).at(4), '123456');
+    await tester.enterText(find.byType(TextFormField).at(4), '11999990000');
+    await tester.enterText(find.byType(TextFormField).at(5), '12345678');
+    await tester.enterText(find.byType(TextFormField).at(6), '12345678');
 
-    await tester.ensureVisible(find.text('Unidade Morumbi'));
-    await tester.tap(find.text('Unidade Morumbi'));
-    await tester.pumpAndSettle();
-
-    final submit = find.text('Solicitar acesso');
+    final submit = find.text('Solicitar cadastro');
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Solicitação enviada'), findsOneWidget);
-    expect(find.text('login_route_marker'), findsOneWidget);
+    expect(find.text('registration_status_route_marker'), findsOneWidget);
     auth.dispose();
   });
 }
 
 final class _RegisterTestAuthRepository implements AuthRepository {
   @override
-  Future<AppResult<Unit>> register({
-    required String fullName,
+  Future<AppResult<ClientRegistrationSubmission>> register({
+    required String ownerEmail,
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
-    required String employeeId,
-    required String accessProfileLabel,
-    required List<String> requestedStoreIds,
+    String? mobile,
   }) async {
-    return const Success<Unit, AppFailure>(unit);
+    return const Success<ClientRegistrationSubmission, AppFailure>(
+      ClientRegistrationSubmission(
+        status: ClientRegistrationStatus.pending,
+        approvalToken: 'pending-token',
+      ),
+    );
   }
 
   @override
@@ -177,24 +202,41 @@ final class _RegisterTestAuthRepository implements AuthRepository {
   );
 
   @override
+  Future<AppResult<ClientRegistrationStatus>> readRegistrationStatus({
+    required String token,
+  }) async {
+    return const Success<ClientRegistrationStatus, AppFailure>(
+      ClientRegistrationStatus.pending,
+    );
+  }
+
+  @override
   Future<AppResult<AuthSession>> restoreSession() async {
     return const Failure<AuthSession, AppFailure>(
       SessionFailure(message: 'n', userMessage: 'n'),
     );
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 final class _RegisterSuccessAuthRepository implements AuthRepository {
   @override
-  Future<AppResult<Unit>> register({
-    required String fullName,
+  Future<AppResult<ClientRegistrationSubmission>> register({
+    required String ownerEmail,
+    required String firstName,
+    required String lastName,
     required String email,
     required String password,
-    required String employeeId,
-    required String accessProfileLabel,
-    required List<String> requestedStoreIds,
+    String? mobile,
   }) async {
-    return const Success<Unit, AppFailure>(unit);
+    return const Success<ClientRegistrationSubmission, AppFailure>(
+      ClientRegistrationSubmission(
+        status: ClientRegistrationStatus.pending,
+        approvalToken: 'pending-token',
+      ),
+    );
   }
 
   @override
@@ -213,9 +255,21 @@ final class _RegisterSuccessAuthRepository implements AuthRepository {
   );
 
   @override
+  Future<AppResult<ClientRegistrationStatus>> readRegistrationStatus({
+    required String token,
+  }) async {
+    return const Success<ClientRegistrationStatus, AppFailure>(
+      ClientRegistrationStatus.pending,
+    );
+  }
+
+  @override
   Future<AppResult<AuthSession>> restoreSession() async {
     return const Failure<AuthSession, AppFailure>(
       SessionFailure(message: 'n', userMessage: 'n'),
     );
   }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

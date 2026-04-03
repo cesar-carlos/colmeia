@@ -1,7 +1,11 @@
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
+import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/features/auth/data/models/client_me_response_dto.dart';
 import 'package:colmeia/features/user_context/data/models/current_user_context_model.dart';
 import 'package:colmeia/features/user_context/data/models/user_access_scope_model.dart';
 import 'package:colmeia/features/user_context/data/models/user_profile_model.dart';
+import 'package:colmeia/features/user_context/domain/entities/access/store_scope.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
 import 'package:dio/dio.dart';
 
 // ignore: one_member_abstracts — explicit remote contract for fake vs API swap.
@@ -14,50 +18,44 @@ abstract interface class UserContextRemoteDataSource {
 class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
   ApiUserContextRemoteDataSource(this._dio);
 
+  static const String _clientScopeStoreId = 'client-account';
+
   final Dio _dio;
 
   @override
   Future<CurrentUserContextModel> loadUserContext({
     required String userId,
   }) async {
-    final meResponse = await _dio.get<Map<String, dynamic>>('/me');
-    final permissionsResponse = await _dio.get<List<dynamic>>(
-      '/me/permissions',
+    final response = await _dio.get<Map<String, dynamic>>(
+      ClientAuthApiRoutes.me,
     );
-    final storesResponse = await _dio.get<List<dynamic>>('/me/stores');
-
-    final me = meResponse.data;
-    final permissions = permissionsResponse.data;
-    final stores = storesResponse.data;
-
-    if (me == null || permissions == null || stores == null) {
-      throw const FormatException('User context response is incomplete');
+    final responseBody = response.data;
+    if (responseBody == null) {
+      throw const FormatException('Current client profile response is null');
     }
 
-    final defaultStore = stores.first as Map<String, dynamic>;
+    final profile = ClientMeResponseDto.fromJson(
+      responseBody,
+    ).user.toUserProfile();
 
-    return CurrentUserContextModel.fromJson(
-      <String, dynamic>{
-        'userId': me['id'] ?? userId,
-        'name': me['name'],
-        'roleLabel': me['roleLabel'] ?? me['role'] ?? 'Usuario',
-        'email': me['email'] ?? me['corporateEmail'],
-        'phone': me['phone'],
-        'allowedStores': stores,
-        'permissions': permissions,
-        'dashboardGrants':
-            me['dashboardGrants'] ??
-            (me['allowedDashboardIds'] == null
-                ? null
-                : (me['allowedDashboardIds'] as List<dynamic>)
-                      .map(
-                        (dashboardId) => <String, Object?>{
-                          'dashboardId': dashboardId,
-                        },
-                      )
-                      .toList(growable: false)),
-        'activeStoreId': me['activeStoreId'] ?? defaultStore['id'],
-      },
+    return CurrentUserContextModel(
+      profile: UserProfileModel(
+        id: profile.id,
+        name: profile.name,
+        roleLabel: profile.roleLabel,
+        corporateEmail: profile.corporateEmail,
+        phone: profile.phone,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        thumbnailUrl: profile.thumbnailUrl,
+      ),
+      access: const UserAccessScopeModel(
+        allowedStores: <StoreScope>[
+          StoreScope(id: _clientScopeStoreId, name: 'Conta do cliente'),
+        ],
+        permissions: <UserPermission>{},
+      ),
+      activeStoreId: _clientScopeStoreId,
     );
   }
 }
@@ -84,6 +82,9 @@ class FakeUserContextRemoteDataSource implements UserContextRemoteDataSource {
         roleLabel: user.roleLabel,
         corporateEmail: user.email,
         phone: user.phone,
+        firstName: user.fullName.split(' ').first,
+        lastName: user.fullName.split(' ').skip(1).join(' '),
+        thumbnailUrl: user.thumbnailUrl.isEmpty ? null : user.thumbnailUrl,
       ),
       access: UserAccessScopeModel(
         allowedStores: user.allowedStores,

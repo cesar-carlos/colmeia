@@ -175,6 +175,54 @@ final class FakeIdentityBackendStore {
     await _saveUsers(updatedUsers);
   }
 
+  Future<FakeIdentityUserRecord> updateClientProfile({
+    required String userId,
+    String? fullName,
+    String? phone,
+    String? thumbnailUrl,
+    bool clearThumbnail = false,
+  }) async {
+    final users = await loadUsers();
+    final targetUser = users.where((user) => user.id == userId).firstOrNull;
+    if (targetUser == null) {
+      throw const FakeBackendUnauthorizedException('Client profile not found');
+    }
+
+    final updatedUser = targetUser.copyWith(
+      fullName: fullName,
+      phone: phone,
+      thumbnailUrl: clearThumbnail ? '' : thumbnailUrl,
+    );
+    final updatedUsers = users
+        .map((user) => user.id == userId ? updatedUser : user)
+        .toList(growable: false);
+    await _saveUsers(updatedUsers);
+    return updatedUser;
+  }
+
+  Future<void> updatePassword({
+    required String userId,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final users = await loadUsers();
+    final targetUser = users.where((user) => user.id == userId).firstOrNull;
+    if (targetUser == null) {
+      throw const FakeBackendUnauthorizedException('Client account not found');
+    }
+    if (targetUser.password != currentPassword) {
+      throw const FakeBackendUnauthorizedException(
+        'Current password is invalid',
+      );
+    }
+
+    final updatedUser = targetUser.copyWith(password: newPassword);
+    final updatedUsers = users
+        .map((user) => user.id == userId ? updatedUser : user)
+        .toList(growable: false);
+    await _saveUsers(updatedUsers);
+  }
+
   Future<void> _saveUsers(List<FakeIdentityUserRecord> users) {
     final encoded = jsonEncode(
       users.map((user) => user.toJson()).toList(),
@@ -268,6 +316,7 @@ final class FakeIdentityUserRecord {
     required List<DashboardAccessGrant> dashboardGrants,
     required String activeStoreId,
     String phone = '',
+    String thumbnailUrl = '',
   }) : this._(
          id: id,
          profile: FakeIdentityUserProfileRecord(
@@ -276,6 +325,7 @@ final class FakeIdentityUserRecord {
            employeeId: employeeId,
            roleLabel: roleLabel,
            phone: phone,
+            thumbnailUrl: thumbnailUrl,
          ),
          access: FakeIdentityUserAccessRecord(
            allowedStores: allowedStores,
@@ -324,19 +374,23 @@ final class FakeIdentityUserRecord {
   String get phone => profile.phone;
   String get employeeId => profile.employeeId;
   String get roleLabel => profile.roleLabel;
+  String get thumbnailUrl => profile.thumbnailUrl;
   List<StoreScope> get allowedStores => access.allowedStores;
   Set<UserPermission> get permissions => access.permissions;
   List<DashboardAccessGrant> get dashboardGrants => access.dashboardGrants;
 
   FakeIdentityUserRecord copyWith({
     String? activeStoreId,
+    String? fullName,
+    String? password,
     String? phone,
+    String? thumbnailUrl,
   }) {
     return FakeIdentityUserRecord(
       id: id,
-      fullName: fullName,
+      fullName: fullName ?? this.fullName,
       email: email,
-      password: password,
+      password: password ?? this.password,
       employeeId: employeeId,
       roleLabel: roleLabel,
       allowedStores: allowedStores,
@@ -344,6 +398,7 @@ final class FakeIdentityUserRecord {
       dashboardGrants: dashboardGrants,
       activeStoreId: activeStoreId ?? this.activeStoreId,
       phone: phone ?? this.phone,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );
   }
 
@@ -365,6 +420,7 @@ final class FakeIdentityUserProfileRecord {
     required this.employeeId,
     required this.roleLabel,
     this.phone = '',
+    this.thumbnailUrl = '',
   });
 
   factory FakeIdentityUserProfileRecord.fromJson(Map<String, dynamic> json) {
@@ -374,6 +430,7 @@ final class FakeIdentityUserProfileRecord {
       employeeId: json['employeeId'] as String? ?? '',
       roleLabel: json['roleLabel'] as String,
       phone: json['phone'] as String? ?? '',
+      thumbnailUrl: json['thumbnailUrl'] as String? ?? '',
     );
   }
 
@@ -382,12 +439,14 @@ final class FakeIdentityUserProfileRecord {
   final String employeeId;
   final String roleLabel;
   final String phone;
+  final String thumbnailUrl;
 
   Map<String, Object?> toJson() {
     return <String, Object?>{
       'fullName': fullName,
       'email': email,
       'phone': phone,
+      'thumbnailUrl': thumbnailUrl,
       'employeeId': employeeId,
       'roleLabel': roleLabel,
     };

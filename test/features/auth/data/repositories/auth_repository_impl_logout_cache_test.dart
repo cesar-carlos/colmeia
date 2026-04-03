@@ -41,7 +41,7 @@ void main() {
       );
       when(() => local.readSession()).thenAnswer((_) async => session);
       when(
-        () => remote.logout(accessToken: any(named: 'accessToken')),
+        () => remote.logout(refreshToken: any(named: 'refreshToken')),
       ).thenAnswer((_) async {});
       when(() => local.clearSession()).thenAnswer((_) async {});
       when(() => cache.clearAll()).thenAnswer((_) async {});
@@ -51,7 +51,7 @@ void main() {
       expect(result.isSuccess(), isTrue);
       verify(() => local.readSession()).called(1);
       verify(
-        () => remote.logout(accessToken: session.accessToken),
+        () => remote.logout(refreshToken: session.refreshToken),
       ).called(1);
       verify(() => local.clearSession()).called(1);
       verify(() => cache.clearAll()).called(1);

@@ -7,6 +7,9 @@ class UserProfileModel {
     required this.roleLabel,
     this.corporateEmail = '',
     this.phone = '',
+    this.firstName = '',
+    this.lastName = '',
+    this.thumbnailUrl,
   });
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
@@ -17,6 +20,9 @@ class UserProfileModel {
       corporateEmail:
           json['corporateEmail'] as String? ?? json['email'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
+      firstName: json['firstName'] as String? ?? '',
+      lastName: json['lastName'] as String? ?? '',
+      thumbnailUrl: json['thumbnailUrl'] as String?,
     );
   }
 
@@ -25,6 +31,9 @@ class UserProfileModel {
   final String roleLabel;
   final String corporateEmail;
   final String phone;
+  final String firstName;
+  final String lastName;
+  final String? thumbnailUrl;
 
   UserProfile toEntity() {
     return UserProfile(
@@ -33,6 +42,9 @@ class UserProfileModel {
       roleLabel: roleLabel,
       corporateEmail: corporateEmail,
       phone: phone,
+      firstName: firstName,
+      lastName: lastName,
+      thumbnailUrl: thumbnailUrl,
     );
   }
 }

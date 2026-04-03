@@ -5,6 +5,9 @@ class UserProfile {
     required this.roleLabel,
     this.corporateEmail = '',
     this.phone = '',
+    this.firstName = '',
+    this.lastName = '',
+    this.thumbnailUrl,
   });
 
   final String id;
@@ -12,7 +15,11 @@ class UserProfile {
   final String roleLabel;
   final String corporateEmail;
   final String phone;
+  final String firstName;
+  final String lastName;
+  final String? thumbnailUrl;
 
   bool get hasCorporateEmail => corporateEmail.trim().isNotEmpty;
   bool get hasPhone => phone.trim().isNotEmpty;
+  bool get hasThumbnail => thumbnailUrl?.trim().isNotEmpty ?? false;
 }

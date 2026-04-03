@@ -9,6 +9,7 @@ void main() {
       check(
         resolveAuthRedirect(
           isAuthenticated: false,
+          canAccessRoute: false,
           matchedRoute: AppRoute.dashboard,
         ),
       ).equals(AppRoute.login.path);
@@ -18,6 +19,7 @@ void main() {
       check(
         resolveAuthRedirect(
           isAuthenticated: false,
+          canAccessRoute: true,
           matchedRoute: AppRoute.login,
         ),
       ).isNull();
@@ -27,15 +29,17 @@ void main() {
       check(
         resolveAuthRedirect(
           isAuthenticated: true,
+          canAccessRoute: true,
           matchedRoute: AppRoute.login,
         ),
-      ).equals(AppRoute.dashboard.path);
+      ).equals(AppRoute.settings.path);
     });
 
     test('should keep authenticated users on protected routes', () {
       check(
         resolveAuthRedirect(
           isAuthenticated: true,
+          canAccessRoute: true,
           matchedRoute: AppRoute.settings,
         ),
       ).isNull();

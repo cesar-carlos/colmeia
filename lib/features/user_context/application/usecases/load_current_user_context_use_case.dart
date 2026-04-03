@@ -10,6 +10,8 @@ class LoadCurrentUserContextUseCase {
   Future<AppResult<CurrentUserContext>> call({
     required String userId,
   }) {
-    return _repository.loadUserContext(userId: userId);
+    return _repository.loadUserContext(
+      userId: userId,
+    );
   }
 }
