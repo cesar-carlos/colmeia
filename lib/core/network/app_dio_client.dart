@@ -4,6 +4,7 @@ import 'package:colmeia/core/network/auth_interceptor.dart';
 import 'package:dio/dio.dart';
 
 abstract final class AppDioClient {
+  static const String _defaultApiNamespacePath = '/api/v1';
   static const Set<String> _sensitiveQueryKeys = <String>{
     'token',
     'accesstoken',
@@ -25,7 +26,7 @@ abstract final class AppDioClient {
       },
     );
     if (AppEnvironment.apiBaseUrl.isNotEmpty) {
-      options.baseUrl = AppEnvironment.apiBaseUrl;
+      options.baseUrl = normalizeBaseUrl(AppEnvironment.apiBaseUrl);
     } else if (!AppEnvironment.useFakeBackend) {
       AppLogger.warning(
         'API_BASE_URL is empty while USE_FAKE_BACKEND is false; '
@@ -105,5 +106,21 @@ abstract final class AppDioClient {
           : values;
       return MapEntry<String, Object?>(key, sanitizedValue);
     });
+  }
+
+  static String normalizeBaseUrl(String rawBaseUrl) {
+    final trimmed = rawBaseUrl.trim();
+    if (trimmed.isEmpty) {
+      return '';
+    }
+
+    final uri = Uri.parse(trimmed);
+    final normalizedPath = switch (uri.path) {
+      '' || '/' => _defaultApiNamespacePath,
+      final path when path.endsWith('/') => path.substring(0, path.length - 1),
+      final path => path,
+    };
+
+    return uri.replace(path: normalizedPath).toString();
   }
 }

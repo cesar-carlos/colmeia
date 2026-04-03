@@ -19,6 +19,11 @@ class AuthRefreshCoordinator {
   final Dio _refreshDio;
   final AuthSessionAccessor _sessionAccessor;
   final AuthSessionEvents _sessionEvents;
+  static const Set<int> _sessionInvalidationStatusCodes = <int>{
+    400,
+    401,
+    403,
+  };
 
   Future<String?>? _inFlightRefresh;
 
@@ -68,10 +73,19 @@ class AuthRefreshCoordinator {
           );
       await _sessionAccessor.save(refreshedSession);
       return refreshedSession.accessToken;
+    } on DioException catch (error) {
+      if (_shouldInvalidateSession(error.response?.statusCode)) {
+        await _sessionAccessor.clear();
+        _sessionEvents.notifyInvalidated();
+      }
+      rethrow;
     } on Object {
-      await _sessionAccessor.clear();
-      _sessionEvents.notifyInvalidated();
       rethrow;
     }
+  }
+
+  bool _shouldInvalidateSession(int? statusCode) {
+    return statusCode != null &&
+        _sessionInvalidationStatusCodes.contains(statusCode);
   }
 }

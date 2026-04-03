@@ -45,6 +45,7 @@ void main() {
         'Senha redefinida com sucesso. Voce ja pode entrar na conta.',
       );
       check(controller.errorMessage).isNull();
+      check(controller.status).isNull();
     });
   });
 }

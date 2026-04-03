@@ -53,7 +53,9 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
         allowedStores: <StoreScope>[
           StoreScope(id: _clientScopeStoreId, name: 'Conta do cliente'),
         ],
-        permissions: <UserPermission>{},
+        permissions: <UserPermission>{
+          UserPermission.viewDashboard,
+        },
       ),
       activeStoreId: _clientScopeStoreId,
     );

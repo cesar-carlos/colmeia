@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 class PasswordRecoveryResetPageController extends ChangeNotifier {
   PasswordRecoveryResetPageController({
     required ReadPasswordRecoveryStatusUseCase
-        readPasswordRecoveryStatusUseCase,
+    readPasswordRecoveryStatusUseCase,
     required ResetPasswordUseCase resetPasswordUseCase,
     String? initialToken,
   }) : _readPasswordRecoveryStatusUseCase = readPasswordRecoveryStatusUseCase,
@@ -102,7 +102,7 @@ class PasswordRecoveryResetPageController extends ChangeNotifier {
     );
     result.fold(
       (_) {
-        _status = ClientPasswordRecoveryStatus.pending;
+        _status = null;
         _successMessage =
             'Senha redefinida com sucesso. Voce ja pode entrar na conta.';
       },

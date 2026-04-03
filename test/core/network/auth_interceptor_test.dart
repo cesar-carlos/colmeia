@@ -312,6 +312,51 @@ void main() {
         verify(localDataSource.clearSession).called(1);
       },
     );
+
+    test(
+      'should preserve session when refresh fails with transient server error',
+      () async {
+        final localDataSource = _MockAuthLocalDataSource();
+        final accessor = AuthSessionAccessor(localDataSource);
+        final sessionEvents = AuthSessionEvents();
+        final session = AuthSessionModel(
+          userId: 'client-1',
+          email: 'client@corp.com',
+          accessToken: 'expired-access-token',
+          refreshToken: 'refresh-token-1',
+          expiresAt: DateTime.now().subtract(const Duration(minutes: 2)),
+        );
+        when(localDataSource.readSession).thenAnswer((_) async => session);
+
+        final refreshDio = AppDioClient.create()
+          ..httpClientAdapter = _TestHttpClientAdapter((options) async {
+            return _jsonBody(<String, Object?>{
+              'error': 'temporary_failure',
+            }, statusCode: 500);
+          });
+
+        final coordinator = AuthRefreshCoordinator(
+          refreshDio: refreshDio,
+          sessionAccessor: accessor,
+          sessionEvents: sessionEvents,
+        );
+
+        var emittedEvent = false;
+        final subscription = sessionEvents.stream.listen((_) {
+          emittedEvent = true;
+        });
+
+        await expectLater(
+          coordinator.refreshAccessToken,
+          throwsA(isA<DioException>()),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        verifyNever(localDataSource.clearSession);
+        expect(emittedEvent, isFalse);
+        await subscription.cancel();
+      },
+    );
   });
 }
 
