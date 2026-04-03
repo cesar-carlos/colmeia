@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+"""Copy assets/env/.env.example to local.env if missing; print pubspec hint."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+
+def main() -> int:
+    repo_root = Path(__file__).resolve().parent.parent
+    example = repo_root / "assets" / "env" / ".env.example"
+    target = repo_root / "assets" / "env" / "local.env"
+
+    if not example.is_file():
+        print(f"Missing {example}", file=sys.stderr)
+        return 1
+
+    if target.is_file():
+        print("assets/env/local.env already exists; left unchanged.")
+        return 0
+
+    target.write_text(example.read_text(encoding="utf-8"), encoding="utf-8")
+    print("Created assets/env/local.env from .env.example.")
+    print("Add this line under flutter: assets: in pubspec.yaml:")
+    print("  - assets/env/local.env")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

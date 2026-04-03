@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Colmeia: setup local env",
+      "type": "shell",
+      "command": "python \"${workspaceFolder}/tool/setup_local_env.py\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

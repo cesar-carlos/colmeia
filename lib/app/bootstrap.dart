@@ -4,6 +4,7 @@ import 'package:colmeia/app/app.dart';
 import 'package:colmeia/app/router/app_router.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/app/web_url_strategy.dart';
+import 'package:colmeia/core/config/app_dotenv_loader.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/sentry_bootstrap.dart';
@@ -18,6 +19,7 @@ Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureColmeiaWebUrlStrategy();
   AppLogger.configureForRuntime();
+  await loadAppDotenv();
 
   await runAppWithOptionalSentry(() async {
     await setupDependencies();

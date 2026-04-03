@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+assets/env/local.env
 
 # Miscellaneous
 *.class
