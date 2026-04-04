@@ -31,13 +31,32 @@ class UserAccessScopeModel {
   }
 
   static List<StoreScope> _parseAllowedStores(Map<String, dynamic> json) {
-    return (json['allowedStores'] as List<dynamic>)
+    final rawStores =
+        json['allowedStores'] as List<dynamic>? ??
+        json['stores'] as List<dynamic>? ??
+        json['storeScopes'] as List<dynamic>?;
+    if (rawStores == null) {
+      return const <StoreScope>[];
+    }
+
+    return rawStores
+        .whereType<Map<String, dynamic>>()
         .map(
           (store) => StoreScope(
-            id: (store as Map<String, dynamic>)['id'] as String,
-            name: store['name'] as String,
+            id:
+                (store['id'] as String?) ??
+                (store['storeId'] as String?) ??
+                (store['store_id'] as String?) ??
+                '',
+            name:
+                (store['name'] as String?) ??
+                (store['storeName'] as String?) ??
+                (store['store_name'] as String?) ??
+                (store['label'] as String?) ??
+                '',
           ),
         )
+        .where((store) => store.id.isNotEmpty && store.name.isNotEmpty)
         .toList(growable: false);
   }
 
@@ -45,11 +64,14 @@ class UserAccessScopeModel {
     final rawPermissions = json['permissions'] as List<dynamic>?;
     if (rawPermissions != null) {
       return parseUserPermissionNameSet(
-        rawPermissions.map((entry) => entry as String),
+        rawPermissions.whereType<String>(),
       );
     }
 
     final permissions = <UserPermission>{};
+    if (json['viewDashboard'] == true) {
+      permissions.add(UserPermission.viewDashboard);
+    }
     if (_parseDashboardGrants(json).isNotEmpty) {
       permissions.add(UserPermission.viewDashboard);
     }
@@ -59,7 +81,9 @@ class UserAccessScopeModel {
   static List<DashboardAccessGrant> _parseDashboardGrants(
     Map<String, dynamic> json,
   ) {
-    final rawGrants = json['dashboardGrants'] as List<dynamic>?;
+    final rawGrants =
+        json['dashboardGrants'] as List<dynamic>? ??
+        json['dashboardAccess'] as List<dynamic>?;
     if (rawGrants != null) {
       return rawGrants
           .map(

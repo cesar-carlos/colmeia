@@ -1,4 +1,5 @@
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
+import 'package:flutter/material.dart';
 
 enum AppRoute {
   login(
@@ -47,6 +48,70 @@ enum AppRoute {
   final String path;
   final String title;
   final int? shellIndex;
+
+  String get navigationLabel {
+    switch (this) {
+      case AppRoute.dashboard:
+      case AppRoute.dashboardStore:
+        return 'Painel';
+      case AppRoute.settings:
+        return 'Perfil';
+      case AppRoute.login:
+      case AppRoute.register:
+      case AppRoute.registrationStatus:
+      case AppRoute.passwordRecovery:
+      case AppRoute.passwordRecoveryReset:
+        return title;
+    }
+  }
+
+  String? get navigationSubtitle {
+    switch (this) {
+      case AppRoute.dashboard:
+      case AppRoute.dashboardStore:
+        return 'Resumo operacional e KPIs';
+      case AppRoute.settings:
+        return 'Conta e preferências';
+      case AppRoute.login:
+      case AppRoute.register:
+      case AppRoute.registrationStatus:
+      case AppRoute.passwordRecovery:
+      case AppRoute.passwordRecoveryReset:
+        return null;
+    }
+  }
+
+  IconData get selectedNavigationIcon {
+    switch (this) {
+      case AppRoute.dashboard:
+      case AppRoute.dashboardStore:
+        return Icons.space_dashboard_rounded;
+      case AppRoute.settings:
+        return Icons.person_rounded;
+      case AppRoute.login:
+      case AppRoute.register:
+      case AppRoute.registrationStatus:
+      case AppRoute.passwordRecovery:
+      case AppRoute.passwordRecoveryReset:
+        return Icons.arrow_forward_rounded;
+    }
+  }
+
+  IconData get unselectedNavigationIcon {
+    switch (this) {
+      case AppRoute.dashboard:
+      case AppRoute.dashboardStore:
+        return Icons.space_dashboard_outlined;
+      case AppRoute.settings:
+        return Icons.person_outline_rounded;
+      case AppRoute.login:
+      case AppRoute.register:
+      case AppRoute.registrationStatus:
+      case AppRoute.passwordRecovery:
+      case AppRoute.passwordRecoveryReset:
+        return Icons.arrow_forward_rounded;
+    }
+  }
 
   bool get isShellRoute => shellIndex != null;
   UserPermission? get requiredPermission {

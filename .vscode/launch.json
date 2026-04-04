@@ -33,6 +33,15 @@
             ]
         },
         {
+            "name": "colmeia (Xiaomi)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "ei7h4xwk99gml78d",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
+        },
+        {
             "name": "colmeia (Chrome)",
             "request": "launch",
             "type": "dart",

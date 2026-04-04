@@ -42,6 +42,7 @@ class CurrentUserContextController extends ChangeNotifier {
        _userScope = userScope ?? _placeholderUserScope,
        _activeStoreId =
            activeStoreId ?? UserContextPlaceholders.loadingStoreId {
+    _availableShellRoutes = _computeAvailableShellRoutes();
     if (_authController != null) {
       _authController.addListener(_handleAuthStateChanged);
       _handleAuthStateChanged();
@@ -109,6 +110,7 @@ class CurrentUserContextController extends ChangeNotifier {
   final ClearActiveStoreUseCase? _clearActiveStoreUseCase;
 
   CurrentUserScope _userScope;
+  late List<AppRoute> _availableShellRoutes;
   String _activeStoreId;
   String? _errorMessage;
   bool _isLoading = false;
@@ -158,7 +160,13 @@ class CurrentUserContextController extends ChangeNotifier {
   }
 
   List<AppRoute> get availableShellRoutes {
-    return AppRoute.shellRoutes.where(canAccessRoute).toList();
+    return _availableShellRoutes;
+  }
+
+  List<AppRoute> _computeAvailableShellRoutes() {
+    return List<AppRoute>.unmodifiable(
+      AppRoute.shellRoutes.where(canAccessRoute),
+    );
   }
 
   void _handleAuthStateChanged() {
@@ -202,6 +210,7 @@ class CurrentUserContextController extends ChangeNotifier {
       final previousUserId = _syncedUserId;
       _syncedUserId = null;
       _userScope = _placeholderUserScope;
+      _availableShellRoutes = _computeAvailableShellRoutes();
       _activeStoreId = UserContextPlaceholders.loadingStoreId;
       _errorMessage = null;
       _isLoading = false;
@@ -226,12 +235,14 @@ class CurrentUserContextController extends ChangeNotifier {
     result.fold(
       (snapshot) {
         _userScope = snapshot.scope;
+        _availableShellRoutes = _computeAvailableShellRoutes();
         _activeStoreId = snapshot.activeStoreId;
         _syncedUserId = session.userId;
         _errorMessage = null;
       },
       (failure) {
         _userScope = _placeholderUserScope;
+        _availableShellRoutes = _computeAvailableShellRoutes();
         _activeStoreId = UserContextPlaceholders.loadingStoreId;
         _syncedUserId = session.userId;
         _errorMessage = failure.displayMessage;

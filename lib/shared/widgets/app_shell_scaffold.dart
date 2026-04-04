@@ -4,7 +4,6 @@ import 'package:colmeia/core/layout/app_content_constraint.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/widgets/backgrounds/honeycomb_hex_background.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_app_bar.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_bottom_nav.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_rail.dart';
 import 'package:flutter/material.dart';
@@ -22,8 +21,10 @@ class AppShellScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userContextController = context.watch<CurrentUserContextController>();
-    final visibleShellRoutes = userContextController.availableShellRoutes;
+    final visibleShellRoutes = context
+        .select<CurrentUserContextController, List<AppRoute>>(
+          (controller) => controller.availableShellRoutes,
+        );
     final showShellNav = visibleShellRoutes.length > 1;
     final useRail = AppBreakpoints.useRail(context);
 
@@ -77,12 +78,6 @@ class AppShellScaffold extends StatelessWidget {
       appBar: const AppShellAppBar(),
       drawer: showShellNav
           ? AppShellDrawer(
-              currentRoute: currentRoute,
-              visibleShellRoutes: visibleShellRoutes,
-            )
-          : null,
-      bottomNavigationBar: showShellNav
-          ? AppShellBottomNav(
               currentRoute: currentRoute,
               visibleShellRoutes: visibleShellRoutes,
             )

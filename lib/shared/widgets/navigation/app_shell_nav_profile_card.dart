@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_user_initials.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_user_avatar.dart';
 import 'package:flutter/material.dart';
 
 class AppShellNavProfileCard extends StatelessWidget {
@@ -9,10 +9,12 @@ class AppShellNavProfileCard extends StatelessWidget {
     required this.name,
     required this.roleLabel,
     super.key,
+    this.thumbnailUrl,
   });
 
   final String name;
   final String roleLabel;
+  final String? thumbnailUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -37,15 +39,14 @@ class AppShellNavProfileCard extends StatelessWidget {
                 width: 2,
               ),
             ),
-            child: CircleAvatar(
+            child: AppShellUserAvatar(
+              name: name,
+              thumbnailUrl: thumbnailUrl,
               radius: 22,
               backgroundColor: colors.surfaceContainerHigh,
               foregroundColor: colors.onSurface,
-              child: Text(
-                appShellUserInitials(name),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+              textStyle: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),

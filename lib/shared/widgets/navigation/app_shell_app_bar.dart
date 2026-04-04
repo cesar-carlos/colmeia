@@ -5,23 +5,17 @@ import 'package:colmeia/features/user_context/presentation/controllers/current_u
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_user_initials.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_user_avatar.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_user_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   const AppShellAppBar({
     super.key,
-    this.showSearchPill = true,
-    this.searchHint = 'Buscar metricas, lojas ou relatorios...',
     this.primary = true,
     this.showBrandTitle = true,
   });
-
-  /// Hidden on narrow ([AppBreakpoints.isMobile]) to avoid crowding the title.
-  final bool showSearchPill;
-
-  final String searchHint;
 
   /// When `false`, use next to [NavigationRail] inside the body (no duplicate
   /// top status-bar padding). When `true` (default), used as [Scaffold.appBar].
@@ -38,14 +32,13 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     final colors = theme.appColors;
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
-    final userContext = context.watch<CurrentUserContextController>();
-    final userScope = userContext.userScope;
+    final userData = context
+        .select<CurrentUserContextController, AppShellUserSummary>(
+          selectAppShellUserSummary,
+        );
 
-    final showSearch = showSearchPill && !AppBreakpoints.isMobile(context);
     final showUserDetails = !AppBreakpoints.isMobile(context);
-    final titleSpacing = showBrandTitle
-        ? (showSearch ? 16.0 : 0.0)
-        : tokens.contentSpacing;
+    final titleSpacing = showBrandTitle ? 0.0 : tokens.contentSpacing;
 
     final brandTitle = Row(
       mainAxisSize: MainAxisSize.min,
@@ -87,21 +80,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
       ],
     );
 
-    final title = showSearch
-        ? showBrandTitle
-              ? Row(
-                  children: <Widget>[
-                    brandTitle,
-                    SizedBox(width: tokens.gapMd),
-                    Expanded(
-                      child: _ShellSearchPill(hintText: searchHint),
-                    ),
-                  ],
-                )
-              : _ShellSearchPill(hintText: searchHint)
-        : showBrandTitle
-        ? brandTitle
-        : null;
+    final title = showBrandTitle ? brandTitle : null;
 
     return AppBar(
       primary: primary,
@@ -111,47 +90,16 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
       surfaceTintColor: Colors.transparent,
       shadowColor: Colors.transparent,
       actions: <Widget>[
-        _ShellAppBarIconButton(
-          tooltip: 'Notificacoes',
-          icon: Icons.notifications_none_rounded,
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Notificacoes em breve.'),
-              ),
-            );
-          },
-        ),
-        if (!AppBreakpoints.isMobile(context)) ...<Widget>[
-          SizedBox(width: tokens.gapSm),
-          _ShellAppBarIconButton(
-            tooltip: 'Ajuda',
-            icon: Icons.help_outline_rounded,
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Central de ajuda em breve.'),
-                ),
-              );
-            },
-          ),
-          SizedBox(width: tokens.gapMd),
-          SizedBox(
-            height: 24,
-            child: VerticalDivider(
-              color: colors.outlineVariant.withValues(alpha: 0.55),
-            ),
-          ),
-        ] else
-          SizedBox(width: tokens.gapSm),
+        SizedBox(width: tokens.gapSm),
         Padding(
           padding: EdgeInsetsDirectional.only(
             end: tokens.contentSpacing,
             start: tokens.gapSm,
           ),
           child: _ShellUserChip(
-            name: userScope.name,
-            subtitle: showUserDetails ? userScope.roleLabel : null,
+            name: userData.name,
+            thumbnailUrl: userData.thumbnailUrl,
+            subtitle: showUserDetails ? userData.roleLabel : null,
             onTap: () => context.goTo(AppRoute.settings),
           ),
         ),
@@ -160,130 +108,16 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class _ShellSearchPill extends StatelessWidget {
-  const _ShellSearchPill({required this.hintText});
-
-  final String hintText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final colors = theme.appColors;
-    final tokens = theme.extension<AppThemeTokens>()!;
-
-    final hintStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: scheme.onSurfaceVariant.withValues(alpha: 0.82),
-    );
-
-    return Semantics(
-      label: 'Busca',
-      hint: hintText,
-      button: true,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Busca global em breve.')),
-            );
-          },
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: colors.outlineVariant.withValues(alpha: 0.7),
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.gapMd + 2,
-                vertical: tokens.gapSm + 4,
-              ),
-              child: Row(
-                children: <Widget>[
-                  Icon(
-                    Icons.search_rounded,
-                    size: 20,
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
-                  ),
-                  SizedBox(width: tokens.gapSm),
-                  Expanded(
-                    child: Text(
-                      hintText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: hintStyle,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ShellAppBarIconButton extends StatelessWidget {
-  const _ShellAppBarIconButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.appColors;
-    final tokens = theme.extension<AppThemeTokens>()!;
-
-    return Padding(
-      padding: EdgeInsetsDirectional.only(start: tokens.gapSm),
-      child: Tooltip(
-        message: tooltip,
-        child: Material(
-          color: colors.surfaceContainerLow,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(tokens.formFieldRadius + 4),
-            side: BorderSide(
-              color: colors.outlineVariant.withValues(alpha: 0.55),
-            ),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(tokens.formFieldRadius + 4),
-            onTap: onPressed,
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Icon(
-                icon,
-                size: 20,
-                color: colors.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ShellUserChip extends StatelessWidget {
   const _ShellUserChip({
     required this.name,
     required this.onTap,
+    this.thumbnailUrl,
     this.subtitle,
   });
 
   final String name;
+  final String? thumbnailUrl;
   final String? subtitle;
   final VoidCallback onTap;
 
@@ -310,15 +144,14 @@ class _ShellUserChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                CircleAvatar(
+                AppShellUserAvatar(
+                  name: name,
+                  thumbnailUrl: thumbnailUrl,
                   radius: 18,
                   backgroundColor: colors.primaryContainer,
                   foregroundColor: colors.onPrimaryContainer,
-                  child: Text(
-                    appShellUserInitials(name),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                  textStyle: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 if (showSubtitle) ...<Widget>[

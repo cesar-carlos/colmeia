@@ -1,23 +1,18 @@
-import 'dart:async';
-
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer_header.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer_menu_item.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer_menu_list.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_nav_footer_action.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_nav_profile_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_route_presentation.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_user_summary.dart';
 import 'package:colmeia/shared/widgets/navigation/show_app_sign_out_dialog.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class AppShellDrawer extends StatelessWidget {
@@ -30,45 +25,24 @@ class AppShellDrawer extends StatelessWidget {
   final AppRoute currentRoute;
   final List<AppRoute> visibleShellRoutes;
 
-  List<_DrawerMenuEntry> _buildMenuEntries(BuildContext context) {
-    final hasDashboardRoute = visibleShellRoutes.any(
-      (route) => route.shellIndex == AppRoute.dashboard.shellIndex,
-    );
-    final hasSettingsRoute = visibleShellRoutes.contains(AppRoute.settings);
-    final dashboardSelected =
-        currentRoute.shellIndex == AppRoute.dashboard.shellIndex;
-    final settingsSelected = currentRoute == AppRoute.settings;
-
-    return <_DrawerMenuEntry>[
-      if (hasDashboardRoute)
-        _DrawerMenuEntry(
-          title: 'Dashboard',
-          icon: appShellRouteIcon(
-            AppRoute.dashboard,
-            selected: dashboardSelected,
+  List<_DrawerMenuEntry> _buildMenuEntries(
+    BuildContext context,
+    List<AppShellRoutePresentation> routes,
+  ) {
+    return routes
+        .map(
+          (route) => _DrawerMenuEntry(
+            title: route.label,
+            subtitle: route.subtitle,
+            icon: appShellRouteIcon(
+              route.route,
+              selected: route.route.shellIndex == currentRoute.shellIndex,
+            ),
+            selected: route.route.shellIndex == currentRoute.shellIndex,
+            onTap: () => _handleShellRouteTap(context, route.route),
           ),
-          selected: dashboardSelected,
-          onTap: () => _handleShellRouteTap(context, AppRoute.dashboard),
-        ),
-      const _DrawerMenuEntry(
-        title: 'Analytics',
-        icon: Icons.auto_graph_rounded,
-      ),
-      const _DrawerMenuEntry(
-        title: 'Reports',
-        icon: Icons.assessment_outlined,
-      ),
-      if (hasSettingsRoute)
-        _DrawerMenuEntry(
-          title: 'Settings',
-          icon: appShellRouteIcon(
-            AppRoute.settings,
-            selected: settingsSelected,
-          ),
-          selected: settingsSelected,
-          onTap: () => _handleShellRouteTap(context, AppRoute.settings),
-        ),
-    ];
+        )
+        .toList(growable: false);
   }
 
   void _handleShellRouteTap(BuildContext context, AppRoute route) {
@@ -83,11 +57,18 @@ class AppShellDrawer extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
-    final userScope = context.watch<CurrentUserContextController>().userScope;
-    final menuEntries = _buildMenuEntries(context);
+    final isSigningOut = context.select<AuthController, bool>(
+      (controller) => controller.isLoading,
+    );
+    final userData = context
+        .select<CurrentUserContextController, AppShellUserSummary>(
+          selectAppShellUserSummary,
+        );
+    final shellRoutes = buildAppShellRoutePresentations(visibleShellRoutes);
+    final menuEntries = _buildMenuEntries(context, shellRoutes);
 
     return Drawer(
-      width: 296,
+      width: tokens.shellDrawerWidth,
       child: ColoredBox(
         color: colors.surfaceContainerLowest,
         child: SafeArea(
@@ -104,8 +85,9 @@ class AppShellDrawer extends StatelessWidget {
                 const AppShellDrawerHeader(),
                 SizedBox(height: tokens.sectionSpacing),
                 AppShellNavProfileCard(
-                  name: userScope.name,
-                  roleLabel: userScope.roleLabel,
+                  name: userData.name,
+                  roleLabel: userData.roleLabel,
+                  thumbnailUrl: userData.thumbnailUrl,
                 ),
                 SizedBox(height: tokens.sectionSpacing),
                 Expanded(
@@ -115,33 +97,14 @@ class AppShellDrawer extends StatelessWidget {
                           (entry) => AppShellDrawerMenuItem(
                             icon: entry.icon,
                             title: entry.title,
+                            subtitle: entry.subtitle,
                             selected: entry.selected,
-                            onTap: entry.onTap,
+                            onTap: isSigningOut ? null : entry.onTap,
                           ),
                         )
                         .toList(growable: false),
                   ),
                 ),
-                if (kDebugMode) ...<Widget>[
-                  SizedBox(height: tokens.gapSm),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: AppFlatButton(
-                      fillWidth: false,
-                      icon: const Icon(Icons.widgets_outlined),
-                      label: 'Componentes (dev)',
-                      semanticsLabel:
-                          'Abrir catalogo de componentes de desenvolvimento',
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        unawaited(
-                          context.push(sharedComponentsDemoIndexLocation),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(height: tokens.gapMd),
-                ],
                 Divider(
                   height: 1,
                   color: colors.outlineVariant.withValues(alpha: 0.42),
@@ -149,7 +112,8 @@ class AppShellDrawer extends StatelessWidget {
                 SizedBox(height: tokens.gapSm),
                 AppShellNavFooterAction(
                   icon: Icons.logout_rounded,
-                  label: 'Sair',
+                  label: isSigningOut ? 'Saindo...' : 'Sair',
+                  isLoading: isSigningOut,
                   onTap: () async {
                     final confirmed = await showAppSignOutConfirmDialog(
                       context,
@@ -174,12 +138,14 @@ class _DrawerMenuEntry {
   const _DrawerMenuEntry({
     required this.title,
     required this.icon,
+    this.subtitle,
     this.selected = false,
     this.onTap,
   });
 
   final String title;
   final IconData icon;
+  final String? subtitle;
   final bool selected;
   final VoidCallback? onTap;
 }

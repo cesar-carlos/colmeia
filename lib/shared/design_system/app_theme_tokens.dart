@@ -20,6 +20,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     required this.pagePaddingHorizontalCompact,
     required this.pagePaddingHorizontalComfortable,
     required this.pagePaddingHorizontalSpacious,
+    required this.shellDrawerWidth,
+    required this.shellRailWidthTablet,
+    required this.shellRailWidthDesktop,
     required this.chartCompactHeight,
     required this.chartStandardHeight,
     required this.authGlassBlurSigma,
@@ -71,6 +74,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       pagePaddingHorizontalCompact: 16,
       pagePaddingHorizontalComfortable: 20,
       pagePaddingHorizontalSpacious: 24,
+      shellDrawerWidth: 296,
+      shellRailWidthTablet: 280,
+      shellRailWidthDesktop: 296,
       chartCompactHeight: 180,
       chartStandardHeight: 260,
       authGlassBlurSigma: 20,
@@ -138,6 +144,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
 
   /// Horizontal inset for shell pages on desktop widths.
   final double pagePaddingHorizontalSpacious;
+  final double shellDrawerWidth;
+  final double shellRailWidthTablet;
+  final double shellRailWidthDesktop;
   final double chartCompactHeight;
   final double chartStandardHeight;
 
@@ -240,6 +249,9 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     double? pagePaddingHorizontalCompact,
     double? pagePaddingHorizontalComfortable,
     double? pagePaddingHorizontalSpacious,
+    double? shellDrawerWidth,
+    double? shellRailWidthTablet,
+    double? shellRailWidthDesktop,
     double? chartCompactHeight,
     double? chartStandardHeight,
     double? authGlassBlurSigma,
@@ -293,6 +305,10 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           this.pagePaddingHorizontalComfortable,
       pagePaddingHorizontalSpacious:
           pagePaddingHorizontalSpacious ?? this.pagePaddingHorizontalSpacious,
+      shellDrawerWidth: shellDrawerWidth ?? this.shellDrawerWidth,
+      shellRailWidthTablet: shellRailWidthTablet ?? this.shellRailWidthTablet,
+      shellRailWidthDesktop:
+          shellRailWidthDesktop ?? this.shellRailWidthDesktop,
       chartCompactHeight: chartCompactHeight ?? this.chartCompactHeight,
       chartStandardHeight: chartStandardHeight ?? this.chartStandardHeight,
       authGlassBlurSigma: authGlassBlurSigma ?? this.authGlassBlurSigma,
@@ -408,6 +424,15 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
             t,
           ) ??
           pagePaddingHorizontalSpacious,
+      shellDrawerWidth:
+          lerpDouble(shellDrawerWidth, other.shellDrawerWidth, t) ??
+          shellDrawerWidth,
+      shellRailWidthTablet:
+          lerpDouble(shellRailWidthTablet, other.shellRailWidthTablet, t) ??
+          shellRailWidthTablet,
+      shellRailWidthDesktop:
+          lerpDouble(shellRailWidthDesktop, other.shellRailWidthDesktop, t) ??
+          shellRailWidthDesktop,
       chartCompactHeight:
           lerpDouble(
             chartCompactHeight,

@@ -60,7 +60,6 @@ export 'package:colmeia/shared/widgets/metrics/app_executive_metric_tile.dart';
 export 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 export 'package:colmeia/shared/widgets/metrics/app_metric_stat_delta.dart';
 export 'package:colmeia/shared/widgets/navigation/app_shell_app_bar.dart';
-export 'package:colmeia/shared/widgets/navigation/app_shell_bottom_nav.dart';
 export 'package:colmeia/shared/widgets/navigation/app_shell_drawer.dart';
 export 'package:colmeia/shared/widgets/navigation/app_shell_drawer_header.dart';
 export 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';

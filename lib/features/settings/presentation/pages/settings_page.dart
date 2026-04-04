@@ -11,12 +11,12 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/auth/presentation/widgets/auth_form_text_field.dart';
 import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_field.dart';
 import 'package:colmeia/features/settings/presentation/controllers/client_account_settings_controller.dart';
-import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/forms/app_form_validators.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/app_editorial_media_card.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
@@ -31,7 +31,6 @@ import 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_status_pill.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -81,7 +80,18 @@ class _SettingsPageState extends State<SettingsPage> {
     if (messenger == null) {
       return;
     }
-    messenger.showSnackBar(SnackBar(content: Text(message)));
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _evictThumbnailCache(String? thumbnailUrl) async {
+    final resolvedUrl = thumbnailUrl?.trim();
+    if (resolvedUrl == null || resolvedUrl.isEmpty) {
+      return;
+    }
+
+    imageCache.evict(NetworkImage(resolvedUrl));
   }
 
   Future<void> _showEditProfileSheet(
@@ -93,89 +103,106 @@ class _SettingsPageState extends State<SettingsPage> {
     final phoneController = TextEditingController(text: scope.phone);
     final formKey = GlobalKey<FormState>();
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    _accountSettingsController.clearFeedback();
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            tokens.contentSpacing,
-            0,
-            tokens.contentSpacing,
-            MediaQuery.viewInsetsOf(sheetContext).bottom +
-                tokens.contentSpacing,
-          ),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                AuthFormTextField(
-                  controller: firstNameController,
-                  label: 'Nome',
-                  icon: Icons.person_outline_rounded,
-                  validator: (value) => AppFormValidators.requiredText(
-                    value,
-                    message: 'Informe seu nome.',
-                  ),
-                ),
-                SizedBox(height: tokens.gapMd),
-                AuthFormTextField(
-                  controller: lastNameController,
-                  label: 'Sobrenome',
-                  icon: Icons.badge_outlined,
-                  validator: (value) => AppFormValidators.requiredText(
-                    value,
-                    message: 'Informe seu sobrenome.',
-                  ),
-                ),
-                SizedBox(height: tokens.gapMd),
-                AuthFormTextField(
-                  controller: phoneController,
-                  label: 'Telefone',
-                  icon: Icons.phone_android_outlined,
-                  keyboardType: TextInputType.phone,
-                ),
-                SizedBox(height: tokens.contentSpacing),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () async {
-                      if (!formKey.currentState!.validate()) {
-                        return;
-                      }
-                      final success = await _accountSettingsController
-                          .updateProfile(
-                            firstName: firstNameController.text.trim(),
-                            lastName: lastNameController.text.trim(),
-                            mobile: phoneController.text.trim(),
-                          );
-                      if (!mounted || !sheetContext.mounted) {
-                        return;
-                      }
-                      if (!success) {
-                        _showSoonSnack(
-                          _accountSettingsController.errorMessage ??
-                              'Nao foi possivel atualizar a conta.',
-                        );
-                        return;
-                      }
+        return ListenableBuilder(
+          listenable: _accountSettingsController,
+          builder: (context, _) {
+            final isSaving = _accountSettingsController.isSavingProfile;
+            final errorMessage = _accountSettingsController.errorMessage;
 
-                      Navigator.of(sheetContext).pop();
-                      await userContextController.reloadUserContext();
-                      _showSoonSnack(
-                        _accountSettingsController.successMessage ??
-                            'Conta atualizada com sucesso.',
-                      );
-                    },
-                    child: const Text('Salvar alteracoes'),
-                  ),
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                tokens.contentSpacing,
+                0,
+                tokens.contentSpacing,
+                MediaQuery.viewInsetsOf(sheetContext).bottom +
+                    tokens.contentSpacing,
+              ),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    if (errorMessage != null) ...<Widget>[
+                      AppInlineErrorPanel(
+                        title: 'Nao foi possivel salvar',
+                        message: errorMessage,
+                        variant: AppInlineErrorPanelVariant.plain,
+                      ),
+                      SizedBox(height: tokens.contentSpacing),
+                    ],
+                    AuthFormTextField(
+                      controller: firstNameController,
+                      enabled: !isSaving,
+                      label: 'Nome',
+                      icon: Icons.person_outline_rounded,
+                      validator: (value) => AppFormValidators.requiredText(
+                        value,
+                        message: 'Informe seu nome.',
+                      ),
+                    ),
+                    SizedBox(height: tokens.gapMd),
+                    AuthFormTextField(
+                      controller: lastNameController,
+                      enabled: !isSaving,
+                      label: 'Sobrenome',
+                      icon: Icons.badge_outlined,
+                      validator: (value) => AppFormValidators.requiredText(
+                        value,
+                        message: 'Informe seu sobrenome.',
+                      ),
+                    ),
+                    SizedBox(height: tokens.gapMd),
+                    AuthFormTextField(
+                      controller: phoneController,
+                      enabled: !isSaving,
+                      label: 'Telefone',
+                      icon: Icons.phone_android_outlined,
+                      keyboardType: TextInputType.phone,
+                    ),
+                    SizedBox(height: tokens.contentSpacing),
+                    AppPrimaryButton(
+                      onPressed: () async {
+                        if (!formKey.currentState!.validate()) {
+                          return;
+                        }
+                        final success = await _accountSettingsController
+                            .updateProfile(
+                              firstName: firstNameController.text.trim(),
+                              lastName: lastNameController.text.trim(),
+                              mobile: phoneController.text.trim(),
+                            );
+                        if (!mounted || !sheetContext.mounted) {
+                          return;
+                        }
+                        if (!success) {
+                          return;
+                        }
+
+                        Navigator.of(sheetContext).pop();
+                        await userContextController.reloadUserContext();
+                        _showSoonSnack(
+                          _accountSettingsController.successMessage ??
+                              'Conta atualizada com sucesso.',
+                        );
+                      },
+                      label: 'Salvar alteracoes',
+                      fillWidth: true,
+                      isLoading: isSaving,
+                      showLabelWhileLoading: true,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -194,6 +221,7 @@ class _SettingsPageState extends State<SettingsPage> {
     var obscureCurrent = true;
     var obscureNext = true;
     var obscureConfirm = true;
+    _accountSettingsController.clearFeedback();
 
     await showModalBottomSheet<void>(
       context: context,
@@ -202,97 +230,115 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.contentSpacing,
-                0,
-                tokens.contentSpacing,
-                MediaQuery.viewInsetsOf(sheetContext).bottom +
-                    tokens.contentSpacing,
-              ),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    AuthPasswordTextField(
-                      controller: currentPasswordController,
-                      obscureText: obscureCurrent,
-                      onToggleObscure: () {
-                        setSheetState(() {
-                          obscureCurrent = !obscureCurrent;
-                        });
-                      },
-                      label: 'Senha atual',
-                      icon: Icons.lock_clock_outlined,
-                    ),
-                    SizedBox(height: tokens.gapMd),
-                    AuthPasswordTextField(
-                      controller: newPasswordController,
-                      obscureText: obscureNext,
-                      onToggleObscure: () {
-                        setSheetState(() {
-                          obscureNext = !obscureNext;
-                        });
-                      },
-                      label: 'Nova senha',
-                      icon: Icons.lock_outline_rounded,
-                      validator: (value) =>
-                          AppFormValidators.password(value, minLength: 8),
-                    ),
-                    SizedBox(height: tokens.gapMd),
-                    AuthPasswordTextField(
-                      controller: confirmPasswordController,
-                      obscureText: obscureConfirm,
-                      onToggleObscure: () {
-                        setSheetState(() {
-                          obscureConfirm = !obscureConfirm;
-                        });
-                      },
-                      label: 'Confirmar nova senha',
-                      icon: Icons.lock_reset_outlined,
-                      validator: (value) => AppFormValidators.confirmPassword(
-                        value,
-                        password: newPasswordController.text,
-                      ),
-                    ),
-                    SizedBox(height: tokens.contentSpacing),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: () async {
-                          if (!formKey.currentState!.validate()) {
-                            return;
-                          }
-                          final success = await _accountSettingsController
-                              .changePassword(
-                                currentPassword:
-                                    currentPasswordController.text,
-                                newPassword: newPasswordController.text,
-                              );
-                          if (!mounted || !sheetContext.mounted) {
-                            return;
-                          }
-                          if (!success) {
-                            _showSoonSnack(
-                              _accountSettingsController.errorMessage ??
-                                  'Nao foi possivel alterar a senha.',
-                            );
-                            return;
-                          }
+            return ListenableBuilder(
+              listenable: _accountSettingsController,
+              builder: (context, _) {
+                final isChanging =
+                    _accountSettingsController.isChangingPassword;
+                final errorMessage = _accountSettingsController.errorMessage;
 
-                          Navigator.of(sheetContext).pop();
-                          _showSoonSnack(
-                            _accountSettingsController.successMessage ??
-                                'Senha alterada com sucesso.',
-                          );
-                        },
-                        child: const Text('Atualizar senha'),
-                      ),
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.contentSpacing,
+                    0,
+                    tokens.contentSpacing,
+                    MediaQuery.viewInsetsOf(sheetContext).bottom +
+                        tokens.contentSpacing,
+                  ),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        if (errorMessage != null) ...<Widget>[
+                          AppInlineErrorPanel(
+                            title: 'Nao foi possivel atualizar a senha',
+                            message: errorMessage,
+                            variant: AppInlineErrorPanelVariant.plain,
+                          ),
+                          SizedBox(height: tokens.contentSpacing),
+                        ],
+                        AuthPasswordTextField(
+                          controller: currentPasswordController,
+                          obscureText: obscureCurrent,
+                          enabled: !isChanging,
+                          onToggleObscure: () {
+                            setSheetState(() {
+                              obscureCurrent = !obscureCurrent;
+                            });
+                          },
+                          label: 'Senha atual',
+                          icon: Icons.lock_clock_outlined,
+                        ),
+                        SizedBox(height: tokens.gapMd),
+                        AuthPasswordTextField(
+                          controller: newPasswordController,
+                          obscureText: obscureNext,
+                          enabled: !isChanging,
+                          onToggleObscure: () {
+                            setSheetState(() {
+                              obscureNext = !obscureNext;
+                            });
+                          },
+                          label: 'Nova senha',
+                          icon: Icons.lock_outline_rounded,
+                          validator: (value) =>
+                              AppFormValidators.password(value, minLength: 8),
+                        ),
+                        SizedBox(height: tokens.gapMd),
+                        AuthPasswordTextField(
+                          controller: confirmPasswordController,
+                          obscureText: obscureConfirm,
+                          enabled: !isChanging,
+                          onToggleObscure: () {
+                            setSheetState(() {
+                              obscureConfirm = !obscureConfirm;
+                            });
+                          },
+                          label: 'Confirmar nova senha',
+                          icon: Icons.lock_reset_outlined,
+                          validator: (value) =>
+                              AppFormValidators.confirmPassword(
+                                value,
+                                password: newPasswordController.text,
+                              ),
+                        ),
+                        SizedBox(height: tokens.contentSpacing),
+                        AppPrimaryButton(
+                          onPressed: () async {
+                            if (!formKey.currentState!.validate()) {
+                              return;
+                            }
+                            final success = await _accountSettingsController
+                                .changePassword(
+                                  currentPassword:
+                                      currentPasswordController.text,
+                                  newPassword: newPasswordController.text,
+                                );
+                            if (!mounted || !sheetContext.mounted) {
+                              return;
+                            }
+                            if (!success) {
+                              return;
+                            }
+
+                            Navigator.of(sheetContext).pop();
+                            _showSoonSnack(
+                              _accountSettingsController.successMessage ??
+                                  'Senha alterada com sucesso.',
+                            );
+                          },
+                          label: 'Atualizar senha',
+                          fillWidth: true,
+                          isLoading: isChanging,
+                          showLabelWhileLoading: true,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -309,6 +355,7 @@ class _SettingsPageState extends State<SettingsPage> {
   ) async {
     final scope = userContextController.userScope;
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    _accountSettingsController.clearFeedback();
 
     await showModalBottomSheet<void>(
       context: context,
@@ -324,8 +371,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   leading: const Icon(Icons.photo_library_outlined),
                   title: Text(
                     scope.thumbnailUrl == null
-                        ? 'Adicionar foto'
-                        : 'Atualizar foto',
+                        ? 'Adicionar foto do perfil'
+                        : 'Atualizar foto do perfil',
                   ),
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
@@ -337,6 +384,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     if (file == null || !mounted) {
                       return;
                     }
+                    _showSoonSnack('Enviando foto do perfil...');
                     final success = await _accountSettingsController
                         .uploadThumbnail(filePath: file.path);
                     if (!mounted) {
@@ -350,6 +398,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       return;
                     }
 
+                    await _evictThumbnailCache(scope.thumbnailUrl);
                     await userContextController.reloadUserContext();
                     _showSoonSnack(
                       _accountSettingsController.successMessage ??
@@ -381,6 +430,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         return;
                       }
 
+                      await _evictThumbnailCache(scope.thumbnailUrl);
                       await userContextController.reloadUserContext();
                       _showSoonSnack(
                         _accountSettingsController.successMessage ??
@@ -548,96 +598,73 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ],
         SizedBox(height: tokens.sectionSpacing),
-        AppSectionCardWithHeading(
-          title: 'Conta',
-          subtitle:
-              'Dados pessoais, seguranca e preferencias organizados em abas '
-              'para consulta mais rapida.',
-          child: AppTabView(
-            items: <AppTabViewItem>[
-              AppTabViewItem(
-                label: 'Dados pessoais',
-                child: _SettingsProfileTab(
-                  name: scope.name,
-                  emailDisplay: emailDisplay,
-                  emailEmpty: emailEmpty,
-                  phoneDisplay: phoneDisplay,
-                  phoneEmpty: phoneEmpty,
-                  thumbnailActionLabel: scope.thumbnailUrl == null
-                      ? 'Adicionar foto'
-                      : 'Atualizar foto',
-                  onNameTap: () => _showEditProfileSheet(controller),
-                  onPhoneTap: () => _showEditProfileSheet(controller),
-                  onThumbnailTap: () => _showThumbnailActions(controller),
-                ),
-              ),
-              AppTabViewItem(
-                label: 'Seguranca',
-                child: _SettingsSecurityTab(
-                  onPasswordTap: _showChangePasswordSheet,
-                  onTwoFactorTap: () => _showSoonSnack(
-                    'O Client Auth ainda não expõe configuração de 2FA.',
+        AppSkeleton(
+          enabled: controller.isLoading,
+          child: AppSectionCardWithHeading(
+            title: 'Conta',
+            subtitle:
+                'Dados pessoais, seguranca e preferencias organizados em abas '
+                'para consulta mais rapida.',
+            child: AppTabView(
+              items: <AppTabViewItem>[
+                AppTabViewItem(
+                  label: 'Dados pessoais',
+                  child: _SettingsProfileTab(
+                    name: scope.name,
+                    emailDisplay: emailDisplay,
+                    emailEmpty: emailEmpty,
+                    phoneDisplay: phoneDisplay,
+                    phoneEmpty: phoneEmpty,
+                    thumbnailActionLabel: scope.thumbnailUrl == null
+                        ? 'Adicionar foto'
+                        : 'Atualizar foto',
+                    onNameTap: () => _showEditProfileSheet(controller),
+                    onPhoneTap: () => _showEditProfileSheet(controller),
+                    onThumbnailTap: () => _showThumbnailActions(controller),
                   ),
                 ),
-              ),
-              AppTabViewItem(
-                label: 'Preferencias',
-                child: _SettingsPreferencesTab(
-                  pushNotificationsEnabled: _pushNotificationsEnabled,
-                  themePreferenceLabel: _themePreferenceLabel(themeMode),
-                  onPushNotificationsChanged: _persistPushNotifications,
-                  onAppearanceTap: _showThemeModePicker,
+                AppTabViewItem(
+                  label: 'Seguranca',
+                  child: _SettingsSecurityTab(
+                    onPasswordTap: _showChangePasswordSheet,
+                  ),
                 ),
-              ),
-            ],
+                AppTabViewItem(
+                  label: 'Preferencias',
+                  child: _SettingsPreferencesTab(
+                    pushNotificationsEnabled: _pushNotificationsEnabled,
+                    themePreferenceLabel: _themePreferenceLabel(themeMode),
+                    onPushNotificationsChanged: _persistPushNotifications,
+                    onAppearanceTap: _showThemeModePicker,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppSectionCardWithHeading(
-          title: 'Estado da conta',
-          child: controller.permissions.isEmpty
-              ? Text(
-                  'Esta conta cliente não utiliza o catálogo atual de '
-                  'permissões e lojas do fluxo corporativo. O acesso liberado '
-                  'virá das integrações específicas de cliente e agentes.',
-                  style: typography.body.copyWith(
-                    color: cs.onSurfaceVariant,
+        AppSkeleton(
+          enabled: controller.isLoading,
+          child: AppSectionCardWithHeading(
+            title: 'Estado da conta',
+            child: controller.permissions.isEmpty
+                ? Text(
+                    'As permissoes detalhadas desta conta ainda nao foram '
+                    'disponibilizadas pela API. O acesso funcional continua '
+                    'sendo validado pelo backend.',
+                    style: typography.body.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  )
+                : Wrap(
+                    spacing: tokens.gapSm,
+                    runSpacing: tokens.gapSm,
+                    children: controller.permissions
+                        .map(
+                          (permission) => AppTagChip(label: permission.label),
+                        )
+                        .toList(growable: false),
                   ),
-                )
-              : Wrap(
-                  spacing: tokens.gapSm,
-                  runSpacing: tokens.gapSm,
-                  children: controller.permissions
-                      .map(
-                        (permission) => AppTagChip(label: permission.label),
-                      )
-                      .toList(growable: false),
-                ),
-        ),
-        SizedBox(height: tokens.sectionSpacing),
-        AppSectionCardWithHeading(
-          title: 'Demos de componentes',
-          child: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.widgets_outlined, color: cs.primary),
-            title: Text(
-              'Biblioteca de demos',
-              style: typography.sectionHeaderH2.copyWith(
-                fontSize: theme.textTheme.titleSmall?.fontSize,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            subtitle: Text(
-              'Graficos, metricas, secoes e paginacao em telas separadas.',
-              style: typography.caption.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
-            ),
-            trailing: Icon(
-              Icons.chevron_right_rounded,
-              color: cs.onSurfaceVariant,
-            ),
-            onTap: () => context.push(sharedComponentsDemoIndexLocation),
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
@@ -760,6 +787,8 @@ class _SettingsProfileHeroArtwork extends StatelessWidget {
   final String roleLabel;
   final String? thumbnailUrl;
 
+  bool get _hasThumbnail => thumbnailUrl?.trim().isNotEmpty ?? false;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -804,26 +833,40 @@ class _SettingsProfileHeroArtwork extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              CircleAvatar(
-                radius: 42,
-                backgroundColor: cs.primaryContainer,
-                foregroundColor: cs.onPrimaryContainer,
-                foregroundImage: thumbnailUrl?.trim().isNotEmpty == true
-                    ? NetworkImage(thumbnailUrl!.trim())
-                    : null,
-                child: thumbnailUrl?.trim().isNotEmpty == true
-                    ? null
-                    : Text(
-                        initials,
-                        style: typography.displayH1.copyWith(
-                          fontSize: theme.textTheme.headlineSmall?.fontSize,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+              Container(
+                width: 84,
+                height: 84,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: _hasThumbnail
+                    ? Image.network(
+                        thumbnailUrl!.trim(),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _SettingsProfileAvatarFallback(
+                            initials: initials,
+                          );
+                        },
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) {
+                            return child;
+                          }
+                          return Center(
+                            child: CircularProgressIndicator(
+                              color: cs.primary,
+                              strokeWidth: 2,
+                            ),
+                          );
+                        },
+                      )
+                    : _SettingsProfileAvatarFallback(initials: initials),
               ),
               SizedBox(height: tokens.gapSm),
               Text(
-                'ACCOUNT',
+                'CONTA',
                 style: typography.utilityOverline.copyWith(
                   color: cs.primary,
                 ),
@@ -847,11 +890,9 @@ class _SettingsProfileHeroArtwork extends StatelessWidget {
 class _SettingsSecurityTab extends StatelessWidget {
   const _SettingsSecurityTab({
     required this.onPasswordTap,
-    required this.onTwoFactorTap,
   });
 
   final VoidCallback onPasswordTap;
-  final VoidCallback onTwoFactorTap;
 
   @override
   Widget build(BuildContext context) {
@@ -875,49 +916,72 @@ class _SettingsSecurityTab extends StatelessWidget {
           onTap: onPasswordTap,
         ),
         SizedBox(height: tokens.gapMd),
-        InkWell(
-          onTap: onTwoFactorTap,
-          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.gapSm),
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  Icons.vibration_rounded,
-                  size: 22,
-                  color: cs.primary,
-                ),
-                SizedBox(width: tokens.gapMd),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        'Autenticação 2FA',
-                        style: typography.sectionHeaderH2.copyWith(
-                          fontSize: theme.textTheme.titleSmall?.fontSize,
-                          fontWeight: FontWeight.w700,
-                        ),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.gapSm),
+          child: Row(
+            children: <Widget>[
+              Icon(
+                Icons.vibration_rounded,
+                size: 22,
+                color: cs.primary,
+              ),
+              SizedBox(width: tokens.gapMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Autenticação 2FA',
+                      style: typography.sectionHeaderH2.copyWith(
+                        fontSize: theme.textTheme.titleSmall?.fontSize,
+                        fontWeight: FontWeight.w700,
                       ),
-                      SizedBox(height: tokens.gapXs),
-                      Text(
-                        'Camada extra para operações sensíveis.',
-                        style: typography.caption.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
+                    ),
+                    SizedBox(height: tokens.gapXs),
+                    Text(
+                      'Disponível assim que o backend expuser a configuração '
+                      'deste recurso.',
+                      style: typography.caption.copyWith(
+                        color: cs.onSurfaceVariant,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const AppProfileStatusPill(
-                  label: 'ATIVO',
-                  variant: AppStatusBadgeVariant.success,
-                ),
-              ],
-            ),
+              ),
+              const AppProfileStatusPill(
+                label: 'EM BREVE',
+                variant: AppStatusBadgeVariant.info,
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SettingsProfileAvatarFallback extends StatelessWidget {
+  const _SettingsProfileAvatarFallback({
+    required this.initials,
+  });
+
+  final String initials;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final typography = theme.appTypography;
+    final cs = theme.colorScheme;
+
+    return Center(
+      child: Text(
+        initials,
+        style: typography.displayH1.copyWith(
+          color: cs.onPrimaryContainer,
+          fontSize: theme.textTheme.headlineSmall?.fontSize,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 }
