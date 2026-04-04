@@ -72,6 +72,11 @@ class UserAccessScopeModel {
     if (json['viewDashboard'] == true) {
       permissions.add(UserPermission.viewDashboard);
     }
+    if (json['manageAgents'] == true ||
+        json['viewAgents'] == true ||
+        json['viewClientAgents'] == true) {
+      permissions.add(UserPermission.manageAgents);
+    }
     if (_parseDashboardGrants(json).isNotEmpty) {
       permissions.add(UserPermission.viewDashboard);
     }

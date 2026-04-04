@@ -1,0 +1,445 @@
+import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/features/client_agents/data/models/agent_catalog_record_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_access_requests_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_accessible_agent_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_agent_access_request_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_agent_ids_request_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/online_agent_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
+import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
+import 'package:dio/dio.dart';
+
+abstract interface class ClientAgentsRemoteDataSource {
+  Future<PaginatedAgentCatalogResponseDto> fetchCatalog({
+    required PaginatedQuery query,
+    String? search,
+  });
+
+  Future<ClientApprovedAgentsResponseDto> fetchApprovedAgents({
+    required PaginatedQuery query,
+    String? search,
+    String? status,
+  });
+
+  Future<ClientApprovedAgentDetailResponseDto> fetchApprovedAgentById(
+    String agentId,
+  );
+
+  Future<ClientAccessRequestsResponseDto> fetchAccessRequests({
+    required PaginatedQuery query,
+    String? search,
+    String? status,
+  });
+
+  Future<Set<String>> requestAccess({
+    required Set<String> agentIds,
+  });
+
+  Future<Set<String>> removeAccess({
+    required Set<String> agentIds,
+  });
+
+  Future<OnlineAgentsResponseDto> fetchOnlineAgents();
+}
+
+class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
+  ApiClientAgentsRemoteDataSource(this._dio);
+
+  final Dio _dio;
+
+  @override
+  Future<PaginatedAgentCatalogResponseDto> fetchCatalog({
+    required PaginatedQuery query,
+    String? search,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      AgentCatalogApiRoutes.catalog,
+      queryParameters: <String, Object?>{
+        'page': query.page,
+        'pageSize': query.pageSize,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+    );
+    return PaginatedAgentCatalogResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<ClientApprovedAgentsResponseDto> fetchApprovedAgents({
+    required PaginatedQuery query,
+    String? search,
+    String? status,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ClientAgentApiRoutes.approvedAgents,
+      queryParameters: <String, Object?>{
+        'page': query.page,
+        'pageSize': query.pageSize,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+        if (status != null && status.trim().isNotEmpty) 'status': status.trim(),
+      },
+    );
+    return ClientApprovedAgentsResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<ClientApprovedAgentDetailResponseDto> fetchApprovedAgentById(
+    String agentId,
+  ) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ClientAgentApiRoutes.approvedAgentById(agentId),
+    );
+    return ClientApprovedAgentDetailResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<ClientAccessRequestsResponseDto> fetchAccessRequests({
+    required PaginatedQuery query,
+    String? search,
+    String? status,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ClientAgentApiRoutes.accessRequests,
+      queryParameters: <String, Object?>{
+        'page': query.page,
+        'pageSize': query.pageSize,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+        if (status != null && status.trim().isNotEmpty) 'status': status.trim(),
+      },
+    );
+    return ClientAccessRequestsResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<Set<String>> requestAccess({
+    required Set<String> agentIds,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ClientAgentApiRoutes.approvedAgents,
+      data: ClientAgentIdsRequestDto(agentIds: agentIds).toJson(),
+    );
+    return _resolveMutatedAgentIds(
+      body: response.data ?? const <String, dynamic>{},
+      fallbackAgentIds: agentIds,
+    );
+  }
+
+  @override
+  Future<Set<String>> removeAccess({
+    required Set<String> agentIds,
+  }) async {
+    final response = await _dio.delete<Map<String, dynamic>>(
+      ClientAgentApiRoutes.approvedAgents,
+      data: ClientAgentIdsRequestDto(agentIds: agentIds).toJson(),
+    );
+    return _resolveMutatedAgentIds(
+      body: response.data ?? const <String, dynamic>{},
+      fallbackAgentIds: agentIds,
+    );
+  }
+
+  @override
+  Future<OnlineAgentsResponseDto> fetchOnlineAgents() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiRoutes.onlineAgents,
+    );
+    return OnlineAgentsResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  Set<String> _resolveMutatedAgentIds({
+    required Map<String, dynamic> body,
+    required Set<String> fallbackAgentIds,
+  }) {
+    final knownLists = <String>[
+      'agentIds',
+      'processedAgentIds',
+      'affectedAgentIds',
+      'requestedAgentIds',
+      'removedAgentIds',
+    ];
+    for (final key in knownLists) {
+      final raw = body[key];
+      if (raw is List<dynamic>) {
+        final mapped = raw.whereType<String>().toSet();
+        if (mapped.isNotEmpty) {
+          return mapped;
+        }
+      }
+    }
+    return fallbackAgentIds;
+  }
+}
+
+class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
+  FakeClientAgentsRemoteDataSource();
+
+  final List<Map<String, dynamic>> _catalog = <Map<String, dynamic>>[
+    _agentRecord(
+      agentId: '6ac362c2-72b5-4f2f-a071-96fe6f5f5080',
+      name: 'Plug Agente Norte',
+      tradeName: 'Norte BI',
+      status: 'active',
+      city: 'Sao Paulo',
+      state: 'SP',
+    ),
+    _agentRecord(
+      agentId: '67bcaf42-6ee2-4f8d-8e76-0c74a16de9bd',
+      name: 'Plug Agente Sul',
+      tradeName: 'Sul Insights',
+      status: 'active',
+      city: 'Curitiba',
+      state: 'PR',
+    ),
+    _agentRecord(
+      agentId: '5736f60b-33d0-4811-8b66-30d3f507f270',
+      name: 'Plug Agente Legado',
+      tradeName: 'Legacy Ops',
+      status: 'inactive',
+      city: 'Rio de Janeiro',
+      state: 'RJ',
+    ),
+  ];
+
+  final Set<String> _approvedAgentIds = <String>{
+    '6ac362c2-72b5-4f2f-a071-96fe6f5f5080',
+  };
+
+  final List<Map<String, dynamic>> _requests = <Map<String, dynamic>>[
+    <String, dynamic>{
+      'requestId': 'rq-1001',
+      'agentId': '67bcaf42-6ee2-4f8d-8e76-0c74a16de9bd',
+      'agentName': 'Plug Agente Sul',
+      'status': 'pending',
+      'requestedAt': DateTime.now()
+          .subtract(const Duration(days: 1))
+          .toIso8601String(),
+    },
+  ];
+
+  @override
+  Future<PaginatedAgentCatalogResponseDto> fetchCatalog({
+    required PaginatedQuery query,
+    String? search,
+  }) async {
+    final filtered = _applySearch(
+      items: _catalog,
+      search: search,
+      key: 'name',
+    );
+    return PaginatedAgentCatalogResponseDto(
+      agents: _slice(
+        filtered,
+        query,
+      ).map(AgentCatalogRecordDto.fromJson).toList(growable: false),
+      count: filtered.length,
+      total: filtered.length,
+      page: query.page,
+      pageSize: query.pageSize,
+    );
+  }
+
+  @override
+  Future<ClientApprovedAgentsResponseDto> fetchApprovedAgents({
+    required PaginatedQuery query,
+    String? search,
+    String? status,
+  }) async {
+    final approved = _catalog
+        .where((item) {
+          if (!_approvedAgentIds.contains(item['agentId'])) {
+            return false;
+          }
+          if (status != null && status.trim().isNotEmpty) {
+            if ((item['status'] as String?) != status.trim()) {
+              return false;
+            }
+          }
+          return true;
+        })
+        .toList(growable: false);
+    final filtered = _applySearch(items: approved, search: search, key: 'name');
+    final paged = _slice(filtered, query);
+    return ClientApprovedAgentsResponseDto(
+      agents: paged
+          .map(ClientAccessibleAgentDto.fromJson)
+          .toList(growable: false),
+      agentIds: approved.map((item) => item['agentId'] as String).toSet(),
+      count: filtered.length,
+      total: filtered.length,
+      page: query.page,
+      pageSize: query.pageSize,
+    );
+  }
+
+  @override
+  Future<ClientApprovedAgentDetailResponseDto> fetchApprovedAgentById(
+    String agentId,
+  ) async {
+    final agent = _catalog.firstWhere((item) => item['agentId'] == agentId);
+    return ClientApprovedAgentDetailResponseDto(
+      agent: ClientAccessibleAgentDto.fromJson(agent),
+    );
+  }
+
+  @override
+  Future<ClientAccessRequestsResponseDto> fetchAccessRequests({
+    required PaginatedQuery query,
+    String? search,
+    String? status,
+  }) async {
+    final filtered = _requests
+        .where((item) {
+          if (status != null && status.trim().isNotEmpty) {
+            if ((item['status'] as String?) != status.trim()) {
+              return false;
+            }
+          }
+          return true;
+        })
+        .toList(growable: false);
+    final searched = _applySearch(
+      items: filtered,
+      search: search,
+      key: 'agentName',
+    );
+    return ClientAccessRequestsResponseDto(
+      requests: _slice(
+        searched,
+        query,
+      ).map(ClientAgentAccessRequestDto.fromJson).toList(growable: false),
+      count: searched.length,
+      total: searched.length,
+      page: query.page,
+      pageSize: query.pageSize,
+    );
+  }
+
+  @override
+  Future<Set<String>> requestAccess({
+    required Set<String> agentIds,
+  }) async {
+    for (final agentId in agentIds) {
+      if (_approvedAgentIds.contains(agentId)) {
+        continue;
+      }
+      final agent = _catalog.firstWhere(
+        (item) => item['agentId'] == agentId,
+        orElse: () => <String, dynamic>{'name': 'Agente $agentId'},
+      );
+      _requests.add(<String, dynamic>{
+        'requestId': 'rq-${DateTime.now().microsecondsSinceEpoch}',
+        'agentId': agentId,
+        'agentName': agent['name'] as String? ?? 'Agente $agentId',
+        'status': 'pending',
+        'requestedAt': DateTime.now().toIso8601String(),
+      });
+    }
+    return agentIds;
+  }
+
+  @override
+  Future<Set<String>> removeAccess({
+    required Set<String> agentIds,
+  }) async {
+    _approvedAgentIds.removeAll(agentIds);
+    _requests.removeWhere((item) {
+      final requestAgentId = item['agentId'] as String?;
+      return requestAgentId != null && agentIds.contains(requestAgentId);
+    });
+    return agentIds;
+  }
+
+  @override
+  Future<OnlineAgentsResponseDto> fetchOnlineAgents() async {
+    final onlineIds = _approvedAgentIds.take(1).toSet();
+    return OnlineAgentsResponseDto(
+      agents: onlineIds
+          .map(
+            (agentId) => OnlineAgentDto(
+              agentId: agentId,
+              connectedAt: DateTime.now().subtract(const Duration(minutes: 6)),
+              lastSeenAt: DateTime.now(),
+            ),
+          )
+          .toList(growable: false),
+      count: onlineIds.length,
+    );
+  }
+
+  static Map<String, dynamic> _agentRecord({
+    required String agentId,
+    required String name,
+    required String tradeName,
+    required String status,
+    required String city,
+    required String state,
+  }) {
+    final now = DateTime.now();
+    return <String, dynamic>{
+      'agentId': agentId,
+      'name': name,
+      'tradeName': tradeName,
+      'document': null,
+      'cnpjCpf': null,
+      'documentType': null,
+      'phone': null,
+      'mobile': null,
+      'email': null,
+      'address': <String, dynamic>{
+        'street': null,
+        'number': null,
+        'district': null,
+        'postalCode': null,
+        'city': city,
+        'state': state,
+      },
+      'notes': null,
+      'observation': null,
+      'status': status,
+      'createdAt': now.subtract(const Duration(days: 30)).toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+      'profileUpdatedAt': now.toIso8601String(),
+    };
+  }
+
+  List<Map<String, dynamic>> _applySearch({
+    required List<Map<String, dynamic>> items,
+    required String? search,
+    required String key,
+  }) {
+    final normalized = search?.trim().toLowerCase();
+    if (normalized == null || normalized.isEmpty) {
+      return items;
+    }
+    return items
+        .where((item) {
+          final value = (item[key] as String?)?.toLowerCase() ?? '';
+          return value.contains(normalized);
+        })
+        .toList(growable: false);
+  }
+
+  List<Map<String, dynamic>> _slice(
+    List<Map<String, dynamic>> items,
+    PaginatedQuery query,
+  ) {
+    final start = (query.page - 1) * query.pageSize;
+    if (start >= items.length) {
+      return const <Map<String, dynamic>>[];
+    }
+    final end = (start + query.pageSize).clamp(0, items.length);
+    return items.sublist(start, end);
+  }
+}

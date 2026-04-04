@@ -1,4 +1,5 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/features/client_agents/presentation/routes/client_agents_routes.dart';
 import 'package:colmeia/features/dashboards/presentation/routes/dashboard_routes.dart';
 import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/shared/widgets/app_shell_scaffold.dart';
@@ -15,6 +16,7 @@ List<RouteBase> buildAppShellRoutes() {
       },
       routes: <RouteBase>[
         ...buildDashboardRoutes(),
+        ...buildClientAgentsRoutes(),
         ...buildSettingsRoutes(),
       ],
     ),

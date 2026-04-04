@@ -1,6 +1,9 @@
 enum UserPermission {
   viewDashboard(
     label: 'Dashboard principal',
+  ),
+  manageAgents(
+    label: 'Gestao de agentes',
   )
   ;
 

@@ -1,5 +1,20 @@
 abstract final class ApiRoutes {
   static const String dashboardsOverview = '/dashboards/overview';
+  static const String onlineAgents = '/agents';
+}
+
+abstract final class AgentCatalogApiRoutes {
+  static const String catalog = '/agents/catalog';
+
+  static String catalogByAgentId(String agentId) => '$catalog/$agentId';
+}
+
+abstract final class ClientAgentApiRoutes {
+  static const String approvedAgents = '/client/me/agents';
+  static const String accessRequests = '/client/me/agent-access-requests';
+  static const String accessStatusByToken = '/client-access/status';
+
+  static String approvedAgentById(String agentId) => '$approvedAgents/$agentId';
 }
 
 abstract final class ClientAuthApiRoutes {

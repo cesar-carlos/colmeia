@@ -32,10 +32,19 @@ enum AppRoute {
     title: 'Dashboard principal',
     shellIndex: 0,
   ),
+  agents(
+    path: '/agents',
+    title: 'Agentes',
+    shellIndex: 1,
+  ),
+  agentsDetail(
+    path: '/agents/:agentId',
+    title: 'Detalhe do agente',
+  ),
   settings(
     path: '/settings',
     title: 'Perfil',
-    shellIndex: 1,
+    shellIndex: 2,
   )
   ;
 
@@ -56,6 +65,10 @@ enum AppRoute {
         return 'Painel';
       case AppRoute.settings:
         return 'Perfil';
+      case AppRoute.agents:
+        return 'Agentes';
+      case AppRoute.agentsDetail:
+        return 'Detalhe do agente';
       case AppRoute.login:
       case AppRoute.register:
       case AppRoute.registrationStatus:
@@ -72,6 +85,10 @@ enum AppRoute {
         return 'Resumo operacional e KPIs';
       case AppRoute.settings:
         return 'Conta e preferências';
+      case AppRoute.agents:
+        return 'Fontes de dados e acessos';
+      case AppRoute.agentsDetail:
+        return null;
       case AppRoute.login:
       case AppRoute.register:
       case AppRoute.registrationStatus:
@@ -88,6 +105,10 @@ enum AppRoute {
         return Icons.space_dashboard_rounded;
       case AppRoute.settings:
         return Icons.person_rounded;
+      case AppRoute.agents:
+        return Icons.hub_rounded;
+      case AppRoute.agentsDetail:
+        return Icons.hub_rounded;
       case AppRoute.login:
       case AppRoute.register:
       case AppRoute.registrationStatus:
@@ -104,6 +125,10 @@ enum AppRoute {
         return Icons.space_dashboard_outlined;
       case AppRoute.settings:
         return Icons.person_outline_rounded;
+      case AppRoute.agents:
+        return Icons.hub_outlined;
+      case AppRoute.agentsDetail:
+        return Icons.hub_outlined;
       case AppRoute.login:
       case AppRoute.register:
       case AppRoute.registrationStatus:
@@ -125,12 +150,15 @@ enum AppRoute {
       case AppRoute.passwordRecovery:
       case AppRoute.passwordRecoveryReset:
       case AppRoute.settings:
+      case AppRoute.agents:
+      case AppRoute.agentsDetail:
         return null;
     }
   }
 
   static const List<AppRoute> shellRoutes = <AppRoute>[
     dashboard,
+    agents,
     settings,
   ];
 

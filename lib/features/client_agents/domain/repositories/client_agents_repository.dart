@@ -1,0 +1,54 @@
+import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agent_catalog_item.dart';
+import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
+import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
+import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:result_dart/result_dart.dart';
+
+abstract interface class ClientAgentsRepository {
+  Future<AppResult<PaginatedResult<ClientAgentCatalogItem>>> loadCatalog({
+    required String userId,
+    required PaginatedQuery query,
+    String? search,
+  });
+
+  Future<AppResult<PaginatedResult<ClientAgent>>> loadApprovedAgents({
+    required String userId,
+    required PaginatedQuery query,
+    String? search,
+    String? status,
+  });
+
+  Future<AppResult<ClientAgent>> loadApprovedAgentById({
+    required String userId,
+    required String agentId,
+  });
+
+  Future<AppResult<PaginatedResult<ClientAgentAccessRequest>>>
+  loadAccessRequests({
+    required String userId,
+    required PaginatedQuery query,
+    String? search,
+    String? status,
+  });
+
+  Future<AppResult<List<PendingAgentAction>>> readPendingActions({
+    required String userId,
+  });
+
+  Future<AppResult<Unit>> queueRequestAccess({
+    required String userId,
+    required Set<String> agentIds,
+  });
+
+  Future<AppResult<Unit>> queueRemoveAccess({
+    required String userId,
+    required Set<String> agentIds,
+  });
+
+  Future<AppResult<Unit>> syncPendingActions({
+    required String userId,
+  });
+}
