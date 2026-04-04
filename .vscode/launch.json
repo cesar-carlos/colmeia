@@ -5,26 +5,6 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (web)",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/<target-framework>/<project-name.dll>",
-            "args": [],
-            "cwd": "${workspaceFolder}",
-            "stopAtEntry": false,
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
-            "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
-            },
-            "sourceFileMap": {
-                "/Views": "${workspaceFolder}/Views"
-            }
-        },
-        {
             "name": "colmeia",
             "request": "launch",
             "type": "dart",
@@ -33,10 +13,10 @@
             ]
         },
         {
-            "name": "colmeia (Xiaomi)",
+            "name": "colmeia (Xiaomi Wi-Fi)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "ei7h4xwk99gml78d",
+            "deviceId": "192.168.3.208:34909",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
