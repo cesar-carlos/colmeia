@@ -16,7 +16,17 @@ enum AppMetricStatCardEmphasis {
   hero,
 }
 
-/// Where the trend label sits relative to the leading widget on the top row.
+/// Visual structure of the KPI tile.
+enum AppMetricStatCardLayout {
+  /// Icon and trend share the top row; label then value (legacy / sparklines).
+  classic,
+
+  /// Title row (label + icon), value, trend row — common dashboard reference.
+  stacked,
+}
+
+/// Where the trend label sits relative to the leading widget on the top row
+/// ([AppMetricStatCardLayout.classic] only).
 enum AppMetricStatTrendPlacement {
   /// Trend uses the rest of the row and aligns to the trailing edge.
   end,
@@ -42,6 +52,8 @@ class AppMetricStatCardStyle {
     this.valueTextAlign,
     this.trendTextAlign,
     this.showTrendPill,
+    this.headerToValueSpacing,
+    this.valueToTrendSpacing,
   });
 
   final Color? cardColor;
@@ -61,6 +73,12 @@ class AppMetricStatCardStyle {
 
   /// When null, [AppMetricStatCard.showTrendPill] applies.
   final bool? showTrendPill;
+
+  /// Spacing between title row and value ([AppMetricStatCardLayout.stacked]).
+  final double? headerToValueSpacing;
+
+  /// Spacing between value and trend row ([AppMetricStatCardLayout.stacked]).
+  final double? valueToTrendSpacing;
 }
 
 /// KPI tile: leading icon, optional trend, label, and primary value.
@@ -73,6 +91,7 @@ class AppMetricStatCard extends StatelessWidget {
     super.key,
     this.trendLabel,
     this.emphasis = AppMetricStatCardEmphasis.standard,
+    this.layout = AppMetricStatCardLayout.stacked,
     this.trendPlacement = AppMetricStatTrendPlacement.end,
     this.style = const AppMetricStatCardStyle(),
     this.tooltipMessage,
@@ -81,7 +100,7 @@ class AppMetricStatCard extends StatelessWidget {
     this.labelWidget,
     this.valueWidget,
     this.trendWidget,
-    this.showTrendPill = true,
+    this.showTrendPill,
   });
 
   final Widget leading;
@@ -89,6 +108,7 @@ class AppMetricStatCard extends StatelessWidget {
   final String label;
   final String value;
   final AppMetricStatCardEmphasis emphasis;
+  final AppMetricStatCardLayout layout;
   final AppMetricStatCardStyle style;
   final String? tooltipMessage;
 
@@ -103,12 +123,29 @@ class AppMetricStatCard extends StatelessWidget {
   /// When true (default), non-custom trends render as a soft pill; when false,
   /// plain colored text (legacy). Ignored when [trendWidget] is set.
   ///
+  /// [AppMetricStatCardLayout.stacked] defaults to inline rich text + icon;
+  /// set to true for a pill on the bottom row.
+  ///
   /// [AppMetricStatCardStyle.showTrendPill] overrides this when non-null.
-  final bool showTrendPill;
+  ///
+  /// When null, classic layout defaults to pill; stacked defaults to inline
+  /// rich text + trend icon.
+  final bool? showTrendPill;
 
   /// `end`: trend at the row end (paired KPIs). `inlineStart`: icon + delta
-  /// grouped at the start (full-width / compact metrics).
+  /// grouped at the start (full-width / compact metrics). Only used when
+  /// [layout] is [AppMetricStatCardLayout.classic].
   final AppMetricStatTrendPlacement trendPlacement;
+
+  bool _effectiveTrendPill(AppMetricStatCardLayout forLayout) {
+    if (style.showTrendPill != null) {
+      return style.showTrendPill!;
+    }
+    if (showTrendPill != null) {
+      return showTrendPill!;
+    }
+    return forLayout == AppMetricStatCardLayout.classic;
+  }
 
   bool get _useOnPrimaryContainer =>
       emphasis == AppMetricStatCardEmphasis.accent ||
@@ -132,6 +169,84 @@ class AppMetricStatCard extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
     final typography = theme.appTypography;
+
+    final body = switch (layout) {
+      AppMetricStatCardLayout.classic => _buildClassicColumn(
+        context: context,
+        theme: theme,
+        tokens: tokens,
+        colors: colors,
+        typography: typography,
+      ),
+      AppMetricStatCardLayout.stacked => _buildStackedColumn(
+        context: context,
+        theme: theme,
+        tokens: tokens,
+        colors: colors,
+        typography: typography,
+      ),
+    };
+
+    final direction = Directionality.of(context);
+    final inkWellBorderRadius = style.borderRadius != null
+        ? style.borderRadius!.resolve(direction)
+        : BorderRadius.circular(tokens.cardRadius);
+
+    Widget child = AppSectionCard(
+      color: _resolvedCardColor(colors),
+      padding: style.cardPadding,
+      borderRadius: style.borderRadius,
+      borderSide: style.borderSide,
+      decoration: style.cardDecoration,
+      child: body,
+    );
+    if (onTap != null) {
+      child = Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: inkWellBorderRadius,
+          child: child,
+        ),
+      );
+    }
+    final resolvedTooltipMessage = tooltipMessage;
+    if (resolvedTooltipMessage != null &&
+        resolvedTooltipMessage.trim().isNotEmpty) {
+      child = Tooltip(message: resolvedTooltipMessage, child: child);
+    }
+    if (onTap != null) {
+      child = Semantics(
+        button: true,
+        label: _resolvedSemanticsLabel,
+        child: child,
+      );
+    }
+    return child;
+  }
+
+  Color? _resolvedCardColor(AppColors colors) {
+    var resolvedCardColor = style.cardColor;
+    if (resolvedCardColor == null && style.cardDecoration == null) {
+      resolvedCardColor = switch (emphasis) {
+        AppMetricStatCardEmphasis.hero => colors.primaryContainer,
+        AppMetricStatCardEmphasis.accent => Color.alphaBlend(
+          colors.primaryContainer.withValues(alpha: 0.65),
+          colors.surfaceContainerLowest,
+        ),
+        AppMetricStatCardEmphasis.standard => null,
+      };
+    }
+    return resolvedCardColor;
+  }
+
+  Widget _buildClassicColumn({
+    required BuildContext context,
+    required ThemeData theme,
+    required AppThemeTokens tokens,
+    required AppColors colors,
+    required AppTypographyTokens typography,
+  }) {
     final leadingSpacing = style.leadingSpacing ?? tokens.gapSm;
     final topRowBottomSpacing = style.topRowBottomSpacing ?? tokens.gapMd;
     final labelBottomSpacing = style.labelBottomSpacing ?? tokens.gapXs;
@@ -151,19 +266,7 @@ class AppMetricStatCard extends StatelessWidget {
           color: _useOnPrimaryContainer ? colors.onPrimaryContainer : null,
         );
 
-    var resolvedCardColor = style.cardColor;
-    if (resolvedCardColor == null && style.cardDecoration == null) {
-      resolvedCardColor = switch (emphasis) {
-        AppMetricStatCardEmphasis.hero => colors.primaryContainer,
-        AppMetricStatCardEmphasis.accent => Color.alphaBlend(
-          colors.primaryContainer.withValues(alpha: 0.65),
-          colors.surfaceContainerLowest,
-        ),
-        AppMetricStatCardEmphasis.standard => null,
-      };
-    }
-
-    final usePill = style.showTrendPill ?? showTrendPill;
+    final usePill = _effectiveTrendPill(AppMetricStatCardLayout.classic);
     final trimmedTrend = trendLabel?.trim() ?? '';
     final hasTextTrend = trimmedTrend.isNotEmpty;
     final hasCustomTrend = trendWidget != null;
@@ -231,7 +334,7 @@ class AppMetricStatCard extends StatelessWidget {
                 children: <Widget>[
                   leading,
                   SizedBox(width: leadingSpacing),
-                  ?resolvedTrend,
+                  resolvedTrend ?? const SizedBox.shrink(),
                 ],
               )
             : Row(
@@ -240,7 +343,7 @@ class AppMetricStatCard extends StatelessWidget {
               ),
     };
 
-    final body = Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         topRow,
@@ -260,43 +363,172 @@ class AppMetricStatCard extends StatelessWidget {
             ),
       ],
     );
+  }
 
-    final direction = Directionality.of(context);
-    final inkWellBorderRadius = style.borderRadius != null
-        ? style.borderRadius!.resolve(direction)
-        : BorderRadius.circular(tokens.cardRadius);
+  Widget _buildStackedColumn({
+    required BuildContext context,
+    required ThemeData theme,
+    required AppThemeTokens tokens,
+    required AppColors colors,
+    required AppTypographyTokens typography,
+  }) {
+    final headerToValue = style.headerToValueSpacing ?? tokens.gapSm;
+    final valueToTrend = style.valueToTrendSpacing ?? tokens.gapSm;
 
-    Widget child = AppSectionCard(
-      color: resolvedCardColor,
-      padding: style.cardPadding,
-      borderRadius: style.borderRadius,
-      borderSide: style.borderSide,
-      decoration: style.cardDecoration,
-      child: body,
-    );
-    if (onTap != null) {
-      child = Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: inkWellBorderRadius,
-          child: child,
+    final stackedLabelStyle =
+        style.labelTextStyle ??
+        typography.utilityOverline.copyWith(
+          color: _useOnPrimaryContainer
+              ? colors.onPrimaryContainer
+              : colors.onSurfaceVariant,
+        );
+
+    final valueStyle =
+        style.valueTextStyle ??
+        typography.displayH1.copyWith(
+          fontSize: theme.textTheme.headlineSmall?.fontSize,
+          fontWeight: FontWeight.w800,
+          color: _useOnPrimaryContainer ? colors.onPrimaryContainer : null,
+        );
+
+    final usePill = _effectiveTrendPill(AppMetricStatCardLayout.stacked);
+    final trimmedTrend = trendLabel?.trim() ?? '';
+    final hasTextTrend = trimmedTrend.isNotEmpty;
+    final hasCustomTrend = trendWidget != null;
+    final showTrendRegion = hasCustomTrend || hasTextTrend;
+
+    final Widget? builtTextTrend = !hasTextTrend
+        ? null
+        : usePill
+        ? _MetricTrendPill(
+            text: trimmedTrend,
+            tokens: tokens,
+            theme: theme,
+            colors: colors,
+            textAlign: style.trendTextAlign ?? TextAlign.start,
+          )
+        : _MetricTrendRichLine(
+            text: trimmedTrend,
+            tokens: tokens,
+            theme: theme,
+            colors: colors,
+            typography: typography,
+            style: style.trendTextStyle,
+          );
+
+    final trendBlock = !showTrendRegion
+        ? null
+        : hasCustomTrend && builtTextTrend != null
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: builtTextTrend),
+              SizedBox(width: tokens.gapSm),
+              trendWidget!,
+            ],
+          )
+        : hasCustomTrend
+        ? trendWidget
+        : builtTextTrend;
+
+    final headerRow = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child:
+              labelWidget ??
+              Text(
+                label,
+                style: stackedLabelStyle,
+                textAlign: style.labelTextAlign ?? TextAlign.start,
+              ),
         ),
-      );
-    }
-    final resolvedTooltipMessage = tooltipMessage;
-    if (resolvedTooltipMessage != null &&
-        resolvedTooltipMessage.trim().isNotEmpty) {
-      child = Tooltip(message: resolvedTooltipMessage, child: child);
-    }
-    if (onTap != null) {
-      child = Semantics(
-        button: true,
-        label: _resolvedSemanticsLabel,
-        child: child,
-      );
-    }
-    return child;
+        SizedBox(width: tokens.gapSm),
+        leading,
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        headerRow,
+        SizedBox(height: headerToValue),
+        valueWidget ??
+            Text(
+              value,
+              style: valueStyle,
+              textAlign: style.valueTextAlign ?? TextAlign.start,
+            ),
+        if (trendBlock != null) ...<Widget>[
+          SizedBox(height: valueToTrend),
+          trendBlock,
+        ],
+      ],
+    );
+  }
+}
+
+class _MetricTrendRichLine extends StatelessWidget {
+  const _MetricTrendRichLine({
+    required this.text,
+    required this.tokens,
+    required this.theme,
+    required this.colors,
+    required this.typography,
+    this.style,
+  });
+
+  final String text;
+  final AppThemeTokens tokens;
+  final ThemeData theme;
+  final AppColors colors;
+  final AppTypographyTokens typography;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    final sign = parseMetricDeltaSign(text);
+    final fg = metricDeltaForeground(colors, sign);
+    final split = splitMetricTrendLabel(text);
+    final baseStyle =
+        style ??
+        typography.caption.copyWith(
+          fontWeight: FontWeight.w600,
+          height: 1.35,
+        );
+
+    final primaryStyle = baseStyle.copyWith(color: fg);
+    final suffixStyle = baseStyle.copyWith(color: colors.onSurfaceVariant);
+
+    final icon = Icon(
+      metricDeltaTrendIcon(sign),
+      size: 18,
+      color: fg,
+    );
+
+    final rich = Text.rich(
+      TextSpan(
+        style: baseStyle,
+        children: <InlineSpan>[
+          TextSpan(text: split.primary, style: primaryStyle),
+          if (split.suffix != null)
+            TextSpan(text: ' ${split.suffix}', style: suffixStyle),
+        ],
+      ),
+      textAlign: TextAlign.start,
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.only(top: tokens.gapXs * 0.25),
+          child: icon,
+        ),
+        SizedBox(width: tokens.gapXs),
+        Expanded(child: rich),
+      ],
+    );
   }
 }
 

@@ -11,6 +11,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_filters_panel.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_grid.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_header.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_inline_filters_bar.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_pagination_bar.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
@@ -279,9 +280,65 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     widget.events.onQueryChanged?.call(updated);
   }
 
+  bool _supportsInlineFilter(AppReportFilterType type) => switch (type) {
+    AppReportFilterType.text => true,
+    AppReportFilterType.search => true,
+    AppReportFilterType.singleSelect => true,
+    AppReportFilterType.date => true,
+    AppReportFilterType.dateRange => true,
+    _ => false,
+  };
+
+  Future<void> _showAdvancedFiltersSheet() async {
+    final filters = widget.filters;
+    if (filters == null || filters.isEmpty || !mounted) {
+      return;
+    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) {
+        final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.contentSpacing,
+            tokens.gapMd,
+            tokens.contentSpacing,
+            tokens.contentSpacing,
+          ),
+          child: SingleChildScrollView(
+            child: AppReportFiltersPanel(
+              filters: filters,
+              initialValues:
+                  widget.filterValues ??
+                  widget.query?.filters ??
+                  <String, Object?>{},
+              onApply: (values) {
+                widget.events.onFiltersApplied?.call(values);
+                Navigator.of(context).pop();
+                _emitQueryChanged(filters: values, page: 1);
+              },
+              onClear: () {
+                widget.events.onFilterCleared?.call();
+                Navigator.of(context).pop();
+                _emitQueryChanged(
+                  filters: const <String, Object?>{},
+                  page: 1,
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
     final style = widget.style;
     final groupableColumns = widget.columns
         .where(
@@ -297,9 +354,28 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
         (widget.contextChips?.isNotEmpty ?? false);
     final showFilters =
         style.showFiltersPanel && (widget.filters?.isNotEmpty ?? false);
+    final showInlineFilters =
+        showFilters && style.filterLayout == AppReportFilterLayout.inline;
+    final showPanelFilters =
+        showFilters && style.filterLayout == AppReportFilterLayout.panel;
     final showSummary =
         style.showSummaryBar && (widget.summaryItems?.isNotEmpty ?? false);
     final showPagination = style.showPagination && widget.pageInfo != null;
+    final showAdvancedInlineFilters =
+        showInlineFilters &&
+        (widget.filters?.any((f) => !_supportsInlineFilter(f.type)) ?? false);
+    final isMinimal = style.variant == AppReportViewerVariant.minimal;
+    final reportCardColor = isMinimal
+        ? theme.colorScheme.surface
+        : theme.colorScheme.surfaceContainerLow;
+    final reportCardBorder = BorderSide(
+      color: theme.colorScheme.outlineVariant.withValues(
+        alpha: isMinimal ? 0.28 : 0.4,
+      ),
+    );
+    final reportCardPadding = EdgeInsets.all(
+      isMinimal ? tokens.gapMd : tokens.contentSpacing,
+    );
 
     final body = ListView(
       padding: context.pageScrollPadding(tokens),
@@ -324,7 +400,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],
-        if (showFilters) ...<Widget>[
+        if (showPanelFilters) ...<Widget>[
           AppSkeleton(
             enabled: widget.isLoading,
             loadingSemanticsLabel: 'Carregando filtros...',
@@ -362,10 +438,30 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
           enabled: widget.isLoading,
           loadingSemanticsLabel: 'Carregando tabela...',
           child: AppSectionCard(
-            padding: EdgeInsets.all(tokens.contentSpacing),
+            color: reportCardColor,
+            borderSide: reportCardBorder,
+            padding: reportCardPadding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
+                if (showInlineFilters) ...<Widget>[
+                  AppReportInlineFiltersBar(
+                    filters: widget.filters!,
+                    initialValues:
+                        widget.filterValues ??
+                        widget.query?.filters ??
+                        <String, Object?>{},
+                    isLoading: widget.isLoading,
+                    debounceDuration: style.searchDebounce,
+                    showAdvancedFiltersButton: showAdvancedInlineFilters,
+                    onOpenAdvancedFilters: _showAdvancedFiltersSheet,
+                    onFiltersChanged: (values) {
+                      widget.events.onFiltersApplied?.call(values);
+                      _emitQueryChanged(filters: values, page: 1);
+                    },
+                  ),
+                  SizedBox(height: tokens.gapMd),
+                ],
                 AppReportToolbar<T>(
                   style: style,
                   events: AppReportEvents<T>(
@@ -431,6 +527,8 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
             enabled: widget.isLoading,
             loadingSemanticsLabel: 'Carregando paginação...',
             child: AppSectionCard(
+              color: reportCardColor,
+              borderSide: reportCardBorder,
               child: AppReportPaginationBar(
                 pageInfo: widget.pageInfo!,
                 onPageChanged: (page) {
@@ -443,6 +541,10 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                 },
                 availablePageSizes: style.resolvedPageSizes,
                 isLoading: widget.isLoading,
+                entityLabel: style.entityLabel,
+                itemsPerPageLabel: style.itemsPerPageLabel,
+                showingLabelPrefix: style.showingLabelPrefix,
+                showingLabelMiddle: style.showingLabelMiddle,
               ),
             ),
           ),

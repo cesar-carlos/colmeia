@@ -139,6 +139,30 @@ class AppReportSummaryItem {
 enum AppReportDensity { compact, comfortable, expanded }
 
 // ---------------------------------------------------------------------------
+// Filter layout
+// ---------------------------------------------------------------------------
+
+/// Controls how the filters panel is displayed inside `AppReportViewer`.
+///
+/// [panel] renders the collapsible `AppReportFiltersPanel` card (default).
+/// [inline] renders a compact horizontal `AppReportInlineFiltersBar` inside
+/// the same card as the grid, applying changes immediately without a submit
+/// button. Supports [AppReportFilterType.text], [AppReportFilterType.search],
+/// [AppReportFilterType.singleSelect], [AppReportFilterType.dateRange] and
+/// [AppReportFilterType.date]; other types are silently ignored.
+enum AppReportFilterLayout { panel, inline }
+
+// ---------------------------------------------------------------------------
+// Viewer variants
+// ---------------------------------------------------------------------------
+
+/// High-level visual treatment for the report viewer shell.
+enum AppReportViewerVariant { standard, minimal }
+
+/// Controls how the toolbar is rendered above the grid.
+enum AppReportToolbarMode { full, compact, hidden }
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 

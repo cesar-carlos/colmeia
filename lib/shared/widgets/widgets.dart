@@ -15,6 +15,8 @@ export 'package:colmeia/shared/widgets/backgrounds/app_hex_screen_body.dart';
 export 'package:colmeia/shared/widgets/backgrounds/honeycomb_hex_background.dart';
 export 'package:colmeia/shared/widgets/charts/app_area_trend_chart.dart';
 export 'package:colmeia/shared/widgets/charts/app_bullet_chart.dart';
+export 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
+export 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 export 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 export 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 export 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';

@@ -32,6 +32,19 @@ class AppReportViewerStyle {
     this.showPagination = true,
     this.showRowDetailOnTap = false,
     this.enablePullToRefresh = true,
+    this.variant = AppReportViewerVariant.standard,
+    this.toolbarMode = AppReportToolbarMode.full,
+    this.showToolbarLabel = true,
+    this.filterLayout = AppReportFilterLayout.panel,
+    this.entityLabel = 'registros',
+    this.itemsPerPageLabel,
+    this.showingLabelPrefix = 'Mostrando ',
+    this.showingLabelMiddle = ' de ',
+    this.searchDebounce = Duration.zero,
+    this.uppercaseHeaderLabels = false,
+    this.headerLetterSpacing,
+    this.headerBackgroundColor,
+    this.headerDividerColor,
     this.headerTextStyle,
     this.dataTextStyle,
     this.groupTextStyle,
@@ -43,6 +56,81 @@ class AppReportViewerStyle {
     this.alternateRowColor,
     this.trustServerRowOrder = false,
   });
+
+  factory AppReportViewerStyle.standard({
+    bool showSearchBar = false,
+    bool showDensityToggle = false,
+    bool showColumnChooser = false,
+    bool showGroupingChooser = false,
+    bool showExportActions = true,
+    bool showPrintAction = false,
+    bool showRefreshAction = true,
+    bool showFiltersPanel = true,
+    AppReportFilterLayout filterLayout = AppReportFilterLayout.panel,
+    String entityLabel = 'registros',
+  }) {
+    return AppReportViewerStyle(
+      showSearchBar: showSearchBar,
+      showDensityToggle: showDensityToggle,
+      showColumnChooser: showColumnChooser,
+      showGroupingChooser: showGroupingChooser,
+      showExportActions: showExportActions,
+      showPrintAction: showPrintAction,
+      showRefreshAction: showRefreshAction,
+      showFiltersPanel: showFiltersPanel,
+      filterLayout: filterLayout,
+      entityLabel: entityLabel,
+    );
+  }
+
+  factory AppReportViewerStyle.minimal({
+    bool showColumnChooser = true,
+    bool showGroupingChooser = false,
+    bool showDensityToggle = false,
+    bool showExportActions = false,
+    bool showRefreshAction = true,
+    bool showSummaryBar = false,
+    bool showPagination = true,
+    AppReportFilterLayout filterLayout = AppReportFilterLayout.inline,
+    AppReportToolbarMode toolbarMode = AppReportToolbarMode.compact,
+    String entityLabel = 'transações',
+  }) {
+    return AppReportViewerStyle(
+      variant: AppReportViewerVariant.minimal,
+      toolbarMode: toolbarMode,
+      showToolbarLabel: false,
+      showColumnChooser: showColumnChooser,
+      showGroupingChooser: showGroupingChooser,
+      showDensityToggle: showDensityToggle,
+      showExportActions: showExportActions,
+      showRefreshAction: showRefreshAction,
+      showSummaryBar: showSummaryBar,
+      showPagination: showPagination,
+      filterLayout: filterLayout,
+      entityLabel: entityLabel,
+      searchDebounce: const Duration(milliseconds: 250),
+      uppercaseHeaderLabels: true,
+      headerLetterSpacing: 0.6,
+      alternateRowColor: const Color(0xFFF8FAFC),
+    );
+  }
+
+  factory AppReportViewerStyle.analytics({
+    String entityLabel = 'registros',
+  }) {
+    return AppReportViewerStyle(
+      showSearchBar: true,
+      showDensityToggle: true,
+      showColumnChooser: true,
+      showGroupingChooser: true,
+      filterLayout: AppReportFilterLayout.inline,
+      showToolbarLabel: false,
+      entityLabel: entityLabel,
+      searchDebounce: const Duration(milliseconds: 250),
+      uppercaseHeaderLabels: true,
+      headerLetterSpacing: 0.4,
+    );
+  }
 
   /// Fixed grid height. When null the grid fills the available height or
   /// falls back to a sensible default.
@@ -88,6 +176,42 @@ class AppReportViewerStyle {
   final bool showRowDetailOnTap;
 
   final bool enablePullToRefresh;
+
+  final AppReportViewerVariant variant;
+
+  final AppReportToolbarMode toolbarMode;
+
+  /// When false, hides the "Ferramentas da tabela" overline label inside the
+  /// toolbar. Defaults to true for backward compatibility.
+  final bool showToolbarLabel;
+
+  /// Controls how the filters area is rendered.
+  /// Defaults to [AppReportFilterLayout.panel] (collapsible card).
+  /// Use [AppReportFilterLayout.inline] for a compact horizontal bar
+  /// that applies changes immediately.
+  final AppReportFilterLayout filterLayout;
+
+  /// Label used in the pagination bar to describe the items being paginated.
+  /// Defaults to 'registros'.
+  final String entityLabel;
+
+  /// Label for the page-size selector. When null, the pagination bar uses its
+  /// own default ('Linhas por pagina:').
+  final String? itemsPerPageLabel;
+
+  final String showingLabelPrefix;
+
+  final String showingLabelMiddle;
+
+  final Duration searchDebounce;
+
+  final bool uppercaseHeaderLabels;
+
+  final double? headerLetterSpacing;
+
+  final Color? headerBackgroundColor;
+
+  final Color? headerDividerColor;
 
   final TextStyle? headerTextStyle;
   final TextStyle? dataTextStyle;
@@ -163,6 +287,19 @@ class AppReportViewerStyle {
     bool? showPagination,
     bool? showRowDetailOnTap,
     bool? enablePullToRefresh,
+    AppReportViewerVariant? variant,
+    AppReportToolbarMode? toolbarMode,
+    bool? showToolbarLabel,
+    AppReportFilterLayout? filterLayout,
+    String? entityLabel,
+    String? itemsPerPageLabel,
+    String? showingLabelPrefix,
+    String? showingLabelMiddle,
+    Duration? searchDebounce,
+    bool? uppercaseHeaderLabels,
+    double? headerLetterSpacing,
+    Color? headerBackgroundColor,
+    Color? headerDividerColor,
     TextStyle? headerTextStyle,
     TextStyle? dataTextStyle,
     TextStyle? groupTextStyle,
@@ -199,6 +336,21 @@ class AppReportViewerStyle {
       showPagination: showPagination ?? this.showPagination,
       showRowDetailOnTap: showRowDetailOnTap ?? this.showRowDetailOnTap,
       enablePullToRefresh: enablePullToRefresh ?? this.enablePullToRefresh,
+      variant: variant ?? this.variant,
+      toolbarMode: toolbarMode ?? this.toolbarMode,
+      showToolbarLabel: showToolbarLabel ?? this.showToolbarLabel,
+      filterLayout: filterLayout ?? this.filterLayout,
+      entityLabel: entityLabel ?? this.entityLabel,
+      itemsPerPageLabel: itemsPerPageLabel ?? this.itemsPerPageLabel,
+      showingLabelPrefix: showingLabelPrefix ?? this.showingLabelPrefix,
+      showingLabelMiddle: showingLabelMiddle ?? this.showingLabelMiddle,
+      searchDebounce: searchDebounce ?? this.searchDebounce,
+      uppercaseHeaderLabels:
+          uppercaseHeaderLabels ?? this.uppercaseHeaderLabels,
+      headerLetterSpacing: headerLetterSpacing ?? this.headerLetterSpacing,
+      headerBackgroundColor:
+          headerBackgroundColor ?? this.headerBackgroundColor,
+      headerDividerColor: headerDividerColor ?? this.headerDividerColor,
       headerTextStyle: headerTextStyle ?? this.headerTextStyle,
       dataTextStyle: dataTextStyle ?? this.dataTextStyle,
       groupTextStyle: groupTextStyle ?? this.groupTextStyle,

@@ -1,7 +1,8 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_sparkline_chart.dart';
-import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
+import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart'
+    show AppMetricStatCard, AppMetricStatCardLayout;
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 
@@ -156,6 +157,7 @@ class AppSparklineChartDemoPage extends StatelessWidget {
           child: Column(
             children: <Widget>[
               AppMetricStatCard(
+                layout: AppMetricStatCardLayout.classic,
                 leading: const Icon(Icons.attach_money_rounded),
                 trendLabel: '+12,4%',
                 label: 'Faturamento',
@@ -172,6 +174,7 @@ class AppSparklineChartDemoPage extends StatelessWidget {
               ),
               const Divider(height: 1),
               AppMetricStatCard(
+                layout: AppMetricStatCardLayout.classic,
                 leading: const Icon(Icons.assignment_return_outlined),
                 trendLabel: '+0,8 p.p.',
                 label: 'Devolucoes',
@@ -188,6 +191,7 @@ class AppSparklineChartDemoPage extends StatelessWidget {
               ),
               const Divider(height: 1),
               AppMetricStatCard(
+                layout: AppMetricStatCardLayout.classic,
                 leading: const Icon(Icons.star_border_rounded),
                 trendLabel: '=',
                 label: 'NPS',

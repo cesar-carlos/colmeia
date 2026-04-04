@@ -3,6 +3,7 @@ import 'package:colmeia/features/settings/presentation/pages/app_area_trend_char
 import 'package:colmeia/features/settings/presentation/pages/app_badges_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_bullet_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_buttons_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_category_donut_card_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_combo_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_compact_kpi_and_executive_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_comparison_bar_chart_demo_page.dart';
@@ -48,6 +49,7 @@ const String appComparisonBarChartDemoPath = 'app-comparison-bar-chart-demo';
 const String appBadgesDemoPath = 'app-badges-demo';
 const String appTimeSeriesChartDemoPath = 'app-time-series-chart-demo';
 const String appDistributionChartDemoPath = 'app-distribution-chart-demo';
+const String appCategoryDonutCardDemoPath = 'app-category-donut-card-demo';
 const String appEditorialMediaCardDemoPath = 'app-editorial-media-card-demo';
 const String appMetricStatCardDemoPath = 'app-metric-stat-card-demo';
 const String appSectionCardHeadingDemoPath = 'app-section-card-heading-demo';
@@ -101,6 +103,9 @@ final String appTimeSeriesChartDemoLocation =
 
 final String appDistributionChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appDistributionChartDemoPath';
+
+final String appCategoryDonutCardDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appCategoryDonutCardDemoPath';
 
 final String appEditorialMediaCardDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appEditorialMediaCardDemoPath';
@@ -247,6 +252,12 @@ List<RouteBase> buildSettingsRoutes() {
               path: appDistributionChartDemoPath,
               builder: (context, state) {
                 return const AppDistributionChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appCategoryDonutCardDemoPath,
+              builder: (context, state) {
+                return const AppCategoryDonutCardDemoPage();
               },
             ),
             GoRoute(

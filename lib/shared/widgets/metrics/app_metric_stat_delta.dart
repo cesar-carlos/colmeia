@@ -8,6 +8,31 @@ enum MetricDeltaSign {
   positive,
 }
 
+/// Leading icon for KPI delta rows (stacked metric card trend line).
+IconData metricDeltaTrendIcon(MetricDeltaSign sign) {
+  return switch (sign) {
+    MetricDeltaSign.negative => Icons.trending_down_rounded,
+    MetricDeltaSign.neutral => Icons.horizontal_rule_rounded,
+    MetricDeltaSign.positive => Icons.trending_up_rounded,
+  };
+}
+
+/// Splits a trend line into a leading delta segment and an optional comparison
+/// suffix after ` vs ` (case-insensitive), for two-tone typography.
+({String primary, String? suffix}) splitMetricTrendLabel(String raw) {
+  final trimmed = raw.trim();
+  final match = RegExp(r'\s+vs\s+', caseSensitive: false).firstMatch(trimmed);
+  if (match == null) {
+    return (primary: trimmed, suffix: null);
+  }
+  final primary = trimmed.substring(0, match.start).trim();
+  final suffix = trimmed.substring(match.start).trim();
+  if (primary.isEmpty) {
+    return (primary: trimmed, suffix: null);
+  }
+  return (primary: primary, suffix: suffix);
+}
+
 /// Parses [raw] delta text for KPI trend badges.
 ///
 /// Negative values start with ASCII `-` or Unicode minus `−`. Values that

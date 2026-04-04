@@ -48,4 +48,22 @@ void main() {
       check(isZeroDeltaString('+0,1%')).isFalse();
     });
   });
+
+  group('splitMetricTrendLabel', () {
+    test('should split on vs clause case-insensitively', () {
+      final a = splitMetricTrendLabel('+12,5% vs último período');
+      check(a.primary).equals('+12,5%');
+      check(a.suffix).equals('vs último período');
+
+      final b = splitMetricTrendLabel('+2% VS last period');
+      check(b.primary).equals('+2%');
+      check(b.suffix).equals('VS last period');
+    });
+
+    test('should return full string when no vs clause', () {
+      final c = splitMetricTrendLabel('Sem mudança');
+      check(c.primary).equals('Sem mudança');
+      check(c.suffix).isNull();
+    });
+  });
 }

@@ -235,6 +235,93 @@ class AppReportGridSource<T> extends DataGridSource {
 
             final displayText = col?.formatValue(cell.value) ?? '${cell.value}';
             final alignment = _resolveAlignment(col?.effectiveAlignment);
+            final cellStyle = col?.cellStyle ?? AppReportCellStyle.plain;
+            final leading = (col != null &&
+                    col.leadingBuilder != null &&
+                    sourceRow != null)
+                ? col.leadingBuilder!(_context, sourceRow, cell.value)
+                : null;
+
+            Widget buildText(TextStyle? style, {int maxLines = 2}) {
+              final text = Text(
+                displayText,
+                style: style,
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+              );
+              if (leading == null) {
+                return text;
+              }
+
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  leading,
+                  SizedBox(width: tokens.gapSm),
+                  Expanded(child: text),
+                ],
+              );
+            }
+
+            if (cellStyle == AppReportCellStyle.link) {
+              final theme = Theme.of(_context);
+              return Container(
+                alignment: alignment,
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.gapMd,
+                  vertical: tokens.gapSm,
+                ),
+                child: buildText(
+                  (col?.textStyle ?? dataTextStyle)?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ) ??
+                      TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              );
+            }
+
+            if (cellStyle == AppReportCellStyle.badge) {
+              final theme = Theme.of(_context);
+              return Container(
+                alignment: alignment,
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.gapMd,
+                  vertical: tokens.gapSm,
+                ),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHigh,
+                    borderRadius:
+                        BorderRadius.circular(tokens.formFieldRadius / 2),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant
+                          .withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.gapSm,
+                      vertical: tokens.gapXs / 2,
+                    ),
+                    child: buildText(
+                      (col?.textStyle ?? dataTextStyle)?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ) ??
+                          const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                      maxLines: 1,
+                    ),
+                  ),
+                ),
+              );
+            }
 
             return Container(
               alignment: alignment,
@@ -242,11 +329,8 @@ class AppReportGridSource<T> extends DataGridSource {
                 horizontal: tokens.gapMd,
                 vertical: tokens.gapSm,
               ),
-              child: Text(
-                displayText,
-                style: col?.textStyle ?? dataTextStyle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              child: buildText(
+                col?.textStyle ?? dataTextStyle,
               ),
             );
           })

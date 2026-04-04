@@ -11,6 +11,10 @@ class AppReportPaginationBar extends StatelessWidget {
     this.onPageSizeChanged,
     this.availablePageSizes = const <int>[5, 10, 20, 50],
     this.isLoading = false,
+    this.entityLabel = 'registros',
+    this.itemsPerPageLabel,
+    this.showingLabelPrefix = 'Mostrando ',
+    this.showingLabelMiddle = ' de ',
   });
 
   final AppReportPageInfo pageInfo;
@@ -18,6 +22,15 @@ class AppReportPaginationBar extends StatelessWidget {
   final ValueChanged<int>? onPageSizeChanged;
   final List<int> availablePageSizes;
   final bool isLoading;
+
+  /// Label for the items count (e.g. 'registros', 'transações', 'pedidos').
+  final String entityLabel;
+
+  /// Label for the page-size selector. Falls back to the footer's default
+  /// when null.
+  final String? itemsPerPageLabel;
+  final String showingLabelPrefix;
+  final String showingLabelMiddle;
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +49,11 @@ class AppReportPaginationBar extends StatelessWidget {
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
       totalItems: pageInfo.totalRows,
-      entityLabel: 'registros',
+      entityLabel: entityLabel,
       pageSizeOptions: availablePageSizes,
-      itemsPerPageLabel: 'Linhas por pagina:',
+      itemsPerPageLabel: itemsPerPageLabel ?? 'Linhas por pagina:',
+      showingLabelPrefix: showingLabelPrefix,
+      showingLabelMiddle: showingLabelMiddle,
       style: const AppTablePaginationFooterStyle(showTopBorder: false),
       onPageSizeChanged: isLoading
           ? null

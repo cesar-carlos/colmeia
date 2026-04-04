@@ -12,6 +12,7 @@ class DashboardOverview {
     required this.operationalHighlights,
     required this.aiInsight,
     required this.categoryShares,
+    this.categoryMixTotalRevenue,
   });
 
   final List<DashboardSummaryMetric> summaryMetrics;
@@ -20,4 +21,8 @@ class DashboardOverview {
   final List<DashboardDetailHighlight> operationalHighlights;
   final DashboardAiInsight aiInsight;
   final List<DashboardCategoryShare> categoryShares;
+
+  /// Total revenue for the category mix when the API sends percent-only rows.
+  /// Used to scale estimated amounts in the donut; optional.
+  final double? categoryMixTotalRevenue;
 }

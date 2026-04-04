@@ -19,8 +19,9 @@ class AppMetricStatCardDemoPage extends StatelessWidget {
           eyebrow: 'Metricas',
           title: 'AppMetricStatCard',
           subtitle:
-              'KPI com icone, variacao em pill, enfase hero/accent, tooltip, '
-              'tap e estilos opcionais (AppMetricStatCardStyle).',
+              'Layout stacked: titulo + icone no topo, valor, tendencia embaixo'
+              ' (texto "vs ..." em cinza). Layout classic para sparklines. '
+              'Enfase hero/accent, tooltip, tap e AppMetricStatCardStyle.',
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
@@ -73,7 +74,7 @@ class AppMetricStatCardDemoPage extends StatelessWidget {
                   color: theme.colorScheme.onPrimaryContainer,
                   size: 22,
                 ),
-                trendLabel: '+12%',
+                trendLabel: '+12% vs período anterior',
                 label: 'TOTAL VENDAS',
                 value: r'R$ 142,8k',
                 emphasis: AppMetricStatCardEmphasis.hero,

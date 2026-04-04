@@ -2,6 +2,18 @@ import 'package:flutter/material.dart';
 
 enum AppReportColumnAlignment { start, center, end }
 
+/// Visual style applied to the default (non-custom) cell renderer.
+///
+/// Has no effect when [AppReportColumn.cellBuilder] is provided.
+///
+/// [plain] renders plain text (default).
+/// [link] renders the value with primary color and semi-bold weight —
+/// suitable for IDs, codes, or clickable references (pair with
+/// `AppReportEvents.onRowTap`).
+/// [badge] renders the value inside a small rounded chip, useful for
+/// short category labels or status codes that do not need a colour legend.
+enum AppReportCellStyle { plain, link, badge }
+
 /// Aggregations for the table summary row
 /// (`AppReportGridSource.buildSummaryValue`).
 ///
@@ -19,6 +31,7 @@ class AppReportColumn<T> {
     required this.label,
     required this.valueGetter,
     this.cellBuilder,
+    this.leadingBuilder,
     this.headerBuilder,
     this.formatter,
     this.alignment = AppReportColumnAlignment.start,
@@ -32,6 +45,7 @@ class AppReportColumn<T> {
     this.filterable = false,
     this.groupable = false,
     this.aggregations = const <AppReportAggregation>[],
+    this.cellStyle = AppReportCellStyle.plain,
     this.textStyle,
     this.headerTextStyle,
     this.numeric = false,
@@ -52,6 +66,13 @@ class AppReportColumn<T> {
   /// [formatter](value) or value.toString().
   final Widget Function(BuildContext context, T row, Object? value)?
   cellBuilder;
+
+  /// Optional leading widget rendered before the default text cell content.
+  ///
+  /// Ignored when [cellBuilder] is provided. Useful for thumbnails, avatars,
+  /// or small icons while still keeping the default text renderer.
+  final Widget Function(BuildContext context, T row, Object? value)?
+  leadingBuilder;
 
   /// Custom widget builder for the header label cell. When null the column
   /// renders [label] with [headerTextStyle] or the theme's labelLarge.
@@ -98,6 +119,10 @@ class AppReportColumn<T> {
 
   /// Summary functions this column should participate in (sum, avg, etc.).
   final List<AppReportAggregation> aggregations;
+
+  /// Visual style for the default cell renderer.
+  /// Ignored when [cellBuilder] is provided.
+  final AppReportCellStyle cellStyle;
 
   /// Text style applied to data cells. Falls back to the theme default.
   final TextStyle? textStyle;

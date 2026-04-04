@@ -52,6 +52,7 @@ class AppEditorialMediaCardDemoPage extends StatelessWidget {
                 'Use this pattern to introduce analytical cards with a '
                 'stronger '
                 'visual hook before the user dives into the dataset.',
+            heroHeight: 200,
             hero: const _DataDensityArtwork(),
             footer: Align(
               alignment: Alignment.centerLeft,

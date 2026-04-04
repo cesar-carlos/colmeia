@@ -25,7 +25,6 @@ import 'package:colmeia/features/user_context/presentation/widgets/allowed_store
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -96,11 +95,12 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
       ctaLabel: 'Aplicar estratégia',
     ),
     categoryShares: <DashboardCategoryShare>[
-      DashboardCategoryShare(label: 'Bebidas', percent: 42),
-      DashboardCategoryShare(label: 'Lanches', percent: 28),
-      DashboardCategoryShare(label: 'Mercearia', percent: 18),
-      DashboardCategoryShare(label: 'Outros', percent: 12),
+      DashboardCategoryShare(label: 'Bebidas', percent: 42, amount: 504_000),
+      DashboardCategoryShare(label: 'Lanches', percent: 28, amount: 336_000),
+      DashboardCategoryShare(label: 'Mercearia', percent: 18, amount: 216_000),
+      DashboardCategoryShare(label: 'Outros', percent: 12, amount: 144_000),
     ],
+    categoryMixTotalRevenue: 1_200_000,
   );
 
   late final DashboardController _controller;
@@ -364,7 +364,6 @@ List<Widget> _summaryMetricWidgets({
           deltaLabel: m.deltaLabel,
           icon: m.icon,
           emphasis: DashboardSummaryCardEmphasis.hero,
-          trendPlacement: AppMetricStatTrendPlacement.inlineStart,
         ),
       ),
     ];
@@ -416,7 +415,6 @@ List<Widget> _summaryMetricWidgets({
               value: metric.value,
               deltaLabel: metric.deltaLabel,
               icon: metric.icon,
-              trendPlacement: AppMetricStatTrendPlacement.inlineStart,
             ),
           ),
         ];
@@ -441,7 +439,6 @@ List<Widget> _summaryMetricWidgets({
             value: m.value,
             deltaLabel: m.deltaLabel,
             icon: m.icon,
-            trendPlacement: AppMetricStatTrendPlacement.inlineStart,
           ),
         ),
       );
@@ -536,6 +533,7 @@ Widget _buildOverviewSecondarySection({
   );
   final categoryCard = DashboardCategoryMixCard(
     shares: overview.categoryShares,
+    fallbackTotalRevenue: overview.categoryMixTotalRevenue,
   );
 
   if (AppBreakpoints.isMobile(context)) {

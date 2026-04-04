@@ -234,6 +234,15 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
               ),
               const Divider(height: 1),
               _DemoEntryTile(
+                icon: Icons.pie_chart_outline_rounded,
+                title: 'Card donut por categoria',
+                subtitle:
+                    'AppCategoryDonutCard: legenda ao lado, centro, selecao e '
+                    'layout responsivo (card de dashboard).',
+                onTap: () => context.push(appCategoryDonutCardDemoLocation),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
                 icon: Icons.waterfall_chart_rounded,
                 title: 'Grafico horizontal de progresso',
                 subtitle:

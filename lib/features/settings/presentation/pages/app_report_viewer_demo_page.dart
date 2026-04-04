@@ -2,7 +2,6 @@ import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
-import 'package:colmeia/shared/widgets/app_status_badge.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
@@ -24,9 +23,9 @@ enum _OrderStatus { pending, approved, shipped, delivered, cancelled }
 class _SaleRow {
   const _SaleRow({
     required this.id,
-    required this.seller,
-    required this.store,
     required this.product,
+    required this.category,
+    required this.store,
     required this.status,
     required this.orders,
     required this.revenue,
@@ -35,14 +34,16 @@ class _SaleRow {
   });
 
   final String id;
-  final String seller;
-  final String store;
   final String product;
+  final String category;
+  final String store;
   final _OrderStatus status;
   final int orders;
   final double revenue;
   final DateTime date;
   final double margin;
+
+  double get unitPrice => orders == 0 ? 0 : revenue / orders;
 }
 
 // ---------------------------------------------------------------------------
@@ -80,10 +81,16 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
     if (search != null && search.isNotEmpty) {
       final lower = search.toLowerCase();
       rows = rows.where((r) {
-        return r.seller.toLowerCase().contains(lower) ||
+        return r.id.toLowerCase().contains(lower) ||
             r.store.toLowerCase().contains(lower) ||
-            r.product.toLowerCase().contains(lower);
+            r.product.toLowerCase().contains(lower) ||
+            r.category.toLowerCase().contains(lower);
       }).toList();
+    }
+
+    final category = _query.filters['category'] as String?;
+    if (category != null && category.isNotEmpty) {
+      rows = rows.where((r) => r.category == category).toList();
     }
 
     final store = _query.filters['store'] as String?;
@@ -91,13 +98,19 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       rows = rows.where((r) => r.store == store).toList();
     }
 
-    final status = _query.filters['status'] as String?;
-    if (status != null && status.isNotEmpty) {
-      final enumVal = _OrderStatus.values.firstWhere(
-        (e) => e.name == status,
-        orElse: () => _OrderStatus.pending,
-      );
-      rows = rows.where((r) => r.status == enumVal).toList();
+    final period = _query.filters['period'] as DateTimeRange?;
+    if (period != null) {
+      rows = rows
+          .where(
+            (r) =>
+                !r.date.isBefore(period.start) && !r.date.isAfter(period.end),
+          )
+          .toList();
+    }
+
+    final premiumOnly = _query.filters['premiumOnly'] as bool? ?? false;
+    if (premiumOnly) {
+      rows = rows.where((r) => r.unitPrice >= 1000).toList();
     }
 
     if (_query.sorts.isNotEmpty) {
@@ -106,16 +119,22 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
         ..sort((a, b) {
           final int cmp;
           switch (sort.columnKey) {
-            case 'seller':
-              cmp = a.seller.compareTo(b.seller);
+            case 'date':
+              cmp = a.date.compareTo(b.date);
+            case 'id':
+              cmp = a.id.compareTo(b.id);
+            case 'product':
+              cmp = a.product.compareTo(b.product);
+            case 'category':
+              cmp = a.category.compareTo(b.category);
             case 'store':
               cmp = a.store.compareTo(b.store);
-            case 'orders':
+            case 'quantity':
               cmp = a.orders.compareTo(b.orders);
-            case 'revenue':
+            case 'unitPrice':
+              cmp = a.unitPrice.compareTo(b.unitPrice);
+            case 'total':
               cmp = a.revenue.compareTo(b.revenue);
-            case 'margin':
-              cmp = a.margin.compareTo(b.margin);
             default:
               cmp = 0;
           }
@@ -151,34 +170,35 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
 
   List<AppReportSummaryItem> get _summaries {
     final rows = _currentRows;
-    final totalRevenue = rows.fold<double>(0, (s, r) => s + r.revenue);
-    final totalOrders = rows.fold<int>(0, (s, r) => s + r.orders);
-    final avgMargin = rows.isEmpty
+    final totalRevenue = rows.fold<double>(0, (sum, row) => sum + row.revenue);
+    final totalUnits = rows.fold<int>(0, (sum, row) => sum + row.orders);
+    final avgTicket = rows.isEmpty
         ? 0.0
-        : rows.fold<double>(0, (s, r) => s + r.margin) / rows.length;
+        : rows.fold<double>(0, (sum, row) => sum + row.revenue) / rows.length;
+    final storeCount = rows.map((row) => row.store).toSet().length;
     final currencyFmt = NumberFormat.currency(locale: 'pt_BR', symbol: r'R$');
 
     return <AppReportSummaryItem>[
       AppReportSummaryItem(
-        label: 'Receita total',
+        label: 'Volume total',
         value: currencyFmt.format(totalRevenue),
         icon: Icons.payments_outlined,
       ),
       AppReportSummaryItem(
-        label: 'Total de pedidos',
-        value: NumberFormat.decimalPattern('pt_BR').format(totalOrders),
-        icon: Icons.shopping_bag_outlined,
+        label: 'Itens vendidos',
+        value: NumberFormat.decimalPattern('pt_BR').format(totalUnits),
+        icon: Icons.inventory_2_outlined,
       ),
       AppReportSummaryItem(
-        label: 'Margem média',
-        value: '${avgMargin.toStringAsFixed(1)}%',
-        icon: Icons.percent_rounded,
-        detailLabel: 'dos registros filtrados',
+        label: 'Ticket médio',
+        value: currencyFmt.format(avgTicket),
+        icon: Icons.local_offer_outlined,
+        detailLabel: 'por transação filtrada',
       ),
       AppReportSummaryItem(
-        label: 'Registros',
-        value: '${rows.length}',
-        icon: Icons.table_rows_outlined,
+        label: 'Lojas ativas',
+        value: '$storeCount',
+        icon: Icons.storefront_outlined,
       ),
     ];
   }
@@ -225,8 +245,8 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
         request: request,
         columns: _columns,
         rows: rows,
-        title: 'Vendas por vendedor',
-        subtitle: 'Demo — dados gerados automaticamente',
+        title: 'Transactions Table',
+        subtitle: 'Demo visual inspirada em catálogo e pedidos',
         summaryItems: _summaries,
         filters: _filters,
         filterValues: _query.filters,
@@ -248,100 +268,116 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
     locale: 'pt_BR',
     symbol: r'R$',
   );
-  static final DateFormat _dateFmt = DateFormat('dd/MM/yyyy', 'pt_BR');
-  static final NumberFormat _pctFmt = NumberFormat('#0.0', 'pt_BR');
+  static final DateFormat _dateFmt = DateFormat('yyyy-MM-dd', 'pt_BR');
 
   List<AppReportColumn<_SaleRow>> get _columns => <AppReportColumn<_SaleRow>>[
-    const AppReportColumn<_SaleRow>(
-      key: 'id',
-      label: 'Nº',
-      valueGetter: _getId,
-      width: 60,
+    AppReportColumn<_SaleRow>(
+      key: 'date',
+      label: 'Date',
+      valueGetter: _getDate,
+      formatter: (value) => _dateFmt.format(value! as DateTime),
+      width: 110,
       hideBelowBreakpoint: AppBreakpoints.reportColumnHideNarrow,
     ),
     const AppReportColumn<_SaleRow>(
-      key: 'seller',
-      label: 'Vendedor',
-      valueGetter: _getSeller,
-      aggregations: <AppReportAggregation>[AppReportAggregation.count],
-      groupable: true,
-    ),
-    const AppReportColumn<_SaleRow>(
-      key: 'store',
-      label: 'Loja',
-      valueGetter: _getStore,
-      groupable: true,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideExtraNarrow,
+      key: 'id',
+      label: 'ID',
+      valueGetter: _getId,
+      cellStyle: AppReportCellStyle.link,
+      formatter: _formatTransactionId,
+      width: 96,
     ),
     const AppReportColumn<_SaleRow>(
       key: 'product',
-      label: 'Produto',
+      label: 'Item',
       valueGetter: _getProduct,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideWide,
-    ),
-    AppReportColumn<_SaleRow>(
-      key: 'status',
-      label: 'Status',
-      valueGetter: _getStatus,
-      formatter: (v) => _statusLabel(v! as _OrderStatus),
-      cellBuilder: (ctx, row, _) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: _StatusChip(status: row.status),
-      ),
-      width: 120,
-      sortable: false,
-      groupable: true,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideNarrow,
+      leadingBuilder: _buildProductLeading,
+      minWidth: 260,
+      aggregations: <AppReportAggregation>[AppReportAggregation.count],
     ),
     const AppReportColumn<_SaleRow>(
-      key: 'orders',
-      label: 'Pedidos',
+      key: 'quantity',
+      label: 'Quantity',
       valueGetter: _getOrders,
       numeric: true,
       aggregations: <AppReportAggregation>[
         AppReportAggregation.sum,
-        AppReportAggregation.average,
       ],
-      width: 80,
+      width: 90,
     ),
     AppReportColumn<_SaleRow>(
-      key: 'revenue',
-      label: 'Faturamento',
+      key: 'unitPrice',
+      label: 'Unit Price',
+      valueGetter: _getUnitPrice,
+      formatter: _currencyFmt.format,
+      numeric: true,
+      width: 120,
+    ),
+    AppReportColumn<_SaleRow>(
+      key: 'total',
+      label: 'Total',
       valueGetter: _getRevenue,
       formatter: _currencyFmt.format,
       numeric: true,
       aggregations: <AppReportAggregation>[AppReportAggregation.sum],
       width: 130,
     ),
-    AppReportColumn<_SaleRow>(
-      key: 'margin',
-      label: 'Margem',
-      valueGetter: _getMargin,
-      formatter: (v) => '${_pctFmt.format(v)}%',
-      numeric: true,
-      aggregations: <AppReportAggregation>[AppReportAggregation.average],
-      width: 90,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideMedium,
-    ),
-    AppReportColumn<_SaleRow>(
-      key: 'date',
-      label: 'Data',
-      valueGetter: _getDate,
-      formatter: (v) => _dateFmt.format(v! as DateTime),
-      width: 100,
+    const AppReportColumn<_SaleRow>(
+      key: 'category',
+      label: 'Category',
+      valueGetter: _getCategory,
+      groupable: true,
       hideBelowBreakpoint: AppBreakpoints.reportColumnHideWide,
+    ),
+    const AppReportColumn<_SaleRow>(
+      key: 'store',
+      label: 'Store',
+      valueGetter: _getStore,
+      groupable: true,
+      hideBelowBreakpoint: AppBreakpoints.reportColumnHideExtraNarrow,
     ),
   ];
 
   static Object? _getId(_SaleRow r) => r.id;
-  static Object? _getSeller(_SaleRow r) => r.seller;
-  static Object? _getStore(_SaleRow r) => r.store;
   static Object? _getProduct(_SaleRow r) => r.product;
-  static Object? _getStatus(_SaleRow r) => r.status;
+  static Object? _getCategory(_SaleRow r) => r.category;
+  static Object? _getStore(_SaleRow r) => r.store;
   static Object? _getOrders(_SaleRow r) => r.orders;
+  static Object? _getUnitPrice(_SaleRow r) => r.unitPrice;
   static Object? _getRevenue(_SaleRow r) => r.revenue;
-  static Object? _getMargin(_SaleRow r) => r.margin;
   static Object? _getDate(_SaleRow r) => r.date;
+
+  static String _formatTransactionId(Object? value) => '#TRX-${value ?? ''}';
+
+  static Widget _buildProductLeading(
+    BuildContext context,
+    _SaleRow row,
+    Object? value,
+  ) {
+    final theme = Theme.of(context);
+    final seed = row.product.codeUnitAt(row.product.length - 1);
+    final colors = <Color>[
+      theme.colorScheme.primaryContainer,
+      theme.colorScheme.tertiaryContainer,
+      theme.colorScheme.secondaryContainer,
+    ];
+    final color = colors[seed % colors.length];
+
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        Icons.inventory_2_outlined,
+        size: 16,
+        color: theme.colorScheme.onPrimaryContainer,
+      ),
+    );
+  }
 
   // -------------------------------------------------------------------------
   // Filters
@@ -351,30 +387,36 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       <AppReportFilterDescriptor>[
         const AppReportFilterDescriptor(
           name: 'search',
-          label: 'Busca geral',
+          label: 'Search items',
           type: AppReportFilterType.search,
-          hint: 'Vendedor, loja ou produto',
+          hint: 'Filter by product name...',
+        ),
+        const AppReportFilterDescriptor(
+          name: 'period',
+          label: 'Date range',
+          type: AppReportFilterType.dateRange,
+        ),
+        AppReportFilterDescriptor(
+          name: 'category',
+          label: 'Category',
+          type: AppReportFilterType.singleSelect,
+          options: _categories
+              .map((value) => AppReportFilterOption(value: value, label: value))
+              .toList(),
         ),
         AppReportFilterDescriptor(
           name: 'store',
-          label: 'Loja',
+          label: 'Store',
           type: AppReportFilterType.singleSelect,
           options: _stores
               .map((s) => AppReportFilterOption(value: s, label: s))
               .toList(),
         ),
-        AppReportFilterDescriptor(
-          name: 'status',
-          label: 'Status do pedido',
-          type: AppReportFilterType.singleSelect,
-          options: _OrderStatus.values
-              .map(
-                (s) => AppReportFilterOption(
-                  value: s.name,
-                  label: _statusLabel(s),
-                ),
-              )
-              .toList(),
+        const AppReportFilterDescriptor(
+          name: 'premiumOnly',
+          label: 'Only premium items',
+          type: AppReportFilterType.toggle,
+          hint: r'Show only items with unit price above R$ 1.000',
         ),
       ];
 
@@ -397,8 +439,8 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
               eyebrow: 'Componentes compartilhados',
               title: 'Report Viewer',
               subtitle:
-                  'Tabela ERP genérica com filtros, paginação, export, '
-                  'agrupamento e seleção de colunas.',
+                  'Demo visual de uma tabela de transações com filtros inline, '
+                  'toolbar compacta e paginação estilo catálogo.',
             ),
           ),
           Padding(
@@ -418,12 +460,12 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
             child: Padding(
               padding: EdgeInsets.only(top: tokens.sectionSpacing),
               child: AppReportViewer<_SaleRow>(
-                title: 'Vendas por vendedor',
-                subtitle: 'Demonstração com dados sintéticos',
+                title: 'Transactions Table',
+                subtitle: 'Minimal preset inspired by e-commerce reporting',
                 contextChips: <String>[
-                  'Loja: Todas',
-                  'Período: 2025',
-                  '${_currentRows.length} registros',
+                  'Store: All Stores',
+                  'Period: Oct 2023',
+                  '${_currentRows.length} transactions',
                   _describeGroups(_query.groups),
                 ],
                 columns: _columns,
@@ -476,23 +518,25 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
                   onRowTap: (row, _) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Selecionado: ${row.seller}'),
+                        content: Text('Selecionado: ${row.product}'),
                         duration: const Duration(seconds: 1),
                       ),
                     );
                   },
                 ),
-                style: const AppReportViewerStyle(
-                  showColumnChooser: true,
-                  showGroupingChooser: true,
-                  showDensityToggle: true,
-                  showSearchBar: true,
-                  showRowDetailOnTap: true,
-                  allowMultiSelection: true,
-                  filtersStartExpanded: false,
-                ),
+                style:
+                    AppReportViewerStyle.minimal(
+                      showExportActions: true,
+                      entityLabel: 'pedidos',
+                    ).copyWith(
+                      allowMultiSelection: true,
+                      showRowDetailOnTap: true,
+                      itemsPerPageLabel: 'Rows:',
+                      showingLabelPrefix: 'Showing ',
+                      showingLabelMiddle: ' of ',
+                    ),
                 isLoading: _isLoading,
-                emptyMessage: 'Nenhum resultado para os filtros aplicados.',
+                emptyMessage: 'No transactions match the selected filters.',
               ),
             ),
           ),
@@ -505,14 +549,12 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
   // Fake data generation
   // -------------------------------------------------------------------------
 
-  static const List<String> _sellers = <String>[
-    'Ana Costa',
-    'Bruno Lima',
-    'Carla Souza',
-    'Diego Alves',
-    'Eduarda Nunes',
-    'Fábio Torres',
-    'Gabriela Rocha',
+  static const List<String> _categories = <String>[
+    'Laptops',
+    'Audio',
+    'Wearables',
+    'Accessories',
+    'Phones',
   ];
 
   static const List<String> _stores = <String>[
@@ -523,29 +565,44 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
   ];
 
   static const List<String> _products = <String>[
-    'Produto A',
-    'Produto B',
-    'Produto C',
-    'Produto D',
-    'Produto E',
-    'Produto F',
+    'MacBook Pro M2 14"',
+    'Wireless Noise Cancelling Headphones',
+    'Series 9 Smartwatch - Stainless',
+    'Thunderbolt 4 Pro Cable (2m)',
+    'Phone 15 Pro Max 256GB',
+    'Mechanical Keyboard RGB',
+    'Portable SSD 2TB',
+    'Studio Display 27"',
   ];
 
   static List<_SaleRow> _generateFakeRows() {
     final rows = <_SaleRow>[];
-    final baseDate = DateTime(2025);
+    final baseDate = DateTime(2023, 10, 22);
+    final unitPrices = <double>[
+      1999,
+      299,
+      749,
+      129,
+      1199,
+      189,
+      249,
+      1599,
+    ];
 
     for (var i = 0; i < _totalRows; i++) {
+      final productIndex = i % _products.length;
+      final quantity = (i % 12) + 1;
+      final unitPrice = unitPrices[productIndex];
       rows.add(
         _SaleRow(
-          id: '${1000 + i}',
-          seller: _sellers[i % _sellers.length],
+          id: '${9480 + i}',
           store: _stores[i % _stores.length],
-          product: _products[i % _products.length],
+          category: _categories[productIndex % _categories.length],
+          product: _products[productIndex],
           status: _OrderStatus.values[i % _OrderStatus.values.length],
-          orders: 10 + (i * 3) % 90,
-          revenue: 1500.0 + (i * 237.43) % 48000,
-          date: baseDate.add(Duration(days: i * 3)),
+          orders: quantity,
+          revenue: unitPrice * quantity,
+          date: baseDate.add(Duration(days: i ~/ 3)),
           margin: 5.0 + (i * 1.7) % 35,
         ),
       );
@@ -554,49 +611,39 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
     return rows;
   }
 
-  static String _statusLabel(_OrderStatus status) {
-    return switch (status) {
-      _OrderStatus.pending => 'Pendente',
-      _OrderStatus.approved => 'Aprovado',
-      _OrderStatus.shipped => 'Enviado',
-      _OrderStatus.delivered => 'Entregue',
-      _OrderStatus.cancelled => 'Cancelado',
-    };
-  }
-
   static String _describeGroups(List<AppReportGroupDescriptor> groups) {
     if (groups.isEmpty) {
-      return 'Agrupamento: Nenhum';
+      return 'Grouping: none';
     }
 
     final labels = groups
         .map((group) => _groupLabel(group.columnKey))
         .join(' / ');
-    return 'Agrupamento: $labels';
+    return 'Grouping: $labels';
   }
 
   static String _groupChangeMessage(List<AppReportGroupDescriptor> groups) {
     if (groups.isEmpty) {
-      return 'Agrupamento removido';
+      return 'Grouping cleared';
     }
 
     final labels = groups
         .map((group) => _groupLabel(group.columnKey))
         .join(', ');
-    return 'Agrupado por $labels';
+    return 'Grouped by $labels';
   }
 
   static String _groupToggleMessage(AppReportGroupToggleEvent event) {
-    final action = event.isExpanded ? 'expandido' : 'recolhido';
+    final action = event.isExpanded ? 'expanded' : 'collapsed';
     final label = _groupLabel(event.columnKey);
     return '$label: ${event.groupKey} $action';
   }
 
   static String _groupLabel(String key) {
     return switch (key) {
-      'seller' => 'Vendedor',
-      'store' => 'Loja',
-      'status' => 'Status',
+      'category' => 'Category',
+      'store' => 'Store',
+      'date' => 'Date',
       _ => key,
     };
   }
@@ -627,8 +674,8 @@ class _ReportViewerShowcaseCard extends StatelessWidget {
       ),
       titleWidget: _ReportViewerShowcaseHeading(theme: theme, tokens: tokens),
       subtitle:
-          'Viewer completo para cenários tabulares com filtros, resumo, '
-          'agrupamento e exportação em uma única superfície.',
+          'Showcase focused on the minimal transaction-table presentation '
+          'with inline filters and compact actions.',
       headingTrailing: const _ReportViewerShowcaseBadge(),
       headingBottom: const _ReportViewerShowcaseLegend(),
       style: AppSectionCardWithHeadingStyle(
@@ -643,10 +690,10 @@ class _ReportViewerShowcaseCard extends StatelessWidget {
         spacing: tokens.gapSm,
         runSpacing: tokens.gapSm,
         children: <Widget>[
-          AppTagChip(label: '$totalRows registros'),
-          if (selectedRows > 0) AppTagChip(label: '$selectedRows selecionados'),
+          AppTagChip(label: '$totalRows rows'),
+          if (selectedRows > 0) AppTagChip(label: '$selectedRows selected'),
           AppTagChip(label: groupingDescription),
-          const AppTagChip(label: 'Filtros + toolbar + grid'),
+          const AppTagChip(label: 'Inline filters + minimal grid'),
         ],
       ),
     );
@@ -683,7 +730,7 @@ class _ReportViewerShowcaseHeading extends StatelessWidget {
         SizedBox(width: tokens.gapMd),
         Expanded(
           child: Text(
-            'Superfície tabular compartilhada',
+            'Minimal transaction surface',
             style: theme.appTypography.sectionHeaderH2.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -716,7 +763,7 @@ class _ReportViewerShowcaseBadge extends StatelessWidget {
           vertical: tokens.gapXs,
         ),
         child: Text(
-          'ERP',
+          'MINIMAL',
           style: theme.appTypography.utilityOverline.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.4,
@@ -738,9 +785,9 @@ class _ReportViewerShowcaseLegend extends StatelessWidget {
       spacing: tokens.gapSm,
       runSpacing: tokens.gapSm,
       children: const <Widget>[
-        _ReportViewerLegendChip(label: 'Toolbar contextual'),
-        _ReportViewerLegendChip(label: 'Filtros colapsáveis'),
-        _ReportViewerLegendChip(label: 'Grid com agrupamento'),
+        _ReportViewerLegendChip(label: 'Compact toolbar'),
+        _ReportViewerLegendChip(label: 'Advanced filters sheet'),
+        _ReportViewerLegendChip(label: 'Catalog-style pagination'),
       ],
     );
   }
@@ -774,32 +821,6 @@ class _ReportViewerLegendChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Status chip
-// ---------------------------------------------------------------------------
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
-
-  final _OrderStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, variant) = switch (status) {
-      _OrderStatus.pending => ('Pendente', AppStatusBadgeVariant.warning),
-      _OrderStatus.approved => ('Aprovado', AppStatusBadgeVariant.info),
-      _OrderStatus.shipped => ('Enviado', AppStatusBadgeVariant.info),
-      _OrderStatus.delivered => ('Entregue', AppStatusBadgeVariant.success),
-      _OrderStatus.cancelled => ('Cancelado', AppStatusBadgeVariant.error),
-    };
-
-    return AppStatusBadge(
-      label: label,
-      variant: variant,
     );
   }
 }

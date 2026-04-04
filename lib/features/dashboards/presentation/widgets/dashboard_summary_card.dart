@@ -1,6 +1,9 @@
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_summary_metric.dart';
 import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_summary_metric_icon_material.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
+import 'package:colmeia/shared/widgets/metrics/app_metric_stat_icon_badge.dart';
 import 'package:flutter/material.dart';
 
 enum DashboardSummaryCardEmphasis {
@@ -18,7 +21,6 @@ class DashboardSummaryCard extends StatelessWidget {
     this.icon,
     this.leading,
     this.emphasis = DashboardSummaryCardEmphasis.standard,
-    this.trendPlacement = AppMetricStatTrendPlacement.end,
   }) : assert(
          leading != null || icon != null,
          'DashboardSummaryCard requires icon or leading.',
@@ -30,23 +32,29 @@ class DashboardSummaryCard extends StatelessWidget {
   final DashboardSummaryMetricIcon? icon;
   final Widget? leading;
   final DashboardSummaryCardEmphasis emphasis;
-  final AppMetricStatTrendPlacement trendPlacement;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final iconColor = switch (emphasis) {
-      DashboardSummaryCardEmphasis.hero => cs.onPrimaryContainer,
-      DashboardSummaryCardEmphasis.accent => cs.onPrimaryContainer,
-      DashboardSummaryCardEmphasis.standard => cs.primary,
-    };
-    final resolvedLeading =
-        leading ??
-        Icon(
+    final theme = Theme.of(context);
+    final colors = theme.appColors;
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final cs = theme.colorScheme;
+
+    final Widget resolvedLeading;
+    if (leading != null) {
+      resolvedLeading = leading!;
+    } else {
+      final (Color bg, Color fg) = icon!.kpiBadgeColors(colors);
+      resolvedLeading = AppMetricStatIconBadge(
+        backgroundColor: bg,
+        child: Icon(
           icon!.materialIconData,
           size: 22,
-          color: iconColor,
-        );
+          color: fg,
+        ),
+      );
+    }
+
     return AppMetricStatCard(
       leading: resolvedLeading,
       trendLabel: deltaLabel,
@@ -58,7 +66,11 @@ class DashboardSummaryCard extends StatelessWidget {
         DashboardSummaryCardEmphasis.standard =>
           AppMetricStatCardEmphasis.standard,
       },
-      trendPlacement: trendPlacement,
+      style: AppMetricStatCardStyle(
+        borderSide: emphasis == DashboardSummaryCardEmphasis.standard
+            ? tokens.cardOutlineBorderSide(cs)
+            : null,
+      ),
     );
   }
 }

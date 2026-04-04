@@ -17,10 +17,10 @@ const DashboardAiInsight _kDashboardDefaultAiInsight = DashboardAiInsight(
 
 const List<DashboardCategoryShare> _kDashboardDefaultCategoryShares =
     <DashboardCategoryShare>[
-      DashboardCategoryShare(label: 'Bebidas', percent: 42),
-      DashboardCategoryShare(label: 'Lanches', percent: 28),
-      DashboardCategoryShare(label: 'Mercearia', percent: 18),
-      DashboardCategoryShare(label: 'Outros', percent: 12),
+      DashboardCategoryShare(label: 'Bebidas', percent: 42, amount: 504_000),
+      DashboardCategoryShare(label: 'Lanches', percent: 28, amount: 336_000),
+      DashboardCategoryShare(label: 'Mercearia', percent: 18, amount: 216_000),
+      DashboardCategoryShare(label: 'Outros', percent: 12, amount: 144_000),
     ];
 
 class DashboardOverviewModel {
@@ -31,6 +31,7 @@ class DashboardOverviewModel {
     required this.operationalHighlights,
     required this.aiInsight,
     required this.categoryShares,
+    this.categoryMixTotalRevenue,
   });
 
   factory DashboardOverviewModel.fromJson(Map<String, dynamic> json) {
@@ -42,6 +43,7 @@ class DashboardOverviewModel {
         json['operationalHighlights'] as List<dynamic>? ?? <dynamic>[];
     final aiJson = json['aiInsight'] as Map<String, dynamic>?;
     final categoryJson = json['categoryShares'] as List<dynamic>?;
+    final mixTotalRaw = json['categoryMixTotalRevenue'];
 
     return DashboardOverviewModel(
       summaryMetrics: summaryMetricsJson
@@ -114,12 +116,19 @@ class DashboardOverviewModel {
           : categoryJson
                 .map((item) {
                   final row = item as Map<String, dynamic>;
+                  final amountRaw = row['amount'];
                   return DashboardCategoryShare(
                     label: row['label'] as String,
                     percent: (row['percent'] as num).toDouble(),
+                    amount: amountRaw == null
+                        ? null
+                        : (amountRaw as num).toDouble(),
                   );
                 })
                 .toList(growable: false),
+      categoryMixTotalRevenue: mixTotalRaw == null
+          ? null
+          : (mixTotalRaw as num).toDouble(),
     );
   }
 
@@ -135,6 +144,7 @@ class DashboardOverviewModel {
   final List<DashboardDetailHighlight> operationalHighlights;
   final DashboardAiInsight aiInsight;
   final List<DashboardCategoryShare> categoryShares;
+  final double? categoryMixTotalRevenue;
 
   DashboardOverview toEntity() {
     return DashboardOverview(
@@ -144,6 +154,7 @@ class DashboardOverviewModel {
       operationalHighlights: operationalHighlights,
       aiInsight: aiInsight,
       categoryShares: categoryShares,
+      categoryMixTotalRevenue: categoryMixTotalRevenue,
     );
   }
 
@@ -189,11 +200,14 @@ class DashboardOverviewModel {
         'body': aiInsight.body,
         'ctaLabel': aiInsight.ctaLabel,
       },
+      if (categoryMixTotalRevenue != null)
+        'categoryMixTotalRevenue': categoryMixTotalRevenue,
       'categoryShares': categoryShares
           .map((row) {
             return <String, Object?>{
               'label': row.label,
               'percent': row.percent,
+              if (row.amount != null) 'amount': row.amount,
             };
           })
           .toList(growable: false),

@@ -316,10 +316,18 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     final typography = theme.appTypography;
     final density = widget.style.density;
     final headerHeight = widget.style.resolvedHeaderRowHeight(density);
+    final headerBackgroundColor =
+        widget.style.headerBackgroundColor ??
+        (widget.style.variant == AppReportViewerVariant.minimal
+            ? theme.colorScheme.surface
+            : theme.colorScheme.surfaceContainerHigh);
+    final headerDividerColor =
+        widget.style.headerDividerColor ??
+        theme.colorScheme.outlineVariant.withValues(alpha: 0.48);
     final defaultHeaderTextStyle =
         widget.style.headerTextStyle ??
         typography.utilityOverline.copyWith(
-          letterSpacing: 0.2,
+          letterSpacing: widget.style.headerLetterSpacing ?? 0.2,
           fontWeight: FontWeight.w700,
         );
 
@@ -329,12 +337,10 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
               ? col.headerBuilder!(context, col.label)
               : DecoratedBox(
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHigh,
+                    color: headerBackgroundColor,
                     border: Border(
                       bottom: BorderSide(
-                        color: theme.colorScheme.outlineVariant.withValues(
-                          alpha: 0.48,
-                        ),
+                        color: headerDividerColor,
                       ),
                     ),
                   ),
@@ -343,8 +349,15 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
                     padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
                     height: headerHeight,
                     child: Text(
-                      col.label,
-                      style: col.headerTextStyle ?? defaultHeaderTextStyle,
+                      widget.style.uppercaseHeaderLabels
+                          ? col.label.toUpperCase()
+                          : col.label,
+                      style: (col.headerTextStyle ?? defaultHeaderTextStyle)
+                          .copyWith(
+                            letterSpacing:
+                                widget.style.headerLetterSpacing ??
+                                defaultHeaderTextStyle.letterSpacing,
+                          ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -476,6 +489,8 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     final tokens = theme.extension<AppThemeTokens>()!;
     final density = widget.style.density;
     final visible = _visibleColumns;
+    final borderAlpha =
+        widget.style.variant == AppReportViewerVariant.minimal ? 0.28 : 0.48;
 
     if (widget.rows.isEmpty) {
       if (widget.isLoading) {
@@ -486,6 +501,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
             widget.emptyMessage ??
             widget.style.emptyMessage ??
             'Nenhum resultado encontrado.',
+        style: widget.style,
       );
     }
 
@@ -530,7 +546,9 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(tokens.cardRadius),
           border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.48),
+            color: theme.colorScheme.outlineVariant.withValues(
+              alpha: borderAlpha,
+            ),
           ),
         ),
         child: widget.style.gridHeight != null
@@ -608,7 +626,11 @@ class _LoadingGridPlaceholder extends StatelessWidget {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(tokens.cardRadius),
           border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.48),
+            color: theme.colorScheme.outlineVariant.withValues(
+              alpha: style.variant == AppReportViewerVariant.minimal
+                  ? 0.28
+                  : 0.48,
+            ),
           ),
         ),
         child: Padding(
@@ -704,9 +726,13 @@ class _LoadingGridPlaceholder extends StatelessWidget {
 }
 
 class _EmptyGridPlaceholder extends StatelessWidget {
-  const _EmptyGridPlaceholder({required this.message});
+  const _EmptyGridPlaceholder({
+    required this.message,
+    required this.style,
+  });
 
   final String message;
+  final AppReportViewerStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -721,7 +747,11 @@ class _EmptyGridPlaceholder extends StatelessWidget {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(tokens.cardRadius),
           border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.48),
+            color: theme.colorScheme.outlineVariant.withValues(
+              alpha: style.variant == AppReportViewerVariant.minimal
+                  ? 0.28
+                  : 0.48,
+            ),
           ),
         ),
         child: Padding(

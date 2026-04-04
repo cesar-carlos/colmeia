@@ -202,28 +202,78 @@ class FakeDashboardRemoteDataSource implements DashboardRemoteDataSource {
         ctaLabel: 'Aplicar estratégia',
       ),
       categoryShares: _categorySharesForStore(storeId.value),
+      categoryMixTotalRevenue: 1_200_000,
     );
   }
 
+  /// Amounts sum to 1.2M and align with percent shares for demo/API parity.
   List<DashboardCategoryShare> _categorySharesForStore(String storeId) {
     return switch (storeId) {
       '08' => const <DashboardCategoryShare>[
-        DashboardCategoryShare(label: 'Bebidas', percent: 44),
-        DashboardCategoryShare(label: 'Lanches', percent: 26),
-        DashboardCategoryShare(label: 'Mercearia', percent: 18),
-        DashboardCategoryShare(label: 'Outros', percent: 12),
+        DashboardCategoryShare(
+          label: 'Bebidas',
+          percent: 44,
+          amount: 528_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Lanches',
+          percent: 26,
+          amount: 312_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Mercearia',
+          percent: 18,
+          amount: 216_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Outros',
+          percent: 12,
+          amount: 144_000,
+        ),
       ],
       '14' => const <DashboardCategoryShare>[
-        DashboardCategoryShare(label: 'Bebidas', percent: 38),
-        DashboardCategoryShare(label: 'Lanches', percent: 31),
-        DashboardCategoryShare(label: 'Mercearia', percent: 19),
-        DashboardCategoryShare(label: 'Outros', percent: 12),
+        DashboardCategoryShare(
+          label: 'Bebidas',
+          percent: 38,
+          amount: 456_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Lanches',
+          percent: 31,
+          amount: 372_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Mercearia',
+          percent: 19,
+          amount: 228_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Outros',
+          percent: 12,
+          amount: 144_000,
+        ),
       ],
       _ => const <DashboardCategoryShare>[
-        DashboardCategoryShare(label: 'Bebidas', percent: 42),
-        DashboardCategoryShare(label: 'Lanches', percent: 28),
-        DashboardCategoryShare(label: 'Mercearia', percent: 18),
-        DashboardCategoryShare(label: 'Outros', percent: 12),
+        DashboardCategoryShare(
+          label: 'Bebidas',
+          percent: 42,
+          amount: 504_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Lanches',
+          percent: 28,
+          amount: 336_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Mercearia',
+          percent: 18,
+          amount: 216_000,
+        ),
+        DashboardCategoryShare(
+          label: 'Outros',
+          percent: 12,
+          amount: 144_000,
+        ),
       ],
     };
   }
