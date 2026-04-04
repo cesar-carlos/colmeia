@@ -224,9 +224,11 @@ class _SunburstCenterLabel extends StatelessWidget {
     return SizedBox(
       width: diameter,
       height: diameter,
-      child: Center(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
               valueLabel,
