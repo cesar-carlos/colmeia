@@ -11,6 +11,7 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/auth/presentation/widgets/auth_form_text_field.dart';
 import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_field.dart';
 import 'package:colmeia/features/settings/presentation/controllers/client_account_settings_controller.dart';
+import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -31,6 +32,7 @@ import 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_status_pill.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -636,6 +638,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     themePreferenceLabel: _themePreferenceLabel(themeMode),
                     onPushNotificationsChanged: _persistPushNotifications,
                     onAppearanceTap: _showThemeModePicker,
+                    onComponentsTap: () => context.push(
+                      sharedComponentsDemoIndexLocation,
+                    ),
                   ),
                 ),
               ],
@@ -992,12 +997,14 @@ class _SettingsPreferencesTab extends StatelessWidget {
     required this.themePreferenceLabel,
     required this.onPushNotificationsChanged,
     required this.onAppearanceTap,
+    required this.onComponentsTap,
   });
 
   final bool pushNotificationsEnabled;
   final String themePreferenceLabel;
   final ValueChanged<bool> onPushNotificationsChanged;
   final VoidCallback onAppearanceTap;
+  final VoidCallback onComponentsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1076,6 +1083,29 @@ class _SettingsPreferencesTab extends StatelessWidget {
             color: cs.onSurfaceVariant,
           ),
           onTap: onAppearanceTap,
+        ),
+        SizedBox(height: tokens.gapMd),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.widgets_outlined, color: cs.primary),
+          title: Text(
+            'Componentes do app',
+            style: typography.sectionHeaderH2.copyWith(
+              fontSize: theme.textTheme.titleSmall?.fontSize,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Text(
+            'Abrir catalogo com os componentes e demos disponiveis para uso.',
+            style: typography.caption.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: cs.onSurfaceVariant,
+          ),
+          onTap: onComponentsTap,
         ),
       ],
     );

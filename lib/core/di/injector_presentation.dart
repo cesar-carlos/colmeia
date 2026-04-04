@@ -1,6 +1,5 @@
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
-import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_catalog_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
@@ -33,7 +32,6 @@ void registerInjectorPresentation(GetIt getIt) {
     ..registerFactory<ClientAgentsController>(
       () => ClientAgentsController(
         authController: getIt<AuthController>(),
-        loadCatalogUseCase: getIt<LoadClientAgentCatalogUseCase>(),
         loadApprovedAgentsUseCase: getIt<LoadClientApprovedAgentsUseCase>(),
         loadAccessRequestsUseCase: getIt<LoadClientAccessRequestsUseCase>(),
         queueRequestAccessUseCase:

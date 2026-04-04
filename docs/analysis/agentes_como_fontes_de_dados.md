@@ -36,10 +36,10 @@ O app ja possui uma feature dedicada para manutencao dos agentes do cliente em `
 
 Essa feature ja cobre:
 
-- listagem de agentes disponiveis no catalogo
 - listagem de agentes aprovados para a conta do cliente
-- consulta de detalhe de um agente especifico
+- consulta de detalhe de um agente aprovado
 - historico de solicitacoes de acesso
+- solicitacao manual de acesso por `agentId`
 - fila local de acoes pendentes para solicitar ou remover acesso
 - sincronizacao posterior dessas pendencias com a API
 - leitura de status operacional via endpoint de agentes online
@@ -52,14 +52,15 @@ Hoje o ciclo de manutencao funciona assim:
 
 1. o cliente abre a tela de agentes
 2. o app carrega tres conjuntos principais:
-   - catalogo de agentes
    - agentes ja aprovados para a conta
    - solicitacoes de acesso
-3. o cliente pode solicitar acesso a um agente do catalogo
+   - pendencias locais de sincronizacao
+3. o cliente informa um ou mais `agentIds` manualmente para solicitar acesso
 4. o cliente pode remover acesso de um agente ja aprovado
 5. essas alteracoes entram primeiro em uma fila local
-6. a sincronizacao envia as mudancas para a API
-7. apos sincronizar, o app atualiza snapshots locais de agentes aprovados, solicitacoes e status online
+6. o app tenta sincronizar automaticamente quando ha pendencias elegiveis
+7. o usuario tambem pode disparar sincronizacao manual
+8. apos sincronizar, o app atualiza snapshots locais de agentes aprovados, solicitacoes e status online
 
 Esse desenho prepara o produto para redes instaveis e reduz perda de intencao do usuario.
 
@@ -67,20 +68,27 @@ Esse desenho prepara o produto para redes instaveis e reduz perda de intencao do
 
 As rotas relevantes ja foram centralizadas em `lib/core/network/api_routes.dart`.
 
-### Catalogo e manutencao
+### Manutencao do cliente
 
-- `GET /agents/catalog`
 - `GET /client/me/agents`
 - `GET /client/me/agents/{agentId}`
 - `POST /client/me/agents`
 - `DELETE /client/me/agents`
 - `GET /client/me/agent-access-requests`
 
+### Descoberta e catalogo
+
+- `GET /agents/catalog`
+
 ### Status operacional
 
 - `GET /agents`
 
 ### Observacao importante
+
+O fluxo atual exposto no app do cliente **nao depende mais de um catalogo navegavel na UI**. A solicitacao de acesso foi alinhada ao contrato real da API e hoje acontece por entrada manual de `agentId`.
+
+O endpoint `GET /agents/catalog` continua mapeado no modulo e pode ser reaproveitado em evolucoes futuras, mas ele **nao faz parte do fluxo principal atual da UX do cliente** enquanto nao houver contrato de descoberta claramente fechado para esse perfil.
 
 O endpoint `GET /agents` esta sendo usado como fonte de status operacional para identificar agentes conectados, o que hoje alimenta os estados:
 
@@ -133,12 +141,13 @@ Um ponto importante da feature e que ela nao trata manutencao de agentes como te
 
 ### O que fica salvo
 
-- catalogo paginado
 - agentes aprovados paginados
 - historico de solicitacoes paginado
-- detalhe de agente por `agentId`
+- detalhe de agente aprovado por `agentId`
 - status online dos agentes
 - fila de acoes pendentes
+
+O modulo ainda possui estrutura tecnica para cache de catalogo paginado, mas esse dado nao compoe a UX principal atual do cliente.
 
 ### Como o cache foi modelado
 
@@ -188,17 +197,17 @@ Isso e importante porque a lista de agentes do cliente passa a ser uma fronteira
 A UI atual de `ClientAgentsPage` organiza a manutencao em tres abas:
 
 - `Meus agentes`
-- `Catalogo`
+- `Solicitar acesso`
 - `Solicitacoes`
 
 O usuario consegue:
 
 - visualizar agentes aprovados
-- ver endereco ou dados basicos do catalogo
 - abrir detalhe de um agente
-- solicitar acesso
+- solicitar acesso informando um ou mais `agentIds`
 - remover acesso
 - acompanhar pendencias locais
+- ver feedback de itens enfileirados localmente e de sincronizacao automatica
 - disparar sincronizacao manual
 
 O detalhe do agente mostra informacoes como:

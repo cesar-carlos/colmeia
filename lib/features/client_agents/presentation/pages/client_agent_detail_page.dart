@@ -53,7 +53,8 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
                 eyebrow: 'Detalhe',
                 title: 'Agente',
                 subtitle:
-                    'Informacoes detalhadas da fonte de dados selecionada.',
+                    'Informacoes detalhadas do agente aprovado para esta '
+                    'conta.',
               ),
               SizedBox(height: tokens.sectionSpacing),
               if (controller.isLoading)

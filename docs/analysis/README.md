@@ -29,7 +29,7 @@ Este diretorio concentra os levantamentos de negocio, arquitetura e evolucao do 
 - dashboard principal com integracao real inicial
 - cache local leve com `Hive`
 - manutencao de agentes do cliente
-- catalogo, agentes aprovados, detalhe, solicitacoes e fila local de pendencias
+- agentes aprovados, detalhe, solicitacoes, solicitacao manual por `agentId` e fila local de pendencias
 
 ### Parcialmente implementado
 

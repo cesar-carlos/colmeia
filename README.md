@@ -10,7 +10,7 @@ O Colmeia usa uma API central como fluxo principal de integracao e foi desenhado
 - permissoes por usuario e por escopo
 - dashboards com integracao real inicial
 - cache local leve e controlado
-- manutencao de agentes do cliente
+- manutencao de agentes do cliente por lista aprovada, solicitacoes e fila local
 - preparacao para relatorios e consultas multi-agente
 
 ## Estado atual
@@ -21,7 +21,11 @@ O Colmeia usa uma API central como fluxo principal de integracao e foi desenhado
 - contexto de usuario e escopo por loja
 - dashboard principal
 - cache local com `Hive`
-- manutencao de agentes do cliente
+- manutencao de agentes do cliente com:
+- agentes aprovados
+- solicitacao manual por `agentId`
+- historico de solicitacoes
+- fila local de pendencias e sincronizacao
 
 ### Em evolucao
 
@@ -82,7 +86,7 @@ O objetivo atual do Colmeia e consolidar uma base mobile para leitura analitica 
 - backend como fonte final de autorizacao
 - REST como integracao principal
 - cache leve no MVP
-- agentes como futuras fontes de dados autorizadas
+- agentes aprovados como futuras fontes de dados autorizadas
 
 ## Observacao
 
