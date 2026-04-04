@@ -336,13 +336,13 @@ Pelo estado atual do codigo, ainda faltam etapas para a visao completa de agente
 
 ## Matriz de riscos e mitigacao
 
-| Risco | Impacto | Mitigacao sugerida |
-| --- | --- | --- |
-| Confundir manutencao de agentes com camada de consulta ja pronta | expectativa incorreta de escopo | marcar explicitamente `implementado` vs `planejado` |
-| Consultar agente nao aprovado | quebra de regra funcional | resolver elegibilidade sempre a partir da lista aprovada da conta |
-| Status online stale | decisao ruim de origem | manter TTL curto e permitir refresh |
-| Excesso de logica de consulta na UI | acoplamento e baixa testabilidade | criar feature propria de consulta por agentes |
-| Falhas parciais na sincronizacao de manutencao | pendencias invisiveis ao usuario | manter fila local com estados e erro por item |
+| Risco                                                            | Impacto                           | Mitigacao sugerida                                                |
+| ---------------------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------- |
+| Confundir manutencao de agentes com camada de consulta ja pronta | expectativa incorreta de escopo   | marcar explicitamente `implementado` vs `planejado`               |
+| Consultar agente nao aprovado                                    | quebra de regra funcional         | resolver elegibilidade sempre a partir da lista aprovada da conta |
+| Status online stale                                              | decisao ruim de origem            | manter TTL curto e permitir refresh                               |
+| Excesso de logica de consulta na UI                              | acoplamento e baixa testabilidade | criar feature propria de consulta por agentes                     |
+| Falhas parciais na sincronizacao de manutencao                   | pendencias invisiveis ao usuario  | manter fila local com estados e erro por item                     |
 
 ## Roadmap tecnico ligado a agentes
 

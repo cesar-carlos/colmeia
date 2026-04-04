@@ -250,12 +250,12 @@ Entram apenas as abstracoes novas da feature de consulta, sem quebrar a base atu
 
 ## Matriz de mitigacao
 
-| Risco | Mitigacao |
-| --- | --- |
-| Acoplamento da consulta a widgets | manter contratos intermediarios e normalizados |
-| `RACE` mal aplicado | habilitar apenas em consultas elegiveis para primeiro sucesso |
-| Falta de endpoint claro | fechar contrato da API antes da Fase 2 |
-| Excesso de escopo no piloto | limitar cada fase a um entregavel validavel |
+| Risco                             | Mitigacao                                                           |
+| --------------------------------- | ------------------------------------------------------------------- |
+| Acoplamento da consulta a widgets | manter contratos intermediarios e normalizados                      |
+| `RACE` mal aplicado               | habilitar apenas em consultas elegiveis para primeiro sucesso       |
+| Falta de endpoint claro           | fechar contrato da API antes da Fase 2                              |
+| Excesso de escopo no piloto       | limitar cada fase a um entregavel validavel                         |
 | Drift entre documentacao e codigo | manter referencias de codigo e status `implementado` vs `planejado` |
 
 ## Criterios de sucesso

@@ -23,15 +23,15 @@ As principais divergencias nao estao no objetivo de negocio, mas nas decisoes te
 
 ## Tabela rapida de divergencias
 
-| Tema | Levantamento inicial | Projeto atual | Situacao |
-| --- | --- | --- | --- |
-| Estado de apresentacao | `Riverpod` | `Provider` | Divergencia tecnica |
-| Persistencia local | `SQLite/Drift` | `Hive` + `AppCacheStore` | Divergencia tecnica |
-| Relatorios na navegacao | Esperados cedo no fluxo principal | Ainda fora da navegacao principal | Divergencia de cronograma |
-| Agentes como fontes de dados | Nao apareciam como eixo funcional | Viraram parte importante da evolucao | Escopo ampliado |
-| REST como principal | Sim | Sim | Alinhado |
-| Autorizacao no backend | Sim | Sim | Alinhado |
-| Cache leve no MVP | Sim | Sim | Alinhado |
+| Tema                         | Levantamento inicial              | Projeto atual                        | Situacao                  |
+| ---------------------------- | --------------------------------- | ------------------------------------ | ------------------------- |
+| Estado de apresentacao       | `Riverpod`                        | `Provider`                           | Divergencia tecnica       |
+| Persistencia local           | `SQLite/Drift`                    | `Hive` + `AppCacheStore`             | Divergencia tecnica       |
+| Relatorios na navegacao      | Esperados cedo no fluxo principal | Ainda fora da navegacao principal    | Divergencia de cronograma |
+| Agentes como fontes de dados | Nao apareciam como eixo funcional | Viraram parte importante da evolucao | Escopo ampliado           |
+| REST como principal          | Sim                               | Sim                                  | Alinhado                  |
+| Autorizacao no backend       | Sim                               | Sim                                  | Alinhado                  |
+| Cache leve no MVP            | Sim                               | Sim                                  | Alinhado                  |
 
 ## Objetivo atual consolidado
 

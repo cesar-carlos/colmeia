@@ -311,13 +311,13 @@ Isso ajuda em tuning, suporte e diagnostico.
 
 ## Matriz de riscos e mitigacao
 
-| Risco | Impacto | Mitigacao sugerida |
-| --- | --- | --- |
-| Usar `RACE` onde a consulta exige agregacao real | resultado incorreto | limitar `RACE` aos casos em que qualquer agente pode responder sozinho |
-| Contrato muito acoplado ao grafico | pouca reutilizacao | manter resultado normalizado e intermediario |
-| Timeout agressivo demais | erro artificial e baixa UX | configurar timeout por agente e timeout global separadamente |
-| Falta de elegibilidade clara | consultas em fontes erradas | criar resolver de agentes elegiveis por `queryKey` |
-| Falta de observabilidade por agente | depuracao dificil | registrar duracao, falha e vencedor por agente |
+| Risco                                            | Impacto                     | Mitigacao sugerida                                                     |
+| ------------------------------------------------ | --------------------------- | ---------------------------------------------------------------------- |
+| Usar `RACE` onde a consulta exige agregacao real | resultado incorreto         | limitar `RACE` aos casos em que qualquer agente pode responder sozinho |
+| Contrato muito acoplado ao grafico               | pouca reutilizacao          | manter resultado normalizado e intermediario                           |
+| Timeout agressivo demais                         | erro artificial e baixa UX  | configurar timeout por agente e timeout global separadamente           |
+| Falta de elegibilidade clara                     | consultas em fontes erradas | criar resolver de agentes elegiveis por `queryKey`                     |
+| Falta de observabilidade por agente              | depuracao dificil           | registrar duracao, falha e vencedor por agente                         |
 
 ## Reuso da infraestrutura atual
 
