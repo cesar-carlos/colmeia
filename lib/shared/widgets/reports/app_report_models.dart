@@ -166,7 +166,7 @@ enum AppReportToolbarMode { full, compact, hidden }
 // Export
 // ---------------------------------------------------------------------------
 
-enum AppReportExportFormat { pdf, excel }
+enum AppReportExportFormat { pdf, excel, json, csv }
 
 enum AppReportExportScope { currentPage, allPages, selection }
 
@@ -198,6 +198,49 @@ class AppReportExportRequest {
   /// column count exceeds the export handler's internal threshold. Applies to
   /// PDF only; Excel orientation is not affected by this flag.
   final bool autoLandscape;
+}
+
+extension AppReportExportFormatX on AppReportExportFormat {
+  String get label => switch (this) {
+    AppReportExportFormat.pdf => 'PDF',
+    AppReportExportFormat.excel => 'Excel',
+    AppReportExportFormat.json => 'JSON',
+    AppReportExportFormat.csv => 'CSV',
+  };
+
+  String get fileExtension => switch (this) {
+    AppReportExportFormat.pdf => 'pdf',
+    AppReportExportFormat.excel => 'xlsx',
+    AppReportExportFormat.json => 'json',
+    AppReportExportFormat.csv => 'csv',
+  };
+
+  String get mimeType => switch (this) {
+    AppReportExportFormat.pdf => 'application/pdf',
+    AppReportExportFormat.excel =>
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    AppReportExportFormat.json => 'application/json',
+    AppReportExportFormat.csv => 'text/csv',
+  };
+
+  IconData get icon => switch (this) {
+    AppReportExportFormat.pdf => Icons.picture_as_pdf_outlined,
+    AppReportExportFormat.excel => Icons.table_chart_outlined,
+    AppReportExportFormat.json => Icons.data_object_outlined,
+    AppReportExportFormat.csv => Icons.table_rows_outlined,
+  };
+
+  bool get supportsMetadataSections => switch (this) {
+    AppReportExportFormat.pdf || AppReportExportFormat.excel => true,
+    AppReportExportFormat.json || AppReportExportFormat.csv => false,
+  };
+
+  bool get supportsLandscapeOptions => switch (this) {
+    AppReportExportFormat.pdf => true,
+    AppReportExportFormat.excel ||
+    AppReportExportFormat.json ||
+    AppReportExportFormat.csv => false,
+  };
 }
 
 // ---------------------------------------------------------------------------

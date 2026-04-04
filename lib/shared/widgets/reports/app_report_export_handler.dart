@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:typed_data';
 
@@ -11,7 +12,8 @@ import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus, XFile;
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 
-/// Stateless utility that produces PDF or Excel output from a typed report.
+/// Stateless utility that produces PDF, Excel, JSON, or CSV output from a
+/// typed report.
 ///
 /// Usage:
 /// ```dart
@@ -67,6 +69,18 @@ abstract final class AppReportExportHandler {
             subtitle: effectiveSubtitle,
             summaryItems: summaryItems,
             resolvedFilters: resolvedFilters,
+          );
+        case AppReportExportFormat.json:
+          await _exportJson<T>(
+            columns: columns,
+            rows: rows,
+            title: effectiveTitle,
+          );
+        case AppReportExportFormat.csv:
+          await _exportCsv<T>(
+            columns: columns,
+            rows: rows,
+            title: effectiveTitle,
           );
       }
     } catch (error, stackTrace) {
@@ -138,19 +152,10 @@ abstract final class AppReportExportHandler {
         name: title ?? 'relatorio',
       );
     } else {
-      final bytes = await doc.save();
-      final fileName = '${_sanitizeFileName(title ?? 'relatorio')}.pdf';
-      await SharePlus.instance.share(
-        ShareParams(
-          files: <XFile>[
-            XFile.fromData(
-              Uint8List.fromList(bytes),
-              name: fileName,
-              mimeType: 'application/pdf',
-            ),
-          ],
-          subject: title ?? 'Relatório',
-        ),
+      await _shareExportBytes(
+        format: AppReportExportFormat.pdf,
+        bytes: Uint8List.fromList(await doc.save()),
+        title: title,
       );
     }
   }
@@ -447,26 +452,108 @@ abstract final class AppReportExportHandler {
     final bytes = Uint8List.fromList(workbook.saveAsStream());
     workbook.dispose();
 
-    final fileName = '${_sanitizeFileName(title ?? 'relatorio')}.xlsx';
+    await _shareExportBytes(
+      format: AppReportExportFormat.excel,
+      bytes: bytes,
+      title: title,
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // JSON / CSV
+  // -------------------------------------------------------------------------
+
+  static Future<void> _exportJson<T>({
+    required List<AppReportColumn<T>> columns,
+    required List<T> rows,
+    String? title,
+  }) async {
+    final objects = <Map<String, Object?>>[];
+    for (final row in rows) {
+      final map = <String, Object?>{};
+      for (final col in columns) {
+        map[col.key] = _exportCellValue(col, row);
+      }
+      objects.add(map);
+    }
+    final str = const JsonEncoder.withIndent('  ').convert(objects);
+    final bytes = Uint8List.fromList(utf8.encode(str));
+    await _shareExportBytes(
+      format: AppReportExportFormat.json,
+      bytes: bytes,
+      title: title,
+    );
+  }
+
+  static Future<void> _exportCsv<T>({
+    required List<AppReportColumn<T>> columns,
+    required List<T> rows,
+    String? title,
+  }) async {
+    final buffer = StringBuffer()
+      ..writeln(columns.map((c) => _escapeCsvField(c.label)).join(','));
+    for (final row in rows) {
+      final line = columns
+          .map((col) => _escapeCsvField(col.formatValue(col.valueGetter(row))))
+          .join(',');
+      buffer.writeln(line);
+    }
+    final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+    await _shareExportBytes(
+      format: AppReportExportFormat.csv,
+      bytes: bytes,
+      title: title,
+    );
+  }
+
+  static Object? _exportCellValue<T>(AppReportColumn<T> col, T row) {
+    final v = col.valueGetter(row);
+    if (v == null) {
+      return null;
+    }
+    if (v is num || v is bool) {
+      return v;
+    }
+    if (v is String) {
+      return v;
+    }
+    return col.formatValue(v);
+  }
+
+  static String _escapeCsvField(String value) {
+    if (value.contains(',') ||
+        value.contains('"') ||
+        value.contains('\n') ||
+        value.contains('\r')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
+  }
+
+  // -------------------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------------------
+
+  static Future<void> _shareExportBytes({
+    required AppReportExportFormat format,
+    required Uint8List bytes,
+    String? title,
+  }) async {
+    final fileName =
+        '${_sanitizeFileName(title ?? 'relatorio')}.${format.fileExtension}';
     await SharePlus.instance.share(
       ShareParams(
         files: <XFile>[
           XFile.fromData(
             bytes,
             name: fileName,
-            mimeType:
-                'application/vnd.openxmlformats-officedocument'
-                '.spreadsheetml.sheet',
+            mimeType: format.mimeType,
           ),
         ],
         subject: title ?? 'Relatório',
       ),
     );
   }
-
-  // -------------------------------------------------------------------------
-  // Helpers
-  // -------------------------------------------------------------------------
 
   static String _sanitizeFileName(String name) {
     return name.replaceAll(RegExp(r'[^\w\s-]'), '').replaceAll(' ', '_');

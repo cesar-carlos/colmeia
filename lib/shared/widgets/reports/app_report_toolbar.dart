@@ -219,8 +219,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                   onRemove: widget.isLoading ? null : widget.onClearSelection,
                 ),
               ...activeGroups.map((group) {
-                final label =
-                    groupLabels[group.columnKey] ?? group.columnKey;
+                final label = groupLabels[group.columnKey] ?? group.columnKey;
                 return _ToolbarPill(
                   icon: Icons.layers_outlined,
                   label: 'Agrupado: $label',
@@ -295,10 +294,11 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                               ? () async {
                                   final result =
                                       await showAppReportColumnChooser<T>(
-                                    context: context,
-                                    columns: widget.columns,
-                                    currentlyVisible: widget.visibleColumnKeys,
-                                  );
+                                        context: context,
+                                        columns: widget.columns,
+                                        currentlyVisible:
+                                            widget.visibleColumnKeys,
+                                      );
                                   if (result != null) {
                                     widget.events.onColumnVisibilityChanged
                                         ?.call(result);
@@ -316,10 +316,11 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                               ? () async {
                                   final result =
                                       await showAppReportColumnChooser<T>(
-                                    context: context,
-                                    columns: widget.columns,
-                                    currentlyVisible: widget.visibleColumnKeys,
-                                  );
+                                        context: context,
+                                        columns: widget.columns,
+                                        currentlyVisible:
+                                            widget.visibleColumnKeys,
+                                      );
                                   if (result != null) {
                                     widget.events.onColumnVisibilityChanged
                                         ?.call(result);
@@ -832,26 +833,14 @@ class _ExportButton extends StatelessWidget {
         );
       },
       menuChildren: <Widget>[
-        SubmenuButton(
-          menuStyle: _buildReportMenuStyle(context),
-          style: _buildReportMenuItemStyle(context),
-          leadingIcon: const Icon(Icons.picture_as_pdf_outlined),
-          menuChildren: _buildFormatMenuChildren(
-            context,
-            AppReportExportFormat.pdf,
+        for (final format in AppReportExportFormat.values)
+          SubmenuButton(
+            menuStyle: _buildReportMenuStyle(context),
+            style: _buildReportMenuItemStyle(context),
+            leadingIcon: Icon(format.icon),
+            menuChildren: _buildFormatMenuChildren(context, format),
+            child: Text(format.label),
           ),
-          child: const Text('PDF'),
-        ),
-        SubmenuButton(
-          menuStyle: _buildReportMenuStyle(context),
-          style: _buildReportMenuItemStyle(context),
-          leadingIcon: const Icon(Icons.table_chart_outlined),
-          menuChildren: _buildFormatMenuChildren(
-            context,
-            AppReportExportFormat.excel,
-          ),
-          child: const Text('Excel'),
-        ),
       ],
     );
   }
@@ -860,12 +849,9 @@ class _ExportButton extends StatelessWidget {
     BuildContext context,
     AppReportExportFormat format,
   ) {
-    final scopeLabel = switch (format) {
-      AppReportExportFormat.pdf => 'PDF',
-      AppReportExportFormat.excel => 'Excel',
-    };
+    final scopeLabel = format.label;
 
-    return <Widget>[
+    final items = <Widget>[
       _buildExportMenuItem(
         context: context,
         format: format,
@@ -885,30 +871,43 @@ class _ExportButton extends StatelessWidget {
           scope: AppReportExportScope.selection,
           label: '$scopeLabel da seleção ($selectedRowCount)',
         ),
-      const Divider(height: 1),
-      _buildExportMenuItem(
-        context: context,
-        format: format,
-        scope: AppReportExportScope.currentPage,
-        includeFilters: true,
-        label: '$scopeLabel da página atual + filtros',
-      ),
-      _buildExportMenuItem(
-        context: context,
-        format: format,
-        scope: AppReportExportScope.allPages,
-        includeFilters: true,
-        label: '$scopeLabel de todas as páginas + filtros',
-      ),
-      if (selectedRowCount > 0)
-        _buildExportMenuItem(
-          context: context,
-          format: format,
-          scope: AppReportExportScope.selection,
-          includeFilters: true,
-          label: '$scopeLabel da seleção + filtros',
-        ),
     ];
+
+    if (format.supportsMetadataSections) {
+      items
+        ..add(const Divider(height: 1))
+        ..add(
+          _buildExportMenuItem(
+            context: context,
+            format: format,
+            scope: AppReportExportScope.currentPage,
+            includeFilters: true,
+            label: '$scopeLabel da página atual + filtros',
+          ),
+        )
+        ..add(
+          _buildExportMenuItem(
+            context: context,
+            format: format,
+            scope: AppReportExportScope.allPages,
+            includeFilters: true,
+            label: '$scopeLabel de todas as páginas + filtros',
+          ),
+        );
+      if (selectedRowCount > 0) {
+        items.add(
+          _buildExportMenuItem(
+            context: context,
+            format: format,
+            scope: AppReportExportScope.selection,
+            includeFilters: true,
+            label: '$scopeLabel da seleção + filtros',
+          ),
+        );
+      }
+    }
+
+    return items;
   }
 
   Widget _buildExportMenuItem({

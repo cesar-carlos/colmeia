@@ -55,6 +55,7 @@ class AppReportViewer<T> extends StatefulWidget {
     this.subtitle,
     this.contextChips,
     this.headerTrailing,
+    this.headerActions = const <Widget>[],
     this.filters,
     this.filterValues,
     this.selectedRows,
@@ -83,6 +84,9 @@ class AppReportViewer<T> extends StatefulWidget {
 
   /// Widget placed in the trailing position of the header row (e.g. a link).
   final Widget? headerTrailing;
+
+  /// Small actions rendered with the title row (e.g. JSON/CSV).
+  final List<Widget> headerActions;
 
   /// Filter descriptors. When null the filters panel is not rendered.
   final List<AppReportFilterDescriptor>? filters;
@@ -389,6 +393,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
             subtitle: widget.subtitle,
             contextChips: widget.contextChips ?? <String>[],
             trailing: widget.headerTrailing,
+            actions: widget.headerActions,
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],

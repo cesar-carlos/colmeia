@@ -132,6 +132,48 @@ class AppReportViewerStyle {
     );
   }
 
+  /// Dense dashboard table: zebra rows, minimal chrome, optional first column
+  /// frozen. Prefer passing JSON/CSV actions via the viewer `headerTrailing`
+  /// and set [showExportActions] to false to avoid duplicating export.
+  factory AppReportViewerStyle.numericalDetailing({
+    String entityLabel = 'linhas',
+    bool showExportActions = false,
+    double? gridHeight,
+    double? dataRowHeight,
+    int frozenColumnsCount = 1,
+  }) {
+    return AppReportViewerStyle(
+      variant: AppReportViewerVariant.minimal,
+      toolbarMode: AppReportToolbarMode.compact,
+      showToolbarLabel: false,
+      showExportActions: showExportActions,
+      showRefreshAction: false,
+      showFiltersPanel: false,
+      showSummaryBar: false,
+      filterLayout: AppReportFilterLayout.inline,
+      entityLabel: entityLabel,
+      uppercaseHeaderLabels: true,
+      headerLetterSpacing: 0.35,
+      headerBackgroundColor: const Color(0xFFF8FAFC),
+      headerDividerColor: const Color(0xFFE2E8F0),
+      headerTextStyle: const TextStyle(
+        fontSize: 11,
+        height: 1.2,
+        fontWeight: FontWeight.w800,
+      ),
+      dataTextStyle: const TextStyle(
+        fontSize: 14,
+        height: 1.3,
+        fontWeight: FontWeight.w500,
+      ),
+      alternateRowColor: const Color(0xFFF8FAFC),
+      gridHeight: gridHeight,
+      dataRowHeight: dataRowHeight ?? 72,
+      headerRowHeight: 48,
+      frozenColumnsCount: frozenColumnsCount,
+    );
+  }
+
   /// Fixed grid height. When null the grid fills the available height or
   /// falls back to a sensible default.
   final double? gridHeight;

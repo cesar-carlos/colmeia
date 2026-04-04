@@ -1,4 +1,5 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/features/settings/presentation/widgets/app_report_numerical_detailing_demo_section.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
@@ -439,8 +440,8 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
               eyebrow: 'Componentes compartilhados',
               title: 'Report Viewer',
               subtitle:
-                  'Demo visual de uma tabela de transações com filtros inline, '
-                  'toolbar compacta e paginação estilo catálogo.',
+                  'Inclui o preset Detalhamento numérico e a demo minimal de '
+                  'transações com filtros inline e paginação estilo catálogo.',
             ),
           ),
           Padding(
@@ -457,6 +458,19 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
             ),
           ),
           Expanded(
+            flex: 38,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.contentSpacing,
+                tokens.sectionSpacing,
+                tokens.contentSpacing,
+                0,
+              ),
+              child: const AppReportNumericalDetailingDemoSection(),
+            ),
+          ),
+          Expanded(
+            flex: 62,
             child: Padding(
               padding: EdgeInsets.only(top: tokens.sectionSpacing),
               child: AppReportViewer<_SaleRow>(
