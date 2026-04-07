@@ -209,7 +209,9 @@
   "clientAgentDetailTitle": "Agent",
   "clientAgentDetailSubtitle": "Detailed information for the agent approved for this account.",
   "clientAgentDetailLoadErrorTitle": "Could not load the agent",
+  "clientAgentFieldTradeName": "Trade name",
   "clientAgentFieldDocument": "Document",
+  "clientAgentFieldCnpjCpf": "CNPJ/CPF",
   "clientAgentFieldEmail": "Email",
   "clientAgentFieldPhone": "Phone",
   "clientAgentFieldCity": "City",
@@ -291,7 +293,53 @@
   "clientAgentsPendingFilterSyncing": "Sending…",
   "clientAgentsPendingFilterFailed": "Failed",
   "clientAgentsPendingFilterSynced": "Sent",
+  "reportFiltersTitle": "Filters",
+  "reportFiltersTitleWithContext": "Filters - {title}",
+  "@reportFiltersTitleWithContext": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "reportFiltersDescription": "Adjust the query and apply only the slices that make sense for this analysis.",
+  "reportFiltersFieldCount": "{count, plural, =1{1 field} other{{count} fields}}",
+  "@reportFiltersFieldCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportFiltersRequiredCount": "{count, plural, =1{1 required} other{{count} required}}",
+  "@reportFiltersRequiredCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportFiltersActiveCount": "{count, plural, =1{1 active} other{{count} active}}",
+  "@reportFiltersActiveCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportFiltersClearAction": "Clear",
+  "reportFiltersApplyAction": "Apply filters",
+  "reportFiltersButton": "Filters",
+  "reportFiltersButtonActive": "Filters ({count} active)",
+  "@reportFiltersButtonActive": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportFiltersClearTooltip": "Clear",
+  "reportFiltersClearAllTooltip": "Clear filters",
+  "reportFiltersAdvancedButton": "Advanced filters",
+  "reportInlineFiltersHint": "Filter...",
+  "reportInlineFiltersAllOption": "All",
+  "reportInlineFiltersSelectPeriod": "Select period",
+  "reportInlineFiltersSelectDate": "Select date",
+  "reportFiltersAppliedSectionTitle": "Applied filters",
   "clientAgentsErrorLoadCatalog": "Could not load the agent catalog.",
+  "clientAgentsErrorLoadCatalogAgent": "Could not load this catalog agent.",
+  "clientAgentsErrorLoadClientAccessStatus":
+      "Could not read the access request status.",
   "clientAgentsErrorLoadApproved": "Could not load approved agents for this account.",
   "clientAgentsErrorLoadAgentDetail": "Could not load agent details.",
   "clientAgentsErrorLoadAccessRequests": "Could not load request history.",

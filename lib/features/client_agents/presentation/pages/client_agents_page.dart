@@ -36,19 +36,23 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
     with SyncAppLocalizationsMixin<ClientAgentsPage> {
   static const int _approvedAgentsTabIndex = 0;
   static const int _requestsTabIndex = 2;
+  static const int _maxTabIndex = _requestsTabIndex;
+  static const Duration _draftPersistenceDebounce = Duration(milliseconds: 350);
   late final ClientAgentsController _controller;
   late final SharedPreferences _prefs;
-  int _selectedTabIndex = _approvedAgentsTabIndex;
-  late Map<String, Object?> _approvedAgentFilters;
-  late Map<String, Object?> _requestsFilters;
+  late ClientAgentsPageSessionState _pageSession;
+  Timer? _draftPersistenceTimer;
 
   @override
   void initState() {
     super.initState();
     _prefs = getIt<SharedPreferences>();
     _controller = getIt<ClientAgentsController>();
-    _approvedAgentFilters = restoreClientAgentsApprovedFilters(_prefs);
-    _requestsFilters = restoreClientAgentsRequestsFilters(_prefs);
+    _pageSession = ClientAgentsPageSessionState.restore(
+      prefs: _prefs,
+      fallbackTabIndex: _approvedAgentsTabIndex,
+      maxTabIndex: _maxTabIndex,
+    );
   }
 
   bool _initialLoadScheduled = false;
@@ -69,6 +73,13 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
 
   @override
   void dispose() {
+    _draftPersistenceTimer?.cancel();
+    unawaited(
+      persistClientAgentsRequestAccessDraft(
+        _prefs,
+        _pageSession.requestAccessDraft,
+      ),
+    );
     _controller.dispose();
     super.dispose();
   }
@@ -89,15 +100,15 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
               controller.approvedAgents?.items ?? const <ClientAgent>[];
           final filteredRequests = filterClientAgentsRequestsList(
             requests,
-            _requestsFilters,
+            _pageSession.requestsFilters,
           );
           final filteredPendingActions = filterClientAgentsPendingActionsList(
             controller.pendingActions,
-            _requestsFilters,
+            _pageSession.requestsFilters,
           );
           final filteredApprovedAgents = filterClientAgentsApprovedList(
             approvedAgents,
-            _approvedAgentFilters,
+            _pageSession.approvedAgentFilters,
           );
           return ListView(
             padding: context.pageScrollPadding(tokens),
@@ -155,23 +166,24 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
               AppSectionCardWithHeading(
                 title: l10n.clientAgentsMaintenanceTitle,
                 subtitle: l10n.clientAgentsMaintenanceSubtitle,
-                headingTrailing: _selectedTabIndex == _approvedAgentsTabIndex
+                headingTrailing:
+                    _pageSession.selectedTabIndex == _approvedAgentsTabIndex
                     ? ClientAgentsFilterButton(
                         activeCount: clientAgentsApprovedActiveFilterCount(
                           l10n,
-                          _approvedAgentFilters,
+                          _pageSession.approvedAgentFilters,
                         ),
                         l10n: l10n,
                         onPressed: controller.isLoading
                             ? null
                             : () => unawaited(_showApprovedAgentFilters()),
                       )
-                    : (_selectedTabIndex == _requestsTabIndex
+                    : (_pageSession.selectedTabIndex == _requestsTabIndex
                           ? ClientAgentsFilterButton(
                               activeCount:
                                   clientAgentsRequestsActiveFilterCount(
                                     l10n,
-                                    _requestsFilters,
+                                    _pageSession.requestsFilters,
                                   ),
                               l10n: l10n,
                               onPressed: controller.isLoading
@@ -180,10 +192,10 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                             )
                           : null),
                 headingBottom:
-                    _selectedTabIndex == _approvedAgentsTabIndex &&
+                    _pageSession.selectedTabIndex == _approvedAgentsTabIndex &&
                         clientAgentsApprovedActiveFilterCount(
                               l10n,
-                              _approvedAgentFilters,
+                              _pageSession.approvedAgentFilters,
                             ) >
                             0
                     ? Wrap(
@@ -191,13 +203,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                         runSpacing: tokens.gapSm,
                         children: buildClientAgentsApprovedFilterSummaryChips(
                           l10n: l10n,
-                          approvedAgentFilters: _approvedAgentFilters,
+                          approvedAgentFilters:
+                              _pageSession.approvedAgentFilters,
                         ),
                       )
-                    : (_selectedTabIndex == _requestsTabIndex &&
+                    : (_pageSession.selectedTabIndex == _requestsTabIndex &&
                               clientAgentsRequestsActiveFilterCount(
                                     l10n,
-                                    _requestsFilters,
+                                    _pageSession.requestsFilters,
                                   ) >
                                   0
                           ? Wrap(
@@ -206,7 +219,8 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                               children:
                                   buildClientAgentsRequestsFilterSummaryChips(
                                     l10n: l10n,
-                                    requestsFilters: _requestsFilters,
+                                    requestsFilters:
+                                        _pageSession.requestsFilters,
                                   ),
                             )
                           : null),
@@ -214,10 +228,17 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                   enabled: controller.isLoading,
                   child: AppTabView(
                     onChanged: (index) {
-                      if (_selectedTabIndex == index) {
+                      if (_pageSession.selectedTabIndex == index) {
                         return;
                       }
-                      setState(() => _selectedTabIndex = index);
+                      setState(() {
+                        _pageSession = _pageSession.copyWith(
+                          selectedTabIndex: index,
+                        );
+                      });
+                      unawaited(
+                        persistClientAgentsSelectedTabIndex(_prefs, index),
+                      );
                     },
                     items: <AppTabViewItem>[
                       AppTabViewItem(
@@ -233,7 +254,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                           hasActiveFilters:
                               clientAgentsApprovedActiveFilterCount(
                                 l10n,
-                                _approvedAgentFilters,
+                                _pageSession.approvedAgentFilters,
                               ) >
                               0,
                           requestAccessTabLabel:
@@ -243,9 +264,32 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                       AppTabViewItem(
                         label: l10n.clientAgentsTabRequestAccess,
                         child: ClientAgentsRequestAccessTab(
-                          onRequestAccess: (agentIds) => unawaited(
-                            controller.requestAccess(agentIds: agentIds),
-                          ),
+                          initialDraft: _pageSession.requestAccessDraft,
+                          onDraftChanged: (draft) {
+                            _pageSession = _pageSession.copyWith(
+                              requestAccessDraft: draft,
+                            );
+                            _scheduleDraftPersistence();
+                          },
+                          onRequestAccess: (agentIds) async {
+                            final accepted = await controller.requestAccess(
+                              agentIds: agentIds,
+                            );
+                            if (!mounted) {
+                              return accepted;
+                            }
+                            if (accepted) {
+                              _pageSession = _pageSession.copyWith(
+                                requestAccessDraft: '',
+                              );
+                              _draftPersistenceTimer?.cancel();
+                              await persistClientAgentsRequestAccessDraft(
+                                _prefs,
+                                '',
+                              );
+                            }
+                            return accepted;
+                          },
                           onClearMessages: () {
                             controller
                               ..clearActionError()
@@ -266,7 +310,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                           hasActiveFilters:
                               clientAgentsRequestsActiveFilterCount(
                                 l10n,
-                                _requestsFilters,
+                                _pageSession.requestsFilters,
                               ) >
                               0,
                         ),
@@ -294,34 +338,40 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
       builder: (context) {
         final tokens = Theme.of(context).extension<AppThemeTokens>()!;
         final sheetL10n = AppLocalizations.of(context);
+        final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
         return Padding(
           padding: EdgeInsets.fromLTRB(
             tokens.contentSpacing,
             tokens.gapMd,
             tokens.contentSpacing,
-            tokens.contentSpacing,
+            tokens.contentSpacing + bottomInset,
           ),
           child: SingleChildScrollView(
             child: AppReportFiltersPanel(
               title: sheetL10n.clientAgentsFilterSheetTitle,
               filters: buildClientAgentsApprovedFilterDescriptors(sheetL10n),
-              initialValues: _approvedAgentFilters,
+              initialValues: _pageSession.approvedAgentFilters,
               onApply: (values) {
-                setState(() => _approvedAgentFilters = values);
+                setState(() {
+                  _pageSession = _pageSession.copyWith(
+                    approvedAgentFilters: values,
+                  );
+                });
                 unawaited(
-                  persistClientAgentsApprovedFilters(
-                    _prefs,
-                    _approvedAgentFilters,
-                  ),
+                  persistClientAgentsApprovedFilters(_prefs, values),
                 );
                 Navigator.of(context).pop();
               },
               onClear: () {
-                setState(() => _approvedAgentFilters = <String, Object?>{});
+                setState(() {
+                  _pageSession = _pageSession.copyWith(
+                    approvedAgentFilters: <String, Object?>{},
+                  );
+                });
                 unawaited(
                   persistClientAgentsApprovedFilters(
                     _prefs,
-                    _approvedAgentFilters,
+                    const <String, Object?>{},
                   ),
                 );
                 Navigator.of(context).pop();
@@ -345,29 +395,41 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
       builder: (context) {
         final tokens = Theme.of(context).extension<AppThemeTokens>()!;
         final sheetL10n = AppLocalizations.of(context);
+        final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
         return Padding(
           padding: EdgeInsets.fromLTRB(
             tokens.contentSpacing,
             tokens.gapMd,
             tokens.contentSpacing,
-            tokens.contentSpacing,
+            tokens.contentSpacing + bottomInset,
           ),
           child: SingleChildScrollView(
             child: AppReportFiltersPanel(
               title: sheetL10n.clientAgentsRequestsFilterSheetTitle,
               filters: buildClientAgentsRequestsFilterDescriptors(sheetL10n),
-              initialValues: _requestsFilters,
+              initialValues: _pageSession.requestsFilters,
               onApply: (values) {
-                setState(() => _requestsFilters = values);
+                setState(() {
+                  _pageSession = _pageSession.copyWith(
+                    requestsFilters: values,
+                  );
+                });
                 unawaited(
-                  persistClientAgentsRequestsFilters(_prefs, _requestsFilters),
+                  persistClientAgentsRequestsFilters(_prefs, values),
                 );
                 Navigator.of(context).pop();
               },
               onClear: () {
-                setState(() => _requestsFilters = <String, Object?>{});
+                setState(() {
+                  _pageSession = _pageSession.copyWith(
+                    requestsFilters: <String, Object?>{},
+                  );
+                });
                 unawaited(
-                  persistClientAgentsRequestsFilters(_prefs, _requestsFilters),
+                  persistClientAgentsRequestsFilters(
+                    _prefs,
+                    const <String, Object?>{},
+                  ),
                 );
                 Navigator.of(context).pop();
               },
@@ -376,5 +438,17 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
         );
       },
     );
+  }
+
+  void _scheduleDraftPersistence() {
+    _draftPersistenceTimer?.cancel();
+    _draftPersistenceTimer = Timer(_draftPersistenceDebounce, () {
+      unawaited(
+        persistClientAgentsRequestAccessDraft(
+          _prefs,
+          _pageSession.requestAccessDraft,
+        ),
+      );
+    });
   }
 }

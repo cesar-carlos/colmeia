@@ -151,17 +151,17 @@ class ClientAgentsController extends ChangeNotifier {
     _scheduleAutoSyncIfNeeded();
   }
 
-  Future<void> requestAccess({
+  Future<bool> requestAccess({
     required Set<String> agentIds,
   }) async {
     if (agentIds.isEmpty) {
-      return;
+      return false;
     }
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
       _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
       _notifyListenersIfAlive();
-      return;
+      return false;
     }
     _isSyncing = true;
     _actionErrorMessage = null;
@@ -173,7 +173,7 @@ class ClientAgentsController extends ChangeNotifier {
       _isSyncing = false;
       _actionErrorMessage = _buildBlockedRequestMessage(classification);
       _notifyListenersIfAlive();
-      return;
+      return false;
     }
 
     final queueResult = await _queueRequestAccessUseCase(
@@ -191,6 +191,7 @@ class ClientAgentsController extends ChangeNotifier {
       );
     }
     await _reloadPendingAfterEnqueue(userId: userId);
+    return _actionErrorMessage == null;
   }
 
   Future<void> removeAccess({

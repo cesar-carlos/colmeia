@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
@@ -40,6 +41,8 @@ class AppReportToolbar<T> extends StatefulWidget {
     this.isLoading = false,
     this.groupController,
     this.onClearSelection,
+    this.onOpenFiltersSheet,
+    this.activeFilterCount = 0,
   });
 
   final AppReportViewerStyle style;
@@ -54,6 +57,8 @@ class AppReportToolbar<T> extends StatefulWidget {
   final bool isLoading;
   final AppReportGroupController? groupController;
   final VoidCallback? onClearSelection;
+  final VoidCallback? onOpenFiltersSheet;
+  final int activeFilterCount;
 
   @override
   State<AppReportToolbar<T>> createState() => _AppReportToolbarState<T>();
@@ -131,9 +136,14 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
         style.showRefreshAction &&
         widget.events.onRefresh != null &&
         !widget.isLoading;
+    final canOpenFiltersSheet =
+        style.showFiltersPanel &&
+        style.filterLayout == AppReportFilterLayout.sheet &&
+        widget.onOpenFiltersSheet != null;
     final showSelectionStatus = widget.selectedRowCount > 0;
 
     final hasAnyAction =
+        canOpenFiltersSheet ||
         style.showRefreshAction ||
         style.showExportActions ||
         style.showPrintAction ||
@@ -234,6 +244,14 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                         },
                 );
               }),
+              if (canOpenFiltersSheet)
+                _FilterSheetButton(
+                  onPressed: widget.isLoading
+                      ? null
+                      : widget.onOpenFiltersSheet,
+                  activeCount: widget.activeFilterCount,
+                  compact: compactToolbar,
+                ),
               if (style.showDensityToggle)
                 _DensityToggle(
                   current: widget.currentDensity,
@@ -506,6 +524,53 @@ class _ToolbarPill extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FilterSheetButton extends StatelessWidget {
+  const _FilterSheetButton({
+    required this.activeCount,
+    this.onPressed,
+    this.compact = false,
+  });
+
+  final VoidCallback? onPressed;
+  final int activeCount;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final hasActiveFilters = activeCount > 0;
+    final icon = Badge.count(
+      isLabelVisible: hasActiveFilters,
+      count: activeCount,
+      child: Icon(
+        Icons.filter_list_rounded,
+        size: 18,
+        color: hasActiveFilters ? theme.colorScheme.primary : null,
+      ),
+    );
+
+    if (compact) {
+      return Tooltip(
+        message: hasActiveFilters
+            ? l10n.reportFiltersButtonActive(activeCount)
+            : l10n.reportFiltersButton,
+        child: AppFlatButton(
+          onPressed: onPressed,
+          fillWidth: false,
+          child: icon,
+        ),
+      );
+    }
+
+    return AppSecondaryButton(
+      onPressed: onPressed,
+      label: l10n.reportFiltersButton,
+      icon: icon,
     );
   }
 }

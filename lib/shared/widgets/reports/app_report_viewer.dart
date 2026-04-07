@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
@@ -188,6 +189,16 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
         .toList(growable: false);
   }
 
+  int get _activeFilterCount {
+    final values = widget.filterValues ??
+        widget.query?.filters ??
+        const <String, Object?>{};
+    return widget.filters
+            ?.where((filter) => filter.hasActiveValue(values))
+            .length ??
+        0;
+  }
+
   void _onSortChanged(List<AppReportSortDescriptor> sorts) {
     setState(() => _sorts = sorts);
     widget.events.onSortChanged?.call(sorts);
@@ -305,15 +316,20 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
       useSafeArea: true,
       builder: (context) {
         final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+        final l10n = AppLocalizations.of(context);
+        final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
         return Padding(
           padding: EdgeInsets.fromLTRB(
             tokens.contentSpacing,
             tokens.gapMd,
             tokens.contentSpacing,
-            tokens.contentSpacing,
+            tokens.contentSpacing + bottomInset,
           ),
           child: SingleChildScrollView(
             child: AppReportFiltersPanel(
+              title: widget.title != null
+                  ? l10n.reportFiltersTitleWithContext(widget.title!)
+                  : l10n.reportFiltersTitle,
               filters: filters,
               initialValues:
                   widget.filterValues ??
@@ -491,6 +507,12 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                   groupController: _groupController,
                   searchTerm: widget.query?.searchTerm,
                   selectedRowCount: widget.selectedRows?.length ?? 0,
+                  onOpenFiltersSheet:
+                      style.filterLayout == AppReportFilterLayout.sheet &&
+                          showFilters
+                      ? _showAdvancedFiltersSheet
+                      : null,
+                  activeFilterCount: _activeFilterCount,
                   onClearSelection: widget.events.onRowSelection != null
                       ? () =>
                             widget.events.onRowSelection?.call(List<T>.empty())

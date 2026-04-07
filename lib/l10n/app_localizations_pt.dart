@@ -387,7 +387,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nao foi possivel carregar o agente';
 
   @override
+  String get clientAgentFieldTradeName => 'Nome fantasia';
+
+  @override
   String get clientAgentFieldDocument => 'Documento';
+
+  @override
+  String get clientAgentFieldCnpjCpf => 'CNPJ/CPF';
 
   @override
   String get clientAgentFieldEmail => 'Email';
@@ -558,8 +564,99 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsPendingFilterSynced => 'Enviado';
 
   @override
+  String get reportFiltersTitle => 'Filtros';
+
+  @override
+  String reportFiltersTitleWithContext(String title) {
+    return 'Filtros - $title';
+  }
+
+  @override
+  String get reportFiltersDescription =>
+      'Ajuste a consulta e aplique somente os recortes que fazem sentido para esta analise.';
+
+  @override
+  String reportFiltersFieldCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count campos',
+      one: '1 campo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reportFiltersRequiredCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count obrigatorios',
+      one: '1 obrigatorio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reportFiltersActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ativos',
+      one: '1 ativo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportFiltersClearAction => 'Limpar';
+
+  @override
+  String get reportFiltersApplyAction => 'Aplicar filtros';
+
+  @override
+  String get reportFiltersButton => 'Filtros';
+
+  @override
+  String reportFiltersButtonActive(int count) {
+    return 'Filtros ($count ativos)';
+  }
+
+  @override
+  String get reportFiltersClearTooltip => 'Limpar';
+
+  @override
+  String get reportFiltersClearAllTooltip => 'Limpar filtros';
+
+  @override
+  String get reportFiltersAdvancedButton => 'Filtros avancados';
+
+  @override
+  String get reportInlineFiltersHint => 'Filtrar...';
+
+  @override
+  String get reportInlineFiltersAllOption => 'Todos';
+
+  @override
+  String get reportInlineFiltersSelectPeriod => 'Selecionar periodo';
+
+  @override
+  String get reportInlineFiltersSelectDate => 'Selecionar data';
+
+  @override
+  String get reportFiltersAppliedSectionTitle => 'Filtros aplicados';
+
+  @override
   String get clientAgentsErrorLoadCatalog =>
       'Nao foi possivel carregar o catalogo de agentes.';
+
+  @override
+  String get clientAgentsErrorLoadCatalogAgent =>
+      'Nao foi possivel carregar este agente do catalogo.';
+
+  @override
+  String get clientAgentsErrorLoadClientAccessStatus =>
+      'Nao foi possivel ler o status da solicitacao de acesso.';
 
   @override
   String get clientAgentsErrorLoadApproved =>
@@ -977,7 +1074,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Nao foi possivel carregar o agente';
 
   @override
+  String get clientAgentFieldTradeName => 'Nome fantasia';
+
+  @override
   String get clientAgentFieldDocument => 'Documento';
+
+  @override
+  String get clientAgentFieldCnpjCpf => 'CNPJ/CPF';
 
   @override
   String get clientAgentFieldEmail => 'Email';
@@ -1148,8 +1251,99 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsPendingFilterSynced => 'Enviado';
 
   @override
+  String get reportFiltersTitle => 'Filtros';
+
+  @override
+  String reportFiltersTitleWithContext(String title) {
+    return 'Filtros - $title';
+  }
+
+  @override
+  String get reportFiltersDescription =>
+      'Ajuste a consulta e aplique somente os recortes que fazem sentido para esta analise.';
+
+  @override
+  String reportFiltersFieldCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count campos',
+      one: '1 campo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reportFiltersRequiredCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count obrigatorios',
+      one: '1 obrigatorio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reportFiltersActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ativos',
+      one: '1 ativo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportFiltersClearAction => 'Limpar';
+
+  @override
+  String get reportFiltersApplyAction => 'Aplicar filtros';
+
+  @override
+  String get reportFiltersButton => 'Filtros';
+
+  @override
+  String reportFiltersButtonActive(int count) {
+    return 'Filtros ($count ativos)';
+  }
+
+  @override
+  String get reportFiltersClearTooltip => 'Limpar';
+
+  @override
+  String get reportFiltersClearAllTooltip => 'Limpar filtros';
+
+  @override
+  String get reportFiltersAdvancedButton => 'Filtros avancados';
+
+  @override
+  String get reportInlineFiltersHint => 'Filtrar...';
+
+  @override
+  String get reportInlineFiltersAllOption => 'Todos';
+
+  @override
+  String get reportInlineFiltersSelectPeriod => 'Selecionar periodo';
+
+  @override
+  String get reportInlineFiltersSelectDate => 'Selecionar data';
+
+  @override
+  String get reportFiltersAppliedSectionTitle => 'Filtros aplicados';
+
+  @override
   String get clientAgentsErrorLoadCatalog =>
       'Nao foi possivel carregar o catalogo de agentes.';
+
+  @override
+  String get clientAgentsErrorLoadCatalogAgent =>
+      'Nao foi possivel carregar este agente do catalogo.';
+
+  @override
+  String get clientAgentsErrorLoadClientAccessStatus =>
+      'Nao foi possivel ler o status da solicitacao de acesso.';
 
   @override
   String get clientAgentsErrorLoadApproved =>

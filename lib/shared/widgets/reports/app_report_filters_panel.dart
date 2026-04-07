@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
@@ -23,6 +24,7 @@ class AppReportFiltersPanel extends StatefulWidget {
     required this.filters,
     required this.onApply,
     super.key,
+    this.title,
     this.initialValues = const <String, Object?>{},
     this.onClear,
     this.startExpanded = true,
@@ -30,6 +32,7 @@ class AppReportFiltersPanel extends StatefulWidget {
 
   final List<AppReportFilterDescriptor> filters;
   final ValueChanged<Map<String, Object?>> onApply;
+  final String? title;
   final Map<String, Object?> initialValues;
   final VoidCallback? onClear;
   final bool startExpanded;
@@ -71,13 +74,14 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
+    final l10n = AppLocalizations.of(context);
     final hasFilters = widget.filters.isNotEmpty;
     final requiredCount = widget.filters.where((f) => f.required).length;
     final activeCount = widget.filters
         .where(
           (filter) => _hasActiveValue(
-            filter: filter,
-            values: widget.initialValues,
+            filter,
+            widget.initialValues,
           ),
         )
         .length;
@@ -102,15 +106,14 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        'Filtros',
+                        widget.title ?? l10n.reportFiltersTitle,
                         style: typography.sectionHeaderH2.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       SizedBox(height: tokens.gapXs),
                       Text(
-                        'Ajuste a consulta e aplique somente os recortes que '
-                        'fazem sentido para esta analise.',
+                        l10n.reportFiltersDescription,
                         style: typography.caption.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -120,11 +123,23 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                         spacing: tokens.gapSm,
                         runSpacing: tokens.gapSm,
                         children: <Widget>[
-                          AppTagChip(label: '${widget.filters.length} campos'),
+                          AppTagChip(
+                            label: l10n.reportFiltersFieldCount(
+                              widget.filters.length,
+                            ),
+                          ),
                           if (requiredCount > 0)
-                            AppTagChip(label: '$requiredCount obrigatórios'),
+                            AppTagChip(
+                              label: l10n.reportFiltersRequiredCount(
+                                requiredCount,
+                              ),
+                            ),
                           if (activeCount > 0)
-                            AppTagChip(label: '$activeCount ativos'),
+                            AppTagChip(
+                              label: l10n.reportFiltersActiveCount(
+                                activeCount,
+                              ),
+                            ),
                         ],
                       ),
                     ],
@@ -166,7 +181,7 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                             _formKey.currentState?.reset();
                             widget.onClear?.call();
                           },
-                          label: 'Limpar',
+                          label: l10n.reportFiltersClearAction,
                         ),
                       ),
                       SizedBox(width: tokens.gapMd),
@@ -182,7 +197,7 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                                   <String, Object?>{},
                             );
                           },
-                          label: 'Aplicar filtros',
+                          label: l10n.reportFiltersApplyAction,
                         ),
                       ),
                     ],
@@ -196,27 +211,10 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
     );
   }
 
-  static bool _hasActiveValue({
-    required AppReportFilterDescriptor filter,
-    required Map<String, Object?> values,
-  }) {
-    bool hasObjectValue(Object? value) {
-      return switch (value) {
-        null => false,
-        final String text => text.trim().isNotEmpty,
-        final Iterable<Object?> list => list.isNotEmpty,
-        final bool enabled => enabled,
-        _ => true,
-      };
-    }
-
-    if (filter.type == AppReportFilterType.numericRange) {
-      return hasObjectValue(values['${filter.name}_min']) ||
-          hasObjectValue(values['${filter.name}_max']);
-    }
-
-    return hasObjectValue(values[filter.name]);
-  }
+  static bool _hasActiveValue(
+    AppReportFilterDescriptor filter,
+    Map<String, Object?> values,
+  ) => filter.hasActiveValue(values);
 }
 
 class _FilterField extends StatelessWidget {

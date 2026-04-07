@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:typed_data';
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
@@ -69,6 +70,7 @@ abstract final class AppReportExportHandler {
             subtitle: effectiveSubtitle,
             summaryItems: summaryItems,
             resolvedFilters: resolvedFilters,
+            context: context,
           );
         case AppReportExportFormat.json:
           await _exportJson<T>(
@@ -109,6 +111,9 @@ abstract final class AppReportExportHandler {
     BuildContext? context,
   }) async {
     final doc = pw.Document();
+    final l10n = context != null ? AppLocalizations.of(context) : null;
+    final filtersTitle = l10n?.reportFiltersAppliedSectionTitle ??
+        'Applied filters';
     final useLandscape =
         request.landscape ||
         (request.autoLandscape &&
@@ -129,7 +134,12 @@ abstract final class AppReportExportHandler {
         footer: (ctx) => _buildPdfFooter(ctx, bodyFont),
         build: (ctx) => <pw.Widget>[
           if (request.includeFilters && (resolvedFilters?.isNotEmpty ?? false))
-            _buildPdfFilters(resolvedFilters!, bodyFont, headerFont),
+            _buildPdfFilters(
+              resolvedFilters!,
+              bodyFont,
+              headerFont,
+              filtersTitle,
+            ),
           if (request.includeFilters && (resolvedFilters?.isNotEmpty ?? false))
             pw.SizedBox(height: 8),
           if (request.includeSummary && (summaryItems?.isNotEmpty ?? false))
@@ -250,12 +260,13 @@ abstract final class AppReportExportHandler {
     List<({String label, String value})> filters,
     pw.Font bodyFont,
     pw.Font headerFont,
+    String sectionTitle,
   ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: <pw.Widget>[
         pw.Text(
-          'Filtros aplicados',
+          sectionTitle,
           style: pw.TextStyle(font: headerFont, fontSize: 12),
         ),
         pw.SizedBox(height: 6),
@@ -359,7 +370,11 @@ abstract final class AppReportExportHandler {
     String? subtitle,
     List<AppReportSummaryItem>? summaryItems,
     List<({String label, String value})>? resolvedFilters,
+    BuildContext? context,
   }) async {
+    final l10n = context != null ? AppLocalizations.of(context) : null;
+    final filtersTitle = l10n?.reportFiltersAppliedSectionTitle ??
+        'Applied filters';
     final workbook = xlsio.Workbook();
     final sheet = workbook.worksheets[0]
       ..name = _sanitizeSheetName(title ?? 'Relatório');
@@ -389,7 +404,7 @@ abstract final class AppReportExportHandler {
     }
 
     if (request.includeFilters && (resolvedFilters?.isNotEmpty ?? false)) {
-      sheet.getRangeByIndex(rowIndex, 1).setText('Filtros aplicados');
+      sheet.getRangeByIndex(rowIndex, 1).setText(filtersTitle);
       sheet.getRangeByIndex(rowIndex, 1).cellStyle.bold = true;
       rowIndex++;
 

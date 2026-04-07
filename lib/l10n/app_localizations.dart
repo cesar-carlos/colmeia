@@ -687,11 +687,23 @@ abstract class AppLocalizations {
   /// **'Could not load the agent'**
   String get clientAgentDetailLoadErrorTitle;
 
+  /// No description provided for @clientAgentFieldTradeName.
+  ///
+  /// In en, this message translates to:
+  /// **'Trade name'**
+  String get clientAgentFieldTradeName;
+
   /// No description provided for @clientAgentFieldDocument.
   ///
   /// In en, this message translates to:
   /// **'Document'**
   String get clientAgentFieldDocument;
+
+  /// No description provided for @clientAgentFieldCnpjCpf.
+  ///
+  /// In en, this message translates to:
+  /// **'CNPJ/CPF'**
+  String get clientAgentFieldCnpjCpf;
 
   /// No description provided for @clientAgentFieldEmail.
   ///
@@ -999,11 +1011,131 @@ abstract class AppLocalizations {
   /// **'Sent'**
   String get clientAgentsPendingFilterSynced;
 
+  /// No description provided for @reportFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get reportFiltersTitle;
+
+  /// No description provided for @reportFiltersTitleWithContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters - {title}'**
+  String reportFiltersTitleWithContext(String title);
+
+  /// No description provided for @reportFiltersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the query and apply only the slices that make sense for this analysis.'**
+  String get reportFiltersDescription;
+
+  /// No description provided for @reportFiltersFieldCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 field} other{{count} fields}}'**
+  String reportFiltersFieldCount(int count);
+
+  /// No description provided for @reportFiltersRequiredCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 required} other{{count} required}}'**
+  String reportFiltersRequiredCount(int count);
+
+  /// No description provided for @reportFiltersActiveCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 active} other{{count} active}}'**
+  String reportFiltersActiveCount(int count);
+
+  /// No description provided for @reportFiltersClearAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get reportFiltersClearAction;
+
+  /// No description provided for @reportFiltersApplyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get reportFiltersApplyAction;
+
+  /// No description provided for @reportFiltersButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get reportFiltersButton;
+
+  /// No description provided for @reportFiltersButtonActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters ({count} active)'**
+  String reportFiltersButtonActive(int count);
+
+  /// No description provided for @reportFiltersClearTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get reportFiltersClearTooltip;
+
+  /// No description provided for @reportFiltersClearAllTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get reportFiltersClearAllTooltip;
+
+  /// No description provided for @reportFiltersAdvancedButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced filters'**
+  String get reportFiltersAdvancedButton;
+
+  /// No description provided for @reportInlineFiltersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter...'**
+  String get reportInlineFiltersHint;
+
+  /// No description provided for @reportInlineFiltersAllOption.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get reportInlineFiltersAllOption;
+
+  /// No description provided for @reportInlineFiltersSelectPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Select period'**
+  String get reportInlineFiltersSelectPeriod;
+
+  /// No description provided for @reportInlineFiltersSelectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get reportInlineFiltersSelectDate;
+
+  /// No description provided for @reportFiltersAppliedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied filters'**
+  String get reportFiltersAppliedSectionTitle;
+
   /// No description provided for @clientAgentsErrorLoadCatalog.
   ///
   /// In en, this message translates to:
   /// **'Could not load the agent catalog.'**
   String get clientAgentsErrorLoadCatalog;
+
+  /// No description provided for @clientAgentsErrorLoadCatalogAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this catalog agent.'**
+  String get clientAgentsErrorLoadCatalogAgent;
+
+  /// No description provided for @clientAgentsErrorLoadClientAccessStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the access request status.'**
+  String get clientAgentsErrorLoadClientAccessStatus;
 
   /// No description provided for @clientAgentsErrorLoadApproved.
   ///

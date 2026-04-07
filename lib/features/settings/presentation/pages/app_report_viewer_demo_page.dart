@@ -1,4 +1,9 @@
+import 'dart:async';
+
+import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
+import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/features/settings/presentation/widgets/app_report_numerical_detailing_demo_section.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -14,6 +19,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------
 // Demo data model
@@ -59,26 +65,73 @@ class AppReportViewerDemoPage extends StatefulWidget {
       _AppReportViewerDemoPageState();
 }
 
+PersistedFilterMapSchema _buildReportViewerDemoRestoreFiltersSchema() {
+  return PersistedFilterMapSchema(
+    rules: <PersistedFilterRule>[
+      PersistedFilterMapSchema.trimmedString('search'),
+      PersistedFilterMapSchema.trimmedString('category'),
+      PersistedFilterMapSchema.trimmedString('store'),
+      PersistedFilterMapSchema.boolean('premiumOnly'),
+      PersistedFilterMapSchema.dateRangeFromEpoch(
+        targetKey: 'period',
+        startEpochKey: 'periodStartMs',
+        endEpochKey: 'periodEndMs',
+      ),
+    ],
+  );
+}
+
+PersistedFilterMapSchema _buildReportViewerDemoPersistFiltersSchema() {
+  return PersistedFilterMapSchema(
+    rules: <PersistedFilterRule>[
+      PersistedFilterMapSchema.trimmedString('search'),
+      PersistedFilterMapSchema.trimmedString('category'),
+      PersistedFilterMapSchema.trimmedString('store'),
+      PersistedFilterMapSchema.boolean('premiumOnly'),
+      PersistedFilterMapSchema.dateRangeToEpoch(
+        sourceKey: 'period',
+        startEpochKey: 'periodStartMs',
+        endEpochKey: 'periodEndMs',
+      ),
+    ],
+  );
+}
+
 class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
   static const int _totalRows = 87;
   static const int _pageSize = 10;
+  static const String _sessionNamespace = 'settings.app_report_viewer_demo';
+  static const String _filtersSessionKey = 'filters.v1';
+  static final PersistedFilterMapSchema _restoreFiltersSchema =
+      _buildReportViewerDemoRestoreFiltersSchema();
+  static final PersistedFilterMapSchema _persistFiltersSchema =
+      _buildReportViewerDemoPersistFiltersSchema();
 
   late List<_SaleRow> _allRows;
   late AppReportQuery _query;
+  late final PersistedPageSessionStore _sessionStore;
   List<_SaleRow> _selectedRows = <_SaleRow>[];
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    final prefs = getIt<SharedPreferences>();
+    _sessionStore = PersistedPageSessionStore(
+      prefs: prefs,
+      namespace: _sessionNamespace,
+    );
     _allRows = _generateFakeRows();
-    _query = const AppReportQuery(pageSize: _pageSize);
+    _query = AppReportQuery(
+      pageSize: _pageSize,
+      filters: _restoreSavedFilters(),
+    );
   }
 
   List<_SaleRow> get _currentRows {
     var rows = _allRows;
 
-    final search = _query.searchTerm;
+    final search = _query.searchTerm ?? _query.filters['search'] as String?;
     if (search != null && search.isNotEmpty) {
       final lower = search.toLowerCase();
       rows = rows.where((r) {
@@ -221,6 +274,13 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
         }
       }
     });
+    unawaited(_persistFilters(_query.filters));
+  }
+
+  int get _activeFilterCount {
+    return _filters
+        .where((filter) => filter.hasActiveValue(_query.filters))
+        .length;
   }
 
   Future<void> _onRefresh() async {
@@ -259,6 +319,20 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
         const SnackBar(content: Text('Falha ao exportar.')),
       );
     }
+  }
+
+  Map<String, Object?> _restoreSavedFilters() {
+    final decoded = _sessionStore.restoreJsonMap(suffix: _filtersSessionKey);
+    return _restoreFiltersSchema.apply(decoded);
+  }
+
+  Future<void> _persistFilters(Map<String, Object?> filters) async {
+    final payload = _persistFiltersSchema.apply(filters);
+
+    await _sessionStore.persistJsonMap(
+      suffix: _filtersSessionKey,
+      value: payload,
+    );
   }
 
   // -------------------------------------------------------------------------
@@ -441,7 +515,8 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
               title: 'Report Viewer',
               subtitle:
                   'Inclui o preset Detalhamento numérico e a demo minimal de '
-                  'transações com filtros inline e paginação estilo catálogo.',
+                  'transações com filtros em sheet, persistência local e '
+                  'paginação estilo catálogo.',
             ),
           ),
           Padding(
@@ -455,6 +530,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
               totalRows: _currentRows.length,
               selectedRows: _selectedRows.length,
               groupingDescription: _describeGroups(_query.groups),
+              activeFilters: _activeFilterCount,
             ),
           ),
           Expanded(
@@ -480,6 +556,10 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
                   'Store: All Stores',
                   'Period: Oct 2023',
                   '${_currentRows.length} transactions',
+                  if (_activeFilterCount == 0)
+                    'Filters: none'
+                  else
+                    'Filters: $_activeFilterCount active',
                   _describeGroups(_query.groups),
                 ],
                 columns: _columns,
@@ -540,6 +620,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
                 ),
                 style:
                     AppReportViewerStyle.minimal(
+                      filterLayout: AppReportFilterLayout.sheet,
                       showExportActions: true,
                       entityLabel: 'pedidos',
                     ).copyWith(
@@ -668,11 +749,13 @@ class _ReportViewerShowcaseCard extends StatelessWidget {
     required this.totalRows,
     required this.selectedRows,
     required this.groupingDescription,
+    required this.activeFilters,
   });
 
   final int totalRows;
   final int selectedRows;
   final String groupingDescription;
+  final int activeFilters;
 
   @override
   Widget build(BuildContext context) {
@@ -706,8 +789,13 @@ class _ReportViewerShowcaseCard extends StatelessWidget {
         children: <Widget>[
           AppTagChip(label: '$totalRows rows'),
           if (selectedRows > 0) AppTagChip(label: '$selectedRows selected'),
+          AppTagChip(
+            label: activeFilters == 0
+                ? 'No saved filters'
+                : '$activeFilters saved filters',
+          ),
           AppTagChip(label: groupingDescription),
-          const AppTagChip(label: 'Inline filters + minimal grid'),
+          const AppTagChip(label: 'Filter sheet + minimal grid'),
         ],
       ),
     );
@@ -800,7 +888,8 @@ class _ReportViewerShowcaseLegend extends StatelessWidget {
       runSpacing: tokens.gapSm,
       children: const <Widget>[
         _ReportViewerLegendChip(label: 'Compact toolbar'),
-        _ReportViewerLegendChip(label: 'Advanced filters sheet'),
+        _ReportViewerLegendChip(label: 'Primary filter sheet'),
+        _ReportViewerLegendChip(label: 'Saved last filters'),
         _ReportViewerLegendChip(label: 'Catalog-style pagination'),
       ],
     );

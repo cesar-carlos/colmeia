@@ -150,7 +150,9 @@ enum AppReportDensity { compact, comfortable, expanded }
 /// button. Supports [AppReportFilterType.text], [AppReportFilterType.search],
 /// [AppReportFilterType.singleSelect], [AppReportFilterType.dateRange] and
 /// [AppReportFilterType.date]; other types are silently ignored.
-enum AppReportFilterLayout { panel, inline }
+/// [sheet] hides inline/panel filter UI and exposes filters through a toolbar
+/// action that opens `AppReportFiltersPanel` in a bottom sheet.
+enum AppReportFilterLayout { panel, inline, sheet }
 
 // ---------------------------------------------------------------------------
 // Viewer variants
@@ -287,4 +289,23 @@ class AppReportFilterDescriptor {
   final String? hint;
   final num? minValue;
   final num? maxValue;
+
+  bool hasActiveValue(Map<String, Object?> values) {
+    bool hasObjectValue(Object? value) {
+      return switch (value) {
+        null => false,
+        final String text => text.trim().isNotEmpty,
+        final Iterable<Object?> list => list.isNotEmpty,
+        final bool enabled => enabled,
+        _ => true,
+      };
+    }
+
+    if (type == AppReportFilterType.numericRange) {
+      return hasObjectValue(values['${name}_min']) ||
+          hasObjectValue(values['${name}_max']);
+    }
+
+    return hasObjectValue(values[name]);
+  }
 }

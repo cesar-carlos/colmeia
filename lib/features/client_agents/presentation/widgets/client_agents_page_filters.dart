@@ -1,5 +1,5 @@
-import 'dart:convert';
-
+import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
+import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
@@ -11,10 +11,108 @@ import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String kClientAgentsApprovedFiltersPrefsKey =
-    'client_agents.approved_filters.v1';
-const String kClientAgentsRequestsFiltersPrefsKey =
-    'client_agents.requests_filters.v1';
+const String _kClientAgentsSessionNamespace = 'client_agents';
+const String _kApprovedFiltersKey = 'approved_filters.v1';
+const String _kRequestsFiltersKey = 'requests_filters.v1';
+const String _kRequestAccessDraftKey = 'request_access_draft.v1';
+const String _kSelectedTabIndexKey = 'selected_tab_index.v1';
+
+final PersistedFilterMapSchema _approvedFiltersSchema =
+    _buildClientAgentsApprovedFiltersSchema();
+
+final PersistedFilterMapSchema _requestsFiltersSchema =
+    _buildClientAgentsRequestsFiltersSchema();
+
+PersistedFilterMapSchema _buildClientAgentsApprovedFiltersSchema() {
+  return PersistedFilterMapSchema(
+    rules: <PersistedFilterRule>[
+      PersistedFilterMapSchema.trimmedString('search'),
+      PersistedFilterMapSchema.stringIfAllowed(
+        key: 'connectionStatus',
+        allowedValues: <String>{'online', 'offline', 'unknown'},
+      ),
+      PersistedFilterMapSchema.stringIfAllowed(
+        key: 'catalogStatus',
+        allowedValues: <String>{'active', 'inactive'},
+      ),
+    ],
+  );
+}
+
+PersistedFilterMapSchema _buildClientAgentsRequestsFiltersSchema() {
+  return PersistedFilterMapSchema(
+    rules: <PersistedFilterRule>[
+      PersistedFilterMapSchema.trimmedString('search'),
+      PersistedFilterMapSchema.stringIfAllowed(
+        key: 'requestStatus',
+        allowedValues: <String>{
+          'pending',
+          'approved',
+          'rejected',
+          'expired',
+          'unknown',
+        },
+      ),
+      PersistedFilterMapSchema.stringIfAllowed(
+        key: 'pendingState',
+        allowedValues: <String>{'queued', 'syncing', 'failed', 'synced'},
+      ),
+    ],
+  );
+}
+
+PersistedPageSessionStore _clientAgentsSessionStore(SharedPreferences prefs) {
+  return PersistedPageSessionStore(
+    prefs: prefs,
+    namespace: _kClientAgentsSessionNamespace,
+  );
+}
+
+@immutable
+class ClientAgentsPageSessionState {
+  const ClientAgentsPageSessionState({
+    required this.selectedTabIndex,
+    required this.approvedAgentFilters,
+    required this.requestsFilters,
+    required this.requestAccessDraft,
+  });
+
+  factory ClientAgentsPageSessionState.restore({
+    required SharedPreferences prefs,
+    required int fallbackTabIndex,
+    required int maxTabIndex,
+  }) {
+    return ClientAgentsPageSessionState(
+      selectedTabIndex: restoreClientAgentsSelectedTabIndex(
+        prefs: prefs,
+        fallbackIndex: fallbackTabIndex,
+        maxTabIndex: maxTabIndex,
+      ),
+      approvedAgentFilters: restoreClientAgentsApprovedFilters(prefs),
+      requestsFilters: restoreClientAgentsRequestsFilters(prefs),
+      requestAccessDraft: restoreClientAgentsRequestAccessDraft(prefs),
+    );
+  }
+
+  final int selectedTabIndex;
+  final Map<String, Object?> approvedAgentFilters;
+  final Map<String, Object?> requestsFilters;
+  final String requestAccessDraft;
+
+  ClientAgentsPageSessionState copyWith({
+    int? selectedTabIndex,
+    Map<String, Object?>? approvedAgentFilters,
+    Map<String, Object?>? requestsFilters,
+    String? requestAccessDraft,
+  }) {
+    return ClientAgentsPageSessionState(
+      selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
+      approvedAgentFilters: approvedAgentFilters ?? this.approvedAgentFilters,
+      requestsFilters: requestsFilters ?? this.requestsFilters,
+      requestAccessDraft: requestAccessDraft ?? this.requestAccessDraft,
+    );
+  }
+}
 
 int clientAgentsApprovedActiveFilterCount(
   AppLocalizations l10n,
@@ -147,148 +245,80 @@ List<AppReportFilterDescriptor> buildClientAgentsRequestsFilterDescriptors(
 Map<String, Object?> restoreClientAgentsApprovedFilters(
   SharedPreferences prefs,
 ) {
-  final raw = prefs.getString(kClientAgentsApprovedFiltersPrefsKey);
-  if (raw == null || raw.isEmpty) {
-    return <String, Object?>{};
-  }
-
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) {
-      return <String, Object?>{};
-    }
-
-    final restored = <String, Object?>{};
-    final search = decoded['search'];
-    if (search is String && search.trim().isNotEmpty) {
-      restored['search'] = search.trim();
-    }
-
-    final connectionStatus = decoded['connectionStatus'];
-    if (connectionStatus is String &&
-        const <String>{'online', 'offline', 'unknown'}.contains(
-          connectionStatus,
-        )) {
-      restored['connectionStatus'] = connectionStatus;
-    }
-
-    final catalogStatus = decoded['catalogStatus'];
-    if (catalogStatus is String &&
-        const <String>{'active', 'inactive'}.contains(catalogStatus)) {
-      restored['catalogStatus'] = catalogStatus;
-    }
-
-    return restored;
-  } on FormatException {
-    return <String, Object?>{};
-  }
+  final decoded = _clientAgentsSessionStore(prefs).restoreJsonMap(
+    suffix: _kApprovedFiltersKey,
+  );
+  return _approvedFiltersSchema.apply(decoded);
 }
 
 Future<void> persistClientAgentsApprovedFilters(
   SharedPreferences prefs,
   Map<String, Object?> approvedAgentFilters,
 ) async {
-  final payload = <String, Object?>{};
-  final search = approvedAgentFilters['search'];
-  if (search is String && search.trim().isNotEmpty) {
-    payload['search'] = search.trim();
-  }
+  final payload = _approvedFiltersSchema.apply(approvedAgentFilters);
 
-  final connectionStatus = approvedAgentFilters['connectionStatus'];
-  if (connectionStatus is String && connectionStatus.isNotEmpty) {
-    payload['connectionStatus'] = connectionStatus;
-  }
-
-  final catalogStatus = approvedAgentFilters['catalogStatus'];
-  if (catalogStatus is String && catalogStatus.isNotEmpty) {
-    payload['catalogStatus'] = catalogStatus;
-  }
-
-  if (payload.isEmpty) {
-    await prefs.remove(kClientAgentsApprovedFiltersPrefsKey);
-    return;
-  }
-
-  await prefs.setString(
-    kClientAgentsApprovedFiltersPrefsKey,
-    jsonEncode(payload),
+  await _clientAgentsSessionStore(prefs).persistJsonMap(
+    suffix: _kApprovedFiltersKey,
+    value: payload,
   );
 }
 
 Map<String, Object?> restoreClientAgentsRequestsFilters(
   SharedPreferences prefs,
 ) {
-  final raw = prefs.getString(kClientAgentsRequestsFiltersPrefsKey);
-  if (raw == null || raw.isEmpty) {
-    return <String, Object?>{};
-  }
-
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) {
-      return <String, Object?>{};
-    }
-
-    final restored = <String, Object?>{};
-    final search = decoded['search'];
-    if (search is String && search.trim().isNotEmpty) {
-      restored['search'] = search.trim();
-    }
-
-    final requestStatus = decoded['requestStatus'];
-    if (requestStatus is String &&
-        const <String>{
-          'pending',
-          'approved',
-          'rejected',
-          'expired',
-          'unknown',
-        }.contains(requestStatus)) {
-      restored['requestStatus'] = requestStatus;
-    }
-
-    final pendingState = decoded['pendingState'];
-    if (pendingState is String &&
-        const <String>{'queued', 'syncing', 'failed', 'synced'}.contains(
-          pendingState,
-        )) {
-      restored['pendingState'] = pendingState;
-    }
-
-    return restored;
-  } on FormatException {
-    return <String, Object?>{};
-  }
+  final decoded = _clientAgentsSessionStore(prefs).restoreJsonMap(
+    suffix: _kRequestsFiltersKey,
+  );
+  return _requestsFiltersSchema.apply(decoded);
 }
 
 Future<void> persistClientAgentsRequestsFilters(
   SharedPreferences prefs,
   Map<String, Object?> requestsFilters,
 ) async {
-  final payload = <String, Object?>{};
-  final search = requestsFilters['search'];
-  if (search is String && search.trim().isNotEmpty) {
-    payload['search'] = search.trim();
-  }
+  final payload = _requestsFiltersSchema.apply(requestsFilters);
 
-  final requestStatus = requestsFilters['requestStatus'];
-  if (requestStatus is String && requestStatus.isNotEmpty) {
-    payload['requestStatus'] = requestStatus;
-  }
+  await _clientAgentsSessionStore(prefs).persistJsonMap(
+    suffix: _kRequestsFiltersKey,
+    value: payload,
+  );
+}
 
-  final pendingState = requestsFilters['pendingState'];
-  if (pendingState is String && pendingState.isNotEmpty) {
-    payload['pendingState'] = pendingState;
-  }
+String restoreClientAgentsRequestAccessDraft(SharedPreferences prefs) {
+  return _clientAgentsSessionStore(prefs).restoreText(
+    suffix: _kRequestAccessDraftKey,
+  );
+}
 
-  if (payload.isEmpty) {
-    await prefs.remove(kClientAgentsRequestsFiltersPrefsKey);
-    return;
-  }
+Future<void> persistClientAgentsRequestAccessDraft(
+  SharedPreferences prefs,
+  String draft,
+) async {
+  await _clientAgentsSessionStore(prefs).persistText(
+    suffix: _kRequestAccessDraftKey,
+    value: draft,
+  );
+}
 
-  await prefs.setString(
-    kClientAgentsRequestsFiltersPrefsKey,
-    jsonEncode(payload),
+int restoreClientAgentsSelectedTabIndex({
+  required SharedPreferences prefs,
+  required int fallbackIndex,
+  required int maxTabIndex,
+}) {
+  return _clientAgentsSessionStore(prefs).restoreTabIndex(
+    suffix: _kSelectedTabIndexKey,
+    fallbackIndex: fallbackIndex,
+    maxTabIndex: maxTabIndex,
+  );
+}
+
+Future<void> persistClientAgentsSelectedTabIndex(
+  SharedPreferences prefs,
+  int tabIndex,
+) async {
+  await _clientAgentsSessionStore(prefs).persistTabIndex(
+    suffix: _kSelectedTabIndexKey,
+    tabIndex: tabIndex,
   );
 }
 

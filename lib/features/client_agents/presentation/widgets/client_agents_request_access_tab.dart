@@ -10,11 +10,15 @@ class ClientAgentsRequestAccessTab extends StatefulWidget {
     required this.onClearMessages,
     required this.isMutating,
     super.key,
+    this.initialDraft = '',
+    this.onDraftChanged,
   });
 
-  final ValueChanged<Set<String>> onRequestAccess;
+  final Future<bool> Function(Set<String> agentIds) onRequestAccess;
   final VoidCallback onClearMessages;
   final bool isMutating;
+  final String initialDraft;
+  final ValueChanged<String>? onDraftChanged;
 
   @override
   State<ClientAgentsRequestAccessTab> createState() =>
@@ -34,6 +38,21 @@ class _ClientAgentsRequestAccessTabState
   final TextEditingController _agentIdsController = TextEditingController();
   String? _validationMessage;
   String? _inputNoteMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _agentIdsController.text = widget.initialDraft;
+  }
+
+  @override
+  void didUpdateWidget(covariant ClientAgentsRequestAccessTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialDraft != widget.initialDraft &&
+        widget.initialDraft != _agentIdsController.text) {
+      _agentIdsController.text = widget.initialDraft;
+    }
+  }
 
   @override
   void dispose() {
@@ -67,6 +86,7 @@ class _ClientAgentsRequestAccessTabState
               });
             }
             widget.onClearMessages();
+            widget.onDraftChanged?.call(_agentIdsController.text);
           },
         ),
         if (_validationMessage case final String message) ...<Widget>[
@@ -101,7 +121,7 @@ class _ClientAgentsRequestAccessTabState
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
     final parsed = _parseAgentIds(_agentIdsController.text);
     if (parsed.validAgentIds.isEmpty) {
@@ -116,7 +136,16 @@ class _ClientAgentsRequestAccessTabState
       return;
     }
 
-    widget.onRequestAccess(parsed.validAgentIds);
+    final accepted = await widget.onRequestAccess(parsed.validAgentIds);
+    if (!mounted) {
+      return;
+    }
+
+    if (accepted) {
+      _agentIdsController.clear();
+      widget.onDraftChanged?.call('');
+    }
+
     setState(() {
       _validationMessage = null;
       _inputNoteMessage = parsed.duplicatedAgentIds.isEmpty

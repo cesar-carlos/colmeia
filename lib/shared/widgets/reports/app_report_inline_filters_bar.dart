@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
@@ -336,6 +337,7 @@ class _InlineFilterField extends StatelessWidget {
   };
 
   Widget _buildTextField(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final controller = textController;
     if (controller == null) return const SizedBox.shrink();
 
@@ -347,13 +349,13 @@ class _InlineFilterField extends StatelessWidget {
           return AppTextField(
             controller: controller,
             enabled: !isLoading,
-            hintText: descriptor.hint ?? 'Filtrar...',
+            hintText: descriptor.hint ?? l10n.reportInlineFiltersHint,
             prefixIcon: Icons.search_rounded,
             density: AppTextFieldDensity.compact,
             suffix: controller.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.close_rounded, size: 16),
-                    tooltip: 'Limpar',
+                    tooltip: l10n.reportFiltersClearTooltip,
                     onPressed: isLoading
                         ? null
                         : () {
@@ -370,9 +372,13 @@ class _InlineFilterField extends StatelessWidget {
   }
 
   Widget _buildDropdown(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final currentValue = currentValues[descriptor.name] as String?;
     final allOptions = <AppDropdownOption<String>>[
-      const AppDropdownOption<String>(value: '', label: 'Todos'),
+      AppDropdownOption<String>(
+        value: '',
+        label: l10n.reportInlineFiltersAllOption,
+      ),
       ...descriptor.options.map(
         (o) => AppDropdownOption<String>(value: o.value, label: o.label),
       ),
@@ -399,13 +405,14 @@ class _InlineFilterField extends StatelessWidget {
   }
 
   Widget _buildDateRangeButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final current = currentValues[descriptor.name] as DateTimeRange?;
     final label = current != null
         ? '${_fmtDate(current.start)} – ${_fmtDate(current.end)}'
-        : 'Selecionar período';
+        : l10n.reportInlineFiltersSelectPeriod;
 
     return GestureDetector(
       onTap: isLoading
@@ -437,11 +444,14 @@ class _InlineFilterField extends StatelessWidget {
   }
 
   Widget _buildDateButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final current = currentValues[descriptor.name] as DateTime?;
-    final label = current != null ? _fmtDate(current) : 'Selecionar data';
+    final label = current != null
+        ? _fmtDate(current)
+        : l10n.reportInlineFiltersSelectDate;
 
     return GestureDetector(
       onTap: isLoading
@@ -542,8 +552,9 @@ class _ClearButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Tooltip(
-      message: 'Limpar filtros',
+      message: l10n.reportFiltersClearAllTooltip,
       child: IconButton.outlined(
         icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
         onPressed: onClear,
@@ -563,8 +574,9 @@ class _AdvancedFiltersButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Tooltip(
-      message: 'Filtros avançados',
+      message: l10n.reportFiltersAdvancedButton,
       child: IconButton.filled(
         icon: const Icon(Icons.tune_rounded, size: 18),
         onPressed: onPressed,

@@ -380,7 +380,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentDetailLoadErrorTitle => 'Could not load the agent';
 
   @override
+  String get clientAgentFieldTradeName => 'Trade name';
+
+  @override
   String get clientAgentFieldDocument => 'Document';
+
+  @override
+  String get clientAgentFieldCnpjCpf => 'CNPJ/CPF';
 
   @override
   String get clientAgentFieldEmail => 'Email';
@@ -550,8 +556,99 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentsPendingFilterSynced => 'Sent';
 
   @override
+  String get reportFiltersTitle => 'Filters';
+
+  @override
+  String reportFiltersTitleWithContext(String title) {
+    return 'Filters - $title';
+  }
+
+  @override
+  String get reportFiltersDescription =>
+      'Adjust the query and apply only the slices that make sense for this analysis.';
+
+  @override
+  String reportFiltersFieldCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fields',
+      one: '1 field',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reportFiltersRequiredCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count required',
+      one: '1 required',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String reportFiltersActiveCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active',
+      one: '1 active',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportFiltersClearAction => 'Clear';
+
+  @override
+  String get reportFiltersApplyAction => 'Apply filters';
+
+  @override
+  String get reportFiltersButton => 'Filters';
+
+  @override
+  String reportFiltersButtonActive(int count) {
+    return 'Filters ($count active)';
+  }
+
+  @override
+  String get reportFiltersClearTooltip => 'Clear';
+
+  @override
+  String get reportFiltersClearAllTooltip => 'Clear filters';
+
+  @override
+  String get reportFiltersAdvancedButton => 'Advanced filters';
+
+  @override
+  String get reportInlineFiltersHint => 'Filter...';
+
+  @override
+  String get reportInlineFiltersAllOption => 'All';
+
+  @override
+  String get reportInlineFiltersSelectPeriod => 'Select period';
+
+  @override
+  String get reportInlineFiltersSelectDate => 'Select date';
+
+  @override
+  String get reportFiltersAppliedSectionTitle => 'Applied filters';
+
+  @override
   String get clientAgentsErrorLoadCatalog =>
       'Could not load the agent catalog.';
+
+  @override
+  String get clientAgentsErrorLoadCatalogAgent =>
+      'Could not load this catalog agent.';
+
+  @override
+  String get clientAgentsErrorLoadClientAccessStatus =>
+      'Could not read the access request status.';
 
   @override
   String get clientAgentsErrorLoadApproved =>
