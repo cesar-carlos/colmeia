@@ -82,6 +82,7 @@ flutter_launcher_icons:
     theme_color: "#FFB300"
 
 flutter:
+  generate: true
   uses-material-design: true
 
   assets:

@@ -2,6 +2,9 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
+import 'package:colmeia/features/client_agents/presentation/localization/client_agents_failure_l10n.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
 
 class ClientAgentDetailController extends ChangeNotifier {
@@ -13,6 +16,14 @@ class ClientAgentDetailController extends ChangeNotifier {
 
   final AuthController _authController;
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;
+
+  AppLocalizations? _l10n;
+
+  AppLocalizations? get activeLocalizations => _l10n;
+
+  set activeLocalizations(AppLocalizations value) => _l10n = value;
+
+  AppLocalizations get _s => _l10n ?? AppLocalizationsEn();
 
   ClientAgent? _agent;
   String? _errorMessage;
@@ -31,7 +42,7 @@ class ClientAgentDetailController extends ChangeNotifier {
 
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _errorMessage = 'Sessao indisponivel para carregar o agente.';
+      _errorMessage = _s.clientAgentDetailSessionUnavailable;
       _notifyListenersIfAlive();
       return;
     }
@@ -56,7 +67,7 @@ class ClientAgentDetailController extends ChangeNotifier {
       },
       (failure) {
         _agent = null;
-        _errorMessage = failure.displayMessage;
+        _errorMessage = clientAgentsFailureUserMessage(failure, _s);
         AppLogger.warning(
           'Client agent detail load failed',
           context: <String, Object?>{

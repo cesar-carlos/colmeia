@@ -1,0 +1,533 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for English (`en`).
+class AppLocalizationsEn extends AppLocalizations {
+  AppLocalizationsEn([String locale = 'en']) : super(locale);
+
+  @override
+  String get shellNavDashboardLabel => 'Dashboard';
+
+  @override
+  String get shellNavDashboardSubtitle => 'Operational summary and KPIs';
+
+  @override
+  String get shellNavAgentsLabel => 'Agents';
+
+  @override
+  String get shellNavAgentsSubtitle => 'Data sources and access';
+
+  @override
+  String get shellNavSettingsLabel => 'Profile';
+
+  @override
+  String get shellNavSettingsSubtitle => 'Account and preferences';
+
+  @override
+  String get userPermissionViewDashboard => 'Main dashboard';
+
+  @override
+  String get userPermissionManageAgents => 'Agent management';
+
+  @override
+  String get clientAgentsDataSourcesEyebrow => 'Data sources';
+
+  @override
+  String get clientAgentsPageTitle => 'Agent management';
+
+  @override
+  String get clientAgentsPageSubtitle =>
+      'Track your approved agents, request new access, and follow the status of your requests.';
+
+  @override
+  String clientAgentsPendingActionsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actions to send',
+      one: '1 action to send',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get clientAgentsRefresh => 'Refresh';
+
+  @override
+  String get clientAgentsSubmitRequests => 'Send requests';
+
+  @override
+  String get clientAgentsActionFailedTitle => 'Could not complete the action';
+
+  @override
+  String get clientAgentsMaintenanceTitle => 'Agent maintenance';
+
+  @override
+  String get clientAgentsMaintenanceSubtitle =>
+      'Use the tabs to see approved agents, request new access, and follow your request history.';
+
+  @override
+  String get clientAgentsTabMyAgents => 'My agents';
+
+  @override
+  String get clientAgentsTabRequestAccess => 'Request access';
+
+  @override
+  String get clientAgentsTabRequests => 'Requests';
+
+  @override
+  String get clientAgentsLoadApprovedErrorTitle => 'Could not load your agents';
+
+  @override
+  String clientAgentsEmptyApproved(String tabLabel) {
+    return 'No approved agents yet. Request access in the \"$tabLabel\" tab.';
+  }
+
+  @override
+  String get clientAgentsNoTradeName => 'No trade name';
+
+  @override
+  String get agentCatalogInactive => 'inactive';
+
+  @override
+  String get agentCatalogActive => 'active';
+
+  @override
+  String get agentConnectionOnline => 'online';
+
+  @override
+  String get agentConnectionOffline => 'offline';
+
+  @override
+  String get agentConnectionUnknown => 'operational status unavailable';
+
+  @override
+  String get clientAgentsRemoveAccess => 'Remove access';
+
+  @override
+  String get clientAgentsRequestAccessIntro1 =>
+      'Enter one or more agent IDs to request access for this account. Use commas, spaces, or line breaks to separate the UUIDs.';
+
+  @override
+  String get clientAgentsRequestAccessIntro2 =>
+      'The agent ID must be provided by the agent owner or an external flow. When the request is approved, the agent will be released automatically for this account.';
+
+  @override
+  String get clientAgentsAgentIdsLabel => 'Agent IDs';
+
+  @override
+  String get clientAgentsRequestAccessCta => 'Request access';
+
+  @override
+  String get clientAgentsValidationNeedOneValidId =>
+      'Enter at least one valid agent ID to continue.';
+
+  @override
+  String clientAgentsValidationInvalidIds(String ids) {
+    return 'The following agent IDs are invalid: $ids.';
+  }
+
+  @override
+  String clientAgentsDuplicatedIdsNote(String ids) {
+    return 'Duplicate IDs were ignored automatically: $ids.';
+  }
+
+  @override
+  String get clientAgentsLoadRequestsErrorTitle => 'Could not load requests';
+
+  @override
+  String get clientAgentsLoadPendingErrorTitle =>
+      'Could not load pending submissions';
+
+  @override
+  String get clientAgentsNoRequestsYet => 'No requests at the moment.';
+
+  @override
+  String get clientAgentsRequestStatusPending => 'Pending';
+
+  @override
+  String get clientAgentsRequestStatusApproved => 'Approved';
+
+  @override
+  String get clientAgentsRequestStatusRejected => 'Rejected';
+
+  @override
+  String get clientAgentsRequestStatusExpired => 'Expired';
+
+  @override
+  String get clientAgentsRequestStatusUnknown => 'Status unavailable';
+
+  @override
+  String get clientAgentsRequestDescPending =>
+      'Under review by the agent owner.';
+
+  @override
+  String get clientAgentsRequestDescApproved =>
+      'Approved and available for this account.';
+
+  @override
+  String get clientAgentsRequestDescRejected =>
+      'Not approved by the agent owner.';
+
+  @override
+  String get clientAgentsRequestDescExpired =>
+      'The request expired. Submit again if needed.';
+
+  @override
+  String get clientAgentsRequestDescUnknown =>
+      'The status of this request is not available yet.';
+
+  @override
+  String get clientAgentsPendingDescQueued => 'Ready to send.';
+
+  @override
+  String get clientAgentsPendingDescSyncing => 'Sending now.';
+
+  @override
+  String get clientAgentsPendingDescFailed => 'Could not send. Try again.';
+
+  @override
+  String get clientAgentsPendingDescSynced => 'Sent.';
+
+  @override
+  String get clientAgentsPendingChipRequest => 'Request';
+
+  @override
+  String get clientAgentsPendingChipRemove => 'Remove';
+
+  @override
+  String get clientAgentsPendingChipQueued => 'ready to send';
+
+  @override
+  String get clientAgentsPendingChipSyncing => 'sending';
+
+  @override
+  String get clientAgentsPendingChipFailed => 'failed';
+
+  @override
+  String get clientAgentsPendingChipSynced => 'sent';
+
+  @override
+  String clientAgentsPendingSendTitle(String agentId) {
+    return 'Pending send: $agentId';
+  }
+
+  @override
+  String get clientAgentsSessionUnavailableLoad =>
+      'Session unavailable to load agents.';
+
+  @override
+  String get clientAgentsSessionUnavailableRequest =>
+      'Session unavailable to request access.';
+
+  @override
+  String get clientAgentsSessionUnavailableRemove =>
+      'Session unavailable to remove access.';
+
+  @override
+  String get clientAgentsSessionUnavailableSync =>
+      'Session unavailable to sync pending items.';
+
+  @override
+  String get clientAgentDetailSessionUnavailable =>
+      'Session unavailable to load the agent.';
+
+  @override
+  String get clientAgentsNoLocalPendingToSync =>
+      'There are no local pending items to sync.';
+
+  @override
+  String get clientAgentsRequestBlockedFallback =>
+      'Could not register the requested access request.';
+
+  @override
+  String clientAgentsRequestBlockedIntro(String details) {
+    return 'No new agents can be requested with the IDs provided. $details';
+  }
+
+  @override
+  String clientAgentsRequestBlockedAlreadyApproved(String ids) {
+    return 'Already approved: $ids.';
+  }
+
+  @override
+  String clientAgentsRequestBlockedAlreadyReview(String ids) {
+    return 'Already under review: $ids.';
+  }
+
+  @override
+  String clientAgentsRequestBlockedAlreadyQueued(String ids) {
+    return 'Already queued for sending: $ids.';
+  }
+
+  @override
+  String get clientAgentsRequestQueuedWatchingSingle =>
+      'Request submitted. We will track approval automatically.';
+
+  @override
+  String clientAgentsRequestQueuedWatchingPlural(int count) {
+    return '$count requests submitted. We will track approvals automatically.';
+  }
+
+  @override
+  String clientAgentsRequestQueuedIgnoredSuffix(int count) {
+    return '$count IDs were ignored because they were already approved or under review.';
+  }
+
+  @override
+  String get clientAgentsRemoveBlockedFallback =>
+      'Could not register the requested removal.';
+
+  @override
+  String clientAgentsRemoveBlockedIntro(String details) {
+    return 'No new agents can be removed with the IDs provided. $details';
+  }
+
+  @override
+  String clientAgentsRemoveBlockedNotApproved(String ids) {
+    return 'No approved access: $ids.';
+  }
+
+  @override
+  String clientAgentsRemoveBlockedAlreadyQueued(String ids) {
+    return 'Removal already queued for sending: $ids.';
+  }
+
+  @override
+  String get clientAgentsRemoveQueuedSingle =>
+      'Access removal prepared and queued for sync.';
+
+  @override
+  String clientAgentsRemoveQueuedPlural(int count) {
+    return '$count access removals prepared and queued for sync.';
+  }
+
+  @override
+  String clientAgentsRemoveQueuedIgnoredSuffix(int count) {
+    return '$count IDs were ignored.';
+  }
+
+  @override
+  String get clientAgentsSyncSuccessSingle => '1 request was sent for review.';
+
+  @override
+  String clientAgentsSyncSuccessPlural(int count) {
+    return '$count requests were sent for review.';
+  }
+
+  @override
+  String get clientAgentsSyncSuccessAutoSuffix => ' It was sent automatically.';
+
+  @override
+  String get clientAgentsSyncSuccessManualSuffix =>
+      ' The screen was refreshed with the latest status.';
+
+  @override
+  String get clientAgentsSyncSuccessPollingSuffix =>
+      ' We will track approval automatically.';
+
+  @override
+  String clientAgentsPollApprovedSingle(String tabLabel) {
+    return 'Access approved. The agent is already available under \"$tabLabel\".';
+  }
+
+  @override
+  String clientAgentsPollApprovedPlural(int count, String tabLabel) {
+    return '$count accesses were approved. The agents are already available under \"$tabLabel\".';
+  }
+
+  @override
+  String get clientAgentsPollDeniedSingle =>
+      '1 request was closed without approval.';
+
+  @override
+  String clientAgentsPollDeniedPlural(int count) {
+    return '$count requests were closed without approval.';
+  }
+
+  @override
+  String get clientAgentsPollTimeoutSingle =>
+      '1 request is still under review. Refresh this screen later to check the result.';
+
+  @override
+  String clientAgentsPollTimeoutPlural(int count) {
+    return '$count requests are still under review and you can refresh this screen later to check the result.';
+  }
+
+  @override
+  String get clientAgentsPollRemainingSingle =>
+      'There is still 1 request under review.';
+
+  @override
+  String clientAgentsPollRemainingPlural(int count) {
+    return 'There are still $count requests under review.';
+  }
+
+  @override
+  String get clientAgentDetailEyebrow => 'Detail';
+
+  @override
+  String get clientAgentDetailTitle => 'Agent';
+
+  @override
+  String get clientAgentDetailSubtitle =>
+      'Detailed information for the agent approved for this account.';
+
+  @override
+  String get clientAgentDetailLoadErrorTitle => 'Could not load the agent';
+
+  @override
+  String get clientAgentFieldDocument => 'Document';
+
+  @override
+  String get clientAgentFieldEmail => 'Email';
+
+  @override
+  String get clientAgentFieldPhone => 'Phone';
+
+  @override
+  String get clientAgentFieldCity => 'City';
+
+  @override
+  String get clientAgentValueNotAvailable => 'N/A';
+
+  @override
+  String get clientAgentAddressNotProvided => 'Address not provided';
+
+  @override
+  String get clientAgentsFilterSheetTitle => 'Agent filters';
+
+  @override
+  String get clientAgentsFilterSearchLabel => 'Search agent';
+
+  @override
+  String get clientAgentsFilterSearchHint => 'Name, agentId, or trade name';
+
+  @override
+  String get clientAgentsFilterConnectionLabel => 'Connection';
+
+  @override
+  String get clientAgentsFilterConnectionOnline => 'Online';
+
+  @override
+  String get clientAgentsFilterConnectionOffline => 'Offline';
+
+  @override
+  String get clientAgentsFilterConnectionUnknown => 'Unavailable';
+
+  @override
+  String get clientAgentsFilterCatalogLabel => 'Catalog';
+
+  @override
+  String get clientAgentsFilterCatalogActive => 'Active';
+
+  @override
+  String get clientAgentsFilterCatalogInactive => 'Inactive';
+
+  @override
+  String clientAgentsFilterSummarySearch(String query) {
+    return 'Search: $query';
+  }
+
+  @override
+  String clientAgentsFilterSummaryConnection(String label) {
+    return 'Connection: $label';
+  }
+
+  @override
+  String clientAgentsFilterSummaryCatalog(String label) {
+    return 'Catalog: $label';
+  }
+
+  @override
+  String get clientAgentsEmptyFilteredApproved =>
+      'No agents match the selected filters.';
+
+  @override
+  String get clientAgentsRequestsFilterSheetTitle => 'Request filters';
+
+  @override
+  String get clientAgentsRequestsFilterSearchLabel => 'Search';
+
+  @override
+  String get clientAgentsRequestsFilterSearchHint => 'Agent name or agent ID';
+
+  @override
+  String get clientAgentsRequestsFilterStatusLabel => 'Request status';
+
+  @override
+  String get clientAgentsRequestsFilterPendingLabel => 'Queued action';
+
+  @override
+  String clientAgentsRequestsFilterSummaryRequest(String label) {
+    return 'Request: $label';
+  }
+
+  @override
+  String clientAgentsRequestsFilterSummaryPending(String label) {
+    return 'Pending: $label';
+  }
+
+  @override
+  String get clientAgentsFiltersTooltip => 'Filters';
+
+  @override
+  String clientAgentsFiltersTooltipActive(int count) {
+    return 'Filters ($count active)';
+  }
+
+  @override
+  String get clientAgentsEmptyFilteredRequests =>
+      'No requests match the selected filters.';
+
+  @override
+  String get clientAgentsPendingFilterQueued => 'Ready to send';
+
+  @override
+  String get clientAgentsPendingFilterSyncing => 'Sending…';
+
+  @override
+  String get clientAgentsPendingFilterFailed => 'Failed';
+
+  @override
+  String get clientAgentsPendingFilterSynced => 'Sent';
+
+  @override
+  String get clientAgentsErrorLoadCatalog =>
+      'Could not load the agent catalog.';
+
+  @override
+  String get clientAgentsErrorLoadApproved =>
+      'Could not load approved agents for this account.';
+
+  @override
+  String get clientAgentsErrorLoadAgentDetail =>
+      'Could not load agent details.';
+
+  @override
+  String get clientAgentsErrorLoadAccessRequests =>
+      'Could not load request history.';
+
+  @override
+  String get clientAgentsErrorReadPending =>
+      'Could not load pending submissions to sync.';
+
+  @override
+  String get clientAgentsErrorQueueRequest =>
+      'Could not queue the access request for sync.';
+
+  @override
+  String get clientAgentsErrorQueueRemove =>
+      'Could not queue the removal for sync.';
+
+  @override
+  String get clientAgentsErrorSyncAction =>
+      'Could not sync the change for this agent.';
+
+  @override
+  String get clientAgentsErrorSyncPending =>
+      'Could not sync pending agent actions.';
+}

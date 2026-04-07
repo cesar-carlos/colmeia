@@ -1,7 +1,8 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
+import 'package:colmeia/core/localization/app_locale_resolution.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -16,11 +17,9 @@ class ColmeiaApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'Colmeia',
       debugShowCheckedModeBanner: false,
-      supportedLocales: const <Locale>[
-        Locale('pt', 'BR'),
-        Locale('en'),
-      ],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localeResolutionCallback: lookupColmeiaLocale,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,

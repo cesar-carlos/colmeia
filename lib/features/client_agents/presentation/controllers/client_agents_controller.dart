@@ -16,6 +16,9 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent_acce
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:colmeia/features/client_agents/presentation/localization/client_agents_failure_l10n.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
 
 enum ClientAgentsActionFeedbackKind { info, success }
@@ -53,6 +56,14 @@ class ClientAgentsController extends ChangeNotifier {
   final QueueClientAgentRemoveAccessUseCase _queueRemoveAccessUseCase;
   final ReadPendingClientAgentActionsUseCase _readPendingActionsUseCase;
   final SyncPendingClientAgentActionsUseCase _syncPendingActionsUseCase;
+
+  AppLocalizations? _l10n;
+
+  AppLocalizations? get activeLocalizations => _l10n;
+
+  set activeLocalizations(AppLocalizations value) => _l10n = value;
+
+  AppLocalizations get _s => _l10n ?? AppLocalizationsEn();
 
   bool _isDisposed = false;
   bool _isLoading = false;
@@ -98,7 +109,7 @@ class ClientAgentsController extends ChangeNotifier {
   Future<void> refreshAll() async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = 'Sessao indisponivel para carregar agentes.';
+      _actionErrorMessage = _s.clientAgentsSessionUnavailableLoad;
       _notifyListenersIfAlive();
       return;
     }
@@ -148,7 +159,7 @@ class ClientAgentsController extends ChangeNotifier {
     }
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = 'Sessao indisponivel para solicitar acesso.';
+      _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
       _notifyListenersIfAlive();
       return;
     }
@@ -190,7 +201,7 @@ class ClientAgentsController extends ChangeNotifier {
     }
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = 'Sessao indisponivel para remover acesso.';
+      _actionErrorMessage = _s.clientAgentsSessionUnavailableRemove;
       _notifyListenersIfAlive();
       return;
     }
@@ -230,7 +241,7 @@ class ClientAgentsController extends ChangeNotifier {
   }) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = 'Sessao indisponivel para sincronizar pendencias.';
+      _actionErrorMessage = _s.clientAgentsSessionUnavailableSync;
       _notifyListenersIfAlive();
       return;
     }
@@ -248,7 +259,7 @@ class ClientAgentsController extends ChangeNotifier {
     if (pendingCount == 0) {
       if (!autoTriggered) {
         _setActionFeedback(
-          message: 'Nao ha pendencias locais para sincronizar.',
+          message: _s.clientAgentsNoLocalPendingToSync,
           kind: ClientAgentsActionFeedbackKind.info,
         );
         _notifyListenersIfAlive();
@@ -357,7 +368,7 @@ class ClientAgentsController extends ChangeNotifier {
           error: failure.cause ?? failure,
           stackTrace: failure.stackTrace,
         );
-        return failure.displayMessage;
+        return clientAgentsFailureUserMessage(failure, _s);
       },
     );
   }
@@ -519,9 +530,7 @@ class ClientAgentsController extends ChangeNotifier {
           timedOutNow: timedOutNow,
           remaining: _trackedApprovalAgentIds.length,
         ),
-        kind: approvedNow.isNotEmpty &&
-                deniedNow.isEmpty &&
-                timedOutNow.isEmpty
+        kind: approvedNow.isNotEmpty && deniedNow.isEmpty && timedOutNow.isEmpty
             ? ClientAgentsActionFeedbackKind.success
             : ClientAgentsActionFeedbackKind.info,
       );
@@ -699,16 +708,17 @@ class ClientAgentsController extends ChangeNotifier {
     final localPendingMessage = classification.localPending.join(', ');
     final parts = <String>[
       if (classification.approved.isNotEmpty)
-        'Ja aprovados: ${classification.approved.join(', ')}.',
+        _s.clientAgentsRequestBlockedAlreadyApproved(
+          classification.approved.join(', '),
+        ),
       if (classification.remotePending.isNotEmpty)
-        'Ja em analise: $remotePendingMessage.',
+        _s.clientAgentsRequestBlockedAlreadyReview(remotePendingMessage),
       if (classification.localPending.isNotEmpty)
-        'Ja preparados para envio: $localPendingMessage.',
+        _s.clientAgentsRequestBlockedAlreadyQueued(localPendingMessage),
     ];
     return parts.isEmpty
-        ? 'Nao foi possivel registrar a solicitacao informada.'
-        : 'Nenhum novo agente pode ser solicitado com os IDs informados. '
-              '${parts.join(' ')}';
+        ? _s.clientAgentsRequestBlockedFallback
+        : _s.clientAgentsRequestBlockedIntro(parts.join(' '));
   }
 
   String _buildQueuedRequestMessage(
@@ -726,14 +736,13 @@ class ClientAgentsController extends ChangeNotifier {
         classification.remotePending.length +
         classification.localPending.length;
     final baseMessage = queuedCount == 1
-        ? 'Solicitacao enviada. Vamos acompanhar a aprovacao automaticamente.'
-        : '$queuedCount solicitacoes enviadas. '
-              'Vamos acompanhar as aprovacoes automaticamente.';
+        ? _s.clientAgentsRequestQueuedWatchingSingle
+        : _s.clientAgentsRequestQueuedWatchingPlural(queuedCount);
     if (ignoredCount == 0) {
       return baseMessage;
     }
-    return '$baseMessage $ignoredCount IDs foram ignorados porque '
-        'ja estavam aprovados ou em analise.';
+    return '$baseMessage '
+        '${_s.clientAgentsRequestQueuedIgnoredSuffix(ignoredCount)}';
   }
 
   String _buildBlockedRemoveMessage(
@@ -743,14 +752,15 @@ class ClientAgentsController extends ChangeNotifier {
     final localPendingMessage = classification.localPending.join(', ');
     final parts = <String>[
       if (classification.notApproved.isNotEmpty)
-        'Sem acesso aprovado: ${classification.notApproved.join(', ')}.',
+        _s.clientAgentsRemoveBlockedNotApproved(
+          classification.notApproved.join(', '),
+        ),
       if (classification.localPending.isNotEmpty)
-        'Remocao ja preparada para envio: $localPendingMessage.',
+        _s.clientAgentsRemoveBlockedAlreadyQueued(localPendingMessage),
     ];
     return parts.isEmpty
-        ? 'Nao foi possivel registrar a remocao informada.'
-        : 'Nenhum novo agente pode ser removido com os IDs informados. '
-              '${parts.join(' ')}';
+        ? _s.clientAgentsRemoveBlockedFallback
+        : _s.clientAgentsRemoveBlockedIntro(parts.join(' '));
   }
 
   String _buildQueuedRemoveMessage(
@@ -761,13 +771,13 @@ class ClientAgentsController extends ChangeNotifier {
     final ignoredCount =
         classification.notApproved.length + classification.localPending.length;
     final baseMessage = queuedCount == 1
-        ? 'Remocao de acesso preparada e enviada para sincronizacao.'
-        : '$queuedCount remocoes de acesso preparadas e enviadas '
-              'para sincronizacao.';
+        ? _s.clientAgentsRemoveQueuedSingle
+        : _s.clientAgentsRemoveQueuedPlural(queuedCount);
     if (ignoredCount == 0) {
       return baseMessage;
     }
-    return '$baseMessage $ignoredCount IDs foram ignorados.';
+    return '$baseMessage '
+        '${_s.clientAgentsRemoveQueuedIgnoredSuffix(ignoredCount)}';
   }
 
   String _buildSyncSuccessMessage({
@@ -776,13 +786,13 @@ class ClientAgentsController extends ChangeNotifier {
     required bool watchingApproval,
   }) {
     final prefix = pendingCount == 1
-        ? '1 solicitacao foi enviada para analise.'
-        : '$pendingCount solicitacoes foram enviadas para analise.';
+        ? _s.clientAgentsSyncSuccessSingle
+        : _s.clientAgentsSyncSuccessPlural(pendingCount);
     final suffix = autoTriggered
-        ? ' O envio aconteceu automaticamente.'
-        : ' A tela ja foi atualizada com o status mais recente.';
+        ? _s.clientAgentsSyncSuccessAutoSuffix
+        : _s.clientAgentsSyncSuccessManualSuffix;
     final polling = watchingApproval
-        ? ' Vamos acompanhar a aprovacao automaticamente.'
+        ? _s.clientAgentsSyncSuccessPollingSuffix
         : '';
     return '$prefix$suffix$polling';
   }
@@ -793,28 +803,27 @@ class ClientAgentsController extends ChangeNotifier {
     required Set<String> timedOutNow,
     required int remaining,
   }) {
+    final myAgentsTab = _s.clientAgentsTabMyAgents;
     final parts = <String>[
       if (approvedNow.isNotEmpty)
         approvedNow.length == 1
-            ? 'Acesso aprovado. O agente ja esta disponivel em "Meus agentes".'
-            : '${approvedNow.length} acessos foram aprovados. '
-                  'Os agentes ja estao disponiveis em "Meus agentes".',
+            ? _s.clientAgentsPollApprovedSingle(myAgentsTab)
+            : _s.clientAgentsPollApprovedPlural(
+                approvedNow.length,
+                myAgentsTab,
+              ),
       if (deniedNow.isNotEmpty)
         deniedNow.length == 1
-            ? '1 solicitacao foi encerrada sem aprovacao.'
-            : '${deniedNow.length} solicitacoes foram encerradas '
-                  'sem aprovacao.',
+            ? _s.clientAgentsPollDeniedSingle
+            : _s.clientAgentsPollDeniedPlural(deniedNow.length),
       if (timedOutNow.isNotEmpty)
         timedOutNow.length == 1
-            ? '1 solicitacao ainda esta em analise. '
-                  'Atualize esta tela mais tarde para verificar o resultado.'
-            : '${timedOutNow.length} solicitacoes seguem em analise '
-                  'e voce pode atualizar esta tela mais tarde para '
-                  'verificar o resultado.',
+            ? _s.clientAgentsPollTimeoutSingle
+            : _s.clientAgentsPollTimeoutPlural(timedOutNow.length),
       if (remaining > 0)
         remaining == 1
-            ? 'Ainda ha 1 solicitacao em analise.'
-            : 'Ainda ha $remaining solicitacoes em analise.',
+            ? _s.clientAgentsPollRemainingSingle
+            : _s.clientAgentsPollRemainingPlural(remaining),
     ];
     return parts.join(' ');
   }

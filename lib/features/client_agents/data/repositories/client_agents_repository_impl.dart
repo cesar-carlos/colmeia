@@ -7,6 +7,7 @@ import 'package:colmeia/features/client_agents/data/models/client_access_request
 import 'package:colmeia/features/client_agents/data/models/client_agent_profile_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
+import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_key.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
@@ -72,11 +73,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to load agent catalog',
-          fallbackUserMessage:
-              'Nao foi possivel carregar o catalogo de agentes.',
+          fallbackUserMessage: 'Could not load the agent catalog.',
           context: <String, Object?>{
             'operation': 'loadClientAgentCatalog',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadCatalog,
           },
         ),
       );
@@ -97,11 +99,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to load agent catalog',
-          fallbackUserMessage:
-              'Nao foi possivel carregar o catalogo de agentes.',
+          fallbackUserMessage: 'Could not load the agent catalog.',
           context: <String, Object?>{
             'operation': 'loadClientAgentCatalog',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadCatalog,
           },
         ),
       );
@@ -151,10 +154,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to load approved client agents',
           fallbackUserMessage:
-              'Nao foi possivel carregar os agentes aprovados para esta conta.',
+              'Could not load approved agents for this account.',
           context: <String, Object?>{
             'operation': 'loadApprovedClientAgents',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadApprovedAgents,
           },
         ),
       );
@@ -177,10 +182,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to load approved client agents',
           fallbackUserMessage:
-              'Nao foi possivel carregar os agentes aprovados para esta conta.',
+              'Could not load approved agents for this account.',
           context: <String, Object?>{
             'operation': 'loadApprovedClientAgents',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadApprovedAgents,
           },
         ),
       );
@@ -219,11 +226,13 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to load approved agent detail',
-          fallbackUserMessage: 'Nao foi possivel carregar os dados do agente.',
+          fallbackUserMessage: 'Could not load agent details.',
           context: <String, Object?>{
             'operation': 'loadApprovedAgentById',
             'userId': userId,
             'agentId': agentId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadAgentDetail,
           },
         ),
       );
@@ -243,11 +252,13 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to load approved agent detail',
-          fallbackUserMessage: 'Nao foi possivel carregar os dados do agente.',
+          fallbackUserMessage: 'Could not load agent details.',
           context: <String, Object?>{
             'operation': 'loadApprovedAgentById',
             'userId': userId,
             'agentId': agentId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadAgentDetail,
           },
         ),
       );
@@ -295,11 +306,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to load access requests',
-          fallbackUserMessage:
-              'Nao foi possivel carregar o historico de solicitacoes.',
+          fallbackUserMessage: 'Could not load request history.',
           context: <String, Object?>{
             'operation': 'loadAccessRequests',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadAccessRequests,
           },
         ),
       );
@@ -320,11 +332,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to load access requests',
-          fallbackUserMessage:
-              'Nao foi possivel carregar o historico de solicitacoes.',
+          fallbackUserMessage: 'Could not load request history.',
           context: <String, Object?>{
             'operation': 'loadAccessRequests',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadAccessRequests,
           },
         ),
       );
@@ -345,10 +358,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to read pending actions',
           fallbackUserMessage:
-              'Nao foi possivel carregar as acoes pendentes de sincronizacao.',
+              'Could not load pending submissions to sync.',
           context: <String, Object?>{
             'operation': 'readPendingClientAgentActions',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.readPendingActions,
           },
         ),
       );
@@ -381,10 +396,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to queue request-access actions',
           fallbackUserMessage:
-              'Nao foi possivel registrar a solicitacao para sincronizacao.',
+              'Could not queue the access request for sync.',
           context: <String, Object?>{
             'operation': 'queueRequestAccess',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.queueRequestAccess,
           },
         ),
       );
@@ -416,11 +433,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to queue remove-access actions',
-          fallbackUserMessage:
-              'Nao foi possivel registrar a remocao para sincronizacao.',
+          fallbackUserMessage: 'Could not queue the removal for sync.',
           context: <String, Object?>{
             'operation': 'queueRemoveAccess',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.queueRemoveAccess,
           },
         ),
       );
@@ -495,13 +513,14 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
             error,
             stackTrace: stackTrace,
             fallbackMessage: 'Unable to sync agent action',
-            fallbackUserMessage:
-                'Nao foi possivel sincronizar a alteracao do agente.',
+            fallbackUserMessage: 'Could not sync the change for this agent.',
             context: <String, Object?>{
               'operation': 'syncPendingAction',
               'userId': userId,
               'agentId': action.agentId,
               'actionType': action.type.name,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.syncPendingAction,
             },
           );
           working = working
@@ -549,11 +568,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to sync pending agent actions',
-          fallbackUserMessage:
-              'Nao foi possivel sincronizar as acoes pendentes de agentes.',
+          fallbackUserMessage: 'Could not sync pending agent actions.',
           context: <String, Object?>{
             'operation': 'syncPendingActions',
             'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.syncPendingActions,
           },
         ),
       );

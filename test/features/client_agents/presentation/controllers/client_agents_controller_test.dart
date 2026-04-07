@@ -11,6 +11,7 @@ import 'package:colmeia/features/client_agents/application/usecases/queue_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_key.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
@@ -21,6 +22,8 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_result.
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
+import 'package:colmeia/l10n/app_localizations_en.dart';
+import 'package:colmeia/l10n/app_localizations_pt.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -215,7 +218,7 @@ void main() {
       queueRemoveAccessUseCase: queueRemoveAccessUseCase,
       readPendingActionsUseCase: readPendingActionsUseCase,
       syncPendingActionsUseCase: syncPendingActionsUseCase,
-    );
+    )..activeLocalizations = AppLocalizationsEn();
   });
 
   tearDown(() {
@@ -247,12 +250,43 @@ void main() {
 
     verify(() => syncPendingActionsUseCase(userId: session.userId)).called(1);
     check(controller.actionFeedbackMessage).isNotNull();
-    expect(controller.actionFeedbackMessage, contains('enviada para analise'));
+    expect(controller.actionFeedbackMessage, contains('sent for review'));
     expect(
       controller.actionFeedbackMessage,
-      contains('acompanhar a aprovacao'),
+      contains('track approval'),
     );
   });
+
+  test(
+    'should map repository failure key to Portuguese when Pt localizations '
+    'are active',
+    () async {
+      when(
+        () => loadApprovedAgentsUseCase(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer(
+        (_) async => const Failure<PaginatedResult<ClientAgent>, AppFailure>(
+          NetworkFailure(
+            message: 'technical',
+            userMessage: 'Fallback user message',
+            context: <String, Object?>{
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadApprovedAgents,
+            },
+          ),
+        ),
+      );
+
+      controller.activeLocalizations = AppLocalizationsPt();
+      await controller.refreshAll();
+
+      check(controller.approvedAgentsErrorMessage).equals(
+        AppLocalizationsPt().clientAgentsErrorLoadApproved,
+      );
+    },
+  );
 
   test(
     'should block request when all ids are already approved or pending',
@@ -294,7 +328,10 @@ void main() {
         ),
       );
       check(controller.actionErrorMessage).isNotNull();
-      expect(controller.actionErrorMessage, contains('Nenhum novo agente'));
+      expect(
+        controller.actionErrorMessage,
+        contains('No new agents can be requested'),
+      );
     },
   );
 
@@ -334,76 +371,79 @@ void main() {
       ),
     ).called(1);
     check(controller.actionFeedbackMessage).isNotNull();
-    expect(controller.actionFeedbackMessage, contains('Solicitacao enviada'));
-    expect(controller.actionFeedbackMessage, contains('IDs foram ignorados'));
+    expect(controller.actionFeedbackMessage, contains('Request submitted'));
+    expect(controller.actionFeedbackMessage, contains('IDs were ignored'));
   });
 
   test(
     'should upsert approved agent when directed polling finds approval',
     () async {
-    const watchedAgentId = '33333333-3333-3333-8333-333333333333';
-    when(
-      () => readPendingActionsUseCase(userId: any(named: 'userId')),
-    ).thenAnswer(
-      (_) async => Success<List<PendingAgentAction>, AppFailure>(
-        queuedPendingActions,
-      ),
-    );
-    when(
-      () => syncPendingActionsUseCase(userId: any(named: 'userId')),
-    ).thenAnswer(
-      (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
-        SyncPendingAgentActionsResult(
-          successfulRequestAccessAgentIds: <String>{watchedAgentId},
+      const watchedAgentId = '33333333-3333-3333-8333-333333333333';
+      when(
+        () => readPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => Success<List<PendingAgentAction>, AppFailure>(
+          queuedPendingActions,
         ),
-      ),
-    );
-    when(
-      () => loadClientAgentDetailUseCase(
-        userId: any(named: 'userId'),
-        agentId: watchedAgentId,
-      ),
-    ).thenAnswer(
-      (_) async => Success<ClientAgent, AppFailure>(
-        ClientAgent(
-          agentId: watchedAgentId,
-          name: 'Agente novo aprovado',
-          catalogStatus: AgentCatalogStatus.active,
-          connectionStatus: AgentConnectionStatus.unknown,
-          createdAt: DateTime(2026, 4, 7),
-          updatedAt: DateTime(2026, 4, 7),
-        ),
-      ),
-    );
-    when(
-      () => loadAccessRequestsUseCase(
-        userId: any(named: 'userId'),
-        query: any(named: 'query'),
-        search: any(named: 'search'),
-        status: any(named: 'status'),
-      ),
-    ).thenAnswer(
-      (_) async =>
-          const Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-            emptyRequestsResult,
+      );
+      when(
+        () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
+          SyncPendingAgentActionsResult(
+            successfulRequestAccessAgentIds: <String>{watchedAgentId},
           ),
-    );
+        ),
+      );
+      when(
+        () => loadClientAgentDetailUseCase(
+          userId: any(named: 'userId'),
+          agentId: watchedAgentId,
+        ),
+      ).thenAnswer(
+        (_) async => Success<ClientAgent, AppFailure>(
+          ClientAgent(
+            agentId: watchedAgentId,
+            name: 'Agente novo aprovado',
+            catalogStatus: AgentCatalogStatus.active,
+            connectionStatus: AgentConnectionStatus.unknown,
+            createdAt: DateTime(2026, 4, 7),
+            updatedAt: DateTime(2026, 4, 7),
+          ),
+        ),
+      );
+      when(
+        () => loadAccessRequestsUseCase(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Success<
+              PaginatedResult<ClientAgentAccessRequest>,
+              AppFailure
+            >(
+              emptyRequestsResult,
+            ),
+      );
 
-    await controller.refreshAll();
-    await controller.syncPending();
-    await Future<void>.delayed(Duration.zero);
+      await controller.refreshAll();
+      await controller.syncPending();
+      await Future<void>.delayed(Duration.zero);
 
-    check(controller.approvedAgents).isNotNull();
-    expect(
-      controller.approvedAgents!.items.any(
-        (agent) => agent.agentId == watchedAgentId,
-      ),
-      isTrue,
-    );
-    expect(
-      controller.actionFeedbackMessage,
-      contains('ja esta disponivel em "Meus agentes"'),
-    );
+      check(controller.approvedAgents).isNotNull();
+      expect(
+        controller.approvedAgents!.items.any(
+          (agent) => agent.agentId == watchedAgentId,
+        ),
+        isTrue,
+      );
+      expect(
+        controller.actionFeedbackMessage,
+        contains('already available under "My agents"'),
+      );
     },
   );
 }

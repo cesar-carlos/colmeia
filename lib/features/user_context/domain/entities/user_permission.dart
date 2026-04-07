@@ -1,17 +1,6 @@
 enum UserPermission {
-  viewDashboard(
-    label: 'Dashboard principal',
-  ),
-  manageAgents(
-    label: 'Gestao de agentes',
-  )
-  ;
-
-  const UserPermission({
-    required this.label,
-  });
-
-  final String label;
+  viewDashboard,
+  manageAgents,
 }
 
 /// Resolves a permission from an API or storage string. Names that do not match

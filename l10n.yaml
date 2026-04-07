@@ -1,0 +1,8 @@
+# After editing app_pt_BR.arb, keep app_pt.arb in sync (fallback locale "pt"):
+#   dart run tool/sync_pt_locale_arb.dart
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
+output-dir: lib/l10n

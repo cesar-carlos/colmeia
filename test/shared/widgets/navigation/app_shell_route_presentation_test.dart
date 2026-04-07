@@ -1,44 +1,59 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/l10n/app_localizations_pt.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_route_presentation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  final l10n = AppLocalizationsPt();
+
   group('appShellRouteLabel', () {
-    test('should map dashboard variants to Dashboard', () {
-      expect(appShellRouteLabel(AppRoute.dashboard), 'Dashboard');
-      expect(appShellRouteLabel(AppRoute.dashboardStore), 'Dashboard');
+    test('should map dashboard variants to shell label', () {
+      expect(
+        appShellRouteLabel(AppRoute.dashboard, l10n),
+        l10n.shellNavDashboardLabel,
+      );
+      expect(
+        appShellRouteLabel(AppRoute.dashboardStore, l10n),
+        l10n.shellNavDashboardLabel,
+      );
     });
 
-    test('should map settings to Perfil', () {
-      expect(appShellRouteLabel(AppRoute.settings), 'Perfil');
+    test('should map settings to shell label', () {
+      expect(
+        appShellRouteLabel(AppRoute.settings, l10n),
+        l10n.shellNavSettingsLabel,
+      );
     });
 
     test('should use enum title for auth routes', () {
-      expect(appShellRouteLabel(AppRoute.login), AppRoute.login.title);
-      expect(appShellRouteLabel(AppRoute.register), AppRoute.register.title);
+      expect(appShellRouteLabel(AppRoute.login, l10n), AppRoute.login.title);
+      expect(
+        appShellRouteLabel(AppRoute.register, l10n),
+        AppRoute.register.title,
+      );
     });
   });
 
   group('appShellRouteSubtitle', () {
     test('should describe shell destinations', () {
       expect(
-        appShellRouteSubtitle(AppRoute.dashboard),
-        'Resumo operacional e KPIs',
+        appShellRouteSubtitle(AppRoute.dashboard, l10n),
+        l10n.shellNavDashboardSubtitle,
       );
       expect(
-        appShellRouteSubtitle(AppRoute.dashboardStore),
-        'Resumo operacional e KPIs',
+        appShellRouteSubtitle(AppRoute.dashboardStore, l10n),
+        l10n.shellNavDashboardSubtitle,
       );
       expect(
-        appShellRouteSubtitle(AppRoute.settings),
-        'Conta, permissões e preferências',
+        appShellRouteSubtitle(AppRoute.settings, l10n),
+        l10n.shellNavSettingsSubtitle,
       );
     });
 
     test('should omit subtitle for auth routes', () {
-      expect(appShellRouteSubtitle(AppRoute.login), isNull);
-      expect(appShellRouteSubtitle(AppRoute.register), isNull);
+      expect(appShellRouteSubtitle(AppRoute.login, l10n), isNull);
+      expect(appShellRouteSubtitle(AppRoute.register, l10n), isNull);
     });
   });
 

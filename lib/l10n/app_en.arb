@@ -1,0 +1,285 @@
+{
+  "@@locale": "en",
+  "shellNavDashboardLabel": "Dashboard",
+  "shellNavDashboardSubtitle": "Operational summary and KPIs",
+  "shellNavAgentsLabel": "Agents",
+  "shellNavAgentsSubtitle": "Data sources and access",
+  "shellNavSettingsLabel": "Profile",
+  "shellNavSettingsSubtitle": "Account and preferences",
+  "userPermissionViewDashboard": "Main dashboard",
+  "userPermissionManageAgents": "Agent management",
+  "clientAgentsDataSourcesEyebrow": "Data sources",
+  "clientAgentsPageTitle": "Agent management",
+  "clientAgentsPageSubtitle": "Track your approved agents, request new access, and follow the status of your requests.",
+  "clientAgentsPendingActionsCount": "{count, plural, =1{1 action to send} other{{count} actions to send}}",
+  "@clientAgentsPendingActionsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsRefresh": "Refresh",
+  "clientAgentsSubmitRequests": "Send requests",
+  "clientAgentsActionFailedTitle": "Could not complete the action",
+  "clientAgentsMaintenanceTitle": "Agent maintenance",
+  "clientAgentsMaintenanceSubtitle": "Use the tabs to see approved agents, request new access, and follow your request history.",
+  "clientAgentsTabMyAgents": "My agents",
+  "clientAgentsTabRequestAccess": "Request access",
+  "clientAgentsTabRequests": "Requests",
+  "clientAgentsLoadApprovedErrorTitle": "Could not load your agents",
+  "clientAgentsEmptyApproved": "No approved agents yet. Request access in the \"{tabLabel}\" tab.",
+  "@clientAgentsEmptyApproved": {
+    "placeholders": {
+      "tabLabel": {"type": "String"}
+    }
+  },
+  "clientAgentsNoTradeName": "No trade name",
+  "agentCatalogInactive": "inactive",
+  "agentCatalogActive": "active",
+  "agentConnectionOnline": "online",
+  "agentConnectionOffline": "offline",
+  "agentConnectionUnknown": "operational status unavailable",
+  "clientAgentsRemoveAccess": "Remove access",
+  "clientAgentsRequestAccessIntro1": "Enter one or more agent IDs to request access for this account. Use commas, spaces, or line breaks to separate the UUIDs.",
+  "clientAgentsRequestAccessIntro2": "The agent ID must be provided by the agent owner or an external flow. When the request is approved, the agent will be released automatically for this account.",
+  "clientAgentsAgentIdsLabel": "Agent IDs",
+  "clientAgentsRequestAccessCta": "Request access",
+  "clientAgentsValidationNeedOneValidId": "Enter at least one valid agent ID to continue.",
+  "clientAgentsValidationInvalidIds": "The following agent IDs are invalid: {ids}.",
+  "@clientAgentsValidationInvalidIds": {
+    "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsDuplicatedIdsNote": "Duplicate IDs were ignored automatically: {ids}.",
+  "@clientAgentsDuplicatedIdsNote": {
+    "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsLoadRequestsErrorTitle": "Could not load requests",
+  "clientAgentsLoadPendingErrorTitle": "Could not load pending submissions",
+  "clientAgentsNoRequestsYet": "No requests at the moment.",
+  "clientAgentsRequestStatusPending": "Pending",
+  "clientAgentsRequestStatusApproved": "Approved",
+  "clientAgentsRequestStatusRejected": "Rejected",
+  "clientAgentsRequestStatusExpired": "Expired",
+  "clientAgentsRequestStatusUnknown": "Status unavailable",
+  "clientAgentsRequestDescPending": "Under review by the agent owner.",
+  "clientAgentsRequestDescApproved": "Approved and available for this account.",
+  "clientAgentsRequestDescRejected": "Not approved by the agent owner.",
+  "clientAgentsRequestDescExpired": "The request expired. Submit again if needed.",
+  "clientAgentsRequestDescUnknown": "The status of this request is not available yet.",
+  "clientAgentsPendingDescQueued": "Ready to send.",
+  "clientAgentsPendingDescSyncing": "Sending now.",
+  "clientAgentsPendingDescFailed": "Could not send. Try again.",
+  "clientAgentsPendingDescSynced": "Sent.",
+  "clientAgentsPendingChipRequest": "Request",
+  "clientAgentsPendingChipRemove": "Remove",
+  "clientAgentsPendingChipQueued": "ready to send",
+  "clientAgentsPendingChipSyncing": "sending",
+  "clientAgentsPendingChipFailed": "failed",
+  "clientAgentsPendingChipSynced": "sent",
+  "clientAgentsPendingSendTitle": "Pending send: {agentId}",
+  "@clientAgentsPendingSendTitle": {
+    "placeholders": {
+      "agentId": {"type": "String"}
+    }
+  },
+  "clientAgentsSessionUnavailableLoad": "Session unavailable to load agents.",
+  "clientAgentsSessionUnavailableRequest": "Session unavailable to request access.",
+  "clientAgentsSessionUnavailableRemove": "Session unavailable to remove access.",
+  "clientAgentsSessionUnavailableSync": "Session unavailable to sync pending items.",
+  "clientAgentDetailSessionUnavailable": "Session unavailable to load the agent.",
+  "clientAgentsNoLocalPendingToSync": "There are no local pending items to sync.",
+  "clientAgentsRequestBlockedFallback": "Could not register the requested access request.",
+  "clientAgentsRequestBlockedIntro": "No new agents can be requested with the IDs provided. {details}",
+  "@clientAgentsRequestBlockedIntro": {
+    "placeholders": {
+      "details": {"type": "String"}
+    }
+  },
+  "clientAgentsRequestBlockedAlreadyApproved": "Already approved: {ids}.",
+  "@clientAgentsRequestBlockedAlreadyApproved": {
+    "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsRequestBlockedAlreadyReview": "Already under review: {ids}.",
+  "@clientAgentsRequestBlockedAlreadyReview": {
+    "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsRequestBlockedAlreadyQueued": "Already queued for sending: {ids}.",
+  "@clientAgentsRequestBlockedAlreadyQueued": {
+    "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsRequestQueuedWatchingSingle": "Request submitted. We will track approval automatically.",
+  "clientAgentsRequestQueuedWatchingPlural": "{count} requests submitted. We will track approvals automatically.",
+  "@clientAgentsRequestQueuedWatchingPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsRequestQueuedIgnoredSuffix": "{count} IDs were ignored because they were already approved or under review.",
+  "@clientAgentsRequestQueuedIgnoredSuffix": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsRemoveBlockedFallback": "Could not register the requested removal.",
+  "clientAgentsRemoveBlockedIntro": "No new agents can be removed with the IDs provided. {details}",
+  "@clientAgentsRemoveBlockedIntro": {
+    "placeholders": {
+      "details": {"type": "String"}
+    }
+  },
+  "clientAgentsRemoveBlockedNotApproved": "No approved access: {ids}.",
+  "@clientAgentsRemoveBlockedNotApproved": {
+    "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsRemoveBlockedAlreadyQueued": "Removal already queued for sending: {ids}.",
+  "@clientAgentsRemoveBlockedAlreadyQueued": {
+    "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsRemoveQueuedSingle": "Access removal prepared and queued for sync.",
+  "clientAgentsRemoveQueuedPlural": "{count} access removals prepared and queued for sync.",
+  "@clientAgentsRemoveQueuedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsRemoveQueuedIgnoredSuffix": "{count} IDs were ignored.",
+  "@clientAgentsRemoveQueuedIgnoredSuffix": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsSyncSuccessSingle": "1 request was sent for review.",
+  "clientAgentsSyncSuccessPlural": "{count} requests were sent for review.",
+  "@clientAgentsSyncSuccessPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsSyncSuccessAutoSuffix": " It was sent automatically.",
+  "clientAgentsSyncSuccessManualSuffix": " The screen was refreshed with the latest status.",
+  "clientAgentsSyncSuccessPollingSuffix": " We will track approval automatically.",
+  "clientAgentsPollApprovedSingle": "Access approved. The agent is already available under \"{tabLabel}\".",
+  "@clientAgentsPollApprovedSingle": {
+    "placeholders": {
+      "tabLabel": {"type": "String"}
+    }
+  },
+  "clientAgentsPollApprovedPlural": "{count} accesses were approved. The agents are already available under \"{tabLabel}\".",
+  "@clientAgentsPollApprovedPlural": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "tabLabel": {"type": "String"}
+    }
+  },
+  "clientAgentsPollDeniedSingle": "1 request was closed without approval.",
+  "clientAgentsPollDeniedPlural": "{count} requests were closed without approval.",
+  "@clientAgentsPollDeniedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsPollTimeoutSingle": "1 request is still under review. Refresh this screen later to check the result.",
+  "clientAgentsPollTimeoutPlural": "{count} requests are still under review and you can refresh this screen later to check the result.",
+  "@clientAgentsPollTimeoutPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsPollRemainingSingle": "There is still 1 request under review.",
+  "clientAgentsPollRemainingPlural": "There are still {count} requests under review.",
+  "@clientAgentsPollRemainingPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentDetailEyebrow": "Detail",
+  "clientAgentDetailTitle": "Agent",
+  "clientAgentDetailSubtitle": "Detailed information for the agent approved for this account.",
+  "clientAgentDetailLoadErrorTitle": "Could not load the agent",
+  "clientAgentFieldDocument": "Document",
+  "clientAgentFieldEmail": "Email",
+  "clientAgentFieldPhone": "Phone",
+  "clientAgentFieldCity": "City",
+  "clientAgentValueNotAvailable": "N/A",
+  "clientAgentAddressNotProvided": "Address not provided",
+  "clientAgentsFilterSheetTitle": "Agent filters",
+  "clientAgentsFilterSearchLabel": "Search agent",
+  "clientAgentsFilterSearchHint": "Name, agentId, or trade name",
+  "clientAgentsFilterConnectionLabel": "Connection",
+  "clientAgentsFilterConnectionOnline": "Online",
+  "clientAgentsFilterConnectionOffline": "Offline",
+  "clientAgentsFilterConnectionUnknown": "Unavailable",
+  "clientAgentsFilterCatalogLabel": "Catalog",
+  "clientAgentsFilterCatalogActive": "Active",
+  "clientAgentsFilterCatalogInactive": "Inactive",
+  "clientAgentsFilterSummarySearch": "Search: {query}",
+  "@clientAgentsFilterSummarySearch": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "clientAgentsFilterSummaryConnection": "Connection: {label}",
+  "@clientAgentsFilterSummaryConnection": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "clientAgentsFilterSummaryCatalog": "Catalog: {label}",
+  "@clientAgentsFilterSummaryCatalog": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "clientAgentsEmptyFilteredApproved": "No agents match the selected filters.",
+  "clientAgentsRequestsFilterSheetTitle": "Request filters",
+  "clientAgentsRequestsFilterSearchLabel": "Search",
+  "clientAgentsRequestsFilterSearchHint": "Agent name or agent ID",
+  "clientAgentsRequestsFilterStatusLabel": "Request status",
+  "clientAgentsRequestsFilterPendingLabel": "Queued action",
+  "clientAgentsRequestsFilterSummaryRequest": "Request: {label}",
+  "@clientAgentsRequestsFilterSummaryRequest": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "clientAgentsRequestsFilterSummaryPending": "Pending: {label}",
+  "@clientAgentsRequestsFilterSummaryPending": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "clientAgentsFiltersTooltip": "Filters",
+  "clientAgentsFiltersTooltipActive": "Filters ({count} active)",
+  "@clientAgentsFiltersTooltipActive": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsEmptyFilteredRequests": "No requests match the selected filters.",
+  "clientAgentsPendingFilterQueued": "Ready to send",
+  "clientAgentsPendingFilterSyncing": "Sending…",
+  "clientAgentsPendingFilterFailed": "Failed",
+  "clientAgentsPendingFilterSynced": "Sent",
+  "clientAgentsErrorLoadCatalog": "Could not load the agent catalog.",
+  "clientAgentsErrorLoadApproved": "Could not load approved agents for this account.",
+  "clientAgentsErrorLoadAgentDetail": "Could not load agent details.",
+  "clientAgentsErrorLoadAccessRequests": "Could not load request history.",
+  "clientAgentsErrorReadPending": "Could not load pending submissions to sync.",
+  "clientAgentsErrorQueueRequest": "Could not queue the access request for sync.",
+  "clientAgentsErrorQueueRemove": "Could not queue the removal for sync.",
+  "clientAgentsErrorSyncAction": "Could not sync the change for this agent.",
+  "clientAgentsErrorSyncPending": "Could not sync pending agent actions."
+}

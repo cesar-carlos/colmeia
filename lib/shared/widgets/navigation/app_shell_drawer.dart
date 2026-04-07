@@ -2,6 +2,7 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_drawer_header.dart';
@@ -64,7 +65,10 @@ class AppShellDrawer extends StatelessWidget {
         .select<CurrentUserContextController, AppShellUserSummary>(
           selectAppShellUserSummary,
         );
-    final shellRoutes = buildAppShellRoutePresentations(visibleShellRoutes);
+    final shellRoutes = buildAppShellRoutePresentations(
+      visibleShellRoutes,
+      AppLocalizations.of(context),
+    );
     final menuEntries = _buildMenuEntries(context, shellRoutes);
 
     return Drawer(

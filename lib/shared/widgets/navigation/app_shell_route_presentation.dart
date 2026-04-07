@@ -1,4 +1,5 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class AppShellRoutePresentation {
@@ -17,11 +18,44 @@ class AppShellRoutePresentation {
   final IconData unselectedIcon;
 }
 
-AppShellRoutePresentation appShellRoutePresentation(AppRoute route) {
+String _shellRouteLabel(AppRoute route, AppLocalizations l10n) {
+  return switch (route) {
+    AppRoute.dashboard ||
+    AppRoute.dashboardStore => l10n.shellNavDashboardLabel,
+    AppRoute.settings => l10n.shellNavSettingsLabel,
+    AppRoute.agents => l10n.shellNavAgentsLabel,
+    AppRoute.agentsDetail => l10n.shellNavAgentsLabel,
+    AppRoute.login ||
+    AppRoute.register ||
+    AppRoute.registrationStatus ||
+    AppRoute.passwordRecovery ||
+    AppRoute.passwordRecoveryReset => route.title,
+  };
+}
+
+String? _shellRouteSubtitle(AppRoute route, AppLocalizations l10n) {
+  return switch (route) {
+    AppRoute.dashboard ||
+    AppRoute.dashboardStore => l10n.shellNavDashboardSubtitle,
+    AppRoute.settings => l10n.shellNavSettingsSubtitle,
+    AppRoute.agents => l10n.shellNavAgentsSubtitle,
+    AppRoute.agentsDetail => null,
+    AppRoute.login ||
+    AppRoute.register ||
+    AppRoute.registrationStatus ||
+    AppRoute.passwordRecovery ||
+    AppRoute.passwordRecoveryReset => null,
+  };
+}
+
+AppShellRoutePresentation appShellRoutePresentation(
+  AppRoute route,
+  AppLocalizations l10n,
+) {
   return AppShellRoutePresentation(
     route: route,
-    label: route.navigationLabel,
-    subtitle: route.navigationSubtitle,
+    label: _shellRouteLabel(route, l10n),
+    subtitle: _shellRouteSubtitle(route, l10n),
     selectedIcon: route.selectedNavigationIcon,
     unselectedIcon: route.unselectedNavigationIcon,
   );
@@ -29,19 +63,25 @@ AppShellRoutePresentation appShellRoutePresentation(AppRoute route) {
 
 List<AppShellRoutePresentation> buildAppShellRoutePresentations(
   Iterable<AppRoute> routes,
+  AppLocalizations l10n,
 ) {
-  return routes.map(appShellRoutePresentation).toList(growable: false);
+  return routes
+      .map((r) => appShellRoutePresentation(r, l10n))
+      .toList(
+        growable: false,
+      );
 }
 
-String appShellRouteLabel(AppRoute route) {
-  return appShellRoutePresentation(route).label;
+String appShellRouteLabel(AppRoute route, AppLocalizations l10n) {
+  return _shellRouteLabel(route, l10n);
 }
 
-String? appShellRouteSubtitle(AppRoute route) {
-  return appShellRoutePresentation(route).subtitle;
+String? appShellRouteSubtitle(AppRoute route, AppLocalizations l10n) {
+  return _shellRouteSubtitle(route, l10n);
 }
 
 IconData appShellRouteIcon(AppRoute route, {required bool selected}) {
-  final presentation = appShellRoutePresentation(route);
-  return selected ? presentation.selectedIcon : presentation.unselectedIcon;
+  return selected
+      ? route.selectedNavigationIcon
+      : route.unselectedNavigationIcon;
 }

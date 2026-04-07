@@ -20,7 +20,7 @@ class AgentProfileAddress {
     final stateCode = state?.trim();
     if ((cityName == null || cityName.isEmpty) &&
         (stateCode == null || stateCode.isEmpty)) {
-      return 'Endereco nao informado';
+      return '';
     }
     if (cityName == null || cityName.isEmpty) {
       return stateCode!;

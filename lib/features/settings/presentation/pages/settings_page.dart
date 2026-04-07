@@ -13,6 +13,8 @@ import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_fi
 import 'package:colmeia/features/settings/presentation/controllers/client_account_settings_controller.dart';
 import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/features/user_context/presentation/localization/user_permission_l10n.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/forms/app_form_validators.dart';
@@ -543,6 +545,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
     final scope = controller.userScope;
+    final l10n = AppLocalizations.of(context);
     final emailEmpty = scope.corporateEmail.trim().isEmpty;
     final emailDisplay = emailEmpty
         ? 'Indisponível no momento'
@@ -666,7 +669,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     runSpacing: tokens.gapSm,
                     children: controller.permissions
                         .map(
-                          (permission) => AppTagChip(label: permission.label),
+                          (permission) => AppTagChip(
+                            label: permission.displayLabel(l10n),
+                          ),
                         )
                         .toList(growable: false),
                   ),
