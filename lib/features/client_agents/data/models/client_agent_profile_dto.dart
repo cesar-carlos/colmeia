@@ -78,6 +78,8 @@ class ClientAgentProfileDto {
       agentId: agentId,
       name: name,
       tradeName: tradeName,
+      document: document,
+      cnpjCpf: cnpjCpf,
       registrationDocument: document ?? cnpjCpf,
       documentType: documentType,
       phone: phone,

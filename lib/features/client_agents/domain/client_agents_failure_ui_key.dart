@@ -4,9 +4,11 @@ abstract final class ClientAgentsFailureUiKey {
   static const String field = 'clientAgentsFailureUiKey';
 
   static const String loadCatalog = 'loadCatalog';
+  static const String loadCatalogAgentById = 'loadCatalogAgentById';
   static const String loadApprovedAgents = 'loadApprovedAgents';
   static const String loadAgentDetail = 'loadAgentDetail';
   static const String loadAccessRequests = 'loadAccessRequests';
+  static const String loadClientAccessStatus = 'loadClientAccessStatus';
   static const String readPendingActions = 'readPendingActions';
   static const String queueRequestAccess = 'queueRequestAccess';
   static const String queueRemoveAccess = 'queueRemoveAccess';

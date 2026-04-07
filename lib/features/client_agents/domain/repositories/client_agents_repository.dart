@@ -1,4 +1,5 @@
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_access_status_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_catalog_item.dart';
@@ -13,6 +14,11 @@ abstract interface class ClientAgentsRepository {
     required String userId,
     required PaginatedQuery query,
     String? search,
+  });
+
+  Future<AppResult<ClientAgentCatalogItem>> loadCatalogAgentById({
+    required String userId,
+    required String agentId,
   });
 
   Future<AppResult<PaginatedResult<ClientAgent>>> loadApprovedAgents({
@@ -33,6 +39,10 @@ abstract interface class ClientAgentsRepository {
     required PaginatedQuery query,
     String? search,
     String? status,
+  });
+
+  Future<AppResult<ClientAccessStatusSnapshot>> loadClientAccessStatus({
+    required String token,
   });
 
   Future<AppResult<List<PendingAgentAction>>> readPendingActions({

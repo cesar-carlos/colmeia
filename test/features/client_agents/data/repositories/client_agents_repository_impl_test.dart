@@ -1,12 +1,15 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
+import 'package:colmeia/features/client_agents/data/models/agent_catalog_record_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_access_requests_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_access_status_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_accessible_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_address_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/repositories/client_agents_repository_impl.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -288,4 +291,78 @@ void main() {
       );
     },
   );
+
+  test(
+    'should return catalog agent by id when remote succeeds',
+    () async {
+      final catalogJson = <String, dynamic>{
+        'agentId': 'cat-1',
+        'name': 'Catalog Agent',
+        'status': 'active',
+        'createdAt': now.toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+      };
+      when(() => remote.fetchCatalogAgentById('cat-1')).thenAnswer(
+        (_) async => AgentCatalogRecordDto.fromJson(catalogJson),
+      );
+      when(
+        () => local.readOnlineAgents(
+          userId: any(named: 'userId'),
+          maxAge: any(named: 'maxAge'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => local.readOnlineAgents(userId: any(named: 'userId')),
+      ).thenAnswer((_) async => null);
+      when(() => remote.fetchOnlineAgents()).thenAnswer(
+        (_) async => const OnlineAgentsResponseDto(agents: [], count: 0),
+      );
+      when(
+        () => local.saveOnlineAgents(
+          userId: any(named: 'userId'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final result = await repository.loadCatalogAgentById(
+        userId: 'user-1',
+        agentId: 'cat-1',
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrNull()?.agent.agentId).equals('cat-1');
+      check(result.getOrNull()?.agent.name).equals('Catalog Agent');
+    },
+  );
+
+  test(
+    'should return access status when remote succeeds',
+    () async {
+      when(
+        () => remote.fetchClientAccessStatus(token: any(named: 'token')),
+      ).thenAnswer(
+        (_) async => const ClientAccessStatusResponseDto(
+          statusWire: 'pending',
+        ),
+      );
+
+      final result = await repository.loadClientAccessStatus(
+        token: 'review-token',
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrNull()?.status).equals(
+        AgentAccessRequestStatus.pending,
+      );
+    },
+  );
+
+  test('should fail client access status when token is empty', () async {
+    final result = await repository.loadClientAccessStatus(token: '   ');
+
+    check(result.isError()).isTrue();
+    verifyNever(
+      () => remote.fetchClientAccessStatus(token: any(named: 'token')),
+    );
+  });
 }

@@ -27,10 +27,11 @@ class ClientApprovedAgentsResponseDto {
 
     return ClientApprovedAgentsResponseDto(
       agents: mappedItems,
-      agentIds: (json['agentIds'] as List<dynamic>? ?? const <dynamic>[])
-          .whereType<String>()
-          .toSet()
-        ..addAll(mappedAgentIds),
+      agentIds:
+          (json['agentIds'] as List<dynamic>? ?? const <dynamic>[])
+              .whereType<String>()
+              .toSet()
+            ..addAll(mappedAgentIds),
       count: (json['count'] as num?)?.toInt() ?? mappedItems.length,
       total:
           (json['total'] as num?)?.toInt() ??

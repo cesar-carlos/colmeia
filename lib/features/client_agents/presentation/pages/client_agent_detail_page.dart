@@ -137,18 +137,23 @@ class _IdentityCard extends StatelessWidget {
     final na = l10n.clientAgentValueNotAvailable;
     return AppSectionCardWithHeading(
       title: agent.name,
-      subtitle: agent.tradeName ?? l10n.clientAgentsNoTradeName,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           _AgentDetailRow(
+            label: l10n.clientAgentFieldTradeName,
+            value: _nonEmptyOr(agent.tradeName, na),
+          ),
+          _AgentDetailRow(
             label: l10n.clientAgentFieldId,
             value: agent.agentId,
           ),
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldDocument,
-            value: _documentLine(agent, na),
-          ),
+          ..._documentIdentityRows(agent, l10n, na),
+          if (_nonEmptyTrim(agent.documentType) != null)
+            _AgentDetailRow(
+              label: l10n.clientAgentFieldDocumentType,
+              value: _nonEmptyTrim(agent.documentType)!,
+            ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldStatus,
             value: _catalogStatusLabel(l10n, agent.catalogStatus),
@@ -162,12 +167,50 @@ class _IdentityCard extends StatelessWidget {
     );
   }
 
-  String _documentLine(ClientAgent agent, String na) {
-    final doc = agent.registrationDocument;
-    final type = agent.documentType;
-    if (doc == null || doc.isEmpty) return na;
-    if (type != null && type.isNotEmpty) return '$doc ($type)';
-    return doc;
+  String _nonEmptyOr(String? value, String fallback) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return fallback;
+    }
+    return trimmed;
+  }
+
+  String? _nonEmptyTrim(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  /// Document and CNPJ/CPF from API; one row when both match.
+  List<Widget> _documentIdentityRows(
+    ClientAgent agent,
+    AppLocalizations l10n,
+    String na,
+  ) {
+    final doc = agent.document?.trim();
+    final cnpj = agent.cnpjCpf?.trim();
+    final hasDoc = doc != null && doc.isNotEmpty;
+    final hasCnpj = cnpj != null && cnpj.isNotEmpty;
+    if (hasDoc && hasCnpj && doc == cnpj) {
+      return <Widget>[
+        _AgentDetailRow(
+          label: l10n.clientAgentFieldDocument,
+          value: doc,
+        ),
+      ];
+    }
+    return <Widget>[
+      _AgentDetailRow(
+        label: l10n.clientAgentFieldDocument,
+        value: hasDoc ? doc : na,
+      ),
+      _AgentDetailRow(
+        label: l10n.clientAgentFieldCnpjCpf,
+        value: hasCnpj ? cnpj : na,
+      ),
+    ];
   }
 
   String _catalogStatusLabel(AppLocalizations l10n, AgentCatalogStatus status) {

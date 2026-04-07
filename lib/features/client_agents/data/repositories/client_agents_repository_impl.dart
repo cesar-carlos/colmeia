@@ -9,6 +9,7 @@ import 'package:colmeia/features/client_agents/data/models/client_approved_agent
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
 import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_key.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_access_status_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_catalog_item.dart';
@@ -105,6 +106,113 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
             'userId': userId,
             ClientAgentsFailureUiKey.field:
                 ClientAgentsFailureUiKey.loadCatalog,
+          },
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<AppResult<ClientAgentCatalogItem>> loadCatalogAgentById({
+    required String userId,
+    required String agentId,
+  }) async {
+    final trimmed = agentId.trim();
+    if (trimmed.isEmpty) {
+      return const Failure<ClientAgentCatalogItem, AppFailure>(
+        ValidationFailure(
+          message: 'Agent id is empty',
+          userMessage: 'Invalid agent identifier.',
+        ),
+      );
+    }
+    try {
+      final remote = await _remoteDataSource.fetchCatalogAgentById(trimmed);
+      final onlineIds = await _loadOnlineAgentIds(userId: userId);
+      return Success<ClientAgentCatalogItem, AppFailure>(
+        ClientAgentCatalogItem(
+          agent: _mapProfile(remote, onlineIds: onlineIds),
+        ),
+      );
+    } on DioException catch (error, stackTrace) {
+      return Failure<ClientAgentCatalogItem, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to load catalog agent by id',
+          fallbackUserMessage: 'Could not load catalog agent details.',
+          context: <String, Object?>{
+            'operation': 'loadCatalogAgentById',
+            'userId': userId,
+            'agentId': trimmed,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadCatalogAgentById,
+          },
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      return Failure<ClientAgentCatalogItem, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to load catalog agent by id',
+          fallbackUserMessage: 'Could not load catalog agent details.',
+          context: <String, Object?>{
+            'operation': 'loadCatalogAgentById',
+            'userId': userId,
+            'agentId': trimmed,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadCatalogAgentById,
+          },
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<AppResult<ClientAccessStatusSnapshot>> loadClientAccessStatus({
+    required String token,
+  }) async {
+    final trimmed = token.trim();
+    if (trimmed.isEmpty) {
+      return const Failure<ClientAccessStatusSnapshot, AppFailure>(
+        ValidationFailure(
+          message: 'Client access token is empty',
+          userMessage: 'Invalid access link.',
+        ),
+      );
+    }
+    try {
+      final remote =
+          await _remoteDataSource.fetchClientAccessStatus(token: trimmed);
+      return Success<ClientAccessStatusSnapshot, AppFailure>(
+        remote.toEntity(),
+      );
+    } on DioException catch (error, stackTrace) {
+      return Failure<ClientAccessStatusSnapshot, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to load client access status',
+          fallbackUserMessage: 'Could not read access request status.',
+          context: <String, Object?>{
+            'operation': 'loadClientAccessStatus',
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadClientAccessStatus,
+          },
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      return Failure<ClientAccessStatusSnapshot, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to load client access status',
+          fallbackUserMessage: 'Could not read access request status.',
+          context: <String, Object?>{
+            'operation': 'loadClientAccessStatus',
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.loadClientAccessStatus,
           },
         ),
       );

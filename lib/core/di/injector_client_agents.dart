@@ -1,6 +1,8 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_catalog_agent_by_id_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_catalog_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
@@ -34,11 +36,17 @@ void registerInjectorClientAgents(GetIt getIt) {
     ..registerLazySingleton<LoadClientAgentCatalogUseCase>(
       () => LoadClientAgentCatalogUseCase(getIt<ClientAgentsRepository>()),
     )
+    ..registerLazySingleton<LoadCatalogAgentByIdUseCase>(
+      () => LoadCatalogAgentByIdUseCase(getIt<ClientAgentsRepository>()),
+    )
     ..registerLazySingleton<LoadClientApprovedAgentsUseCase>(
       () => LoadClientApprovedAgentsUseCase(getIt<ClientAgentsRepository>()),
     )
     ..registerLazySingleton<LoadClientAccessRequestsUseCase>(
       () => LoadClientAccessRequestsUseCase(getIt<ClientAgentsRepository>()),
+    )
+    ..registerLazySingleton<LoadClientAccessStatusUseCase>(
+      () => LoadClientAccessStatusUseCase(getIt<ClientAgentsRepository>()),
     )
     ..registerLazySingleton<LoadClientAgentDetailUseCase>(
       () => LoadClientAgentDetailUseCase(getIt<ClientAgentsRepository>()),

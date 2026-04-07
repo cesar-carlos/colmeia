@@ -1,6 +1,7 @@
 import 'package:colmeia/core/network/api_routes.dart';
 import 'package:colmeia/features/client_agents/data/models/agent_catalog_record_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_access_requests_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_access_status_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_accessible_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_access_request_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_ids_request_dto.dart';
@@ -17,6 +18,8 @@ abstract interface class ClientAgentsRemoteDataSource {
     required PaginatedQuery query,
     String? search,
   });
+
+  Future<AgentCatalogRecordDto> fetchCatalogAgentById(String agentId);
 
   Future<ClientApprovedAgentsResponseDto> fetchApprovedAgents({
     required PaginatedQuery query,
@@ -43,6 +46,10 @@ abstract interface class ClientAgentsRemoteDataSource {
   });
 
   Future<OnlineAgentsResponseDto> fetchOnlineAgents();
+
+  Future<ClientAccessStatusResponseDto> fetchClientAccessStatus({
+    required String token,
+  });
 }
 
 class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
@@ -66,6 +73,14 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     return PaginatedAgentCatalogResponseDto.fromJson(
       response.data ?? const <String, dynamic>{},
     );
+  }
+
+  @override
+  Future<AgentCatalogRecordDto> fetchCatalogAgentById(String agentId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      AgentCatalogApiRoutes.catalogByAgentId(agentId),
+    );
+    return _parseCatalogAgentBody(response.data ?? const <String, dynamic>{});
   }
 
   @override
@@ -158,6 +173,20 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     );
   }
 
+  @override
+  Future<ClientAccessStatusResponseDto> fetchClientAccessStatus({
+    required String token,
+  }) async {
+    // Plug Server: GET /client-access/status?token=…
+    final response = await _dio.get<Map<String, dynamic>>(
+      ClientAgentApiRoutes.accessStatusByToken,
+      queryParameters: <String, Object?>{'token': token},
+    );
+    return ClientAccessStatusResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
   Set<String> _resolveMutatedAgentIds({
     required Map<String, dynamic> body,
     required Set<String> fallbackAgentIds,
@@ -180,6 +209,22 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     }
     return fallbackAgentIds;
   }
+}
+
+AgentCatalogRecordDto _parseCatalogAgentBody(Map<String, dynamic> json) {
+  final direct = json['agent'];
+  if (direct is Map<String, dynamic>) {
+    return AgentCatalogRecordDto.fromJson(direct);
+  }
+  final data = json['data'];
+  if (data is Map<String, dynamic>) {
+    final nested = data['agent'];
+    if (nested is Map<String, dynamic>) {
+      return AgentCatalogRecordDto.fromJson(nested);
+    }
+    return AgentCatalogRecordDto.fromJson(data);
+  }
+  return AgentCatalogRecordDto.fromJson(json);
 }
 
 class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
@@ -248,6 +293,12 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
       page: query.page,
       pageSize: query.pageSize,
     );
+  }
+
+  @override
+  Future<AgentCatalogRecordDto> fetchCatalogAgentById(String agentId) async {
+    final raw = _catalog.firstWhere((item) => item['agentId'] == agentId);
+    return AgentCatalogRecordDto.fromJson(raw);
   }
 
   @override
@@ -375,6 +426,19 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
           )
           .toList(growable: false),
       count: onlineIds.length,
+    );
+  }
+
+  @override
+  Future<ClientAccessStatusResponseDto> fetchClientAccessStatus({
+    required String token,
+  }) async {
+    final wire = token.contains('reject')
+        ? 'rejected'
+        : (token.contains('approve') ? 'approved' : 'pending');
+    return ClientAccessStatusResponseDto(
+      statusWire: wire,
+      agentId: '6ac362c2-72b5-4f2f-a071-96fe6f5f5080',
     );
   }
 

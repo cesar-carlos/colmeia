@@ -12,12 +12,16 @@ String clientAgentsFailureUserMessage(
   }
   return switch (key) {
     ClientAgentsFailureUiKey.loadCatalog => l10n.clientAgentsErrorLoadCatalog,
+    ClientAgentsFailureUiKey.loadCatalogAgentById =>
+      l10n.clientAgentsErrorLoadCatalogAgent,
     ClientAgentsFailureUiKey.loadApprovedAgents =>
       l10n.clientAgentsErrorLoadApproved,
     ClientAgentsFailureUiKey.loadAgentDetail =>
       l10n.clientAgentsErrorLoadAgentDetail,
     ClientAgentsFailureUiKey.loadAccessRequests =>
       l10n.clientAgentsErrorLoadAccessRequests,
+    ClientAgentsFailureUiKey.loadClientAccessStatus =>
+      l10n.clientAgentsErrorLoadClientAccessStatus,
     ClientAgentsFailureUiKey.readPendingActions =>
       l10n.clientAgentsErrorReadPending,
     ClientAgentsFailureUiKey.queueRequestAccess =>

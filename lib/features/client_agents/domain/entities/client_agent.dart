@@ -11,6 +11,8 @@ class ClientAgent {
     required this.createdAt,
     required this.updatedAt,
     this.tradeName,
+    this.document,
+    this.cnpjCpf,
     this.registrationDocument,
     this.documentType,
     this.phone,
@@ -25,6 +27,8 @@ class ClientAgent {
   final String agentId;
   final String name;
   final String? tradeName;
+  final String? document;
+  final String? cnpjCpf;
   final String? registrationDocument;
   final String? documentType;
   final String? phone;
@@ -46,6 +50,8 @@ class ClientAgent {
       agentId: agentId,
       name: name,
       tradeName: tradeName,
+      document: document,
+      cnpjCpf: cnpjCpf,
       registrationDocument: registrationDocument,
       documentType: documentType,
       phone: phone,
