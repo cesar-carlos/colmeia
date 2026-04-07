@@ -10,6 +10,7 @@ import 'package:colmeia/features/client_agents/data/repositories/client_agents_r
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -205,6 +206,13 @@ void main() {
     final result = await repository.syncPendingActions(userId: 'user-1');
 
     check(result.isSuccess()).isTrue();
+    check(result.getOrNull()).isA<SyncPendingAgentActionsResult>();
+    check(result.getOrNull()!.successfulRequestAccessAgentIds).deepEquals(
+      const <String>{'agent-1'},
+    );
+    check(result.getOrNull()!.failedRemoveAccessAgentIds).deepEquals(
+      const <String>{'agent-2'},
+    );
     check(storedActions).has((it) => it.length, 'length').equals(1);
     check(storedActions.first.agentId).equals('agent-2');
     check(storedActions.first.state).equals(PendingAgentActionState.failed);

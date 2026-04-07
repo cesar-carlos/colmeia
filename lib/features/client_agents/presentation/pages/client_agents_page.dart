@@ -61,14 +61,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> {
                 eyebrow: 'Fontes de dados',
                 title: 'Gestao de agentes',
                 subtitle:
-                    'Gerencie agentes aprovados, solicite novos acessos por '
-                    'agentId e acompanhe o status das pendencias locais.',
+                    'Acompanhe seus agentes aprovados, solicite novos acessos '
+                    'e consulte o andamento das solicitacoes.',
                 footer: Wrap(
                   spacing: tokens.gapSm,
                   runSpacing: tokens.gapSm,
                   children: <Widget>[
                     if (pendingCount > 0)
-                      Chip(label: Text('$pendingCount pendencias locais')),
+                      Chip(label: Text('$pendingCount acoes para enviar')),
                     AppSecondaryButton(
                       label: 'Atualizar',
                       icon: const Icon(Icons.refresh_rounded),
@@ -78,7 +78,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> {
                     ),
                     if (pendingCount > 0)
                       AppPrimaryButton(
-                        label: 'Sincronizar pendencias',
+                        label: 'Enviar solicitacoes',
                         icon: const Icon(Icons.sync_rounded),
                         onPressed: controller.isSyncing
                             ? null
@@ -108,8 +108,8 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> {
               AppSectionCardWithHeading(
                 title: 'Manutencao de agentes',
                 subtitle:
-                    'Use as abas para acompanhar agentes aprovados, solicitar '
-                    'novos acessos e revisar o historico de solicitacoes.',
+                    'Use as abas para ver agentes aprovados, pedir novos '
+                    'acessos e acompanhar o historico das solicitacoes.',
                 child: AppSkeleton(
                   enabled: controller.isLoading,
                   child: AppTabView(
@@ -284,15 +284,15 @@ class _RequestAccessTabState extends State<_RequestAccessTab> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         const Text(
-          'Informe um ou mais agentIds para solicitar o vinculo com esta '
+          'Informe um ou mais agentIds para solicitar acesso a esta '
           'conta. '
           'Use virgula, espaco ou quebra de linha para separar os UUIDs.',
         ),
         SizedBox(height: tokens.gapSm),
         const Text(
-          'A conta cliente nao cria agentes nesta tela. O agentId deve vir do '
-          'responsavel pelo agente ou de um fluxo externo de descoberta. A '
-          'liberacao final depende da aprovacao do dono do agente.',
+          'O agentId deve ser informado pelo responsavel do agente ou por um '
+          'fluxo externo. Quando a solicitacao for aprovada, o agente sera '
+          'liberado automaticamente para esta conta.',
         ),
         SizedBox(height: tokens.gapMd),
         AppTextField(
@@ -432,14 +432,14 @@ class _RequestsTab extends StatelessWidget {
     final children = <Widget>[
       if (errorMessage case final String message) ...<Widget>[
         AppInlineErrorPanel(
-          title: 'Nao foi possivel carregar as solicitacoes remotas',
+          title: 'Nao foi possivel carregar as solicitacoes',
           message: message,
           onRetry: onRetry,
         ),
       ],
       if (pendingErrorMessage case final String message) ...<Widget>[
         AppInlineErrorPanel(
-          title: 'Nao foi possivel carregar as pendencias locais',
+          title: 'Nao foi possivel carregar os envios pendentes',
           message: message,
           onRetry: onRetry,
         ),
@@ -464,7 +464,7 @@ class _RequestsTab extends StatelessWidget {
                 ? ''
                 : ' (${action.errorMessage})';
             return _AgentTile(
-              title: 'Pendencia local: ${action.agentId}',
+              title: 'Envio pendente: ${action.agentId}',
               subtitle: '${_pendingActionDescription(action)}$errorSuffix',
               trailing: _StatusChip(
                 label: _pendingActionChipLabel(action),
@@ -506,27 +506,27 @@ class _RequestsTab extends StatelessWidget {
   String _requestStatusDescription(AgentAccessRequestStatus status) {
     return switch (status) {
       AgentAccessRequestStatus.pending =>
-        'Enviado para a API e aguardando aprovacao do responsavel.',
+        'Em analise pelo responsavel do agente.',
       AgentAccessRequestStatus.approved =>
-        'Aprovado e liberado para esta conta.',
+        'Aprovado e disponivel para esta conta.',
       AgentAccessRequestStatus.rejected =>
-        'Rejeitado pelo responsavel do agente.',
+        'Nao foi aprovado pelo responsavel do agente.',
       AgentAccessRequestStatus.expired =>
-        'Pedido expirado. Solicite novamente se necessario.',
+        'A solicitacao expirou. Envie novamente se necessario.',
       AgentAccessRequestStatus.unknown =>
-        'Status retornado pela API ainda nao foi mapeado pelo app.',
+        'O status dessa solicitacao ainda nao esta disponivel.',
     };
   }
 
   String _pendingActionDescription(PendingAgentAction action) {
     return switch (action.state) {
       PendingAgentActionState.queued =>
-        'Registrado localmente e aguardando envio para a API.',
+        'Pronto para envio.',
       PendingAgentActionState.syncing =>
-        'Sincronizando com o servidor neste momento.',
+        'Enviando agora.',
       PendingAgentActionState.failed =>
-        'Falhou ao enviar para a API. Revise e tente sincronizar novamente.',
-      PendingAgentActionState.synced => 'Sincronizado localmente.',
+        'Nao foi possivel enviar. Tente novamente.',
+      PendingAgentActionState.synced => 'Enviado.',
     };
   }
 
@@ -536,10 +536,10 @@ class _RequestsTab extends StatelessWidget {
       PendingAgentActionType.removeAccess => 'Remover',
     };
     final suffix = switch (action.state) {
-      PendingAgentActionState.queued => 'fila local',
-      PendingAgentActionState.syncing => 'sincronizando',
+      PendingAgentActionState.queued => 'pronto para envio',
+      PendingAgentActionState.syncing => 'enviando',
       PendingAgentActionState.failed => 'falhou',
-      PendingAgentActionState.synced => 'sincronizado',
+      PendingAgentActionState.synced => 'enviado',
     };
     return '$prefix: $suffix';
   }

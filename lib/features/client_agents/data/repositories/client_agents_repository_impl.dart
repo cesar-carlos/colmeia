@@ -14,6 +14,7 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent_cata
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:result_dart/result_dart.dart';
@@ -427,7 +428,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
   }
 
   @override
-  Future<AppResult<Unit>> syncPendingActions({
+  Future<AppResult<SyncPendingAgentActionsResult>> syncPendingActions({
     required String userId,
   }) async {
     try {
@@ -441,7 +442,9 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           .toList(growable: false);
 
       if (syncCandidates.isEmpty) {
-        return const Success<Unit, AppFailure>(unit);
+        return const Success<SyncPendingAgentActionsResult, AppFailure>(
+          SyncPendingAgentActionsResult(),
+        );
       }
 
       final syncingIds = syncCandidates.map((item) => item.id).toSet();
@@ -462,6 +465,10 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
 
       final successfulIds = <String>{};
+      final successfulRequestAccessAgentIds = <String>{};
+      final successfulRemoveAccessAgentIds = <String>{};
+      final failedRequestAccessAgentIds = <String>{};
+      final failedRemoveAccessAgentIds = <String>{};
       for (final action in syncCandidates) {
         try {
           switch (action.type) {
@@ -469,13 +476,21 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
               await _remoteDataSource.requestAccess(
                 agentIds: <String>{action.agentId},
               );
+              successfulRequestAccessAgentIds.add(action.agentId);
             case PendingAgentActionType.removeAccess:
               await _remoteDataSource.removeAccess(
                 agentIds: <String>{action.agentId},
               );
+              successfulRemoveAccessAgentIds.add(action.agentId);
           }
           successfulIds.add(action.id);
         } on Object catch (error, stackTrace) {
+          switch (action.type) {
+            case PendingAgentActionType.requestAccess:
+              failedRequestAccessAgentIds.add(action.agentId);
+            case PendingAgentActionType.removeAccess:
+              failedRemoveAccessAgentIds.add(action.agentId);
+          }
           final failure = mapToAppFailure(
             error,
             stackTrace: stackTrace,
@@ -520,9 +535,16 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
 
       await _refreshSnapshotsAfterSync(userId: userId);
-      return const Success<Unit, AppFailure>(unit);
+      return Success<SyncPendingAgentActionsResult, AppFailure>(
+        SyncPendingAgentActionsResult(
+          successfulRequestAccessAgentIds: successfulRequestAccessAgentIds,
+          successfulRemoveAccessAgentIds: successfulRemoveAccessAgentIds,
+          failedRequestAccessAgentIds: failedRequestAccessAgentIds,
+          failedRemoveAccessAgentIds: failedRemoveAccessAgentIds,
+        ),
+      );
     } on Object catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
+      return Failure<SyncPendingAgentActionsResult, AppFailure>(
         mapToAppFailure(
           error,
           stackTrace: stackTrace,

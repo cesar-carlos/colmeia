@@ -11,18 +11,36 @@ class ClientApprovedAgentsResponseDto {
   });
 
   factory ClientApprovedAgentsResponseDto.fromJson(Map<String, dynamic> json) {
+    final dynamicItems =
+        (json['agents'] as List<dynamic>?) ??
+        (json['items'] as List<dynamic>?) ??
+        (json['data'] as List<dynamic>?) ??
+        const <dynamic>[];
+    final mappedItems = dynamicItems
+        .whereType<Map<String, dynamic>>()
+        .map(ClientAccessibleAgentDto.fromJson)
+        .toList(growable: false);
+    final mappedAgentIds = mappedItems
+        .map((agent) => agent.agentId)
+        .where((agentId) => agentId.isNotEmpty)
+        .toSet();
+
     return ClientApprovedAgentsResponseDto(
-      agents: (json['agents'] as List<dynamic>? ?? const <dynamic>[])
-          .whereType<Map<String, dynamic>>()
-          .map(ClientAccessibleAgentDto.fromJson)
-          .toList(growable: false),
+      agents: mappedItems,
       agentIds: (json['agentIds'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<String>()
-          .toSet(),
-      count: (json['count'] as num?)?.toInt() ?? 0,
-      total: (json['total'] as num?)?.toInt() ?? 0,
+          .toSet()
+        ..addAll(mappedAgentIds),
+      count: (json['count'] as num?)?.toInt() ?? mappedItems.length,
+      total:
+          (json['total'] as num?)?.toInt() ??
+          (json['count'] as num?)?.toInt() ??
+          mappedItems.length,
       page: (json['page'] as num?)?.toInt() ?? 1,
-      pageSize: (json['pageSize'] as num?)?.toInt() ?? 20,
+      pageSize:
+          (json['pageSize'] as num?)?.toInt() ??
+          (json['page_size'] as num?)?.toInt() ??
+          mappedItems.length,
     );
   }
 

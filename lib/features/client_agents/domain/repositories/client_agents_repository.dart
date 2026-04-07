@@ -5,6 +5,7 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent_cata
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:result_dart/result_dart.dart';
 
 abstract interface class ClientAgentsRepository {
@@ -48,7 +49,7 @@ abstract interface class ClientAgentsRepository {
     required Set<String> agentIds,
   });
 
-  Future<AppResult<Unit>> syncPendingActions({
+  Future<AppResult<SyncPendingAgentActionsResult>> syncPendingActions({
     required String userId,
   });
 }

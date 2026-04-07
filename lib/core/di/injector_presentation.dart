@@ -34,6 +34,7 @@ void registerInjectorPresentation(GetIt getIt) {
         authController: getIt<AuthController>(),
         loadApprovedAgentsUseCase: getIt<LoadClientApprovedAgentsUseCase>(),
         loadAccessRequestsUseCase: getIt<LoadClientAccessRequestsUseCase>(),
+        loadClientAgentDetailUseCase: getIt<LoadClientAgentDetailUseCase>(),
         queueRequestAccessUseCase:
             getIt<QueueClientAgentRequestAccessUseCase>(),
         queueRemoveAccessUseCase: getIt<QueueClientAgentRemoveAccessUseCase>(),

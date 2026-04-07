@@ -5,6 +5,7 @@ import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
@@ -18,6 +19,7 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent_acce
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -30,6 +32,9 @@ class _MockLoadClientApprovedAgentsUseCase extends Mock
 
 class _MockLoadClientAccessRequestsUseCase extends Mock
     implements LoadClientAccessRequestsUseCase {}
+
+class _MockLoadClientAgentDetailUseCase extends Mock
+    implements LoadClientAgentDetailUseCase {}
 
 class _MockQueueClientAgentRequestAccessUseCase extends Mock
     implements QueueClientAgentRequestAccessUseCase {}
@@ -47,6 +52,7 @@ void main() {
   late _MockAuthController authController;
   late _MockLoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase;
   late _MockLoadClientAccessRequestsUseCase loadAccessRequestsUseCase;
+  late _MockLoadClientAgentDetailUseCase loadClientAgentDetailUseCase;
   late _MockQueueClientAgentRequestAccessUseCase queueRequestAccessUseCase;
   late _MockQueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase;
   late _MockReadPendingClientAgentActionsUseCase readPendingActionsUseCase;
@@ -123,6 +129,7 @@ void main() {
     authController = _MockAuthController();
     loadApprovedAgentsUseCase = _MockLoadClientApprovedAgentsUseCase();
     loadAccessRequestsUseCase = _MockLoadClientAccessRequestsUseCase();
+    loadClientAgentDetailUseCase = _MockLoadClientAgentDetailUseCase();
     queueRequestAccessUseCase = _MockQueueClientAgentRequestAccessUseCase();
     queueRemoveAccessUseCase = _MockQueueClientAgentRemoveAccessUseCase();
     readPendingActionsUseCase = _MockReadPendingClientAgentActionsUseCase();
@@ -151,6 +158,36 @@ void main() {
           ),
     );
     when(
+      () => loadAccessRequestsUseCase(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          const Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
+            emptyRequestsResult,
+          ),
+    );
+    when(
+      () => loadClientAgentDetailUseCase(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+      ),
+    ).thenAnswer(
+      (_) async => const Failure<ClientAgent, AppFailure>(
+        UnknownFailure(message: 'Agent not approved yet'),
+      ),
+    );
+    when(
+      () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+    ).thenAnswer(
+      (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
+        SyncPendingAgentActionsResult(),
+      ),
+    );
+    when(
       () => queueRequestAccessUseCase(
         userId: any(named: 'userId'),
         agentIds: any(named: 'agentIds'),
@@ -169,19 +206,20 @@ void main() {
         emptyPendingActions,
       ),
     );
-    when(
-      () => syncPendingActionsUseCase(userId: any(named: 'userId')),
-    ).thenAnswer((_) async => const Success<Unit, AppFailure>(unit));
-
     controller = ClientAgentsController(
       authController: authController,
       loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
       loadAccessRequestsUseCase: loadAccessRequestsUseCase,
+      loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
       queueRequestAccessUseCase: queueRequestAccessUseCase,
       queueRemoveAccessUseCase: queueRemoveAccessUseCase,
       readPendingActionsUseCase: readPendingActionsUseCase,
       syncPendingActionsUseCase: syncPendingActionsUseCase,
     );
+  });
+
+  tearDown(() {
+    controller.dispose();
   });
 
   test('should auto sync pending actions during initialize', () async {
@@ -192,13 +230,28 @@ void main() {
         queuedPendingActions,
       ),
     );
+    when(
+      () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+    ).thenAnswer(
+      (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
+        SyncPendingAgentActionsResult(
+          successfulRequestAccessAgentIds: <String>{
+            '33333333-3333-3333-8333-333333333333',
+          },
+        ),
+      ),
+    );
 
     await controller.initialize();
     await Future<void>.delayed(Duration.zero);
 
     verify(() => syncPendingActionsUseCase(userId: session.userId)).called(1);
     check(controller.actionFeedbackMessage).isNotNull();
-    expect(controller.actionFeedbackMessage, contains('sincronizacao'));
+    expect(controller.actionFeedbackMessage, contains('enviada para analise'));
+    expect(
+      controller.actionFeedbackMessage,
+      contains('acompanhar a aprovacao'),
+    );
   });
 
   test(
@@ -241,7 +294,7 @@ void main() {
         ),
       );
       check(controller.actionErrorMessage).isNotNull();
-      expect(controller.actionErrorMessage, contains('Nenhum agentId novo'));
+      expect(controller.actionErrorMessage, contains('Nenhum novo agente'));
     },
   );
 
@@ -281,7 +334,76 @@ void main() {
       ),
     ).called(1);
     check(controller.actionFeedbackMessage).isNotNull();
-    expect(controller.actionFeedbackMessage, contains('1 solicitacao'));
-    expect(controller.actionFeedbackMessage, contains('ignorados'));
+    expect(controller.actionFeedbackMessage, contains('Solicitacao enviada'));
+    expect(controller.actionFeedbackMessage, contains('IDs foram ignorados'));
   });
+
+  test(
+    'should upsert approved agent when directed polling finds approval',
+    () async {
+    const watchedAgentId = '33333333-3333-3333-8333-333333333333';
+    when(
+      () => readPendingActionsUseCase(userId: any(named: 'userId')),
+    ).thenAnswer(
+      (_) async => Success<List<PendingAgentAction>, AppFailure>(
+        queuedPendingActions,
+      ),
+    );
+    when(
+      () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+    ).thenAnswer(
+      (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
+        SyncPendingAgentActionsResult(
+          successfulRequestAccessAgentIds: <String>{watchedAgentId},
+        ),
+      ),
+    );
+    when(
+      () => loadClientAgentDetailUseCase(
+        userId: any(named: 'userId'),
+        agentId: watchedAgentId,
+      ),
+    ).thenAnswer(
+      (_) async => Success<ClientAgent, AppFailure>(
+        ClientAgent(
+          agentId: watchedAgentId,
+          name: 'Agente novo aprovado',
+          catalogStatus: AgentCatalogStatus.active,
+          connectionStatus: AgentConnectionStatus.unknown,
+          createdAt: DateTime(2026, 4, 7),
+          updatedAt: DateTime(2026, 4, 7),
+        ),
+      ),
+    );
+    when(
+      () => loadAccessRequestsUseCase(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          const Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
+            emptyRequestsResult,
+          ),
+    );
+
+    await controller.refreshAll();
+    await controller.syncPending();
+    await Future<void>.delayed(Duration.zero);
+
+    check(controller.approvedAgents).isNotNull();
+    expect(
+      controller.approvedAgents!.items.any(
+        (agent) => agent.agentId == watchedAgentId,
+      ),
+      isTrue,
+    );
+    expect(
+      controller.actionFeedbackMessage,
+      contains('ja esta disponivel em "Meus agentes"'),
+    );
+    },
+  );
 }
