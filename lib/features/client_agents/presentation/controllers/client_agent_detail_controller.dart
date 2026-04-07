@@ -28,15 +28,19 @@ class ClientAgentDetailController extends ChangeNotifier {
   ClientAgent? _agent;
   String? _errorMessage;
   bool _isLoading = false;
+  bool _isRefreshing = false;
   bool _disposed = false;
   String? _loadedAgentId;
 
   ClientAgent? get agent => _agent;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
+  bool get isRefreshing => _isRefreshing;
 
-  Future<void> load(String agentId) async {
-    if (_loadedAgentId == agentId && (_agent != null || _isLoading)) {
+  Future<void> load(String agentId, {bool forceRefresh = false}) async {
+    if (!forceRefresh &&
+        _loadedAgentId == agentId &&
+        (_agent != null || _isLoading)) {
       return;
     }
 
@@ -48,7 +52,13 @@ class ClientAgentDetailController extends ChangeNotifier {
     }
 
     _loadedAgentId = agentId;
-    _isLoading = true;
+    final keepContentVisible = forceRefresh && _agent != null;
+
+    if (keepContentVisible) {
+      _isRefreshing = true;
+    } else {
+      _isLoading = true;
+    }
     _errorMessage = null;
     _notifyListenersIfAlive();
 
@@ -66,13 +76,16 @@ class ClientAgentDetailController extends ChangeNotifier {
         _errorMessage = null;
       },
       (failure) {
-        _agent = null;
+        if (!keepContentVisible) {
+          _agent = null;
+        }
         _errorMessage = clientAgentsFailureUserMessage(failure, _s);
         AppLogger.warning(
           'Client agent detail load failed',
           context: <String, Object?>{
             'operation': 'loadClientAgentDetail',
             'agentId': agentId,
+            'forceRefresh': forceRefresh,
             'technicalMessage': failure.message,
           },
           error: failure.cause ?? failure,
@@ -81,7 +94,11 @@ class ClientAgentDetailController extends ChangeNotifier {
       },
     );
 
-    _isLoading = false;
+    if (keepContentVisible) {
+      _isRefreshing = false;
+    } else {
+      _isLoading = false;
+    }
     _notifyListenersIfAlive();
   }
 
@@ -92,6 +109,10 @@ class ClientAgentDetailController extends ChangeNotifier {
     }
     _loadedAgentId = null;
     await load(agentId);
+  }
+
+  Future<void> refresh(String agentId) async {
+    await load(agentId, forceRefresh: true);
   }
 
   void _notifyListenersIfAlive() {

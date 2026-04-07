@@ -13,6 +13,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/presentation/localization/sync_app_localizations_mixin.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -71,6 +72,12 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
       child: Consumer<ClientAgentDetailController>(
         builder: (context, controller, _) {
           final agent = controller.agent;
+          final initialLoading =
+              controller.isLoading && agent == null && !controller.isRefreshing;
+          final blockingError =
+              controller.errorMessage != null && agent == null;
+          final showRefreshFooter = !initialLoading;
+
           return ListView(
             padding: context.pageScrollPadding(tokens),
             children: <Widget>[
@@ -78,31 +85,57 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                 eyebrow: l10n.clientAgentDetailEyebrow,
                 title: l10n.clientAgentDetailTitle,
                 subtitle: l10n.clientAgentDetailSubtitle,
+                footer: showRefreshFooter
+                    ? AppSecondaryButton(
+                        label: l10n.clientAgentsRefresh,
+                        icon: const Icon(Icons.refresh_rounded),
+                        isLoading: controller.isRefreshing,
+                        onPressed: controller.isRefreshing ||
+                                (controller.isLoading && agent == null)
+                            ? null
+                            : () => unawaited(
+                                  _controller.refresh(widget.agentId),
+                                ),
+                      )
+                    : null,
               ),
               SizedBox(height: tokens.sectionSpacing),
-              if (controller.isLoading)
+              if (initialLoading)
                 const Center(child: CircularProgressIndicator())
-              else if (controller.errorMessage != null)
+              else if (blockingError)
                 AppInlineErrorPanel(
                   title: l10n.clientAgentDetailLoadErrorTitle,
                   message: controller.errorMessage!,
                   onRetry: controller.reload,
                 )
-              else if (agent != null) ...<Widget>[
-                _IdentityCard(agent: agent, l10n: l10n),
-                SizedBox(height: tokens.gapMd),
-                _ContactCard(agent: agent, l10n: l10n),
-                if (_hasAddress(agent)) ...<Widget>[
+              else ...<Widget>[
+                if (agent != null &&
+                    controller.errorMessage != null) ...<Widget>[
+                  AppInlineErrorPanel(
+                    title: l10n.clientAgentDetailLoadErrorTitle,
+                    message: controller.errorMessage!,
+                    onRetry: () => unawaited(
+                      _controller.refresh(widget.agentId),
+                    ),
+                  ),
                   SizedBox(height: tokens.gapMd),
-                  _AddressCard(address: agent.address!, l10n: l10n),
                 ],
-                if (agent.notes != null ||
-                    agent.observation != null) ...<Widget>[
+                if (agent != null) ...<Widget>[
+                  _IdentityCard(agent: agent, l10n: l10n),
                   SizedBox(height: tokens.gapMd),
-                  _NotesCard(agent: agent, l10n: l10n),
+                  _ContactCard(agent: agent, l10n: l10n),
+                  if (_hasAddress(agent)) ...<Widget>[
+                    SizedBox(height: tokens.gapMd),
+                    _AddressCard(address: agent.address!, l10n: l10n),
+                  ],
+                  if (agent.notes != null ||
+                      agent.observation != null) ...<Widget>[
+                    SizedBox(height: tokens.gapMd),
+                    _NotesCard(agent: agent, l10n: l10n),
+                  ],
+                  SizedBox(height: tokens.gapMd),
+                  _RecordCard(agent: agent, l10n: l10n),
                 ],
-                SizedBox(height: tokens.gapMd),
-                _RecordCard(agent: agent, l10n: l10n),
               ],
             ],
           );
