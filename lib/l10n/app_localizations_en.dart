@@ -398,6 +398,60 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentAddressNotProvided => 'Address not provided';
 
   @override
+  String get clientAgentDetailSectionContact => 'Contact';
+
+  @override
+  String get clientAgentDetailSectionAddress => 'Address';
+
+  @override
+  String get clientAgentDetailSectionNotes => 'Notes';
+
+  @override
+  String get clientAgentDetailSectionRecord => 'Record';
+
+  @override
+  String get clientAgentFieldId => 'Agent ID';
+
+  @override
+  String get clientAgentFieldDocumentType => 'Type';
+
+  @override
+  String get clientAgentFieldMobile => 'Mobile';
+
+  @override
+  String get clientAgentFieldStatus => 'Status';
+
+  @override
+  String get clientAgentFieldConnection => 'Connection';
+
+  @override
+  String get clientAgentFieldNotes => 'Notes';
+
+  @override
+  String get clientAgentFieldObservation => 'Observation';
+
+  @override
+  String get clientAgentFieldStreet => 'Street';
+
+  @override
+  String get clientAgentFieldDistrict => 'District';
+
+  @override
+  String get clientAgentFieldPostalCode => 'Postal code';
+
+  @override
+  String get clientAgentFieldState => 'State';
+
+  @override
+  String get clientAgentFieldCreatedAt => 'Since';
+
+  @override
+  String get clientAgentFieldUpdatedAt => 'Updated';
+
+  @override
+  String get clientAgentFieldProfileUpdatedAt => 'Profile updated';
+
+  @override
   String get clientAgentsFilterSheetTitle => 'Agent filters';
 
   @override

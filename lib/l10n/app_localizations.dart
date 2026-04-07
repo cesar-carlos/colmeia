@@ -723,6 +723,114 @@ abstract class AppLocalizations {
   /// **'Address not provided'**
   String get clientAgentAddressNotProvided;
 
+  /// No description provided for @clientAgentDetailSectionContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get clientAgentDetailSectionContact;
+
+  /// No description provided for @clientAgentDetailSectionAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get clientAgentDetailSectionAddress;
+
+  /// No description provided for @clientAgentDetailSectionNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get clientAgentDetailSectionNotes;
+
+  /// No description provided for @clientAgentDetailSectionRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get clientAgentDetailSectionRecord;
+
+  /// No description provided for @clientAgentFieldId.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent ID'**
+  String get clientAgentFieldId;
+
+  /// No description provided for @clientAgentFieldDocumentType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get clientAgentFieldDocumentType;
+
+  /// No description provided for @clientAgentFieldMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get clientAgentFieldMobile;
+
+  /// No description provided for @clientAgentFieldStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get clientAgentFieldStatus;
+
+  /// No description provided for @clientAgentFieldConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get clientAgentFieldConnection;
+
+  /// No description provided for @clientAgentFieldNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get clientAgentFieldNotes;
+
+  /// No description provided for @clientAgentFieldObservation.
+  ///
+  /// In en, this message translates to:
+  /// **'Observation'**
+  String get clientAgentFieldObservation;
+
+  /// No description provided for @clientAgentFieldStreet.
+  ///
+  /// In en, this message translates to:
+  /// **'Street'**
+  String get clientAgentFieldStreet;
+
+  /// No description provided for @clientAgentFieldDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get clientAgentFieldDistrict;
+
+  /// No description provided for @clientAgentFieldPostalCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Postal code'**
+  String get clientAgentFieldPostalCode;
+
+  /// No description provided for @clientAgentFieldState.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get clientAgentFieldState;
+
+  /// No description provided for @clientAgentFieldCreatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Since'**
+  String get clientAgentFieldCreatedAt;
+
+  /// No description provided for @clientAgentFieldUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated'**
+  String get clientAgentFieldUpdatedAt;
+
+  /// No description provided for @clientAgentFieldProfileUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated'**
+  String get clientAgentFieldProfileUpdatedAt;
+
   /// No description provided for @clientAgentsFilterSheetTitle.
   ///
   /// In en, this message translates to:

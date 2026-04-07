@@ -405,6 +405,60 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentAddressNotProvided => 'Endereco nao informado';
 
   @override
+  String get clientAgentDetailSectionContact => 'Contato';
+
+  @override
+  String get clientAgentDetailSectionAddress => 'Endereco';
+
+  @override
+  String get clientAgentDetailSectionNotes => 'Anotacoes';
+
+  @override
+  String get clientAgentDetailSectionRecord => 'Registro';
+
+  @override
+  String get clientAgentFieldId => 'Agent ID';
+
+  @override
+  String get clientAgentFieldDocumentType => 'Tipo';
+
+  @override
+  String get clientAgentFieldMobile => 'Celular';
+
+  @override
+  String get clientAgentFieldStatus => 'Status';
+
+  @override
+  String get clientAgentFieldConnection => 'Conexao';
+
+  @override
+  String get clientAgentFieldNotes => 'Notas';
+
+  @override
+  String get clientAgentFieldObservation => 'Observacao';
+
+  @override
+  String get clientAgentFieldStreet => 'Rua';
+
+  @override
+  String get clientAgentFieldDistrict => 'Bairro';
+
+  @override
+  String get clientAgentFieldPostalCode => 'CEP';
+
+  @override
+  String get clientAgentFieldState => 'Estado';
+
+  @override
+  String get clientAgentFieldCreatedAt => 'Desde';
+
+  @override
+  String get clientAgentFieldUpdatedAt => 'Atualizado';
+
+  @override
+  String get clientAgentFieldProfileUpdatedAt => 'Perfil atualizado';
+
+  @override
   String get clientAgentsFilterSheetTitle => 'Filtros de agentes';
 
   @override
@@ -939,6 +993,60 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentAddressNotProvided => 'Endereco nao informado';
+
+  @override
+  String get clientAgentDetailSectionContact => 'Contato';
+
+  @override
+  String get clientAgentDetailSectionAddress => 'Endereco';
+
+  @override
+  String get clientAgentDetailSectionNotes => 'Anotacoes';
+
+  @override
+  String get clientAgentDetailSectionRecord => 'Registro';
+
+  @override
+  String get clientAgentFieldId => 'Agent ID';
+
+  @override
+  String get clientAgentFieldDocumentType => 'Tipo';
+
+  @override
+  String get clientAgentFieldMobile => 'Celular';
+
+  @override
+  String get clientAgentFieldStatus => 'Status';
+
+  @override
+  String get clientAgentFieldConnection => 'Conexao';
+
+  @override
+  String get clientAgentFieldNotes => 'Notas';
+
+  @override
+  String get clientAgentFieldObservation => 'Observacao';
+
+  @override
+  String get clientAgentFieldStreet => 'Rua';
+
+  @override
+  String get clientAgentFieldDistrict => 'Bairro';
+
+  @override
+  String get clientAgentFieldPostalCode => 'CEP';
+
+  @override
+  String get clientAgentFieldState => 'Estado';
+
+  @override
+  String get clientAgentFieldCreatedAt => 'Desde';
+
+  @override
+  String get clientAgentFieldUpdatedAt => 'Atualizado';
+
+  @override
+  String get clientAgentFieldProfileUpdatedAt => 'Perfil atualizado';
 
   @override
   String get clientAgentsFilterSheetTitle => 'Filtros de agentes';

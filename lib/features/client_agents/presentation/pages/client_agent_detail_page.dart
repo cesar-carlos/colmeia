@@ -1,11 +1,17 @@
 import 'dart:async';
 
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_profile_address.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/presentation/localization/sync_app_localizations_mixin.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
@@ -65,7 +71,6 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
       child: Consumer<ClientAgentDetailController>(
         builder: (context, controller, _) {
           final agent = controller.agent;
-          final valueMissing = l10n.clientAgentValueNotAvailable;
           return ListView(
             padding: context.pageScrollPadding(tokens),
             children: <Widget>[
@@ -83,32 +88,22 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                   message: controller.errorMessage!,
                   onRetry: controller.reload,
                 )
-              else if (agent != null)
-                AppSectionCardWithHeading(
-                  title: agent.name,
-                  subtitle: agent.tradeName ?? l10n.clientAgentsNoTradeName,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        '${l10n.clientAgentFieldDocument}: '
-                        '${agent.registrationDocument ?? valueMissing}',
-                      ),
-                      Text(
-                        '${l10n.clientAgentFieldEmail}: '
-                        '${agent.email ?? valueMissing}',
-                      ),
-                      Text(
-                        '${l10n.clientAgentFieldPhone}: '
-                        '${agent.phone ?? agent.mobile ?? valueMissing}',
-                      ),
-                      Text(
-                        '${l10n.clientAgentFieldCity}: '
-                        '${_cityLine(l10n, agent)}',
-                      ),
-                    ],
-                  ),
-                ),
+              else if (agent != null) ...<Widget>[
+                _IdentityCard(agent: agent, l10n: l10n),
+                SizedBox(height: tokens.gapMd),
+                _ContactCard(agent: agent, l10n: l10n),
+                if (_hasAddress(agent)) ...<Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  _AddressCard(address: agent.address!, l10n: l10n),
+                ],
+                if (agent.notes != null ||
+                    agent.observation != null) ...<Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  _NotesCard(agent: agent, l10n: l10n),
+                ],
+                SizedBox(height: tokens.gapMd),
+                _RecordCard(agent: agent, l10n: l10n),
+              ],
             ],
           );
         },
@@ -116,15 +111,257 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
     );
   }
 
-  String _cityLine(AppLocalizations l10n, ClientAgent agent) {
-    final address = agent.address;
-    if (address == null) {
-      return l10n.clientAgentValueNotAvailable;
-    }
-    final label = address.shortLabel;
-    if (label.isEmpty) {
-      return l10n.clientAgentAddressNotProvided;
-    }
-    return label;
+  bool _hasAddress(ClientAgent agent) {
+    final a = agent.address;
+    if (a == null) return false;
+    return (a.street?.isNotEmpty ?? false) ||
+        (a.district?.isNotEmpty ?? false) ||
+        (a.postalCode?.isNotEmpty ?? false) ||
+        (a.city?.isNotEmpty ?? false) ||
+        (a.state?.isNotEmpty ?? false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cards
+// ---------------------------------------------------------------------------
+
+class _IdentityCard extends StatelessWidget {
+  const _IdentityCard({required this.agent, required this.l10n});
+
+  final ClientAgent agent;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final na = l10n.clientAgentValueNotAvailable;
+    return AppSectionCardWithHeading(
+      title: agent.name,
+      subtitle: agent.tradeName ?? l10n.clientAgentsNoTradeName,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldId,
+            value: agent.agentId,
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldDocument,
+            value: _documentLine(agent, na),
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldStatus,
+            value: _catalogStatusLabel(l10n, agent.catalogStatus),
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldConnection,
+            value: _connectionLabel(l10n, agent.connectionStatus),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _documentLine(ClientAgent agent, String na) {
+    final doc = agent.registrationDocument;
+    final type = agent.documentType;
+    if (doc == null || doc.isEmpty) return na;
+    if (type != null && type.isNotEmpty) return '$doc ($type)';
+    return doc;
+  }
+
+  String _catalogStatusLabel(AppLocalizations l10n, AgentCatalogStatus status) {
+    return switch (status) {
+      AgentCatalogStatus.inactive => l10n.agentCatalogInactive,
+      AgentCatalogStatus.active => l10n.agentCatalogActive,
+    };
+  }
+
+  String _connectionLabel(AppLocalizations l10n, AgentConnectionStatus status) {
+    return switch (status) {
+      AgentConnectionStatus.online => l10n.agentConnectionOnline,
+      AgentConnectionStatus.offline => l10n.agentConnectionOffline,
+      AgentConnectionStatus.unknown => l10n.agentConnectionUnknown,
+    };
+  }
+}
+
+class _ContactCard extends StatelessWidget {
+  const _ContactCard({required this.agent, required this.l10n});
+
+  final ClientAgent agent;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final na = l10n.clientAgentValueNotAvailable;
+    return AppSectionCardWithHeading(
+      title: l10n.clientAgentDetailSectionContact,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldEmail,
+            value: agent.email ?? na,
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldPhone,
+            value: agent.phone ?? na,
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldMobile,
+            value: agent.mobile ?? na,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AddressCard extends StatelessWidget {
+  const _AddressCard({required this.address, required this.l10n});
+
+  final AgentProfileAddress address;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final na = l10n.clientAgentValueNotAvailable;
+    final streetLine = _streetLine(address);
+    return AppSectionCardWithHeading(
+      title: l10n.clientAgentDetailSectionAddress,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (streetLine.isNotEmpty)
+            _AgentDetailRow(
+              label: l10n.clientAgentFieldStreet,
+              value: streetLine,
+            ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldDistrict,
+            value: address.district ?? na,
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldPostalCode,
+            value: address.postalCode ?? na,
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldCity,
+            value: address.city ?? na,
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldState,
+            value: address.state ?? na,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _streetLine(AgentProfileAddress a) {
+    final street = a.street?.trim() ?? '';
+    final number = a.number?.trim() ?? '';
+    if (street.isEmpty) return number;
+    if (number.isEmpty) return street;
+    return '$street, $number';
+  }
+}
+
+class _NotesCard extends StatelessWidget {
+  const _NotesCard({required this.agent, required this.l10n});
+
+  final ClientAgent agent;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final notes = agent.notes;
+    final observation = agent.observation;
+    return AppSectionCardWithHeading(
+      title: l10n.clientAgentDetailSectionNotes,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (notes != null && notes.isNotEmpty)
+            _AgentDetailRow(
+              label: l10n.clientAgentFieldNotes,
+              value: notes,
+            ),
+          if (observation != null && observation.isNotEmpty)
+            _AgentDetailRow(
+              label: l10n.clientAgentFieldObservation,
+              value: observation,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecordCard extends StatelessWidget {
+  const _RecordCard({required this.agent, required this.l10n});
+
+  final ClientAgent agent;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final na = l10n.clientAgentValueNotAvailable;
+    return AppSectionCardWithHeading(
+      title: l10n.clientAgentDetailSectionRecord,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (agent.profileUpdatedAt != null)
+            _AgentDetailRow(
+              label: l10n.clientAgentFieldProfileUpdatedAt,
+              value: AppBrFormatters.shortDateTime(agent.profileUpdatedAt!),
+            ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldCreatedAt,
+            value: AppBrFormatters.shortDate(agent.createdAt),
+          ),
+          _AgentDetailRow(
+            label: l10n.clientAgentFieldUpdatedAt,
+            value: agent.updatedAt.isAfter(agent.createdAt)
+                ? AppBrFormatters.shortDateTime(agent.updatedAt)
+                : na,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared row widget
+// ---------------------------------------------------------------------------
+
+class _AgentDetailRow extends StatelessWidget {
+  const _AgentDetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final typography = theme.appTypography;
+    final colors = theme.appColors;
+    final tokens = theme.extension<AppThemeTokens>()!;
+    return Padding(
+      padding: EdgeInsets.only(bottom: tokens.gapSm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            label,
+            style: typography.caption.copyWith(color: colors.onSurfaceVariant),
+          ),
+          Text(value, style: typography.body),
+        ],
+      ),
+    );
   }
 }
