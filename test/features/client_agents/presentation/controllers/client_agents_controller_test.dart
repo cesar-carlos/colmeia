@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
@@ -77,6 +80,23 @@ void main() {
         connectionStatus: AgentConnectionStatus.online,
         createdAt: DateTime(2026, 4, 4),
         updatedAt: DateTime(2026, 4, 4),
+      ),
+    ],
+    count: 1,
+    total: 1,
+    page: 1,
+    pageSize: 50,
+  );
+
+  final refreshedApprovedAgentsResult = PaginatedResult<ClientAgent>(
+    items: <ClientAgent>[
+      ClientAgent(
+        agentId: '99999999-9999-9999-8999-999999999999',
+        name: 'Agente atualizado',
+        catalogStatus: AgentCatalogStatus.active,
+        connectionStatus: AgentConnectionStatus.online,
+        createdAt: DateTime(2026, 4, 8),
+        updatedAt: DateTime(2026, 4, 8),
       ),
     ],
     count: 1,
@@ -193,12 +213,11 @@ void main() {
     when(
       () => loadClientAccessStatusUseCase(token: any(named: 'token')),
     ).thenAnswer(
-      (_) async =>
-          const Success<ClientAccessStatusSnapshot, AppFailure>(
-            ClientAccessStatusSnapshot(
-              status: AgentAccessRequestStatus.pending,
-            ),
-          ),
+      (_) async => const Success<ClientAccessStatusSnapshot, AppFailure>(
+        ClientAccessStatusSnapshot(
+          status: AgentAccessRequestStatus.pending,
+        ),
+      ),
     );
     when(
       () => syncPendingActionsUseCase(userId: any(named: 'userId')),
@@ -274,6 +293,104 @@ void main() {
       contains('track approval'),
     );
   });
+
+  test(
+    'should preserve loaded content while refreshing all sections',
+    () async {
+      final approvedRefreshCompleter =
+          Completer<AppResult<PaginatedResult<ClientAgent>>>();
+
+      await controller.refreshAll();
+
+      when(
+        () => loadApprovedAgentsUseCase(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer((_) => approvedRefreshCompleter.future);
+
+      final refreshFuture = controller.refreshAll();
+
+      await Future<void>.delayed(Duration.zero);
+
+      check(controller.isRefreshing).isTrue();
+      check(controller.isLoadingInitial).isFalse();
+      check(controller.approvedAgents).isNotNull();
+      check(controller.approvedAgents!.items.single.name).equals(
+        'Agente aprovado',
+      );
+
+      approvedRefreshCompleter.complete(
+        Success<PaginatedResult<ClientAgent>, AppFailure>(
+          refreshedApprovedAgentsResult,
+        ),
+      );
+
+      await refreshFuture;
+
+      check(controller.isRefreshing).isFalse();
+      check(controller.approvedAgents).isNotNull();
+      check(controller.approvedAgents!.items.single.name).equals(
+        'Agente atualizado',
+      );
+    },
+  );
+
+  test(
+    'should ignore stale refresh result when a newer refresh wins',
+    () async {
+      final firstRefreshCompleter =
+          Completer<AppResult<PaginatedResult<ClientAgent>>>();
+      final secondRefreshCompleter =
+          Completer<AppResult<PaginatedResult<ClientAgent>>>();
+      var approvedCallCount = 0;
+
+      await controller.refreshAll();
+
+      when(
+        () => loadApprovedAgentsUseCase(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer((_) {
+        approvedCallCount += 1;
+        return approvedCallCount == 1
+            ? firstRefreshCompleter.future
+            : secondRefreshCompleter.future;
+      });
+
+      final firstRefresh = controller.refreshAll();
+      final secondRefresh = controller.refreshAll();
+
+      firstRefreshCompleter.complete(
+        Success<PaginatedResult<ClientAgent>, AppFailure>(
+          approvedAgentsResult,
+        ),
+      );
+
+      await firstRefresh;
+
+      check(controller.isRefreshing).isTrue();
+      check(controller.approvedAgents).isNotNull();
+      check(controller.approvedAgents!.items.single.name).equals(
+        'Agente aprovado',
+      );
+
+      secondRefreshCompleter.complete(
+        Success<PaginatedResult<ClientAgent>, AppFailure>(
+          refreshedApprovedAgentsResult,
+        ),
+      );
+
+      await secondRefresh;
+
+      check(controller.isRefreshing).isFalse();
+      check(controller.approvedAgents).isNotNull();
+      check(controller.approvedAgents!.items.single.name).equals(
+        'Agente atualizado',
+      );
+    },
+  );
 
   test(
     'should map repository failure key to Portuguese when Pt localizations '

@@ -70,7 +70,8 @@ class ClientAgentsController extends ChangeNotifier {
   AppLocalizations get _s => _l10n ?? AppLocalizationsEn();
 
   bool _isDisposed = false;
-  bool _isLoading = false;
+  bool _isLoadingInitial = false;
+  bool _isRefreshing = false;
   bool _isSyncing = false;
   bool _hasLoadedInitialData = false;
   bool _hasAttemptedAutoSync = false;
@@ -91,7 +92,9 @@ class ClientAgentsController extends ChangeNotifier {
   Timer? _approvalPollingTimer;
   int _refreshAllToken = 0;
 
-  bool get isLoading => _isLoading;
+  bool get isLoading => _isLoadingInitial || _isRefreshing;
+  bool get isLoadingInitial => _isLoadingInitial;
+  bool get isRefreshing => _isRefreshing;
   bool get isSyncing => _isSyncing;
   String? get actionErrorMessage => _actionErrorMessage;
   String? get actionFeedbackMessage => _actionFeedbackMessage;
@@ -105,13 +108,25 @@ class ClientAgentsController extends ChangeNotifier {
   List<PendingAgentAction> get pendingActions => _pendingActions;
 
   Future<void> initialize() async {
-    if (_hasLoadedInitialData || _isLoading) {
+    if (_hasLoadedInitialData || isLoading) {
       return;
     }
-    await refreshAll();
+    await _refreshAll(keepContentVisible: false);
   }
 
   Future<void> refreshAll() async {
+    await _refreshAll(keepContentVisible: hasContent);
+  }
+
+  bool get hasContent {
+    return _approvedAgents != null ||
+        _accessRequests != null ||
+        _pendingActions.isNotEmpty;
+  }
+
+  Future<void> _refreshAll({
+    required bool keepContentVisible,
+  }) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
       _actionErrorMessage = _s.clientAgentsSessionUnavailableLoad;
@@ -120,15 +135,20 @@ class ClientAgentsController extends ChangeNotifier {
     }
 
     final refreshToken = ++_refreshAllToken;
-    _isLoading = true;
+    if (keepContentVisible) {
+      _isLoadingInitial = false;
+      _isRefreshing = true;
+    } else {
+      _isRefreshing = false;
+      _isLoadingInitial = true;
+    }
     _clearSectionErrors();
     _notifyListenersIfAlive();
 
     const query = PaginatedQuery(pageSize: 50);
     try {
       late AppResult<PaginatedResult<ClientAgent>> approvedResult;
-      late AppResult<PaginatedResult<ClientAgentAccessRequest>>
-          requestsResult;
+      late AppResult<PaginatedResult<ClientAgentAccessRequest>> requestsResult;
       late AppResult<List<PendingAgentAction>> pendingResult;
 
       await Future.wait<void>(<Future<void>>[
@@ -165,7 +185,11 @@ class ClientAgentsController extends ChangeNotifier {
       );
     } finally {
       if (!_isDisposed && refreshToken == _refreshAllToken) {
-        _isLoading = false;
+        if (keepContentVisible) {
+          _isRefreshing = false;
+        } else {
+          _isLoadingInitial = false;
+        }
         _hasLoadedInitialData = true;
         _notifyListenersIfAlive();
         _scheduleAutoSyncIfNeeded();

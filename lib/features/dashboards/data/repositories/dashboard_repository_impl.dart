@@ -4,6 +4,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/data/datasources/dashboard_local_datasource.dart';
 import 'package:colmeia/features/dashboards/data/datasources/dashboard_remote_datasource.dart';
+import 'package:colmeia/features/dashboards/data/models/dashboard_overview_model.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/repositories/dashboard_repository.dart';
 import 'package:dio/dio.dart';
@@ -23,6 +24,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   Future<AppResult<DashboardOverview>> loadOverview({
     required String userId,
     required StoreId storeId,
+    DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
   }) async {
     try {
       final overviewModel = await _remoteDataSource.fetchOverview(
@@ -46,28 +48,21 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
       return Success<DashboardOverview, AppFailure>(overviewModel.toEntity());
     } on DioException catch (error, stackTrace) {
-      final cachedOverview = await _localDataSource.readOverview(
+      final statusCode = error.response?.statusCode;
+      final cachedOverview = await _readCachedOverviewIfAllowed(
         userId: userId,
         storeId: storeId,
+        policy: policy,
+        statusCode: statusCode,
+        error: error,
+        stackTrace: stackTrace,
       );
       if (cachedOverview != null) {
-        AppLogger.warning(
-          'Dashboard overview fallback to cached data',
-          context: <String, Object?>{
-            'operation': 'loadDashboardOverview',
-            'userId': userId,
-            'storeId': storeId.value,
-            'source': 'cache',
-          },
-          error: error,
-          stackTrace: stackTrace,
-        );
         return Success<DashboardOverview, AppFailure>(
           cachedOverview.toEntity(),
         );
       }
 
-      final statusCode = error.response?.statusCode;
       AppLogger.error(
         'Unable to load dashboard overview',
         context: <String, Object?>{
@@ -75,6 +70,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
           'userId': userId,
           'storeId': storeId.value,
           'statusCode': statusCode,
+          'policy': policy.name,
         },
         error: error,
         stackTrace: stackTrace,
@@ -97,26 +93,19 @@ class DashboardRepositoryImpl implements DashboardRepository {
             'userId': userId,
             'storeId': storeId.value,
             'statusCode': statusCode,
+            'policy': policy.name,
           },
         ),
       );
     } on Object catch (error, stackTrace) {
-      final cachedOverview = await _localDataSource.readOverview(
+      final cachedOverview = await _readCachedOverviewIfAllowed(
         userId: userId,
         storeId: storeId,
+        policy: policy,
+        error: error,
+        stackTrace: stackTrace,
       );
       if (cachedOverview != null) {
-        AppLogger.warning(
-          'Dashboard overview fallback to cached data',
-          context: <String, Object?>{
-            'operation': 'loadDashboardOverview',
-            'userId': userId,
-            'storeId': storeId.value,
-            'source': 'cache',
-          },
-          error: error,
-          stackTrace: stackTrace,
-        );
         return Success<DashboardOverview, AppFailure>(
           cachedOverview.toEntity(),
         );
@@ -128,6 +117,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
           'operation': 'loadDashboardOverview',
           'userId': userId,
           'storeId': storeId.value,
+          'policy': policy.name,
         },
         error: error,
         stackTrace: stackTrace,
@@ -142,9 +132,60 @@ class DashboardRepositoryImpl implements DashboardRepository {
             'operation': 'loadDashboardOverview',
             'userId': userId,
             'storeId': storeId.value,
+            'policy': policy.name,
           },
         ),
       );
     }
+  }
+
+  Future<DashboardOverviewModel?> _readCachedOverviewIfAllowed({
+    required String userId,
+    required StoreId storeId,
+    required DashboardLoadPolicy policy,
+    required Object error,
+    required StackTrace stackTrace,
+    int? statusCode,
+  }) async {
+    if (!_shouldFallbackToCache(policy: policy, statusCode: statusCode)) {
+      return null;
+    }
+
+    final cachedOverview = await _localDataSource.readOverview(
+      userId: userId,
+      storeId: storeId,
+    );
+    if (cachedOverview == null) {
+      return null;
+    }
+
+    AppLogger.warning(
+      'Dashboard overview fallback to cached data',
+      context: <String, Object?>{
+        'operation': 'loadDashboardOverview',
+        'userId': userId,
+        'storeId': storeId.value,
+        'source': 'cache',
+        'policy': policy.name,
+        if (statusCode case final int code) 'statusCode': code,
+      },
+      error: error,
+      stackTrace: stackTrace,
+    );
+    return cachedOverview;
+  }
+
+  bool _shouldFallbackToCache({
+    required DashboardLoadPolicy policy,
+    int? statusCode,
+  }) {
+    if (policy == DashboardLoadPolicy.forceRefresh) {
+      return false;
+    }
+
+    return switch (statusCode) {
+      401 || 403 || 404 => false,
+      _ => true,
+    };
   }
 }

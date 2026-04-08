@@ -79,68 +79,79 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
               controller.errorMessage != null && agent == null;
           final showRefreshFooter = !initialLoading;
 
-          return ListView(
-            padding: context.pageScrollPadding(tokens),
-            children: <Widget>[
-              AppShellPageIntro(
-                eyebrow: l10n.clientAgentDetailEyebrow,
-                title: l10n.clientAgentDetailTitle,
-                subtitle: l10n.clientAgentDetailSubtitle,
-                footer: showRefreshFooter
-                    ? AppSecondaryButton(
-                        label: l10n.clientAgentsRefresh,
-                        icon: const Icon(Icons.refresh_rounded),
-                        isLoading: controller.isRefreshing,
-                        onPressed: controller.isRefreshing ||
-                                (controller.isLoading && agent == null)
-                            ? null
-                            : () => unawaited(
+          return RefreshIndicator(
+            onRefresh: () async {
+              final c = _controller;
+              if (c.isRefreshing || (c.isLoading && c.agent == null)) {
+                return;
+              }
+              await c.refresh(widget.agentId);
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: context.pageScrollPadding(tokens),
+              children: <Widget>[
+                AppShellPageIntro(
+                  eyebrow: l10n.clientAgentDetailEyebrow,
+                  title: l10n.clientAgentDetailTitle,
+                  subtitle: l10n.clientAgentDetailSubtitle,
+                  footer: showRefreshFooter
+                      ? AppSecondaryButton(
+                          label: l10n.clientAgentsRefresh,
+                          icon: const Icon(Icons.refresh_rounded),
+                          isLoading: controller.isRefreshing,
+                          onPressed:
+                              controller.isRefreshing ||
+                                  (controller.isLoading && agent == null)
+                              ? null
+                              : () => unawaited(
                                   _controller.refresh(widget.agentId),
                                 ),
-                      )
-                    : null,
-              ),
-              SizedBox(height: tokens.sectionSpacing),
-              if (initialLoading)
-                _ClientAgentDetailLoadingSkeleton(tokens: tokens)
-              else if (blockingError)
-                AppInlineErrorPanel(
-                  title: l10n.clientAgentDetailLoadErrorTitle,
-                  message: controller.errorMessage!,
-                  onRetry: controller.reload,
-                  retryLabel: l10n.appInlineErrorRetry,
-                )
-              else ...<Widget>[
-                if (agent != null &&
-                    controller.errorMessage != null) ...<Widget>[
+                        )
+                      : null,
+                ),
+                SizedBox(height: tokens.sectionSpacing),
+                if (initialLoading)
+                  _ClientAgentDetailLoadingSkeleton(tokens: tokens)
+                else if (blockingError)
                   AppInlineErrorPanel(
                     title: l10n.clientAgentDetailLoadErrorTitle,
                     message: controller.errorMessage!,
-                    onRetry: () => unawaited(
-                      _controller.refresh(widget.agentId),
-                    ),
+                    onRetry: controller.reload,
                     retryLabel: l10n.appInlineErrorRetry,
-                  ),
-                  SizedBox(height: tokens.gapMd),
-                ],
-                if (agent != null) ...<Widget>[
-                  _IdentityCard(agent: agent, l10n: l10n),
-                  SizedBox(height: tokens.gapMd),
-                  _ContactCard(agent: agent, l10n: l10n),
-                  if (_hasAddress(agent)) ...<Widget>[
+                  )
+                else ...<Widget>[
+                  if (agent != null &&
+                      controller.errorMessage != null) ...<Widget>[
+                    AppInlineErrorPanel(
+                      title: l10n.clientAgentDetailLoadErrorTitle,
+                      message: controller.errorMessage!,
+                      onRetry: () => unawaited(
+                        _controller.refresh(widget.agentId),
+                      ),
+                      retryLabel: l10n.appInlineErrorRetry,
+                    ),
                     SizedBox(height: tokens.gapMd),
-                    _AddressCard(address: agent.address!, l10n: l10n),
                   ],
-                  if (agent.notes != null ||
-                      agent.observation != null) ...<Widget>[
+                  if (agent != null) ...<Widget>[
+                    _IdentityCard(agent: agent, l10n: l10n),
                     SizedBox(height: tokens.gapMd),
-                    _NotesCard(agent: agent, l10n: l10n),
+                    _ContactCard(agent: agent, l10n: l10n),
+                    if (_hasAddress(agent)) ...<Widget>[
+                      SizedBox(height: tokens.gapMd),
+                      _AddressCard(address: agent.address!, l10n: l10n),
+                    ],
+                    if (agent.notes != null ||
+                        agent.observation != null) ...<Widget>[
+                      SizedBox(height: tokens.gapMd),
+                      _NotesCard(agent: agent, l10n: l10n),
+                    ],
+                    SizedBox(height: tokens.gapMd),
+                    _RecordCard(agent: agent, l10n: l10n),
                   ],
-                  SizedBox(height: tokens.gapMd),
-                  _RecordCard(agent: agent, l10n: l10n),
                 ],
               ],
-            ],
+            ),
           );
         },
       ),

@@ -181,11 +181,11 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                   );
                   final overview = dashboardController.overview;
                   final showSkeleton =
-                      dashboardController.isLoading && overview == null;
+                      dashboardController.isLoadingInitial && overview == null;
                   final resolvedOverview = overview ?? _skeletonOverview;
                   final shouldShowOverview = showSkeleton || overview != null;
                   if (session != null &&
-                      !userContext.isLoading &&
+                      !userContext.isLoadingInitial &&
                       !UserContextPlaceholders.isLoadingStoreId(
                         selectedStore.id,
                       )) {
@@ -208,7 +208,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                         )) {
                       return;
                     }
-                    await dashboardController.loadOverview(
+                    await dashboardController.refreshOverview(
                       userId: currentSession.userId,
                       storeId: StoreId(selectedStore.id),
                     );
@@ -229,7 +229,8 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                           footer: AllowedStoreSelectorStrip(
                             stores: userContext.userScope.allowedStores,
                             selectedStoreId: selectedStore.id,
-                            isLoading: userContext.isLoading,
+                            isLoading: userContext.isLoadingInitial,
+                            isRefreshing: userContext.isRefreshing,
                             errorMessage: userContext.errorMessage,
                             onRetry: session == null
                                 ? null
@@ -291,7 +292,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                                     )
                                 ? () {
                                     unawaited(
-                                      dashboardController.loadOverview(
+                                      dashboardController.retryOverview(
                                         userId: sessionUserId,
                                         storeId: StoreId(selectedStore.id),
                                       ),

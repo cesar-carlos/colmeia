@@ -11,10 +11,12 @@ class LoadDashboardOverviewUseCase {
   Future<AppResult<DashboardOverview>> call({
     required String userId,
     required StoreId storeId,
+    DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
   }) {
     return _dashboardRepository.loadOverview(
       userId: userId,
       storeId: storeId,
+      policy: policy,
     );
   }
 }

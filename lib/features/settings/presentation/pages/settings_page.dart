@@ -557,7 +557,7 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: context.pageScrollPadding(tokens),
       children: <Widget>[
         AppSkeleton(
-          enabled: controller.isLoading,
+          enabled: controller.isLoadingInitial,
           child: AppEditorialMediaCard(
             heroHeight: 172,
             heroBackgroundColor: cs.surfaceContainerLowest,
@@ -603,8 +603,12 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ],
         SizedBox(height: tokens.sectionSpacing),
+        if (controller.isRefreshing) ...<Widget>[
+          const LinearProgressIndicator(minHeight: 4),
+          SizedBox(height: tokens.sectionSpacing),
+        ],
         AppSkeleton(
-          enabled: controller.isLoading,
+          enabled: controller.isLoadingInitial,
           child: AppSectionCardWithHeading(
             title: 'Conta',
             subtitle:
@@ -652,7 +656,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
-          enabled: controller.isLoading,
+          enabled: controller.isLoadingInitial,
           child: AppSectionCardWithHeading(
             title: 'Estado da conta',
             child: controller.permissions.isEmpty

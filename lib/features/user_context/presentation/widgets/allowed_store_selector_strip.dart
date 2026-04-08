@@ -10,6 +10,7 @@ class AllowedStoreSelectorStrip extends StatelessWidget {
     required this.selectedStoreId,
     required this.onStoreSelected,
     this.isLoading = false,
+    this.isRefreshing = false,
     this.errorMessage,
     this.onRetry,
     super.key,
@@ -19,6 +20,7 @@ class AllowedStoreSelectorStrip extends StatelessWidget {
   final String selectedStoreId;
   final void Function(StoreScope store) onStoreSelected;
   final bool isLoading;
+  final bool isRefreshing;
   final String? errorMessage;
   final VoidCallback? onRetry;
 
@@ -52,7 +54,7 @@ class AllowedStoreSelectorStrip extends StatelessWidget {
       );
     }
 
-    return SingleChildScrollView(
+    final chips = SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: stores.map((store) {
@@ -68,6 +70,22 @@ class AllowedStoreSelectorStrip extends StatelessWidget {
           );
         }).toList(),
       ),
+    );
+
+    if (!isRefreshing) {
+      return chips;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        ClipRRect(
+          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+          child: const LinearProgressIndicator(minHeight: 4),
+        ),
+        SizedBox(height: tokens.gapSm),
+        chips,
+      ],
     );
   }
 }

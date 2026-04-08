@@ -113,13 +113,18 @@ class CurrentUserContextController extends ChangeNotifier {
   late List<AppRoute> _availableShellRoutes;
   String _activeStoreId;
   String? _errorMessage;
-  bool _isLoading = false;
+  bool _isLoadingInitial = false;
+  bool _isRefreshing = false;
   String? _syncedUserId;
+  int _syncGeneration = 0;
+  bool _isDisposed = false;
 
   CurrentUserScope get userScope => _userScope;
   Set<UserPermission> get permissions => _userScope.permissions;
   String? get errorMessage => _errorMessage;
-  bool get isLoading => _isLoading;
+  bool get isLoading => _isLoadingInitial || _isRefreshing;
+  bool get isLoadingInitial => _isLoadingInitial;
+  bool get isRefreshing => _isRefreshing;
 
   StoreScope get activeStore {
     return _userScope.allowedStores.firstWhere(
@@ -193,11 +198,21 @@ class CurrentUserContextController extends ChangeNotifier {
     if (authController == null || session == null) {
       return;
     }
-    _syncedUserId = null;
-    await _syncAuthState();
+    await _syncAuthState(
+      forceReload: true,
+      keepContentVisible: hasResolvedData,
+    );
   }
 
-  Future<void> _syncAuthState() async {
+  bool get hasResolvedData {
+    return _syncedUserId != null &&
+        !UserContextPlaceholders.isLoadingStoreId(_activeStoreId);
+  }
+
+  Future<void> _syncAuthState({
+    bool forceReload = false,
+    bool keepContentVisible = false,
+  }) async {
     final authController = _authController;
     final loadCurrentUserContextUseCase = _loadCurrentUserContextUseCase;
     final clearActiveStoreUseCase = _clearActiveStoreUseCase;
@@ -207,6 +222,7 @@ class CurrentUserContextController extends ChangeNotifier {
       return;
     }
 
+    final generation = ++_syncGeneration;
     final session = authController.session;
     if (session == null) {
       final previousUserId = _syncedUserId;
@@ -215,25 +231,39 @@ class CurrentUserContextController extends ChangeNotifier {
       _availableShellRoutes = _computeAvailableShellRoutes();
       _activeStoreId = UserContextPlaceholders.loadingStoreId;
       _errorMessage = null;
-      _isLoading = false;
-      notifyListeners();
+      _isLoadingInitial = false;
+      _isRefreshing = false;
+      _notifyListenersIfAlive();
       if (previousUserId != null) {
         await clearActiveStoreUseCase(userId: previousUserId);
       }
       return;
     }
 
-    if (_syncedUserId == session.userId && !_isLoading) {
+    if (_syncedUserId == session.userId && !forceReload && !isLoading) {
       return;
     }
 
-    _isLoading = true;
+    if (keepContentVisible) {
+      _isLoadingInitial = false;
+      _isRefreshing = true;
+    } else {
+      _isRefreshing = false;
+      _isLoadingInitial = true;
+      _userScope = _placeholderUserScope;
+      _availableShellRoutes = _computeAvailableShellRoutes();
+      _activeStoreId = UserContextPlaceholders.loadingStoreId;
+    }
     _errorMessage = null;
-    notifyListeners();
+    _notifyListenersIfAlive();
 
     final result = await loadCurrentUserContextUseCase(
       userId: session.userId,
     );
+    if (_isDisposed || generation != _syncGeneration) {
+      return;
+    }
+
     result.fold(
       (snapshot) {
         _userScope = snapshot.scope;
@@ -243,16 +273,22 @@ class CurrentUserContextController extends ChangeNotifier {
         _errorMessage = null;
       },
       (failure) {
-        _userScope = _placeholderUserScope;
-        _availableShellRoutes = _computeAvailableShellRoutes();
-        _activeStoreId = UserContextPlaceholders.loadingStoreId;
         _syncedUserId = session.userId;
+        if (!keepContentVisible) {
+          _userScope = _placeholderUserScope;
+          _availableShellRoutes = _computeAvailableShellRoutes();
+          _activeStoreId = UserContextPlaceholders.loadingStoreId;
+        }
         _errorMessage = failure.displayMessage;
       },
     );
 
-    _isLoading = false;
-    notifyListeners();
+    if (keepContentVisible) {
+      _isRefreshing = false;
+    } else {
+      _isLoadingInitial = false;
+    }
+    _notifyListenersIfAlive();
   }
 
   AppResult<StoreScope> resolveStore({
@@ -355,12 +391,20 @@ class CurrentUserContextController extends ChangeNotifier {
         );
       }
     }
-    notifyListeners();
+    _notifyListenersIfAlive();
     return Success<StoreScope, AppFailure>(store);
+  }
+
+  void _notifyListenersIfAlive() {
+    if (_isDisposed) {
+      return;
+    }
+    notifyListeners();
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _authController?.removeListener(_handleAuthStateChanged);
     super.dispose();
   }
