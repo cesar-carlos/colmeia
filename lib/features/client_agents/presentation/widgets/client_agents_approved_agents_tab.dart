@@ -36,6 +36,7 @@ class ClientAgentsApprovedAgentsTab extends StatelessWidget {
         title: l10n.clientAgentsLoadApprovedErrorTitle,
         message: message,
         onRetry: onRetry,
+        retryLabel: l10n.appInlineErrorRetry,
       );
     }
 

@@ -267,6 +267,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
       'agentId': '67bcaf42-6ee2-4f8d-8e76-0c74a16de9bd',
       'agentName': 'Plug Agente Sul',
       'status': 'pending',
+      'reviewToken': 'fake-review-token-sul',
       'requestedAt': DateTime.now()
           .subtract(const Duration(days: 1))
           .toIso8601String(),

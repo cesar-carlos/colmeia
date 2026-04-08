@@ -4,6 +4,7 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
@@ -28,6 +29,7 @@ class ClientAgentsController extends ChangeNotifier {
     required AuthController authController,
     required LoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase,
     required LoadClientAccessRequestsUseCase loadAccessRequestsUseCase,
+    required LoadClientAccessStatusUseCase loadClientAccessStatusUseCase,
     required LoadClientAgentDetailUseCase loadClientAgentDetailUseCase,
     required QueueClientAgentRequestAccessUseCase queueRequestAccessUseCase,
     required QueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase,
@@ -36,6 +38,7 @@ class ClientAgentsController extends ChangeNotifier {
   }) : _authController = authController,
        _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
        _loadAccessRequestsUseCase = loadAccessRequestsUseCase,
+       _loadClientAccessStatusUseCase = loadClientAccessStatusUseCase,
        _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
        _queueRequestAccessUseCase = queueRequestAccessUseCase,
        _queueRemoveAccessUseCase = queueRemoveAccessUseCase,
@@ -51,6 +54,7 @@ class ClientAgentsController extends ChangeNotifier {
   final AuthController _authController;
   final LoadClientApprovedAgentsUseCase _loadApprovedAgentsUseCase;
   final LoadClientAccessRequestsUseCase _loadAccessRequestsUseCase;
+  final LoadClientAccessStatusUseCase _loadClientAccessStatusUseCase;
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;
   final QueueClientAgentRequestAccessUseCase _queueRequestAccessUseCase;
   final QueueClientAgentRemoveAccessUseCase _queueRemoveAccessUseCase;
@@ -85,6 +89,7 @@ class ClientAgentsController extends ChangeNotifier {
   final Map<String, DateTime> _approvalPollingStartedAtByAgentId =
       <String, DateTime>{};
   Timer? _approvalPollingTimer;
+  int _refreshAllToken = 0;
 
   bool get isLoading => _isLoading;
   bool get isSyncing => _isSyncing;
@@ -114,41 +119,58 @@ class ClientAgentsController extends ChangeNotifier {
       return;
     }
 
+    final refreshToken = ++_refreshAllToken;
     _isLoading = true;
     _clearSectionErrors();
     _notifyListenersIfAlive();
 
     const query = PaginatedQuery(pageSize: 50);
-    final approvedResult = await _loadApprovedAgentsUseCase(
-      userId: userId,
-      query: query,
-    );
-    final requestsResult = await _loadAccessRequestsUseCase(
-      userId: userId,
-      query: query,
-    );
-    final pendingResult = await _readPendingActionsUseCase(userId: userId);
+    try {
+      late AppResult<PaginatedResult<ClientAgent>> approvedResult;
+      late AppResult<PaginatedResult<ClientAgentAccessRequest>>
+          requestsResult;
+      late AppResult<List<PendingAgentAction>> pendingResult;
 
-    _approvedAgentsErrorMessage = _consumeResult(
-      result: approvedResult,
-      onSuccess: (value) => _approvedAgents = value,
-      operation: 'loadApprovedClientAgents',
-    );
-    _accessRequestsErrorMessage = _consumeResult(
-      result: requestsResult,
-      onSuccess: (value) => _accessRequests = value,
-      operation: 'loadClientAgentAccessRequests',
-    );
-    _pendingActionsErrorMessage = _consumeResult(
-      result: pendingResult,
-      onSuccess: (value) => _pendingActions = value,
-      operation: 'readPendingClientAgentActions',
-    );
+      await Future.wait<void>(<Future<void>>[
+        _loadApprovedAgentsUseCase(
+          userId: userId,
+          query: query,
+        ).then((value) => approvedResult = value),
+        _loadAccessRequestsUseCase(
+          userId: userId,
+          query: query,
+        ).then((value) => requestsResult = value),
+        _readPendingActionsUseCase(userId: userId).then(
+          (value) => pendingResult = value,
+        ),
+      ]);
+      if (_isDisposed || refreshToken != _refreshAllToken) {
+        return;
+      }
 
-    _isLoading = false;
-    _hasLoadedInitialData = true;
-    _notifyListenersIfAlive();
-    _scheduleAutoSyncIfNeeded();
+      _approvedAgentsErrorMessage = _consumeResult(
+        result: approvedResult,
+        onSuccess: (value) => _approvedAgents = value,
+        operation: 'loadApprovedClientAgents',
+      );
+      _accessRequestsErrorMessage = _consumeResult(
+        result: requestsResult,
+        onSuccess: (value) => _accessRequests = value,
+        operation: 'loadClientAgentAccessRequests',
+      );
+      _pendingActionsErrorMessage = _consumeResult(
+        result: pendingResult,
+        onSuccess: (value) => _pendingActions = value,
+        operation: 'readPendingClientAgentActions',
+      );
+    } finally {
+      if (!_isDisposed && refreshToken == _refreshAllToken) {
+        _isLoading = false;
+        _hasLoadedInitialData = true;
+        _notifyListenersIfAlive();
+        _scheduleAutoSyncIfNeeded();
+      }
+    }
   }
 
   Future<bool> requestAccess({
@@ -319,15 +341,26 @@ class ClientAgentsController extends ChangeNotifier {
     required String userId,
   }) async {
     const query = PaginatedQuery(pageSize: 50);
-    final approvedResult = await _loadApprovedAgentsUseCase(
-      userId: userId,
-      query: query,
-    );
-    final requestsResult = await _loadAccessRequestsUseCase(
-      userId: userId,
-      query: query,
-    );
-    final pendingResult = await _readPendingActionsUseCase(userId: userId);
+    late AppResult<PaginatedResult<ClientAgent>> approvedResult;
+    late AppResult<PaginatedResult<ClientAgentAccessRequest>> requestsResult;
+    late AppResult<List<PendingAgentAction>> pendingResult;
+
+    await Future.wait<void>(<Future<void>>[
+      _loadApprovedAgentsUseCase(
+        userId: userId,
+        query: query,
+      ).then((value) => approvedResult = value),
+      _loadAccessRequestsUseCase(
+        userId: userId,
+        query: query,
+      ).then((value) => requestsResult = value),
+      _readPendingActionsUseCase(userId: userId).then(
+        (value) => pendingResult = value,
+      ),
+    ]);
+    if (_isDisposed) {
+      return;
+    }
 
     _approvedAgentsErrorMessage = _consumeResult(
       result: approvedResult,
@@ -475,6 +508,16 @@ class ClientAgentsController extends ChangeNotifier {
     }
 
     _isPollingApprovals = true;
+    final requestsRefreshResult = await _loadAccessRequestsUseCase(
+      userId: userId,
+      query: _approvalPollingQuery,
+    );
+    _accessRequestsErrorMessage = _consumeResult(
+      result: requestsRefreshResult,
+      onSuccess: (value) => _accessRequests = value,
+      operation: 'pollRefreshClientAgentAccessRequests',
+    );
+
     final approvedNow = <String, ClientAgent>{};
     final deniedNow = <String>{};
     final timedOutNow = <String>{};
@@ -555,10 +598,33 @@ class ClientAgentsController extends ChangeNotifier {
     return result.fold((value) => value, (_) => null);
   }
 
+  ClientAgentAccessRequest? _accessRequestForAgentId(String agentId) {
+    final items = _accessRequests?.items;
+    if (items == null) {
+      return null;
+    }
+    for (final request in items) {
+      if (request.agentId == agentId) {
+        return request;
+      }
+    }
+    return null;
+  }
+
   Future<AgentAccessRequestStatus?> _loadRequestStatusForPolling({
     required String userId,
     required String agentId,
   }) async {
+    final cached = _accessRequestForAgentId(agentId);
+    if (cached != null) {
+      final token = cached.statusPollToken?.trim();
+      if (token != null && token.isNotEmpty) {
+        final snapshot = await _loadClientAccessStatusUseCase(token: token);
+        return snapshot.fold((value) => value.status, (_) => cached.status);
+      }
+      return cached.status;
+    }
+
     final result = await _loadAccessRequestsUseCase(
       userId: userId,
       query: const PaginatedQuery(),

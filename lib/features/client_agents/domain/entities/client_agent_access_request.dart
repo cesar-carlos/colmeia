@@ -9,6 +9,7 @@ class ClientAgentAccessRequest {
     this.requestedAt,
     this.reviewedAt,
     this.rejectionReason,
+    this.statusPollToken,
   });
 
   final String? requestId;
@@ -18,4 +19,7 @@ class ClientAgentAccessRequest {
   final DateTime? requestedAt;
   final DateTime? reviewedAt;
   final String? rejectionReason;
+
+  /// When present, [GET /client-access/status] can be used for accurate polling.
+  final String? statusPollToken;
 }

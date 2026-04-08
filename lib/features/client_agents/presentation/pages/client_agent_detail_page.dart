@@ -16,6 +16,7 @@ import 'package:colmeia/shared/presentation/localization/sync_app_localizations_
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
+import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -101,12 +102,13 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
               ),
               SizedBox(height: tokens.sectionSpacing),
               if (initialLoading)
-                const Center(child: CircularProgressIndicator())
+                _ClientAgentDetailLoadingSkeleton(tokens: tokens)
               else if (blockingError)
                 AppInlineErrorPanel(
                   title: l10n.clientAgentDetailLoadErrorTitle,
                   message: controller.errorMessage!,
                   onRetry: controller.reload,
+                  retryLabel: l10n.appInlineErrorRetry,
                 )
               else ...<Widget>[
                 if (agent != null &&
@@ -117,6 +119,7 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                     onRetry: () => unawaited(
                       _controller.refresh(widget.agentId),
                     ),
+                    retryLabel: l10n.appInlineErrorRetry,
                   ),
                   SizedBox(height: tokens.gapMd),
                 ],
@@ -152,6 +155,38 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
         (a.postalCode?.isNotEmpty ?? false) ||
         (a.city?.isNotEmpty ?? false) ||
         (a.state?.isNotEmpty ?? false);
+  }
+}
+
+class _ClientAgentDetailLoadingSkeleton extends StatelessWidget {
+  const _ClientAgentDetailLoadingSkeleton({required this.tokens});
+
+  final AppThemeTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSkeleton(
+      enabled: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppSectionCardWithHeading(
+            title: ' ',
+            child: SizedBox(height: tokens.contentSpacing * 4),
+          ),
+          SizedBox(height: tokens.gapMd),
+          AppSectionCardWithHeading(
+            title: ' ',
+            child: SizedBox(height: tokens.contentSpacing * 2),
+          ),
+          SizedBox(height: tokens.gapMd),
+          AppSectionCardWithHeading(
+            title: ' ',
+            child: SizedBox(height: tokens.contentSpacing * 2),
+          ),
+        ],
+      ),
+    );
   }
 }
 

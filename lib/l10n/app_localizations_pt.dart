@@ -240,6 +240,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sessao indisponivel para carregar o agente.';
 
   @override
+  String get appInlineErrorRetry => 'Tentar novamente';
+
+  @override
   String get clientAgentsNoLocalPendingToSync =>
       'Nao ha pendencias locais para sincronizar.';
 
@@ -925,6 +928,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentDetailSessionUnavailable =>
       'Sessao indisponivel para carregar o agente.';
+
+  @override
+  String get appInlineErrorRetry => 'Tentar novamente';
 
   @override
   String get clientAgentsNoLocalPendingToSync =>

@@ -5,6 +5,7 @@ import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
@@ -15,6 +16,7 @@ import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_k
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_access_status_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
@@ -36,6 +38,9 @@ class _MockLoadClientApprovedAgentsUseCase extends Mock
 class _MockLoadClientAccessRequestsUseCase extends Mock
     implements LoadClientAccessRequestsUseCase {}
 
+class _MockLoadClientAccessStatusUseCase extends Mock
+    implements LoadClientAccessStatusUseCase {}
+
 class _MockLoadClientAgentDetailUseCase extends Mock
     implements LoadClientAgentDetailUseCase {}
 
@@ -55,6 +60,7 @@ void main() {
   late _MockAuthController authController;
   late _MockLoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase;
   late _MockLoadClientAccessRequestsUseCase loadAccessRequestsUseCase;
+  late _MockLoadClientAccessStatusUseCase loadClientAccessStatusUseCase;
   late _MockLoadClientAgentDetailUseCase loadClientAgentDetailUseCase;
   late _MockQueueClientAgentRequestAccessUseCase queueRequestAccessUseCase;
   late _MockQueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase;
@@ -132,6 +138,7 @@ void main() {
     authController = _MockAuthController();
     loadApprovedAgentsUseCase = _MockLoadClientApprovedAgentsUseCase();
     loadAccessRequestsUseCase = _MockLoadClientAccessRequestsUseCase();
+    loadClientAccessStatusUseCase = _MockLoadClientAccessStatusUseCase();
     loadClientAgentDetailUseCase = _MockLoadClientAgentDetailUseCase();
     queueRequestAccessUseCase = _MockQueueClientAgentRequestAccessUseCase();
     queueRemoveAccessUseCase = _MockQueueClientAgentRemoveAccessUseCase();
@@ -184,6 +191,16 @@ void main() {
       ),
     );
     when(
+      () => loadClientAccessStatusUseCase(token: any(named: 'token')),
+    ).thenAnswer(
+      (_) async =>
+          const Success<ClientAccessStatusSnapshot, AppFailure>(
+            ClientAccessStatusSnapshot(
+              status: AgentAccessRequestStatus.pending,
+            ),
+          ),
+    );
+    when(
       () => syncPendingActionsUseCase(userId: any(named: 'userId')),
     ).thenAnswer(
       (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
@@ -213,6 +230,7 @@ void main() {
       authController: authController,
       loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
       loadAccessRequestsUseCase: loadAccessRequestsUseCase,
+      loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
       loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
       queueRequestAccessUseCase: queueRequestAccessUseCase,
       queueRemoveAccessUseCase: queueRemoveAccessUseCase,

@@ -33,6 +33,7 @@ class ClientAgentsRequestsTab extends StatelessWidget {
           title: l10n.clientAgentsLoadRequestsErrorTitle,
           message: message,
           onRetry: onRetry,
+          retryLabel: l10n.appInlineErrorRetry,
         ),
       ],
       if (pendingErrorMessage case final String message) ...<Widget>[
@@ -40,6 +41,7 @@ class ClientAgentsRequestsTab extends StatelessWidget {
           title: l10n.clientAgentsLoadPendingErrorTitle,
           message: message,
           onRetry: onRetry,
+          retryLabel: l10n.appInlineErrorRetry,
         ),
       ],
     ];

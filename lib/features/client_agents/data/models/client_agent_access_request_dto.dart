@@ -10,6 +10,7 @@ class ClientAgentAccessRequestDto {
     this.requestedAt,
     this.reviewedAt,
     this.rejectionReason,
+    this.statusPollToken,
   });
 
   factory ClientAgentAccessRequestDto.fromJson(Map<String, dynamic> json) {
@@ -46,7 +47,35 @@ class ClientAgentAccessRequestDto {
           (json['reason'] as String?) ??
           (json['rejectionReason'] as String?) ??
           (json['rejection_reason'] as String?),
+      statusPollToken: _readOptionalString(
+        json,
+        <String>[
+          'statusPollToken',
+          'status_token',
+          'reviewToken',
+          'review_token',
+          'accessToken',
+          'access_token',
+          'token',
+        ],
+      ),
     );
+  }
+
+  static String? _readOptionalString(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final raw = json[key];
+      if (raw is String) {
+        final trimmed = raw.trim();
+        if (trimmed.isNotEmpty) {
+          return trimmed;
+        }
+      }
+    }
+    return null;
   }
 
   final String? requestId;
@@ -56,6 +85,7 @@ class ClientAgentAccessRequestDto {
   final DateTime? requestedAt;
   final DateTime? reviewedAt;
   final String? rejectionReason;
+  final String? statusPollToken;
 
   ClientAgentAccessRequest toEntity() {
     return ClientAgentAccessRequest(
@@ -66,6 +96,7 @@ class ClientAgentAccessRequestDto {
       requestedAt: requestedAt,
       reviewedAt: reviewedAt,
       rejectionReason: rejectionReason,
+      statusPollToken: statusPollToken,
     );
   }
 
@@ -78,6 +109,7 @@ class ClientAgentAccessRequestDto {
       'requestedAt': requestedAt?.toIso8601String(),
       'reviewedAt': reviewedAt?.toIso8601String(),
       'rejectionReason': rejectionReason,
+      'statusPollToken': statusPollToken,
     };
   }
 }

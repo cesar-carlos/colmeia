@@ -489,6 +489,12 @@ abstract class AppLocalizations {
   /// **'Session unavailable to load the agent.'**
   String get clientAgentDetailSessionUnavailable;
 
+  /// No description provided for @appInlineErrorRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get appInlineErrorRetry;
+
   /// No description provided for @clientAgentsNoLocalPendingToSync.
   ///
   /// In en, this message translates to:

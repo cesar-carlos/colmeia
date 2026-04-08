@@ -65,6 +65,7 @@
   "clientAgentsSessionUnavailableRemove": "Sessao indisponivel para remover acesso.",
   "clientAgentsSessionUnavailableSync": "Sessao indisponivel para sincronizar pendencias.",
   "clientAgentDetailSessionUnavailable": "Sessao indisponivel para carregar o agente.",
+  "appInlineErrorRetry": "Tentar novamente",
   "clientAgentsNoLocalPendingToSync": "Nao ha pendencias locais para sincronizar.",
   "clientAgentsRequestBlockedFallback": "Nao foi possivel registrar a solicitacao informada.",
   "clientAgentsRequestBlockedIntro": "Nenhum novo agente pode ser solicitado com os IDs informados. {details}",

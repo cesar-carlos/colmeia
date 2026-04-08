@@ -90,6 +90,7 @@
   "clientAgentsSessionUnavailableRemove": "Session unavailable to remove access.",
   "clientAgentsSessionUnavailableSync": "Session unavailable to sync pending items.",
   "clientAgentDetailSessionUnavailable": "Session unavailable to load the agent.",
+  "appInlineErrorRetry": "Try again",
   "clientAgentsNoLocalPendingToSync": "There are no local pending items to sync.",
   "clientAgentsRequestBlockedFallback": "Could not register the requested access request.",
   "clientAgentsRequestBlockedIntro": "No new agents can be requested with the IDs provided. {details}",

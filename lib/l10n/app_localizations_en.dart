@@ -236,6 +236,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Session unavailable to load the agent.';
 
   @override
+  String get appInlineErrorRetry => 'Try again';
+
+  @override
   String get clientAgentsNoLocalPendingToSync =>
       'There are no local pending items to sync.';
 

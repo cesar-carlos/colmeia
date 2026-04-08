@@ -31,6 +31,7 @@ class ClientAgentDetailController extends ChangeNotifier {
   bool _isRefreshing = false;
   bool _disposed = false;
   String? _loadedAgentId;
+  int _loadGeneration = 0;
 
   ClientAgent? get agent => _agent;
   String? get errorMessage => _errorMessage;
@@ -53,6 +54,7 @@ class ClientAgentDetailController extends ChangeNotifier {
 
     _loadedAgentId = agentId;
     final keepContentVisible = forceRefresh && _agent != null;
+    final generation = ++_loadGeneration;
 
     if (keepContentVisible) {
       _isRefreshing = true;
@@ -62,44 +64,48 @@ class ClientAgentDetailController extends ChangeNotifier {
     _errorMessage = null;
     _notifyListenersIfAlive();
 
-    final result = await _loadClientAgentDetailUseCase(
-      userId: userId,
-      agentId: agentId,
-    );
-    if (_disposed) {
-      return;
-    }
+    try {
+      final result = await _loadClientAgentDetailUseCase(
+        userId: userId,
+        agentId: agentId,
+      );
+      if (_disposed || generation != _loadGeneration) {
+        return;
+      }
 
-    result.fold(
-      (loadedAgent) {
-        _agent = loadedAgent;
-        _errorMessage = null;
-      },
-      (failure) {
-        if (!keepContentVisible) {
-          _agent = null;
+      result.fold(
+        (loadedAgent) {
+          _agent = loadedAgent;
+          _errorMessage = null;
+        },
+        (failure) {
+          if (!keepContentVisible) {
+            _agent = null;
+          }
+          _errorMessage = clientAgentsFailureUserMessage(failure, _s);
+          AppLogger.warning(
+            'Client agent detail load failed',
+            context: <String, Object?>{
+              'operation': 'loadClientAgentDetail',
+              'agentId': agentId,
+              'forceRefresh': forceRefresh,
+              'technicalMessage': failure.message,
+            },
+            error: failure.cause ?? failure,
+            stackTrace: failure.stackTrace,
+          );
+        },
+      );
+    } finally {
+      if (!_disposed && generation == _loadGeneration) {
+        if (keepContentVisible) {
+          _isRefreshing = false;
+        } else {
+          _isLoading = false;
         }
-        _errorMessage = clientAgentsFailureUserMessage(failure, _s);
-        AppLogger.warning(
-          'Client agent detail load failed',
-          context: <String, Object?>{
-            'operation': 'loadClientAgentDetail',
-            'agentId': agentId,
-            'forceRefresh': forceRefresh,
-            'technicalMessage': failure.message,
-          },
-          error: failure.cause ?? failure,
-          stackTrace: failure.stackTrace,
-        );
-      },
-    );
-
-    if (keepContentVisible) {
-      _isRefreshing = false;
-    } else {
-      _isLoading = false;
+        _notifyListenersIfAlive();
+      }
     }
-    _notifyListenersIfAlive();
   }
 
   Future<void> reload() async {

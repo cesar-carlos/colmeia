@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_shell_route_observer.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
@@ -33,7 +34,7 @@ class ClientAgentsPage extends StatefulWidget {
 }
 
 class _ClientAgentsPageState extends State<ClientAgentsPage>
-    with SyncAppLocalizationsMixin<ClientAgentsPage> {
+    with SyncAppLocalizationsMixin<ClientAgentsPage>, RouteAware {
   static const int _approvedAgentsTabIndex = 0;
   static const int _requestsTabIndex = 2;
   static const int _maxTabIndex = _requestsTabIndex;
@@ -42,6 +43,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   late final SharedPreferences _prefs;
   late ClientAgentsPageSessionState _pageSession;
   Timer? _draftPersistenceTimer;
+  bool _shellRouteObserverSubscribed = false;
 
   @override
   void initState() {
@@ -65,6 +67,13 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_shellRouteObserverSubscribed) {
+      final route = ModalRoute.of(context);
+      if (route is PageRoute<void>) {
+        appShellRouteObserver.subscribe(this, route);
+        _shellRouteObserverSubscribed = true;
+      }
+    }
     if (!_initialLoadScheduled) {
       _initialLoadScheduled = true;
       unawaited(_controller.initialize());
@@ -72,7 +81,15 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   }
 
   @override
+  void didPopNext() {
+    unawaited(_controller.refreshAll());
+  }
+
+  @override
   void dispose() {
+    if (_shellRouteObserverSubscribed) {
+      appShellRouteObserver.unsubscribe(this);
+    }
     _draftPersistenceTimer?.cancel();
     unawaited(
       persistClientAgentsRequestAccessDraft(
