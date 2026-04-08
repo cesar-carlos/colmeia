@@ -1,0 +1,100 @@
+---
+description: Arquitetura do Colmeia, roteamento, estado de apresentacao e DI
+globs: ["lib/**/*.dart"]
+---
+
+# Colmeia - Arquitetura
+
+## Escopo
+
+Este arquivo registra escolhas especificas do repositorio sobre arquitetura e
+composicao de dependencias.
+
+## Estrutura de Alto Nivel
+
+```text
+lib/
+|-- core/                    # app shell, router, theme, config, and shared utilities
+|-- features/
+|   `-- <feature>/
+|       |-- presentation/    # pages, widgets, controllers, and view models
+|       |-- application/     # use cases and orchestration
+|       |-- domain/          # entities and contracts
+|       `-- data/            # repositories, datasources, and mappers
+`-- shared/                  # design system, widgets, and reusable models
+```
+
+## Organizacao Arquitetural
+
+- Prefira organizacao por feature em vez de pastas globais por camada
+- Dentro de uma feature, mantenha `presentation`, `application`, `domain` e
+  `data` claramente separados quando a complexidade justificar
+- Em features menores, menos arquivos sao aceitaveis, mas nao misture UI,
+  regra de negocio e acesso a dados no mesmo tipo
+- `shared/` deve conter apenas o que e realmente reutilizado entre features
+- `core/` deve concentrar app shell, tema, roteamento e utilitarios
+  transversais sem virar deposito generico
+- Value objects reutilizaveis podem viver em `core/value_objects/`; value
+  objects especificos de feature pertencem ao `domain` da propria feature
+
+## Navegacao e Estado de Apresentacao
+
+- Use `go_router` como padrao de navegacao
+- Centralize nomes, paths e metadados de rota em
+  `lib/app/router/app_routes.dart`
+- Mantenha `lib/app/router/app_router.dart` focado na composicao final da
+  arvore de rotas
+- Organize definicoes de rota por feature em `presentation/routes`
+- Mantenha guards e redirects perto da feature que e dona da regra de acesso
+- Prefira `goNamed`, `pushNamed` ou helpers centralizados em vez de strings de
+  path soltas
+- Prefira route data objects dedicados para ids, filtros ou navegacao
+  escopada
+- Evite strings de rota soltas em widgets, controllers e testes
+- Use `Provider` para estado de apresentacao
+- Nao introduza outro gerenciador de estado sem decisao explicita
+- Controllers e view models devem expor estado e intencoes da tela sem conhecer
+  detalhes concretos de API, storage ou plataforma
+
+## Injecao de Dependencia com get_it
+
+- Use `get_it` para registrar e resolver dependencias fora da camada de
+  apresentacao
+- Organize registros por feature em arquivos de modulo dedicados e invoque-os
+  a partir de um `AppDependencies.setup()` centralizado
+- Use `registerLazySingleton` para servicos stateless que vivem enquanto o app
+  estiver aberto
+- Use `registerFactory` para use cases e objetos que possam ter estado por
+  execucao
+- Use `registerSingleton` apenas quando a inicializacao sincrona na subida do
+  app for realmente necessaria
+- Nunca chame `GetIt.instance` ou `sl()` dentro de widgets, controllers de
+  apresentacao ou regras de dominio; injete dependencias por construtor
+- Em testes, use `GetIt.instance.reset()` no `tearDown` para evitar vazamento
+  de estado
+
+```dart
+// lib/features/auth/auth_module.dart
+void setupAuthDependencies(GetIt sl) {
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(sl(), sl()),
+  );
+  sl.registerFactory<LoginUseCase>(
+    () => LoginUseCase(sl()),
+  );
+}
+
+// lib/core/app_dependencies.dart
+Future<void> setupDependencies() async {
+  final sl = GetIt.instance;
+  setupAuthDependencies(sl);
+  registerInjectorDashboards(sl);
+  // ...
+}
+```
+
+## Referencias
+
+- Fronteiras universais de arquitetura: `clean_architecture.mdc`
+- Escopo do produto e modulos ativos: `project_product_scope.mdc`
+- Fluxos de dados especificos do repo: `project_data_domain.mdc`

@@ -1,0 +1,69 @@
+---
+description: Escopo do produto Colmeia, limites do MVP e modulos ativos
+globs: ["lib/**/*.dart"]
+---
+
+# Colmeia - Escopo do Produto
+
+## Escopo
+
+Este arquivo registra o contexto especifico do produto: o que o app e, o que
+entra no MVP e quais modulos estao ativos ou previstos.
+
+## Visao Geral do Produto
+
+- Aplicacao Flutter com foco principal em Android e iOS
+- Produto corporativo centrado em dashboards e relatorios para operacao
+  multi-loja e multi-perfil
+- A experiencia deve priorizar leitura de dados, segmentacao por loja, fluxos
+  sensiveis a permissao e bom comportamento em rede real
+
+## Escopo Inicial do Produto
+
+- autenticacao e restauracao de sessao
+- contexto do usuario autenticado
+- controle de permissao por recurso e por loja
+- dashboard principal com KPIs e atalhos
+- dashboards detalhados com filtros
+- relatorios dinamicos com filtros, paginacao e ordenacao quando o modulo
+  estiver integrado
+- escolha e troca de loja ativa
+- preparacao para atualizacao eventual em tempo real
+
+## Estado Atual
+
+- O modulo de relatorios nao esta na navegacao nem em rotas ativas; URLs
+  legadas `/reports` redirecionam para o dashboard
+- Widgets tabulares de relatorio permanecem em `shared/widgets/reports/` para
+  demos e reuso futuro
+- O backend ainda pode enviar chaves legadas de permissao como `viewReports` e
+  `reportGrants`; valores nao mapeados devem ser ignorados com seguranca
+
+## Limites do MVP
+
+- Entregue primeiro login, restauracao de sessao, permissoes basicas, selecao
+  de loja ativa e dashboard principal
+- Trate relatorios como prioridade apenas quando o modulo estiver realmente
+  conectado a API
+- Use REST como integracao principal
+- Mantenha o cache leve e controlado
+- Nao implemente offline-first completo no MVP
+- Nao dependa de sockets para o funcionamento principal do app
+
+## Modulos Principais
+
+- `auth`: login, refresh de token, logout, restauracao de sessao e protecao de
+  rota
+- `user_context`: usuario autenticado, perfis, permissoes, lojas permitidas e
+  loja ativa
+- `dashboards`: listagem, detalhes, filtros, widgets e atualizacao de KPIs
+- `reports`: modulo futuro para listagem, metadados, consulta, filtros,
+  paginacao, ordenacao e exportacao
+- `notifications` ou `realtime`: eventos de atualizacao e invalidacao de cache
+- `settings` ou `profile`: preferencias, dados basicos do usuario e sessao
+
+## Referencias
+
+- Arquitetura e DI especificas do repo: `project_architecture.mdc`
+- Plataforma e escolhas de pacotes do repo: `project_platform_dependencies.mdc`
+- Fluxos de dados e dominio do repo: `project_data_domain.mdc`

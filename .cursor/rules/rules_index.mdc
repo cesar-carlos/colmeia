@@ -1,69 +1,98 @@
 ---
-description: Index of available Cursor rules in this repo
+description: Indice das rules disponiveis neste repositorio
 globs: ["**/*"]
 alwaysApply: true
 ---
 
-# Rules Index
+# Indice de Rules
 
-## Behavioral Guardrails
+## Escopo
 
-- Never commit, push, or create new documentation unless explicitly requested
-- Prefer self-explanatory code via naming, structure, and focused abstractions
-- Prefer modern, idiomatic Dart and Flutter constructs when they improve clarity
-- Never swallow errors silently
-- Prefer clear, actionable failures over generic error messages
-- Do not add or suggest Flutter **widget tests** (`testWidgets`) unless the user
-  explicitly asks for them; see `testing.mdc` and `testing_dart_flutter.mdc`
+Este arquivo e o mapa de roteamento das rules do repositorio.
 
-## Rule Categories
+Mantenha a politica detalhada no arquivo dono do assunto em vez de repeti-la
+aqui.
 
-### Universal Rules
+## Rules Globais
 
-Use these as language-agnostic guidance that can be reused in other stacks.
+- **`global_guardrails.mdc`**: restricoes minimas globais de seguranca e fluxo
+  de trabalho
+- **`rules_authoring.mdc`**: como manter `.cursor/rules` e `CLAUDE.md` sem
+  duplicacao ou drift
 
-- **`general_rules.mdc`**: cross-cutting behavior, docs/comments policy, reuse,
-  duplication, magic numbers, refactoring strategy (when/how/what not to do)
-- **`clean_architecture.mdc`**: layer boundaries and dependency direction
-- **`solid_principles.mdc`**: SRP/OCP/LSP/ISP/DIP design guidance
-- **`testing.mdc`**: universal test strategy, isolation, mocking, failure-path
-  coverage
+## Categorias de Rules
 
-### Dart and Flutter Rules
+### Rules Universais
 
-Use these only when the codebase is Dart/Flutter.
+Use estas rules como orientacao agnostica de linguagem que pode ser reutilizada
+em outras stacks.
 
-- **`coding_style.mdc`**: Dart syntax, naming, imports, formatting,
-  async/logging, tooling
-- **`null_safety.mdc`**: nullability modeling and safe access patterns
-- **`flutter_widgets.mdc`**: widget composition, local UI state, build/rebuild
-  performance, layout primitives, Flutter-specific refactoring signals
-- **`ui_ux_design.mdc`**: mobile design system, interaction patterns,
-  accessibility and responsive mobile behavior
-- **`testing_dart_flutter.mdc`**: Dart/Flutter test code, widget tests, test
-  harnesses, assertion preferences
+- **`general_rules.mdc`**: comportamento transversal, politica de docs e
+  comentarios, reuso, duplicacao, valores magicos e estrategia de refatoracao
+- **`clean_architecture.mdc`**: fronteiras de camada e direcao de dependencias
+- **`solid_principles.mdc`**: orientacao de design baseada em SRP/OCP/LSP/ISP/DIP
+- **`testing.mdc`**: estrategia universal de testes, isolamento, mocking e
+  cobertura de falhas
 
-### Project-Specific Rules
+### Rules de Dart e Flutter
 
-- **`project_specifics.mdc`**: repo-specific mobile architecture choices,
-  packages, visual identity and platform decisions
+Use estas rules apenas quando o codebase for Dart/Flutter.
 
-## Coordination Rules
+- **`coding_style.mdc`**: sintaxe Dart, naming, imports, formatacao,
+  async/logging e tooling
+- **`null_safety.mdc`**: modelagem de nullability e padroes de acesso seguro
+- **`flutter_widgets.mdc`**: composicao de widgets, estado local de UI,
+  performance de build/rebuild, layout e sinais de refatoracao em Flutter
+- **`ui_ux_design.mdc`**: design system mobile, padroes de interacao,
+  acessibilidade e comportamento responsivo
+- **`testing_dart_flutter.mdc`**: codigo de teste Dart/Flutter, widget tests,
+  harnesses e preferencias de assertion
 
-- General behavior, docs/comments, reuse, duplication, refactoring strategy: `general_rules.mdc`
-- Layering and import direction: `clean_architecture.mdc`
-- Class and interface design: `solid_principles.mdc`
-- Test strategy in any stack: `testing.mdc`
-- Dart syntax/style/tooling: `coding_style.mdc`
-- Dart nullability: `null_safety.mdc`
-- Flutter widget/layout code: `flutter_widgets.mdc`
-- Mobile UX/design: `ui_ux_design.mdc`
-- Dart/Flutter test code: `testing_dart_flutter.mdc`
-- Repo-specific packages, platform decisions and app conventions:
+### Rules Especificas do Projeto
+
+- **`project_specifics.mdc`**: ponto de entrada para convencoes especificas do
+  Colmeia e referencias cruzadas
+- **`project_product_scope.mdc`**: escopo do produto, limites do MVP e modulos
+  ativos e futuros
+- **`project_architecture.mdc`**: estrutura do repositorio, roteamento, estado
+  de apresentacao e injecao de dependencia
+- **`project_platform_dependencies.mdc`**: foco de plataforma, dependencias
+  preferenciais e dependencias fora de escopo
+- **`project_data_domain.mdc`**: REST, cache, auth, dashboards, relatorios e
+  value objects
+- **`project_shared_components.mdc`**: criacao, promocao, especializacao e
+  evolucao segura de componentes compartilhados de UI
+- **`project_conventions.mdc`**: formularios, strings, design system
+  especifico, erros, monitoramento e prioridades de teste do repositorio
+
+## Regras de Coordenacao
+
+- Guardrails globais do repositorio: `global_guardrails.mdc`
+- Autoria e manutencao de rules: `rules_authoring.mdc`
+- Comportamento geral, docs e comentarios, reuso, duplicacao e refatoracao:
+  `general_rules.mdc`
+- Camadas e direcao de dependencias: `clean_architecture.mdc`
+- Design de classes e interfaces: `solid_principles.mdc`
+- Estrategia de testes em qualquer stack: `testing.mdc`
+- Sintaxe, estilo e tooling Dart: `coding_style.mdc`
+- Nullability em Dart: `null_safety.mdc`
+- Widgets e layout em Flutter: `flutter_widgets.mdc`
+- UX mobile e design system: `ui_ux_design.mdc`
+- Codigo de teste Dart/Flutter: `testing_dart_flutter.mdc`
+- Ponto de entrada e roteamento especifico do Colmeia:
   `project_specifics.mdc`
+- Escopo do produto no Colmeia: `project_product_scope.mdc`
+- Arquitetura e DI no Colmeia: `project_architecture.mdc`
+- Plataforma e pacotes no Colmeia: `project_platform_dependencies.mdc`
+- Fluxos de dados e dominio no Colmeia: `project_data_domain.mdc`
+- Ciclo de vida de componentes compartilhados no Colmeia:
+  `project_shared_components.mdc`
+- Convencoes de implementacao no Colmeia: `project_conventions.mdc`
 
-## Copying to Other Projects
+## Copia para Outros Projetos
 
-- For non-Dart projects, keep only the universal rules
-- For Dart/Flutter projects, keep the universal rules plus the Dart/Flutter rules
-- Replace `project_specifics.mdc` with one tailored to the target repository
+- Para projetos nao Dart, mantenha apenas as rules globais e universais
+- Para projetos Dart/Flutter, mantenha as rules globais, universais e de
+  Dart/Flutter
+- Substitua as `project_*` rules por versoes adequadas ao repositorio de
+  destino

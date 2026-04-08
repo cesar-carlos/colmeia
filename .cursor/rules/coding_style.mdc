@@ -1,7 +1,6 @@
 ---
-description: Dart Style Guide - Effective Dart with modern best practices
+description: Sintaxe Dart, imports, naming, tooling e recursos modernos
 globs: ["lib/**/*.dart", "test/**/*.dart"]
-alwaysApply: true
 ---
 
 # Dart Style Guide

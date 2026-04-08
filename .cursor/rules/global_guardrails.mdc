@@ -1,0 +1,38 @@
+---
+description: Commit, docs, widget tests, refatoracao e guardrails globais
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Guardrails Globais
+
+## Escopo
+
+Este arquivo mantem apenas as restricoes do repositorio que realmente precisam
+ficar sempre em contexto.
+
+Use `rules_index.mdc` para encaminhar decisoes especificas ao arquivo dono do
+assunto.
+
+## Guardrails do repositorio
+
+- Nunca faca commit, push ou crie documentacao nova sem pedido explicito do
+  usuario
+- Prefira codigo autoexplicativo por nomenclatura, estrutura e abstracoes
+  focadas
+- Prefira falhas claras e acionaveis a mensagens genericas
+- Nunca esconda erros silenciosamente
+- Nao adicione nem sugira widget tests (`testWidgets`) sem pedido explicito do
+  usuario; os detalhes vivem em `testing.mdc`
+- Nao misture refatoracao com trabalho de feature no mesmo passo ou commit; os
+  detalhes vivem em `general_rules.mdc`
+- Encerre refatoracoes rodando o lint ou analyzer aplicavel e os testes
+  relevantes da area alterada; os detalhes vivem em `general_rules.mdc`
+- Quando um assunto tiver um arquivo de rule dedicado, siga esse arquivo em vez
+  de duplicar ou improvisar politica local
+
+## Referencias
+
+- Roteamento das rules: `rules_index.mdc`
+- Comportamento geral, docs e refatoracao: `general_rules.mdc`
+- Politica de testes: `testing.mdc`

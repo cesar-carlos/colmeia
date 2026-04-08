@@ -1,7 +1,6 @@
 ---
-description: General rules - cross-cutting principles and code hygiene
+description: Reuso, duplicacao, refatoracao, comentarios e guardrails gerais
 globs: ["lib/**/*.dart", "test/**/*.dart"]
-alwaysApply: true
 ---
 
 # Regras Gerais do Projeto
@@ -98,6 +97,9 @@ Prefira:
 - Nunca misture refatoracao com adicao de feature no mesmo commit ou PR; o
   revisor precisa distinguir o que muda comportamento do que so limpa
 - Rode o analyzer e os testes existentes apos cada passo significativo
+- Ao encerrar uma refatoracao, rode o lint ou analyzer aplicavel e os testes
+  relevantes da area alterada; nao assuma que rodar toda a suite e sempre a
+  melhor escolha
 - Prefira renomear e mover em operacoes separadas; nao renomeie e mude logica
   ao mesmo tempo
 - Se a area a refatorar nao tem testes, escreva os testes minimos necessarios
@@ -130,6 +132,8 @@ Prefira:
 ## Checklist
 
 - [ ] Refatoracao e adicao de feature foram separadas em passos/commits distintos
+- [ ] A refatoracao terminou com lint ou analyzer aplicavel e testes relevantes
+      da area alterada
 - [ ] O codigo esta claro sem depender de comentarios longos
 - [ ] Comentarios foram evitados quando uma melhoria de codigo resolveria
 - [ ] Nao foram criados docs/READMEs sem pedido explicito

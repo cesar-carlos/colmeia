@@ -17,6 +17,11 @@ reinterpreting rules from memory.
 
 ## Rule Categories
 
+### Global
+
+- `./.cursor/rules/global_guardrails.mdc`
+- `./.cursor/rules/rules_authoring.mdc`
+
 ### Universal
 
 Use these as language-agnostic guidance:
@@ -41,20 +46,20 @@ Use these only for Dart/Flutter code:
 Use these for repository-specific decisions:
 
 - `./.cursor/rules/project_specifics.mdc`
+- `./.cursor/rules/project_product_scope.mdc`
+- `./.cursor/rules/project_architecture.mdc`
+- `./.cursor/rules/project_platform_dependencies.mdc`
+- `./.cursor/rules/project_data_domain.mdc`
+- `./.cursor/rules/project_shared_components.mdc`
+- `./.cursor/rules/project_conventions.mdc`
 
 ## Usage Rules
 
 - Do not rewrite the rules from `./.cursor/rules` here
-- If topics overlap, follow the coordination defined in
-  `./.cursor/rules/rules_index.mdc`
-- Treat `./.cursor/rules/project_specifics.mdc` as the source of truth for
-  packages, platform decisions, and repository conventions
-- Prefer modern, idiomatic Dart and Flutter code when it improves clarity
-- Do not create new documentation unless explicitly requested
-- Do not add widget tests (`testWidgets`) unless the user explicitly requests
-  them; see `./.cursor/rules/testing.mdc` and `./.cursor/rules/testing_dart_flutter.mdc`
-- Never mix refactoring with feature changes in the same step or commit; see
-  `./.cursor/rules/general_rules.mdc`
+- Use `./.cursor/rules/rules_index.mdc` to route each topic to its owning file
+- Treat `./.cursor/rules/project_specifics.mdc` as the entry point for
+  repository-specific conventions
+- Keep this file concise and defer detailed policy to the owning rule file
 
 ## Notes
 

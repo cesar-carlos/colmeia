@@ -1,0 +1,68 @@
+---
+description: Foco de plataforma do Colmeia e escolhas preferenciais de dependencias
+globs: ["lib/**/*.dart", "pubspec.yaml"]
+---
+
+# Colmeia - Plataforma e Dependencias
+
+## Escopo
+
+Este arquivo registra o foco de plataforma e a selecao de pacotes do
+repositorio.
+
+## Foco de Plataforma
+
+- O produto prioriza Android e iOS
+- Web pode existir para preview ou entregas secundarias quando agregar valor
+  claro
+- Evite codigo e abstracoes desktop-specific sem necessidade explicita de
+  escopo
+- Ao adicionar comportamento multiplataforma, valide se ele agrega valor ao
+  escopo mobile ativo
+- Respeite expectativas nativas de Android e iOS para navegacao, permissoes,
+  comportamento de teclado e lifecycle
+
+## Dependencias Preferenciais
+
+- `dio` para HTTP e interceptors
+- `get_it` para injecao de dependencia fora da apresentacao
+- `go_router` para navegacao
+- `provider` para estado de apresentacao
+- `result_dart` para fluxos faliveis entre camadas
+- `shared_preferences` para preferencias simples
+- `flutter_secure_storage` para tokens e dados sensiveis
+- `package_info_plus` para metadados da app
+- `flutter_dotenv` para ambiente e configuracao de build
+- `logger` para logging estruturado quando o projeto precisar de camada propria
+- `hive_ce` para cache local chave-valor
+- `path` e `path_provider` para diretorios de dados no VM
+- `uuid` para identificadores tecnicos
+- `google_fonts` para tipografia do design system quando fizer sentido
+- `intl` para formatacao de moeda, data, hora e numeros
+- `brasil_fields` para mascaras e formatacoes brasileiras comuns
+- `flutter_form_builder` e `form_builder_validators` para formularios e filtros
+  dinamicos
+- `zard` para schemas pequenos de validacao e value objects
+- `syncfusion_flutter_charts` para graficos interativos
+- `syncfusion_flutter_datagrid` para grids de relatorio com sorting e filtros
+- `flutter_local_notifications` apenas quando um fluxo concreto exigir
+  notificacoes locais
+- `sentry_flutter` para erros e performance, com DSN fornecido via
+  `--dart-define=SENTRY_DSN=`
+- `mocktail` como biblioteca padrao de mocks em testes
+
+## Dependencias Fora de Escopo
+
+- Nao adicione `tray_manager`; o projeto e mobile-first
+- Nao mantenha `flutter_lints` junto com `very_good_analysis`
+- Nao adicione `syncfusion_flutter_core` diretamente sem uso explicito de API
+- Nao adicione `protoc_plugin` sem pipeline real de protobuf
+- Evite `mailer` no app cliente; prefira envio de email no backend
+- Pacotes como `socket_io_client`, `jose` e `crypto` devem entrar apenas quando
+  existir caso de uso concreto
+
+## Referencias
+
+- Escopo do produto e modulos ativos: `project_product_scope.mdc`
+- Arquitetura e DI especificas do repo: `project_architecture.mdc`
+- Convencoes e monitoramento do repo: `project_conventions.mdc`

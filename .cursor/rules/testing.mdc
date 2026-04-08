@@ -1,7 +1,6 @@
 ---
-description: Universal testing patterns - structure, isolation, and behavior coverage
+description: Estrutura, isolamento, falhas e cobertura de testes
 globs: ["test/**/*.dart"]
-alwaysApply: true
 ---
 
 # Padroes de Testes

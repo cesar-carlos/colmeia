@@ -1,7 +1,6 @@
 ---
-description: SOLID principles - class and interface design guidance
+description: SRP, OCP, DIP, contratos, responsabilidades e abstracoes
 globs: ["lib/**/*.dart"]
-alwaysApply: true
 ---
 
 # Principios SOLID
@@ -27,6 +26,9 @@ Nao repita aqui as regras de camada da arquitetura. Para isso, use
   espalhadas
 - Prefira polimorfismo, estrategias e adaptadores a editar codigo estavel toda
   vez que surge uma variante
+- Em widgets e componentes de UI, prefira composicao para especializacao; use
+  polimorfismo principalmente para contratos e comportamentos fora da arvore
+  visual
 - Se um fluxo depende de `switch` frequente por tipo, reavalie a modelagem
 
 ## LSP
@@ -64,6 +66,7 @@ Nao repita aqui as regras de camada da arquitetura. Para isso, use
 ## Referencias Cruzadas
 
 - Direcao de dependencias por camada: `clean_architecture.mdc`
+- Especializacao de widgets por composicao: `flutter_widgets.mdc`
 - Regras do repositorio para DI e contracts: `project_specifics.mdc`
 
 ## Checklist

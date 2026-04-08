@@ -1,7 +1,6 @@
 ---
-description: UI/UX design principles for Android and iOS apps
+description: Design system mobile, loading, empty, error, acessibilidade e responsividade
 globs: ["lib/**/*.dart"]
-alwaysApply: true
 ---
 
 # UI/UX Design Principles for Mobile Apps

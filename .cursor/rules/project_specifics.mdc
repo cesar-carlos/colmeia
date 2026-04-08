@@ -1,408 +1,52 @@
 ---
-description: Project-specific rules for the Colmeia mobile app
-globs: ["lib/**/*.dart", "pubspec.yaml"]
-alwaysApply: true
+description: Ponto de entrada das convencoes especificas do Colmeia
+globs: ["lib/**/*.dart", "test/**/*.dart", "pubspec.yaml"]
 ---
 
 # Colmeia - Project Specifics
 
 ## Escopo
 
-Este arquivo registra apenas decisoes especificas deste repositorio.
+Este arquivo e o ponto de entrada para as convencoes especificas do repositorio.
 
-Para regras genericas, consulte:
+Mantenha a politica detalhada nos arquivos focados abaixo em vez de expandir
+este arquivo como um novo monolito.
+
+## Comece por aqui
+
+- `project_product_scope.mdc`: escopo do produto, limites do MVP, modulos
+  ativos e futuros
+- `project_architecture.mdc`: estrutura do repositorio, roteamento, estado de
+  apresentacao e injecao de dependencia
+- `project_platform_dependencies.mdc`: foco de plataforma, dependencias
+  preferenciais e dependencias fora de escopo
+- `project_data_domain.mdc`: estrategia de dados, cache, auth, dashboards,
+  relatorios e value objects
+- `project_shared_components.mdc`: criacao, promocao, especializacao e evolucao
+  segura de componentes compartilhados
+- `project_conventions.mdc`: formularios, strings, design system especifico,
+  erros, monitoramento e prioridades de teste
+
+## Regras genericas continuam aqui
 
 - `clean_architecture.mdc` para fronteiras arquiteturais
 - `solid_principles.mdc` para SRP e DIP
 - `coding_style.mdc` para estilo Dart
 - `flutter_widgets.mdc` e `ui_ux_design.mdc` para UI
+- `testing.mdc` e `testing_dart_flutter.mdc` para estrategia e mecanica de
+  testes
 
-## Visao Geral
+## Coordenacao
 
-Aplicacao Flutter nova, com foco exclusivo em Android e iOS. O projeto deve
-priorizar uma identidade visual propria, componentizada e sustentada por tokens
-de design reutilizaveis.
-
-O produto e um app corporativo de dashboards e relatorios para operacao
-multi-loja e multi-perfil. O app deve privilegiar leitura de dados,
-segmentacao por loja, controle de permissao e boa experiencia de consulta em
-rede real.
-
-## Escopo Inicial do Produto
-
-- autenticacao e restauracao de sessao
-- contexto do usuario autenticado
-- controle de permissoes por recurso e por loja
-- dashboard principal com KPIs e atalhos
-- dashboards detalhados com filtros
-- relatorios dinamicos com filtros, paginacao e ordenacao (quando o modulo for integrado)
-- escolha e troca de loja ativa
-- preparacao para atualizacao eventual em tempo real
-
-## Estado atual (roteiro)
-
-- Modulo de **relatorios** nao esta na navegacao nem em rotas ativas; URLs antigas
-  `/reports` redirecionam para o dashboard (ver `AppFeatureFlags` e
-  `redirectRemovedReportRoutes`). Widgets de visualizacao tabular permanecem em
-  `shared/widgets/reports/` para demos e reuso futuro.
-- O backend pode ainda enviar chaves legadas (ex.: `viewReports`, `reportGrants`);
-  o app ignora valores que nao mapeiam para `UserPermission` atuais.
-
-## MVP
-
-- Entregue primeiro login, sessao, permissoes basicas, escolha de loja,
-  dashboard principal; relatorios prioritarios quando o modulo for ligado a API
-- Use `REST` como integracao principal no MVP
-- Mantenha cache leve e controlado
-- Nao implemente offline-first completo no MVP
-- Nao dependa de socket para o funcionamento principal do app
-
-## Estrutura de Alto Nivel
-
-```text
-lib/
-|-- core/                    # app shell, router, theme, config e utilitarios
-|-- features/
-|   `-- <feature>/
-|       |-- presentation/    # pages, widgets e controllers/view models
-|       |-- application/     # casos de uso e orquestracao
-|       |-- domain/          # entidades e contratos da feature
-|       `-- data/            # repositorios, datasources e mapeadores
-`-- shared/                  # design system, widgets e modelos reutilizaveis
-```
-
-## Organizacao Arquitetural
-
-- Prefira organizacao por feature, nao por camada global
-- Dentro de cada feature, mantenha separacao clara entre `presentation`,
-  `application`, `domain` e `data` quando a complexidade justificar
-- Em features pequenas, aceite menos arquivos, mas nao misture UI, regra de
-  negocio e acesso a dados no mesmo tipo
-- `shared/` deve conter apenas o que for realmente reutilizado entre features
-- `core/` deve concentrar shell do app, tema, roteamento e utilitarios
-  transversais, sem virar deposito generico
-- Value objects reutilizaveis podem viver em `core/value_objects/`; value
-  objects especificos de uma feature devem ficar no `domain` da propria feature
-
-## Navegacao e Estado de Apresentacao
-
-- Use `go_router` como padrao de navegacao
-- Centralize nomes, paths e metadados de rota em `lib/app/router/app_routes.dart`
-- Deixe `lib/app/router/app_router.dart` apenas como composicao da arvore final
-- Organize definicoes de rotas por feature, preferencialmente em `presentation/routes`
-- Mantenha guards e redirects junto da feature dona da regra de acesso
-- Prefira `goNamed`, `pushNamed` ou helpers centralizados sobre paths literais
-- Para rotas com ids, filtros ou escopos, prefira route data objects dedicados
-- Evite strings de rota soltas em widgets, controllers e testes
-- Use `Provider` para estado de apresentacao
-- Nao introduza outro gerenciador de estado sem decisao explicita
-- Controllers/view models devem expor estado e intencoes da tela; nao devem
-  conhecer detalhes concretos de API, storage ou plataforma
-
-## Injecao de Dependencia com get_it
-
-- Use `get_it` para registrar e resolver dependencias fora da camada de
-  apresentacao (datasources, repositories, use cases, services)
-- Organize o registro por feature em arquivos dedicados (ex:
-  `lib/features/auth/auth_module.dart`); chame todos a partir de um
-  `AppDependencies.setup()` centralizado em `lib/core/`
-- Use `registerLazySingleton` para servicos stateless que vivem enquanto o app
-  estiver aberto (repositorios, datasources, clientes HTTP)
-- Use `registerFactory` para use cases e objetos que podem ter estado proprio
-  por execucao
-- Use `registerSingleton` apenas quando a inicializacao sincrona e obrigatoria
-  na subida do app; prefira `registerLazySingleton` para evitar atrasos no startup
-- Nunca chame `GetIt.instance` ou `sl()` dentro de widgets, controllers de
-  apresentacao ou regras de dominio; injete via construtor
-- Em testes, use `GetIt.instance.reset()` no `tearDown` para evitar vazamento
-  de estado entre testes
-
-```dart
-// lib/features/auth/auth_module.dart
-void setupAuthDependencies(GetIt sl) {
-  sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl(), sl()),
-  );
-  sl.registerFactory<LoginUseCase>(
-    () => LoginUseCase(sl()),
-  );
-}
-
-// lib/core/app_dependencies.dart
-Future<void> setupDependencies() async {
-  final sl = GetIt.instance;
-  setupAuthDependencies(sl);
-  registerInjectorDashboards(sl);
-  // ...
-}
-```
-
-## Modulos Principais
-
-- `auth`: login, refresh token, logout, restauracao de sessao e protecao de
-  rotas
-- `user_context`: usuario autenticado, perfis, permissoes, lojas permitidas e
-  loja ativa
-- `dashboards`: listagem, detalhes, filtros, widgets e atualizacao de KPIs
-- `reports` (futuro): listagem, metadados, consulta, filtros, paginacao,
-  ordenacao e exportacao — componentes base em `shared/widgets/reports/`
-- `notifications` ou `realtime`: eventos de atualizacao e invalidacao de cache
-- `settings` ou `profile`: preferencias, dados basicos do usuario e sessao
-
-## Dependencias Preferenciais do Projeto
-
-- `dio` para HTTP e interceptors
-- `get_it` para injecao de dependencia fora da camada de apresentacao
-- `go_router` para navegacao
-- `provider` para estado de apresentacao
-- `result_dart` para fluxos faliveis entre camadas
-- `shared_preferences` para preferencias simples e leves
-- `flutter_secure_storage` para token e dados sensiveis
-- `package_info_plus` para metadados da app
-- `flutter_dotenv` para ambiente e configuracao por build
-- `logger` para logging estruturado quando o projeto precisar de camada propria
-- `hive_ce` para persistencia local de cache chave-valor (mobile, desktop e web)
-- `path` e `path_provider` para diretorio de dados no VM (Hive init fora da web)
-- `uuid` para identificadores tecnicos
-- `google_fonts` para tipografia do design system quando fizer sentido
-- `intl` para moeda, data, hora e formatacao numerica
-- `brasil_fields` para mascaras e formatacoes brasileiras recorrentes
-- `flutter_form_builder` e `form_builder_validators` para filtros e parametros
-  dinamicos
-- `zard` para schemas pequenos de validacao e suporte a value objects
-- `syncfusion_flutter_charts` para graficos interativos de uso corporativo
-- `syncfusion_flutter_datagrid` para relatorios tabulares com sorting, filtros e
-  grid robusto
-- `flutter_local_notifications` apenas quando um fluxo concreto exigir
-  notificacoes locais (nao manter como dependencia ate la)
-- `sentry_flutter` para erros e performance; DSN via `--dart-define=SENTRY_DSN=`
-  (ver `AppEnvironment` e `runAppWithOptionalSentry`)
-- `mocktail` como padrao para mocks em testes (dev dependency)
-
-## Dependencias Fora do Escopo Atual
-
-- Nao adicione `tray_manager`; o projeto atual e mobile-only
-- Nao mantenha `flutter_lints` junto com `very_good_analysis`
-- Nao adicione `syncfusion_flutter_core` diretamente sem uso explicito de APIs
-  do pacote
-- Nao adicione `protoc_plugin` sem pipeline real de protobuf
-- Evite `mailer` no app cliente; prefira backend para envio de email
-- Pacotes como `socket_io_client`, `jose` e `crypto` devem entrar apenas quando
-  houver caso de uso concreto
-
-## Estrategia de Dados
-
-- Use `REST` como fonte principal para autenticacao, bootstrap da sessao,
-  dashboards, relatorios, filtros, exportacao e preferencias
-- Trate socket ou `WebSocket` como complemento para aviso de atualizacao,
-  invalidacao de cache e refresh pontual de KPIs
-- Introduza tempo real apenas em modulos que realmente se beneficiem disso
-- O app nao deve depender de atualizacao em tempo real para funcionar
-
-## Cache Local
-
-- Comece com cache leve, focado em performance de leitura
-- Cacheie apenas sessao, loja ativa, preferencias, filtros recentes,
-  dashboards, metadados e ultimos resumos relevantes
-- Exponha cache de leitura para features via contrato `AppCacheStore` (DIP);
-  a implementacao atual usa `hive_ce` (`HiveAppCacheStore`); prefira nao acoplar
-  datasources a `Box` ou detalhes do Hive
-- Use chaves logicas, `TTL` por recurso e invalidacao clara
-- Sempre permita refresh manual quando o dado puder envelhecer
-- Evite sincronizacao offline completa, merge complexo e reconciliacao avancada
-  no inicio do projeto
-
-## Autenticacao e Autorizacao
-
-- O backend e a fonte final de verdade para autenticacao e autorizacao
-- O app pode ocultar menus, telas, botoes, dashboards e relatorios nao
-  permitidos, mas nao decide acesso real sozinho
-- Toda consulta sensivel deve considerar usuario autenticado, lojas permitidas,
-  recursos permitidos e filtros autorizados
-- Modele permissao por usuario, perfil, escopo de lojas e recursos liberados,
-  nao apenas por cargo fixo
-
-## Dashboards Dinamicos
-
-- Prefira um contrato em que o backend devolva metadados suficientes para montar
-  dashboards sem publicar nova versao para cada ajuste pequeno
-- Widgets dinamicos devem carregar identificador, tipo, titulo, fonte de dados,
-  parametros, ordem e regras de exibicao
-- Para graficos interativos, prefira contratos que descrevam serie, eixo,
-  tooltip, intervalo e comportamento de interacao
-- Evite acoplar cada relatorio ou dashboard a uma tela totalmente bespoke quando
-  um renderer configuravel resolver
-
-## Relatorios Parametrizados
-
-- Parametros devem ser descritos por metadados do backend sempre que possivel
-- Cada parametro deve carregar tipo, obrigatoriedade, valor inicial,
-  opcoes permitidas e regras de exibicao
-- Prefira filtros, ordenacao e paginação no servidor
-- Use formularios dinamicos na UI para montar a consulta sem duplicar regras
-  entre relatorios
-- Quando o parametro exigir mascara ou formato brasileiro recorrente, prefira
-  helper central com `brasil_fields`
-
-## Formularios com flutter_form_builder
-
-- Use `flutter_form_builder` + `form_builder_validators` para todos os
-  formularios de filtro, parametros de relatorio e entrada de dados
-- Mantenha um `GlobalKey<FormBuilderState>` no controller ou no widget pai;
-  nunca acesse o estado do form diretamente de um widget filho
-- Valide antes de submeter via `_formKey.currentState?.saveAndValidate()`
-- Prefira `FormBuilderTextField`, `FormBuilderDropdown`, `FormBuilderDateRangePicker`
-  em vez de construir campos manualmente; crie wrappers de molecula quando a
-  configuracao for repetida entre formularios
-- Para campos de dominio (periodo, CNPJ, valor monetario), envolva o campo
-  do form_builder em uma molecula que ja configura validators, formatters e
-  teclado — nao repita essa configuracao em cada tela
-- Resete o form apos submissao bem-sucedida ou navegacao de saida para evitar
-  estado residual
-
-## Strings e Localizacao
-
-- No MVP, strings de UI podem ser escritas diretamente em Portugues nos
-  widgets — nao e obrigatorio ARB/l10n neste momento
-- Strings de mensagens de erro para o usuario devem vir de `AppFailure.userMessage`
-  ou equivalente — nunca hardcode de mensagem de erro tecnica na UI
-- Strings que representam labels de campo, titulos de tela e textos de
-  confirmacao ficam no proprio widget ou page; evite arquivos de constantes
-  globais de string sem estrutura clara
-- Quando o projeto evoluir para multiplos idiomas, prefira `flutter_localizations`
-  - ARB files gerados por `flutter_gen` ou similar; nao introduza i18n
-    prematuramente antes de haver necessidade real de um segundo idioma
-- Formatacao de datas, moedas e numeros usa `intl` via helpers centralizados
-  em `lib/core/formatters/`; nunca formate diretamente nos widgets
-
-## Value Objects
-
-- Use value objects para modelar entradas com regra propria, como email,
-  documento, periodo, identificadores e filtros estruturados
-- Prefira validar value objects com schemas pequenos usando `zard`
-- Value objects devem expor valor normalizado e manter igualdade por valor
-- Nao espalhe regex e validacoes de string pela UI, controller e mapper ao
-  mesmo tempo
-
-## Design System do App
-
-Para principios gerais de design system, tokens e composicao visual, veja
-`ui_ux_design.mdc`. As decisoes especificas deste repositorio sao:
-
-- `lib/shared/design_system/app_colors.dart` (`AppColors`) e a fonte de verdade
-  para a paleta nomeada do produto
-- Ao precisar de uma cor de identidade, prefira `AppColors` em vez de criar
-  novos `Color(...)`, hex literais ou variantes ad hoc em widgets/features
-- Use `ColorScheme` para papeis semanticos do Material e `AppThemeTokens` para
-  tokens complementares; nao duplique a mesma cor-base em mais de uma fonte
-- Se uma nova cor de marca ou tom reutilizavel for necessario, adicione primeiro
-  em `AppColors` e depois derive o restante do tema a partir dessa base
-
-## Android e iOS (e web opcional)
-
-- O produto prioriza Android e iOS; web pode existir para preview ou entregas
-  adicionais quando fizer sentido (ex.: stack compartilhada com `hive_ce`)
-- Evite desktop ou web-specific sem necessidade real para o escopo atual
-- Ao criar abstractions de plataforma, foque primeiro em Android e iOS
-- Respeite convencoes nativas de navegacao, permissao, teclado e lifecycle
-- Antes de adicionar codigo multiplataforma extra, valide se ele traz valor para
-  o escopo que o time mantem ativo
-
-## Erros e Resultados
-
-- Trate erros de rede, persistencia e plataforma nas bordas do sistema
-- Prefira `ResultDart`/`AppResult<T>` como contrato para fluxos faliveis entre
-  datasource, repository, use case e controller
-- Traduza excecoes tecnicas para failures tipadas com mensagem clara para a UI
-- Centralize o mapeamento de erro em failures reutilizaveis; evite espalhar
-  `try/catch` por controller, widget e regra de negocio
-- Preserve contexto tecnico util para log e debug
-- Nao esconda erros com `catch` vazio, fallback silencioso ou mensagens genericas
-
-```dart
-Future<AppResult<User>> getById(String id) async {
-  try {
-    final user = await repository.getById(id);
-    return Success(user);
-  } on DioException catch (error, stackTrace) {
-    return Failure(
-      NetworkFailure(
-        message: 'Unable to load user',
-        userMessage: 'Nao foi possivel carregar o usuario.',
-        cause: error,
-        stackTrace: stackTrace,
-      ),
-    );
-  }
-}
-```
-
-## Monitoramento de Erros com Sentry
-
-- Capture apenas erros nao tratados e failures inesperados; nao capture
-  failures de negocio esperados (ex: login invalido, campo obrigatorio vazio)
-- Nunca inclua PII nos eventos do Sentry: sem CPF, CNPJ, email, nome completo,
-  senha, token de sessao ou dados bancarios em mensagens, breadcrumbs ou
-  contexto adicional
-- Adicione contexto util ao capturar: loja ativa, modulo/feature, acao que
-  o usuario estava executando — sem dados pessoais
-- Classifique severidade corretamente: `fatal` para crashes que impedem uso,
-  `error` para falhas de integracao nao tratadas, `warning` para degradacao
-  silenciosa (cache miss critico, timeout recuperavel)
-- Nao use Sentry para logging de debug ou fluxo normal do app; use
-  `dart:developer` `log` para isso
-- Valide que o DSN esta configurado antes de habilitar captura; em builds
-  sem DSN, o SDK deve operar em modo silencioso (ver `runAppWithOptionalSentry`)
-
-## Testes no Repositorio
-
-Para estrategia universal de testes e a proibicao de widget tests por
-iniciativa propria, veja `testing.mdc` e `testing_dart_flutter.mdc`.
-Prioridades especificas deste repositorio:
-
-- Espelhe `lib/` em `test/` por feature ou modulo compartilhado
-- Priorize testes unitarios para regras, mapeadores e controllers/view models
-- Cubra com prioridade: auth, permissoes, troca de loja, filtros e mapeamento
-  de metadados dinamicos
-- Para auth, permissao, navegacao e componentes compartilhados, prefira testes
-  unitarios ou de integracao leve
-
-## Regra de UI para Falhas
-
-```dart
-final result = await controller.loadUser();
-
-result.fold(
-  (user) => state = UserLoaded(user),
-  (failure) => state = UserError(
-    message: failure.displayMessage,
-    canRetry: failure.isTransient,
-  ),
-);
-```
-
-## Entry Point
-
-```dart
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  runApp(const ColmeiaApp());
-}
-```
-
-## Checklist de Revisao
-
-- [ ] A feature ficou organizada por responsabilidade sem rigidez desnecessaria
-- [ ] `Provider` e `go_router` foram usados como padrao do projeto
-- [ ] `REST` permaneceu como fluxo principal e socket ficou complementar quando
-      presente
-- [ ] O cache local permaneceu leve, com invalidacao e refresh claros
-- [ ] O backend continua como fonte final de autorizacao
-- [ ] O catalogo `lib/shared/widgets/` foi consultado antes de criar novo widget
-- [ ] Componentes existentes foram evoluidos em vez de duplicados ou substituidos
-- [ ] Tokens e componentes compartilhados sustentam a identidade visual do app
-- [ ] Nao foram introduzidas preocupacoes de desktop/web sem necessidade
-- [ ] Mensagens de erro para usuario sao claras e nao vazam detalhes internos
-- [ ] Testes relevantes cobrem regras ou regressoes alteradas; widget tests so
-      com pedido explicito
+- Quando a decisao for sobre arquitetura do repo, leia
+  `project_architecture.mdc`
+- Quando a decisao for sobre escopo e modulos do produto, leia
+  `project_product_scope.mdc`
+- Quando a decisao for sobre pacotes ou plataforma, leia
+  `project_platform_dependencies.mdc`
+- Quando a decisao for sobre fluxo de dados e modelagem de dominio, leia
+  `project_data_domain.mdc`
+- Quando a decisao for sobre criacao ou evolucao de componentes compartilhados,
+  leia `project_shared_components.mdc`
+- Quando a decisao for sobre formularios, strings, erros, monitoramento ou
+  prioridades de teste, leia `project_conventions.mdc`

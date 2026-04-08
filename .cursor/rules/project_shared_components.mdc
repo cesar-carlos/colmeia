@@ -1,0 +1,95 @@
+---
+description: Regras do Colmeia para criar e evoluir componentes compartilhados
+globs: ["lib/**/*.dart"]
+---
+
+# Colmeia - Componentes Compartilhados
+
+## Escopo
+
+Este arquivo registra decisoes especificas do repositorio para criar, promover
+e evoluir componentes compartilhados de UI sem duplicar codigo.
+
+## Promocao para `shared/`
+
+- Antes de criar um novo componente de UI, verifique se `lib/shared/widgets/`
+  ja tem um componente que resolve ou quase resolve a necessidade
+- Promova um componente para `lib/shared/widgets/` quando o mesmo padrao visual
+  ou de interacao aparecer em uma segunda feature com a mesma intencao
+- Mantenha organismos especificos de feature e widgets orientados ao dominio
+  dentro da feature ate que a API e a semantica estejam estaveis para reuso
+- Nao mova um componente para `shared/` apenas porque ele ficou grande; mova
+  quando a intencao de reuso for real
+- Componentes em `shared/` nao devem depender de controllers, models, entities,
+  rotas ou imports de uma feature especifica
+- Se um componente exige import de `lib/features/<feature>/...` para funcionar,
+  ele provavelmente ainda nao pertence a `shared/`
+
+## Escada do basico ao especializado
+
+- Comece pelo menor primitivo estavel que resolva a necessidade repetida
+- Construa especializacao nesta ordem: token -> atomo -> molecula -> organismo
+- Adicione um parametro opcional ao componente base apenas quando a variacao
+  for generica e util a multiplos chamadores
+- Crie um wrapper quando a variacao adicionar validacao de dominio, regras fixas
+  de UX ou estado local proprio
+- Nao crie variantes paralelas como `BaseCard`, `NewCard` e `AdvancedCard`
+  para a mesma responsabilidade
+
+## Tecnicas de reuso
+
+- Use composicao como forma padrao de especializar widgets
+- Use mixins para comportamento reutilizavel de `State`, como scroll, ticker ou
+  keep-alive
+- Use estrategias, adaptadores ou contratos para variacao nao visual que nao
+  deve viver na arvore de widgets
+- Nao use subclass de `StatelessWidget` ou `StatefulWidget` como mecanismo
+  principal para construir a hierarquia do design system
+
+## Evolucao segura de APIs compartilhadas
+
+- Prefira mudancas aditivas e compativeis com versoes anteriores nas APIs de
+  componentes compartilhados
+- Separe rename, move e mudancas semanticas de comportamento em refactors
+  diferentes
+- Ao evoluir um componente compartilhado, migre os call sites existentes em vez
+  de deixar padroes antigos e paralelos convivendo
+- Se um componente compartilhado crescer com parametros demais e sem relacao,
+  divida-o em uma base menor com wrappers especializados
+- Em mudancas incompativeis amplas, prefira um passo intermediario com
+  deprecacao e migracao dos call sites antes da remocao final
+- Encerre refactors em componentes compartilhados rodando o analyzer ou lint
+  aplicavel e os testes das features, wrappers e fluxos impactados
+
+## Exemplos
+
+```text
+Bom:
+- AppSectionCard -> adicionar spacing generico ou trailing slot quando varios
+  chamadores precisarem
+- AppTextField -> envolver em AppEmailField quando a especializacao fixa teclado,
+  autofill e validacao
+
+Evite:
+- copiar o mesmo layout de card em duas features com diferencas pequenas de
+  texto
+- subclass de widget compartilhado apenas para travar alguns parametros
+- adicionar regras de dominio especificas de feature direto em um atomo
+```
+
+## Referencias
+
+- Regras de composicao de widgets compartilhados: `flutter_widgets.mdc`
+- Regras de reuso e duplicacao: `general_rules.mdc`
+- Design system e consistencia visual: `ui_ux_design.mdc`
+- Fronteiras arquiteturais: `clean_architecture.mdc`
+
+## Checklist
+
+- [ ] O componente foi pesquisado ou revisado primeiro em `lib/shared/widgets/`
+- [ ] A promocao para `shared/` aconteceu porque a intencao de reuso e real
+- [ ] A escolha entre parametro no base e wrapper especializado foi intencional
+- [ ] Composicao, mixin ou estrategia foram escolhidos em vez de heranca de widget
+- [ ] O componente compartilhado nao depende de detalhes de uma feature
+- [ ] Mudancas de API compartilhada permaneceram compativeis ou foram migradas
+      de forma limpa

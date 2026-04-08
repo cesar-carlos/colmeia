@@ -1,7 +1,6 @@
 ---
-description: Dart and Flutter testing conventions - assertions, widget tests, and harness setup
+description: Assertions, mocks, harness e widget tests em Dart e Flutter
 globs: ["test/**/*.dart"]
-alwaysApply: true
 ---
 
 # Testes Dart e Flutter
@@ -21,9 +20,9 @@ em Dart/Flutter.
 
 ## Widget Tests
 
-- **Padrao:** nao crie testes de widget; veja `testing.mdc` (secao Widget tests)
-- **Excecao:** use `testWidgets` **apenas** se o usuario solicitar **de forma
-  explicita** testes de widget ou `testWidgets` para aquela mudanca
+- Siga a politica de quando `testWidgets` e permitido em `testing.mdc`
+- Quando o usuario pedir explicitamente widget tests, use `testWidgets` para a
+  mudanca solicitada
 - Quando for solicitado, monte o menor app shell necessario para tema,
   localizacao, roteamento ou injecao de dependencia
 - Valide estados de loading, empty, success e error quando o widget os expuser

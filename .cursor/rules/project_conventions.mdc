@@ -1,0 +1,134 @@
+---
+description: Convencoes do Colmeia para formularios, strings, erros e monitoramento
+globs: ["lib/**/*.dart", "test/**/*.dart"]
+---
+
+# Colmeia - Convencoes
+
+## Escopo
+
+Este arquivo registra convencoes especificas do repositorio que nao se encaixam
+nas rules universais de Dart e Flutter.
+
+## Formularios com flutter_form_builder
+
+- Use `flutter_form_builder` e `form_builder_validators` para filtros,
+  parametros de relatorio e formularios estruturados de entrada de dados
+- Mantenha um `GlobalKey<FormBuilderState>` no controller ou no widget pai
+- Valide antes do submit via `_formKey.currentState?.saveAndValidate()`
+- Prefira wrappers do app sobre widgets `FormBuilder*` quando configuracao ou
+  validacao se repetirem entre telas
+- Fora de fluxos com `flutter_form_builder`, use `AppTextField` ou uma
+  molecula por composicao como base padrao de input
+- Nao deixe configuracao raw de `TextField`, `TextFormField` ou
+  `FormBuilderTextField` espalhada pelas paginas quando um wrapper puder ser o
+  dono do comportamento
+- Resete o formulario apos submit bem-sucedido ou ao sair do fluxo quando o
+  estado residual puder ser prejudicial
+
+## Strings e Localizacao
+
+- No MVP, strings de UI podem viver diretamente em Portugues dentro dos widgets
+- Texto de erro voltado ao usuario deve vir de `AppFailure.userMessage` ou de
+  uma abstracao equivalente
+- Labels, titulos de tela e textos de confirmacao podem viver perto da page ou
+  widget em vez de arquivos globais de constantes de string
+- Nao introduza i18n prematuramente antes de existir necessidade real de um
+  segundo idioma
+- Quando o produto se tornar multi-idioma, prefira `flutter_localizations` com
+  arquivos ARB gerados
+- Formate datas, moedas e numeros por meio de helpers em
+  `lib/core/formatters/` em vez de formatar ad hoc dentro dos widgets
+
+## Design System Especifico
+
+- `lib/shared/design_system/app_colors.dart` (`AppColors`) e a fonte de
+  verdade para a paleta nomeada do produto
+- Prefira `AppColors` em vez de `Color(...)`, hex literais ou tons ad hoc em
+  features e widgets
+- Use `ColorScheme` para papeis semanticos do Material e `AppThemeTokens` para
+  tokens complementares
+- Quando uma nova cor de marca reutilizavel for necessaria, adicione-a primeiro
+  em `AppColors` e derive o tema a partir dela
+
+## Erros e Resultados
+
+- Trate erros de rede, persistencia e plataforma nas bordas do sistema
+- Prefira `ResultDart` ou `AppResult<T>` como contrato para fluxos faliveis
+  entre datasource, repository, use case e controller
+- Traduza excecoes tecnicas para failures tipadas com mensagens claras para o
+  usuario
+- Centralize o mapeamento de erro em failures reutilizaveis em vez de espalhar
+  `try/catch` entre controllers, widgets e logica de dominio
+- Preserve contexto tecnico util para logging e debug
+- Nao esconda erros com `catch` vazio, fallback silencioso ou mensagens
+  genericas
+
+```dart
+Future<AppResult<User>> getById(String id) async {
+  try {
+    final user = await repository.getById(id);
+    return Success(user);
+  } on DioException catch (error, stackTrace) {
+    return Failure(
+      NetworkFailure(
+        message: 'Unable to load user',
+        userMessage: 'Nao foi possivel carregar o usuario.',
+        cause: error,
+        stackTrace: stackTrace,
+      ),
+    );
+  }
+}
+```
+
+## Monitoramento com Sentry
+
+- Capture apenas erros nao tratados e failures inesperados
+- Nao capture failures de negocio esperados, como login invalido ou campo
+  obrigatorio vazio
+- Nunca envie PII como CPF, CNPJ, email, nome completo, senha, token de sessao
+  ou dados financeiros
+- Adicione contexto util e nao pessoal, como loja ativa, feature e acao atual
+  do usuario
+- Classifique a severidade corretamente: `fatal` para crashes bloqueantes,
+  `error` para falhas de integracao nao tratadas e `warning` para estados
+  degradados importantes
+- Nao use Sentry como sink de log de debug; use `dart:developer` `log` para
+  logging operacional normal
+- Valide que o DSN existe antes de habilitar a captura para que builds sem DSN
+  permanecam silenciosos
+
+## Testes neste Repositorio
+
+- Espelhe `lib/` dentro de `test/` por feature ou modulo compartilhado
+- Priorize testes unitarios para regras, mapeadores, controllers e view models
+- De prioridade extra para auth, permissoes, troca de loja, filtros e
+  mapeamento de metadados dinamicos
+- Para auth, permissoes, navegacao e componentes compartilhados, prefira
+  testes unitarios ou de integracao leve
+- Ao alterar um componente compartilhado, rode os testes dos wrappers
+  especializados e das features impactadas, nao apenas do modulo base
+- A politica de widget tests continua em `testing.mdc`; este arquivo define
+  apenas prioridades do repositorio
+
+## Regra de UI para Falhas
+
+```dart
+final result = await controller.loadUser();
+
+result.fold(
+  (user) => state = UserLoaded(user),
+  (failure) => state = UserError(
+    message: failure.displayMessage,
+    canRetry: failure.isTransient,
+  ),
+);
+```
+
+## Referencias
+
+- Estrategia universal de testes: `testing.mdc`
+- Detalhes de teste em Dart e Flutter: `testing_dart_flutter.mdc`
+- Composicao de widgets e abstracoes de input: `flutter_widgets.mdc`
+- Design system e UX mobile: `ui_ux_design.mdc`

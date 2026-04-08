@@ -1,0 +1,81 @@
+---
+description: Estrategia de dados do Colmeia, modelagem de dominio, cache e auth
+globs: ["lib/**/*.dart"]
+---
+
+# Colmeia - Dados e Dominio
+
+## Escopo
+
+Este arquivo registra convencoes especificas do repositorio sobre dominio e
+fluxo de dados.
+
+## Estrategia de Dados
+
+- Use REST como fonte principal para autenticacao, bootstrap da sessao,
+  dashboards, relatorios, filtros, exportacao e preferencias
+- Trate sockets ou `WebSocket` como mecanismos complementares para aviso de
+  atualizacao, invalidacao de cache ou refresh pontual de KPI
+- Introduza comportamento em tempo real apenas em modulos que realmente se
+  beneficiem disso
+- O app deve continuar funcionando sem conectividade em tempo real
+
+## Cache Local
+
+- Comece com cache leve focado em performance de leitura
+- Cacheie apenas dados de sessao, loja ativa, preferencias, filtros recentes,
+  dashboards, metadados e os ultimos resumos relevantes
+- Exponha acesso ao cache via `AppCacheStore` em vez de vazar detalhes de
+  `Hive` ou `Box` para as features
+- Use chaves logicas, TTL por recurso e invalidacao explicita
+- Sempre permita refresh manual para dados que possam ficar desatualizados
+- Evite sincronizacao offline completa, merges complexos e reconciliacao
+  avancada nas fases iniciais do produto
+
+## Autenticacao e Autorizacao
+
+- O backend e a fonte final de verdade para autenticacao e autorizacao
+- O app pode ocultar telas, menus, botoes, dashboards e relatorios nao
+  permitidos, mas nao deve atuar como autoridade final de acesso
+- Consultas sensiveis devem considerar usuario autenticado, lojas permitidas,
+  recursos concedidos e filtros autorizados
+- Modele permissoes por usuario, perfil, escopo de loja e recursos habilitados,
+  nao por um cargo estatico unico
+
+## Dashboards Dinamicos
+
+- Prefira contratos de backend que retornem metadados suficientes para ajustar
+  dashboards sem publicar nova versao a cada pequena mudanca
+- Widgets dinamicos devem carregar identificador, tipo, titulo, fonte de dados,
+  parametros, ordem e regras de exibicao
+- Para graficos interativos, prefira contratos que descrevam series, eixos,
+  tooltips, intervalos e comportamento de interacao
+- Evite telas bespoke por relatorio ou dashboard quando um renderer
+  configuravel for suficiente
+
+## Relatorios Parametrizados
+
+- Prefira metadados fornecidos pelo backend para parametros de relatorio sempre
+  que possivel
+- Cada parametro deve descrever tipo, obrigatoriedade, valor inicial, opcoes
+  permitidas e regras de exibicao
+- Prefira filtros, ordenacao e paginacao no servidor
+- Use formularios dinamicos na UI para que regras especificas de relatorio nao
+  sejam duplicadas
+- Quando um parametro precisar de formatacao brasileira recorrente, prefira
+  helpers centralizados construidos sobre `brasil_fields`
+
+## Value Objects
+
+- Use value objects para entradas com regras proprias, como email, documento,
+  periodos, identificadores e filtros estruturados
+- Prefira schemas pequenos com `zard` para validar value objects
+- Value objects devem expor valores normalizados e manter igualdade por valor
+- Nao espalhe regex e validacao de string entre UI, controller e mapper ao
+  mesmo tempo
+
+## Referencias
+
+- Fronteiras universais de arquitetura: `clean_architecture.mdc`
+- Escopo do produto e estado dos modulos: `project_product_scope.mdc`
+- Formularios, erros e strings especificos do repo: `project_conventions.mdc`

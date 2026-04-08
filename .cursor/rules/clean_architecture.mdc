@@ -1,7 +1,6 @@
 ---
-description: Architectural boundaries for feature-first Flutter modules
+description: Fronteiras entre presentation, application, domain e data
 globs: ["lib/**/*.dart"]
-alwaysApply: true
 ---
 
 # Architecture Boundaries

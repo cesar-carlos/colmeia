@@ -1,0 +1,37 @@
+---
+description: Criacao, manutencao e roteamento de rules e CLAUDE.md
+globs: [".cursor/rules/**/*.mdc", "CLAUDE.md"]
+---
+
+# Manutencao de Rules
+
+## Escopo
+
+Use este arquivo ao editar rules do repositorio ou arquivos de entrada do
+agente.
+
+## Principios de autoria
+
+- Mantenha uma preocupacao principal por arquivo de rule
+- Prefira referencias ao arquivo dono da politica em vez de copiar a mesma
+  regra em varios arquivos
+- Mantenha o conjunto always-on minimo; use `alwaysApply: true` apenas para
+  guardrails globais ou arquivos de roteamento
+- Prefira `globs` para escopar rules especificas aos arquivos que realmente
+  precisam delas
+- Quando uma rule especifica do projeto crescer cobrindo assuntos sem relacao,
+  divida por responsabilidade em vez de expandir um monolito
+- Exemplos dentro das rules precisam estar corretos, seguros e alinhados com a
+  arquitetura atual do repositorio
+- Ao mudar a ownership de uma rule, atualize `rules_index.mdc` e `CLAUDE.md` no
+  mesmo passo
+- Evite drift de politica entre `CLAUDE.md`, `rules_index.mdc` e o arquivo dono
+  da regra
+
+## Checklist
+
+- [ ] Este arquivo de rule tem uma unica preocupacao principal
+- [ ] Guardrails repetidos foram substituidos por referencias ao arquivo dono
+- [ ] `alwaysApply` foi usado apenas onde a rule realmente precisa de contexto global
+- [ ] Os exemplos foram revisados como se fossem codigo de producao
+- [ ] `rules_index.mdc` e `CLAUDE.md` ainda apontam para os arquivos corretos

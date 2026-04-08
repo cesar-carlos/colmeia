@@ -1,7 +1,6 @@
 ---
-description: Null safety - modeling nullability and safe access patterns
+description: Null safety, late, nullable, required e modelagem segura
 globs: ["lib/**/*.dart"]
-alwaysApply: true
 ---
 
 # Null Safety

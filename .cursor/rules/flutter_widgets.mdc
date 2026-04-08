@@ -1,7 +1,6 @@
 ---
-description: Flutter widgets - composition, local state, layout, and rebuild performance
+description: Criacao, composicao, especializacao e refatoracao de widgets Flutter
 globs: ["lib/**/*.dart"]
-alwaysApply: true
 ---
 
 # Flutter Widgets
@@ -41,6 +40,8 @@ componente pertence define onde ele fica e quando extrair para `lib/shared/`:
 - Use `ValueNotifier` + `ValueListenableBuilder` para estado local simples de UI
   (toggle visivel/oculto, contador, selecao pontual) — reduz rebuild ao menor
   subarvore possivel sem precisar de `StatefulWidget`
+- Se o widget for dono do `ValueNotifier`, mantenha o lifecycle explicito e
+  descarte-o corretamente
 - Use `StatefulWidget` apenas quando houver controle de foco, animacao,
   controllers de scroll/texto ou subscriptions que exijam `initState`/`dispose`
 - Mantenha `setState()` restrito a menor subarvore que realmente muda
@@ -48,12 +49,25 @@ componente pertence define onde ele fica e quando extrair para `lib/shared/`:
 - Sempre descarte `FocusNode`, controllers, timers, subscriptions e streams
 
 ```dart
-// Prefira ValueNotifier para toggle simples
-class _PasswordField extends StatelessWidget {
-  _PasswordField({required this.controller});
+// Use ValueNotifier para estado simples, com lifecycle explicito quando ele
+// pertence ao widget
+class _PasswordField extends StatefulWidget {
+  const _PasswordField({required this.controller});
 
   final TextEditingController controller;
+
+  @override
+  State<_PasswordField> createState() => _PasswordFieldState();
+}
+
+class _PasswordFieldState extends State<_PasswordField> {
   final ValueNotifier<bool> _obscure = ValueNotifier(true);
+
+  @override
+  void dispose() {
+    _obscure.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +75,7 @@ class _PasswordField extends StatelessWidget {
       valueListenable: _obscure,
       builder: (context, obscure, _) {
         return AppTextField(
-          controller: controller,
+          controller: widget.controller,
           obscureText: obscure,
           suffix: IconButton(
             icon: Icon(obscure ? Icons.visibility_off : Icons.visibility),
@@ -429,12 +443,16 @@ List<int> _squareValues(List<int> values) {
 
 ## Inputs, Imagens e Acessibilidade no Codigo
 
-- Use `AppTextField` como base para todos os campos de texto; nunca use
-  `TextField` ou `TextFormField` diretamente em paginas e features
+- Use abstracoes de input do app em vez de `TextField` ou `TextFormField`
+  diretamente em paginas e features
+- Fora de fluxos com `flutter_form_builder`, `AppTextField` e a base padrao
+  para campos de texto
+- Em fluxos com `flutter_form_builder`, prefira wrappers do app sobre
+  `FormBuilder*`; a politica do repositorio vive em `project_conventions.mdc`
 - Configure `textInputAction`, `keyboardType`, autofill e `onSubmitted` de forma
   coerente com fluxos mobile
-- Para campos especializados (email, senha, CNPJ), crie uma molecula por
-  composicao sobre `AppTextField` — veja "Especializacao de componentes"
+- Para campos especializados, crie uma molecula ou wrapper por composicao
+  sobre a abstracao base usada no fluxo — veja "Especializacao de componentes"
 - Mantenha validacao perto do campo
 - Forneca `loadingBuilder` e `errorBuilder` em imagens de rede
 - Adicione labels semanticos para acoes apenas com icone
@@ -542,6 +560,7 @@ de refatoracao (quando, como, o que nao fazer), veja `general_rules.mdc`.
 - Diretrizes de design system, paleta, tipografia e UX mobile:
   `ui_ux_design.mdc`
 - Regras gerais de reutilizacao e duplicacao: `general_rules.mdc`
+- Criacao e evolucao de componentes compartilhados: `project_shared_components.mdc`
 - Estilo Dart e tooling: `coding_style.mdc`
 - Catalogo de componentes, gerenciamento de estado (`Provider`) e decisoes de
   pacotes do projeto: `project_specifics.mdc`
