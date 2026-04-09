@@ -50,7 +50,7 @@ void main() {
         ),
       );
 
-      check(failure).isA<NetworkFailure>();
+      check(failure).isA<AuthorizationFailure>();
       check(failure.displayMessage).equals(
         'Sua conta esta pendente de aprovacao.',
       );

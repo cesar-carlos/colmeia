@@ -11,6 +11,7 @@ class DashboardOverview {
     required this.paymentMethods,
     required this.filialRankings,
     required this.userRankings,
+    this.isStaleCache = false,
   });
 
   final DateTime periodStart;
@@ -19,6 +20,9 @@ class DashboardOverview {
   final List<DashboardPaymentMethodBreakdown> paymentMethods;
   final List<DashboardFilialRanking> filialRankings;
   final List<DashboardUserRanking> userRankings;
+
+  /// True when recovered from local cache after a remote error.
+  final bool isStaleCache;
 
   bool get hasRows => paymentMethods.isNotEmpty;
 

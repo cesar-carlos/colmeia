@@ -1,5 +1,6 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/cache/app_kv_cache_key_prefixes.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/dashboards/data/models/dashboard_overview_model.dart';
 
 class DashboardLocalDataSource {
@@ -15,7 +16,20 @@ class DashboardLocalDataSource {
       return null;
     }
 
-    return DashboardOverviewModel.decode(raw);
+    try {
+      return DashboardOverviewModel.decode(raw);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Dashboard overview cache decode failed; treating as cache miss',
+        context: <String, Object?>{
+          'operation': 'readDashboardOverviewCache',
+          'userId': userId,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   Future<void> saveOverview({

@@ -14,6 +14,8 @@ class DashboardOverviewModel {
     required this.paymentMethods,
     required this.filialRankings,
     required this.userRankings,
+    this.cachedAt,
+    this.sourceAgentIds,
   });
 
   factory DashboardOverviewModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,13 @@ class DashboardOverviewModel {
         json['filialRankings'] as List<dynamic>? ?? const <dynamic>[];
     final userRankingsJson =
         json['userRankings'] as List<dynamic>? ?? const <dynamic>[];
+
+    final cachedAt = json['cachedAt'] is String
+        ? DateTime.tryParse(json['cachedAt'] as String)
+        : null;
+    final sourceAgentIds = (json['sourceAgentIds'] as List<dynamic>?)
+        ?.map((e) => e.toString())
+        .toList(growable: false);
 
     return DashboardOverviewModel(
       periodStart: DateTime.parse(json['periodStart'] as String),
@@ -63,6 +72,8 @@ class DashboardOverviewModel {
           averageTicket: (row['averageTicket'] as num).toDouble(),
         );
       }).toList(growable: false),
+      cachedAt: cachedAt,
+      sourceAgentIds: sourceAgentIds,
     );
   }
 
@@ -72,7 +83,11 @@ class DashboardOverviewModel {
     );
   }
 
-  factory DashboardOverviewModel.fromEntity(DashboardOverview overview) {
+  factory DashboardOverviewModel.fromEntity(
+    DashboardOverview overview, {
+    DateTime? cachedAt,
+    List<String>? sourceAgentIds,
+  }) {
     return DashboardOverviewModel(
       periodStart: overview.periodStart,
       periodEnd: overview.periodEnd,
@@ -80,6 +95,8 @@ class DashboardOverviewModel {
       paymentMethods: overview.paymentMethods,
       filialRankings: overview.filialRankings,
       userRankings: overview.userRankings,
+      cachedAt: cachedAt,
+      sourceAgentIds: sourceAgentIds,
     );
   }
 
@@ -90,7 +107,13 @@ class DashboardOverviewModel {
   final List<DashboardFilialRanking> filialRankings;
   final List<DashboardUserRanking> userRankings;
 
-  DashboardOverview toEntity() {
+  /// When the overview was persisted locally (for TTL / signature checks).
+  final DateTime? cachedAt;
+
+  /// Sorted at persistence time; used to avoid mixing datasets across agents.
+  final List<String>? sourceAgentIds;
+
+  DashboardOverview toEntity({bool isStaleCache = false}) {
     return DashboardOverview(
       periodStart: periodStart,
       periodEnd: periodEnd,
@@ -98,6 +121,7 @@ class DashboardOverviewModel {
       paymentMethods: paymentMethods,
       filialRankings: filialRankings,
       userRankings: userRankings,
+      isStaleCache: isStaleCache,
     );
   }
 
@@ -137,6 +161,8 @@ class DashboardOverviewModel {
           'averageTicket': item.averageTicket,
         };
       }).toList(growable: false),
+      if (cachedAt != null) 'cachedAt': cachedAt!.toIso8601String(),
+      if (sourceAgentIds != null) 'sourceAgentIds': sourceAgentIds,
     };
   }
 

@@ -4,6 +4,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_produto_vendido_forma_pagamento_repository.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/dashboards/data/datasources/dashboard_local_datasource.dart';
@@ -32,7 +33,12 @@ class DashboardRepositoryImpl implements DashboardRepository {
   final ClientAgentsRepository _clientAgentsRepository;
   final ResumoParcelaProdutoVendidoFormaPagamentoRepository _resumoRepository;
   final DateTime Function() _now;
-  static const PaginatedQuery _firstAgentQuery = PaginatedQuery(pageSize: 1);
+
+  static const int _approvedAgentsPageSize = 50;
+  static const int _maxApprovedAgentsPaginationPages = 400;
+  static const int _resumoLoadConcurrency = 4;
+  static const String _paginationSignatureSeparator = '\u001f';
+  static const Duration _dashboardCacheMaxAge = Duration(hours: 48);
 
   @override
   Future<AppResult<DashboardOverview>> loadOverview({
@@ -41,11 +47,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }) async {
     final period = _buildDefaultPeriod();
     try {
-      final approvedAgentsResult =
-          await _clientAgentsRepository.loadApprovedAgents(
-        userId: userId,
-        query: _firstAgentQuery,
-      );
+      final approvedAgentsResult = await _loadAllApprovedAgents(userId: userId);
       final approvedAgents = approvedAgentsResult.getOrNull();
       if (approvedAgents == null) {
         final failure = approvedAgentsResult.exceptionOrNull()!;
@@ -53,9 +55,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
           failure: failure,
           userId: userId,
           policy: policy,
+          period: period,
+          sourceAgentIds: null,
         );
       }
-      if (approvedAgents.items.isEmpty) {
+      if (approvedAgents.isEmpty) {
         return Failure<DashboardOverview, AppFailure>(
           ValidationFailure(
             message: 'No approved agents available for dashboard overview',
@@ -69,20 +73,32 @@ class DashboardRepositoryImpl implements DashboardRepository {
         );
       }
 
-      final agentId = approvedAgents.items.first.agentId;
-      final queryResult = await _resumoRepository.load(
-        agentId: agentId,
+      final sortedAgentIds = approvedAgents
+          .map((a) => a.agentId)
+          .toList(growable: false)
+        ..sort();
+
+      final queryResults = await _loadResumoQueryResults(
+        sortedAgentIds: sortedAgentIds,
         filter: period.filter,
       );
-      final rows = queryResult.getOrNull();
-      if (rows == null) {
-        final failure = queryResult.exceptionOrNull()!;
-        return _recoverOrFail(
-          failure: failure,
-          userId: userId,
-          policy: policy,
-          agentId: agentId,
-        );
+
+      final rows = <ResumoParcelaProdutoVendidoFormaPagamentoRow>[];
+      for (var i = 0; i < queryResults.length; i++) {
+        final queryResult = queryResults[i];
+        final batch = queryResult.getOrNull();
+        if (batch == null) {
+          final failure = queryResult.exceptionOrNull()!;
+          return _recoverOrFail(
+            failure: failure,
+            userId: userId,
+            policy: policy,
+            period: period,
+            sourceAgentIds: sortedAgentIds,
+            failedAgentId: sortedAgentIds[i],
+          );
+        }
+        rows.addAll(batch);
       }
 
       final overview = _buildOverview(
@@ -90,16 +106,37 @@ class DashboardRepositoryImpl implements DashboardRepository {
         periodStart: period.start,
         periodEnd: period.end,
       );
-      await _localDataSource.saveOverview(
-        userId: userId,
-        overview: DashboardOverviewModel.fromEntity(overview),
+
+      final stamp = _now();
+      final model = DashboardOverviewModel.fromEntity(
+        overview,
+        cachedAt: stamp,
+        sourceAgentIds: sortedAgentIds,
       );
+
+      try {
+        await _localDataSource.saveOverview(
+          userId: userId,
+          overview: model,
+        );
+      } on Object catch (error, stackTrace) {
+        AppLogger.warning(
+          'Dashboard overview cache save failed; returning computed overview',
+          context: <String, Object?>{
+            'operation': 'loadDashboardOverview',
+            'userId': userId,
+          },
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+
       AppLogger.info(
         'Dashboard overview loaded from agent query',
         context: <String, Object?>{
           'operation': 'loadDashboardOverview',
           'userId': userId,
-          'agentId': agentId,
+          'agentCount': sortedAgentIds.length,
           'periodStart': period.start.toIso8601String(),
           'periodEnd': period.end.toIso8601String(),
           'paymentMethods': overview.paymentMethods.length,
@@ -123,17 +160,116 @@ class DashboardRepositoryImpl implements DashboardRepository {
         failure: failure,
         userId: userId,
         policy: policy,
+        period: period,
+        sourceAgentIds: null,
         error: error,
         stackTrace: stackTrace,
       );
     }
   }
 
+  /// Loads resumo rows per agent with bounded parallelism to avoid spiking the
+  /// SQL bridge when many agents are approved.
+  Future<List<AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>>>
+  _loadResumoQueryResults({
+    required List<String> sortedAgentIds,
+    required ResumoParcelaProdutoVendidoFormaPagamentoFilter filter,
+  }) async {
+    final results =
+        <AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>>[];
+    const concurrency = _resumoLoadConcurrency;
+    for (var i = 0; i < sortedAgentIds.length; i += concurrency) {
+      final end = i + concurrency > sortedAgentIds.length
+          ? sortedAgentIds.length
+          : i + concurrency;
+      final chunk = await Future.wait(
+        sortedAgentIds.sublist(i, end).map(
+          (id) => _resumoRepository.load(
+            agentId: id,
+            filter: filter,
+          ),
+        ),
+      );
+      results.addAll(chunk);
+    }
+    return results;
+  }
+
+  Future<AppResult<List<ClientAgent>>> _loadAllApprovedAgents({
+    required String userId,
+  }) async {
+    final agents = <ClientAgent>[];
+    var page = 1;
+    String? previousPageSignature;
+    while (true) {
+      if (page > _maxApprovedAgentsPaginationPages) {
+        AppLogger.warning(
+          'Approved agents pagination stopped at safety page limit',
+          context: <String, Object?>{
+            'operation': 'loadDashboardApprovedAgents',
+            'userId': userId,
+            'maxPages': _maxApprovedAgentsPaginationPages,
+            'loadedCount': agents.length,
+          },
+        );
+        break;
+      }
+      final query = PaginatedQuery(
+        page: page,
+        pageSize: _approvedAgentsPageSize,
+      );
+      final result = await _clientAgentsRepository.loadApprovedAgents(
+        userId: userId,
+        query: query,
+        includeOnlineStatus: false,
+      );
+      final batch = result.getOrNull();
+      if (batch == null) {
+        final failure = result.exceptionOrNull()!;
+        return Failure<List<ClientAgent>, AppFailure>(failure);
+      }
+      if (batch.items.isEmpty) {
+        break;
+      }
+
+      final pageItemsSignature = batch.items
+          .map((a) => a.agentId)
+          .join(_paginationSignatureSeparator);
+      final pageSignature =
+          '${batch.page}$_paginationSignatureSeparator$pageItemsSignature';
+      if (pageSignature == previousPageSignature) {
+        AppLogger.warning(
+          'Approved agents pagination: duplicate page payload; stopping',
+          context: <String, Object?>{
+            'operation': 'loadDashboardApprovedAgents',
+            'userId': userId,
+            'page': batch.page,
+          },
+        );
+        break;
+      }
+      previousPageSignature = pageSignature;
+
+      agents.addAll(batch.items);
+
+      final loadedAllKnownTotal =
+          batch.total > 0 && agents.length >= batch.total;
+      final lastPage = batch.items.length < query.pageSize;
+      if (loadedAllKnownTotal || lastPage) {
+        break;
+      }
+      page++;
+    }
+    return Success<List<ClientAgent>, AppFailure>(agents);
+  }
+
   Future<AppResult<DashboardOverview>> _recoverOrFail({
     required AppFailure failure,
     required String userId,
     required DashboardLoadPolicy policy,
-    String? agentId,
+    required _DashboardPeriod period,
+    required List<String>? sourceAgentIds,
+    String? failedAgentId,
     Object? error,
     StackTrace? stackTrace,
   }) async {
@@ -141,23 +277,31 @@ class DashboardRepositoryImpl implements DashboardRepository {
       userId: userId,
       policy: policy,
       failure: failure,
+      period: period,
+      expectedSortedAgentIds: sourceAgentIds,
       error: error ?? failure.cause ?? failure,
       stackTrace: stackTrace ?? failure.stackTrace ?? StackTrace.current,
-      agentId: agentId,
+      failedAgentId: failedAgentId,
     );
     if (cachedOverview != null) {
-      return Success<DashboardOverview, AppFailure>(cachedOverview.toEntity());
+      return Success<DashboardOverview, AppFailure>(
+        cachedOverview.toEntity(isStaleCache: true),
+      );
+    }
+
+    final logContext = <String, Object?>{
+      'operation': 'loadDashboardOverview',
+      'userId': userId,
+      'policy': policy.name,
+      'failureType': failure.runtimeType.toString(),
+    };
+    if (failedAgentId != null) {
+      logContext['agentId'] = failedAgentId;
     }
 
     AppLogger.error(
       'Unable to load dashboard overview',
-      context: <String, Object?>{
-        'operation': 'loadDashboardOverview',
-        'userId': userId,
-        'policy': policy.name,
-        'agentId': ?agentId,
-        'failureType': failure.runtimeType.toString(),
-      },
+      context: logContext,
       error: error ?? failure.cause ?? failure,
       stackTrace: stackTrace ?? failure.stackTrace,
     );
@@ -168,9 +312,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required String userId,
     required DashboardLoadPolicy policy,
     required AppFailure failure,
+    required _DashboardPeriod period,
+    required List<String>? expectedSortedAgentIds,
     required Object error,
     required StackTrace stackTrace,
-    String? agentId,
+    String? failedAgentId,
   }) async {
     if (!_shouldFallbackToCache(policy: policy, failure: failure)) {
       return null;
@@ -181,19 +327,81 @@ class DashboardRepositoryImpl implements DashboardRepository {
       return null;
     }
 
+    if (!_isCacheAcceptable(
+      cached: cachedOverview,
+      period: period,
+      expectedSortedAgentIds: expectedSortedAgentIds,
+    )) {
+      return null;
+    }
+
+    final warningContext = <String, Object?>{
+      'operation': 'loadDashboardOverview',
+      'userId': userId,
+      'policy': policy.name,
+      'failureType': failure.runtimeType.toString(),
+    };
+    if (failedAgentId != null) {
+      warningContext['agentId'] = failedAgentId;
+    }
+    if (cachedOverview.sourceAgentIds == null) {
+      warningContext['legacyCacheMissingAgentSignature'] = true;
+    }
+
     AppLogger.warning(
       'Dashboard overview fallback to cached data',
-      context: <String, Object?>{
-        'operation': 'loadDashboardOverview',
-        'userId': userId,
-        'policy': policy.name,
-        'agentId': ?agentId,
-        'failureType': failure.runtimeType.toString(),
-      },
+      context: warningContext,
       error: error,
       stackTrace: stackTrace,
     );
     return cachedOverview;
+  }
+
+  bool _isCacheAcceptable({
+    required DashboardOverviewModel cached,
+    required _DashboardPeriod period,
+    required List<String>? expectedSortedAgentIds,
+  }) {
+    if (!_sameCalendarDay(cached.periodStart, period.start) ||
+        !_sameCalendarDay(cached.periodEnd, period.end)) {
+      return false;
+    }
+
+    if (cached.cachedAt != null) {
+      final age = _now().difference(cached.cachedAt!);
+      if (age > _dashboardCacheMaxAge) {
+        return false;
+      }
+    }
+
+    if (expectedSortedAgentIds != null) {
+      if (cached.sourceAgentIds == null) {
+        return false;
+      }
+      final a = List<String>.from(expectedSortedAgentIds)..sort();
+      final b = List<String>.from(cached.sourceAgentIds!)..sort();
+      if (!_listEquals(a, b)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  static bool _sameCalendarDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   bool _shouldFallbackToCache({
@@ -203,7 +411,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
     if (policy == DashboardLoadPolicy.forceRefresh) {
       return false;
     }
-    if (failure is ValidationFailure || failure is SessionFailure) {
+    if (failure is ValidationFailure ||
+        failure is SessionFailure ||
+        failure is AuthorizationFailure) {
       return false;
     }
     if (failure case RpcFailure(:final retryable)) {
@@ -226,6 +436,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
     );
   }
 
+  /// Aggregates SQL rows across agents by summing measures into shared buckets.
+  ///
+  /// If two agents expose overlapping business data for the same sale,
+  /// totals may be double-counted; the backend is expected to partition
+  /// work per agent.
   DashboardOverview _buildOverview(
     List<ResumoParcelaProdutoVendidoFormaPagamentoRow> rows, {
     required DateTime periodStart,

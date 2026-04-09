@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
 import 'package:colmeia/features/client_agents/data/models/agent_catalog_record_dto.dart';
@@ -365,4 +366,89 @@ void main() {
       () => remote.fetchClientAccessStatus(token: any(named: 'token')),
     );
   });
+
+  test(
+    'loadApprovedAgents does not return cached snapshot on HTTP 403',
+    () async {
+      when(
+        () => remote.fetchApprovedAgents(
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+        ),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/client/me/agents'),
+          response: Response<dynamic>(
+            requestOptions: RequestOptions(path: '/client/me/agents'),
+            statusCode: 403,
+            data: <String, dynamic>{'message': 'Forbidden'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      final result = await repository.loadApprovedAgents(
+        userId: 'user-1',
+        query: const PaginatedQuery(),
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<AuthorizationFailure>();
+      verifyNever(
+        () => local.readApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'loadApprovedAgents skips online status when includeOnlineStatus is false',
+    () async {
+      when(
+        () => remote.fetchApprovedAgents(
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+        ),
+      ).thenAnswer(
+        (_) async => const ClientApprovedAgentsResponseDto(
+          agents: [],
+          agentIds: <String>{},
+          count: 0,
+          total: 0,
+          page: 1,
+          pageSize: 20,
+        ),
+      );
+      when(
+        () => local.saveApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          payload: any(named: 'payload'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await repository.loadApprovedAgents(
+        userId: 'user-1',
+        query: const PaginatedQuery(),
+        includeOnlineStatus: false,
+      );
+
+      verifyNever(
+        () => local.readOnlineAgents(
+          userId: any(named: 'userId'),
+          maxAge: any(named: 'maxAge'),
+        ),
+      );
+      verifyNever(() => local.readOnlineAgents(userId: any(named: 'userId')));
+      verifyNever(() => remote.fetchOnlineAgents());
+    },
+  );
 }

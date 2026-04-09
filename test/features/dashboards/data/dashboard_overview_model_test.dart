@@ -34,6 +34,24 @@ void main() {
         check(decoded.userRankings.first.userName).equals('Caixa 01');
       });
 
+      test('preserves cache metadata through encode/decode', () {
+        final base = _fullModel();
+        final original = DashboardOverviewModel(
+          periodStart: base.periodStart,
+          periodEnd: base.periodEnd,
+          kpis: base.kpis,
+          paymentMethods: base.paymentMethods,
+          filialRankings: base.filialRankings,
+          userRankings: base.userRankings,
+          cachedAt: DateTime.utc(2026, 4, 8, 12),
+          sourceAgentIds: const <String>['z', 'a'],
+        );
+        final decoded = DashboardOverviewModel.decode(original.encode());
+
+        check(decoded.cachedAt).equals(original.cachedAt);
+        check(decoded.sourceAgentIds!).deepEquals(<String>['z', 'a']);
+      });
+
       test('handles empty lists gracefully', () {
         final model = DashboardOverviewModel(
           periodStart: DateTime(2026, 3, 9),

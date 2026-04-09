@@ -37,6 +37,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(const PaginatedQuery(pageSize: 1));
+    registerFallbackValue(false);
     registerFallbackValue(
       ResumoParcelaProdutoVendidoFormaPagamentoFilter(
         dataVendaInicio: DateTime(2026, 3, 10),
@@ -90,6 +91,7 @@ void main() {
           query: any(named: 'query'),
           search: any(named: 'search'),
           status: any(named: 'status'),
+          includeOnlineStatus: any(named: 'includeOnlineStatus'),
         ),
       ).thenAnswer(
         (_) async => const Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -119,6 +121,7 @@ void main() {
             query: any(named: 'query'),
             search: any(named: 'search'),
             status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
           ),
         ).thenAnswer(
           (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -213,6 +216,7 @@ void main() {
             query: any(named: 'query'),
             search: any(named: 'search'),
             status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
           ),
         ).thenAnswer(
           (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -267,6 +271,7 @@ void main() {
             query: any(named: 'query'),
             search: any(named: 'search'),
             status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
           ),
         ).thenAnswer(
           (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -321,6 +326,7 @@ void main() {
             query: any(named: 'query'),
             search: any(named: 'search'),
             status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
           ),
         ).thenAnswer(
           (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -373,6 +379,137 @@ void main() {
       },
     );
 
+    test('merges SQL rows from all approved agents', () async {
+      when(
+        () => agents.loadApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+          includeOnlineStatus: any(named: 'includeOnlineStatus'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+          PaginatedResult<ClientAgent>(
+            items: <ClientAgent>[_agent('agent-b'), _agent('agent-a')],
+            count: 2,
+            total: 2,
+            page: 1,
+            pageSize: 50,
+          ),
+        ),
+      );
+
+      when(
+        () => resumo.load(
+          agentId: 'agent-a',
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Success<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                AppFailure>(
+          <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
+            ResumoParcelaProdutoVendidoFormaPagamentoRow(
+              codEmpresa: 1,
+              codFilial: 1,
+              nomeUsuario: 'Caixa',
+              codFormaPagamento: 'PIX',
+              descricaoFormaPagamento: 'Pix',
+              qtdVendas: 1,
+              valorParcela: 100,
+            ),
+          ],
+        ),
+      );
+      when(
+        () => resumo.load(
+          agentId: 'agent-b',
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Success<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                AppFailure>(
+          <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
+            ResumoParcelaProdutoVendidoFormaPagamentoRow(
+              codEmpresa: 1,
+              codFilial: 1,
+              nomeUsuario: 'Caixa',
+              codFormaPagamento: 'PIX',
+              descricaoFormaPagamento: 'Pix',
+              qtdVendas: 2,
+              valorParcela: 50,
+            ),
+          ],
+        ),
+      );
+
+      final repository = makeRepository();
+      final result = await repository.loadOverview(userId: 'user-1');
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrThrow().kpis.totalAmount).equals(150);
+      check(result.getOrThrow().kpis.totalSalesCount).equals(3);
+    });
+
+    test(
+      'does not fall back to cache on session failure from SQL bridge',
+      () async {
+        when(
+          () => agents.loadApprovedAgents(
+            userId: any(named: 'userId'),
+            query: any(named: 'query'),
+            search: any(named: 'search'),
+            status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          ),
+        ).thenAnswer(
+          (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+            PaginatedResult<ClientAgent>(
+              items: <ClientAgent>[_agent('agent-42')],
+              count: 1,
+              total: 1,
+              page: 1,
+              pageSize: 50,
+            ),
+          ),
+        );
+
+        when(
+          () => resumo.load(
+            agentId: any(named: 'agentId'),
+            filter: any(named: 'filter'),
+            clientToken: any(named: 'clientToken'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const Failure<
+                  List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                  AppFailure>(
+            SessionFailure(
+              message: 'expired',
+              userMessage: 'Sessao expirada.',
+            ),
+          ),
+        );
+
+        when(
+          () => local.readOverview(userId: any(named: 'userId')),
+        ).thenAnswer((_) async => _cachedModel());
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isError()).isTrue();
+      },
+    );
+
     test(
       'share percent sums to 100 for a single payment method',
       () async {
@@ -382,6 +519,7 @@ void main() {
             query: any(named: 'query'),
             search: any(named: 'search'),
             status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
           ),
         ).thenAnswer(
           (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -427,6 +565,58 @@ void main() {
         check(method.sharePercent).equals(100);
       },
     );
+
+    test(
+      'loads approved agents with online status disabled for dashboard path',
+      () async {
+        when(
+          () => agents.loadApprovedAgents(
+            userId: any(named: 'userId'),
+            query: any(named: 'query'),
+            search: any(named: 'search'),
+            status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          ),
+        ).thenAnswer(
+          (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+            PaginatedResult<ClientAgent>(
+              items: <ClientAgent>[_agent('dash-agent')],
+              count: 1,
+              total: 1,
+              page: 1,
+              pageSize: 50,
+            ),
+          ),
+        );
+        when(
+          () => resumo.load(
+            agentId: any(named: 'agentId'),
+            filter: any(named: 'filter'),
+            clientToken: any(named: 'clientToken'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const Success<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                  AppFailure>(
+            <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+          ),
+        );
+
+        final repository = makeRepository();
+        await repository.loadOverview(userId: 'user-1');
+
+        verify(
+          () => agents.loadApprovedAgents(
+            userId: 'user-1',
+            query: any(named: 'query'),
+            search: any(named: 'search'),
+            status: any(named: 'status'),
+            includeOnlineStatus: false,
+          ),
+        ).called(1);
+      },
+    );
   });
 }
 
@@ -443,8 +633,10 @@ ClientAgent _agent(String id) {
 
 DashboardOverviewModel _cachedModel() {
   return DashboardOverviewModel(
-    periodStart: DateTime(2026, 3, 9),
-    periodEnd: DateTime(2026, 4, 7),
+    periodStart: DateTime(2026, 3, 10),
+    periodEnd: DateTime(2026, 4, 8),
+    cachedAt: DateTime(2026, 4, 8, 10),
+    sourceAgentIds: const <String>['agent-42'],
     kpis: const DashboardPaymentKpis(
       totalSalesCount: 50,
       totalAmount: 4500,

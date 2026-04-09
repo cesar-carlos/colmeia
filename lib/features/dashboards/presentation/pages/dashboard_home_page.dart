@@ -35,89 +35,19 @@ class DashboardHomePage extends StatefulWidget {
 }
 
 class _DashboardHomePageState extends State<DashboardHomePage> {
-  static final DashboardOverview _skeletonOverview = DashboardOverview(
-    periodStart: DateTime(2026, 3, 9),
-    periodEnd: DateTime(2026, 4, 7),
+  /// Neutral placeholders (no plausible KPIs before real data).
+  static final DashboardOverview _neutralSkeletonOverview = DashboardOverview(
+    periodStart: DateTime(1970),
+    periodEnd: DateTime(1970),
     kpis: const DashboardPaymentKpis(
-      totalSalesCount: 310,
-      totalAmount: 27850.75,
-      averageTicket: 89.84,
-      paymentMethodCount: 4,
+      totalSalesCount: 0,
+      totalAmount: 0,
+      averageTicket: 0,
+      paymentMethodCount: 0,
     ),
-    paymentMethods: const <DashboardPaymentMethodBreakdown>[
-      DashboardPaymentMethodBreakdown(
-        code: 'PIX',
-        label: 'Pix',
-        totalSalesCount: 144,
-        totalAmount: 12450.20,
-        averageTicket: 86.46,
-        sharePercent: 44.7,
-      ),
-      DashboardPaymentMethodBreakdown(
-        code: 'CRED',
-        label: 'Cartao de credito',
-        totalSalesCount: 92,
-        totalAmount: 9650.30,
-        averageTicket: 104.89,
-        sharePercent: 34.6,
-      ),
-      DashboardPaymentMethodBreakdown(
-        code: 'DEB',
-        label: 'Cartao de debito',
-        totalSalesCount: 51,
-        totalAmount: 3710,
-        averageTicket: 72.75,
-        sharePercent: 13.3,
-      ),
-      DashboardPaymentMethodBreakdown(
-        code: 'DIN',
-        label: 'Dinheiro',
-        totalSalesCount: 23,
-        totalAmount: 2040.25,
-        averageTicket: 88.70,
-        sharePercent: 7.4,
-      ),
-    ],
-    filialRankings: const <DashboardFilialRanking>[
-      DashboardFilialRanking(
-        codEmpresa: 1,
-        codFilial: 3,
-        totalSalesCount: 130,
-        totalAmount: 11800.40,
-      ),
-      DashboardFilialRanking(
-        codEmpresa: 1,
-        codFilial: 8,
-        totalSalesCount: 102,
-        totalAmount: 9570.10,
-      ),
-      DashboardFilialRanking(
-        codEmpresa: 1,
-        codFilial: 14,
-        totalSalesCount: 78,
-        totalAmount: 6480.25,
-      ),
-    ],
-    userRankings: const <DashboardUserRanking>[
-      DashboardUserRanking(
-        userName: 'Caixa 01',
-        totalSalesCount: 84,
-        totalAmount: 7750.10,
-        averageTicket: 92.26,
-      ),
-      DashboardUserRanking(
-        userName: 'Caixa 02',
-        totalSalesCount: 73,
-        totalAmount: 6540.60,
-        averageTicket: 89.60,
-      ),
-      DashboardUserRanking(
-        userName: 'Caixa 03',
-        totalSalesCount: 58,
-        totalAmount: 5210.25,
-        averageTicket: 89.83,
-      ),
-    ],
+    paymentMethods: const <DashboardPaymentMethodBreakdown>[],
+    filialRankings: const <DashboardFilialRanking>[],
+    userRankings: const <DashboardUserRanking>[],
   );
 
   late final DashboardController _controller;
@@ -159,10 +89,13 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
           final overview = dashboardController.overview;
           final showSkeleton =
               dashboardController.isLoadingInitial && overview == null;
-          final resolvedOverview = overview ?? _skeletonOverview;
-          final hasContent = showSkeleton || overview != null;
+          final displayOverview =
+              overview ?? (showSkeleton ? _neutralSkeletonOverview : null);
 
-          if (session != null && !userContext.isLoadingInitial) {
+          if (session != null &&
+              !userContext.isLoadingInitial &&
+              userContext.errorMessage == null &&
+              userContext.hasResolvedData) {
             dashboardController.scheduleOverviewLoadIfNeeded(
               userId: session.userId,
             );
@@ -177,10 +110,10 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
             await dashboardController.refreshOverview(userId: current.userId);
           }
 
-          final periodLabel = hasContent
-              ? '${AppBrFormatters.shortDate(resolvedOverview.periodStart)}'
+          final periodLabel = (overview != null && !showSkeleton)
+              ? '${AppBrFormatters.shortDate(overview.periodStart)}'
                     ' – '
-                    '${AppBrFormatters.shortDate(resolvedOverview.periodEnd)}'
+                    '${AppBrFormatters.shortDate(overview.periodEnd)}'
               : null;
 
           return RefreshIndicator(
@@ -192,7 +125,8 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                 AppShellPageIntro(
                   eyebrow: 'Ola, $greetingName',
                   title: 'Dashboard de Pagamentos',
-                  subtitle: 'Resumo consolidado de todas as filiais.',
+                  subtitle: 'Resumo consolidado dos agentes aprovados '
+                      '(todas as filiais conectadas).',
                   footer: periodLabel != null
                       ? AppTagChip(
                           label: periodLabel,
@@ -215,13 +149,30 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                         : null,
                   ),
                 ],
-                if (hasContent) ...<Widget>[
+                if (overview?.isStaleCache == true) ...<Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  AppInlineErrorPanel(
+                    tone: AppInlinePanelTone.informational,
+                    title: 'Dados salvos neste aparelho',
+                    message:
+                        'Nao foi possivel atualizar agora. Os numeros abaixo '
+                        'refletem o ultimo resumo obtido com sucesso.',
+                    onRetry: sessionUserId != null
+                        ? () => unawaited(
+                              dashboardController.retryOverview(
+                                userId: sessionUserId,
+                              ),
+                            )
+                        : null,
+                  ),
+                ],
+                if (displayOverview != null) ...<Widget>[
                   SizedBox(height: tokens.sectionSpacing),
                   AppSkeleton(
                     enabled: showSkeleton,
                     loadingSemanticsLabel:
                         'Carregando indicadores de pagamento...',
-                    child: _KpiBar(kpis: resolvedOverview.kpis),
+                    child: _KpiBar(kpis: displayOverview.kpis),
                   ),
                   SizedBox(height: tokens.sectionSpacing),
                   AppSkeleton(
@@ -230,7 +181,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                     loadingSemanticsLabel:
                         'Carregando mix de formas de pagamento...',
                     child: _PaymentMixCard(
-                      methods: resolvedOverview.paymentMethods,
+                      methods: displayOverview.paymentMethods,
                     ),
                   ),
                   SizedBox(height: tokens.sectionSpacing),
@@ -240,7 +191,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                     loadingSemanticsLabel:
                         'Carregando faturamento por forma de pagamento...',
                     child: _PaymentBarChart(
-                      methods: resolvedOverview.paymentMethods,
+                      methods: displayOverview.paymentMethods,
                     ),
                   ),
                   SizedBox(height: tokens.sectionSpacing),
@@ -249,8 +200,8 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                     showDelay: const Duration(milliseconds: 120),
                     loadingSemanticsLabel: 'Carregando rankings...',
                     child: _RankingsSection(
-                      filialRankings: resolvedOverview.filialRankings,
-                      userRankings: resolvedOverview.userRankings,
+                      filialRankings: displayOverview.filialRankings,
+                      userRankings: displayOverview.userRankings,
                     ),
                   ),
                   SizedBox(height: tokens.sectionSpacing),
@@ -260,7 +211,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                     loadingSemanticsLabel:
                         'Carregando tabela de formas de pagamento...',
                     child: _PaymentSummaryTable(
-                      methods: resolvedOverview.paymentMethods,
+                      methods: displayOverview.paymentMethods,
                     ),
                   ),
                 ],

@@ -41,7 +41,25 @@ final class SessionFailure extends AppFailure {
     super.cause,
     super.stackTrace,
     super.context,
-  });
+  }) : super(isTransient: false);
+}
+
+/// HTTP 403 or equivalent: authenticated but not allowed to perform the action.
+final class AuthorizationFailure extends AppFailure {
+  const AuthorizationFailure({
+    required super.message,
+    super.userMessage,
+    super.cause,
+    super.stackTrace,
+    super.context,
+  }) : super(isTransient: false);
+}
+
+/// Returns true when the response indicates the caller should not use cached
+/// snapshots (session expired or forbidden).
+bool isDioUnauthorizedOrForbidden(DioException error) {
+  final code = error.response?.statusCode;
+  return code == 401 || code == 403;
 }
 
 final class StorageFailure extends AppFailure {
@@ -100,6 +118,14 @@ final class UnknownFailure extends AppFailure {
   });
 }
 
+/// Maps low-level failures to [AppFailure].
+///
+/// [DioException] with HTTP 401 becomes [SessionFailure] and 403 becomes
+/// [AuthorizationFailure]; both are non-transient and must not trigger cache
+/// fallbacks for authenticated resources. For rare flows where 403 means
+/// something other than "authenticated but forbidden" (for example a public
+/// endpoint), handle that case before calling this function or adjust the
+/// mapped [AppFailure] afterward.
 AppFailure mapToAppFailure(
   Object error, {
   StackTrace? stackTrace,
@@ -122,10 +148,35 @@ AppFailure mapToAppFailure(
   }
 
   if (error is DioException) {
+    final statusCode = error.response?.statusCode;
     final resolvedUserMessage = _resolveDioUserMessage(
       error,
       fallbackUserMessage: fallbackUserMessage,
     );
+    if (statusCode == 401) {
+      return SessionFailure(
+        message: fallbackMessage ?? 'Unauthorized request',
+        userMessage: resolvedUserMessage,
+        cause: error,
+        stackTrace: stackTrace,
+        context: <String, Object?>{
+          ...context,
+          'httpStatusCode': statusCode,
+        },
+      );
+    }
+    if (statusCode == 403) {
+      return AuthorizationFailure(
+        message: fallbackMessage ?? 'Forbidden request',
+        userMessage: resolvedUserMessage,
+        cause: error,
+        stackTrace: stackTrace,
+        context: <String, Object?>{
+          ...context,
+          'httpStatusCode': statusCode,
+        },
+      );
+    }
     return NetworkFailure(
       message: fallbackMessage ?? 'Network request failed',
       userMessage: resolvedUserMessage,

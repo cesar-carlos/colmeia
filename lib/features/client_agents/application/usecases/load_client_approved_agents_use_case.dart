@@ -14,12 +14,14 @@ class LoadClientApprovedAgentsUseCase {
     required PaginatedQuery query,
     String? search,
     String? status,
+    bool includeOnlineStatus = true,
   }) {
     return _repository.loadApprovedAgents(
       userId: userId,
       query: query,
       search: search,
       status: status,
+      includeOnlineStatus: includeOnlineStatus,
     );
   }
 }

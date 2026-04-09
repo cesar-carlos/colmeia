@@ -58,6 +58,22 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         _mapCatalog(remote, onlineIds: onlineIds),
       );
     } on DioException catch (error, stackTrace) {
+      if (isDioUnauthorizedOrForbidden(error)) {
+        return Failure<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load agent catalog',
+            fallbackUserMessage: 'Could not load the agent catalog.',
+            context: <String, Object?>{
+              'operation': 'loadClientAgentCatalog',
+              'userId': userId,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadCatalog,
+            },
+          ),
+        );
+      }
       final cached = await _localDataSource.readCatalog(
         userId: userId,
         query: query,
@@ -84,6 +100,22 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     } on Object catch (error, stackTrace) {
+      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
+        return Failure<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load agent catalog',
+            fallbackUserMessage: 'Could not load the agent catalog.',
+            context: <String, Object?>{
+              'operation': 'loadClientAgentCatalog',
+              'userId': userId,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadCatalog,
+            },
+          ),
+        );
+      }
       final cached = await _localDataSource.readCatalog(
         userId: userId,
         query: query,
@@ -219,12 +251,15 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     }
   }
 
+  /// [includeOnlineStatus] avoids online-agent enrichment when false (faster;
+  /// each agent reports [AgentConnectionStatus.unknown]).
   @override
   Future<AppResult<PaginatedResult<ClientAgent>>> loadApprovedAgents({
     required String userId,
     required PaginatedQuery query,
     String? search,
     String? status,
+    bool includeOnlineStatus = true,
   }) async {
     try {
       final remote = await _remoteDataSource.fetchApprovedAgents(
@@ -239,11 +274,30 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         status: status,
         payload: remote,
       );
-      final onlineIds = await _loadOnlineAgentIds(userId: userId);
+      final onlineIds = includeOnlineStatus
+          ? await _loadOnlineAgentIds(userId: userId)
+          : null;
       return Success<PaginatedResult<ClientAgent>, AppFailure>(
         _mapApproved(remote, onlineIds: onlineIds),
       );
     } on DioException catch (error, stackTrace) {
+      if (isDioUnauthorizedOrForbidden(error)) {
+        return Failure<PaginatedResult<ClientAgent>, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load approved client agents',
+            fallbackUserMessage:
+                'Could not load approved agents for this account.',
+            context: <String, Object?>{
+              'operation': 'loadApprovedClientAgents',
+              'userId': userId,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadApprovedAgents,
+            },
+          ),
+        );
+      }
       final cached = await _localDataSource.readApprovedAgents(
         userId: userId,
         query: query,
@@ -251,7 +305,9 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         status: status,
       );
       if (cached != null) {
-        final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
+        final onlineIds = includeOnlineStatus
+            ? await _readCachedOnlineAgentIds(userId: userId)
+            : null;
         return Success<PaginatedResult<ClientAgent>, AppFailure>(
           _mapApproved(cached, onlineIds: onlineIds),
         );
@@ -272,6 +328,23 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     } on Object catch (error, stackTrace) {
+      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
+        return Failure<PaginatedResult<ClientAgent>, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load approved client agents',
+            fallbackUserMessage:
+                'Could not load approved agents for this account.',
+            context: <String, Object?>{
+              'operation': 'loadApprovedClientAgents',
+              'userId': userId,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadApprovedAgents,
+            },
+          ),
+        );
+      }
       final cached = await _localDataSource.readApprovedAgents(
         userId: userId,
         query: query,
@@ -279,7 +352,9 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         status: status,
       );
       if (cached != null) {
-        final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
+        final onlineIds = includeOnlineStatus
+            ? await _readCachedOnlineAgentIds(userId: userId)
+            : null;
         return Success<PaginatedResult<ClientAgent>, AppFailure>(
           _mapApproved(cached, onlineIds: onlineIds),
         );
@@ -319,6 +394,23 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         _mapProfile(remote.agent, onlineIds: onlineIds),
       );
     } on DioException catch (error, stackTrace) {
+      if (isDioUnauthorizedOrForbidden(error)) {
+        return Failure<ClientAgent, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load approved agent detail',
+            fallbackUserMessage: 'Could not load agent details.',
+            context: <String, Object?>{
+              'operation': 'loadApprovedAgentById',
+              'userId': userId,
+              'agentId': agentId,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadAgentDetail,
+            },
+          ),
+        );
+      }
       final cached = await _localDataSource.readApprovedAgentDetail(
         userId: userId,
         agentId: agentId,
@@ -345,6 +437,23 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     } on Object catch (error, stackTrace) {
+      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
+        return Failure<ClientAgent, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load approved agent detail',
+            fallbackUserMessage: 'Could not load agent details.',
+            context: <String, Object?>{
+              'operation': 'loadApprovedAgentById',
+              'userId': userId,
+              'agentId': agentId,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadAgentDetail,
+            },
+          ),
+        );
+      }
       final cached = await _localDataSource.readApprovedAgentDetail(
         userId: userId,
         agentId: agentId,
@@ -398,6 +507,22 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         _mapAccessRequests(remote),
       );
     } on DioException catch (error, stackTrace) {
+      if (isDioUnauthorizedOrForbidden(error)) {
+        return Failure<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load access requests',
+            fallbackUserMessage: 'Could not load request history.',
+            context: <String, Object?>{
+              'operation': 'loadAccessRequests',
+              'userId': userId,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadAccessRequests,
+            },
+          ),
+        );
+      }
       final cached = await _localDataSource.readAccessRequests(
         userId: userId,
         query: query,
@@ -424,6 +549,22 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     } on Object catch (error, stackTrace) {
+      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
+        return Failure<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load access requests',
+            fallbackUserMessage: 'Could not load request history.',
+            context: <String, Object?>{
+              'operation': 'loadAccessRequests',
+              'userId': userId,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadAccessRequests,
+            },
+          ),
+        );
+      }
       final cached = await _localDataSource.readAccessRequests(
         userId: userId,
         query: query,

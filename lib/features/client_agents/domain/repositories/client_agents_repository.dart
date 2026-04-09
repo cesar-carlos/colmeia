@@ -26,6 +26,7 @@ abstract interface class ClientAgentsRepository {
     required PaginatedQuery query,
     String? search,
     String? status,
+    bool includeOnlineStatus = true,
   });
 
   Future<AppResult<ClientAgent>> loadApprovedAgentById({

@@ -12,6 +12,15 @@ enum AppInlineErrorPanelVariant {
   plain,
 }
 
+/// Visual weight for [AppInlineErrorPanel] (error vs informational notice).
+enum AppInlinePanelTone {
+  /// Title uses the semantic error color (default).
+  error,
+
+  /// Title uses the primary brand color (non-destructive notices, e.g. cache).
+  informational,
+}
+
 /// Inline error surface with optional retry, aligned with app shell error UX.
 class AppInlineErrorPanel extends StatelessWidget {
   const AppInlineErrorPanel({
@@ -21,6 +30,7 @@ class AppInlineErrorPanel extends StatelessWidget {
     this.onRetry,
     this.retryLabel = 'Tentar novamente',
     this.variant = AppInlineErrorPanelVariant.card,
+    this.tone = AppInlinePanelTone.error,
   });
 
   final String? title;
@@ -28,6 +38,7 @@ class AppInlineErrorPanel extends StatelessWidget {
   final VoidCallback? onRetry;
   final String retryLabel;
   final AppInlineErrorPanelVariant variant;
+  final AppInlinePanelTone tone;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +48,10 @@ class AppInlineErrorPanel extends StatelessWidget {
     final typography = theme.appTypography;
 
     final hasTitle = title?.trim().isNotEmpty ?? false;
+    final titleColor = switch (tone) {
+      AppInlinePanelTone.error => colors.error,
+      AppInlinePanelTone.informational => colors.primary,
+    };
 
     final Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,7 +61,7 @@ class AppInlineErrorPanel extends StatelessWidget {
           Text(
             title!,
             style: typography.sectionHeaderH2.copyWith(
-              color: colors.error,
+              color: titleColor,
               fontWeight: FontWeight.w700,
             ),
           ),
