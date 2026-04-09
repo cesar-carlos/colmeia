@@ -26,6 +26,22 @@ Map<String, dynamic>? readNestedMap(
   return null;
 }
 
+Map<String, dynamic>? readMapAtPath(
+  Map<String, dynamic> json,
+  List<String> path,
+) {
+  Map<String, dynamic>? current = json;
+  for (final key in path) {
+    final value = current?[key];
+    if (value is! Map<String, dynamic>) {
+      return null;
+    }
+    current = value;
+  }
+
+  return current;
+}
+
 String? readOptionalString(
   Map<String, dynamic> json,
   List<String> keys,

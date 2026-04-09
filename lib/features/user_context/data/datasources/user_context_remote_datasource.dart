@@ -1,7 +1,9 @@
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
 import 'package:colmeia/features/auth/data/models/client_auth_json_reader.dart';
 import 'package:colmeia/features/auth/data/models/client_me_response_dto.dart';
+import 'package:colmeia/features/user_context/data/models/client_user_context_access_payload_resolver.dart';
 import 'package:colmeia/features/user_context/data/models/current_user_context_model.dart';
 import 'package:colmeia/features/user_context/data/models/user_access_scope_model.dart';
 import 'package:colmeia/features/user_context/data/models/user_profile_model.dart';
@@ -39,15 +41,10 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
       responseBody,
       wrapperKeys: const <String>['data', 'profile'],
     );
-    final accessPayload =
-        readNestedMap(
-          payload,
-          const <String>['access', 'scope', 'userContext'],
-        ) ??
-        payload;
+    final resolvedAccessPayload = resolveClientUserContextAccessPayload(payload);
+    final accessPayload = resolvedAccessPayload.payload;
     final parsedAccess = UserAccessScopeModel.fromJson(accessPayload);
-    final hasExplicitAccessData = _hasExplicitAccessData(accessPayload);
-    final resolvedAccess = hasExplicitAccessData
+    final resolvedAccess = resolvedAccessPayload.hasExplicitAccessData
         ? UserAccessScopeModel(
             allowedStores: parsedAccess.allowedStores.isEmpty
                 ? const <StoreScope>[
@@ -68,13 +65,31 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
               UserPermission.viewDashboard,
             },
           );
-    final activeStoreId =
+    final activeStoreIdFromPayload =
         (accessPayload['activeStoreId'] as String?) ??
-        (accessPayload['active_store_id'] as String?) ??
+        (accessPayload['active_store_id'] as String?);
+    final activeStoreId =
+        activeStoreIdFromPayload ??
         (resolvedAccess.allowedStores.firstOrNull?.id ?? _clientScopeStoreId);
     final profile = ClientMeResponseDto.fromJson(
       responseBody,
     ).user.toUserProfile();
+
+    AppLogger.debug(
+      'Resolved user context access payload',
+      context: <String, Object?>{
+        'operation': 'loadUserContext',
+        'userId': userId,
+        'accessPayloadSource': resolvedAccessPayload.source,
+        'hasExplicitAccessData': resolvedAccessPayload.hasExplicitAccessData,
+        'permissions': resolvedAccess.permissions
+            .map((permission) => permission.name)
+            .toList(growable: false),
+        'dashboardGrantCount': resolvedAccess.dashboardGrants.length,
+        'allowedStoreCount': resolvedAccess.allowedStores.length,
+        'activeStoreId': activeStoreId,
+      },
+    );
 
     return CurrentUserContextModel(
       profile: UserProfileModel(
@@ -90,17 +105,6 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
       access: resolvedAccess,
       activeStoreId: activeStoreId,
     );
-  }
-
-  bool _hasExplicitAccessData(Map<String, dynamic> json) {
-    return json['allowedStores'] is List<dynamic> ||
-        json['stores'] is List<dynamic> ||
-        json['storeScopes'] is List<dynamic> ||
-        json['permissions'] is List<dynamic> ||
-        json['dashboardGrants'] is List<dynamic> ||
-        json['dashboardAccess'] is List<dynamic> ||
-        json['allowedDashboardIds'] is List<dynamic> ||
-        json['viewDashboard'] is bool;
   }
 }
 

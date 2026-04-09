@@ -1,4 +1,5 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:go_router/go_router.dart';
@@ -9,18 +10,41 @@ String? redirectWithAuthGuard({
   required GoRouterState state,
 }) {
   final matchedRoute = AppRoute.fromLocation(state.matchedLocation);
+  final canAccessMatchedRoute = userContextController.canAccessRoute(matchedRoute);
+  final canAccessDashboardHome = userContextController.canAccessRoute(
+    AppRoute.dashboard,
+  );
 
-  return resolveAuthRedirect(
+  final redirect = resolveAuthRedirect(
     isAuthenticated: authController.isAuthenticated,
-    canAccessRoute: userContextController.canAccessRoute(matchedRoute),
+    canAccessMatchedRoute: canAccessMatchedRoute,
+    canAccessDashboardHome: canAccessDashboardHome,
     matchedRoute: matchedRoute,
     isUserContextLoading: userContextController.isLoadingInitial,
   );
+
+  if (redirect != null) {
+    AppLogger.debug(
+      'Auth guard resolved route redirect',
+      context: <String, Object?>{
+        'operation': 'authGuardRedirect',
+        'matchedRoute': matchedRoute.name,
+        'redirect': redirect,
+        'isAuthenticated': authController.isAuthenticated,
+        'canAccessMatchedRoute': canAccessMatchedRoute,
+        'canAccessDashboardHome': canAccessDashboardHome,
+        'isUserContextLoading': userContextController.isLoadingInitial,
+      },
+    );
+  }
+
+  return redirect;
 }
 
 String? resolveAuthRedirect({
   required bool isAuthenticated,
-  required bool canAccessRoute,
+  required bool canAccessMatchedRoute,
+  required bool canAccessDashboardHome,
   required AppRoute matchedRoute,
   required bool isUserContextLoading,
 }) {
@@ -38,10 +62,14 @@ String? resolveAuthRedirect({
   }
 
   if (isGuestOnlyRoute) {
+    if (isUserContextLoading || canAccessDashboardHome) {
+      return AppRoute.dashboard.path;
+    }
+
     return AppRoute.settings.path;
   }
 
-  if (canAccessRoute) {
+  if (canAccessMatchedRoute) {
     return null;
   }
 

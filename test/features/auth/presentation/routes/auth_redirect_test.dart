@@ -9,7 +9,8 @@ void main() {
       check(
         resolveAuthRedirect(
           isAuthenticated: false,
-          canAccessRoute: false,
+          canAccessMatchedRoute: false,
+          canAccessDashboardHome: false,
           matchedRoute: AppRoute.dashboard,
           isUserContextLoading: false,
         ),
@@ -20,7 +21,8 @@ void main() {
       check(
         resolveAuthRedirect(
           isAuthenticated: false,
-          canAccessRoute: true,
+          canAccessMatchedRoute: true,
+          canAccessDashboardHome: false,
           matchedRoute: AppRoute.login,
           isUserContextLoading: false,
         ),
@@ -31,18 +33,20 @@ void main() {
       check(
         resolveAuthRedirect(
           isAuthenticated: true,
-          canAccessRoute: true,
+          canAccessMatchedRoute: true,
+          canAccessDashboardHome: true,
           matchedRoute: AppRoute.login,
           isUserContextLoading: false,
         ),
-      ).equals(AppRoute.settings.path);
+      ).equals(AppRoute.dashboard.path);
     });
 
     test('should keep authenticated users on protected routes', () {
       check(
         resolveAuthRedirect(
           isAuthenticated: true,
-          canAccessRoute: true,
+          canAccessMatchedRoute: true,
+          canAccessDashboardHome: true,
           matchedRoute: AppRoute.settings,
           isUserContextLoading: false,
         ),
@@ -55,7 +59,8 @@ void main() {
         check(
           resolveAuthRedirect(
             isAuthenticated: true,
-            canAccessRoute: false,
+            canAccessMatchedRoute: false,
+            canAccessDashboardHome: false,
             matchedRoute: AppRoute.dashboard,
             isUserContextLoading: true,
           ),
@@ -63,7 +68,8 @@ void main() {
         check(
           resolveAuthRedirect(
             isAuthenticated: true,
-            canAccessRoute: false,
+            canAccessMatchedRoute: false,
+            canAccessDashboardHome: false,
             matchedRoute: AppRoute.dashboardStore,
             isUserContextLoading: true,
           ),
@@ -78,11 +84,55 @@ void main() {
         check(
           resolveAuthRedirect(
             isAuthenticated: true,
-            canAccessRoute: false,
+            canAccessMatchedRoute: false,
+            canAccessDashboardHome: false,
             matchedRoute: AppRoute.dashboard,
             isUserContextLoading: false,
           ),
         ).equals(AppRoute.settings.path);
+      },
+    );
+
+    test('should redirect authenticated users away from register to dashboard', () {
+      check(
+        resolveAuthRedirect(
+          isAuthenticated: true,
+          canAccessMatchedRoute: true,
+          canAccessDashboardHome: true,
+          matchedRoute: AppRoute.register,
+          isUserContextLoading: false,
+        ),
+      ).equals(AppRoute.dashboard.path);
+    });
+
+    test(
+      'should redirect authenticated users on guest routes to settings '
+      'when dashboard access is denied',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessMatchedRoute: true,
+            canAccessDashboardHome: false,
+            matchedRoute: AppRoute.login,
+            isUserContextLoading: false,
+          ),
+        ).equals(AppRoute.settings.path);
+      },
+    );
+
+    test(
+      'should prefer dashboard while guest route waits for user context',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessMatchedRoute: true,
+            canAccessDashboardHome: false,
+            matchedRoute: AppRoute.login,
+            isUserContextLoading: true,
+          ),
+        ).equals(AppRoute.dashboard.path);
       },
     );
   });

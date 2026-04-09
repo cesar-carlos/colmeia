@@ -16,7 +16,7 @@
             "name": "colmeia (Xiaomi Wi-Fi)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "192.168.3.208:34909",
+            "deviceId": "192.168.3.208:35985",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
