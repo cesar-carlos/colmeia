@@ -5,6 +5,9 @@ SELECT
   CodEmpresa,
   CodFilial,
   NomeUsuario,
+  AnoDataVenda,
+  MesDataVenda,
+  AnoMesDataVenda,
   CodFormaPagamento,
   DescricaoFormaPagamento,
   COUNT(DISTINCT Id) AS QtdVendas,
@@ -23,8 +26,18 @@ FROM (
       AS GeraFinanceiro,
     pv.PreVenda,
     pv.DataVenda,
-    pv.NomeUsuario,
+    COALESCE(
+      NULLIF(LTRIM(RTRIM(pv.NomeUsuario)), ''),
+      'Usuario nao informado'
+    ) AS NomeUsuario,
     ppv.DataEmissao,
+    YEAR(pv.DataVenda) AS AnoDataVenda,
+    MONTH(pv.DataVenda) AS MesDataVenda,
+    CAST(YEAR(pv.DataVenda) AS VARCHAR(4)) + '/' +
+      RIGHT(
+        '0' + CAST(MONTH(pv.DataVenda) AS VARCHAR(2)),
+        2
+      ) AS AnoMesDataVenda,
     ppv.DataVencimento,
     ppv.NumeroDocumento,
     ppv.NumeroParcela,
@@ -49,7 +62,13 @@ GROUP BY
   CodEmpresa,
   CodFilial,
   NomeUsuario,
+  AnoDataVenda,
+  MesDataVenda,
+  AnoMesDataVenda,
   CodFormaPagamento,
   DescricaoFormaPagamento
+ORDER BY
+  AnoDataVenda,
+  MesDataVenda
 ''';
 }

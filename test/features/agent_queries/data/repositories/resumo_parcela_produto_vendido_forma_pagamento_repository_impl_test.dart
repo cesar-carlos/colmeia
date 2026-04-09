@@ -60,6 +60,9 @@ void main() {
               'CodEmpresa': 1,
               'CodFilial': 2,
               'NomeUsuario': 'Caixa 01',
+              'AnoDataVenda': 2026,
+              'MesDataVenda': 4,
+              'AnoMesDataVenda': '2026/04',
               'CodFormaPagamento': 'PIX',
               'DescricaoFormaPagamento': 'Pix',
               'QtdVendas': 3,
@@ -86,6 +89,9 @@ void main() {
     check(rows.single.codEmpresa).equals(1);
     check(rows.single.codFilial).equals(2);
     check(rows.single.nomeUsuario).equals('Caixa 01');
+    check(rows.single.anoDataVenda).equals(2026);
+    check(rows.single.mesDataVenda).equals(4);
+    check(rows.single.anoMesDataVenda).equals('2026/04');
     check(rows.single.codFormaPagamento).equals('PIX');
     check(rows.single.descricaoFormaPagamento).equals('Pix');
     check(rows.single.qtdVendas).equals(3);
@@ -111,5 +117,82 @@ void main() {
     check(capturedRequest.sql).contains(
       'ResumoParcelaProdutoVendidoFormaPagamento',
     );
+    check(rows.single.isAnoMesConsistentWithParts).isTrue();
+  });
+
+  test('maps row when bridge uses camelCase keys', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'codEmpresa': 1,
+              'codFilial': 2,
+              'nomeUsuario': 'Caixa 01',
+              'anoDataVenda': 2026,
+              'mesDataVenda': 4,
+              'anoMesDataVenda': '2026/04',
+              'codFormaPagamento': 'PIX',
+              'descricaoFormaPagamento': 'Pix',
+              'qtdVendas': 1,
+              'valorParcela': 10.0,
+            },
+          ],
+          rowCount: 1,
+        ),
+      ),
+    );
+
+    final result = await repository.load(
+      agentId: 'agent-1',
+      filter: ResumoParcelaProdutoVendidoFormaPagamentoFilter(
+        dataVendaInicio: DateTime.utc(2026, 4),
+        dataVendaFim: DateTime.utc(2026, 4, 30),
+      ),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrNull()!.single.codEmpresa).equals(1);
+    check(result.getOrNull()!.single.anoMesDataVenda).equals('2026/04');
+  });
+
+  test('maps AnoMesDataVenda when bridge sends a number', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 1,
+              'NomeUsuario': 'X',
+              'AnoDataVenda': 2025,
+              'MesDataVenda': 12,
+              'AnoMesDataVenda': 202512,
+              'CodFormaPagamento': 'A',
+              'DescricaoFormaPagamento': 'B',
+              'QtdVendas': 1,
+              'ValorParcela': 1.0,
+            },
+          ],
+          rowCount: 1,
+        ),
+      ),
+    );
+
+    final result = await repository.load(
+      agentId: 'agent-1',
+      filter: ResumoParcelaProdutoVendidoFormaPagamentoFilter(
+        dataVendaInicio: DateTime.utc(2025, 12),
+        dataVendaFim: DateTime.utc(2025, 12, 31),
+      ),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrNull()!.single.anoMesDataVenda).equals('202512');
+    check(result.getOrNull()!.single.isAnoMesConsistentWithParts).isFalse();
   });
 }

@@ -5,6 +5,9 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
     required this.codEmpresa,
     required this.codFilial,
     required this.nomeUsuario,
+    required this.anoDataVenda,
+    required this.mesDataVenda,
+    required this.anoMesDataVenda,
     required this.codFormaPagamento,
     required this.descricaoFormaPagamento,
     required this.qtdVendas,
@@ -14,23 +17,65 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
   factory ResumoParcelaProdutoVendidoFormaPagamentoRowModel.fromMap(
     Map<String, dynamic> map,
   ) {
+    final anoDataVenda = _readRequiredIntKeys(
+      map,
+      _keysCodEmpresaStyle('AnoDataVenda'),
+    );
+    final mesDataVenda = _readRequiredIntKeys(
+      map,
+      _keysCodEmpresaStyle('MesDataVenda'),
+    );
+    final anoMesDataVenda = _readRequiredAnoMesDataVenda(map);
+
+    assert(
+      () {
+        if (!anoMesDataVenda.contains('/')) {
+          return true;
+        }
+        if (!ResumoParcelaProdutoVendidoFormaPagamentoRow.isAnoMesConsistent(
+          anoMesDataVenda: anoMesDataVenda,
+          anoDataVenda: anoDataVenda,
+          mesDataVenda: mesDataVenda,
+        )) {
+          throw StateError(
+            'AnoMesDataVenda "$anoMesDataVenda" is inconsistent with '
+            'AnoDataVenda=$anoDataVenda MesDataVenda=$mesDataVenda',
+          );
+        }
+        return true;
+      }(),
+      'AnoMesDataVenda must match AnoDataVenda/MesDataVenda when it uses /',
+    );
+
     return ResumoParcelaProdutoVendidoFormaPagamentoRowModel(
-      codEmpresa: _readRequiredInt(map, 'CodEmpresa'),
-      codFilial: _readRequiredInt(map, 'CodFilial'),
-      nomeUsuario: _readRequiredString(map, 'NomeUsuario'),
-      codFormaPagamento: _readRequiredString(map, 'CodFormaPagamento'),
-      descricaoFormaPagamento: _readRequiredString(
+      codEmpresa: _readRequiredIntKeys(map, _keysCodEmpresaStyle('CodEmpresa')),
+      codFilial: _readRequiredIntKeys(map, _keysCodEmpresaStyle('CodFilial')),
+      nomeUsuario: _readNomeUsuario(map),
+      anoDataVenda: anoDataVenda,
+      mesDataVenda: mesDataVenda,
+      anoMesDataVenda: anoMesDataVenda,
+      codFormaPagamento: _readRequiredStringKeys(
         map,
-        'DescricaoFormaPagamento',
+        _keysCodEmpresaStyle('CodFormaPagamento'),
       ),
-      qtdVendas: _readRequiredInt(map, 'QtdVendas'),
-      valorParcela: _readRequiredDouble(map, 'ValorParcela'),
+      descricaoFormaPagamento: _readRequiredStringKeys(
+        map,
+        _keysCodEmpresaStyle('DescricaoFormaPagamento'),
+      ),
+      qtdVendas: _readRequiredIntKeys(map, _keysCodEmpresaStyle('QtdVendas')),
+      valorParcela: _readRequiredDoubleKeys(
+        map,
+        _keysCodEmpresaStyle('ValorParcela'),
+      ),
     );
   }
 
   final int codEmpresa;
   final int codFilial;
   final String nomeUsuario;
+  final int anoDataVenda;
+  final int mesDataVenda;
+  final String anoMesDataVenda;
   final String codFormaPagamento;
   final String descricaoFormaPagamento;
   final int qtdVendas;
@@ -41,6 +86,9 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
       codEmpresa: codEmpresa,
       codFilial: codFilial,
       nomeUsuario: nomeUsuario,
+      anoDataVenda: anoDataVenda,
+      mesDataVenda: mesDataVenda,
+      anoMesDataVenda: anoMesDataVenda,
       codFormaPagamento: codFormaPagamento,
       descricaoFormaPagamento: descricaoFormaPagamento,
       qtdVendas: qtdVendas,
@@ -48,8 +96,59 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
     );
   }
 
-  static int _readRequiredInt(Map<String, dynamic> map, String key) {
-    final value = map[key];
+  /// PascalCase plus camelCase (e.g. bridge JSON).
+  static List<String> _keysCodEmpresaStyle(String pascal) {
+    return <String>[pascal, _pascalToCamel(pascal)];
+  }
+
+  static String _pascalToCamel(String pascal) {
+    if (pascal.isEmpty) {
+      return pascal;
+    }
+    return pascal[0].toLowerCase() + pascal.substring(1);
+  }
+
+  static Object? _lookupFirst(Map<String, dynamic> map, List<String> keys) {
+    for (final k in keys) {
+      if (map.containsKey(k)) {
+        return map[k];
+      }
+    }
+    return null;
+  }
+
+  static String _readNomeUsuario(Map<String, dynamic> map) {
+    final raw = _lookupFirst(map, _keysCodEmpresaStyle('NomeUsuario'));
+    if (raw is String) {
+      final trimmed = raw.trim();
+      if (trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    }
+    return 'Usuario nao informado';
+  }
+
+  static String _readRequiredAnoMesDataVenda(Map<String, dynamic> map) {
+    final keys = _keysCodEmpresaStyle('AnoMesDataVenda');
+    final value = _lookupFirst(map, keys);
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    } else if (value is num) {
+      return value.toString();
+    }
+    throw const FormatException(
+      'Invalid or missing "AnoMesDataVenda" in agent SQL row',
+    );
+  }
+
+  static int _readRequiredIntKeys(
+    Map<String, dynamic> map,
+    List<String> keys,
+  ) {
+    final value = _lookupFirst(map, keys);
     if (value is int) {
       return value;
     }
@@ -62,11 +161,16 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
         return parsed;
       }
     }
-    throw FormatException('Invalid or missing "$key" in agent SQL row');
+    throw FormatException(
+      'Invalid or missing "${keys.first}" in agent SQL row',
+    );
   }
 
-  static double _readRequiredDouble(Map<String, dynamic> map, String key) {
-    final value = map[key];
+  static double _readRequiredDoubleKeys(
+    Map<String, dynamic> map,
+    List<String> keys,
+  ) {
+    final value = _lookupFirst(map, keys);
     if (value is double) {
       return value;
     }
@@ -80,14 +184,21 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
         return parsed;
       }
     }
-    throw FormatException('Invalid or missing "$key" in agent SQL row');
+    throw FormatException(
+      'Invalid or missing "${keys.first}" in agent SQL row',
+    );
   }
 
-  static String _readRequiredString(Map<String, dynamic> map, String key) {
-    final value = map[key];
+  static String _readRequiredStringKeys(
+    Map<String, dynamic> map,
+    List<String> keys,
+  ) {
+    final value = _lookupFirst(map, keys);
     if (value is String && value.trim().isNotEmpty) {
       return value.trim();
     }
-    throw FormatException('Invalid or missing "$key" in agent SQL row');
+    throw FormatException(
+      'Invalid or missing "${keys.first}" in agent SQL row',
+    );
   }
 }
