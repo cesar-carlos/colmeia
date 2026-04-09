@@ -869,6 +869,9 @@ class _PaymentBarChart extends StatelessWidget {
       dataLabelBuilder: (m, v) => AppBrFormatters.compactCurrency(v),
       style: const AppComparisonBarChartStyle(
         showDataLabels: true,
+        autoRotateXLabels: false,
+        wrapXAxisLabelsInTwoLines: true,
+        wrapXAxisCharsPerLine: 12,
       ),
     );
   }

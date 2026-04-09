@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
@@ -40,6 +42,8 @@ class AppComparisonBarChartStyle {
     this.dataLabelAlignment = ChartDataLabelAlignment.outer,
     this.autoRotateXLabels = true,
     this.xLabelMaxChars,
+    this.wrapXAxisLabelsInTwoLines = false,
+    this.wrapXAxisCharsPerLine = 14,
     this.loadingLabel,
     this.emptyMessage,
     this.enableAutoScroll = true,
@@ -158,7 +162,20 @@ class AppComparisonBarChartStyle {
   /// Only affects the visual label on the X axis — tooltip text (via
   /// [AppComparisonBarChart.tooltipLabelBuilder]) still shows the full value.
   /// Set to `null` (default) to show labels at their full length.
+  ///
+  /// Ignored when [wrapXAxisLabelsInTwoLines] is `true` (wrap handles length).
   final int? xLabelMaxChars;
+
+  /// When `true`, X-axis labels are split onto up to two horizontal lines using
+  /// `\n` between lines, and overflow on the second line ends with an ellipsis
+  /// (`…`). This avoids tilted labels; pair with `autoRotateXLabels: false`.
+  ///
+  /// Line length is guided by [wrapXAxisCharsPerLine]. Tooltips are unchanged.
+  final bool wrapXAxisLabelsInTwoLines;
+
+  /// Soft maximum characters per line when [wrapXAxisLabelsInTwoLines] is
+  /// `true`. Defaults to `14`.
+  final int wrapXAxisCharsPerLine;
 
   /// Override label for the loading indicator.
   ///
@@ -308,9 +325,15 @@ class AppComparisonBarChart<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final values = items.map(valueBuilder).toList(growable: false);
 
-    // Truncate X-axis labels when xLabelMaxChars is set. Tooltips (which
-    // receive the original T item) are not affected.
-    String truncatedLabel(String raw) {
+    // X-axis label shaping: optional two-line wrap, else optional single-line
+    // truncation. Tooltips still use [tooltipLabelBuilder] with full context.
+    String formatXLabel(String raw) {
+      if (style.wrapXAxisLabelsInTwoLines) {
+        return formatComparisonBarXAxisLabelTwoLines(
+          raw,
+          maxCharsPerLine: style.wrapXAxisCharsPerLine,
+        );
+      }
       final maxChars = style.xLabelMaxChars;
       if (maxChars == null || raw.length <= maxChars) return raw;
       return '${raw.substring(0, maxChars)}\u2026';
@@ -319,7 +342,7 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     final points = items.indexed
         .map(
           (entry) => AppChartPoint(
-            label: truncatedLabel(labelBuilder(entry.$2)),
+            label: formatXLabel(labelBuilder(entry.$2)),
             value: values[entry.$1],
           ),
         )
@@ -389,4 +412,55 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       child: innerChart,
     );
   }
+}
+
+/// Formats a category label for [AppComparisonBarChart] using at most two
+/// horizontal lines (`\n` separator). If the remainder still does not fit on
+/// the second line, it is truncated and an ellipsis (U+2026) is appended.
+///
+/// Syncfusion renders `\n` in category axis labels as line breaks.
+String formatComparisonBarXAxisLabelTwoLines(
+  String raw, {
+  int maxCharsPerLine = 14,
+}) {
+  final s = raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (s.isEmpty) {
+    return s;
+  }
+  final limit = math.max(4, maxCharsPerLine);
+
+  if (s.length <= limit) {
+    return s;
+  }
+
+  var breakIdx = -1;
+  final scanEnd = math.min(limit, s.length);
+  for (var i = scanEnd - 1; i > 0; i--) {
+    if (s[i] == ' ') {
+      breakIdx = i;
+      break;
+    }
+  }
+
+  late final String line1;
+  late final String rest;
+  if (breakIdx > 0) {
+    line1 = s.substring(0, breakIdx).trimRight();
+    rest = s.substring(breakIdx + 1).trimLeft();
+  } else {
+    line1 = s.substring(0, limit);
+    rest = s.substring(limit);
+  }
+
+  if (rest.isEmpty) {
+    return line1;
+  }
+
+  if (rest.length <= limit) {
+    return '$line1\n$rest';
+  }
+
+  final cap = limit - 1;
+  final truncated = rest.substring(0, cap).trimRight();
+  return '$line1\n$truncated\u2026';
 }

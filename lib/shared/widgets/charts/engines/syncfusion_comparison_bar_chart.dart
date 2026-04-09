@@ -74,7 +74,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
     // When autoRotateXLabels is true, estimate whether labels overflow the
     // bar visual width and apply 45° rotation automatically if needed.
     double xLabelRotationForSlotWidth(double slotWidth) {
-      if (!style.autoRotateXLabels || points.isEmpty) {
+      if (style.wrapXAxisLabelsInTwoLines || points.isEmpty) {
+        return style.xLabelRotation;
+      }
+      if (!style.autoRotateXLabels) {
         return style.xLabelRotation;
       }
       final maxLen = points.map((p) => p.label.length).reduce(math.max);
