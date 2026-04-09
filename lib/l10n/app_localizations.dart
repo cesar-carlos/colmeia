@@ -147,6 +147,42 @@ abstract class AppLocalizations {
   /// **'Agent management'**
   String get userPermissionManageAgents;
 
+  /// No description provided for @dashboardPartialAgentQueriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete dashboard data'**
+  String get dashboardPartialAgentQueriesTitle;
+
+  /// No description provided for @dashboardPartialAgentQueriesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Some approved agents did not return data ({agents}). Totals may be incomplete.'**
+  String dashboardPartialAgentQueriesMessage(String agents);
+
+  /// No description provided for @dashboardMissingClientTokenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents without a saved client token'**
+  String get dashboardMissingClientTokenTitle;
+
+  /// No description provided for @dashboardMissingClientTokenMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'These approved agents were skipped because no local client token was saved ({agents}). Add the token on the agent screen to include their data.'**
+  String dashboardMissingClientTokenMessage(String agents);
+
+  /// No description provided for @dashboardMultiAgentAggregationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple agents'**
+  String get dashboardMultiAgentAggregationTitle;
+
+  /// No description provided for @dashboardMultiAgentAggregationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.'**
+  String get dashboardMultiAgentAggregationMessage;
+
   /// No description provided for @clientAgentsDataSourcesEyebrow.
   ///
   /// In en, this message translates to:
@@ -276,7 +312,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsRequestAccessIntro1.
   ///
   /// In en, this message translates to:
-  /// **'Enter one or more agent IDs to request access for this account. Use commas, spaces, or line breaks to separate the UUIDs.'**
+  /// **'Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.'**
   String get clientAgentsRequestAccessIntro1;
 
   /// No description provided for @clientAgentsRequestAccessIntro2.
@@ -285,10 +321,58 @@ abstract class AppLocalizations {
   /// **'The agent ID must be provided by the agent owner or an external flow. When the request is approved, the agent will be released automatically for this account.'**
   String get clientAgentsRequestAccessIntro2;
 
+  /// No description provided for @clientAgentsRequestAccessIntroToken.
+  ///
+  /// In en, this message translates to:
+  /// **'The client token is saved only on this device (encrypted) and is not sent when you submit the access request.'**
+  String get clientAgentsRequestAccessIntroToken;
+
+  /// No description provided for @clientAgentsRequestAccessAddRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add agent row'**
+  String get clientAgentsRequestAccessAddRow;
+
+  /// No description provided for @clientAgentsRequestAccessRemoveRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove row'**
+  String get clientAgentsRequestAccessRemoveRow;
+
+  /// No description provided for @clientAgentsRequestAccessRowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent {index}'**
+  String clientAgentsRequestAccessRowTitle(int index);
+
+  /// No description provided for @clientAgentsClientTokenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client token (local)'**
+  String get clientAgentsClientTokenLabel;
+
+  /// No description provided for @clientAgentsClientTokenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional — stored only on this device'**
+  String get clientAgentsClientTokenHint;
+
+  /// No description provided for @clientAgentsClientTokenShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show token'**
+  String get clientAgentsClientTokenShow;
+
+  /// No description provided for @clientAgentsClientTokenHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide token'**
+  String get clientAgentsClientTokenHide;
+
   /// No description provided for @clientAgentsAgentIdsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Agent IDs'**
+  /// **'Agent ID'**
   String get clientAgentsAgentIdsLabel;
 
   /// No description provided for @clientAgentsRequestAccessCta.
@@ -765,6 +849,42 @@ abstract class AppLocalizations {
   /// **'Record'**
   String get clientAgentDetailSectionRecord;
 
+  /// No description provided for @clientAgentDetailSectionLocalToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Local client token'**
+  String get clientAgentDetailSectionLocalToken;
+
+  /// No description provided for @clientAgentDetailSectionLocalTokenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Used only on this device for SQL queries (for example dashboard). Never sent to Colmeia servers.'**
+  String get clientAgentDetailSectionLocalTokenSubtitle;
+
+  /// No description provided for @clientAgentDetailLocalTokenSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save token'**
+  String get clientAgentDetailLocalTokenSave;
+
+  /// No description provided for @clientAgentDetailLocalTokenRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove token'**
+  String get clientAgentDetailLocalTokenRemove;
+
+  /// No description provided for @clientAgentDetailLocalTokenSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Token saved on this device.'**
+  String get clientAgentDetailLocalTokenSaved;
+
+  /// No description provided for @clientAgentDetailLocalTokenRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Token removed from this device.'**
+  String get clientAgentDetailLocalTokenRemoved;
+
   /// No description provided for @clientAgentFieldId.
   ///
   /// In en, this message translates to:
@@ -1190,6 +1310,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not sync pending agent actions.'**
   String get clientAgentsErrorSyncPending;
+
+  /// No description provided for @agentSqlErrorAuthenticationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication is required to query this agent.'**
+  String get agentSqlErrorAuthenticationFailed;
+
+  /// No description provided for @agentSqlErrorPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to query this data on this agent.'**
+  String get agentSqlErrorPermissionDenied;
+
+  /// No description provided for @agentSqlErrorTransportTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent took too long to respond. Please try again.'**
+  String get agentSqlErrorTransportTimeout;
+
+  /// No description provided for @agentSqlErrorNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the agent right now. Please try again.'**
+  String get agentSqlErrorNetworkError;
+
+  /// No description provided for @agentSqlErrorRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many query attempts were made. Please wait a moment and try again.'**
+  String get agentSqlErrorRateLimited;
+
+  /// No description provided for @agentSqlErrorValidationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The query is invalid.'**
+  String get agentSqlErrorValidationFailed;
+
+  /// No description provided for @agentSqlErrorExecutionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The query could not be executed.'**
+  String get agentSqlErrorExecutionFailed;
+
+  /// No description provided for @agentSqlErrorTransactionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The query transaction could not be completed.'**
+  String get agentSqlErrorTransactionFailed;
+
+  /// No description provided for @agentSqlErrorConnectionPoolExhausted.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is busy processing queries. Please try again shortly.'**
+  String get agentSqlErrorConnectionPoolExhausted;
+
+  /// No description provided for @agentSqlErrorResultTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The query returned too much data. Narrow filters and try again.'**
+  String get agentSqlErrorResultTooLarge;
+
+  /// No description provided for @agentSqlErrorDatabaseConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not connect to the database to run the query.'**
+  String get agentSqlErrorDatabaseConnectionFailed;
+
+  /// No description provided for @agentSqlErrorQueryTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'The query took longer than expected.'**
+  String get agentSqlErrorQueryTimeout;
+
+  /// No description provided for @agentSqlErrorInvalidDatabaseConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent\'s database access configuration is invalid.'**
+  String get agentSqlErrorInvalidDatabaseConfig;
+
+  /// No description provided for @agentSqlErrorExecutionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'The requested execution was not found.'**
+  String get agentSqlErrorExecutionNotFound;
+
+  /// No description provided for @agentSqlErrorExecutionCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'The query was cancelled.'**
+  String get agentSqlErrorExecutionCancelled;
+
+  /// No description provided for @agentSqlErrorGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'The query could not be completed on the agent.'**
+  String get agentSqlErrorGeneric;
 }
 
 class _AppLocalizationsDelegate

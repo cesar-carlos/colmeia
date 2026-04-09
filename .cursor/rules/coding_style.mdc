@@ -136,7 +136,14 @@ final List<String> activeIds = users
   `very_good_analysis` — nao adicione `flutter_lints` junto com ele
 - Em novos projetos Flutter sem escolha definida, `flutter_lints` e um bom
   ponto de partida; em projetos Dart puro, use pelo menos `recommended`
-- Rode `dart format` apos mudancas relevantes
+- Rode `dart format` apos mudancas relevantes, **apenas nos ficheiros que
+  pertencem ao escopo da alteracao** (liste paths explicitamente, por exemplo
+  `dart format lib/feature/x.dart test/feature/x_test.dart`). Evite `dart format`
+  em pastas largas (`lib/`, `test/`, um modulo inteiro) quando o working tree
+  tiver muitas mudancas nao relacionadas — isso reformatar ficheiros por acidente
+  e polui o diff. Para formatar cada `.dart` listado pelo Git (PowerShell):
+  `git diff --name-only HEAD -- '*.dart' | ForEach-Object { dart format $_ }`
+  (ajuste `HEAD` ou use `--cached` para staged).
 - Use `dart fix --apply` para correcoes seguras de lint/refactor
 - Rode `flutter analyze` antes de encerrar **qualquer** tarefa que altere
   codigo Dart — nao apenas tarefas longas; erros de analyzer bloqueiam CI e

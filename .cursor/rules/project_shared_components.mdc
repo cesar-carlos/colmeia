@@ -1,6 +1,5 @@
 ---
-description: Regras do Colmeia para criar e evoluir componentes compartilhados
-globs: ["lib/**/*.dart"]
+alwaysApply: true
 ---
 
 # Colmeia - Componentes Compartilhados

@@ -7,6 +7,7 @@ import 'package:colmeia/features/client_agents/application/usecases/queue_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
 import 'package:colmeia/features/dashboards/application/usecases/load_dashboard_overview_use_case.dart';
@@ -33,6 +34,7 @@ void registerInjectorPresentation(GetIt getIt) {
     ..registerFactory<ClientAgentsController>(
       () => ClientAgentsController(
         authController: getIt<AuthController>(),
+        clientTokenStore: getIt<LocalAgentClientTokenStore>(),
         loadApprovedAgentsUseCase: getIt<LoadClientApprovedAgentsUseCase>(),
         loadAccessRequestsUseCase: getIt<LoadClientAccessRequestsUseCase>(),
         loadClientAccessStatusUseCase: getIt<LoadClientAccessStatusUseCase>(),
@@ -49,6 +51,7 @@ void registerInjectorPresentation(GetIt getIt) {
     ..registerFactory<ClientAgentDetailController>(
       () => ClientAgentDetailController(
         authController: getIt<AuthController>(),
+        clientTokenStore: getIt<LocalAgentClientTokenStore>(),
         loadClientAgentDetailUseCase: getIt<LoadClientAgentDetailUseCase>(),
       ),
     );

@@ -13,10 +13,12 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/presentation/localization/sync_app_localizations_mixin.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -148,6 +150,13 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                     ],
                     SizedBox(height: tokens.gapMd),
                     _RecordCard(agent: agent, l10n: l10n),
+                    SizedBox(height: tokens.gapMd),
+                    _LocalClientTokenCard(
+                      agentId: agent.agentId,
+                      controller: _controller,
+                      l10n: l10n,
+                      tokens: tokens,
+                    ),
                   ],
                 ],
               ],
@@ -166,6 +175,133 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
         (a.postalCode?.isNotEmpty ?? false) ||
         (a.city?.isNotEmpty ?? false) ||
         (a.state?.isNotEmpty ?? false);
+  }
+}
+
+class _LocalClientTokenCard extends StatefulWidget {
+  const _LocalClientTokenCard({
+    required this.agentId,
+    required this.controller,
+    required this.l10n,
+    required this.tokens,
+  });
+
+  final String agentId;
+  final ClientAgentDetailController controller;
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+
+  @override
+  State<_LocalClientTokenCard> createState() => _LocalClientTokenCardState();
+}
+
+class _LocalClientTokenCardState extends State<_LocalClientTokenCard> {
+  late final TextEditingController _tokenController;
+  int _lastSyncedRevision = -1;
+  bool _obscureToken = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _tokenController = TextEditingController();
+    widget.controller.addListener(_syncTokenFieldFromController);
+    _syncTokenFieldFromController();
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncTokenFieldFromController);
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  void _syncTokenFieldFromController() {
+    final c = widget.controller;
+    if (_lastSyncedRevision == c.localClientTokenRevision) {
+      return;
+    }
+    _lastSyncedRevision = c.localClientTokenRevision;
+    final text = c.persistedLocalClientTokenForField;
+    if (_tokenController.text != text) {
+      _tokenController.text = text;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.controller;
+    final feedback = c.localClientTokenFeedback;
+    final theme = Theme.of(context);
+
+    return AppSectionCardWithHeading(
+      title: widget.l10n.clientAgentDetailSectionLocalToken,
+      subtitle: widget.l10n.clientAgentDetailSectionLocalTokenSubtitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppTextField(
+            controller: _tokenController,
+            label: widget.l10n.clientAgentsClientTokenLabel,
+            hintText: widget.l10n.clientAgentsClientTokenHint,
+            obscureText: _obscureToken,
+            textInputAction: TextInputAction.done,
+            suffix: IconButton(
+              tooltip: _obscureToken
+                  ? widget.l10n.clientAgentsClientTokenShow
+                  : widget.l10n.clientAgentsClientTokenHide,
+              onPressed: () {
+                setState(() {
+                  _obscureToken = !_obscureToken;
+                });
+              },
+              icon: Icon(
+                _obscureToken
+                    ? Icons.visibility_rounded
+                    : Icons.visibility_off_rounded,
+              ),
+            ),
+          ),
+          SizedBox(height: widget.tokens.gapMd),
+          Wrap(
+            spacing: widget.tokens.gapSm,
+            runSpacing: widget.tokens.gapSm,
+            children: <Widget>[
+              AppPrimaryButton(
+                label: widget.l10n.clientAgentDetailLocalTokenSave,
+                icon: const Icon(Icons.save_rounded),
+                isLoading: c.isSavingLocalClientToken,
+                onPressed: c.isSavingLocalClientToken
+                    ? null
+                    : () => unawaited(
+                        c.saveLocalClientToken(
+                          agentId: widget.agentId,
+                          rawToken: _tokenController.text,
+                        ),
+                      ),
+              ),
+              AppSecondaryButton(
+                label: widget.l10n.clientAgentDetailLocalTokenRemove,
+                icon: const Icon(Icons.delete_outline_rounded),
+                onPressed: c.isSavingLocalClientToken
+                    ? null
+                    : () => unawaited(
+                        c.removeLocalClientToken(agentId: widget.agentId),
+                      ),
+              ),
+            ],
+          ),
+          if (feedback != null) ...<Widget>[
+            SizedBox(height: widget.tokens.gapSm),
+            Text(
+              feedback,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

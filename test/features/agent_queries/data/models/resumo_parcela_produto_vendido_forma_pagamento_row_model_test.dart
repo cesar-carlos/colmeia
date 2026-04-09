@@ -24,6 +24,45 @@ void main() {
       check(model.anoMesDataVenda).equals('2026/03');
       check(model.toEntity().isAnoMesConsistentWithParts).isTrue();
     });
+
+    test('fromMap accepts all-lowercase keys (bridge JSON)', () {
+      final model = ResumoParcelaProdutoVendidoFormaPagamentoRowModel.fromMap(
+        <String, dynamic>{
+          'codempresa': 1,
+          'codfilial': 2,
+          'nomeusuario': 'CAIXA1',
+          'anodatavenda': 2026,
+          'mesdatavenda': 3,
+          'anomesdatavenda': '2026/3',
+          'codformapagamento': 'PIX',
+          'descricaoformapagamento': 'PIX 1',
+          'qtdvendas': 5,
+          'valorparcela': '123.4500000',
+        },
+      );
+      check(model.codEmpresa).equals(1);
+      check(model.valorParcela).equals(123.45);
+      check(model.anoMesDataVenda).equals('2026/3');
+      check(model.toEntity().isAnoMesConsistentWithParts).isTrue();
+    });
+
+    test('fromMap parses ValorParcela from decimal string', () {
+      final model = ResumoParcelaProdutoVendidoFormaPagamentoRowModel.fromMap(
+        <String, dynamic>{
+          'codEmpresa': 1,
+          'codFilial': 1,
+          'nomeUsuario': 'U',
+          'anoDataVenda': 2026,
+          'mesDataVenda': 4,
+          'anoMesDataVenda': '2026/04',
+          'codFormaPagamento': 'X',
+          'descricaoFormaPagamento': 'Y',
+          'qtdVendas': 1,
+          'valorParcela': '14704.2900000',
+        },
+      );
+      check(model.valorParcela).equals(14704.29);
+    });
   });
 
   group('ResumoParcelaProdutoVendidoFormaPagamentoRow.isAnoMesConsistent', () {

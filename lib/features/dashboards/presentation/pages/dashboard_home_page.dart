@@ -12,6 +12,7 @@ import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_me
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_user_ranking.dart';
 import 'package:colmeia/features/dashboards/presentation/controllers/dashboard_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
@@ -70,6 +71,18 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
     return trimmed.split(RegExp(r'\s+')).first;
   }
 
+  static String _previewExcludedAgentIds(List<String> ids) {
+    if (ids.isEmpty) {
+      return '';
+    }
+    const maxShown = 4;
+    if (ids.length <= maxShown) {
+      return ids.join(', ');
+    }
+    final head = ids.take(maxShown).join(', ');
+    return '$head (+${ids.length - maxShown})';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<DashboardController>.value(
@@ -83,8 +96,11 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
           dashboardController,
           _,
         ) {
+          dashboardController.activeLocalizations =
+              AppLocalizations.of(context);
           final theme = Theme.of(context);
           final tokens = theme.extension<AppThemeTokens>()!;
+          final l10n = AppLocalizations.of(context);
           final session = authController.session;
           final overview = dashboardController.overview;
           final showSkeleton =
@@ -164,6 +180,41 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                               ),
                             )
                         : null,
+                  ),
+                ],
+                if (overview != null && overview.hasMissingClientToken) ...<
+                    Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  AppInlineErrorPanel(
+                    tone: AppInlinePanelTone.informational,
+                    title: l10n.dashboardMissingClientTokenTitle,
+                    message: l10n.dashboardMissingClientTokenMessage(
+                      _previewExcludedAgentIds(
+                        overview.agentIdsMissingClientToken,
+                      ),
+                    ),
+                  ),
+                ],
+                if (overview != null &&
+                    overview.hasPartialAgentQueryFailure) ...<Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  AppInlineErrorPanel(
+                    tone: AppInlinePanelTone.informational,
+                    title: l10n.dashboardPartialAgentQueriesTitle,
+                    message: l10n.dashboardPartialAgentQueriesMessage(
+                      _previewExcludedAgentIds(
+                        overview.agentIdsExcludedFromQueryFailure,
+                      ),
+                    ),
+                  ),
+                ],
+                if (overview != null &&
+                    overview.shouldShowMultiAgentAggregationNote) ...<Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  AppInlineErrorPanel(
+                    tone: AppInlinePanelTone.informational,
+                    title: l10n.dashboardMultiAgentAggregationTitle,
+                    message: l10n.dashboardMultiAgentAggregationMessage,
                   ),
                 ],
                 if (displayOverview != null) ...<Widget>[

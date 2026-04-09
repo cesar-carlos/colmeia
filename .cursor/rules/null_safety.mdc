@@ -1,6 +1,5 @@
 ---
-description: Null safety, late, nullable, required e modelagem segura
-globs: ["lib/**/*.dart"]
+alwaysApply: true
 ---
 
 # Null Safety

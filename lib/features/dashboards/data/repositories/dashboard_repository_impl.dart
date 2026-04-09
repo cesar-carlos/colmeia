@@ -1,9 +1,10 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_produto_vendido_forma_pagamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_row.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_produto_vendido_forma_pagamento_repository.dart';
+import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
@@ -21,17 +22,19 @@ class DashboardRepositoryImpl implements DashboardRepository {
   DashboardRepositoryImpl({
     required DashboardLocalDataSource localDataSource,
     required ClientAgentsRepository clientAgentsRepository,
-    required ResumoParcelaProdutoVendidoFormaPagamentoRepository
-    resumoRepository,
+    required LocalAgentClientTokenStore clientTokenStore,
+    required LoadResumoParcelaProdutoVendidoFormaPagamentoUseCase loadResumo,
     DateTime Function()? now,
   }) : _localDataSource = localDataSource,
        _clientAgentsRepository = clientAgentsRepository,
-       _resumoRepository = resumoRepository,
+       _clientTokenStore = clientTokenStore,
+       _loadResumo = loadResumo,
        _now = now ?? DateTime.now;
 
   final DashboardLocalDataSource _localDataSource;
   final ClientAgentsRepository _clientAgentsRepository;
-  final ResumoParcelaProdutoVendidoFormaPagamentoRepository _resumoRepository;
+  final LocalAgentClientTokenStore _clientTokenStore;
+  final LoadResumoParcelaProdutoVendidoFormaPagamentoUseCase _loadResumo;
   final DateTime Function() _now;
 
   static const int _approvedAgentsPageSize = 50;
@@ -63,7 +66,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
         return Failure<DashboardOverview, AppFailure>(
           ValidationFailure(
             message: 'No approved agents available for dashboard overview',
-            userMessage: 'Nenhum agente aprovado esta disponivel '
+            userMessage:
+                'Nenhum agente aprovado esta disponivel '
                 'para carregar o dashboard.',
             context: <String, Object?>{
               'operation': 'loadDashboardOverview',
@@ -73,38 +77,86 @@ class DashboardRepositoryImpl implements DashboardRepository {
         );
       }
 
-      final sortedAgentIds = approvedAgents
-          .map((a) => a.agentId)
-          .toList(growable: false)
-        ..sort();
+      final sortedAgentIds =
+          approvedAgents.map((a) => a.agentId).toList(growable: false)..sort();
 
-      final queryResults = await _loadResumoQueryResults(
+      final resumoBatch = await _loadResumoQueryResults(
+        userId: userId,
         sortedAgentIds: sortedAgentIds,
         filter: period.filter,
       );
+      final queryResults = resumoBatch.results;
+      final agentIdsMissingClientToken = resumoBatch.agentIdsMissingClientToken;
+
+      if (agentIdsMissingClientToken.isNotEmpty) {
+        AppLogger.warning(
+          'Dashboard overview: agents skipped (no local client_token)',
+          context: <String, Object?>{
+            'operation': 'loadDashboardOverview',
+            'userId': userId,
+            'missingTokenCount': agentIdsMissingClientToken.length,
+            'missingTokenAgentIds': agentIdsMissingClientToken.join(', '),
+          },
+        );
+      }
 
       final rows = <ResumoParcelaProdutoVendidoFormaPagamentoRow>[];
+      final failedQueryAgentIds = <String>[];
+      var hasAnySuccess = false;
+      AppFailure? firstFailure;
+      String? firstFailedAgentId;
+      final missingTokenSet = agentIdsMissingClientToken.toSet();
+
       for (var i = 0; i < queryResults.length; i++) {
         final queryResult = queryResults[i];
+        final agentId = sortedAgentIds[i];
         final batch = queryResult.getOrNull();
-        if (batch == null) {
-          final failure = queryResult.exceptionOrNull()!;
-          return _recoverOrFail(
-            failure: failure,
-            userId: userId,
-            policy: policy,
-            period: period,
-            sourceAgentIds: sortedAgentIds,
-            failedAgentId: sortedAgentIds[i],
-          );
+        if (batch != null) {
+          hasAnySuccess = true;
+          rows.addAll(batch);
+          continue;
         }
-        rows.addAll(batch);
+        final failure = queryResult.exceptionOrNull()!;
+        if (missingTokenSet.contains(agentId)) {
+          firstFailure ??= failure;
+          firstFailedAgentId ??= agentId;
+          continue;
+        }
+        failedQueryAgentIds.add(agentId);
+        firstFailure ??= failure;
+        firstFailedAgentId ??= agentId;
+      }
+
+      if (!hasAnySuccess && firstFailure != null) {
+        return _recoverOrFail(
+          failure: firstFailure,
+          userId: userId,
+          policy: policy,
+          period: period,
+          sourceAgentIds: sortedAgentIds,
+          failedAgentId: firstFailedAgentId,
+        );
+      }
+
+      if (failedQueryAgentIds.isNotEmpty) {
+        AppLogger.warning(
+          'Dashboard overview: partial agent resumo results',
+          context: <String, Object?>{
+            'operation': 'loadDashboardOverview',
+            'userId': userId,
+            'failedAgentCount': failedQueryAgentIds.length,
+            'failedAgentIds': failedQueryAgentIds.join(', '),
+          },
+        );
       }
 
       final overview = _buildOverview(
         rows,
         periodStart: period.start,
         periodEnd: period.end,
+        approvedAgentCount: sortedAgentIds.length,
+        agentIdsExcludedFromQueryFailure: failedQueryAgentIds,
+        agentIdsMissingClientToken: agentIdsMissingClientToken,
       );
 
       final stamp = _now();
@@ -140,6 +192,10 @@ class DashboardRepositoryImpl implements DashboardRepository {
           'periodStart': period.start.toIso8601String(),
           'periodEnd': period.end.toIso8601String(),
           'paymentMethods': overview.paymentMethods.length,
+          'partialQueryFailures':
+              overview.agentIdsExcludedFromQueryFailure.length,
+          'agentsMissingClientToken':
+              overview.agentIdsMissingClientToken.length,
         },
       );
 
@@ -170,29 +226,102 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
   /// Loads resumo rows per agent with bounded parallelism to avoid spiking the
   /// SQL bridge when many agents are approved.
-  Future<List<AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>>>
+  ///
+  /// Agents without a locally stored client token do not call the bridge; they
+  /// surface as `ValidationFailure` results and are listed in the returned
+  /// missing-token id list.
+  Future<
+    ({
+      List<AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>>
+      results,
+      List<String> agentIdsMissingClientToken,
+    })
+  >
   _loadResumoQueryResults({
+    required String userId,
     required List<String> sortedAgentIds,
     required ResumoParcelaProdutoVendidoFormaPagamentoFilter filter,
   }) async {
-    final results =
-        <AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>>[];
+    // Keys are trimmed agent ids (same ids as sortedAgentIds); see
+    // LocalAgentClientTokenStore.readMany.
+    final tokensByAgentId = await _clientTokenStore.readMany(
+      userId: userId,
+      agentIds: sortedAgentIds,
+    );
+
+    final missingTokenIds = <String>[];
+    final slot =
+        List<
+          AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>?
+        >.filled(
+          sortedAgentIds.length,
+          null,
+        );
+
+    final indicesWithToken = <int>[];
+    for (var i = 0; i < sortedAgentIds.length; i++) {
+      final id = sortedAgentIds[i];
+      final token = tokensByAgentId[id];
+      if (token == null || token.isEmpty) {
+        missingTokenIds.add(id);
+        slot[i] = _missingLocalClientTokenFailure(agentId: id);
+      } else {
+        indicesWithToken.add(i);
+      }
+    }
+
     const concurrency = _resumoLoadConcurrency;
-    for (var i = 0; i < sortedAgentIds.length; i += concurrency) {
-      final end = i + concurrency > sortedAgentIds.length
-          ? sortedAgentIds.length
-          : i + concurrency;
-      final chunk = await Future.wait(
-        sortedAgentIds.sublist(i, end).map(
-          (id) => _resumoRepository.load(
+    for (var start = 0; start < indicesWithToken.length; start += concurrency) {
+      final end = start + concurrency > indicesWithToken.length
+          ? indicesWithToken.length
+          : start + concurrency;
+      final chunkIndices = indicesWithToken.sublist(start, end);
+      final chunkResults = await Future.wait(
+        chunkIndices.map((i) {
+          final id = sortedAgentIds[i];
+          return _loadResumo(
             agentId: id,
             filter: filter,
-          ),
-        ),
+            clientToken: tokensByAgentId[id],
+          );
+        }),
       );
-      results.addAll(chunk);
+      for (var j = 0; j < chunkIndices.length; j++) {
+        slot[chunkIndices[j]] = chunkResults[j];
+      }
     }
-    return results;
+
+    return (
+      results:
+          List<
+            AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>
+          >.from(
+            slot.map(
+              (r) => r!,
+            ),
+          ),
+      agentIdsMissingClientToken: missingTokenIds,
+    );
+  }
+
+  AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>
+  _missingLocalClientTokenFailure({required String agentId}) {
+    return Failure<
+      List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+      AppFailure
+    >(
+      ValidationFailure(
+        message: 'Missing local client token for agent $agentId',
+        userMessage:
+            'Cadastre o token do cliente para este agente para consultar '
+            'dados.',
+        context: <String, Object?>{
+          'operation': 'loadDashboardResumo',
+          'agentId': agentId,
+          'reason': 'missing_local_client_token',
+        },
+      ),
+    );
   }
 
   Future<AppResult<List<ClientAgent>>> _loadAllApprovedAgents({
@@ -445,6 +574,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
     List<ResumoParcelaProdutoVendidoFormaPagamentoRow> rows, {
     required DateTime periodStart,
     required DateTime periodEnd,
+    required int approvedAgentCount,
+    List<String> agentIdsExcludedFromQueryFailure = const <String>[],
+    List<String> agentIdsMissingClientToken = const <String>[],
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final filialBuckets = <String, _FilialAggregate>{};
@@ -457,7 +589,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       totalSalesCount += row.qtdVendas;
       totalAmount += row.valorParcela;
 
-      final paymentKey = '${row.codFormaPagamento.trim()}'
+      final paymentKey =
+          '${row.codFormaPagamento.trim()}'
           '|${row.descricaoFormaPagamento.trim()}';
       paymentBuckets
           .putIfAbsent(
@@ -491,45 +624,48 @@ class DashboardRepositoryImpl implements DashboardRepository {
           .add(row.qtdVendas, row.valorParcela);
     }
 
-    final paymentMethods = paymentBuckets.values
-        .map(
-          (item) => DashboardPaymentMethodBreakdown(
-            code: item.code,
-            label: item.label,
-            totalSalesCount: item.totalSalesCount,
-            totalAmount: item.totalAmount,
-            averageTicket: item.averageTicket,
-            sharePercent: totalAmount <= 0
-                ? 0
-                : item.totalAmount / totalAmount * 100,
-          ),
-        )
-        .toList(growable: false)
-      ..sort(_compareBreakdowns);
+    final paymentMethods =
+        paymentBuckets.values
+            .map(
+              (item) => DashboardPaymentMethodBreakdown(
+                code: item.code,
+                label: item.label,
+                totalSalesCount: item.totalSalesCount,
+                totalAmount: item.totalAmount,
+                averageTicket: item.averageTicket,
+                sharePercent: totalAmount <= 0
+                    ? 0
+                    : item.totalAmount / totalAmount * 100,
+              ),
+            )
+            .toList(growable: false)
+          ..sort(_compareBreakdowns);
 
-    final filialRankings = filialBuckets.values
-        .map(
-          (item) => DashboardFilialRanking(
-            codEmpresa: item.codEmpresa,
-            codFilial: item.codFilial,
-            totalSalesCount: item.totalSalesCount,
-            totalAmount: item.totalAmount,
-          ),
-        )
-        .toList(growable: false)
-      ..sort(_compareFiliais);
+    final filialRankings =
+        filialBuckets.values
+            .map(
+              (item) => DashboardFilialRanking(
+                codEmpresa: item.codEmpresa,
+                codFilial: item.codFilial,
+                totalSalesCount: item.totalSalesCount,
+                totalAmount: item.totalAmount,
+              ),
+            )
+            .toList(growable: false)
+          ..sort(_compareFiliais);
 
-    final userRankings = userBuckets.values
-        .map(
-          (item) => DashboardUserRanking(
-            userName: item.userName,
-            totalSalesCount: item.totalSalesCount,
-            totalAmount: item.totalAmount,
-            averageTicket: item.averageTicket,
-          ),
-        )
-        .toList(growable: false)
-      ..sort(_compareUsers);
+    final userRankings =
+        userBuckets.values
+            .map(
+              (item) => DashboardUserRanking(
+                userName: item.userName,
+                totalSalesCount: item.totalSalesCount,
+                totalAmount: item.totalAmount,
+                averageTicket: item.averageTicket,
+              ),
+            )
+            .toList(growable: false)
+          ..sort(_compareUsers);
 
     return DashboardOverview(
       periodStart: periodStart,
@@ -543,6 +679,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
       paymentMethods: paymentMethods,
       filialRankings: filialRankings,
       userRankings: userRankings,
+      approvedAgentCount: approvedAgentCount,
+      agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
+      agentIdsMissingClientToken: agentIdsMissingClientToken,
     );
   }
 

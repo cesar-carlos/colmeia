@@ -15,6 +15,7 @@ import 'package:colmeia/features/client_agents/application/usecases/queue_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_key.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
@@ -59,8 +60,12 @@ class _MockReadPendingClientAgentActionsUseCase extends Mock
 class _MockSyncPendingClientAgentActionsUseCase extends Mock
     implements SyncPendingClientAgentActionsUseCase {}
 
+class _MockLocalAgentClientTokenStore extends Mock
+    implements LocalAgentClientTokenStore {}
+
 void main() {
   late _MockAuthController authController;
+  late _MockLocalAgentClientTokenStore clientTokenStore;
   late _MockLoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase;
   late _MockLoadClientAccessRequestsUseCase loadAccessRequestsUseCase;
   late _MockLoadClientAccessStatusUseCase loadClientAccessStatusUseCase;
@@ -245,8 +250,35 @@ void main() {
         emptyPendingActions,
       ),
     );
+    clientTokenStore = _MockLocalAgentClientTokenStore();
+    when(
+      () => clientTokenStore.read(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
+      () => clientTokenStore.write(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => clientTokenStore.delete(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => clientTokenStore.readMany(
+        userId: any(named: 'userId'),
+        agentIds: any(named: 'agentIds'),
+      ),
+    ).thenAnswer((_) async => <String, String>{});
     controller = ClientAgentsController(
       authController: authController,
+      clientTokenStore: clientTokenStore,
       loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
       loadAccessRequestsUseCase: loadAccessRequestsUseCase,
       loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,

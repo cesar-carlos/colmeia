@@ -96,9 +96,14 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
     );
   }
 
-  /// PascalCase plus camelCase (e.g. bridge JSON).
+  /// PascalCase, camelCase, and all-lowercase keys (some bridges normalize
+  /// column names to lowercase in JSON).
   static List<String> _keysCodEmpresaStyle(String pascal) {
-    return <String>[pascal, _pascalToCamel(pascal)];
+    return <String>[
+      pascal,
+      _pascalToCamel(pascal),
+      pascal.toLowerCase(),
+    ];
   }
 
   static String _pascalToCamel(String pascal) {

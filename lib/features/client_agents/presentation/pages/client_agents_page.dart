@@ -92,9 +92,8 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
     }
     _draftPersistenceTimer?.cancel();
     unawaited(
-      persistClientAgentsRequestAccessDraft(
-        _prefs,
-        _pageSession.requestAccessDraft,
+      _persistRequestAccessDraftSlots(
+        _pageSession.requestAccessDraftAgentIdSlots,
       ),
     );
     _controller.dispose();
@@ -288,28 +287,31 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                         AppTabViewItem(
                           label: l10n.clientAgentsTabRequestAccess,
                           child: ClientAgentsRequestAccessTab(
-                            initialDraft: _pageSession.requestAccessDraft,
-                            onDraftChanged: (draft) {
+                            initialAgentIdSlots:
+                                _pageSession.requestAccessDraftAgentIdSlots,
+                            onDraftSlotsChanged: (slots) {
                               _pageSession = _pageSession.copyWith(
-                                requestAccessDraft: draft,
+                                requestAccessDraftAgentIdSlots: slots,
                               );
                               _scheduleDraftPersistence();
                             },
-                            onRequestAccess: (agentIds) async {
-                              final accepted = await controller.requestAccess(
-                                agentIds: agentIds,
-                              );
+                            loadClientToken: controller.readLocalClientToken,
+                            persistClientTokenDraftLine:
+                                controller.persistLocalClientTokenDraftLine,
+                            onSubmitRows: (rows) async {
+                              final accepted = await controller
+                                  .submitAccessRequestWithLocalTokens(rows);
                               if (!mounted) {
                                 return accepted;
                               }
                               if (accepted) {
                                 _pageSession = _pageSession.copyWith(
-                                  requestAccessDraft: '',
+                                  requestAccessDraftAgentIdSlots:
+                                      const <String>[''],
                                 );
                                 _draftPersistenceTimer?.cancel();
-                                await persistClientAgentsRequestAccessDraft(
-                                  _prefs,
-                                  '',
+                                await _persistRequestAccessDraftSlots(
+                                  const <String>[''],
                                 );
                               }
                               return accepted;
@@ -465,13 +467,16 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
     );
   }
 
+  Future<void> _persistRequestAccessDraftSlots(List<String> slots) {
+    return persistClientAgentsRequestAccessDraftAgentIdSlots(_prefs, slots);
+  }
+
   void _scheduleDraftPersistence() {
     _draftPersistenceTimer?.cancel();
     _draftPersistenceTimer = Timer(_draftPersistenceDebounce, () {
       unawaited(
-        persistClientAgentsRequestAccessDraft(
-          _prefs,
-          _pageSession.requestAccessDraft,
+        _persistRequestAccessDraftSlots(
+          _pageSession.requestAccessDraftAgentIdSlots,
         ),
       );
     });

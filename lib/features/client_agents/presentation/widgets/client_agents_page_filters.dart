@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
@@ -6,6 +8,7 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +18,7 @@ const String _kClientAgentsSessionNamespace = 'client_agents';
 const String _kApprovedFiltersKey = 'approved_filters.v1';
 const String _kRequestsFiltersKey = 'requests_filters.v1';
 const String _kRequestAccessDraftKey = 'request_access_draft.v1';
+const String _kRequestAccessDraftV2Key = 'request_access_draft.v2';
 const String _kSelectedTabIndexKey = 'selected_tab_index.v1';
 
 final PersistedFilterMapSchema _approvedFiltersSchema =
@@ -74,7 +78,7 @@ class ClientAgentsPageSessionState {
     required this.selectedTabIndex,
     required this.approvedAgentFilters,
     required this.requestsFilters,
-    required this.requestAccessDraft,
+    required this.requestAccessDraftAgentIdSlots,
   });
 
   factory ClientAgentsPageSessionState.restore({
@@ -90,26 +94,31 @@ class ClientAgentsPageSessionState {
       ),
       approvedAgentFilters: restoreClientAgentsApprovedFilters(prefs),
       requestsFilters: restoreClientAgentsRequestsFilters(prefs),
-      requestAccessDraft: restoreClientAgentsRequestAccessDraft(prefs),
+      requestAccessDraftAgentIdSlots:
+          restoreClientAgentsRequestAccessDraftAgentIdSlots(prefs),
     );
   }
 
   final int selectedTabIndex;
   final Map<String, Object?> approvedAgentFilters;
   final Map<String, Object?> requestsFilters;
-  final String requestAccessDraft;
+
+  /// Text field values for each request row (agent id only). Tokens are never
+  /// stored in SharedPreferences.
+  final List<String> requestAccessDraftAgentIdSlots;
 
   ClientAgentsPageSessionState copyWith({
     int? selectedTabIndex,
     Map<String, Object?>? approvedAgentFilters,
     Map<String, Object?>? requestsFilters,
-    String? requestAccessDraft,
+    List<String>? requestAccessDraftAgentIdSlots,
   }) {
     return ClientAgentsPageSessionState(
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       approvedAgentFilters: approvedAgentFilters ?? this.approvedAgentFilters,
       requestsFilters: requestsFilters ?? this.requestsFilters,
-      requestAccessDraft: requestAccessDraft ?? this.requestAccessDraft,
+      requestAccessDraftAgentIdSlots: requestAccessDraftAgentIdSlots ??
+          this.requestAccessDraftAgentIdSlots,
     );
   }
 }
@@ -284,19 +293,54 @@ Future<void> persistClientAgentsRequestsFilters(
   );
 }
 
-String restoreClientAgentsRequestAccessDraft(SharedPreferences prefs) {
-  return _clientAgentsSessionStore(prefs).restoreText(
+List<String> restoreClientAgentsRequestAccessDraftAgentIdSlots(
+  SharedPreferences prefs,
+) {
+  final store = _clientAgentsSessionStore(prefs);
+  final rawV2 = store.restoreText(
+    suffix: _kRequestAccessDraftV2Key,
+  );
+  if (rawV2.isNotEmpty) {
+    try {
+      final decoded = jsonDecode(rawV2);
+      if (decoded is List<dynamic>) {
+        final slots = decoded
+            .map((dynamic e) => e == null ? '' : e.toString())
+            .toList(growable: false);
+        if (slots.isNotEmpty) {
+          return slots;
+        }
+      }
+    } on FormatException {
+      // Fall through to legacy migration.
+    }
+  }
+
+  final legacy = store.restoreText(
     suffix: _kRequestAccessDraftKey,
   );
+  final migrated = parseAgentIdsFromFreeformDraft(legacy);
+  if (migrated.isEmpty) {
+    return <String>[''];
+  }
+  return migrated;
 }
 
-Future<void> persistClientAgentsRequestAccessDraft(
+Future<void> persistClientAgentsRequestAccessDraftAgentIdSlots(
   SharedPreferences prefs,
-  String draft,
+  List<String> agentIdSlots,
 ) async {
-  await _clientAgentsSessionStore(prefs).persistText(
-    suffix: _kRequestAccessDraftKey,
-    value: draft,
+  final store = _clientAgentsSessionStore(prefs);
+  final slots = agentIdSlots.isEmpty
+      ? <String>['']
+      : List<String>.from(agentIdSlots);
+  await store.persistText(
+    suffix: _kRequestAccessDraftV2Key,
+    value: jsonEncode(slots),
+    removeWhenBlank: false,
+  );
+  await prefs.remove(
+    '$_kClientAgentsSessionNamespace.$_kRequestAccessDraftKey',
   );
 }
 

@@ -1,6 +1,10 @@
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_pagination_result.dart';
 
+/// Matches `agentSqlErrorGeneric` in `lib/l10n/app_en.arb` (keep in sync).
+const String _kAgentSqlRpcGenericUserMessageEn =
+    'The query could not be completed on the agent.';
+
 class AgentSqlRpcErrorDetails {
   const AgentSqlRpcErrorDetails({
     required this.userMessage,
@@ -12,6 +16,7 @@ class AgentSqlRpcErrorDetails {
     this.technicalMessage,
     this.correlationId,
     this.timestamp,
+    this.errorData,
   });
 
   final String userMessage;
@@ -23,6 +28,9 @@ class AgentSqlRpcErrorDetails {
   final String? technicalMessage;
   final String? correlationId;
   final DateTime? timestamp;
+
+  /// Unmodifiable copy of JSON-RPC `error.data` when present.
+  final Map<String, dynamic>? errorData;
 }
 
 /// Thrown when the hub returns HTTP 200 but the bridge reports an RPC failure
@@ -138,7 +146,7 @@ abstract final class AgentSqlBridgeResponse {
       return _readItemErrorDetails(item);
     }
     return const AgentSqlRpcErrorDetails(
-      userMessage: 'A consulta no agente nao foi concluida.',
+      userMessage: _kAgentSqlRpcGenericUserMessageEn,
       message: 'Agent SQL RPC failed without item payload',
     );
   }
@@ -149,20 +157,25 @@ abstract final class AgentSqlBridgeResponse {
     final error = item['error'];
     if (error is! Map) {
       return const AgentSqlRpcErrorDetails(
-        userMessage: 'A consulta no agente nao foi concluida.',
+        userMessage: _kAgentSqlRpcGenericUserMessageEn,
         message: 'Agent SQL RPC failed without error payload',
       );
     }
     final errorMap = Map<String, dynamic>.from(error);
     final data = errorMap['data'];
     final dataMap = data is Map ? Map<String, dynamic>.from(data) : null;
+    final errorDataPayload = dataMap != null && dataMap.isNotEmpty
+        ? Map<String, dynamic>.unmodifiable(
+            Map<String, dynamic>.from(dataMap),
+          )
+        : null;
     final userMessage =
         _readNonEmptyString(
           dataMap,
           const <String>['user_message', 'userMessage'],
         ) ??
         _readNonEmptyString(errorMap, const <String>['message']) ??
-        'A consulta no agente nao foi concluida.';
+        _kAgentSqlRpcGenericUserMessageEn;
     final message =
         _readNonEmptyString(errorMap, const <String>['message']) ?? userMessage;
 
@@ -184,6 +197,7 @@ abstract final class AgentSqlBridgeResponse {
       timestamp: _readDateTime(
         _readNonEmptyString(dataMap, const <String>['timestamp']),
       ),
+      errorData: errorDataPayload,
     );
   }
 

@@ -1,8 +1,10 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -45,22 +47,36 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
       );
       return Success<AgentSqlExecutionResult, AppFailure>(result);
     } on AgentSqlRpcException catch (error, stackTrace) {
+      final resolution = resolveAgentSqlRpcUserMessage(error.details);
+      final failureContext = <String, Object?>{
+        'operation': 'executeAgentSql',
+        'agentId': request.trimmedAgentId,
+        'rpcCode': error.details.code,
+        'reason': error.details.reason,
+        'category': error.details.category,
+        'correlationId': error.details.correlationId,
+      };
+      if (resolution.uiKey != null) {
+        failureContext[AgentSqlRpcFailureUiKey.field] = resolution.uiKey;
+      }
+      if (resolution.preferBridgeUserMessage) {
+        failureContext[AgentSqlRpcFailureUiKey.preferBridgeUserMessageField] =
+            true;
+      }
+      final errorData = error.details.errorData;
+      if (errorData != null) {
+        failureContext[AgentSqlRpcFailureUiKey.errorDataField] = errorData;
+      }
       AppLogger.warning(
         'Agent SQL RPC reported failure',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          'rpcCode': error.details.code,
-          'reason': error.details.reason,
-          'correlationId': error.details.correlationId,
-        },
+        context: failureContext,
         error: error,
         stackTrace: stackTrace,
       );
       return Failure<AgentSqlExecutionResult, AppFailure>(
         RpcFailure(
           message: error.details.message,
-          userMessage: error.details.userMessage,
+          userMessage: resolution.userMessage,
           rpcCode: error.details.code,
           retryable: error.details.retryable,
           reason: error.details.reason,
@@ -70,14 +86,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           timestamp: error.details.timestamp,
           cause: error,
           stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            'rpcCode': error.details.code,
-            'reason': error.details.reason,
-            'category': error.details.category,
-            'correlationId': error.details.correlationId,
-          },
+          context: failureContext,
         ),
       );
     } on FormatException catch (error, stackTrace) {

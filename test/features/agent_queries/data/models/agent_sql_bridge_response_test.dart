@@ -43,4 +43,39 @@ void main() {
     check(result.pagination!.currentCursor).equals('cursor-2');
     check(result.pagination!.nextCursor).equals('cursor-3');
   });
+
+  test('should expose full error.data on RPC item failure', () {
+    expect(
+      () => AgentSqlBridgeResponse.parseSuccess(<String, dynamic>{
+        'response': <String, dynamic>{
+          'success': true,
+          'item': <String, dynamic>{
+            'success': false,
+            'error': <String, dynamic>{
+              'code': -32101,
+              'message': 'bad sql',
+              'data': <String, dynamic>{
+                'reason': 'validation',
+                'retryable': false,
+                'vendor_hint': 'use LIMIT',
+              },
+            },
+          },
+        },
+      }),
+      throwsA(
+        isA<AgentSqlRpcException>()
+            .having(
+              (e) => e.details.errorData,
+              'errorData',
+              isNotNull,
+            )
+            .having(
+              (e) => e.details.errorData!['vendor_hint'],
+              'vendor_hint',
+              'use LIMIT',
+            ),
+      ),
+    );
+  });
 }

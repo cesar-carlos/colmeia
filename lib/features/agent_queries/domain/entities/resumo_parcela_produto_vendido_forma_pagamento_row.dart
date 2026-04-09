@@ -22,8 +22,8 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRow {
   /// Calendar month of the sale date in the underlying row (SQL `MONTH`).
   final int mesDataVenda;
 
-  /// Server-built label for the sale month: `YYYY/MM` with two-digit month
-  /// (aligned with the resumo SQL query in agent_queries).
+  /// Server-built label for the sale month (e.g. `YYYY/MM` or `YYYY/M`).
+  /// Prefer two-digit months from the bundled SQL; bridges may return either.
   final String anoMesDataVenda;
 
   final String codFormaPagamento;

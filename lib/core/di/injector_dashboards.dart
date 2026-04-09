@@ -1,4 +1,6 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_produto_vendido_forma_pagamento_use_case.dart';
+import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/dashboards/application/usecases/load_dashboard_overview_use_case.dart';
 import 'package:colmeia/features/dashboards/data/datasources/dashboard_local_datasource.dart';
 import 'package:colmeia/features/dashboards/data/repositories/dashboard_repository_impl.dart';
@@ -14,7 +16,9 @@ void registerInjectorDashboards(GetIt getIt) {
       () => DashboardRepositoryImpl(
         localDataSource: getIt<DashboardLocalDataSource>(),
         clientAgentsRepository: getIt(),
-        resumoRepository: getIt(),
+        clientTokenStore: getIt<LocalAgentClientTokenStore>(),
+        loadResumo:
+            getIt<LoadResumoParcelaProdutoVendidoFormaPagamentoUseCase>(),
       ),
     )
     ..registerLazySingleton<LoadDashboardOverviewUseCase>(

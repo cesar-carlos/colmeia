@@ -1,6 +1,5 @@
 ---
-description: Reuso, duplicacao, refatoracao, comentarios e guardrails gerais
-globs: ["lib/**/*.dart", "test/**/*.dart"]
+alwaysApply: true
 ---
 
 # Regras Gerais do Projeto

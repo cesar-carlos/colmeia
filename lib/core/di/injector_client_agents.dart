@@ -13,12 +13,17 @@ import 'package:colmeia/features/client_agents/application/usecases/sync_pending
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
 import 'package:colmeia/features/client_agents/data/repositories/client_agents_repository_impl.dart';
+import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 
 void registerInjectorClientAgents(GetIt getIt) {
   getIt
+    ..registerLazySingleton<LocalAgentClientTokenStore>(
+      () => LocalAgentClientTokenStore(getIt<FlutterSecureStorage>()),
+    )
     ..registerLazySingleton<ClientAgentsLocalDataSource>(
       () => ClientAgentsLocalDataSource(getIt<AppCacheStore>()),
     )

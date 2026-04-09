@@ -56,6 +56,31 @@ void main() {
       );
     });
 
+    test(
+      'should classify blocked account responses separately from permission',
+      () {
+        final failure = mapToAppFailure(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+            response: Response<Map<String, dynamic>>(
+              requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+              statusCode: 403,
+              data: <String, dynamic>{
+                'message': 'Account is blocked',
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        check(failure).isA<AuthorizationFailure>();
+        check(isBlockedAccountFailure(failure)).isTrue();
+        check(failure.displayMessage).equals(
+          'Sua conta esta bloqueada. Entre em contato com o administrador.',
+        );
+      },
+    );
+
     test('should join validation errors from Dio response body', () {
       final failure = mapToAppFailure(
         DioException(

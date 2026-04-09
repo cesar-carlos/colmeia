@@ -1,5 +1,4 @@
 import 'package:colmeia/core/config/app_environment.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/execute_agent_sql_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_produto_vendido_forma_pagamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
@@ -18,9 +17,6 @@ void registerInjectorAgentQueries(GetIt getIt) {
     )
     ..registerLazySingleton<AgentQueriesRepository>(
       () => AgentQueriesRepositoryImpl(getIt<AgentQueriesRemoteDataSource>()),
-    )
-    ..registerLazySingleton<ExecuteAgentSqlUseCase>(
-      () => ExecuteAgentSqlUseCase(getIt<AgentQueriesRepository>()),
     )
     ..registerLazySingleton<
       ResumoParcelaProdutoVendidoFormaPagamentoRepository

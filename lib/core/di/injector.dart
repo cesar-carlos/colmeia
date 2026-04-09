@@ -19,8 +19,8 @@ Future<void> setupDependencies() async {
   await registerInjectorCore(getIt);
   registerInjectorAuth(getIt);
   registerInjectorUserContext(getIt);
-  registerInjectorDashboards(getIt);
   registerInjectorClientAgents(getIt);
+  registerInjectorDashboards(getIt);
   registerInjectorAgentQueries(getIt);
   registerInjectorPresentation(getIt);
 }

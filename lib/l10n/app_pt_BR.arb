@@ -8,6 +8,22 @@
   "shellNavSettingsSubtitle": "Conta e preferencias",
   "userPermissionViewDashboard": "Dashboard principal",
   "userPermissionManageAgents": "Gestao de agentes",
+  "dashboardPartialAgentQueriesTitle": "Dados do painel incompletos",
+  "dashboardPartialAgentQueriesMessage": "Alguns agentes aprovados nao retornaram dados ({agents}). Os totais podem estar incompletos.",
+  "@dashboardPartialAgentQueriesMessage": {
+    "placeholders": {
+      "agents": {"type": "String"}
+    }
+  },
+  "dashboardMissingClientTokenTitle": "Agentes sem token de cliente salvo",
+  "dashboardMissingClientTokenMessage": "Estes agentes aprovados foram ignorados porque nao ha token de cliente local ({agents}). Cadastre o token na tela do agente para incluir os dados.",
+  "@dashboardMissingClientTokenMessage": {
+    "placeholders": {
+      "agents": {"type": "String"}
+    }
+  },
+  "dashboardMultiAgentAggregationTitle": "Varios agentes",
+  "dashboardMultiAgentAggregationMessage": "Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.",
   "clientAgentsDataSourcesEyebrow": "Fontes de dados",
   "clientAgentsPageTitle": "Gestao de agentes",
   "clientAgentsPageSubtitle": "Acompanhe seus agentes aprovados, solicite novos acessos e consulte o andamento das solicitacoes.",
@@ -29,9 +45,17 @@
   "agentConnectionOffline": "offline",
   "agentConnectionUnknown": "status operacional indisponivel",
   "clientAgentsRemoveAccess": "Remover acesso",
-  "clientAgentsRequestAccessIntro1": "Informe um ou mais agentIds para solicitar acesso a esta conta. Use virgula, espaco ou quebra de linha para separar os UUIDs.",
+  "clientAgentsRequestAccessIntro1": "Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.",
   "clientAgentsRequestAccessIntro2": "O agentId deve ser informado pelo responsavel do agente ou por um fluxo externo. Quando a solicitacao for aprovada, o agente sera liberado automaticamente para esta conta.",
-  "clientAgentsAgentIdsLabel": "Agent IDs",
+  "clientAgentsRequestAccessIntroToken": "O client token fica apenas neste dispositivo (criptografado) e nao e enviado ao enviar a solicitacao de acesso.",
+  "clientAgentsRequestAccessAddRow": "Adicionar linha de agente",
+  "clientAgentsRequestAccessRemoveRow": "Remover linha",
+  "clientAgentsRequestAccessRowTitle": "Agente {index}",
+  "clientAgentsClientTokenLabel": "Client token (local)",
+  "clientAgentsClientTokenHint": "Opcional — salvo apenas neste dispositivo",
+  "clientAgentsClientTokenShow": "Mostrar token",
+  "clientAgentsClientTokenHide": "Ocultar token",
+  "clientAgentsAgentIdsLabel": "Agent ID",
   "clientAgentsRequestAccessCta": "Solicitar acesso",
   "clientAgentsValidationNeedOneValidId": "Informe pelo menos um agentId valido para continuar.",
   "clientAgentsValidationInvalidIds": "Os seguintes agentIds sao invalidos: {ids}.",
@@ -111,6 +135,12 @@
   "clientAgentDetailSectionAddress": "Endereco",
   "clientAgentDetailSectionNotes": "Anotacoes",
   "clientAgentDetailSectionRecord": "Registro",
+  "clientAgentDetailSectionLocalToken": "Client token local",
+  "clientAgentDetailSectionLocalTokenSubtitle": "Usado apenas neste dispositivo para consultas SQL (por exemplo no dashboard). Nunca enviado aos servidores Colmeia.",
+  "clientAgentDetailLocalTokenSave": "Salvar token",
+  "clientAgentDetailLocalTokenRemove": "Remover token",
+  "clientAgentDetailLocalTokenSaved": "Token salvo neste dispositivo.",
+  "clientAgentDetailLocalTokenRemoved": "Token removido deste dispositivo.",
   "clientAgentFieldId": "Agent ID",
   "clientAgentFieldDocumentType": "Tipo",
   "clientAgentFieldMobile": "Celular",
@@ -183,5 +213,21 @@
   "clientAgentsErrorQueueRequest": "Nao foi possivel registrar a solicitacao para sincronizacao.",
   "clientAgentsErrorQueueRemove": "Nao foi possivel registrar a remocao para sincronizacao.",
   "clientAgentsErrorSyncAction": "Nao foi possivel sincronizar a alteracao do agente.",
-  "clientAgentsErrorSyncPending": "Nao foi possivel sincronizar as acoes pendentes de agentes."
+  "clientAgentsErrorSyncPending": "Nao foi possivel sincronizar as acoes pendentes de agentes.",
+  "agentSqlErrorAuthenticationFailed": "A autenticacao para consultar este agente e invalida ou expirou.",
+  "agentSqlErrorPermissionDenied": "Voce nao tem permissao para consultar estes dados neste agente.",
+  "agentSqlErrorTransportTimeout": "O agente demorou mais do que o esperado para responder. Tente novamente.",
+  "agentSqlErrorNetworkError": "Nao foi possivel alcancar o agente agora. Tente novamente.",
+  "agentSqlErrorRateLimited": "Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.",
+  "agentSqlErrorValidationFailed": "A consulta informada e invalida.",
+  "agentSqlErrorExecutionFailed": "Nao foi possivel executar a consulta.",
+  "agentSqlErrorTransactionFailed": "Nao foi possivel concluir a transacao da consulta.",
+  "agentSqlErrorConnectionPoolExhausted": "O servidor esta ocupado para processar a consulta agora. Tente novamente em instantes.",
+  "agentSqlErrorResultTooLarge": "A consulta retornou dados demais. Refine os filtros e tente novamente.",
+  "agentSqlErrorDatabaseConnectionFailed": "Nao foi possivel conectar ao banco para executar a consulta.",
+  "agentSqlErrorQueryTimeout": "A consulta demorou mais do que o esperado.",
+  "agentSqlErrorInvalidDatabaseConfig": "A configuracao de acesso ao banco deste agente esta invalida.",
+  "agentSqlErrorExecutionNotFound": "A execucao solicitada nao foi encontrada.",
+  "agentSqlErrorExecutionCancelled": "A consulta foi cancelada.",
+  "agentSqlErrorGeneric": "Nao foi possivel concluir a consulta no agente."
 }

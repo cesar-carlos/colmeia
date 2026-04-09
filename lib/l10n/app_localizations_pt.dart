@@ -33,6 +33,30 @@ class AppLocalizationsPt extends AppLocalizations {
   String get userPermissionManageAgents => 'Gestao de agentes';
 
   @override
+  String get dashboardPartialAgentQueriesTitle => 'Dados do painel incompletos';
+
+  @override
+  String dashboardPartialAgentQueriesMessage(String agents) {
+    return 'Alguns agentes aprovados nao retornaram dados ($agents). Os totais podem estar incompletos.';
+  }
+
+  @override
+  String get dashboardMissingClientTokenTitle =>
+      'Agentes sem token de cliente salvo';
+
+  @override
+  String dashboardMissingClientTokenMessage(String agents) {
+    return 'Estes agentes aprovados foram ignorados porque nao ha token de cliente local ($agents). Cadastre o token na tela do agente para incluir os dados.';
+  }
+
+  @override
+  String get dashboardMultiAgentAggregationTitle => 'Varios agentes';
+
+  @override
+  String get dashboardMultiAgentAggregationMessage =>
+      'Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
+
+  @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';
 
   @override
@@ -111,14 +135,42 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsRequestAccessIntro1 =>
-      'Informe um ou mais agentIds para solicitar acesso a esta conta. Use virgula, espaco ou quebra de linha para separar os UUIDs.';
+      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.';
 
   @override
   String get clientAgentsRequestAccessIntro2 =>
       'O agentId deve ser informado pelo responsavel do agente ou por um fluxo externo. Quando a solicitacao for aprovada, o agente sera liberado automaticamente para esta conta.';
 
   @override
-  String get clientAgentsAgentIdsLabel => 'Agent IDs';
+  String get clientAgentsRequestAccessIntroToken =>
+      'O client token fica apenas neste dispositivo (criptografado) e nao e enviado ao enviar a solicitacao de acesso.';
+
+  @override
+  String get clientAgentsRequestAccessAddRow => 'Adicionar linha de agente';
+
+  @override
+  String get clientAgentsRequestAccessRemoveRow => 'Remover linha';
+
+  @override
+  String clientAgentsRequestAccessRowTitle(int index) {
+    return 'Agente $index';
+  }
+
+  @override
+  String get clientAgentsClientTokenLabel => 'Client token (local)';
+
+  @override
+  String get clientAgentsClientTokenHint =>
+      'Opcional — salvo apenas neste dispositivo';
+
+  @override
+  String get clientAgentsClientTokenShow => 'Mostrar token';
+
+  @override
+  String get clientAgentsClientTokenHide => 'Ocultar token';
+
+  @override
+  String get clientAgentsAgentIdsLabel => 'Agent ID';
 
   @override
   String get clientAgentsRequestAccessCta => 'Solicitar acesso';
@@ -426,6 +478,27 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentDetailSectionRecord => 'Registro';
 
   @override
+  String get clientAgentDetailSectionLocalToken => 'Client token local';
+
+  @override
+  String get clientAgentDetailSectionLocalTokenSubtitle =>
+      'Usado apenas neste dispositivo para consultas SQL (por exemplo no dashboard). Nunca enviado aos servidores Colmeia.';
+
+  @override
+  String get clientAgentDetailLocalTokenSave => 'Salvar token';
+
+  @override
+  String get clientAgentDetailLocalTokenRemove => 'Remover token';
+
+  @override
+  String get clientAgentDetailLocalTokenSaved =>
+      'Token salvo neste dispositivo.';
+
+  @override
+  String get clientAgentDetailLocalTokenRemoved =>
+      'Token removido deste dispositivo.';
+
+  @override
   String get clientAgentFieldId => 'Agent ID';
 
   @override
@@ -692,6 +765,69 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentsErrorSyncPending =>
       'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+
+  @override
+  String get agentSqlErrorAuthenticationFailed =>
+      'A autenticacao para consultar este agente e invalida ou expirou.';
+
+  @override
+  String get agentSqlErrorPermissionDenied =>
+      'Voce nao tem permissao para consultar estes dados neste agente.';
+
+  @override
+  String get agentSqlErrorTransportTimeout =>
+      'O agente demorou mais do que o esperado para responder. Tente novamente.';
+
+  @override
+  String get agentSqlErrorNetworkError =>
+      'Nao foi possivel alcancar o agente agora. Tente novamente.';
+
+  @override
+  String get agentSqlErrorRateLimited =>
+      'Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.';
+
+  @override
+  String get agentSqlErrorValidationFailed =>
+      'A consulta informada e invalida.';
+
+  @override
+  String get agentSqlErrorExecutionFailed =>
+      'Nao foi possivel executar a consulta.';
+
+  @override
+  String get agentSqlErrorTransactionFailed =>
+      'Nao foi possivel concluir a transacao da consulta.';
+
+  @override
+  String get agentSqlErrorConnectionPoolExhausted =>
+      'O servidor esta ocupado para processar a consulta agora. Tente novamente em instantes.';
+
+  @override
+  String get agentSqlErrorResultTooLarge =>
+      'A consulta retornou dados demais. Refine os filtros e tente novamente.';
+
+  @override
+  String get agentSqlErrorDatabaseConnectionFailed =>
+      'Nao foi possivel conectar ao banco para executar a consulta.';
+
+  @override
+  String get agentSqlErrorQueryTimeout =>
+      'A consulta demorou mais do que o esperado.';
+
+  @override
+  String get agentSqlErrorInvalidDatabaseConfig =>
+      'A configuracao de acesso ao banco deste agente esta invalida.';
+
+  @override
+  String get agentSqlErrorExecutionNotFound =>
+      'A execucao solicitada nao foi encontrada.';
+
+  @override
+  String get agentSqlErrorExecutionCancelled => 'A consulta foi cancelada.';
+
+  @override
+  String get agentSqlErrorGeneric =>
+      'Nao foi possivel concluir a consulta no agente.';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -723,6 +859,30 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get userPermissionManageAgents => 'Gestao de agentes';
 
   @override
+  String get dashboardPartialAgentQueriesTitle => 'Dados do painel incompletos';
+
+  @override
+  String dashboardPartialAgentQueriesMessage(String agents) {
+    return 'Alguns agentes aprovados nao retornaram dados ($agents). Os totais podem estar incompletos.';
+  }
+
+  @override
+  String get dashboardMissingClientTokenTitle =>
+      'Agentes sem token de cliente salvo';
+
+  @override
+  String dashboardMissingClientTokenMessage(String agents) {
+    return 'Estes agentes aprovados foram ignorados porque nao ha token de cliente local ($agents). Cadastre o token na tela do agente para incluir os dados.';
+  }
+
+  @override
+  String get dashboardMultiAgentAggregationTitle => 'Varios agentes';
+
+  @override
+  String get dashboardMultiAgentAggregationMessage =>
+      'Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
+
+  @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';
 
   @override
@@ -801,14 +961,42 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsRequestAccessIntro1 =>
-      'Informe um ou mais agentIds para solicitar acesso a esta conta. Use virgula, espaco ou quebra de linha para separar os UUIDs.';
+      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.';
 
   @override
   String get clientAgentsRequestAccessIntro2 =>
       'O agentId deve ser informado pelo responsavel do agente ou por um fluxo externo. Quando a solicitacao for aprovada, o agente sera liberado automaticamente para esta conta.';
 
   @override
-  String get clientAgentsAgentIdsLabel => 'Agent IDs';
+  String get clientAgentsRequestAccessIntroToken =>
+      'O client token fica apenas neste dispositivo (criptografado) e nao e enviado ao enviar a solicitacao de acesso.';
+
+  @override
+  String get clientAgentsRequestAccessAddRow => 'Adicionar linha de agente';
+
+  @override
+  String get clientAgentsRequestAccessRemoveRow => 'Remover linha';
+
+  @override
+  String clientAgentsRequestAccessRowTitle(int index) {
+    return 'Agente $index';
+  }
+
+  @override
+  String get clientAgentsClientTokenLabel => 'Client token (local)';
+
+  @override
+  String get clientAgentsClientTokenHint =>
+      'Opcional — salvo apenas neste dispositivo';
+
+  @override
+  String get clientAgentsClientTokenShow => 'Mostrar token';
+
+  @override
+  String get clientAgentsClientTokenHide => 'Ocultar token';
+
+  @override
+  String get clientAgentsAgentIdsLabel => 'Agent ID';
 
   @override
   String get clientAgentsRequestAccessCta => 'Solicitar acesso';
@@ -1116,6 +1304,27 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentDetailSectionRecord => 'Registro';
 
   @override
+  String get clientAgentDetailSectionLocalToken => 'Client token local';
+
+  @override
+  String get clientAgentDetailSectionLocalTokenSubtitle =>
+      'Usado apenas neste dispositivo para consultas SQL (por exemplo no dashboard). Nunca enviado aos servidores Colmeia.';
+
+  @override
+  String get clientAgentDetailLocalTokenSave => 'Salvar token';
+
+  @override
+  String get clientAgentDetailLocalTokenRemove => 'Remover token';
+
+  @override
+  String get clientAgentDetailLocalTokenSaved =>
+      'Token salvo neste dispositivo.';
+
+  @override
+  String get clientAgentDetailLocalTokenRemoved =>
+      'Token removido deste dispositivo.';
+
+  @override
   String get clientAgentFieldId => 'Agent ID';
 
   @override
@@ -1382,4 +1591,67 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsErrorSyncPending =>
       'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+
+  @override
+  String get agentSqlErrorAuthenticationFailed =>
+      'A autenticacao para consultar este agente e invalida ou expirou.';
+
+  @override
+  String get agentSqlErrorPermissionDenied =>
+      'Voce nao tem permissao para consultar estes dados neste agente.';
+
+  @override
+  String get agentSqlErrorTransportTimeout =>
+      'O agente demorou mais do que o esperado para responder. Tente novamente.';
+
+  @override
+  String get agentSqlErrorNetworkError =>
+      'Nao foi possivel alcancar o agente agora. Tente novamente.';
+
+  @override
+  String get agentSqlErrorRateLimited =>
+      'Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.';
+
+  @override
+  String get agentSqlErrorValidationFailed =>
+      'A consulta informada e invalida.';
+
+  @override
+  String get agentSqlErrorExecutionFailed =>
+      'Nao foi possivel executar a consulta.';
+
+  @override
+  String get agentSqlErrorTransactionFailed =>
+      'Nao foi possivel concluir a transacao da consulta.';
+
+  @override
+  String get agentSqlErrorConnectionPoolExhausted =>
+      'O servidor esta ocupado para processar a consulta agora. Tente novamente em instantes.';
+
+  @override
+  String get agentSqlErrorResultTooLarge =>
+      'A consulta retornou dados demais. Refine os filtros e tente novamente.';
+
+  @override
+  String get agentSqlErrorDatabaseConnectionFailed =>
+      'Nao foi possivel conectar ao banco para executar a consulta.';
+
+  @override
+  String get agentSqlErrorQueryTimeout =>
+      'A consulta demorou mais do que o esperado.';
+
+  @override
+  String get agentSqlErrorInvalidDatabaseConfig =>
+      'A configuracao de acesso ao banco deste agente esta invalida.';
+
+  @override
+  String get agentSqlErrorExecutionNotFound =>
+      'A execucao solicitada nao foi encontrada.';
+
+  @override
+  String get agentSqlErrorExecutionCancelled => 'A consulta foi cancelada.';
+
+  @override
+  String get agentSqlErrorGeneric =>
+      'Nao foi possivel concluir a consulta no agente.';
 }

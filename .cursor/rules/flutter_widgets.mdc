@@ -1,6 +1,5 @@
 ---
-description: Criacao, composicao, especializacao e refatoracao de widgets Flutter
-globs: ["lib/**/*.dart"]
+alwaysApply: true
 ---
 
 # Flutter Widgets

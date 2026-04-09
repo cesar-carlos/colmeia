@@ -55,6 +55,15 @@ final class AuthorizationFailure extends AppFailure {
   }) : super(isTransient: false);
 }
 
+/// Stable context fields for HTTP 403 authorization failures.
+abstract final class AuthorizationFailureContext {
+  static const String accountBlockedField = 'accountBlocked';
+}
+
+bool isBlockedAccountFailure(AppFailure failure) =>
+    failure is AuthorizationFailure &&
+    failure.context[AuthorizationFailureContext.accountBlockedField] == true;
+
 /// Returns true when the response indicates the caller should not use cached
 /// snapshots (session expired or forbidden).
 bool isDioUnauthorizedOrForbidden(DioException error) {
@@ -149,6 +158,7 @@ AppFailure mapToAppFailure(
 
   if (error is DioException) {
     final statusCode = error.response?.statusCode;
+    final responseData = error.response?.data;
     final resolvedUserMessage = _resolveDioUserMessage(
       error,
       fallbackUserMessage: fallbackUserMessage,
@@ -166,6 +176,21 @@ AppFailure mapToAppFailure(
       );
     }
     if (statusCode == 403) {
+      if (_isBlockedAccountResponse(responseData)) {
+        return AuthorizationFailure(
+          message: fallbackMessage ?? 'Forbidden request',
+          userMessage: _resolveBlockedAccountUserMessage(
+            fallbackUserMessage: fallbackUserMessage,
+          ),
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            ...context,
+            'httpStatusCode': statusCode,
+            AuthorizationFailureContext.accountBlockedField: true,
+          },
+        );
+      }
       return AuthorizationFailure(
         message: fallbackMessage ?? 'Forbidden request',
         userMessage: resolvedUserMessage,
@@ -223,6 +248,11 @@ String _resolveDioUserMessage(
   };
 }
 
+String _resolveBlockedAccountUserMessage({String? fallbackUserMessage}) {
+  return fallbackUserMessage ??
+      'Sua conta esta bloqueada. Entre em contato com o administrador.';
+}
+
 String? _extractApiErrorMessage(Object? responseData) {
   if (responseData is String) {
     final trimmed = responseData.trim();
@@ -240,6 +270,46 @@ String? _extractApiErrorMessage(Object? responseData) {
   final validationMessage = _extractValidationMessage(responseData);
 
   return validationMessage ?? directMessage;
+}
+
+bool _isBlockedAccountResponse(Object? responseData) {
+  if (responseData is String) {
+    return _looksLikeBlockedAccountText(responseData);
+  }
+
+  if (responseData is! Map<String, dynamic>) {
+    return false;
+  }
+
+  final directMessage = _readFirstNonEmptyString(
+    responseData,
+    const <String>[
+      'userMessage',
+      'message',
+      'error',
+      'detail',
+      'title',
+      'failure_code',
+      'reason',
+      'type',
+    ],
+  );
+
+  return directMessage != null && _looksLikeBlockedAccountText(directMessage);
+}
+
+bool _looksLikeBlockedAccountText(String value) {
+  final normalized = value.trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return false;
+  }
+
+  return normalized == 'account is blocked' ||
+      normalized.contains('account_blocked') ||
+      normalized.contains('user_blocked') ||
+      normalized.contains('client_blocked') ||
+      (normalized.contains('account') && normalized.contains('blocked')) ||
+      (normalized.contains('conta') && normalized.contains('bloquead'));
 }
 
 String? _extractValidationMessage(Map<String, dynamic> json) {

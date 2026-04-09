@@ -1,6 +1,5 @@
 ---
-description: SRP, OCP, DIP, contratos, responsabilidades e abstracoes
-globs: ["lib/**/*.dart"]
+alwaysApply: true
 ---
 
 # Principios SOLID

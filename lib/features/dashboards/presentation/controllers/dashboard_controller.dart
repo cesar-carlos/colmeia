@@ -1,9 +1,13 @@
 import 'dart:async';
 
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/dashboards/application/usecases/load_dashboard_overview_use_case.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/repositories/dashboard_repository.dart';
+import 'package:colmeia/features/dashboards/presentation/localization/dashboard_failure_l10n.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -11,6 +15,16 @@ class DashboardController extends ChangeNotifier {
   DashboardController(this._loadDashboardOverviewUseCase);
 
   final LoadDashboardOverviewUseCase _loadDashboardOverviewUseCase;
+
+  AppLocalizations? _l10n;
+
+  /// Set from the active page context (`DashboardHomePage`) for localized
+  /// error messages.
+  AppLocalizations? get activeLocalizations => _l10n;
+
+  set activeLocalizations(AppLocalizations value) => _l10n = value;
+
+  AppLocalizations get _s => _l10n ?? AppLocalizationsEn();
 
   DashboardOverview? _overview;
   bool _isLoadingInitial = false;
@@ -159,7 +173,7 @@ class DashboardController extends ChangeNotifier {
           _overview = null;
           _loadedOverviewSignature = null;
         }
-        _errorMessage = failure.displayMessage;
+        _errorMessage = dashboardFailureUserMessage(failure, _s);
         AppLogger.warning(
           'Dashboard load failed in controller',
           context: <String, Object?>{
@@ -167,7 +181,10 @@ class DashboardController extends ChangeNotifier {
             'userId': userId,
             'policy': policy.name,
             'keepContentVisible': keepContentVisible,
-            'technicalMessage': failure.message,
+            'technicalMessage': switch (failure) {
+              RpcFailure(:final technicalMessage) => technicalMessage,
+              _ => failure.message,
+            },
           },
           error: failure.cause ?? failure,
           stackTrace: failure.stackTrace,

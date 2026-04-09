@@ -12,6 +12,9 @@ class DashboardOverview {
     required this.filialRankings,
     required this.userRankings,
     this.isStaleCache = false,
+    this.approvedAgentCount = 0,
+    this.agentIdsExcludedFromQueryFailure = const <String>[],
+    this.agentIdsMissingClientToken = const <String>[],
   });
 
   final DateTime periodStart;
@@ -24,7 +27,26 @@ class DashboardOverview {
   /// True when recovered from local cache after a remote error.
   final bool isStaleCache;
 
+  /// Number of approved agents considered for this load (pagination total).
+  final int approvedAgentCount;
+
+  /// Approved agents whose resumo SQL failed; KPIs omit their data.
+  final List<String> agentIdsExcludedFromQueryFailure;
+
+  /// Approved agents skipped because no local `client_token` was stored.
+  final List<String> agentIdsMissingClientToken;
+
   bool get hasRows => paymentMethods.isNotEmpty;
+
+  bool get hasPartialAgentQueryFailure =>
+      agentIdsExcludedFromQueryFailure.isNotEmpty;
+
+  bool get hasMissingClientToken => agentIdsMissingClientToken.isNotEmpty;
+
+  /// Multiple approved agents are consolidated; overlapping data may inflate
+  /// totals if agents are not partitioned server-side.
+  bool get shouldShowMultiAgentAggregationNote =>
+      approvedAgentCount > 1 && hasRows;
 
   DashboardPaymentMethodBreakdown? get leadingPaymentMethod {
     if (paymentMethods.isEmpty) {

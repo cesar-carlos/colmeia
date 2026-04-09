@@ -11,6 +11,7 @@ import 'package:colmeia/features/client_agents/application/usecases/queue_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
@@ -18,6 +19,8 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_query.d
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/presentation/localization/client_agents_failure_l10n.dart';
+import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
+import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
@@ -27,6 +30,7 @@ enum ClientAgentsActionFeedbackKind { info, success }
 class ClientAgentsController extends ChangeNotifier {
   ClientAgentsController({
     required AuthController authController,
+    required LocalAgentClientTokenStore clientTokenStore,
     required LoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase,
     required LoadClientAccessRequestsUseCase loadAccessRequestsUseCase,
     required LoadClientAccessStatusUseCase loadClientAccessStatusUseCase,
@@ -36,6 +40,7 @@ class ClientAgentsController extends ChangeNotifier {
     required ReadPendingClientAgentActionsUseCase readPendingActionsUseCase,
     required SyncPendingClientAgentActionsUseCase syncPendingActionsUseCase,
   }) : _authController = authController,
+       _clientTokenStore = clientTokenStore,
        _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
        _loadAccessRequestsUseCase = loadAccessRequestsUseCase,
        _loadClientAccessStatusUseCase = loadClientAccessStatusUseCase,
@@ -52,6 +57,7 @@ class ClientAgentsController extends ChangeNotifier {
   );
 
   final AuthController _authController;
+  final LocalAgentClientTokenStore _clientTokenStore;
   final LoadClientApprovedAgentsUseCase _loadApprovedAgentsUseCase;
   final LoadClientAccessRequestsUseCase _loadAccessRequestsUseCase;
   final LoadClientAccessStatusUseCase _loadClientAccessStatusUseCase;
@@ -195,6 +201,83 @@ class ClientAgentsController extends ChangeNotifier {
         _scheduleAutoSyncIfNeeded();
       }
     }
+  }
+
+  Future<String?> readLocalClientToken(String agentId) async {
+    final userId = _authController.session?.userId;
+    if (userId == null || userId.isEmpty) {
+      return null;
+    }
+    return _clientTokenStore.read(userId: userId, agentId: agentId);
+  }
+
+  /// Persists or clears the local token for a draft row when the agent id is
+  /// a valid UUID (used from the request-access form while editing).
+  Future<void> persistLocalClientTokenDraftLine({
+    required String agentIdRaw,
+    required String clientTokenRaw,
+  }) async {
+    final userId = _authController.session?.userId;
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+    final id = agentIdRaw.trim();
+    if (!isValidClientAgentId(id)) {
+      return;
+    }
+    final token = clientTokenRaw.trim();
+    if (token.isEmpty) {
+      await _clientTokenStore.delete(userId: userId, agentId: id);
+    } else {
+      await _clientTokenStore.write(
+        userId: userId,
+        agentId: id,
+        clientToken: token,
+      );
+    }
+  }
+
+  /// Writes tokens for each row, then enqueues access for valid agent ids.
+  Future<bool> submitAccessRequestWithLocalTokens(
+    List<ClientAgentAccessRequestRowInput> rows,
+  ) async {
+    final userId = _authController.session?.userId;
+    if (userId == null || userId.isEmpty) {
+      _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
+      _notifyListenersIfAlive();
+      return false;
+    }
+
+    for (final row in rows) {
+      final id = row.agentIdRaw.trim();
+      if (!isValidClientAgentId(id)) {
+        continue;
+      }
+      final token = row.clientTokenRaw.trim();
+      if (token.isEmpty) {
+        await _clientTokenStore.delete(userId: userId, agentId: id);
+      } else {
+        await _clientTokenStore.write(
+          userId: userId,
+          agentId: id,
+          clientToken: token,
+        );
+      }
+    }
+
+    final requestedIds = <String>{};
+    for (final row in rows) {
+      final id = row.agentIdRaw.trim();
+      if (isValidClientAgentId(id)) {
+        requestedIds.add(id);
+      }
+    }
+
+    if (requestedIds.isEmpty) {
+      return false;
+    }
+
+    return requestAccess(agentIds: requestedIds);
   }
 
   Future<bool> requestAccess({

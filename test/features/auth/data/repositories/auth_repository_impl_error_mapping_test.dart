@@ -61,7 +61,7 @@ void main() {
         );
 
         check(result.isError()).isTrue();
-        check(result.exceptionOrNull()).isA<NetworkFailure>();
+        check(result.exceptionOrNull()).isA<AuthorizationFailure>();
         check(result.exceptionOrNull()?.displayMessage).equals(
           'Sua conta ainda esta pendente de aprovacao.',
         );

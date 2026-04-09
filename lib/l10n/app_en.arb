@@ -8,6 +8,22 @@
   "shellNavSettingsSubtitle": "Account and preferences",
   "userPermissionViewDashboard": "Main dashboard",
   "userPermissionManageAgents": "Agent management",
+  "dashboardPartialAgentQueriesTitle": "Incomplete dashboard data",
+  "dashboardPartialAgentQueriesMessage": "Some approved agents did not return data ({agents}). Totals may be incomplete.",
+  "@dashboardPartialAgentQueriesMessage": {
+    "placeholders": {
+      "agents": {"type": "String"}
+    }
+  },
+  "dashboardMissingClientTokenTitle": "Agents without a saved client token",
+  "dashboardMissingClientTokenMessage": "These approved agents were skipped because no local client token was saved ({agents}). Add the token on the agent screen to include their data.",
+  "@dashboardMissingClientTokenMessage": {
+    "placeholders": {
+      "agents": {"type": "String"}
+    }
+  },
+  "dashboardMultiAgentAggregationTitle": "Multiple agents",
+  "dashboardMultiAgentAggregationMessage": "This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.",
   "clientAgentsDataSourcesEyebrow": "Data sources",
   "clientAgentsPageTitle": "Agent management",
   "clientAgentsPageSubtitle": "Track your approved agents, request new access, and follow the status of your requests.",
@@ -39,9 +55,22 @@
   "agentConnectionOffline": "offline",
   "agentConnectionUnknown": "operational status unavailable",
   "clientAgentsRemoveAccess": "Remove access",
-  "clientAgentsRequestAccessIntro1": "Enter one or more agent IDs to request access for this account. Use commas, spaces, or line breaks to separate the UUIDs.",
+  "clientAgentsRequestAccessIntro1": "Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.",
   "clientAgentsRequestAccessIntro2": "The agent ID must be provided by the agent owner or an external flow. When the request is approved, the agent will be released automatically for this account.",
-  "clientAgentsAgentIdsLabel": "Agent IDs",
+  "clientAgentsRequestAccessIntroToken": "The client token is saved only on this device (encrypted) and is not sent when you submit the access request.",
+  "clientAgentsRequestAccessAddRow": "Add agent row",
+  "clientAgentsRequestAccessRemoveRow": "Remove row",
+  "clientAgentsRequestAccessRowTitle": "Agent {index}",
+  "@clientAgentsRequestAccessRowTitle": {
+    "placeholders": {
+      "index": {"type": "int"}
+    }
+  },
+  "clientAgentsClientTokenLabel": "Client token (local)",
+  "clientAgentsClientTokenHint": "Optional — stored only on this device",
+  "clientAgentsClientTokenShow": "Show token",
+  "clientAgentsClientTokenHide": "Hide token",
+  "clientAgentsAgentIdsLabel": "Agent ID",
   "clientAgentsRequestAccessCta": "Request access",
   "clientAgentsValidationNeedOneValidId": "Enter at least one valid agent ID to continue.",
   "clientAgentsValidationInvalidIds": "The following agent IDs are invalid: {ids}.",
@@ -222,6 +251,12 @@
   "clientAgentDetailSectionAddress": "Address",
   "clientAgentDetailSectionNotes": "Notes",
   "clientAgentDetailSectionRecord": "Record",
+  "clientAgentDetailSectionLocalToken": "Local client token",
+  "clientAgentDetailSectionLocalTokenSubtitle": "Used only on this device for SQL queries (for example dashboard). Never sent to Colmeia servers.",
+  "clientAgentDetailLocalTokenSave": "Save token",
+  "clientAgentDetailLocalTokenRemove": "Remove token",
+  "clientAgentDetailLocalTokenSaved": "Token saved on this device.",
+  "clientAgentDetailLocalTokenRemoved": "Token removed from this device.",
   "clientAgentFieldId": "Agent ID",
   "clientAgentFieldDocumentType": "Type",
   "clientAgentFieldMobile": "Mobile",
@@ -348,5 +383,21 @@
   "clientAgentsErrorQueueRequest": "Could not queue the access request for sync.",
   "clientAgentsErrorQueueRemove": "Could not queue the removal for sync.",
   "clientAgentsErrorSyncAction": "Could not sync the change for this agent.",
-  "clientAgentsErrorSyncPending": "Could not sync pending agent actions."
+  "clientAgentsErrorSyncPending": "Could not sync pending agent actions.",
+  "agentSqlErrorAuthenticationFailed": "Authentication is required to query this agent.",
+  "agentSqlErrorPermissionDenied": "You do not have permission to query this data on this agent.",
+  "agentSqlErrorTransportTimeout": "The agent took too long to respond. Please try again.",
+  "agentSqlErrorNetworkError": "Could not reach the agent right now. Please try again.",
+  "agentSqlErrorRateLimited": "Too many query attempts were made. Please wait a moment and try again.",
+  "agentSqlErrorValidationFailed": "The query is invalid.",
+  "agentSqlErrorExecutionFailed": "The query could not be executed.",
+  "agentSqlErrorTransactionFailed": "The query transaction could not be completed.",
+  "agentSqlErrorConnectionPoolExhausted": "The server is busy processing queries. Please try again shortly.",
+  "agentSqlErrorResultTooLarge": "The query returned too much data. Narrow filters and try again.",
+  "agentSqlErrorDatabaseConnectionFailed": "Could not connect to the database to run the query.",
+  "agentSqlErrorQueryTimeout": "The query took longer than expected.",
+  "agentSqlErrorInvalidDatabaseConfig": "This agent's database access configuration is invalid.",
+  "agentSqlErrorExecutionNotFound": "The requested execution was not found.",
+  "agentSqlErrorExecutionCancelled": "The query was cancelled.",
+  "agentSqlErrorGeneric": "The query could not be completed on the agent."
 }
