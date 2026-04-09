@@ -233,7 +233,7 @@ Entram apenas as abstracoes novas da feature de consulta, sem quebrar a base atu
 ## Referencias de codigo relacionadas
 
 - `lib/features/client_agents/`
-- `lib/features/dashboards/`
+- `lib/features/overview/`
 - `lib/shared/widgets/reports/`
 - `lib/core/network/app_dio_client.dart`
 - `lib/core/network/auth_interceptor.dart`

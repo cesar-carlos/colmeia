@@ -9,7 +9,7 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
-  String get shellNavDashboardLabel => 'Painel';
+  String get shellNavDashboardLabel => 'Visao geral';
 
   @override
   String get shellNavDashboardSubtitle => 'Resumo operacional e KPIs';
@@ -27,13 +27,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavSettingsSubtitle => 'Conta e preferencias';
 
   @override
-  String get userPermissionViewDashboard => 'Dashboard principal';
+  String get userPermissionViewDashboard => 'Visao geral';
 
   @override
   String get userPermissionManageAgents => 'Gestao de agentes';
 
   @override
-  String get dashboardPartialAgentQueriesTitle => 'Dados do painel incompletos';
+  String get dashboardPartialAgentQueriesTitle =>
+      'Dados da visao geral incompletos';
 
   @override
   String dashboardPartialAgentQueriesMessage(String agents) {
@@ -55,7 +56,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String dashboardSetupRequiredMessage(String agents) {
-    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestao de agentes para cadastrar o token e liberar a consulta do dashboard.';
+    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.';
   }
 
   @override
@@ -108,7 +109,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardHomeFiltersAgentsEmptyHint =>
-      'Carregue o painel para listar os agentes.';
+      'Carregue a visao geral para listar os agentes.';
 
   @override
   String get dashboardHomeFiltersYearMonthLabel => 'ANO / MES';
@@ -129,6 +130,114 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get dashboardUserRankingSubtitle =>
       'Faturamento por operador no periodo.';
+
+  @override
+  String get overviewDefaultGreetingName => 'Gestor';
+
+  @override
+  String overviewGreetingEyebrow(String name) {
+    return 'Ola, $name';
+  }
+
+  @override
+  String get overviewHomeSubtitle =>
+      'Resumo consolidado dos agentes aprovados (todas as filiais conectadas).';
+
+  @override
+  String get overviewLoadErrorTitle =>
+      'Nao foi possivel carregar a visao geral';
+
+  @override
+  String get overviewStaleCacheTitle => 'Dados salvos neste aparelho';
+
+  @override
+  String get overviewStaleCacheMessage =>
+      'Nao foi possivel atualizar agora. Os numeros abaixo refletem o ultimo resumo obtido com sucesso.';
+
+  @override
+  String get overviewLoadingPaymentKpisSemantics =>
+      'Carregando indicadores de pagamento…';
+
+  @override
+  String get overviewLoadingPaymentMixSemantics =>
+      'Carregando mix de formas de pagamento…';
+
+  @override
+  String get overviewLoadingPaymentBarSemantics =>
+      'Carregando faturamento por forma de pagamento…';
+
+  @override
+  String get overviewLoadingRankingsSemantics => 'Carregando rankings…';
+
+  @override
+  String get overviewKpiTotalRevenue => 'Faturamento total';
+
+  @override
+  String get overviewKpiSales => 'Vendas';
+
+  @override
+  String get overviewKpiAvgTicket => 'Ticket medio';
+
+  @override
+  String get overviewKpiPaymentMethodCount => 'Formas de pagamento';
+
+  @override
+  String get overviewPaymentMixTitle => 'Mix por forma de pagamento';
+
+  @override
+  String get overviewPaymentMixSubtitle =>
+      'Participacao percentual no faturamento do periodo.';
+
+  @override
+  String get overviewPaymentMixDonutTotalLabel => 'TOTAL';
+
+  @override
+  String get overviewPaymentBarTitle => 'Faturamento por forma de pagamento';
+
+  @override
+  String get overviewPaymentBarSubtitle => 'Valor total acumulado no periodo.';
+
+  @override
+  String overviewPaymentBarTooltip(String label, String amount) {
+    return '$label: $amount';
+  }
+
+  @override
+  String overviewSemanticsPaymentMethodRow(String label) {
+    return 'Forma de pagamento $label';
+  }
+
+  @override
+  String overviewSemanticsRevenue(String amount) {
+    return 'Faturamento $amount';
+  }
+
+  @override
+  String overviewSemanticsSalesCount(String count) {
+    return 'Vendas $count';
+  }
+
+  @override
+  String overviewSemanticsAvgTicket(String amount) {
+    return 'Ticket medio $amount';
+  }
+
+  @override
+  String overviewSemanticsSharePercent(String value) {
+    return '$value por cento';
+  }
+
+  @override
+  String get overviewNoApprovedAgentsUserMessage =>
+      'Nenhum agente aprovado esta disponivel para carregar a visao geral.';
+
+  @override
+  String get overviewLoadFailedUserMessage =>
+      'Nao foi possivel carregar a visao geral.';
+
+  @override
+  String get overviewSaveClientTokenForAgentUserMessage =>
+      'Cadastre o token do cliente para este agente para consultar dados.';
 
   @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';
@@ -556,7 +665,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailSectionLocalTokenSubtitle =>
-      'Usado apenas neste dispositivo para consultas SQL (por exemplo no dashboard). Nunca enviado aos servidores Colmeia.';
+      'Usado apenas neste dispositivo para consultas SQL (por exemplo na visao geral). Nunca enviado aos servidores Colmeia.';
 
   @override
   String get clientAgentDetailLocalTokenSave => 'Salvar token';
@@ -909,7 +1018,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   AppLocalizationsPtBr() : super('pt_BR');
 
   @override
-  String get shellNavDashboardLabel => 'Painel';
+  String get shellNavDashboardLabel => 'Visao geral';
 
   @override
   String get shellNavDashboardSubtitle => 'Resumo operacional e KPIs';
@@ -927,13 +1036,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get shellNavSettingsSubtitle => 'Conta e preferencias';
 
   @override
-  String get userPermissionViewDashboard => 'Dashboard principal';
+  String get userPermissionViewDashboard => 'Visao geral';
 
   @override
   String get userPermissionManageAgents => 'Gestao de agentes';
 
   @override
-  String get dashboardPartialAgentQueriesTitle => 'Dados do painel incompletos';
+  String get dashboardPartialAgentQueriesTitle =>
+      'Dados da visao geral incompletos';
 
   @override
   String dashboardPartialAgentQueriesMessage(String agents) {
@@ -955,7 +1065,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String dashboardSetupRequiredMessage(String agents) {
-    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestao de agentes para cadastrar o token e liberar a consulta do dashboard.';
+    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.';
   }
 
   @override
@@ -1008,7 +1118,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardHomeFiltersAgentsEmptyHint =>
-      'Carregue o painel para listar os agentes.';
+      'Carregue a visao geral para listar os agentes.';
 
   @override
   String get dashboardHomeFiltersYearMonthLabel => 'ANO / MES';
@@ -1029,6 +1139,114 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get dashboardUserRankingSubtitle =>
       'Faturamento por operador no periodo.';
+
+  @override
+  String get overviewDefaultGreetingName => 'Gestor';
+
+  @override
+  String overviewGreetingEyebrow(String name) {
+    return 'Ola, $name';
+  }
+
+  @override
+  String get overviewHomeSubtitle =>
+      'Resumo consolidado dos agentes aprovados (todas as filiais conectadas).';
+
+  @override
+  String get overviewLoadErrorTitle =>
+      'Nao foi possivel carregar a visao geral';
+
+  @override
+  String get overviewStaleCacheTitle => 'Dados salvos neste aparelho';
+
+  @override
+  String get overviewStaleCacheMessage =>
+      'Nao foi possivel atualizar agora. Os numeros abaixo refletem o ultimo resumo obtido com sucesso.';
+
+  @override
+  String get overviewLoadingPaymentKpisSemantics =>
+      'Carregando indicadores de pagamento…';
+
+  @override
+  String get overviewLoadingPaymentMixSemantics =>
+      'Carregando mix de formas de pagamento…';
+
+  @override
+  String get overviewLoadingPaymentBarSemantics =>
+      'Carregando faturamento por forma de pagamento…';
+
+  @override
+  String get overviewLoadingRankingsSemantics => 'Carregando rankings…';
+
+  @override
+  String get overviewKpiTotalRevenue => 'Faturamento total';
+
+  @override
+  String get overviewKpiSales => 'Vendas';
+
+  @override
+  String get overviewKpiAvgTicket => 'Ticket medio';
+
+  @override
+  String get overviewKpiPaymentMethodCount => 'Formas de pagamento';
+
+  @override
+  String get overviewPaymentMixTitle => 'Mix por forma de pagamento';
+
+  @override
+  String get overviewPaymentMixSubtitle =>
+      'Participacao percentual no faturamento do periodo.';
+
+  @override
+  String get overviewPaymentMixDonutTotalLabel => 'TOTAL';
+
+  @override
+  String get overviewPaymentBarTitle => 'Faturamento por forma de pagamento';
+
+  @override
+  String get overviewPaymentBarSubtitle => 'Valor total acumulado no periodo.';
+
+  @override
+  String overviewPaymentBarTooltip(String label, String amount) {
+    return '$label: $amount';
+  }
+
+  @override
+  String overviewSemanticsPaymentMethodRow(String label) {
+    return 'Forma de pagamento $label';
+  }
+
+  @override
+  String overviewSemanticsRevenue(String amount) {
+    return 'Faturamento $amount';
+  }
+
+  @override
+  String overviewSemanticsSalesCount(String count) {
+    return 'Vendas $count';
+  }
+
+  @override
+  String overviewSemanticsAvgTicket(String amount) {
+    return 'Ticket medio $amount';
+  }
+
+  @override
+  String overviewSemanticsSharePercent(String value) {
+    return '$value por cento';
+  }
+
+  @override
+  String get overviewNoApprovedAgentsUserMessage =>
+      'Nenhum agente aprovado esta disponivel para carregar a visao geral.';
+
+  @override
+  String get overviewLoadFailedUserMessage =>
+      'Nao foi possivel carregar a visao geral.';
+
+  @override
+  String get overviewSaveClientTokenForAgentUserMessage =>
+      'Cadastre o token do cliente para este agente para consultar dados.';
 
   @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';
@@ -1456,7 +1674,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailSectionLocalTokenSubtitle =>
-      'Usado apenas neste dispositivo para consultas SQL (por exemplo no dashboard). Nunca enviado aos servidores Colmeia.';
+      'Usado apenas neste dispositivo para consultas SQL (por exemplo na visao geral). Nunca enviado aos servidores Colmeia.';
 
   @override
   String get clientAgentDetailLocalTokenSave => 'Salvar token';

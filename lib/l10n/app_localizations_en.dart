@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get shellNavDashboardLabel => 'Dashboard';
+  String get shellNavDashboardLabel => 'Overview';
 
   @override
   String get shellNavDashboardSubtitle => 'Operational summary and KPIs';
@@ -27,13 +27,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shellNavSettingsSubtitle => 'Account and preferences';
 
   @override
-  String get userPermissionViewDashboard => 'Main dashboard';
+  String get userPermissionViewDashboard => 'Overview';
 
   @override
   String get userPermissionManageAgents => 'Agent management';
 
   @override
-  String get dashboardPartialAgentQueriesTitle => 'Incomplete dashboard data';
+  String get dashboardPartialAgentQueriesTitle => 'Incomplete overview data';
 
   @override
   String dashboardPartialAgentQueriesMessage(String agents) {
@@ -55,7 +55,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dashboardSetupRequiredMessage(String agents) {
-    return 'None of the approved agents has a client token saved on this device ($agents). Open agent management to save the token and enable dashboard queries.';
+    return 'None of the approved agents has a client token saved on this device ($agents). Open agent management to save the token and enable overview queries.';
   }
 
   @override
@@ -108,7 +108,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardHomeFiltersAgentsEmptyHint =>
-      'Load the dashboard to list agents.';
+      'Load the overview to list agents.';
 
   @override
   String get dashboardHomeFiltersYearMonthLabel => 'YEAR / MONTH';
@@ -129,6 +129,112 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dashboardUserRankingSubtitle =>
       'Revenue by operator in the period.';
+
+  @override
+  String get overviewDefaultGreetingName => 'Manager';
+
+  @override
+  String overviewGreetingEyebrow(String name) {
+    return 'Hello, $name';
+  }
+
+  @override
+  String get overviewHomeSubtitle =>
+      'Consolidated summary of approved agents (all connected branches).';
+
+  @override
+  String get overviewLoadErrorTitle => 'Unable to load the overview';
+
+  @override
+  String get overviewStaleCacheTitle => 'Data saved on this device';
+
+  @override
+  String get overviewStaleCacheMessage =>
+      'Could not refresh right now. The numbers below reflect the last summary fetched successfully.';
+
+  @override
+  String get overviewLoadingPaymentKpisSemantics => 'Loading payment KPIs…';
+
+  @override
+  String get overviewLoadingPaymentMixSemantics =>
+      'Loading payment method mix…';
+
+  @override
+  String get overviewLoadingPaymentBarSemantics =>
+      'Loading revenue by payment method…';
+
+  @override
+  String get overviewLoadingRankingsSemantics => 'Loading rankings…';
+
+  @override
+  String get overviewKpiTotalRevenue => 'Total revenue';
+
+  @override
+  String get overviewKpiSales => 'Sales';
+
+  @override
+  String get overviewKpiAvgTicket => 'Average ticket';
+
+  @override
+  String get overviewKpiPaymentMethodCount => 'Payment methods';
+
+  @override
+  String get overviewPaymentMixTitle => 'Mix by payment method';
+
+  @override
+  String get overviewPaymentMixSubtitle =>
+      'Percentage share of revenue in the period.';
+
+  @override
+  String get overviewPaymentMixDonutTotalLabel => 'TOTAL';
+
+  @override
+  String get overviewPaymentBarTitle => 'Revenue by payment method';
+
+  @override
+  String get overviewPaymentBarSubtitle =>
+      'Total amount accumulated in the period.';
+
+  @override
+  String overviewPaymentBarTooltip(String label, String amount) {
+    return '$label: $amount';
+  }
+
+  @override
+  String overviewSemanticsPaymentMethodRow(String label) {
+    return 'Payment method $label';
+  }
+
+  @override
+  String overviewSemanticsRevenue(String amount) {
+    return 'Revenue $amount';
+  }
+
+  @override
+  String overviewSemanticsSalesCount(String count) {
+    return 'Sales $count';
+  }
+
+  @override
+  String overviewSemanticsAvgTicket(String amount) {
+    return 'Average ticket $amount';
+  }
+
+  @override
+  String overviewSemanticsSharePercent(String value) {
+    return '$value percent';
+  }
+
+  @override
+  String get overviewNoApprovedAgentsUserMessage =>
+      'No approved agent is available to load the overview.';
+
+  @override
+  String get overviewLoadFailedUserMessage => 'Unable to load the overview.';
+
+  @override
+  String get overviewSaveClientTokenForAgentUserMessage =>
+      'Save this agent\'s client token to query their data.';
 
   @override
   String get clientAgentsDataSourcesEyebrow => 'Data sources';
@@ -549,7 +655,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentDetailSectionLocalTokenSubtitle =>
-      'Used only on this device for SQL queries (for example dashboard). Never sent to Colmeia servers.';
+      'Used only on this device for SQL queries (for example in the overview). Never sent to Colmeia servers.';
 
   @override
   String get clientAgentDetailLocalTokenSave => 'Save token';

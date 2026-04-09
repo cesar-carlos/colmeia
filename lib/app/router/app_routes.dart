@@ -24,12 +24,12 @@ enum AppRoute {
   ),
   dashboardStore(
     path: '/dashboard/store/:storeId',
-    title: 'Dashboard principal',
+    title: 'Visao geral',
     shellIndex: 0,
   ),
   dashboard(
     path: '/dashboard',
-    title: 'Dashboard principal',
+    title: 'Visao geral',
     shellIndex: 0,
   ),
   agents(
@@ -62,7 +62,7 @@ enum AppRoute {
     switch (this) {
       case AppRoute.dashboard:
       case AppRoute.dashboardStore:
-        return 'Painel';
+        return 'Visao geral';
       case AppRoute.settings:
         return 'Perfil';
       case AppRoute.agents:

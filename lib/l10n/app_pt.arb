@@ -1,14 +1,14 @@
 {
   "@@locale": "pt",
-  "shellNavDashboardLabel": "Painel",
+  "shellNavDashboardLabel": "Visao geral",
   "shellNavDashboardSubtitle": "Resumo operacional e KPIs",
   "shellNavAgentsLabel": "Agentes",
   "shellNavAgentsSubtitle": "Fontes de dados e acessos",
   "shellNavSettingsLabel": "Perfil",
   "shellNavSettingsSubtitle": "Conta e preferencias",
-  "userPermissionViewDashboard": "Dashboard principal",
+  "userPermissionViewDashboard": "Visao geral",
   "userPermissionManageAgents": "Gestao de agentes",
-  "dashboardPartialAgentQueriesTitle": "Dados do painel incompletos",
+  "dashboardPartialAgentQueriesTitle": "Dados da visao geral incompletos",
   "dashboardPartialAgentQueriesMessage": "Alguns agentes aprovados nao retornaram dados ({agents}). Os totais podem estar incompletos.",
   "@dashboardPartialAgentQueriesMessage": {
     "placeholders": {
@@ -23,7 +23,7 @@
     }
   },
   "dashboardSetupRequiredTitle": "Configuracao pendente para consultar dados",
-  "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ({agents}). Abra a gestao de agentes para cadastrar o token e liberar a consulta do dashboard.",
+  "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ({agents}). Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.",
   "@dashboardSetupRequiredMessage": {
     "placeholders": {
       "agents": {"type": "String"}
@@ -43,13 +43,77 @@
   "dashboardPaymentSummaryHeaderAvgTicket": "TICKET\nMEDIO",
   "dashboardPaymentSummaryLoadingSemantics": "Carregando resumo por forma de pagamento…",
   "dashboardHomeFiltersAgentsLabel": "AGENTES",
-  "dashboardHomeFiltersAgentsEmptyHint": "Carregue o painel para listar os agentes.",
+  "dashboardHomeFiltersAgentsEmptyHint": "Carregue a visao geral para listar os agentes.",
   "dashboardHomeFiltersYearMonthLabel": "ANO / MES",
   "dashboardHomeFiltersPeriodLast30Days": "Ultimos 30 dias",
   "dashboardAgentRankingTitle": "Ranking por agente",
   "dashboardAgentRankingSubtitle": "Faturamento total por agente no periodo.",
   "dashboardUserRankingTitle": "Ranking por operador",
   "dashboardUserRankingSubtitle": "Faturamento por operador no periodo.",
+  "overviewDefaultGreetingName": "Gestor",
+  "overviewGreetingEyebrow": "Ola, {name}",
+  "@overviewGreetingEyebrow": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "overviewHomeSubtitle": "Resumo consolidado dos agentes aprovados (todas as filiais conectadas).",
+  "overviewLoadErrorTitle": "Nao foi possivel carregar a visao geral",
+  "overviewStaleCacheTitle": "Dados salvos neste aparelho",
+  "overviewStaleCacheMessage": "Nao foi possivel atualizar agora. Os numeros abaixo refletem o ultimo resumo obtido com sucesso.",
+  "overviewLoadingPaymentKpisSemantics": "Carregando indicadores de pagamento…",
+  "overviewLoadingPaymentMixSemantics": "Carregando mix de formas de pagamento…",
+  "overviewLoadingPaymentBarSemantics": "Carregando faturamento por forma de pagamento…",
+  "overviewLoadingRankingsSemantics": "Carregando rankings…",
+  "overviewKpiTotalRevenue": "Faturamento total",
+  "overviewKpiSales": "Vendas",
+  "overviewKpiAvgTicket": "Ticket medio",
+  "overviewKpiPaymentMethodCount": "Formas de pagamento",
+  "overviewPaymentMixTitle": "Mix por forma de pagamento",
+  "overviewPaymentMixSubtitle": "Participacao percentual no faturamento do periodo.",
+  "overviewPaymentMixDonutTotalLabel": "TOTAL",
+  "overviewPaymentBarTitle": "Faturamento por forma de pagamento",
+  "overviewPaymentBarSubtitle": "Valor total acumulado no periodo.",
+  "overviewPaymentBarTooltip": "{label}: {amount}",
+  "@overviewPaymentBarTooltip": {
+    "placeholders": {
+      "label": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
+  "@overviewSemanticsPaymentMethodRow": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "overviewSemanticsRevenue": "Faturamento {amount}",
+  "@overviewSemanticsRevenue": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "overviewSemanticsSalesCount": "Vendas {count}",
+  "@overviewSemanticsSalesCount": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "overviewSemanticsAvgTicket": "Ticket medio {amount}",
+  "@overviewSemanticsAvgTicket": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "overviewSemanticsSharePercent": "{value} por cento",
+  "@overviewSemanticsSharePercent": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "overviewNoApprovedAgentsUserMessage": "Nenhum agente aprovado esta disponivel para carregar a visao geral.",
+  "overviewLoadFailedUserMessage": "Nao foi possivel carregar a visao geral.",
+  "overviewSaveClientTokenForAgentUserMessage": "Cadastre o token do cliente para este agente para consultar dados.",
   "clientAgentsDataSourcesEyebrow": "Fontes de dados",
   "clientAgentsPageTitle": "Gestao de agentes",
   "clientAgentsPageSubtitle": "Acompanhe seus agentes aprovados, solicite novos acessos e consulte o andamento das solicitacoes.",
@@ -162,7 +226,7 @@
   "clientAgentDetailSectionNotes": "Anotacoes",
   "clientAgentDetailSectionRecord": "Registro",
   "clientAgentDetailSectionLocalToken": "Client token local",
-  "clientAgentDetailSectionLocalTokenSubtitle": "Usado apenas neste dispositivo para consultas SQL (por exemplo no dashboard). Nunca enviado aos servidores Colmeia.",
+  "clientAgentDetailSectionLocalTokenSubtitle": "Usado apenas neste dispositivo para consultas SQL (por exemplo na visao geral). Nunca enviado aos servidores Colmeia.",
   "clientAgentDetailLocalTokenSave": "Salvar token",
   "clientAgentDetailLocalTokenRemove": "Remover token",
   "clientAgentDetailLocalTokenSaved": "Token salvo neste dispositivo.",

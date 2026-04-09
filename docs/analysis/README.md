@@ -230,7 +230,7 @@ Se a pergunta for sobre roadmap:
 ## Referencias de codigo uteis
 
 - `lib/features/client_agents/`
-- `lib/features/dashboards/`
+- `lib/features/overview/`
 - `lib/shared/widgets/reports/`
 - `lib/core/network/app_dio_client.dart`
 - `lib/core/network/auth_interceptor.dart`

@@ -1,14 +1,14 @@
 {
   "@@locale": "en",
-  "shellNavDashboardLabel": "Dashboard",
+  "shellNavDashboardLabel": "Overview",
   "shellNavDashboardSubtitle": "Operational summary and KPIs",
   "shellNavAgentsLabel": "Agents",
   "shellNavAgentsSubtitle": "Data sources and access",
   "shellNavSettingsLabel": "Profile",
   "shellNavSettingsSubtitle": "Account and preferences",
-  "userPermissionViewDashboard": "Main dashboard",
+  "userPermissionViewDashboard": "Overview",
   "userPermissionManageAgents": "Agent management",
-  "dashboardPartialAgentQueriesTitle": "Incomplete dashboard data",
+  "dashboardPartialAgentQueriesTitle": "Incomplete overview data",
   "dashboardPartialAgentQueriesMessage": "Some approved agents did not return data ({agents}). Totals may be incomplete.",
   "@dashboardPartialAgentQueriesMessage": {
     "placeholders": {
@@ -23,7 +23,7 @@
     }
   },
   "dashboardSetupRequiredTitle": "Setup required before loading data",
-  "dashboardSetupRequiredMessage": "None of the approved agents has a client token saved on this device ({agents}). Open agent management to save the token and enable dashboard queries.",
+  "dashboardSetupRequiredMessage": "None of the approved agents has a client token saved on this device ({agents}). Open agent management to save the token and enable overview queries.",
   "@dashboardSetupRequiredMessage": {
     "placeholders": {
       "agents": {"type": "String"}
@@ -43,13 +43,77 @@
   "dashboardPaymentSummaryHeaderAvgTicket": "AVG.\nTICKET",
   "dashboardPaymentSummaryLoadingSemantics": "Loading payment method summary…",
   "dashboardHomeFiltersAgentsLabel": "Agents",
-  "dashboardHomeFiltersAgentsEmptyHint": "Load the dashboard to list agents.",
+  "dashboardHomeFiltersAgentsEmptyHint": "Load the overview to list agents.",
   "dashboardHomeFiltersYearMonthLabel": "YEAR / MONTH",
   "dashboardHomeFiltersPeriodLast30Days": "Last 30 days",
   "dashboardAgentRankingTitle": "Ranking by agent",
   "dashboardAgentRankingSubtitle": "Total revenue by agent in the period.",
   "dashboardUserRankingTitle": "Ranking by operator",
   "dashboardUserRankingSubtitle": "Revenue by operator in the period.",
+  "overviewDefaultGreetingName": "Manager",
+  "overviewGreetingEyebrow": "Hello, {name}",
+  "@overviewGreetingEyebrow": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "overviewHomeSubtitle": "Consolidated summary of approved agents (all connected branches).",
+  "overviewLoadErrorTitle": "Unable to load the overview",
+  "overviewStaleCacheTitle": "Data saved on this device",
+  "overviewStaleCacheMessage": "Could not refresh right now. The numbers below reflect the last summary fetched successfully.",
+  "overviewLoadingPaymentKpisSemantics": "Loading payment KPIs…",
+  "overviewLoadingPaymentMixSemantics": "Loading payment method mix…",
+  "overviewLoadingPaymentBarSemantics": "Loading revenue by payment method…",
+  "overviewLoadingRankingsSemantics": "Loading rankings…",
+  "overviewKpiTotalRevenue": "Total revenue",
+  "overviewKpiSales": "Sales",
+  "overviewKpiAvgTicket": "Average ticket",
+  "overviewKpiPaymentMethodCount": "Payment methods",
+  "overviewPaymentMixTitle": "Mix by payment method",
+  "overviewPaymentMixSubtitle": "Percentage share of revenue in the period.",
+  "overviewPaymentMixDonutTotalLabel": "TOTAL",
+  "overviewPaymentBarTitle": "Revenue by payment method",
+  "overviewPaymentBarSubtitle": "Total amount accumulated in the period.",
+  "overviewPaymentBarTooltip": "{label}: {amount}",
+  "@overviewPaymentBarTooltip": {
+    "placeholders": {
+      "label": {"type": "String"},
+      "amount": {"type": "String"}
+    }
+  },
+  "overviewSemanticsPaymentMethodRow": "Payment method {label}",
+  "@overviewSemanticsPaymentMethodRow": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "overviewSemanticsRevenue": "Revenue {amount}",
+  "@overviewSemanticsRevenue": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "overviewSemanticsSalesCount": "Sales {count}",
+  "@overviewSemanticsSalesCount": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "overviewSemanticsAvgTicket": "Average ticket {amount}",
+  "@overviewSemanticsAvgTicket": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "overviewSemanticsSharePercent": "{value} percent",
+  "@overviewSemanticsSharePercent": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "overviewNoApprovedAgentsUserMessage": "No approved agent is available to load the overview.",
+  "overviewLoadFailedUserMessage": "Unable to load the overview.",
+  "overviewSaveClientTokenForAgentUserMessage": "Save this agent's client token to query their data.",
   "clientAgentsDataSourcesEyebrow": "Data sources",
   "clientAgentsPageTitle": "Agent management",
   "clientAgentsPageSubtitle": "Track your approved agents, request new access, and follow the status of your requests.",
@@ -278,7 +342,7 @@
   "clientAgentDetailSectionNotes": "Notes",
   "clientAgentDetailSectionRecord": "Record",
   "clientAgentDetailSectionLocalToken": "Local client token",
-  "clientAgentDetailSectionLocalTokenSubtitle": "Used only on this device for SQL queries (for example dashboard). Never sent to Colmeia servers.",
+  "clientAgentDetailSectionLocalTokenSubtitle": "Used only on this device for SQL queries (for example in the overview). Never sent to Colmeia servers.",
   "clientAgentDetailLocalTokenSave": "Save token",
   "clientAgentDetailLocalTokenRemove": "Remove token",
   "clientAgentDetailLocalTokenSaved": "Token saved on this device.",

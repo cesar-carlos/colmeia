@@ -61,7 +61,7 @@ void main() {
       check(scope.canAccessStore('03')).isTrue();
       check(scope.canAccessDashboard('dashboard_main')).isTrue();
       check(
-        scope.allowedDashboardFilterKeys('dashboard_main'),
+        scope.allowedOverviewFilterKeys('dashboard_main'),
       ).deepEquals(<String>{'store'});
     });
   });

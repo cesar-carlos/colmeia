@@ -33,7 +33,7 @@ class UserAccessScope {
     return dashboardGrants.any((grant) => grant.dashboardId == dashboardId);
   }
 
-  Set<String> allowedDashboardFilterKeys(String dashboardId) {
+  Set<String> allowedOverviewFilterKeys(String dashboardId) {
     final grant = dashboardGrants
         .where((entry) => entry.dashboardId == dashboardId)
         .firstOrNull;

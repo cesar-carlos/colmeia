@@ -10,8 +10,8 @@ import 'package:colmeia/features/client_agents/application/usecases/sync_pending
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
-import 'package:colmeia/features/dashboards/application/usecases/load_dashboard_overview_use_case.dart';
-import 'package:colmeia/features/dashboards/presentation/controllers/dashboard_controller.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
+import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/user_context/application/usecases/clear_active_store_use_case.dart';
 import 'package:colmeia/features/user_context/application/usecases/load_current_user_context_use_case.dart';
 import 'package:colmeia/features/user_context/application/usecases/persist_active_store_use_case.dart';
@@ -28,8 +28,8 @@ void registerInjectorPresentation(GetIt getIt) {
         clearActiveStoreUseCase: getIt<ClearActiveStoreUseCase>(),
       ),
     )
-    ..registerFactory<DashboardController>(
-      () => DashboardController(getIt<LoadDashboardOverviewUseCase>()),
+    ..registerFactory<OverviewController>(
+      () => OverviewController(getIt<LoadOverviewUseCase>()),
     )
     ..registerFactory<ClientAgentsController>(
       () => ClientAgentsController(

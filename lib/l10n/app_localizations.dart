@@ -102,7 +102,7 @@ abstract class AppLocalizations {
   /// No description provided for @shellNavDashboardLabel.
   ///
   /// In en, this message translates to:
-  /// **'Dashboard'**
+  /// **'Overview'**
   String get shellNavDashboardLabel;
 
   /// No description provided for @shellNavDashboardSubtitle.
@@ -138,7 +138,7 @@ abstract class AppLocalizations {
   /// No description provided for @userPermissionViewDashboard.
   ///
   /// In en, this message translates to:
-  /// **'Main dashboard'**
+  /// **'Overview'**
   String get userPermissionViewDashboard;
 
   /// No description provided for @userPermissionManageAgents.
@@ -150,7 +150,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardPartialAgentQueriesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Incomplete dashboard data'**
+  /// **'Incomplete overview data'**
   String get dashboardPartialAgentQueriesTitle;
 
   /// No description provided for @dashboardPartialAgentQueriesMessage.
@@ -180,7 +180,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardSetupRequiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'None of the approved agents has a client token saved on this device ({agents}). Open agent management to save the token and enable dashboard queries.'**
+  /// **'None of the approved agents has a client token saved on this device ({agents}). Open agent management to save the token and enable overview queries.'**
   String dashboardSetupRequiredMessage(String agents);
 
   /// No description provided for @dashboardMultiAgentAggregationTitle.
@@ -270,7 +270,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardHomeFiltersAgentsEmptyHint.
   ///
   /// In en, this message translates to:
-  /// **'Load the dashboard to list agents.'**
+  /// **'Load the overview to list agents.'**
   String get dashboardHomeFiltersAgentsEmptyHint;
 
   /// No description provided for @dashboardHomeFiltersYearMonthLabel.
@@ -308,6 +308,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Revenue by operator in the period.'**
   String get dashboardUserRankingSubtitle;
+
+  /// No description provided for @overviewDefaultGreetingName.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get overviewDefaultGreetingName;
+
+  /// No description provided for @overviewGreetingEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello, {name}'**
+  String overviewGreetingEyebrow(String name);
+
+  /// No description provided for @overviewHomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Consolidated summary of approved agents (all connected branches).'**
+  String get overviewHomeSubtitle;
+
+  /// No description provided for @overviewLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load the overview'**
+  String get overviewLoadErrorTitle;
+
+  /// No description provided for @overviewStaleCacheTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data saved on this device'**
+  String get overviewStaleCacheTitle;
+
+  /// No description provided for @overviewStaleCacheMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not refresh right now. The numbers below reflect the last summary fetched successfully.'**
+  String get overviewStaleCacheMessage;
+
+  /// No description provided for @overviewLoadingPaymentKpisSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading payment KPIs…'**
+  String get overviewLoadingPaymentKpisSemantics;
+
+  /// No description provided for @overviewLoadingPaymentMixSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading payment method mix…'**
+  String get overviewLoadingPaymentMixSemantics;
+
+  /// No description provided for @overviewLoadingPaymentBarSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading revenue by payment method…'**
+  String get overviewLoadingPaymentBarSemantics;
+
+  /// No description provided for @overviewLoadingRankingsSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading rankings…'**
+  String get overviewLoadingRankingsSemantics;
+
+  /// No description provided for @overviewKpiTotalRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Total revenue'**
+  String get overviewKpiTotalRevenue;
+
+  /// No description provided for @overviewKpiSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get overviewKpiSales;
+
+  /// No description provided for @overviewKpiAvgTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Average ticket'**
+  String get overviewKpiAvgTicket;
+
+  /// No description provided for @overviewKpiPaymentMethodCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment methods'**
+  String get overviewKpiPaymentMethodCount;
+
+  /// No description provided for @overviewPaymentMixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mix by payment method'**
+  String get overviewPaymentMixTitle;
+
+  /// No description provided for @overviewPaymentMixSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Percentage share of revenue in the period.'**
+  String get overviewPaymentMixSubtitle;
+
+  /// No description provided for @overviewPaymentMixDonutTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL'**
+  String get overviewPaymentMixDonutTotalLabel;
+
+  /// No description provided for @overviewPaymentBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue by payment method'**
+  String get overviewPaymentBarTitle;
+
+  /// No description provided for @overviewPaymentBarSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Total amount accumulated in the period.'**
+  String get overviewPaymentBarSubtitle;
+
+  /// No description provided for @overviewPaymentBarTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {amount}'**
+  String overviewPaymentBarTooltip(String label, String amount);
+
+  /// No description provided for @overviewSemanticsPaymentMethodRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method {label}'**
+  String overviewSemanticsPaymentMethodRow(String label);
+
+  /// No description provided for @overviewSemanticsRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue {amount}'**
+  String overviewSemanticsRevenue(String amount);
+
+  /// No description provided for @overviewSemanticsSalesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales {count}'**
+  String overviewSemanticsSalesCount(String count);
+
+  /// No description provided for @overviewSemanticsAvgTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'Average ticket {amount}'**
+  String overviewSemanticsAvgTicket(String amount);
+
+  /// No description provided for @overviewSemanticsSharePercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} percent'**
+  String overviewSemanticsSharePercent(String value);
+
+  /// No description provided for @overviewNoApprovedAgentsUserMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No approved agent is available to load the overview.'**
+  String get overviewNoApprovedAgentsUserMessage;
+
+  /// No description provided for @overviewLoadFailedUserMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load the overview.'**
+  String get overviewLoadFailedUserMessage;
+
+  /// No description provided for @overviewSaveClientTokenForAgentUserMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Save this agent\'s client token to query their data.'**
+  String get overviewSaveClientTokenForAgentUserMessage;
 
   /// No description provided for @clientAgentsDataSourcesEyebrow.
   ///
@@ -984,7 +1152,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentDetailSectionLocalTokenSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Used only on this device for SQL queries (for example dashboard). Never sent to Colmeia servers.'**
+  /// **'Used only on this device for SQL queries (for example in the overview). Never sent to Colmeia servers.'**
   String get clientAgentDetailSectionLocalTokenSubtitle;
 
   /// No description provided for @clientAgentDetailLocalTokenSave.

@@ -37,7 +37,7 @@ class CurrentUserScope {
     return access.canAccessDashboard(dashboardId);
   }
 
-  Set<String> allowedDashboardFilterKeys(String dashboardId) {
-    return access.allowedDashboardFilterKeys(dashboardId);
+  Set<String> allowedOverviewFilterKeys(String dashboardId) {
+    return access.allowedOverviewFilterKeys(dashboardId);
   }
 }

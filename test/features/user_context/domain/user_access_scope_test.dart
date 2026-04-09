@@ -24,7 +24,7 @@ void main() {
       check(access.hasAnyDashboardAccess()).isTrue();
       check(access.canAccessDashboard('dashboard_main')).isTrue();
       check(access.canAccessStore('03')).isTrue();
-      check(access.allowedDashboardFilterKeys('dashboard_main')).deepEquals(
+      check(access.allowedOverviewFilterKeys('dashboard_main')).deepEquals(
         <String>{'store', 'referenceDate'},
       );
     });
@@ -39,7 +39,7 @@ void main() {
 
       check(access.hasAnyDashboardAccess()).isTrue();
       check(access.canAccessDashboard('any-dashboard')).isTrue();
-      check(access.allowedDashboardFilterKeys('any-dashboard')).isEmpty();
+      check(access.allowedOverviewFilterKeys('any-dashboard')).isEmpty();
     });
   });
 }

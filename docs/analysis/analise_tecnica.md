@@ -183,7 +183,7 @@ As inconsistencias mais relevantes entre o levantamento tecnico inicial e o proj
 - `lib/core/network/auth_interceptor.dart`
 - `lib/core/cache/app_cache_store.dart`
 - `lib/core/cache/hive_app_cache_store.dart`
-- `lib/features/dashboards/`
+- `lib/features/overview/`
 - `lib/features/client_agents/`
 
 ## O que continua valido sem ressalvas

@@ -162,8 +162,8 @@ class CurrentUserContextController extends ChangeNotifier {
     return _userScope.canAccessDashboard(dashboardId);
   }
 
-  Set<String> allowedDashboardFilterKeys(String dashboardId) {
-    return _userScope.allowedDashboardFilterKeys(dashboardId);
+  Set<String> allowedOverviewFilterKeys(String dashboardId) {
+    return _userScope.allowedOverviewFilterKeys(dashboardId);
   }
 
   List<AppRoute> get availableShellRoutes {
