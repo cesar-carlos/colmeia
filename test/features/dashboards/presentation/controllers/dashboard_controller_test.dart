@@ -4,7 +4,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/dashboards/application/usecases/load_dashboard_overview_use_case.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_agent_ranking.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
@@ -238,10 +238,10 @@ DashboardOverview _overview(String paymentMethodCode) {
         sharePercent: 100,
       ),
     ],
-    filialRankings: const <DashboardFilialRanking>[
-      DashboardFilialRanking(
-        codEmpresa: 1,
-        codFilial: 1,
+    agentRankings: const <DashboardAgentRanking>[
+      DashboardAgentRanking(
+        agentId: 'a1',
+        displayName: 'Agente 1',
         totalSalesCount: 100,
         totalAmount: 9000,
       ),

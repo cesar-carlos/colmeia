@@ -1,4 +1,4 @@
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_agent_ranking.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_user_ranking.dart';
@@ -9,7 +9,7 @@ class DashboardOverview {
     required this.periodEnd,
     required this.kpis,
     required this.paymentMethods,
-    required this.filialRankings,
+    required this.agentRankings,
     required this.userRankings,
     this.isStaleCache = false,
     this.approvedAgentCount = 0,
@@ -23,7 +23,7 @@ class DashboardOverview {
   final DateTime periodEnd;
   final DashboardPaymentKpis kpis;
   final List<DashboardPaymentMethodBreakdown> paymentMethods;
-  final List<DashboardFilialRanking> filialRankings;
+  final List<DashboardAgentRanking> agentRankings;
   final List<DashboardUserRanking> userRankings;
 
   /// True when recovered from local cache after a remote error.
@@ -71,7 +71,7 @@ class DashboardOverview {
     DateTime? periodEnd,
     DashboardPaymentKpis? kpis,
     List<DashboardPaymentMethodBreakdown>? paymentMethods,
-    List<DashboardFilialRanking>? filialRankings,
+    List<DashboardAgentRanking>? agentRankings,
     List<DashboardUserRanking>? userRankings,
     bool? isStaleCache,
     int? approvedAgentCount,
@@ -85,7 +85,7 @@ class DashboardOverview {
       periodEnd: periodEnd ?? this.periodEnd,
       kpis: kpis ?? this.kpis,
       paymentMethods: paymentMethods ?? this.paymentMethods,
-      filialRankings: filialRankings ?? this.filialRankings,
+      agentRankings: agentRankings ?? this.agentRankings,
       userRankings: userRankings ?? this.userRankings,
       isStaleCache: isStaleCache ?? this.isStaleCache,
       approvedAgentCount: approvedAgentCount ?? this.approvedAgentCount,

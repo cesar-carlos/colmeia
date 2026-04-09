@@ -66,6 +66,71 @@ class AppLocalizationsPt extends AppLocalizations {
       'Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
 
   @override
+  String get dashboardPaymentSummaryTitle => 'Resumo por forma de pagamento';
+
+  @override
+  String get dashboardPaymentSummarySubtitle =>
+      'Detalhamento de vendas, ticket medio e participacao.';
+
+  @override
+  String get dashboardPaymentSummaryEmptyTitle => 'Sem formas de pagamento';
+
+  @override
+  String get dashboardPaymentSummaryEmptyMessage =>
+      'Nao ha linhas de forma de pagamento para este periodo.';
+
+  @override
+  String get dashboardPaymentSummaryHeaderRevenueAbbr => 'FATURAM.';
+
+  @override
+  String get dashboardPaymentSummaryTooltipRevenueAbbr =>
+      'Faturamento no periodo selecionado';
+
+  @override
+  String get dashboardPaymentSummaryHeaderParticipationAbbr => 'PARTIC.';
+
+  @override
+  String get dashboardPaymentSummaryTooltipParticipationAbbr =>
+      'Participacao percentual no faturamento total';
+
+  @override
+  String get dashboardPaymentSummaryHeaderSales => 'VENDAS';
+
+  @override
+  String get dashboardPaymentSummaryHeaderAvgTicket => 'TICKET\nMEDIO';
+
+  @override
+  String get dashboardPaymentSummaryLoadingSemantics =>
+      'Carregando resumo por forma de pagamento…';
+
+  @override
+  String get dashboardHomeFiltersAgentsLabel => 'AGENTES';
+
+  @override
+  String get dashboardHomeFiltersAgentsEmptyHint =>
+      'Carregue o painel para listar os agentes.';
+
+  @override
+  String get dashboardHomeFiltersYearMonthLabel => 'ANO / MES';
+
+  @override
+  String get dashboardHomeFiltersPeriodLast30Days => 'Ultimos 30 dias';
+
+  @override
+  String get dashboardAgentRankingTitle => 'Ranking por agente';
+
+  @override
+  String get dashboardAgentRankingSubtitle =>
+      'Faturamento total por agente no periodo.';
+
+  @override
+  String get dashboardUserRankingTitle => 'Ranking por operador';
+
+  @override
+  String get dashboardUserRankingSubtitle =>
+      'Faturamento por operador no periodo.';
+
+  @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';
 
   @override
@@ -899,6 +964,71 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get dashboardMultiAgentAggregationMessage =>
       'Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
+
+  @override
+  String get dashboardPaymentSummaryTitle => 'Resumo por forma de pagamento';
+
+  @override
+  String get dashboardPaymentSummarySubtitle =>
+      'Detalhamento de vendas, ticket medio e participacao.';
+
+  @override
+  String get dashboardPaymentSummaryEmptyTitle => 'Sem formas de pagamento';
+
+  @override
+  String get dashboardPaymentSummaryEmptyMessage =>
+      'Nao ha linhas de forma de pagamento para este periodo.';
+
+  @override
+  String get dashboardPaymentSummaryHeaderRevenueAbbr => 'FATURAM.';
+
+  @override
+  String get dashboardPaymentSummaryTooltipRevenueAbbr =>
+      'Faturamento no periodo selecionado';
+
+  @override
+  String get dashboardPaymentSummaryHeaderParticipationAbbr => 'PARTIC.';
+
+  @override
+  String get dashboardPaymentSummaryTooltipParticipationAbbr =>
+      'Participacao percentual no faturamento total';
+
+  @override
+  String get dashboardPaymentSummaryHeaderSales => 'VENDAS';
+
+  @override
+  String get dashboardPaymentSummaryHeaderAvgTicket => 'TICKET\nMEDIO';
+
+  @override
+  String get dashboardPaymentSummaryLoadingSemantics =>
+      'Carregando resumo por forma de pagamento…';
+
+  @override
+  String get dashboardHomeFiltersAgentsLabel => 'AGENTES';
+
+  @override
+  String get dashboardHomeFiltersAgentsEmptyHint =>
+      'Carregue o painel para listar os agentes.';
+
+  @override
+  String get dashboardHomeFiltersYearMonthLabel => 'ANO / MES';
+
+  @override
+  String get dashboardHomeFiltersPeriodLast30Days => 'Ultimos 30 dias';
+
+  @override
+  String get dashboardAgentRankingTitle => 'Ranking por agente';
+
+  @override
+  String get dashboardAgentRankingSubtitle =>
+      'Faturamento total por agente no periodo.';
+
+  @override
+  String get dashboardUserRankingTitle => 'Ranking por operador';
+
+  @override
+  String get dashboardUserRankingSubtitle =>
+      'Faturamento por operador no periodo.';
 
   @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';

@@ -41,9 +41,7 @@ class DashboardYearMonth {
 
   @override
   bool operator ==(Object other) =>
-      other is DashboardYearMonth &&
-      other.year == year &&
-      other.month == month;
+      other is DashboardYearMonth && other.year == year && other.month == month;
 
   @override
   int get hashCode => Object.hash(year, month);
@@ -54,28 +52,29 @@ class DashboardYearMonth {
 
 /// Active filter state for the dashboard home screen.
 ///
-/// [selectedAgentId] — null means "all approved agents".
+/// [selectedAgentIds] — null means "all approved agents" (implicitly selected).
+/// When non-null, only these agent ids are queried and shown.
 /// [yearMonth] — null means "last 30 days" (default behaviour).
 @immutable
 class DashboardFilter {
-  const DashboardFilter({this.selectedAgentId, this.yearMonth});
+  const DashboardFilter({this.selectedAgentIds, this.yearMonth});
 
-  /// null = all agents
-  final String? selectedAgentId;
+  /// null = all agents. Non-null = restrict to this set (must be non-empty).
+  final Set<String>? selectedAgentIds;
 
   /// null = default rolling 30-day window
   final DashboardYearMonth? yearMonth;
 
-  bool get isDefault => selectedAgentId == null && yearMonth == null;
+  bool get isDefault => selectedAgentIds == null && yearMonth == null;
 
   DashboardFilter copyWith({
-    Object? selectedAgentId = _sentinel,
+    Object? selectedAgentIds = _sentinel,
     Object? yearMonth = _sentinel,
   }) {
     return DashboardFilter(
-      selectedAgentId: selectedAgentId == _sentinel
-          ? this.selectedAgentId
-          : selectedAgentId as String?,
+      selectedAgentIds: selectedAgentIds == _sentinel
+          ? this.selectedAgentIds
+          : selectedAgentIds as Set<String>?,
       yearMonth: yearMonth == _sentinel
           ? this.yearMonth
           : yearMonth as DashboardYearMonth?,
@@ -85,11 +84,36 @@ class DashboardFilter {
   @override
   bool operator ==(Object other) =>
       other is DashboardFilter &&
-      other.selectedAgentId == selectedAgentId &&
+      _setEquals(other.selectedAgentIds, selectedAgentIds) &&
       other.yearMonth == yearMonth;
 
   @override
-  int get hashCode => Object.hash(selectedAgentId, yearMonth);
+  int get hashCode {
+    final ids = selectedAgentIds;
+    if (ids == null) {
+      return Object.hash(yearMonth, 0);
+    }
+    final sorted = List<String>.from(ids)..sort();
+    return Object.hash(yearMonth, Object.hashAll(sorted));
+  }
+}
+
+bool _setEquals(Set<String>? a, Set<String>? b) {
+  if (identical(a, b)) {
+    return true;
+  }
+  if (a == null || b == null) {
+    return a == null && b == null;
+  }
+  if (a.length != b.length) {
+    return false;
+  }
+  for (final id in a) {
+    if (!b.contains(id)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // Sentinel to distinguish "not provided" from explicit null in copyWith.

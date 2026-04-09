@@ -66,6 +66,71 @@ class AppLocalizationsEn extends AppLocalizations {
       'This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.';
 
   @override
+  String get dashboardPaymentSummaryTitle => 'Summary by payment method';
+
+  @override
+  String get dashboardPaymentSummarySubtitle =>
+      'Sales, average ticket, and share of revenue by method.';
+
+  @override
+  String get dashboardPaymentSummaryEmptyTitle => 'No payment methods';
+
+  @override
+  String get dashboardPaymentSummaryEmptyMessage =>
+      'There is no payment method breakdown for this period.';
+
+  @override
+  String get dashboardPaymentSummaryHeaderRevenueAbbr => 'REV.';
+
+  @override
+  String get dashboardPaymentSummaryTooltipRevenueAbbr =>
+      'Revenue in the selected period';
+
+  @override
+  String get dashboardPaymentSummaryHeaderParticipationAbbr => 'SHARE';
+
+  @override
+  String get dashboardPaymentSummaryTooltipParticipationAbbr =>
+      'Share of total revenue (percent)';
+
+  @override
+  String get dashboardPaymentSummaryHeaderSales => 'SALES';
+
+  @override
+  String get dashboardPaymentSummaryHeaderAvgTicket => 'AVG.\nTICKET';
+
+  @override
+  String get dashboardPaymentSummaryLoadingSemantics =>
+      'Loading payment method summary…';
+
+  @override
+  String get dashboardHomeFiltersAgentsLabel => 'Agents';
+
+  @override
+  String get dashboardHomeFiltersAgentsEmptyHint =>
+      'Load the dashboard to list agents.';
+
+  @override
+  String get dashboardHomeFiltersYearMonthLabel => 'YEAR / MONTH';
+
+  @override
+  String get dashboardHomeFiltersPeriodLast30Days => 'Last 30 days';
+
+  @override
+  String get dashboardAgentRankingTitle => 'Ranking by agent';
+
+  @override
+  String get dashboardAgentRankingSubtitle =>
+      'Total revenue by agent in the period.';
+
+  @override
+  String get dashboardUserRankingTitle => 'Ranking by operator';
+
+  @override
+  String get dashboardUserRankingSubtitle =>
+      'Revenue by operator in the period.';
+
+  @override
   String get clientAgentsDataSourcesEyebrow => 'Data sources';
 
   @override

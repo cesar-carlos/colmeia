@@ -60,7 +60,7 @@ void main() {
           paymentMethodCount: 0,
         ),
         paymentMethods: const <DashboardPaymentMethodBreakdown>[],
-        filialRankings: const [],
+        agentRankings: const [],
         userRankings: const [],
       ),
     );
@@ -237,9 +237,11 @@ void main() {
         check(methods.last.code).equals('CRED');
         check(methods.last.totalAmount).equals(600);
 
-        final filiais = overview.filialRankings;
-        check(filiais.first.codFilial).equals(1);
-        check(filiais.first.totalAmount).equals(1500);
+        final agentRankings = overview.agentRankings;
+        check(agentRankings).length.equals(1);
+        check(agentRankings.first.agentId).equals('agent-42');
+        check(agentRankings.first.totalSalesCount).equals(23);
+        check(agentRankings.first.totalAmount).equals(1980);
 
         final users = overview.userRankings;
         check(users.first.userName).equals('Caixa 01');
@@ -1035,7 +1037,7 @@ DashboardOverviewModel _cachedModel() {
         sharePercent: 40,
       ),
     ],
-    filialRankings: const [],
+    agentRankings: const [],
     userRankings: const [],
   );
 }

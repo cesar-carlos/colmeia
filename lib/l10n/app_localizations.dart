@@ -195,6 +195,120 @@ abstract class AppLocalizations {
   /// **'This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.'**
   String get dashboardMultiAgentAggregationMessage;
 
+  /// No description provided for @dashboardPaymentSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary by payment method'**
+  String get dashboardPaymentSummaryTitle;
+
+  /// No description provided for @dashboardPaymentSummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales, average ticket, and share of revenue by method.'**
+  String get dashboardPaymentSummarySubtitle;
+
+  /// No description provided for @dashboardPaymentSummaryEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No payment methods'**
+  String get dashboardPaymentSummaryEmptyTitle;
+
+  /// No description provided for @dashboardPaymentSummaryEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no payment method breakdown for this period.'**
+  String get dashboardPaymentSummaryEmptyMessage;
+
+  /// No description provided for @dashboardPaymentSummaryHeaderRevenueAbbr.
+  ///
+  /// In en, this message translates to:
+  /// **'REV.'**
+  String get dashboardPaymentSummaryHeaderRevenueAbbr;
+
+  /// No description provided for @dashboardPaymentSummaryTooltipRevenueAbbr.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue in the selected period'**
+  String get dashboardPaymentSummaryTooltipRevenueAbbr;
+
+  /// No description provided for @dashboardPaymentSummaryHeaderParticipationAbbr.
+  ///
+  /// In en, this message translates to:
+  /// **'SHARE'**
+  String get dashboardPaymentSummaryHeaderParticipationAbbr;
+
+  /// No description provided for @dashboardPaymentSummaryTooltipParticipationAbbr.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of total revenue (percent)'**
+  String get dashboardPaymentSummaryTooltipParticipationAbbr;
+
+  /// No description provided for @dashboardPaymentSummaryHeaderSales.
+  ///
+  /// In en, this message translates to:
+  /// **'SALES'**
+  String get dashboardPaymentSummaryHeaderSales;
+
+  /// No description provided for @dashboardPaymentSummaryHeaderAvgTicket.
+  ///
+  /// In en, this message translates to:
+  /// **'AVG.\nTICKET'**
+  String get dashboardPaymentSummaryHeaderAvgTicket;
+
+  /// No description provided for @dashboardPaymentSummaryLoadingSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading payment method summary…'**
+  String get dashboardPaymentSummaryLoadingSemantics;
+
+  /// No description provided for @dashboardHomeFiltersAgentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents'**
+  String get dashboardHomeFiltersAgentsLabel;
+
+  /// No description provided for @dashboardHomeFiltersAgentsEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Load the dashboard to list agents.'**
+  String get dashboardHomeFiltersAgentsEmptyHint;
+
+  /// No description provided for @dashboardHomeFiltersYearMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'YEAR / MONTH'**
+  String get dashboardHomeFiltersYearMonthLabel;
+
+  /// No description provided for @dashboardHomeFiltersPeriodLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get dashboardHomeFiltersPeriodLast30Days;
+
+  /// No description provided for @dashboardAgentRankingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ranking by agent'**
+  String get dashboardAgentRankingTitle;
+
+  /// No description provided for @dashboardAgentRankingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Total revenue by agent in the period.'**
+  String get dashboardAgentRankingSubtitle;
+
+  /// No description provided for @dashboardUserRankingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ranking by operator'**
+  String get dashboardUserRankingTitle;
+
+  /// No description provided for @dashboardUserRankingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue by operator in the period.'**
+  String get dashboardUserRankingSubtitle;
+
   /// No description provided for @clientAgentsDataSourcesEyebrow.
   ///
   /// In en, this message translates to:

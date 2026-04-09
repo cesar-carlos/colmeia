@@ -7,7 +7,7 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_agent_ranking.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_filter.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
@@ -33,6 +33,7 @@ import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_summary_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class DashboardHomePage extends StatefulWidget {
@@ -54,7 +55,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
       paymentMethodCount: 0,
     ),
     paymentMethods: const <DashboardPaymentMethodBreakdown>[],
-    filialRankings: const <DashboardFilialRanking>[],
+    agentRankings: const <DashboardAgentRanking>[],
     userRankings: const <DashboardUserRanking>[],
   );
 
@@ -128,11 +129,9 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                       userContext.hasResolvedData;
                   final showSkeleton =
                       dashboardController.isLoadingInitial && overview == null;
-                  final shouldShowOverviewSections =
-                      showSkeleton || overview?.hasRows == true;
                   final displayOverview = showSkeleton
                       ? _neutralSkeletonOverview
-                      : (shouldShowOverviewSections ? overview : null);
+                      : overview;
 
                   final greetingName = _greetingFirstName(
                     userContext.userScope.name,
@@ -176,6 +175,7 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                           ),
                           SizedBox(height: tokens.gapMd),
                           _DashboardFilterBar(
+                            l10n: l10n,
                             filter: dashboardController.activeFilter,
                             availableAgents:
                                 dashboardController.availableAgents,
@@ -345,7 +345,8 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                               showDelay: const Duration(milliseconds: 120),
                               loadingSemanticsLabel: 'Carregando rankings...',
                               child: _RankingsSection(
-                                filialRankings: displayOverview.filialRankings,
+                                l10n: l10n,
+                                agentRankings: displayOverview.agentRankings,
                                 userRankings: displayOverview.userRankings,
                               ),
                             ),
@@ -354,9 +355,11 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                               enabled: showSkeleton,
                               showDelay: const Duration(milliseconds: 160),
                               loadingSemanticsLabel:
-                                  'Carregando tabela de formas de pagamento...',
+                                  l10n.dashboardPaymentSummaryLoadingSemantics,
                               child: _PaymentSummaryTable(
+                                l10n: l10n,
                                 methods: displayOverview.paymentMethods,
+                                showSkeleton: showSkeleton,
                               ),
                             ),
                           ],
@@ -421,16 +424,52 @@ class _DashboardAutoLoaderState extends State<_DashboardAutoLoader> {
 
 class _DashboardFilterBar extends StatelessWidget {
   const _DashboardFilterBar({
+    required this.l10n,
     required this.filter,
     required this.availableAgents,
     this.onFilterChanged,
   });
 
+  final AppLocalizations l10n;
   final DashboardFilter filter;
   final List<DashboardAgentOption> availableAgents;
   final ValueChanged<DashboardFilter>? onFilterChanged;
 
-  static const String _allAgentsValue = '__all__';
+  static bool _isAgentChecked(
+    DashboardFilter filter,
+    String agentId,
+    Set<String> allAgentIds,
+  ) {
+    final sel = filter.selectedAgentIds;
+    if (sel == null) {
+      return true;
+    }
+    return sel.contains(agentId);
+  }
+
+  static void _toggleAgentSelection({
+    required DashboardFilter filter,
+    required String agentId,
+    required List<DashboardAgentOption> availableAgents,
+    required ValueChanged<DashboardFilter> onFilterChanged,
+  }) {
+    final allIds = availableAgents.map((e) => e.agentId).toSet();
+    final current = filter.selectedAgentIds ?? allIds;
+    final next = Set<String>.from(current);
+    if (next.contains(agentId)) {
+      next.remove(agentId);
+    } else {
+      next.add(agentId);
+    }
+    if (next.isEmpty) {
+      return;
+    }
+    if (next.length == allIds.length && next.containsAll(allIds)) {
+      onFilterChanged(filter.copyWith(selectedAgentIds: null));
+    } else {
+      onFilterChanged(filter.copyWith(selectedAgentIds: next));
+    }
+  }
 
   // Generates the last 13 months (current + 12 previous) as options.
   static List<DashboardYearMonth> _buildMonthOptions() {
@@ -446,12 +485,10 @@ class _DashboardFilterBar extends StatelessWidget {
     });
   }
 
-  static String _monthLabel(DashboardYearMonth ym) {
-    const months = <String>[
-      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
-    ];
-    return '${months[ym.month - 1]} ${ym.year}';
+  static String _monthLabel(BuildContext context, DashboardYearMonth ym) {
+    final locale = Localizations.localeOf(context).toString();
+    final date = DateTime(ym.year, ym.month);
+    return DateFormat.yMMM(locale).format(date);
   }
 
   @override
@@ -474,34 +511,12 @@ class _DashboardFilterBar extends StatelessWidget {
       child: Text(text, style: labelStyle),
     );
 
-    // Agent dropdown
-    final agentValue =
-        filter.selectedAgentId ?? _allAgentsValue;
-    final agentItems = <DropdownMenuItem<String>>[
-      DropdownMenuItem<String>(
-        value: _allAgentsValue,
-        child: Text(
-          'Todos os agentes',
-          style: typography.body.copyWith(fontSize: 13),
-        ),
-      ),
-      for (final a in availableAgents)
-        DropdownMenuItem<String>(
-          value: a.agentId,
-          child: Text(
-            a.name,
-            overflow: TextOverflow.ellipsis,
-            style: typography.body.copyWith(fontSize: 13),
-          ),
-        ),
-    ];
-
     // Month dropdown
     final monthValue = filter.yearMonth;
     final monthItems = <DropdownMenuItem<DashboardYearMonth?>>[
       DropdownMenuItem<DashboardYearMonth?>(
         child: Text(
-          'Ultimos 30 dias',
+          l10n.dashboardHomeFiltersPeriodLast30Days,
           style: typography.body.copyWith(fontSize: 13),
         ),
       ),
@@ -509,7 +524,7 @@ class _DashboardFilterBar extends StatelessWidget {
         DropdownMenuItem<DashboardYearMonth?>(
           value: ym,
           child: Text(
-            _monthLabel(ym),
+            _monthLabel(context, ym),
             style: typography.body.copyWith(fontSize: 13),
           ),
         ),
@@ -542,6 +557,7 @@ class _DashboardFilterBar extends StatelessWidget {
     );
 
     final hasActiveFilter = !filter.isDefault;
+    final allAgentIds = availableAgents.map((e) => e.agentId).toSet();
 
     return AppSectionCard(
       color: cs.surfaceContainerLow,
@@ -561,11 +577,9 @@ class _DashboardFilterBar extends StatelessWidget {
               ),
               SizedBox(width: tokens.gapXs),
               Text(
-                'Filtros',
+                l10n.reportFiltersTitle,
                 style: typography.utilityOverline.copyWith(
-                  color: hasActiveFilter
-                      ? cs.primary
-                      : colors.onSurfaceVariant,
+                  color: hasActiveFilter ? cs.primary : colors.onSurfaceVariant,
                 ),
               ),
               if (hasActiveFilter) ...<Widget>[
@@ -575,7 +589,7 @@ class _DashboardFilterBar extends StatelessWidget {
                       ? null
                       : () => onFilterChanged!(const DashboardFilter()),
                   child: Text(
-                    'Limpar',
+                    l10n.reportFiltersClearAction,
                     style: typography.caption.copyWith(
                       color: cs.primary,
                       decoration: TextDecoration.underline,
@@ -595,25 +609,75 @@ class _DashboardFilterBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  buildLabel('AGENTE'),
-                  DropdownButtonFormField<String>(
-                    initialValue: agentValue,
-                    items: agentItems,
-                    isExpanded: true,
-                    decoration: inputDecoration,
-                    style: typography.body.copyWith(
-                      fontSize: 13,
-                      color: cs.onSurface,
-                    ),
-                    onChanged: isDisabled
-                        ? null
-                        : (v) => onFilterChanged!(
-                            filter.copyWith(
-                              selectedAgentId:
-                                  v == _allAgentsValue ? null : v,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: <Widget>[
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            l10n.dashboardHomeFiltersAgentsLabel,
+                            style: labelStyle,
+                          ),
+                        ),
+                      ),
+                      if (!isDisabled &&
+                          availableAgents.isNotEmpty &&
+                          filter.selectedAgentIds != null)
+                        TextButton(
+                          onPressed: () => onFilterChanged!(
+                            filter.copyWith(selectedAgentIds: null),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            l10n.reportInlineFiltersAllOption,
+                            style: typography.caption.copyWith(
+                              color: cs.primary,
                             ),
                           ),
+                        ),
+                    ],
                   ),
+                  if (availableAgents.isEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top: tokens.gapXs),
+                      child: Text(
+                        l10n.dashboardHomeFiltersAgentsEmptyHint,
+                        style: typography.caption.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  else
+                    ...availableAgents.map(
+                      (a) => CheckboxListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        value: _isAgentChecked(filter, a.agentId, allAgentIds),
+                        onChanged: isDisabled
+                            ? null
+                            : (_) {
+                                _toggleAgentSelection(
+                                  filter: filter,
+                                  agentId: a.agentId,
+                                  availableAgents: availableAgents,
+                                  onFilterChanged: onFilterChanged!,
+                                );
+                              },
+                        title: Text(
+                          a.name,
+                          style: typography.body.copyWith(fontSize: 13),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                    ),
                 ],
               );
 
@@ -621,7 +685,7 @@ class _DashboardFilterBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  buildLabel('ANO / MES'),
+                  buildLabel(l10n.dashboardHomeFiltersYearMonthLabel),
                   DropdownButtonFormField<DashboardYearMonth?>(
                     initialValue: monthValue,
                     items: monthItems,
@@ -811,29 +875,37 @@ class _PaymentBarChart extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Rankings section (filial + user)
+// Rankings section (agent + user)
 // ---------------------------------------------------------------------------
 
 class _RankingsSection extends StatelessWidget {
   const _RankingsSection({
-    required this.filialRankings,
+    required this.l10n,
+    required this.agentRankings,
     required this.userRankings,
   });
 
-  final List<DashboardFilialRanking> filialRankings;
+  final AppLocalizations l10n;
+  final List<DashboardAgentRanking> agentRankings;
   final List<DashboardUserRanking> userRankings;
 
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final filialCard = _FilialRankingCard(filialRankings: filialRankings);
-    final userCard = _UserRankingCard(userRankings: userRankings);
+    final agentCard = _AgentRankingCard(
+      l10n: l10n,
+      agentRankings: agentRankings,
+    );
+    final userCard = _UserRankingCard(
+      l10n: l10n,
+      userRankings: userRankings,
+    );
 
     if (AppBreakpoints.isMobile(context)) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          filialCard,
+          agentCard,
           SizedBox(height: tokens.sectionSpacing),
           userCard,
         ],
@@ -843,7 +915,7 @@ class _RankingsSection extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Expanded(child: filialCard),
+        Expanded(child: agentCard),
         SizedBox(width: tokens.gapMd),
         Expanded(child: userCard),
       ],
@@ -851,21 +923,25 @@ class _RankingsSection extends StatelessWidget {
   }
 }
 
-class _FilialRankingCard extends StatelessWidget {
-  const _FilialRankingCard({required this.filialRankings});
+class _AgentRankingCard extends StatelessWidget {
+  const _AgentRankingCard({
+    required this.l10n,
+    required this.agentRankings,
+  });
 
-  final List<DashboardFilialRanking> filialRankings;
+  final AppLocalizations l10n;
+  final List<DashboardAgentRanking> agentRankings;
 
   @override
   Widget build(BuildContext context) {
-    return AppComparisonBarChart<DashboardFilialRanking>(
-      title: 'Ranking por filial',
-      subtitle: 'Faturamento por filial no periodo.',
-      items: filialRankings,
-      labelBuilder: (f) => 'Fil. ${f.codFilial}',
-      valueBuilder: (f) => f.totalAmount,
-      tooltipLabelBuilder: (f, v) =>
-          '${f.label}: ${AppBrFormatters.currency(v)}',
+    return AppComparisonBarChart<DashboardAgentRanking>(
+      title: l10n.dashboardAgentRankingTitle,
+      subtitle: l10n.dashboardAgentRankingSubtitle,
+      items: agentRankings,
+      labelBuilder: (a) => a.displayName,
+      valueBuilder: (a) => a.totalAmount,
+      tooltipLabelBuilder: (a, v) =>
+          '${a.displayName}: ${AppBrFormatters.currency(v)}',
       style: AppComparisonBarChartStyle(
         yAxisFormat: AppBrFormatters.compactCurrencyFormat,
       ),
@@ -874,15 +950,19 @@ class _FilialRankingCard extends StatelessWidget {
 }
 
 class _UserRankingCard extends StatelessWidget {
-  const _UserRankingCard({required this.userRankings});
+  const _UserRankingCard({
+    required this.l10n,
+    required this.userRankings,
+  });
 
+  final AppLocalizations l10n;
   final List<DashboardUserRanking> userRankings;
 
   @override
   Widget build(BuildContext context) {
     return AppComparisonBarChart<DashboardUserRanking>(
-      title: 'Ranking por operador',
-      subtitle: 'Faturamento por operador no periodo.',
+      title: l10n.dashboardUserRankingTitle,
+      subtitle: l10n.dashboardUserRankingSubtitle,
       items: userRankings,
       labelBuilder: (u) => u.userName,
       valueBuilder: (u) => u.totalAmount,
@@ -900,10 +980,8 @@ class _UserRankingCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 const double _kPaymentSummaryTableTypeScale = 0.92;
-const String _kPaymentSummaryAmountHeader = 'FATURAM.';
-const String _kPaymentSummarySalesHeader = 'VENDAS';
-const String _kPaymentSummaryTicketHeader = 'TICKET\nMEDIO';
-const String _kPaymentSummaryPercentHeader = 'PARTIC.';
+const int _kPaymentSummaryMaxRowsBeforeInnerScroll = 8;
+const double _kPaymentSummaryInnerListMaxHeight = 320;
 
 TextStyle _scaledPaymentSummaryTextStyle(TextStyle base) {
   final fs = base.fontSize;
@@ -913,35 +991,86 @@ TextStyle _scaledPaymentSummaryTextStyle(TextStyle base) {
   return base.copyWith(fontSize: fs * _kPaymentSummaryTableTypeScale);
 }
 
-enum _PaymentPercentLayout { inline, stacked }
-
-class _PaymentSummaryColumnFlexes {
-  const _PaymentSummaryColumnFlexes._();
-
-  static const int label = 3;
-  static const int amount = 2;
-  static const int ticket = 2;
+TextStyle _tabularFigures(TextStyle style) {
+  return style.copyWith(
+    fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
+  );
 }
 
 class _PaymentSummaryTable extends StatelessWidget {
-  const _PaymentSummaryTable({required this.methods});
+  const _PaymentSummaryTable({
+    required this.l10n,
+    required this.methods,
+    required this.showSkeleton,
+  });
 
+  final AppLocalizations l10n;
   final List<DashboardPaymentMethodBreakdown> methods;
-
-  static const _PaymentPercentLayout _layout = _PaymentPercentLayout.stacked;
+  final bool showSkeleton;
 
   @override
   Widget build(BuildContext context) {
-    if (methods.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
     final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
 
+    final Widget body;
+    if (methods.isEmpty) {
+      if (showSkeleton) {
+        body = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _PaymentTableHeader(l10n: l10n),
+            SizedBox(height: tokens.gapMd * 3),
+          ],
+        );
+      } else {
+        body = AppInlineErrorPanel(
+          tone: AppInlinePanelTone.informational,
+          variant: AppInlineErrorPanelVariant.plain,
+          title: l10n.dashboardPaymentSummaryEmptyTitle,
+          message: l10n.dashboardPaymentSummaryEmptyMessage,
+        );
+      }
+    } else if (methods.length <= _kPaymentSummaryMaxRowsBeforeInnerScroll) {
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _PaymentTableHeader(l10n: l10n),
+          ...methods.asMap().entries.map(
+                (e) => _PaymentTableRow(
+                  method: e.value,
+                  showTopDivider: e.key > 0,
+                ),
+              ),
+        ],
+      );
+    } else {
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _PaymentTableHeader(l10n: l10n),
+          SizedBox(
+            height: _kPaymentSummaryInnerListMaxHeight,
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              physics: const ClampingScrollPhysics(),
+              itemCount: methods.length,
+              itemBuilder: (context, index) {
+                return _PaymentTableRow(
+                  method: methods[index],
+                  showTopDivider: index > 0,
+                );
+              },
+            ),
+          ),
+        ],
+      );
+    }
+
     return AppSectionCardWithHeading(
-      title: 'Resumo por forma de pagamento',
-      subtitle: 'Detalhamento de vendas, ticket medio e participacao.',
+      title: l10n.dashboardPaymentSummaryTitle,
+      subtitle: l10n.dashboardPaymentSummarySubtitle,
       style: AppSectionCardWithHeadingStyle(
         titleTextStyle: _scaledPaymentSummaryTextStyle(
           typography.sectionHeaderH2,
@@ -952,23 +1081,15 @@ class _PaymentSummaryTable extends StatelessWidget {
           ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const _PaymentTableHeader(),
-          ...methods.map(
-            (m) => _PaymentTableRow(
-              method: m,
-            ),
-          ),
-        ],
-      ),
+      child: body,
     );
   }
 }
 
 class _PaymentTableHeader extends StatelessWidget {
-  const _PaymentTableHeader();
+  const _PaymentTableHeader({required this.l10n});
+
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -977,43 +1098,114 @@ class _PaymentTableHeader extends StatelessWidget {
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
 
-    final style = _scaledPaymentSummaryTextStyle(
-      typography.utilityOverline,
-    ).copyWith(
-      color: cs.onSurfaceVariant,
-    );
+    final style =
+        _scaledPaymentSummaryTextStyle(
+          typography.utilityOverline,
+        ).copyWith(
+          color: cs.onSurfaceVariant,
+        );
+    final bodyStyle = _scaledPaymentSummaryTextStyle(typography.body);
+    final highlightStyle = bodyStyle.copyWith(fontWeight: FontWeight.w600);
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: tokens.gapSm),
-      child: Row(
-        children: <Widget>[
-          const _PaymentSummaryCell(
-            flex: _PaymentSummaryColumnFlexes.label,
-            child: SizedBox.shrink(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ExcludeSemantics(
+          child: Opacity(
+            opacity: 0,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                ' ',
+                style: highlightStyle,
+                maxLines: 1,
+              ),
+            ),
           ),
-          _PaymentSummaryTextCell(
-            flex: _PaymentSummaryColumnFlexes.amount,
-            text: _kPaymentSummaryAmountHeader,
-            style: style,
-            maxLines: 2,
+        ),
+        SizedBox(height: tokens.gapXs),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: <Widget>[
+            Tooltip(
+              message: l10n.dashboardPaymentSummaryTooltipRevenueAbbr,
+              child: Text(
+                l10n.dashboardPaymentSummaryHeaderRevenueAbbr,
+                style: style,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: tokens.gapMd),
+            Text(
+              l10n.dashboardPaymentSummaryHeaderSales,
+              style: style,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              softWrap: true,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(width: tokens.gapMd),
+            Text(
+              l10n.dashboardPaymentSummaryHeaderAvgTicket,
+              style: style,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              softWrap: true,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(width: tokens.gapMd),
+            Tooltip(
+              message: l10n.dashboardPaymentSummaryTooltipParticipationAbbr,
+              child: Text(
+                l10n.dashboardPaymentSummaryHeaderParticipationAbbr,
+                style: style,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: tokens.gapSm),
+        Divider(
+          height: 1,
+          thickness: 1,
+          color: cs.outlineVariant.withValues(alpha: 0.35),
+        ),
+      ],
+    );
+  }
+}
+
+class _PaymentSummaryValuesScrollRow extends StatelessWidget {
+  const _PaymentSummaryValuesScrollRow({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            reverse: true,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                mainAxisSize: MainAxisSize.min,
+                children: children,
+              ),
+            ),
           ),
-          _PaymentSummaryTextCell(
-            text: _kPaymentSummarySalesHeader,
-            style: style,
-            maxLines: 2,
-          ),
-          _PaymentSummaryTextCell(
-            flex: _PaymentSummaryColumnFlexes.ticket,
-            text: _kPaymentSummaryTicketHeader,
-            style: style,
-            maxLines: 2,
-          ),
-          _PaymentSummaryPercentHeaderCell(
-            layout: _PaymentSummaryTable._layout,
-            style: style,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -1021,9 +1213,11 @@ class _PaymentTableHeader extends StatelessWidget {
 class _PaymentTableRow extends StatelessWidget {
   const _PaymentTableRow({
     required this.method,
+    required this.showTopDivider,
   });
 
   final DashboardPaymentMethodBreakdown method;
+  final bool showTopDivider;
 
   @override
   Widget build(BuildContext context) {
@@ -1031,215 +1225,110 @@ class _PaymentTableRow extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
-    final bodyStyle = _scaledPaymentSummaryTextStyle(typography.body);
+    final bodyStyle =
+        _tabularFigures(_scaledPaymentSummaryTextStyle(typography.body));
     final highlightStyle = bodyStyle.copyWith(fontWeight: FontWeight.w600);
     final percentText = method.sharePercent.toStringAsFixed(1);
-    final percentSemantics =
-        '${percentText.replaceAll('.', ',')} por cento';
-    final percentStyle = highlightStyle.copyWith(color: cs.primary);
+    final percentSemantics = '${percentText.replaceAll('.', ',')} por cento';
+    final amountStyle = _tabularFigures(
+      bodyStyle.copyWith(fontWeight: FontWeight.w600),
+    );
+    final percentStyle = _tabularFigures(
+      bodyStyle.copyWith(color: cs.onSurface),
+    );
     final amountText = AppBrFormatters.currency(method.totalAmount);
     final averageTicketText = AppBrFormatters.currency(method.averageTicket);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.35),
+    final title = Semantics(
+      label: 'Forma de pagamento ${method.label}',
+      child: Text(
+        method.label,
+        style: highlightStyle,
+        textAlign: TextAlign.left,
+        maxLines: 3,
+        softWrap: true,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+
+    final valuesRow = _PaymentSummaryValuesScrollRow(
+      children: <Widget>[
+        Semantics(
+          label: 'Faturamento $amountText',
+          child: ExcludeSemantics(
+            child: Text(
+              amountText,
+              style: amountStyle,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
-      ),
+        SizedBox(width: tokens.gapMd),
+        Semantics(
+          label: 'Vendas ${method.totalSalesCount}',
+          child: ExcludeSemantics(
+            child: Text(
+              method.totalSalesCount.toString(),
+              style: bodyStyle,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.gapMd),
+        Semantics(
+          label: 'Ticket medio $averageTicketText',
+          child: ExcludeSemantics(
+            child: Text(
+              averageTicketText,
+              style: bodyStyle,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.gapMd),
+        Semantics(
+          label: 'Participacao $percentSemantics',
+          child: ExcludeSemantics(
+            child: Text(
+              '$percentText%',
+              style: percentStyle,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final column = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        title,
+        SizedBox(height: tokens.gapXs),
+        valuesRow,
+      ],
+    );
+
+    return DecoratedBox(
+      decoration: showTopDivider
+          ? BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: cs.outlineVariant.withValues(alpha: 0.35),
+                ),
+              ),
+            )
+          : const BoxDecoration(),
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: tokens.gapSm),
-        child: Row(
-          children: <Widget>[
-            _PaymentSummaryTextCell(
-              flex: _PaymentSummaryColumnFlexes.label,
-              text: method.label,
-              style: highlightStyle,
-              textAlign: TextAlign.left,
-              maxLines: 3,
-              semanticsLabel: 'Forma de pagamento ${method.label}',
-            ),
-            _PaymentSummaryTextCell(
-              flex: _PaymentSummaryColumnFlexes.amount,
-              text: amountText,
-              style: bodyStyle,
-              semanticsLabel: 'Faturamento $amountText',
-            ),
-            _PaymentSummaryTextCell(
-              text: method.totalSalesCount.toString(),
-              style: bodyStyle,
-              semanticsLabel: 'Vendas ${method.totalSalesCount}',
-            ),
-            _PaymentSummaryTextCell(
-              flex: _PaymentSummaryColumnFlexes.ticket,
-              text: averageTicketText,
-              style: bodyStyle,
-              semanticsLabel: 'Ticket medio $averageTicketText',
-            ),
-            _PaymentSummaryPercentValueCell(
-              layout: _PaymentSummaryTable._layout,
-              percentText: percentText,
-              style: percentStyle,
-              semanticsLabel: 'Participacao $percentSemantics',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PaymentSummaryCell extends StatelessWidget {
-  const _PaymentSummaryCell({
-    required this.child,
-    this.flex = 1,
-  });
-
-  final Widget child;
-  final int flex;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(flex: flex, child: child);
-  }
-}
-
-class _PaymentSummaryTextCell extends StatelessWidget {
-  const _PaymentSummaryTextCell({
-    required this.text,
-    required this.style,
-    this.flex = 1,
-    this.textAlign = TextAlign.right,
-    this.maxLines = 1,
-    this.semanticsLabel,
-  });
-
-  final String text;
-  final TextStyle style;
-  final int flex;
-  final TextAlign textAlign;
-  final int maxLines;
-  final String? semanticsLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    Widget content = Text(
-      text,
-      style: style,
-      textAlign: textAlign,
-      maxLines: maxLines,
-      softWrap: maxLines > 1,
-      overflow: TextOverflow.ellipsis,
-    );
-
-    if (semanticsLabel != null) {
-      content = Semantics(
-        label: semanticsLabel,
-        child: ExcludeSemantics(child: content),
-      );
-    }
-
-    return _PaymentSummaryCell(flex: flex, child: content);
-  }
-}
-
-class _PaymentSummaryPercentHeaderCell extends StatelessWidget {
-  const _PaymentSummaryPercentHeaderCell({
-    required this.layout,
-    required this.style,
-  });
-
-  final _PaymentPercentLayout layout;
-  final TextStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    if (layout == _PaymentPercentLayout.inline) {
-      return _PaymentSummaryTextCell(
-        text: '$_kPaymentSummaryPercentHeader %',
-        style: style,
-        maxLines: 2,
-      );
-    }
-
-    return _PaymentSummaryCell(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            _kPaymentSummaryPercentHeader,
-            style: style,
-            textAlign: TextAlign.right,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '%',
-            style: style,
-            textAlign: TextAlign.right,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaymentSummaryPercentValueCell extends StatelessWidget {
-  const _PaymentSummaryPercentValueCell({
-    required this.layout,
-    required this.percentText,
-    required this.style,
-    required this.semanticsLabel,
-  });
-
-  final _PaymentPercentLayout layout;
-  final String percentText;
-  final TextStyle style;
-  final String semanticsLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    Widget content;
-
-    if (layout == _PaymentPercentLayout.stacked) {
-      content = Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            percentText,
-            style: style,
-            textAlign: TextAlign.right,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            '%',
-            style: style,
-            textAlign: TextAlign.right,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      );
-    } else {
-      content = Text(
-        '$percentText%',
-        style: style,
-        textAlign: TextAlign.right,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      );
-    }
-
-    return _PaymentSummaryCell(
-      child: Semantics(
-        label: semanticsLabel,
-        child: ExcludeSemantics(child: content),
+        child: column,
       ),
     );
   }

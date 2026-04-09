@@ -1,5 +1,5 @@
 import 'package:colmeia/features/dashboards/data/models/dashboard_overview_model.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_agent_ranking.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_user_ranking.dart';
@@ -72,22 +72,22 @@ class FakeDashboardRemoteDataSource {
           sharePercent: 7.4,
         ),
       ],
-      filialRankings: const <DashboardFilialRanking>[
-        DashboardFilialRanking(
-          codEmpresa: 1,
-          codFilial: 3,
+      agentRankings: const <DashboardAgentRanking>[
+        DashboardAgentRanking(
+          agentId: 'agent-a',
+          displayName: 'Agente Alpha',
           totalSalesCount: 130,
           totalAmount: 11800.40,
         ),
-        DashboardFilialRanking(
-          codEmpresa: 1,
-          codFilial: 8,
+        DashboardAgentRanking(
+          agentId: 'agent-b',
+          displayName: 'Agente Beta',
           totalSalesCount: 102,
           totalAmount: 9570.10,
         ),
-        DashboardFilialRanking(
-          codEmpresa: 1,
-          codFilial: 14,
+        DashboardAgentRanking(
+          agentId: 'agent-c',
+          displayName: 'Agente Gamma',
           totalSalesCount: 78,
           totalAmount: 6480.25,
         ),

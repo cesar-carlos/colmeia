@@ -5,15 +5,26 @@ import 'package:flutter/material.dart';
 
 class AppChartShell extends StatelessWidget {
   const AppChartShell({
-    required this.title,
     required this.child,
     super.key,
+    this.title = '',
+    this.titleWidget,
     this.subtitle,
     this.titleTrailing,
     this.belowSubtitle,
   });
 
+  /// Plain-text chart title. Shown as a styled [Text] unless [titleWidget]
+  /// overrides it. Defaults to an empty string (no title shown).
   final String title;
+
+  /// Optional rich-content widget that replaces the [title] [Text] visually.
+  ///
+  /// When provided, [title] is ignored for display but can still be kept for
+  /// semantics or other purposes. [subtitle], [titleTrailing] and
+  /// [belowSubtitle] continue to render alongside this widget.
+  final Widget? titleWidget;
+
   final String? subtitle;
   final Widget child;
 
@@ -35,15 +46,18 @@ class AppChartShell extends StatelessWidget {
         children: <Widget>[
           LayoutBuilder(
             builder: (context, constraints) {
+              final hasTitle = titleWidget != null || title.isNotEmpty;
               final headerText = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    title,
-                    style: typography.sectionHeaderH2.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  if (hasTitle)
+                    titleWidget ??
+                        Text(
+                          title,
+                          style: typography.sectionHeaderH2.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                   if (subtitle != null) ...<Widget>[
                     SizedBox(height: tokens.gapXs),
                     Text(subtitle!, style: typography.body),

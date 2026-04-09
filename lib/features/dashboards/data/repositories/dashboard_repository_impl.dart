@@ -10,7 +10,7 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_query.d
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/dashboards/data/datasources/dashboard_local_datasource.dart';
 import 'package:colmeia/features/dashboards/data/models/dashboard_overview_model.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_agent_ranking.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
@@ -78,16 +78,31 @@ class DashboardRepositoryImpl implements DashboardRepository {
         );
       }
 
-      // When a specific agent is selected, restrict to that agent only.
-      final filteredAgents = filter.selectedAgentId == null
+      // When [selectedAgentIds] is set, restrict to those agents only.
+      final filteredAgents = filter.selectedAgentIds == null
           ? approvedAgents
           : approvedAgents
-                .where((a) => a.agentId == filter.selectedAgentId)
+                .where((a) => filter.selectedAgentIds!.contains(a.agentId))
                 .toList(growable: false);
 
-      final effectiveAgents = filteredAgents.isEmpty
-          ? approvedAgents
-          : filteredAgents;
+      final effectiveAgents = filteredAgents;
+
+      if (effectiveAgents.isEmpty) {
+        return Success<DashboardOverview, AppFailure>(
+          _buildOverview(
+            const <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+            rowsByAgentId:
+                const <
+                  String,
+                  List<ResumoParcelaProdutoVendidoFormaPagamentoRow>
+                >{},
+            approvedAgentsById: const <String, ClientAgent>{},
+            periodStart: period.start,
+            periodEnd: period.end,
+            approvedAgentCount: 0,
+          ),
+        );
+      }
 
       final sortedApprovedAgents = effectiveAgents.toList(growable: false)
         ..sort((left, right) => left.agentId.compareTo(right.agentId));
@@ -123,6 +138,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
       }
 
       final rows = <ResumoParcelaProdutoVendidoFormaPagamentoRow>[];
+      final rowsByAgentId =
+          <String, List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>{
+            for (final String id in sortedAgentIds)
+              id: <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+          };
       final failedQueryAgentIds = <String>[];
       var hasAnySuccess = false;
       AppFailure? firstFailure;
@@ -136,6 +156,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
         if (batch != null) {
           hasAnySuccess = true;
           rows.addAll(batch);
+          rowsByAgentId[agentId] =
+              List<ResumoParcelaProdutoVendidoFormaPagamentoRow>.of(
+                batch,
+                growable: false,
+              );
           continue;
         }
         final failure = queryResult.exceptionOrNull()!;
@@ -164,6 +189,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
           expectedSortedAgentIds: sortedAgentIds,
           agentIdsMissingClientToken: agentIdsMissingClientToken,
           agentNamesMissingClientToken: agentNamesMissingClientToken,
+          approvedAgentsById: approvedAgentsById,
         );
         if (cachedOverview != null) {
           return Success<DashboardOverview, AppFailure>(cachedOverview);
@@ -172,6 +198,11 @@ class DashboardRepositoryImpl implements DashboardRepository {
         return Success<DashboardOverview, AppFailure>(
           _buildOverview(
             const <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+            rowsByAgentId: {
+              for (final String id in sortedAgentIds)
+                id: <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+            },
+            approvedAgentsById: approvedAgentsById,
             periodStart: period.start,
             periodEnd: period.end,
             approvedAgentCount: sortedAgentIds.length,
@@ -206,6 +237,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
 
       final overview = _buildOverview(
         rows,
+        rowsByAgentId: rowsByAgentId,
+        approvedAgentsById: approvedAgentsById,
         periodStart: period.start,
         periodEnd: period.end,
         approvedAgentCount: sortedAgentIds.length,
@@ -469,9 +502,16 @@ class DashboardRepositoryImpl implements DashboardRepository {
       failedAgentId: failedAgentId,
     );
     if (cachedOverview != null) {
-      return Success<DashboardOverview, AppFailure>(
-        cachedOverview.toEntity(isStaleCache: true),
-      );
+      var entity = cachedOverview.toEntity(isStaleCache: true);
+      final agentsResult = await _loadAllApprovedAgents(userId: userId);
+      final agents = agentsResult.getOrNull();
+      if (agents != null && agents.isNotEmpty) {
+        final byId = <String, ClientAgent>{
+          for (final a in agents) a.agentId: a,
+        };
+        entity = _remapAgentRankingDisplayNames(entity, byId);
+      }
+      return Success<DashboardOverview, AppFailure>(entity);
     }
 
     final logContext = <String, Object?>{
@@ -549,6 +589,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required List<String> expectedSortedAgentIds,
     required List<String> agentIdsMissingClientToken,
     required List<String> agentNamesMissingClientToken,
+    required Map<String, ClientAgent> approvedAgentsById,
   }) async {
     if (policy == DashboardLoadPolicy.forceRefresh) {
       return null;
@@ -578,13 +619,46 @@ class DashboardRepositoryImpl implements DashboardRepository {
       },
     );
 
-    return cachedOverview
+    final entity = cachedOverview
         .toEntity(isStaleCache: true)
         .copyWith(
           approvedAgentCount: expectedSortedAgentIds.length,
           agentIdsMissingClientToken: agentIdsMissingClientToken,
           agentNamesMissingClientToken: agentNamesMissingClientToken,
         );
+    return _remapAgentRankingDisplayNames(entity, approvedAgentsById);
+  }
+
+  DashboardOverview _remapAgentRankingDisplayNames(
+    DashboardOverview overview,
+    Map<String, ClientAgent> approvedAgentsById,
+  ) {
+    if (approvedAgentsById.isEmpty || overview.agentRankings.isEmpty) {
+      return overview;
+    }
+    var changed = false;
+    final next = <DashboardAgentRanking>[];
+    for (final r in overview.agentRankings) {
+      final resolved = _resolveAgentDisplayName(
+        approvedAgentsById[r.agentId],
+        r.agentId,
+      );
+      if (resolved != r.displayName) {
+        changed = true;
+      }
+      next.add(
+        DashboardAgentRanking(
+          agentId: r.agentId,
+          displayName: resolved,
+          totalSalesCount: r.totalSalesCount,
+          totalAmount: r.totalAmount,
+        ),
+      );
+    }
+    if (!changed) {
+      return overview;
+    }
+    return overview.copyWith(agentRankings: next);
   }
 
   bool _isCacheAcceptable({
@@ -683,6 +757,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
   /// work per agent.
   DashboardOverview _buildOverview(
     List<ResumoParcelaProdutoVendidoFormaPagamentoRow> rows, {
+    required Map<String, List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>
+    rowsByAgentId,
+    required Map<String, ClientAgent> approvedAgentsById,
     required DateTime periodStart,
     required DateTime periodEnd,
     required int approvedAgentCount,
@@ -692,7 +769,6 @@ class DashboardRepositoryImpl implements DashboardRepository {
     List<String> agentNamesMissingClientToken = const <String>[],
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
-    final filialBuckets = <String, _FilialAggregate>{};
     final userBuckets = <String, _UserAggregate>{};
 
     var totalSalesCount = 0;
@@ -711,17 +787,6 @@ class DashboardRepositoryImpl implements DashboardRepository {
             () => _PaymentMethodAggregate(
               code: row.codFormaPagamento.trim(),
               label: _resolvePaymentMethodLabel(row),
-            ),
-          )
-          .add(row.qtdVendas, row.valorParcela);
-
-      final filialKey = '${row.codEmpresa}|${row.codFilial}';
-      filialBuckets
-          .putIfAbsent(
-            filialKey,
-            () => _FilialAggregate(
-              codEmpresa: row.codEmpresa,
-              codFilial: row.codFilial,
             ),
           )
           .add(row.qtdVendas, row.valorParcela);
@@ -754,18 +819,30 @@ class DashboardRepositoryImpl implements DashboardRepository {
             .toList(growable: false)
           ..sort(_compareBreakdowns);
 
-    final filialRankings =
-        filialBuckets.values
+    final agentRankings =
+        rowsByAgentId.entries
             .map(
-              (item) => DashboardFilialRanking(
-                codEmpresa: item.codEmpresa,
-                codFilial: item.codFilial,
-                totalSalesCount: item.totalSalesCount,
-                totalAmount: item.totalAmount,
-              ),
+              (e) {
+                final agentId = e.key;
+                var sales = 0;
+                var amount = 0.0;
+                for (final row in e.value) {
+                  sales += row.qtdVendas;
+                  amount += row.valorParcela;
+                }
+                return DashboardAgentRanking(
+                  agentId: agentId,
+                  displayName: _resolveAgentDisplayName(
+                    approvedAgentsById[agentId],
+                    agentId,
+                  ),
+                  totalSalesCount: sales,
+                  totalAmount: amount,
+                );
+              },
             )
             .toList(growable: false)
-          ..sort(_compareFiliais);
+          ..sort(_compareAgents);
 
     final userRankings =
         userBuckets.values
@@ -790,7 +867,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
         paymentMethodCount: paymentMethods.length,
       ),
       paymentMethods: paymentMethods,
-      filialRankings: filialRankings,
+      agentRankings: agentRankings,
       userRankings: userRankings,
       approvedAgentCount: approvedAgentCount,
       agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
@@ -813,14 +890,14 @@ class DashboardRepositoryImpl implements DashboardRepository {
   }
 
   String _resolveAgentDisplayName(ClientAgent? agent, String fallbackAgentId) {
+    final legalName = agent?.name.trim();
+    if (legalName != null && legalName.isNotEmpty) {
+      return legalName;
+    }
+
     final tradeName = agent?.tradeName?.trim();
     if (tradeName != null && tradeName.isNotEmpty) {
       return tradeName;
-    }
-
-    final name = agent?.name.trim();
-    if (name != null && name.isNotEmpty) {
-      return name;
     }
 
     return fallbackAgentId.trim();
@@ -862,9 +939,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
     return left.label.compareTo(right.label);
   }
 
-  static int _compareFiliais(
-    DashboardFilialRanking left,
-    DashboardFilialRanking right,
+  static int _compareAgents(
+    DashboardAgentRanking left,
+    DashboardAgentRanking right,
   ) {
     final amount = right.totalAmount.compareTo(left.totalAmount);
     if (amount != 0) {
@@ -874,11 +951,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
     if (sales != 0) {
       return sales;
     }
-    final empresa = left.codEmpresa.compareTo(right.codEmpresa);
-    if (empresa != 0) {
-      return empresa;
-    }
-    return left.codFilial.compareTo(right.codFilial);
+    return left.displayName.compareTo(right.displayName);
   }
 
   static int _compareUsers(
@@ -922,23 +995,6 @@ class _PaymentMethodAggregate {
 
   double get averageTicket =>
       totalSalesCount == 0 ? 0 : totalAmount / totalSalesCount;
-
-  void add(int salesCount, double amount) {
-    totalSalesCount += salesCount;
-    totalAmount += amount;
-  }
-}
-
-class _FilialAggregate {
-  _FilialAggregate({
-    required this.codEmpresa,
-    required this.codFilial,
-  });
-
-  final int codEmpresa;
-  final int codFilial;
-  int totalSalesCount = 0;
-  double totalAmount = 0;
 
   void add(int salesCount, double amount) {
     totalSalesCount += salesCount;

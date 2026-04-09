@@ -229,16 +229,20 @@ class DashboardController extends ChangeNotifier {
   }
 
   String _signatureFor({required String userId}) {
-    return '$userId|${_activeFilter.selectedAgentId ?? '*'}'
-        '|${_activeFilter.yearMonth ?? 'default'}';
+    final ids = _activeFilter.selectedAgentIds;
+    final agentPart = ids == null
+        ? '*'
+        : (List<String>.from(ids)..sort()).join(',');
+    return '$userId|$agentPart|${_activeFilter.yearMonth ?? 'default'}';
   }
 
-  /// Rebuilds [_availableAgents] from the approved-agent metadata stored in
-  /// the overview.  Uses the names already resolved by the repository so we
-  /// never need a separate agents call here.
+  /// Rebuilds [_availableAgents] from the overview (per-agent rankings and
+  /// failure metadata). Uses names resolved by the repository.
   void _updateAvailableAgents(DashboardOverview overview) {
-    // Collect all agent ids/names we know about from the overview metadata.
     final seen = <String, String>{};
+    for (final r in overview.agentRankings) {
+      seen[r.agentId] = r.displayName;
+    }
     for (var i = 0;
         i < overview.agentIdsExcludedFromQueryFailure.length;
         i++) {

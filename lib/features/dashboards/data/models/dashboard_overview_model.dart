@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_agent_ranking.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
@@ -12,7 +12,7 @@ class DashboardOverviewModel {
     required this.periodEnd,
     required this.kpis,
     required this.paymentMethods,
-    required this.filialRankings,
+    required this.agentRankings,
     required this.userRankings,
     this.cachedAt,
     this.sourceAgentIds,
@@ -22,8 +22,8 @@ class DashboardOverviewModel {
     final kpisJson = json['kpis'] as Map<String, dynamic>;
     final paymentMethodsJson =
         json['paymentMethods'] as List<dynamic>? ?? const <dynamic>[];
-    final filialRankingsJson =
-        json['filialRankings'] as List<dynamic>? ?? const <dynamic>[];
+    final agentRankingsJson =
+        json['agentRankings'] as List<dynamic>? ?? const <dynamic>[];
     final userRankingsJson =
         json['userRankings'] as List<dynamic>? ?? const <dynamic>[];
 
@@ -54,11 +54,11 @@ class DashboardOverviewModel {
           sharePercent: (row['sharePercent'] as num).toDouble(),
         );
       }).toList(growable: false),
-      filialRankings: filialRankingsJson.map((item) {
+      agentRankings: agentRankingsJson.map((item) {
         final row = item as Map<String, dynamic>;
-        return DashboardFilialRanking(
-          codEmpresa: row['codEmpresa'] as int,
-          codFilial: row['codFilial'] as int,
+        return DashboardAgentRanking(
+          agentId: row['agentId'] as String,
+          displayName: row['displayName'] as String,
           totalSalesCount: row['totalSalesCount'] as int,
           totalAmount: (row['totalAmount'] as num).toDouble(),
         );
@@ -93,7 +93,7 @@ class DashboardOverviewModel {
       periodEnd: overview.periodEnd,
       kpis: overview.kpis,
       paymentMethods: overview.paymentMethods,
-      filialRankings: overview.filialRankings,
+      agentRankings: overview.agentRankings,
       userRankings: overview.userRankings,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
@@ -104,7 +104,7 @@ class DashboardOverviewModel {
   final DateTime periodEnd;
   final DashboardPaymentKpis kpis;
   final List<DashboardPaymentMethodBreakdown> paymentMethods;
-  final List<DashboardFilialRanking> filialRankings;
+  final List<DashboardAgentRanking> agentRankings;
   final List<DashboardUserRanking> userRankings;
 
   /// When the overview was persisted locally (for TTL / signature checks).
@@ -119,7 +119,7 @@ class DashboardOverviewModel {
       periodEnd: periodEnd,
       kpis: kpis,
       paymentMethods: paymentMethods,
-      filialRankings: filialRankings,
+      agentRankings: agentRankings,
       userRankings: userRankings,
       isStaleCache: isStaleCache,
     );
@@ -145,10 +145,10 @@ class DashboardOverviewModel {
           'sharePercent': item.sharePercent,
         };
       }).toList(growable: false),
-      'filialRankings': filialRankings.map((item) {
+      'agentRankings': agentRankings.map((item) {
         return <String, Object?>{
-          'codEmpresa': item.codEmpresa,
-          'codFilial': item.codFilial,
+          'agentId': item.agentId,
+          'displayName': item.displayName,
           'totalSalesCount': item.totalSalesCount,
           'totalAmount': item.totalAmount,
         };

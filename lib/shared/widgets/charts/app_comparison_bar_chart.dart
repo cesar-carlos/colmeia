@@ -17,6 +17,7 @@ class AppComparisonBarChartStyle {
     this.height,
     this.barWidth,
     this.spacing,
+    this.barGap,
     this.borderColor,
     this.borderWidth,
     this.plotAreaBackgroundColor,
@@ -37,6 +38,13 @@ class AppComparisonBarChartStyle {
     this.showDataLabels = false,
     this.dataLabelTextStyle,
     this.dataLabelAlignment = ChartDataLabelAlignment.outer,
+    this.autoRotateXLabels = true,
+    this.xLabelMaxChars,
+    this.loadingLabel,
+    this.emptyMessage,
+    this.enableAutoScroll = true,
+    this.minBarWidth,
+    this.showScrollFade = true,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -49,11 +57,28 @@ class AppComparisonBarChartStyle {
   /// Fixed chart height. Falls back to the preset-driven token when null.
   final double? height;
 
-  /// Relative width of each bar, usually between `0.0` and `1.0`.
+  /// Relative width of each bar as a fraction of the bar slot, between
+  /// `0.0` (invisible) and `1.0` (fills the slot). Defaults to `0.7`.
+  ///
+  /// See also [barGap] for an absolute pixel alternative that is often more
+  /// intuitive when you know the visual result you want.
   final double? barWidth;
 
-  /// Space between bars, usually between `0.0` and `1.0`.
+  /// Relative spacing between adjacent bars as a fraction of the bar slot,
+  /// between `0.0` (bars touch) and `1.0` (bars invisible). Defaults to `0.2`.
+  ///
+  /// Prefer [barGap] when you want to express the gap in logical pixels.
+  /// Setting both [spacing] and [barGap] is not recommended — [barGap] takes
+  /// precedence when it is non-null.
   final double? spacing;
+
+  /// Absolute gap in logical pixels between adjacent bars.
+  ///
+  /// When set, the engine converts this value to the relative [spacing] ratio
+  /// that Syncfusion expects, based on the resolved per-bar slot width. This
+  /// is simpler to reason about than the [0, 1] fraction used by [spacing].
+  /// Set to `null` (default) to fall back to [spacing] or the engine default.
+  final double? barGap;
 
   /// Optional outline color for each bar.
   final Color? borderColor;
@@ -118,6 +143,52 @@ class AppComparisonBarChartStyle {
   /// Syncfusion [ColumnSeries]: [ChartDataLabelAlignment.outer] places labels
   /// above the bar; [ChartDataLabelAlignment.top] is inside the bar's top edge.
   final ChartDataLabelAlignment dataLabelAlignment;
+
+  /// Whether to automatically rotate X-axis labels when they would overflow
+  /// the bar slot width.
+  ///
+  /// When `true` (default) the engine estimates the label pixel width based
+  /// on character count and applies a 45° rotation when labels are too wide
+  /// to fit horizontally. Set to `false` to always use [xLabelRotation].
+  final bool autoRotateXLabels;
+
+  /// Maximum number of characters to display in each X-axis label before
+  /// truncating with '…'.
+  ///
+  /// Only affects the visual label on the X axis — tooltip text (via
+  /// [AppComparisonBarChart.tooltipLabelBuilder]) still shows the full value.
+  /// Set to `null` (default) to show labels at their full length.
+  final int? xLabelMaxChars;
+
+  /// Override label for the loading indicator.
+  ///
+  /// When `null` a built-in default is used.
+  final String? loadingLabel;
+
+  /// Override message for the empty state.
+  ///
+  /// When `null` a built-in default is used.
+  final String? emptyMessage;
+
+  /// Whether the chart automatically enables horizontal scrolling when the
+  /// number of bars would make them too narrow to read.
+  ///
+  /// When `true` (default) the engine compares the required chart width
+  /// (`items.length × minBarWidth`) against the available layout width and
+  /// wraps the chart in a [SingleChildScrollView] only when necessary.
+  /// Set to `false` to always fill the available width and never scroll.
+  final bool enableAutoScroll;
+
+  /// Minimum logical-pixel width reserved for each bar slot (bar + gap) when
+  /// [enableAutoScroll] is `true`.
+  ///
+  /// When `null` the engine falls back to a built-in default (72 px), which
+  /// keeps X-axis labels readable at standard font sizes.
+  final double? minBarWidth;
+
+  /// Whether to show a subtle fade gradient on the trailing edge of the chart
+  /// when horizontal scrolling is active. Defaults to `true`.
+  final bool showScrollFade;
 }
 
 /// Structured payload emitted when the user taps a bar.
@@ -160,6 +231,7 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     required this.valueBuilder,
     super.key,
     this.title,
+    this.titleWidget,
     this.subtitle,
     this.titleTrailing,
     this.belowSubtitle,
@@ -183,11 +255,19 @@ class AppComparisonBarChart<T> extends StatelessWidget {
   /// Returns the numeric Y value for an item.
   final num Function(T item) valueBuilder;
 
-  /// Optional chart title. When provided the chart is wrapped in
-  /// [AppChartShell].
+  /// Optional chart title string. When provided (and [titleWidget] is null)
+  /// the chart is wrapped in [AppChartShell] with a plain text header.
   final String? title;
 
-  /// Optional subtitle shown below [title] inside [AppChartShell].
+  /// Optional rich-content widget used as the chart title header.
+  ///
+  /// When set, it replaces the plain [Text] rendered from [title] inside
+  /// [AppChartShell]. [subtitle], [titleTrailing] and [belowSubtitle] still
+  /// apply alongside it. Setting [titleWidget] without [title] is supported —
+  /// pass an empty string for [title] or omit it entirely.
+  final Widget? titleWidget;
+
+  /// Optional subtitle shown below [title] / [titleWidget] inside [AppChartShell].
   final String? subtitle;
 
   /// Widget aligned to the trailing edge of the header row.
@@ -227,10 +307,19 @@ class AppComparisonBarChart<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final values = items.map(valueBuilder).toList(growable: false);
+
+    // Truncate X-axis labels when xLabelMaxChars is set. Tooltips (which
+    // receive the original T item) are not affected.
+    String truncatedLabel(String raw) {
+      final maxChars = style.xLabelMaxChars;
+      if (maxChars == null || raw.length <= maxChars) return raw;
+      return '${raw.substring(0, maxChars)}\u2026';
+    }
+
     final points = items.indexed
         .map(
           (entry) => AppChartPoint(
-            label: labelBuilder(entry.$2),
+            label: truncatedLabel(labelBuilder(entry.$2)),
             value: values[entry.$1],
           ),
         )
@@ -287,12 +376,13 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       emptyPlaceholder: emptyPlaceholder,
     );
 
-    if (title == null) {
+    if (title == null && titleWidget == null) {
       return innerChart;
     }
 
     return AppChartShell(
-      title: title!,
+      title: title ?? '',
+      titleWidget: titleWidget,
       subtitle: subtitle,
       titleTrailing: titleTrailing,
       belowSubtitle: belowSubtitle,

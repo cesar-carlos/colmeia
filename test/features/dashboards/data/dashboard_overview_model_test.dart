@@ -1,6 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/dashboards/data/models/dashboard_overview_model.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_agent_ranking.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
@@ -27,8 +27,8 @@ void main() {
         check(decoded.paymentMethods.first.code).equals('PIX');
         check(decoded.paymentMethods.first.sharePercent).equals(60);
 
-        check(decoded.filialRankings).length.equals(1);
-        check(decoded.filialRankings.first.codFilial).equals(3);
+        check(decoded.agentRankings).length.equals(1);
+        check(decoded.agentRankings.first.agentId).equals('a1');
 
         check(decoded.userRankings).length.equals(1);
         check(decoded.userRankings.first.userName).equals('Caixa 01');
@@ -41,7 +41,7 @@ void main() {
           periodEnd: base.periodEnd,
           kpis: base.kpis,
           paymentMethods: base.paymentMethods,
-          filialRankings: base.filialRankings,
+          agentRankings: base.agentRankings,
           userRankings: base.userRankings,
           cachedAt: DateTime.utc(2026, 4, 8, 12),
           sourceAgentIds: const <String>['z', 'a'],
@@ -63,14 +63,14 @@ void main() {
             paymentMethodCount: 0,
           ),
           paymentMethods: const <DashboardPaymentMethodBreakdown>[],
-          filialRankings: const <DashboardFilialRanking>[],
+          agentRankings: const <DashboardAgentRanking>[],
           userRankings: const <DashboardUserRanking>[],
         );
 
         final decoded = DashboardOverviewModel.decode(model.encode());
 
         check(decoded.paymentMethods).isEmpty();
-        check(decoded.filialRankings).isEmpty();
+        check(decoded.agentRankings).isEmpty();
         check(decoded.userRankings).isEmpty();
         check(decoded.kpis.totalSalesCount).equals(0);
       });
@@ -85,7 +85,7 @@ void main() {
         check(entity.kpis.totalSalesCount).equals(100);
         check(entity.paymentMethods).length.equals(2);
         check(entity.paymentMethods.first.code).equals('PIX');
-        check(entity.filialRankings.single.codFilial).equals(3);
+        check(entity.agentRankings.single.agentId).equals('a1');
         check(entity.userRankings.single.averageTicket).equals(90);
       });
 
@@ -109,7 +109,7 @@ void main() {
               sharePercent: 100,
             ),
           ],
-          filialRankings: const <DashboardFilialRanking>[],
+          agentRankings: const <DashboardAgentRanking>[],
           userRankings: const <DashboardUserRanking>[],
         );
 
@@ -117,7 +117,7 @@ void main() {
 
         check(model.kpis.totalSalesCount).equals(50);
         check(model.paymentMethods.single.code).equals('DIN');
-        check(model.filialRankings).isEmpty();
+        check(model.agentRankings).isEmpty();
       });
     });
 
@@ -133,7 +133,7 @@ void main() {
             paymentMethodCount: 0,
           ),
           paymentMethods: const <DashboardPaymentMethodBreakdown>[],
-          filialRankings: const <DashboardFilialRanking>[],
+          agentRankings: const <DashboardAgentRanking>[],
           userRankings: const <DashboardUserRanking>[],
         );
 
@@ -169,7 +169,7 @@ void main() {
               sharePercent: 30,
             ),
           ],
-          filialRankings: const <DashboardFilialRanking>[],
+          agentRankings: const <DashboardAgentRanking>[],
           userRankings: const <DashboardUserRanking>[],
         );
 
@@ -209,10 +209,10 @@ DashboardOverviewModel _fullModel() {
         sharePercent: 40,
       ),
     ],
-    filialRankings: const <DashboardFilialRanking>[
-      DashboardFilialRanking(
-        codEmpresa: 1,
-        codFilial: 3,
+    agentRankings: const <DashboardAgentRanking>[
+      DashboardAgentRanking(
+        agentId: 'a1',
+        displayName: 'Agente 1',
         totalSalesCount: 100,
         totalAmount: 9000,
       ),
