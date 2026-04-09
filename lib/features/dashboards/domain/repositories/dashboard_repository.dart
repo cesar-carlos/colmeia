@@ -1,5 +1,9 @@
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_filter.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
+
+export 'package:colmeia/features/dashboards/domain/entities/dashboard_filter.dart'
+    show DashboardAgentOption, DashboardFilter, DashboardYearMonth;
 
 enum DashboardLoadPolicy {
   defaultLoad,
@@ -11,5 +15,6 @@ abstract interface class DashboardRepository {
   Future<AppResult<DashboardOverview>> loadOverview({
     required String userId,
     DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
+    DashboardFilter filter = const DashboardFilter(),
   });
 }

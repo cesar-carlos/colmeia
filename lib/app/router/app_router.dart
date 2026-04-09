@@ -18,7 +18,7 @@ class AppRouter {
   final CurrentUserContextController _userContextController;
 
   late final GoRouter router = GoRouter(
-    initialLocation: AppRoute.dashboard.path,
+    initialLocation: '/',
     refreshListenable: Listenable.merge(<Listenable>[
       _authController,
       _userContextController,
@@ -35,6 +35,10 @@ class AppRouter {
       );
     },
     routes: <RouteBase>[
+      GoRoute(
+        path: '/',
+        redirect: (_, _) => AppRoute.dashboard.path,
+      ),
       ...buildAuthRoutes(),
       ...buildAppShellRoutes(),
     ],

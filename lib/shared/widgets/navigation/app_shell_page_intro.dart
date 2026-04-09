@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 
 class AppShellPageIntro extends StatelessWidget {
   const AppShellPageIntro({
-    required this.title,
     required this.subtitle,
     super.key,
+    this.title,
     this.eyebrow,
     this.sectionLabel,
     this.footer,
   });
 
-  final String title;
+  final String? title;
   final String subtitle;
   final String? eyebrow;
 
@@ -26,6 +26,7 @@ class AppShellPageIntro extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
+    final hasTitle = title != null && title!.trim().isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,11 +49,15 @@ class AppShellPageIntro extends StatelessWidget {
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],
-        Text(
-          title,
-          style: typography.displayH1,
-        ),
-        SizedBox(height: tokens.gapSm),
+        if (hasTitle) ...<Widget>[
+          Text(
+            title!.trim(),
+            style: typography.displayH1,
+          ),
+          SizedBox(height: tokens.gapSm),
+        ] else if (eyebrow != null) ...<Widget>[
+          SizedBox(height: tokens.gapSm),
+        ],
         Text(
           subtitle,
           style: typography.body.copyWith(

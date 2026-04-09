@@ -8,6 +8,7 @@ import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_filter.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
@@ -15,11 +16,13 @@ import 'package:colmeia/features/dashboards/domain/entities/dashboard_user_ranki
 import 'package:colmeia/features/dashboards/presentation/controllers/dashboard_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
@@ -161,7 +164,6 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                         children: <Widget>[
                           AppShellPageIntro(
                             eyebrow: 'Ola, $greetingName',
-                            title: 'Dashboard de Pagamentos',
                             subtitle:
                                 'Resumo consolidado dos agentes aprovados '
                                 '(todas as filiais conectadas).',
@@ -171,6 +173,20 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                                     icon: Icons.calendar_today_outlined,
                                   )
                                 : null,
+                          ),
+                          SizedBox(height: tokens.gapMd),
+                          _DashboardFilterBar(
+                            filter: dashboardController.activeFilter,
+                            availableAgents:
+                                dashboardController.availableAgents,
+                            onFilterChanged: sessionUserId == null
+                                ? null
+                                : (f) => unawaited(
+                                    dashboardController.applyFilter(
+                                      userId: sessionUserId,
+                                      filter: f,
+                                    ),
+                                  ),
                           ),
                           if (dashboardController.errorMessage
                               case final String msg) ...<Widget>[
@@ -397,6 +413,258 @@ class _DashboardAutoLoaderState extends State<_DashboardAutoLoader> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard filter bar
+// ---------------------------------------------------------------------------
+
+class _DashboardFilterBar extends StatelessWidget {
+  const _DashboardFilterBar({
+    required this.filter,
+    required this.availableAgents,
+    this.onFilterChanged,
+  });
+
+  final DashboardFilter filter;
+  final List<DashboardAgentOption> availableAgents;
+  final ValueChanged<DashboardFilter>? onFilterChanged;
+
+  static const String _allAgentsValue = '__all__';
+
+  // Generates the last 13 months (current + 12 previous) as options.
+  static List<DashboardYearMonth> _buildMonthOptions() {
+    final now = DateTime.now();
+    return List<DashboardYearMonth>.generate(13, (i) {
+      var month = now.month - i;
+      var year = now.year;
+      while (month < 1) {
+        month += 12;
+        year -= 1;
+      }
+      return DashboardYearMonth(year: year, month: month);
+    });
+  }
+
+  static String _monthLabel(DashboardYearMonth ym) {
+    const months = <String>[
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
+    ];
+    return '${months[ym.month - 1]} ${ym.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
+    final cs = theme.colorScheme;
+    final colors = theme.appColors;
+    final monthOptions = _buildMonthOptions();
+    final isDisabled = onFilterChanged == null;
+
+    final labelStyle = typography.utilityOverline.copyWith(
+      color: colors.onSurfaceVariant,
+      fontSize: 10,
+    );
+
+    Widget buildLabel(String text) => Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(text, style: labelStyle),
+    );
+
+    // Agent dropdown
+    final agentValue =
+        filter.selectedAgentId ?? _allAgentsValue;
+    final agentItems = <DropdownMenuItem<String>>[
+      DropdownMenuItem<String>(
+        value: _allAgentsValue,
+        child: Text(
+          'Todos os agentes',
+          style: typography.body.copyWith(fontSize: 13),
+        ),
+      ),
+      for (final a in availableAgents)
+        DropdownMenuItem<String>(
+          value: a.agentId,
+          child: Text(
+            a.name,
+            overflow: TextOverflow.ellipsis,
+            style: typography.body.copyWith(fontSize: 13),
+          ),
+        ),
+    ];
+
+    // Month dropdown
+    final monthValue = filter.yearMonth;
+    final monthItems = <DropdownMenuItem<DashboardYearMonth?>>[
+      DropdownMenuItem<DashboardYearMonth?>(
+        child: Text(
+          'Ultimos 30 dias',
+          style: typography.body.copyWith(fontSize: 13),
+        ),
+      ),
+      for (final ym in monthOptions)
+        DropdownMenuItem<DashboardYearMonth?>(
+          value: ym,
+          child: Text(
+            _monthLabel(ym),
+            style: typography.body.copyWith(fontSize: 13),
+          ),
+        ),
+    ];
+
+    final inputDecoration = InputDecoration(
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: tokens.gapSm,
+        vertical: tokens.gapSm,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        borderSide: BorderSide(
+          color: cs.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        borderSide: BorderSide(
+          color: cs.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        borderSide: BorderSide(color: cs.primary),
+      ),
+      filled: true,
+      fillColor: cs.surfaceContainerLow,
+    );
+
+    final hasActiveFilter = !filter.isDefault;
+
+    return AppSectionCard(
+      color: cs.surfaceContainerLow,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.contentSpacing,
+        vertical: tokens.gapMd,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.tune_rounded,
+                size: 14,
+                color: hasActiveFilter ? cs.primary : colors.onSurfaceVariant,
+              ),
+              SizedBox(width: tokens.gapXs),
+              Text(
+                'Filtros',
+                style: typography.utilityOverline.copyWith(
+                  color: hasActiveFilter
+                      ? cs.primary
+                      : colors.onSurfaceVariant,
+                ),
+              ),
+              if (hasActiveFilter) ...<Widget>[
+                SizedBox(width: tokens.gapSm),
+                GestureDetector(
+                  onTap: isDisabled
+                      ? null
+                      : () => onFilterChanged!(const DashboardFilter()),
+                  child: Text(
+                    'Limpar',
+                    style: typography.caption.copyWith(
+                      color: cs.primary,
+                      decoration: TextDecoration.underline,
+                      decorationColor: cs.primary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          SizedBox(height: tokens.gapSm),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 480;
+              final agentField = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  buildLabel('AGENTE'),
+                  DropdownButtonFormField<String>(
+                    initialValue: agentValue,
+                    items: agentItems,
+                    isExpanded: true,
+                    decoration: inputDecoration,
+                    style: typography.body.copyWith(
+                      fontSize: 13,
+                      color: cs.onSurface,
+                    ),
+                    onChanged: isDisabled
+                        ? null
+                        : (v) => onFilterChanged!(
+                            filter.copyWith(
+                              selectedAgentId:
+                                  v == _allAgentsValue ? null : v,
+                            ),
+                          ),
+                  ),
+                ],
+              );
+
+              final monthField = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  buildLabel('ANO / MES'),
+                  DropdownButtonFormField<DashboardYearMonth?>(
+                    initialValue: monthValue,
+                    items: monthItems,
+                    isExpanded: true,
+                    decoration: inputDecoration,
+                    style: typography.body.copyWith(
+                      fontSize: 13,
+                      color: cs.onSurface,
+                    ),
+                    onChanged: isDisabled
+                        ? null
+                        : (v) => onFilterChanged!(
+                            filter.copyWith(yearMonth: v),
+                          ),
+                  ),
+                ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    agentField,
+                    SizedBox(height: tokens.gapMd),
+                    monthField,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: agentField),
+                  SizedBox(width: tokens.gapMd),
+                  Expanded(child: monthField),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _DashboardPanelActions extends StatelessWidget {
@@ -631,6 +899,16 @@ class _UserRankingCard extends StatelessWidget {
 // Payment summary table
 // ---------------------------------------------------------------------------
 
+const double _kPaymentSummaryTableTypeScale = 0.92;
+
+TextStyle _scaledPaymentSummaryTextStyle(TextStyle base) {
+  final fs = base.fontSize;
+  if (fs == null) {
+    return base;
+  }
+  return base.copyWith(fontSize: fs * _kPaymentSummaryTableTypeScale);
+}
+
 class _PaymentSummaryTable extends StatelessWidget {
   const _PaymentSummaryTable({required this.methods});
 
@@ -642,9 +920,22 @@ class _PaymentSummaryTable extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final theme = Theme.of(context);
+    final typography = theme.appTypography;
+
     return AppSectionCardWithHeading(
       title: 'Resumo por forma de pagamento',
       subtitle: 'Detalhamento de vendas, ticket medio e participacao.',
+      style: AppSectionCardWithHeadingStyle(
+        titleTextStyle: _scaledPaymentSummaryTextStyle(
+          typography.sectionHeaderH2,
+        ),
+        subtitleTextStyle: _scaledPaymentSummaryTextStyle(
+          typography.caption.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -666,7 +957,9 @@ class _PaymentTableHeader extends StatelessWidget {
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
 
-    final style = typography.utilityOverline.copyWith(
+    final style = _scaledPaymentSummaryTextStyle(
+      typography.utilityOverline,
+    ).copyWith(
       color: cs.onSurfaceVariant,
     );
 
@@ -722,6 +1015,11 @@ class _PaymentTableRow extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
+    final percentStyle =
+        _scaledPaymentSummaryTextStyle(typography.body).copyWith(
+      color: cs.primary,
+      fontWeight: FontWeight.w600,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -739,21 +1037,23 @@ class _PaymentTableRow extends StatelessWidget {
               flex: 3,
               child: Text(
                 method.label,
-                style: typography.body.copyWith(fontWeight: FontWeight.w600),
+                style: _scaledPaymentSummaryTextStyle(typography.body).copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Expanded(
               flex: 2,
               child: Text(
                 AppBrFormatters.currency(method.totalAmount),
-                style: typography.body,
+                style: _scaledPaymentSummaryTextStyle(typography.body),
                 textAlign: TextAlign.right,
               ),
             ),
             Expanded(
               child: Text(
                 method.totalSalesCount.toString(),
-                style: typography.body,
+                style: _scaledPaymentSummaryTextStyle(typography.body),
                 textAlign: TextAlign.right,
               ),
             ),
@@ -761,18 +1061,21 @@ class _PaymentTableRow extends StatelessWidget {
               flex: 2,
               child: Text(
                 AppBrFormatters.currency(method.averageTicket),
-                style: typography.body,
+                style: _scaledPaymentSummaryTextStyle(typography.body),
                 textAlign: TextAlign.right,
               ),
             ),
             Expanded(
-              child: Text(
-                '${method.sharePercent.toStringAsFixed(1)}%',
-                style: typography.body.copyWith(
-                  color: cs.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.right,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    method.sharePercent.toStringAsFixed(1),
+                    style: percentStyle,
+                  ),
+                  Text('%', style: percentStyle),
+                ],
               ),
             ),
           ],

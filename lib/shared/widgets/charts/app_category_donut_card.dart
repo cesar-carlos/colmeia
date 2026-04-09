@@ -10,6 +10,17 @@ import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+/// Slightly smaller type within this card (header, legend, center labels).
+const double _kCategoryDonutTypographyTightenFactor = 0.92;
+
+TextStyle _tightenTypographyFontSize(TextStyle style) {
+  final fs = style.fontSize;
+  if (fs == null) {
+    return style;
+  }
+  return style.copyWith(fontSize: fs * _kCategoryDonutTypographyTightenFactor);
+}
+
 class AppCategoryDonutCardStyle {
   const AppCategoryDonutCardStyle({
     this.chartSize,
@@ -335,13 +346,18 @@ class _CategoryDonutCardHeader extends StatelessWidget {
       children: <Widget>[
         Text(
           title,
-          style: typography.sectionHeaderH2.copyWith(
+          style: _tightenTypographyFontSize(
+            typography.sectionHeaderH2,
+          ).copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         if (subtitle != null) ...<Widget>[
           SizedBox(height: tokens.gapXs),
-          Text(subtitle!, style: typography.body),
+          Text(
+            subtitle!,
+            style: _tightenTypographyFontSize(typography.body),
+          ),
         ],
       ],
     );
@@ -478,6 +494,11 @@ class _DonutSection extends StatelessWidget {
         centerSecondary!,
     ].join(', ');
 
+    final titleLargeSize = theme.textTheme.titleLarge?.fontSize;
+    final centerPrimaryFontSize = titleLargeSize != null
+        ? titleLargeSize * _kCategoryDonutTypographyTightenFactor
+        : _tightenTypographyFontSize(typography.displayH1).fontSize;
+
     return Semantics(
       container: true,
       label: 'Gráfico de rosca. $centerSummary',
@@ -495,7 +516,7 @@ class _DonutSection extends StatelessWidget {
                       centerPrimary!,
                       textAlign: TextAlign.center,
                       style: typography.displayH1.copyWith(
-                        fontSize: theme.textTheme.titleLarge?.fontSize,
+                        fontSize: centerPrimaryFontSize,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -505,7 +526,9 @@ class _DonutSection extends StatelessWidget {
                     Text(
                       centerSecondary!,
                       textAlign: TextAlign.center,
-                      style: typography.utilityOverline.copyWith(
+                      style: _tightenTypographyFontSize(
+                        typography.utilityOverline,
+                      ).copyWith(
                         color: context.appColors.onSurfaceVariant,
                       ),
                     ),
@@ -641,7 +664,7 @@ class _LegendRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     segment.label,
-                    style: typography.body.copyWith(
+                    style: _tightenTypographyFontSize(typography.body).copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 2,
@@ -654,13 +677,15 @@ class _LegendRow extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       valueLabel,
-                      style: typography.body.copyWith(
+                      style: _tightenTypographyFontSize(typography.body)
+                          .copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
                       percentLabel,
-                      style: typography.caption.copyWith(
+                      style: _tightenTypographyFontSize(typography.caption)
+                          .copyWith(
                         color: swatchColor,
                         fontWeight: FontWeight.w700,
                       ),

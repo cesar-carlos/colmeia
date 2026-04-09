@@ -163,8 +163,13 @@ enum AppRoute {
   ];
 
   static AppRoute fromLocation(String location) {
+    final trimmed = location.trim();
+    if (trimmed.isEmpty || trimmed == '/') {
+      return dashboard;
+    }
+
     final matchedRoutes = AppRoute.values
-        .where((route) => route.matches(location))
+        .where((route) => route.matches(trimmed))
         .toList(growable: false);
     if (matchedRoutes.isEmpty) {
       return login;

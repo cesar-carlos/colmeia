@@ -35,6 +35,18 @@ class DashboardController extends ChangeNotifier {
   int _loadGeneration = 0;
   bool _disposed = false;
 
+  DashboardFilter _activeFilter = const DashboardFilter();
+
+  /// The filter currently applied to the dashboard.
+  DashboardFilter get activeFilter => _activeFilter;
+
+  /// Agent options derived from the last successful overview load.
+  ///
+  /// Populated after the first successful load so the filter bar can show
+  /// agent names. Empty until data arrives.
+  List<DashboardAgentOption> _availableAgents = const <DashboardAgentOption>[];
+  List<DashboardAgentOption> get availableAgents => _availableAgents;
+
   @override
   void dispose() {
     _disposed = true;
@@ -54,6 +66,20 @@ class DashboardController extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
   bool get hasContent => _overview != null;
   String? get errorMessage => _errorMessage;
+
+  /// Applies [filter] and immediately reloads the overview.
+  Future<void> applyFilter({
+    required String userId,
+    required DashboardFilter filter,
+  }) async {
+    _activeFilter = filter;
+    _requestedOverviewSignature = null;
+    await _loadOverview(
+      userId: userId,
+      policy: DashboardLoadPolicy.forceRefresh,
+      keepContentVisible: _overview != null,
+    );
+  }
 
   /// Schedules [loadOverview] after the current frame when the
   /// user changes. Safe to call from widget build methods.
@@ -149,6 +175,7 @@ class DashboardController extends ChangeNotifier {
     final result = await _loadDashboardOverviewUseCase(
       userId: userId,
       policy: policy,
+      filter: _activeFilter,
     );
     if (_disposed || generation != _loadGeneration) {
       return;
@@ -158,6 +185,7 @@ class DashboardController extends ChangeNotifier {
       (overview) {
         _overview = overview;
         _loadedOverviewSignature = signature;
+        _updateAvailableAgents(overview);
         AppLogger.info(
           'Dashboard loaded in controller',
           context: <String, Object?>{
@@ -200,9 +228,48 @@ class DashboardController extends ChangeNotifier {
     _notifyListenersIfAlive();
   }
 
-  String _signatureFor({
-    required String userId,
-  }) {
-    return userId;
+  String _signatureFor({required String userId}) {
+    return '$userId|${_activeFilter.selectedAgentId ?? '*'}'
+        '|${_activeFilter.yearMonth ?? 'default'}';
+  }
+
+  /// Rebuilds [_availableAgents] from the approved-agent metadata stored in
+  /// the overview.  Uses the names already resolved by the repository so we
+  /// never need a separate agents call here.
+  void _updateAvailableAgents(DashboardOverview overview) {
+    // Collect all agent ids/names we know about from the overview metadata.
+    final seen = <String, String>{};
+    for (var i = 0;
+        i < overview.agentIdsExcludedFromQueryFailure.length;
+        i++) {
+      final id = overview.agentIdsExcludedFromQueryFailure[i];
+      final name = i < overview.agentNamesExcludedFromQueryFailure.length
+          ? overview.agentNamesExcludedFromQueryFailure[i]
+          : id;
+      seen[id] = name;
+    }
+    for (var i = 0; i < overview.agentIdsMissingClientToken.length; i++) {
+      final id = overview.agentIdsMissingClientToken[i];
+      final name = i < overview.agentNamesMissingClientToken.length
+          ? overview.agentNamesMissingClientToken[i]
+          : id;
+      seen[id] = name;
+    }
+
+    // The overview itself doesn't carry the full agent list, so we keep
+    // whatever we already have and merge new names in.
+    final merged = <String, String>{
+      for (final opt in _availableAgents) opt.agentId: opt.name,
+      ...seen,
+    };
+
+    if (merged.isEmpty) {
+      return;
+    }
+
+    _availableAgents = merged.entries
+        .map((e) => DashboardAgentOption(agentId: e.key, name: e.value))
+        .toList(growable: false)
+      ..sort((a, b) => a.name.compareTo(b.name));
   }
 }

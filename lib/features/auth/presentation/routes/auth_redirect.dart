@@ -14,6 +14,7 @@ String? redirectWithAuthGuard({
     isAuthenticated: authController.isAuthenticated,
     canAccessRoute: userContextController.canAccessRoute(matchedRoute),
     matchedRoute: matchedRoute,
+    isUserContextLoading: userContextController.isLoadingInitial,
   );
 }
 
@@ -21,6 +22,7 @@ String? resolveAuthRedirect({
   required bool isAuthenticated,
   required bool canAccessRoute,
   required AppRoute matchedRoute,
+  required bool isUserContextLoading,
 }) {
   final isGuestOnlyRoute = switch (matchedRoute) {
     AppRoute.login ||
@@ -39,5 +41,15 @@ String? resolveAuthRedirect({
     return AppRoute.settings.path;
   }
 
-  return canAccessRoute ? null : AppRoute.settings.path;
+  if (canAccessRoute) {
+    return null;
+  }
+
+  if (isUserContextLoading &&
+      (matchedRoute == AppRoute.dashboard ||
+          matchedRoute == AppRoute.dashboardStore)) {
+    return null;
+  }
+
+  return AppRoute.settings.path;
 }

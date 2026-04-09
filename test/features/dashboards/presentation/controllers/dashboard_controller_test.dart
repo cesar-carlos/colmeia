@@ -194,6 +194,7 @@ class _PendingDashboardRepository implements DashboardRepository {
   Future<AppResult<DashboardOverview>> loadOverview({
     required String userId,
     DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
+    DashboardFilter filter = const DashboardFilter(),
   }) {
     return _resultFuture;
   }
@@ -210,6 +211,7 @@ class _QueuedDashboardRepository implements DashboardRepository {
   Future<AppResult<DashboardOverview>> loadOverview({
     required String userId,
     DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
+    DashboardFilter filter = const DashboardFilter(),
   }) {
     requestedPolicies.add(policy);
     return _results[_index++];

@@ -47,8 +47,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
   Future<AppResult<DashboardOverview>> loadOverview({
     required String userId,
     DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
+    DashboardFilter filter = const DashboardFilter(),
   }) async {
-    final period = _buildDefaultPeriod();
+    final period = _buildPeriod(filter);
     try {
       final approvedAgentsResult = await _loadAllApprovedAgents(userId: userId);
       final approvedAgents = approvedAgentsResult.getOrNull();
@@ -77,7 +78,18 @@ class DashboardRepositoryImpl implements DashboardRepository {
         );
       }
 
-      final sortedApprovedAgents = approvedAgents.toList(growable: false)
+      // When a specific agent is selected, restrict to that agent only.
+      final filteredAgents = filter.selectedAgentId == null
+          ? approvedAgents
+          : approvedAgents
+                .where((a) => a.agentId == filter.selectedAgentId)
+                .toList(growable: false);
+
+      final effectiveAgents = filteredAgents.isEmpty
+          ? approvedAgents
+          : filteredAgents;
+
+      final sortedApprovedAgents = effectiveAgents.toList(growable: false)
         ..sort((left, right) => left.agentId.compareTo(right.agentId));
       final sortedAgentIds = sortedApprovedAgents
           .map((a) => a.agentId)
@@ -640,10 +652,20 @@ class DashboardRepositoryImpl implements DashboardRepository {
     return failure.isTransient || failure is UnknownFailure;
   }
 
-  _DashboardPeriod _buildDefaultPeriod() {
-    final now = _now();
-    final end = DateTime(now.year, now.month, now.day);
-    final start = end.subtract(const Duration(days: 29));
+  _DashboardPeriod _buildPeriod(DashboardFilter filter) {
+    final yearMonth = filter.yearMonth;
+    final DateTime start;
+    final DateTime end;
+
+    if (yearMonth != null) {
+      start = yearMonth.start;
+      end = yearMonth.end;
+    } else {
+      final now = _now();
+      end = DateTime(now.year, now.month, now.day);
+      start = end.subtract(const Duration(days: 29));
+    }
+
     return _DashboardPeriod(
       start: start,
       end: end,

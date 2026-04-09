@@ -325,7 +325,7 @@ final class FakeIdentityUserRecord {
            employeeId: employeeId,
            roleLabel: roleLabel,
            phone: phone,
-            thumbnailUrl: thumbnailUrl,
+           thumbnailUrl: thumbnailUrl,
          ),
          access: FakeIdentityUserAccessRecord(
            allowedStores: allowedStores,

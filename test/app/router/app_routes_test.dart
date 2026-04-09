@@ -19,5 +19,10 @@ void main() {
     test('should resolve settings route from location', () {
       check(AppRoute.fromLocation('/settings')).equals(AppRoute.settings);
     });
+
+    test('should treat root path as dashboard home', () {
+      check(AppRoute.fromLocation('/')).equals(AppRoute.dashboard);
+      check(AppRoute.fromLocation('')).equals(AppRoute.dashboard);
+    });
   });
 }

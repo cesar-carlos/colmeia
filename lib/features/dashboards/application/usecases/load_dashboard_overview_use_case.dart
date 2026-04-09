@@ -10,10 +10,12 @@ class LoadDashboardOverviewUseCase {
   Future<AppResult<DashboardOverview>> call({
     required String userId,
     DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
+    DashboardFilter filter = const DashboardFilter(),
   }) {
     return _dashboardRepository.loadOverview(
       userId: userId,
       policy: policy,
+      filter: filter,
     );
   }
 }

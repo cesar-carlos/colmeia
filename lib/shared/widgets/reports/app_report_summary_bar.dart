@@ -5,6 +5,12 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
 
+double _twoLineLabelBlockHeight(TextStyle labelStyle, TextScaler scaler) {
+  final fontSize = labelStyle.fontSize ?? 10;
+  final heightFactor = labelStyle.height ?? 1.35;
+  return scaler.scale(fontSize) * heightFactor * 2;
+}
+
 /// Horizontal strip of KPI tiles built from [AppReportSummaryItem] list.
 ///
 /// Scrolls horizontally when items overflow, so it stays readable on compact
@@ -15,6 +21,10 @@ class AppReportSummaryBar extends StatelessWidget {
     super.key,
     this.color,
   });
+
+  static const double _scrollTileWidthFraction = 0.42;
+  static const double _minScrollTileWidth = 136;
+  static const double _maxScrollTileWidth = 176;
 
   final List<AppReportSummaryItem> items;
   final Color? color;
@@ -35,6 +45,9 @@ class AppReportSummaryBar extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth < 640) {
+            final scrollTileWidth = (constraints.maxWidth *
+                    _scrollTileWidthFraction)
+                .clamp(_minScrollTileWidth, _maxScrollTileWidth);
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -44,7 +57,10 @@ class AppReportSummaryBar extends StatelessWidget {
                       final item = entry.$2;
                       return <Widget>[
                         if (i > 0) SizedBox(width: tokens.gapMd),
-                        _SummaryTile(item: item),
+                        SizedBox(
+                          width: scrollTileWidth,
+                          child: _SummaryTile(item: item),
+                        ),
                       ];
                     })
                     .toList(growable: false),
@@ -86,6 +102,13 @@ class _SummaryTile extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
     final typography = theme.appTypography;
+    final labelStyle = typography.utilityOverline.copyWith(
+      color: colors.onSurfaceVariant,
+    );
+    final labelBlockHeight = _twoLineLabelBlockHeight(
+      labelStyle,
+      MediaQuery.textScalerOf(context),
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -101,28 +124,35 @@ class _SummaryTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (item.icon != null) ...<Widget>[
-                  Icon(
-                    item.icon,
-                    size: 14,
-                    color: colors.onSurfaceVariant,
+            SizedBox(
+              height: labelBlockHeight,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  if (item.icon != null) ...<Widget>[
+                    Icon(
+                      item.icon,
+                      size: 14,
+                      color: colors.onSurfaceVariant,
+                    ),
+                    SizedBox(width: tokens.gapXs),
+                  ],
+                  Expanded(
+                    child: Text(
+                      item.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: labelStyle,
+                    ),
                   ),
-                  SizedBox(width: tokens.gapXs),
                 ],
-                Text(
-                  item.label,
-                  style: typography.utilityOverline.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
+              ),
             ),
             SizedBox(height: tokens.gapXs),
             Text(
               item.value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: typography.sectionHeaderH2.copyWith(
                 fontWeight: FontWeight.w700,
                 color: item.valueColor,

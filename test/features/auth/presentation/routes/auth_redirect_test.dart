@@ -11,6 +11,7 @@ void main() {
           isAuthenticated: false,
           canAccessRoute: false,
           matchedRoute: AppRoute.dashboard,
+          isUserContextLoading: false,
         ),
       ).equals(AppRoute.login.path);
     });
@@ -21,6 +22,7 @@ void main() {
           isAuthenticated: false,
           canAccessRoute: true,
           matchedRoute: AppRoute.login,
+          isUserContextLoading: false,
         ),
       ).isNull();
     });
@@ -31,6 +33,7 @@ void main() {
           isAuthenticated: true,
           canAccessRoute: true,
           matchedRoute: AppRoute.login,
+          isUserContextLoading: false,
         ),
       ).equals(AppRoute.settings.path);
     });
@@ -41,8 +44,46 @@ void main() {
           isAuthenticated: true,
           canAccessRoute: true,
           matchedRoute: AppRoute.settings,
+          isUserContextLoading: false,
         ),
       ).isNull();
     });
+
+    test(
+      'should defer dashboard access denial while user context is loading',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessRoute: false,
+            matchedRoute: AppRoute.dashboard,
+            isUserContextLoading: true,
+          ),
+        ).isNull();
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessRoute: false,
+            matchedRoute: AppRoute.dashboardStore,
+            isUserContextLoading: true,
+          ),
+        ).isNull();
+      },
+    );
+
+    test(
+      'should send authenticated users to settings when dashboard is denied '
+      'after context resolved',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessRoute: false,
+            matchedRoute: AppRoute.dashboard,
+            isUserContextLoading: false,
+          ),
+        ).equals(AppRoute.settings.path);
+      },
+    );
   });
 }
