@@ -10,7 +10,9 @@ String? redirectWithAuthGuard({
   required GoRouterState state,
 }) {
   final matchedRoute = AppRoute.fromLocation(state.matchedLocation);
-  final canAccessMatchedRoute = userContextController.canAccessRoute(matchedRoute);
+  final canAccessMatchedRoute = userContextController.canAccessRoute(
+    matchedRoute,
+  );
   final canAccessDashboardHome = userContextController.canAccessRoute(
     AppRoute.dashboard,
   );

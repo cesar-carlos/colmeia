@@ -357,7 +357,6 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
                                   'Carregando tabela de formas de pagamento...',
                               child: _PaymentSummaryTable(
                                 methods: displayOverview.paymentMethods,
-                                percentLayout: _PaymentPercentLayout.stacked,
                               ),
                             ),
                           ],
@@ -921,19 +920,15 @@ class _PaymentSummaryColumnFlexes {
 
   static const int label = 3;
   static const int amount = 2;
-  static const int sales = 1;
   static const int ticket = 2;
-  static const int percent = 1;
 }
 
 class _PaymentSummaryTable extends StatelessWidget {
-  const _PaymentSummaryTable({
-    required this.methods,
-    this.percentLayout = _PaymentPercentLayout.stacked,
-  });
+  const _PaymentSummaryTable({required this.methods});
 
   final List<DashboardPaymentMethodBreakdown> methods;
-  final _PaymentPercentLayout percentLayout;
+
+  static const _PaymentPercentLayout _layout = _PaymentPercentLayout.stacked;
 
   @override
   Widget build(BuildContext context) {
@@ -960,11 +955,10 @@ class _PaymentSummaryTable extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _PaymentTableHeader(percentLayout: percentLayout),
+          const _PaymentTableHeader(),
           ...methods.map(
             (m) => _PaymentTableRow(
               method: m,
-              percentLayout: percentLayout,
             ),
           ),
         ],
@@ -974,9 +968,7 @@ class _PaymentSummaryTable extends StatelessWidget {
 }
 
 class _PaymentTableHeader extends StatelessWidget {
-  const _PaymentTableHeader({required this.percentLayout});
-
-  final _PaymentPercentLayout percentLayout;
+  const _PaymentTableHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -1006,7 +998,6 @@ class _PaymentTableHeader extends StatelessWidget {
             maxLines: 2,
           ),
           _PaymentSummaryTextCell(
-            flex: _PaymentSummaryColumnFlexes.sales,
             text: _kPaymentSummarySalesHeader,
             style: style,
             maxLines: 2,
@@ -1018,8 +1009,7 @@ class _PaymentTableHeader extends StatelessWidget {
             maxLines: 2,
           ),
           _PaymentSummaryPercentHeaderCell(
-            flex: _PaymentSummaryColumnFlexes.percent,
-            layout: percentLayout,
+            layout: _PaymentSummaryTable._layout,
             style: style,
           ),
         ],
@@ -1031,11 +1021,9 @@ class _PaymentTableHeader extends StatelessWidget {
 class _PaymentTableRow extends StatelessWidget {
   const _PaymentTableRow({
     required this.method,
-    required this.percentLayout,
   });
 
   final DashboardPaymentMethodBreakdown method;
-  final _PaymentPercentLayout percentLayout;
 
   @override
   Widget build(BuildContext context) {
@@ -1079,7 +1067,6 @@ class _PaymentTableRow extends StatelessWidget {
               semanticsLabel: 'Faturamento $amountText',
             ),
             _PaymentSummaryTextCell(
-              flex: _PaymentSummaryColumnFlexes.sales,
               text: method.totalSalesCount.toString(),
               style: bodyStyle,
               semanticsLabel: 'Vendas ${method.totalSalesCount}',
@@ -1091,8 +1078,7 @@ class _PaymentTableRow extends StatelessWidget {
               semanticsLabel: 'Ticket medio $averageTicketText',
             ),
             _PaymentSummaryPercentValueCell(
-              flex: _PaymentSummaryColumnFlexes.percent,
-              layout: percentLayout,
+              layout: _PaymentSummaryTable._layout,
               percentText: percentText,
               style: percentStyle,
               semanticsLabel: 'Participacao $percentSemantics',
@@ -1162,18 +1148,15 @@ class _PaymentSummaryPercentHeaderCell extends StatelessWidget {
   const _PaymentSummaryPercentHeaderCell({
     required this.layout,
     required this.style,
-    this.flex = 1,
   });
 
   final _PaymentPercentLayout layout;
   final TextStyle style;
-  final int flex;
 
   @override
   Widget build(BuildContext context) {
     if (layout == _PaymentPercentLayout.inline) {
       return _PaymentSummaryTextCell(
-        flex: flex,
         text: '$_kPaymentSummaryPercentHeader %',
         style: style,
         maxLines: 2,
@@ -1181,7 +1164,6 @@ class _PaymentSummaryPercentHeaderCell extends StatelessWidget {
     }
 
     return _PaymentSummaryCell(
-      flex: flex,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
@@ -1212,14 +1194,12 @@ class _PaymentSummaryPercentValueCell extends StatelessWidget {
     required this.percentText,
     required this.style,
     required this.semanticsLabel,
-    this.flex = 1,
   });
 
   final _PaymentPercentLayout layout;
   final String percentText;
   final TextStyle style;
   final String semanticsLabel;
-  final int flex;
 
   @override
   Widget build(BuildContext context) {
@@ -1257,7 +1237,6 @@ class _PaymentSummaryPercentValueCell extends StatelessWidget {
     }
 
     return _PaymentSummaryCell(
-      flex: flex,
       child: Semantics(
         label: semanticsLabel,
         child: ExcludeSemantics(child: content),

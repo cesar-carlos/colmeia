@@ -93,17 +93,20 @@ void main() {
       },
     );
 
-    test('should redirect authenticated users away from register to dashboard', () {
-      check(
-        resolveAuthRedirect(
-          isAuthenticated: true,
-          canAccessMatchedRoute: true,
-          canAccessDashboardHome: true,
-          matchedRoute: AppRoute.register,
-          isUserContextLoading: false,
-        ),
-      ).equals(AppRoute.dashboard.path);
-    });
+    test(
+      'should redirect authenticated users away from register to dashboard',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessMatchedRoute: true,
+            canAccessDashboardHome: true,
+            matchedRoute: AppRoute.register,
+            isUserContextLoading: false,
+          ),
+        ).equals(AppRoute.dashboard.path);
+      },
+    );
 
     test(
       'should redirect authenticated users on guest routes to settings '
