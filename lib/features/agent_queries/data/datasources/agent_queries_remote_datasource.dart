@@ -24,7 +24,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     final trimmedToken = request.trimmedClientToken;
     final rpcOptions = request.executeOptions?.toRpcOptions();
     final params = <String, Object?>{
-      'sql': request.trimmedSql,
+      'sql': _normalizeSqlForRpc(request.trimmedSql),
       'params': ?(request.namedParams.isEmpty ? null : request.namedParams),
       'client_token': ?(trimmedToken == null || trimmedToken.isEmpty
           ? null
@@ -92,7 +92,7 @@ class FakeAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
             'finished_at': DateTime.now().toUtc().toIso8601String(),
             'rows': <Map<String, dynamic>>[
               <String, dynamic>{
-                'sql_preview': request.trimmedSql,
+                'sql_preview': _normalizeSqlForRpc(request.trimmedSql),
                 'fake': true,
                 'named_params_empty': request.namedParams.isEmpty,
                 'execute_options_empty': request.executeOptions == null,
@@ -107,3 +107,6 @@ class FakeAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     };
   }
 }
+
+String _normalizeSqlForRpc(String sql) =>
+    sql.replaceAll(RegExp(r'\s*\r?\n\s*'), ' ').trim();

@@ -12,7 +12,9 @@ import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_k
 ///   denied and may prefer bridge `user_message` when it adds useful context.
 /// - **Validation**: JSON-RPC `invalid_params` (`-32602`) is treated as query
 ///   validation for UX, even when the technical detail mentions SQL or
-///   pagination.
+///   pagination. When `error.data.odbc_reason` is `invalid_policy`, the hub may
+///   still use `-32002` + `unauthorized`; that case is classified as query
+///   validation (policy / SQL classification), not generic permission denial.
 /// - **Unclassified** errors: prefer bridge `user_message` when non-empty; else
 ///   generic English with [AgentSqlRpcFailureUiKey.generic].
 ///
@@ -75,6 +77,20 @@ String? _nonEmptyStringFromMap(Map<String, dynamic>? map, String key) {
   return null;
 }
 
+/// Hub may return JSON-RPC `-32002` + `unauthorized` while
+/// [AgentSqlRpcErrorDetails.errorData] carries `odbc_reason: invalid_policy`
+/// for SQL policy / classification rejections (not generic permission denial).
+String? _odbcReasonLower(Map<String, dynamic>? data) {
+  if (data == null) {
+    return null;
+  }
+  final raw = data['odbc_reason'] ?? data['odbcReason'];
+  if (raw is String && raw.trim().isNotEmpty) {
+    return raw.trim().toLowerCase();
+  }
+  return null;
+}
+
 AgentSqlRpcUserMessageResolution _localizedResolution({
   required String userMessage,
   required String uiKey,
@@ -125,6 +141,18 @@ AgentSqlRpcUserMessageResolution resolveAgentSqlRpcUserMessage(
       userMessage: _En.authenticationFailed,
       uiKey: AgentSqlRpcFailureUiKey.authenticationFailed,
     );
+  }
+
+  // JSON-RPC / catalog codes for SQL validation must run before the broad
+  // permission check: bridges may set `category: auth` for SQL policy or
+  // authorization-layer rejections while still using -32602 / -32101.
+  if (code == -32602 || code == -32101) {
+    return _sqlValidationResolution(bridge);
+  }
+
+  final odbcReasonLower = _odbcReasonLower(data);
+  if (odbcReasonLower == 'invalid_policy') {
+    return _sqlValidationResolution(bridge);
   }
 
   final isPermissionDenied =

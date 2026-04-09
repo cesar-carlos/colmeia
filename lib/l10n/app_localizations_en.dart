@@ -50,6 +50,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get dashboardSetupRequiredTitle =>
+      'Setup required before loading data';
+
+  @override
+  String dashboardSetupRequiredMessage(String agents) {
+    return 'None of the approved agents has a client token saved on this device ($agents). Open agent management to save the token and enable dashboard queries.';
+  }
+
+  @override
   String get dashboardMultiAgentAggregationTitle => 'Multiple agents';
 
   @override

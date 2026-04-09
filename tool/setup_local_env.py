@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy assets/env/.env.example to local.env if missing; print pubspec hint."""
+"""Copy assets/env/.env.example to local.env if missing."""
 
 from __future__ import annotations
 
@@ -22,8 +22,6 @@ def main() -> int:
 
     target.write_text(example.read_text(encoding="utf-8"), encoding="utf-8")
     print("Created assets/env/local.env from .env.example.")
-    print("Add this line under flutter: assets: in pubspec.yaml:")
-    print("  - assets/env/local.env")
     return 0
 
 

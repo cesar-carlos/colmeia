@@ -22,6 +22,8 @@ este arquivo como um novo monolito.
   preferenciais e dependencias fora de escopo
 - `project_data_domain.mdc`: estrategia de dados, cache, auth, dashboards,
   relatorios e value objects
+- `project_agent_sql.mdc`: payloads `sql.execute`, normalizacao da SQL e testes
+  do bridge
 - `project_shared_components.mdc`: criacao, promocao, especializacao e evolucao
   segura de componentes compartilhados
 - `project_conventions.mdc`: formularios, strings, design system especifico,

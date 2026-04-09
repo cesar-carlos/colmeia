@@ -22,6 +22,13 @@
       "agents": {"type": "String"}
     }
   },
+  "dashboardSetupRequiredTitle": "Configuracao pendente para consultar dados",
+  "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ({agents}). Abra a gestao de agentes para cadastrar o token e liberar a consulta do dashboard.",
+  "@dashboardSetupRequiredMessage": {
+    "placeholders": {
+      "agents": {"type": "String"}
+    }
+  },
   "dashboardMultiAgentAggregationTitle": "Varios agentes",
   "dashboardMultiAgentAggregationMessage": "Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.",
   "clientAgentsDataSourcesEyebrow": "Fontes de dados",

@@ -1,0 +1,33 @@
+---
+description: Convencoes do Colmeia para payloads SQL do agente
+globs: ["lib/features/agent_queries/**/*.dart", "test/features/agent_queries/**/*.dart", "test/integration/e2e/**/*.dart"]
+---
+
+# Colmeia - Agent SQL
+
+## Escopo
+
+Esta rule cobre apenas consultas SQL enviadas ao backend via `sql.execute`.
+
+## Payload RPC
+
+- Pode manter a SQL multiline nos arquivos de query para legibilidade
+- Antes de enviar o payload para `POST /agents/commands`, normalize a SQL para
+  linha unica
+- Nao envie `\n`, `\r\n` ou blocos de whitespace multiline no campo
+  `command.params.sql`
+- Preserve `client_token`, `params` nomeados e `options` do RPC; a
+  normalizacao deve mudar apenas o formato da string SQL
+
+## Testes
+
+- Quando tocar o datasource de `agent_queries`, cubra em teste o payload final
+  enviado ao bridge
+- Garanta explicitamente que uma SQL multiline de entrada sai normalizada para
+  linha unica no body enviado
+
+## Exemplo
+
+```dart
+final payloadSql = sql.replaceAll(RegExp(r'\s*\r?\n\s*'), ' ').trim();
+```

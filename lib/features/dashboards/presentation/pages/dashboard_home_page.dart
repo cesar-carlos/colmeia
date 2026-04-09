@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_navigation.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
@@ -15,6 +17,8 @@ import 'package:colmeia/features/user_context/presentation/controllers/current_u
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
@@ -71,206 +75,370 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
     return trimmed.split(RegExp(r'\s+')).first;
   }
 
-  static String _previewExcludedAgentIds(List<String> ids) {
-    if (ids.isEmpty) {
+  static String _previewAgentNames(List<String> names) {
+    final nonEmpty = names
+        .map((name) => name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList(growable: false);
+    if (nonEmpty.isEmpty) {
       return '';
     }
     const maxShown = 4;
-    if (ids.length <= maxShown) {
-      return ids.join(', ');
+    if (nonEmpty.length <= maxShown) {
+      return nonEmpty.join(', ');
     }
-    final head = ids.take(maxShown).join(', ');
-    return '$head (+${ids.length - maxShown})';
+    final head = nonEmpty.take(maxShown).join(', ');
+    return '$head (+${nonEmpty.length - maxShown})';
   }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<DashboardController>.value(
       value: _controller,
-      child: Consumer3<AuthController, CurrentUserContextController,
-          DashboardController>(
-        builder: (
-          context,
-          authController,
-          userContext,
-          dashboardController,
-          _,
-        ) {
-          dashboardController.activeLocalizations =
-              AppLocalizations.of(context);
-          final theme = Theme.of(context);
-          final tokens = theme.extension<AppThemeTokens>()!;
-          final l10n = AppLocalizations.of(context);
-          final session = authController.session;
-          final overview = dashboardController.overview;
-          final showSkeleton =
-              dashboardController.isLoadingInitial && overview == null;
-          final displayOverview =
-              overview ?? (showSkeleton ? _neutralSkeletonOverview : null);
+      child:
+          Consumer3<
+            AuthController,
+            CurrentUserContextController,
+            DashboardController
+          >(
+            builder:
+                (
+                  context,
+                  authController,
+                  userContext,
+                  dashboardController,
+                  _,
+                ) {
+                  dashboardController.activeLocalizations = AppLocalizations.of(
+                    context,
+                  );
+                  final theme = Theme.of(context);
+                  final tokens = theme.extension<AppThemeTokens>()!;
+                  final l10n = AppLocalizations.of(context);
+                  final session = authController.session;
+                  final overview = dashboardController.overview;
+                  final sessionUserId = session?.userId;
+                  final isUserContextReady =
+                      sessionUserId != null &&
+                      !userContext.isLoadingInitial &&
+                      userContext.errorMessage == null &&
+                      userContext.hasResolvedData;
+                  final showSkeleton =
+                      dashboardController.isLoadingInitial && overview == null;
+                  final shouldShowOverviewSections =
+                      showSkeleton || overview?.hasRows == true;
+                  final displayOverview = showSkeleton
+                      ? _neutralSkeletonOverview
+                      : (shouldShowOverviewSections ? overview : null);
 
-          if (session != null &&
-              !userContext.isLoadingInitial &&
-              userContext.errorMessage == null &&
-              userContext.hasResolvedData) {
-            dashboardController.scheduleOverviewLoadIfNeeded(
-              userId: session.userId,
-            );
-          }
+                  final greetingName = _greetingFirstName(
+                    userContext.userScope.name,
+                  );
 
-          final greetingName = _greetingFirstName(userContext.userScope.name);
-          final sessionUserId = session?.userId;
+                  Future<void> onRefresh() async {
+                    final current = authController.session;
+                    if (current == null) return;
+                    await dashboardController.refreshOverview(
+                      userId: current.userId,
+                    );
+                  }
 
-          Future<void> onRefresh() async {
-            final current = authController.session;
-            if (current == null) return;
-            await dashboardController.refreshOverview(userId: current.userId);
-          }
+                  final periodLabel = (overview != null && !showSkeleton)
+                      ? '${AppBrFormatters.shortDate(overview.periodStart)}'
+                            ' – '
+                            '${AppBrFormatters.shortDate(overview.periodEnd)}'
+                      : null;
 
-          final periodLabel = (overview != null && !showSkeleton)
-              ? '${AppBrFormatters.shortDate(overview.periodStart)}'
-                    ' – '
-                    '${AppBrFormatters.shortDate(overview.periodEnd)}'
-              : null;
-
-          return RefreshIndicator(
-            onRefresh: onRefresh,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: context.pageScrollPadding(tokens),
-              children: <Widget>[
-                AppShellPageIntro(
-                  eyebrow: 'Ola, $greetingName',
-                  title: 'Dashboard de Pagamentos',
-                  subtitle: 'Resumo consolidado dos agentes aprovados '
-                      '(todas as filiais conectadas).',
-                  footer: periodLabel != null
-                      ? AppTagChip(
-                          label: periodLabel,
-                          icon: Icons.calendar_today_outlined,
-                        )
-                      : null,
-                ),
-                if (dashboardController.errorMessage case final String msg) ...<
-                    Widget>[
-                  SizedBox(height: tokens.gapMd),
-                  AppInlineErrorPanel(
-                    title: 'Nao foi possivel carregar o dashboard',
-                    message: msg,
-                    onRetry: sessionUserId != null
-                        ? () => unawaited(
-                              dashboardController.retryOverview(
-                                userId: sessionUserId,
+                  return _DashboardAutoLoader(
+                    controller: dashboardController,
+                    userId: sessionUserId,
+                    isReady: isUserContextReady,
+                    child: RefreshIndicator(
+                      onRefresh: onRefresh,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: context.pageScrollPadding(tokens),
+                        children: <Widget>[
+                          AppShellPageIntro(
+                            eyebrow: 'Ola, $greetingName',
+                            title: 'Dashboard de Pagamentos',
+                            subtitle:
+                                'Resumo consolidado dos agentes aprovados '
+                                '(todas as filiais conectadas).',
+                            footer: periodLabel != null
+                                ? AppTagChip(
+                                    label: periodLabel,
+                                    icon: Icons.calendar_today_outlined,
+                                  )
+                                : null,
+                          ),
+                          if (dashboardController.errorMessage
+                              case final String msg) ...<Widget>[
+                            SizedBox(height: tokens.gapMd),
+                            AppInlineErrorPanel(
+                              title: 'Nao foi possivel carregar o dashboard',
+                              message: msg,
+                              actions: _DashboardPanelActions(
+                                onRetry: sessionUserId == null
+                                    ? null
+                                    : () => unawaited(
+                                        dashboardController.retryOverview(
+                                          userId: sessionUserId,
+                                        ),
+                                      ),
+                                onManageAgents: () =>
+                                    context.goTo(AppRoute.agents),
+                                retryLabel: l10n.appInlineErrorRetry,
+                                manageAgentsLabel: l10n.clientAgentsPageTitle,
                               ),
-                            )
-                        : null,
-                  ),
-                ],
-                if (overview?.isStaleCache == true) ...<Widget>[
-                  SizedBox(height: tokens.gapMd),
-                  AppInlineErrorPanel(
-                    tone: AppInlinePanelTone.informational,
-                    title: 'Dados salvos neste aparelho',
-                    message:
-                        'Nao foi possivel atualizar agora. Os numeros abaixo '
-                        'refletem o ultimo resumo obtido com sucesso.',
-                    onRetry: sessionUserId != null
-                        ? () => unawaited(
-                              dashboardController.retryOverview(
-                                userId: sessionUserId,
+                            ),
+                          ],
+                          if (overview?.requiresClientTokenSetup ==
+                              true) ...<Widget>[
+                            SizedBox(height: tokens.gapMd),
+                            AppInlineErrorPanel(
+                              tone: AppInlinePanelTone.informational,
+                              title: l10n.dashboardSetupRequiredTitle,
+                              message: l10n.dashboardSetupRequiredMessage(
+                                _previewAgentNames(
+                                  overview!.agentNamesMissingClientToken,
+                                ),
                               ),
-                            )
-                        : null,
-                  ),
-                ],
-                if (overview != null && overview.hasMissingClientToken) ...<
-                    Widget>[
-                  SizedBox(height: tokens.gapMd),
-                  AppInlineErrorPanel(
-                    tone: AppInlinePanelTone.informational,
-                    title: l10n.dashboardMissingClientTokenTitle,
-                    message: l10n.dashboardMissingClientTokenMessage(
-                      _previewExcludedAgentIds(
-                        overview.agentIdsMissingClientToken,
+                              actions: _DashboardPanelActions(
+                                onManageAgents: () =>
+                                    context.goTo(AppRoute.agents),
+                                primaryLabel: l10n.clientAgentsPageTitle,
+                              ),
+                            ),
+                          ],
+                          if (overview?.isStaleCache == true) ...<Widget>[
+                            SizedBox(height: tokens.gapMd),
+                            AppInlineErrorPanel(
+                              tone: AppInlinePanelTone.informational,
+                              title: 'Dados salvos neste aparelho',
+                              message:
+                                  'Nao foi possivel atualizar agora. '
+                                  'Os numeros abaixo refletem o ultimo '
+                                  'resumo obtido com sucesso.',
+                              actions: _DashboardPanelActions(
+                                onRetry: sessionUserId == null
+                                    ? null
+                                    : () => unawaited(
+                                        dashboardController.retryOverview(
+                                          userId: sessionUserId,
+                                        ),
+                                      ),
+                                onManageAgents:
+                                    overview?.hasMissingClientToken == true
+                                    ? () => context.goTo(AppRoute.agents)
+                                    : null,
+                                retryLabel: l10n.appInlineErrorRetry,
+                                manageAgentsLabel: l10n.clientAgentsPageTitle,
+                              ),
+                            ),
+                          ],
+                          if (overview != null &&
+                              overview.hasMissingClientToken &&
+                              !overview.requiresClientTokenSetup) ...<Widget>[
+                            SizedBox(height: tokens.gapMd),
+                            AppInlineErrorPanel(
+                              tone: AppInlinePanelTone.informational,
+                              title: l10n.dashboardMissingClientTokenTitle,
+                              message: l10n.dashboardMissingClientTokenMessage(
+                                _previewAgentNames(
+                                  overview.agentNamesMissingClientToken,
+                                ),
+                              ),
+                              actions: _DashboardPanelActions(
+                                onManageAgents: () =>
+                                    context.goTo(AppRoute.agents),
+                                primaryLabel: l10n.clientAgentsPageTitle,
+                              ),
+                            ),
+                          ],
+                          if (overview != null &&
+                              overview.hasPartialAgentQueryFailure) ...<Widget>[
+                            SizedBox(height: tokens.gapMd),
+                            AppInlineErrorPanel(
+                              tone: AppInlinePanelTone.informational,
+                              title: l10n.dashboardPartialAgentQueriesTitle,
+                              message: l10n.dashboardPartialAgentQueriesMessage(
+                                _previewAgentNames(
+                                  overview.agentNamesExcludedFromQueryFailure,
+                                ),
+                              ),
+                              actions: _DashboardPanelActions(
+                                onRetry: sessionUserId == null
+                                    ? null
+                                    : () => unawaited(
+                                        dashboardController.retryOverview(
+                                          userId: sessionUserId,
+                                        ),
+                                      ),
+                                onManageAgents: () =>
+                                    context.goTo(AppRoute.agents),
+                                retryLabel: l10n.appInlineErrorRetry,
+                                manageAgentsLabel: l10n.clientAgentsPageTitle,
+                              ),
+                            ),
+                          ],
+                          if (overview != null &&
+                              overview.shouldShowMultiAgentAggregationNote) ...<
+                            Widget
+                          >[
+                            SizedBox(height: tokens.gapMd),
+                            AppInlineErrorPanel(
+                              tone: AppInlinePanelTone.informational,
+                              title: l10n.dashboardMultiAgentAggregationTitle,
+                              message:
+                                  l10n.dashboardMultiAgentAggregationMessage,
+                            ),
+                          ],
+                          if (displayOverview != null) ...<Widget>[
+                            SizedBox(height: tokens.sectionSpacing),
+                            AppSkeleton(
+                              enabled: showSkeleton,
+                              loadingSemanticsLabel:
+                                  'Carregando indicadores de pagamento...',
+                              child: _KpiBar(kpis: displayOverview.kpis),
+                            ),
+                            SizedBox(height: tokens.sectionSpacing),
+                            AppSkeleton(
+                              enabled: showSkeleton,
+                              showDelay: Duration.zero,
+                              loadingSemanticsLabel:
+                                  'Carregando mix de formas de pagamento...',
+                              child: _PaymentMixCard(
+                                methods: displayOverview.paymentMethods,
+                              ),
+                            ),
+                            SizedBox(height: tokens.sectionSpacing),
+                            AppSkeleton(
+                              enabled: showSkeleton,
+                              showDelay: const Duration(milliseconds: 80),
+                              loadingSemanticsLabel:
+                                  'Carregando faturamento '
+                                  'por forma de pagamento...',
+                              child: _PaymentBarChart(
+                                methods: displayOverview.paymentMethods,
+                              ),
+                            ),
+                            SizedBox(height: tokens.sectionSpacing),
+                            AppSkeleton(
+                              enabled: showSkeleton,
+                              showDelay: const Duration(milliseconds: 120),
+                              loadingSemanticsLabel: 'Carregando rankings...',
+                              child: _RankingsSection(
+                                filialRankings: displayOverview.filialRankings,
+                                userRankings: displayOverview.userRankings,
+                              ),
+                            ),
+                            SizedBox(height: tokens.sectionSpacing),
+                            AppSkeleton(
+                              enabled: showSkeleton,
+                              showDelay: const Duration(milliseconds: 160),
+                              loadingSemanticsLabel:
+                                  'Carregando tabela de formas de pagamento...',
+                              child: _PaymentSummaryTable(
+                                methods: displayOverview.paymentMethods,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                  ),
-                ],
-                if (overview != null &&
-                    overview.hasPartialAgentQueryFailure) ...<Widget>[
-                  SizedBox(height: tokens.gapMd),
-                  AppInlineErrorPanel(
-                    tone: AppInlinePanelTone.informational,
-                    title: l10n.dashboardPartialAgentQueriesTitle,
-                    message: l10n.dashboardPartialAgentQueriesMessage(
-                      _previewExcludedAgentIds(
-                        overview.agentIdsExcludedFromQueryFailure,
-                      ),
-                    ),
-                  ),
-                ],
-                if (overview != null &&
-                    overview.shouldShowMultiAgentAggregationNote) ...<Widget>[
-                  SizedBox(height: tokens.gapMd),
-                  AppInlineErrorPanel(
-                    tone: AppInlinePanelTone.informational,
-                    title: l10n.dashboardMultiAgentAggregationTitle,
-                    message: l10n.dashboardMultiAgentAggregationMessage,
-                  ),
-                ],
-                if (displayOverview != null) ...<Widget>[
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    loadingSemanticsLabel:
-                        'Carregando indicadores de pagamento...',
-                    child: _KpiBar(kpis: displayOverview.kpis),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    showDelay: Duration.zero,
-                    loadingSemanticsLabel:
-                        'Carregando mix de formas de pagamento...',
-                    child: _PaymentMixCard(
-                      methods: displayOverview.paymentMethods,
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    showDelay: const Duration(milliseconds: 80),
-                    loadingSemanticsLabel:
-                        'Carregando faturamento por forma de pagamento...',
-                    child: _PaymentBarChart(
-                      methods: displayOverview.paymentMethods,
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    showDelay: const Duration(milliseconds: 120),
-                    loadingSemanticsLabel: 'Carregando rankings...',
-                    child: _RankingsSection(
-                      filialRankings: displayOverview.filialRankings,
-                      userRankings: displayOverview.userRankings,
-                    ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  AppSkeleton(
-                    enabled: showSkeleton,
-                    showDelay: const Duration(milliseconds: 160),
-                    loadingSemanticsLabel:
-                        'Carregando tabela de formas de pagamento...',
-                    child: _PaymentSummaryTable(
-                      methods: displayOverview.paymentMethods,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        },
-      ),
+                  );
+                },
+          ),
+    );
+  }
+}
+
+class _DashboardAutoLoader extends StatefulWidget {
+  const _DashboardAutoLoader({
+    required this.controller,
+    required this.child,
+    this.userId,
+    this.isReady = false,
+  });
+
+  final DashboardController controller;
+  final Widget child;
+  final String? userId;
+  final bool isReady;
+
+  @override
+  State<_DashboardAutoLoader> createState() => _DashboardAutoLoaderState();
+}
+
+class _DashboardAutoLoaderState extends State<_DashboardAutoLoader> {
+  @override
+  void initState() {
+    super.initState();
+    _scheduleLoadIfReady();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DashboardAutoLoader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.userId != widget.userId ||
+        oldWidget.isReady != widget.isReady) {
+      _scheduleLoadIfReady();
+    }
+  }
+
+  void _scheduleLoadIfReady() {
+    final userId = widget.userId;
+    if (!widget.isReady || userId == null || userId.isEmpty) {
+      return;
+    }
+    widget.controller.scheduleOverviewLoadIfNeeded(userId: userId);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+class _DashboardPanelActions extends StatelessWidget {
+  const _DashboardPanelActions({
+    this.onRetry,
+    this.onManageAgents,
+    this.retryLabel = 'Tentar novamente',
+    this.primaryLabel,
+    this.manageAgentsLabel = 'Gestao de agentes',
+  });
+
+  final VoidCallback? onRetry;
+  final VoidCallback? onManageAgents;
+  final String retryLabel;
+  final String? primaryLabel;
+  final String manageAgentsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    return Wrap(
+      spacing: tokens.gapSm,
+      runSpacing: tokens.gapSm,
+      children: <Widget>[
+        if (onRetry != null)
+          AppPrimaryButton(
+            label: primaryLabel ?? retryLabel,
+            onPressed: onRetry,
+          ),
+        if (onManageAgents != null)
+          (onRetry == null
+              ? AppPrimaryButton(
+                  label: primaryLabel ?? manageAgentsLabel,
+                  icon: const Icon(Icons.hub_rounded),
+                  onPressed: onManageAgents,
+                )
+              : AppSecondaryButton(
+                  label: manageAgentsLabel,
+                  icon: const Icon(Icons.hub_outlined),
+                  onPressed: onManageAgents,
+                )),
+      ],
     );
   }
 }
@@ -339,8 +507,9 @@ class _PaymentMixCard extends StatelessWidget {
             ),
           )
           .toList(growable: false),
-      centerPrimaryLabel:
-          total > 0 ? AppBrFormatters.compactCurrency(total) : null,
+      centerPrimaryLabel: total > 0
+          ? AppBrFormatters.compactCurrency(total)
+          : null,
       centerSecondaryLabel: 'TOTAL',
     );
   }

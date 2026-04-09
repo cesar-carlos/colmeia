@@ -1,6 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -73,6 +74,58 @@ void main() {
         ),
       );
       check(resolution.userMessage).equals(bridge);
+      check(resolution.preferBridgeUserMessage).isTrue();
+    },
+  );
+
+  test(
+    '-32101 with category auth maps to sql validation, not permission denied',
+    () {
+      const bridge = 'Comando SQL nao suportado para autorizacao.';
+      final resolution = resolveAgentSqlRpcUserMessage(
+        const AgentSqlRpcErrorDetails(
+          userMessage: bridge,
+          message: 'SQL validation failed',
+          code: -32101,
+          category: 'auth',
+          reason: 'validation',
+        ),
+      );
+      check(resolution.userMessage).equals(bridge);
+      check(
+        resolution.uiKey,
+      ).equals(AgentSqlRpcFailureUiKey.sqlValidationFailed);
+      check(resolution.preferBridgeUserMessage).isTrue();
+    },
+  );
+
+  test(
+    '-32002 unauthorized with odbc_reason invalid_policy maps to sql '
+    'validation (hub policy rejection), not permission denied',
+    () {
+      const bridge =
+          'Comando SQL nao suportado para autorizacao. Revise a consulta '
+          'enviada.';
+      final resolution = resolveAgentSqlRpcUserMessage(
+        const AgentSqlRpcErrorDetails(
+          userMessage: bridge,
+          message: 'Not authorized',
+          code: -32002,
+          reason: 'unauthorized',
+          category: 'auth',
+          errorData: <String, dynamic>{
+            'reason': 'unauthorized',
+            'category': 'auth',
+            'odbc_reason': 'invalid_policy',
+            'technical_message':
+                'Authorization denied: unsupported SQL classification',
+          },
+        ),
+      );
+      check(resolution.userMessage).equals(bridge);
+      check(
+        resolution.uiKey,
+      ).equals(AgentSqlRpcFailureUiKey.sqlValidationFailed);
       check(resolution.preferBridgeUserMessage).isTrue();
     },
   );

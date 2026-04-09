@@ -50,6 +50,7 @@ Use these for repository-specific decisions:
 - `./.cursor/rules/project_architecture.mdc`
 - `./.cursor/rules/project_platform_dependencies.mdc`
 - `./.cursor/rules/project_data_domain.mdc`
+- `./.cursor/rules/project_agent_sql.mdc`
 - `./.cursor/rules/project_shared_components.mdc`
 - `./.cursor/rules/project_conventions.mdc`
 

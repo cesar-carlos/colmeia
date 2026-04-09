@@ -77,8 +77,14 @@ class DashboardRepositoryImpl implements DashboardRepository {
         );
       }
 
-      final sortedAgentIds =
-          approvedAgents.map((a) => a.agentId).toList(growable: false)..sort();
+      final sortedApprovedAgents = approvedAgents.toList(growable: false)
+        ..sort((left, right) => left.agentId.compareTo(right.agentId));
+      final sortedAgentIds = sortedApprovedAgents
+          .map((a) => a.agentId)
+          .toList(growable: false);
+      final approvedAgentsById = <String, ClientAgent>{
+        for (final agent in sortedApprovedAgents) agent.agentId: agent,
+      };
 
       final resumoBatch = await _loadResumoQueryResults(
         userId: userId,
@@ -87,6 +93,10 @@ class DashboardRepositoryImpl implements DashboardRepository {
       );
       final queryResults = resumoBatch.results;
       final agentIdsMissingClientToken = resumoBatch.agentIdsMissingClientToken;
+      final agentNamesMissingClientToken = _resolveAgentNames(
+        agentIdsMissingClientToken,
+        approvedAgentsById: approvedAgentsById,
+      );
 
       if (agentIdsMissingClientToken.isNotEmpty) {
         AppLogger.warning(
@@ -127,6 +137,38 @@ class DashboardRepositoryImpl implements DashboardRepository {
         firstFailedAgentId ??= agentId;
       }
 
+      final failedQueryAgentNames = _resolveAgentNames(
+        failedQueryAgentIds,
+        approvedAgentsById: approvedAgentsById,
+      );
+
+      if (!hasAnySuccess &&
+          failedQueryAgentIds.isEmpty &&
+          agentIdsMissingClientToken.isNotEmpty) {
+        final cachedOverview = await _readCachedOverviewForMissingClientTokens(
+          userId: userId,
+          policy: policy,
+          period: period,
+          expectedSortedAgentIds: sortedAgentIds,
+          agentIdsMissingClientToken: agentIdsMissingClientToken,
+          agentNamesMissingClientToken: agentNamesMissingClientToken,
+        );
+        if (cachedOverview != null) {
+          return Success<DashboardOverview, AppFailure>(cachedOverview);
+        }
+
+        return Success<DashboardOverview, AppFailure>(
+          _buildOverview(
+            const <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+            periodStart: period.start,
+            periodEnd: period.end,
+            approvedAgentCount: sortedAgentIds.length,
+            agentIdsMissingClientToken: agentIdsMissingClientToken,
+            agentNamesMissingClientToken: agentNamesMissingClientToken,
+          ),
+        );
+      }
+
       if (!hasAnySuccess && firstFailure != null) {
         return _recoverOrFail(
           failure: firstFailure,
@@ -156,7 +198,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
         periodEnd: period.end,
         approvedAgentCount: sortedAgentIds.length,
         agentIdsExcludedFromQueryFailure: failedQueryAgentIds,
+        agentNamesExcludedFromQueryFailure: failedQueryAgentNames,
         agentIdsMissingClientToken: agentIdsMissingClientToken,
+        agentNamesMissingClientToken: agentNamesMissingClientToken,
       );
 
       final stamp = _now();
@@ -486,6 +530,51 @@ class DashboardRepositoryImpl implements DashboardRepository {
     return cachedOverview;
   }
 
+  Future<DashboardOverview?> _readCachedOverviewForMissingClientTokens({
+    required String userId,
+    required DashboardLoadPolicy policy,
+    required _DashboardPeriod period,
+    required List<String> expectedSortedAgentIds,
+    required List<String> agentIdsMissingClientToken,
+    required List<String> agentNamesMissingClientToken,
+  }) async {
+    if (policy == DashboardLoadPolicy.forceRefresh) {
+      return null;
+    }
+
+    final cachedOverview = await _localDataSource.readOverview(userId: userId);
+    if (cachedOverview == null) {
+      return null;
+    }
+
+    if (!_isCacheAcceptable(
+      cached: cachedOverview,
+      period: period,
+      expectedSortedAgentIds: expectedSortedAgentIds,
+    )) {
+      return null;
+    }
+
+    AppLogger.warning(
+      'Dashboard overview fallback to cached data (missing local client token)',
+      context: <String, Object?>{
+        'operation': 'loadDashboardOverview',
+        'userId': userId,
+        'policy': policy.name,
+        'missingTokenCount': agentIdsMissingClientToken.length,
+        'missingTokenAgentIds': agentIdsMissingClientToken.join(', '),
+      },
+    );
+
+    return cachedOverview
+        .toEntity(isStaleCache: true)
+        .copyWith(
+          approvedAgentCount: expectedSortedAgentIds.length,
+          agentIdsMissingClientToken: agentIdsMissingClientToken,
+          agentNamesMissingClientToken: agentNamesMissingClientToken,
+        );
+  }
+
   bool _isCacheAcceptable({
     required DashboardOverviewModel cached,
     required _DashboardPeriod period,
@@ -576,7 +665,9 @@ class DashboardRepositoryImpl implements DashboardRepository {
     required DateTime periodEnd,
     required int approvedAgentCount,
     List<String> agentIdsExcludedFromQueryFailure = const <String>[],
+    List<String> agentNamesExcludedFromQueryFailure = const <String>[],
     List<String> agentIdsMissingClientToken = const <String>[],
+    List<String> agentNamesMissingClientToken = const <String>[],
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final filialBuckets = <String, _FilialAggregate>{};
@@ -681,8 +772,36 @@ class DashboardRepositoryImpl implements DashboardRepository {
       userRankings: userRankings,
       approvedAgentCount: approvedAgentCount,
       agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
+      agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,
       agentIdsMissingClientToken: agentIdsMissingClientToken,
+      agentNamesMissingClientToken: agentNamesMissingClientToken,
     );
+  }
+
+  List<String> _resolveAgentNames(
+    Iterable<String> agentIds, {
+    required Map<String, ClientAgent> approvedAgentsById,
+  }) {
+    return agentIds
+        .map(
+          (agentId) =>
+              _resolveAgentDisplayName(approvedAgentsById[agentId], agentId),
+        )
+        .toList(growable: false);
+  }
+
+  String _resolveAgentDisplayName(ClientAgent? agent, String fallbackAgentId) {
+    final tradeName = agent?.tradeName?.trim();
+    if (tradeName != null && tradeName.isNotEmpty) {
+      return tradeName;
+    }
+
+    final name = agent?.name.trim();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+
+    return fallbackAgentId.trim();
   }
 
   String _resolvePaymentMethodLabel(

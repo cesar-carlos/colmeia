@@ -79,6 +79,9 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
+      () => local.readOverview(userId: any(named: 'userId')),
+    ).thenAnswer((_) async => null);
+    when(
       () => clientTokens.readMany(
         userId: any(named: 'userId'),
         agentIds: any(named: 'agentIds'),
@@ -455,8 +458,8 @@ void main() {
           (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
             PaginatedResult<ClientAgent>(
               items: <ClientAgent>[
-                _agent('agent-bad'),
-                _agent('agent-good'),
+                _agent('agent-bad', name: 'Agente ruim'),
+                _agent('agent-good', name: 'Agente bom'),
               ],
               count: 2,
               total: 2,
@@ -526,6 +529,9 @@ void main() {
         check(overview.agentIdsExcludedFromQueryFailure.first).equals(
           'agent-bad',
         );
+        check(
+          overview.agentNamesExcludedFromQueryFailure,
+        ).deepEquals(const <String>['Agente ruim']);
         check(overview.kpis.totalSalesCount).equals(1);
         check(overview.hasPartialAgentQueryFailure).isTrue();
       },
@@ -546,8 +552,8 @@ void main() {
           (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
             PaginatedResult<ClientAgent>(
               items: <ClientAgent>[
-                _agent('agent-with-token'),
-                _agent('agent-no-token'),
+                _agent('agent-with-token', name: 'Agente com token'),
+                _agent('agent-no-token', name: 'Agente sem token'),
               ],
               count: 2,
               total: 2,
@@ -606,6 +612,9 @@ void main() {
         check(overview.agentIdsMissingClientToken.single).equals(
           'agent-no-token',
         );
+        check(
+          overview.agentNamesMissingClientToken.single,
+        ).equals('Agente sem token');
         check(overview.hasMissingClientToken).isTrue();
         check(overview.approvedAgentCount).equals(2);
 
@@ -624,6 +633,104 @@ void main() {
             clientToken: any(named: 'clientToken'),
             bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           ),
+        );
+      },
+    );
+
+    test(
+      'returns guided empty overview when all approved agents lack local token',
+      () async {
+        when(
+          () => agents.loadApprovedAgents(
+            userId: any(named: 'userId'),
+            query: any(named: 'query'),
+            search: any(named: 'search'),
+            status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          ),
+        ).thenAnswer(
+          (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+            PaginatedResult<ClientAgent>(
+              items: <ClientAgent>[
+                _agent('agent-a', name: 'Loja Centro'),
+                _agent('agent-b', name: 'Loja Norte'),
+              ],
+              count: 2,
+              total: 2,
+              page: 1,
+              pageSize: 50,
+            ),
+          ),
+        );
+        when(
+          () => clientTokens.readMany(
+            userId: any(named: 'userId'),
+            agentIds: any(named: 'agentIds'),
+          ),
+        ).thenAnswer((_) async => <String, String>{});
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.requiresClientTokenSetup).isTrue();
+        check(overview.hasRows).isFalse();
+        check(overview.agentNamesMissingClientToken).deepEquals(
+          const <String>['Loja Centro', 'Loja Norte'],
+        );
+        verifyNever(
+          () => loadResumo(
+            agentId: any(named: 'agentId'),
+            filter: any(named: 'filter'),
+            clientToken: any(named: 'clientToken'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'falls back to cache when all approved agents lack local token',
+      () async {
+        when(
+          () => agents.loadApprovedAgents(
+            userId: any(named: 'userId'),
+            query: any(named: 'query'),
+            search: any(named: 'search'),
+            status: any(named: 'status'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          ),
+        ).thenAnswer(
+          (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+            PaginatedResult<ClientAgent>(
+              items: <ClientAgent>[_agent('agent-42', name: 'Agente cacheado')],
+              count: 1,
+              total: 1,
+              page: 1,
+              pageSize: 50,
+            ),
+          ),
+        );
+        when(
+          () => clientTokens.readMany(
+            userId: any(named: 'userId'),
+            agentIds: any(named: 'agentIds'),
+          ),
+        ).thenAnswer((_) async => <String, String>{});
+        when(
+          () => local.readOverview(userId: any(named: 'userId')),
+        ).thenAnswer((_) async => _cachedModel());
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.isStaleCache).isTrue();
+        check(overview.kpis.totalSalesCount).equals(50);
+        check(overview.agentNamesMissingClientToken).deepEquals(
+          const <String>['Agente cacheado'],
         );
       },
     );
@@ -887,10 +994,10 @@ void main() {
   });
 }
 
-ClientAgent _agent(String id) {
+ClientAgent _agent(String id, {String name = 'Agente Teste'}) {
   return ClientAgent(
     agentId: id,
-    name: 'Agente Teste',
+    name: name,
     catalogStatus: AgentCatalogStatus.active,
     connectionStatus: AgentConnectionStatus.online,
     createdAt: DateTime(2025),

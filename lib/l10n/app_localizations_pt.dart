@@ -50,6 +50,15 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get dashboardSetupRequiredTitle =>
+      'Configuracao pendente para consultar dados';
+
+  @override
+  String dashboardSetupRequiredMessage(String agents) {
+    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestao de agentes para cadastrar o token e liberar a consulta do dashboard.';
+  }
+
+  @override
   String get dashboardMultiAgentAggregationTitle => 'Varios agentes';
 
   @override
@@ -873,6 +882,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String dashboardMissingClientTokenMessage(String agents) {
     return 'Estes agentes aprovados foram ignorados porque nao ha token de cliente local ($agents). Cadastre o token na tela do agente para incluir os dados.';
+  }
+
+  @override
+  String get dashboardSetupRequiredTitle =>
+      'Configuracao pendente para consultar dados';
+
+  @override
+  String dashboardSetupRequiredMessage(String agents) {
+    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestao de agentes para cadastrar o token e liberar a consulta do dashboard.';
   }
 
   @override

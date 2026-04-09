@@ -10,6 +10,42 @@
         "reveal": "always",
         "panel": "shared"
       }
+    },
+    {
+      "label": "Colmeia: flutter test agent_queries",
+      "detail": "Runs all unit/widget tests under test/features/agent_queries/",
+      "type": "shell",
+      "command": "flutter test test/features/agent_queries/ --reporter expanded",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Colmeia: run e2e (agent SQL bridge)",
+      "detail": "Default test task: runs all direct repository e2e tests under test/integration/e2e/. Use Command Palette → Tasks: Run Test Task, or bind workbench.action.tasks.test to a key.",
+      "type": "shell",
+      "command": "flutter test test/integration/e2e/ --reporter expanded",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     }
   ]
 }

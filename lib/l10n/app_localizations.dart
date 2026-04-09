@@ -171,6 +171,18 @@ abstract class AppLocalizations {
   /// **'These approved agents were skipped because no local client token was saved ({agents}). Add the token on the agent screen to include their data.'**
   String dashboardMissingClientTokenMessage(String agents);
 
+  /// No description provided for @dashboardSetupRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup required before loading data'**
+  String get dashboardSetupRequiredTitle;
+
+  /// No description provided for @dashboardSetupRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'None of the approved agents has a client token saved on this device ({agents}). Open agent management to save the token and enable dashboard queries.'**
+  String dashboardSetupRequiredMessage(String agents);
+
   /// No description provided for @dashboardMultiAgentAggregationTitle.
   ///
   /// In en, this message translates to:

@@ -1,0 +1,7 @@
+[
+  {
+    "key": "ctrl+shift+alt+t",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Colmeia: run e2e (agent SQL bridge)"
+  }
+]

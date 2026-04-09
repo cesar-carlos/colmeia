@@ -35,7 +35,7 @@ void main() {
 
       const request = AgentSqlExecuteRequest(
         agentId: ' agent-1 ',
-        sql: ' SELECT * FROM table ',
+        sql: ' SELECT *\n FROM table\n ORDER BY id ',
         namedParams: <String, Object?>{'id': 7},
         clientToken: ' token-abc ',
         bridgeTimeoutMs: 45000,
@@ -70,13 +70,87 @@ void main() {
       check(command['jsonrpc']).equals('2.0');
       check(command['method']).equals('sql.execute');
       check(command['id']).isA<String>();
-      check(params['sql']).equals('SELECT * FROM table');
+      check(params['sql']).equals('SELECT * FROM table ORDER BY id');
       final namedParams = params['params']! as Map<String, Object?>;
       check(namedParams['id']).equals(7);
       check(params['client_token']).equals('token-abc');
       check(options['max_rows']).equals(1000);
       check(options['timeout_ms']).equals(5000);
       check(options['execution_mode']).equals('managed');
+    },
+  );
+
+  test(
+    'omits client_token from rpc params when clientToken is null',
+    () async {
+      when(
+        () => dio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/agents/commands'),
+          data: const <String, dynamic>{},
+        ),
+      );
+
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+      );
+
+      await dataSource.postSqlExecute(request);
+
+      final captured = verify(
+        () => dio.post<Map<String, dynamic>>(
+          captureAny(),
+          data: captureAny(named: 'data'),
+        ),
+      ).captured;
+
+      final body = captured[1]! as Map<String, Object?>;
+      final command = body['command']! as Map<String, Object?>;
+      final params = command['params']! as Map<String, Object?>;
+
+      check(params.containsKey('client_token')).isFalse();
+    },
+  );
+
+  test(
+    'omits named params key when namedParams is empty',
+    () async {
+      when(
+        () => dio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/agents/commands'),
+          data: const <String, dynamic>{},
+        ),
+      );
+
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+      );
+
+      await dataSource.postSqlExecute(request);
+
+      final captured = verify(
+        () => dio.post<Map<String, dynamic>>(
+          captureAny(),
+          data: captureAny(named: 'data'),
+        ),
+      ).captured;
+
+      final body = captured[1]! as Map<String, Object?>;
+      final command = body['command']! as Map<String, Object?>;
+      final params = command['params']! as Map<String, Object?>;
+
+      check(params.containsKey('params')).isFalse();
     },
   );
 }
