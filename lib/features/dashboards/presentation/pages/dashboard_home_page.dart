@@ -1,106 +1,123 @@
 import 'dart:async';
 
-import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
-import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_ai_insight.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_category_share.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_chart_point.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_detail_highlight.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_summary_metric.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_user_ranking.dart';
 import 'package:colmeia/features/dashboards/presentation/controllers/dashboard_controller.dart';
-import 'package:colmeia/features/dashboards/presentation/routes/dashboard_routes.dart';
-import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_ai_insight_card.dart';
-import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_category_mix_card.dart';
-import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_sales_trend_card.dart';
-import 'package:colmeia/features/dashboards/presentation/widgets/dashboard_summary_card.dart';
-import 'package:colmeia/features/user_context/domain/user_context_placeholders.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
-import 'package:colmeia/features/user_context/presentation/widgets/allowed_store_selector_strip.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
+import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_summary_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-const Duration _dashboardCriticalSkeletonDelay = Duration.zero;
-const Duration _dashboardSecondarySkeletonDelay = Duration(milliseconds: 120);
-
 class DashboardHomePage extends StatefulWidget {
-  const DashboardHomePage({
-    this.storeId,
-    super.key,
-  });
-
-  final StoreId? storeId;
+  const DashboardHomePage({super.key});
 
   @override
   State<DashboardHomePage> createState() => _DashboardHomePageState();
 }
 
 class _DashboardHomePageState extends State<DashboardHomePage> {
-  static const DashboardOverview _skeletonOverview = DashboardOverview(
-    summaryMetrics: <DashboardSummaryMetric>[
-      DashboardSummaryMetric(
-        title: 'Total de vendas',
-        value: r'R$ 142.850',
-        deltaLabel: '+12,4%',
-        icon: DashboardSummaryMetricIcon.payments,
-      ),
-      DashboardSummaryMetric(
-        title: 'Ticket médio',
-        value: r'R$ 84,20',
-        deltaLabel: '+2,1%',
-        icon: DashboardSummaryMetricIcon.receiptLong,
-      ),
-      DashboardSummaryMetric(
-        title: 'Rentabilidade',
-        value: '24,5%',
-        deltaLabel: '-0,8%',
-        icon: DashboardSummaryMetricIcon.trendingDown,
-      ),
-    ],
-    revenuePoints: <DashboardChartPoint>[
-      DashboardChartPoint(label: 'Seg', value: 92000),
-      DashboardChartPoint(label: 'Ter', value: 104000),
-      DashboardChartPoint(label: 'Qua', value: 98700),
-      DashboardChartPoint(label: 'Qui', value: 112400),
-      DashboardChartPoint(label: 'Sex', value: 128400),
-      DashboardChartPoint(label: 'Sab', value: 136800),
-      DashboardChartPoint(label: 'Dom', value: 118000),
-    ],
-    sellerPerformancePoints: <DashboardChartPoint>[
-      DashboardChartPoint(label: 'Amanda', value: 32400),
-      DashboardChartPoint(label: 'Bruno', value: 28100),
-      DashboardChartPoint(label: 'Carla', value: 26750),
-    ],
-    operationalHighlights: <DashboardDetailHighlight>[
-      DashboardDetailHighlight(
-        title: 'Ruptura controlada',
-        subtitle: 'Itens críticos abaixo do limite nas últimas 24h.',
-        emphasis: '2 SKUs sob monitoramento',
-      ),
-    ],
-    aiInsight: DashboardAiInsight(
-      title: 'Insight de IA',
-      body:
-          'Aumentar equipe no horário de pico (11h–13h) pode reduzir a '
-          'perda de conversão em até 15%.',
-      ctaLabel: 'Aplicar estratégia',
+  static final DashboardOverview _skeletonOverview = DashboardOverview(
+    periodStart: DateTime(2026, 3, 9),
+    periodEnd: DateTime(2026, 4, 7),
+    kpis: const DashboardPaymentKpis(
+      totalSalesCount: 310,
+      totalAmount: 27850.75,
+      averageTicket: 89.84,
+      paymentMethodCount: 4,
     ),
-    categoryShares: <DashboardCategoryShare>[
-      DashboardCategoryShare(label: 'Bebidas', percent: 42, amount: 504_000),
-      DashboardCategoryShare(label: 'Lanches', percent: 28, amount: 336_000),
-      DashboardCategoryShare(label: 'Mercearia', percent: 18, amount: 216_000),
-      DashboardCategoryShare(label: 'Outros', percent: 12, amount: 144_000),
+    paymentMethods: const <DashboardPaymentMethodBreakdown>[
+      DashboardPaymentMethodBreakdown(
+        code: 'PIX',
+        label: 'Pix',
+        totalSalesCount: 144,
+        totalAmount: 12450.20,
+        averageTicket: 86.46,
+        sharePercent: 44.7,
+      ),
+      DashboardPaymentMethodBreakdown(
+        code: 'CRED',
+        label: 'Cartao de credito',
+        totalSalesCount: 92,
+        totalAmount: 9650.30,
+        averageTicket: 104.89,
+        sharePercent: 34.6,
+      ),
+      DashboardPaymentMethodBreakdown(
+        code: 'DEB',
+        label: 'Cartao de debito',
+        totalSalesCount: 51,
+        totalAmount: 3710,
+        averageTicket: 72.75,
+        sharePercent: 13.3,
+      ),
+      DashboardPaymentMethodBreakdown(
+        code: 'DIN',
+        label: 'Dinheiro',
+        totalSalesCount: 23,
+        totalAmount: 2040.25,
+        averageTicket: 88.70,
+        sharePercent: 7.4,
+      ),
     ],
-    categoryMixTotalRevenue: 1_200_000,
+    filialRankings: const <DashboardFilialRanking>[
+      DashboardFilialRanking(
+        codEmpresa: 1,
+        codFilial: 3,
+        totalSalesCount: 130,
+        totalAmount: 11800.40,
+      ),
+      DashboardFilialRanking(
+        codEmpresa: 1,
+        codFilial: 8,
+        totalSalesCount: 102,
+        totalAmount: 9570.10,
+      ),
+      DashboardFilialRanking(
+        codEmpresa: 1,
+        codFilial: 14,
+        totalSalesCount: 78,
+        totalAmount: 6480.25,
+      ),
+    ],
+    userRankings: const <DashboardUserRanking>[
+      DashboardUserRanking(
+        userName: 'Caixa 01',
+        totalSalesCount: 84,
+        totalAmount: 7750.10,
+        averageTicket: 92.26,
+      ),
+      DashboardUserRanking(
+        userName: 'Caixa 02',
+        totalSalesCount: 73,
+        totalAmount: 6540.60,
+        averageTicket: 89.60,
+      ),
+      DashboardUserRanking(
+        userName: 'Caixa 03',
+        totalSalesCount: 58,
+        totalAmount: 5210.25,
+        averageTicket: 89.83,
+      ),
+    ],
   );
 
   late final DashboardController _controller;
@@ -111,458 +128,485 @@ class _DashboardHomePageState extends State<DashboardHomePage> {
     _controller = getIt<DashboardController>();
   }
 
-  void _retryUserStores(
-    BuildContext context,
-    CurrentUserContextController userContext,
-  ) {
-    unawaited(
-      userContext.reloadUserContext().catchError((Object error, StackTrace st) {
-        AppLogger.warning(
-          'Reload user context failed',
-          context: const <String, Object?>{
-            'operation': 'reloadUserContext',
-          },
-          error: error,
-          stackTrace: st,
-        );
-        if (!context.mounted) {
-          return;
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Nao foi possivel atualizar as lojas.'),
-          ),
-        );
-      }),
-    );
-  }
-
-  String _greetingFirstName(String fullName) {
-    final trimmed = fullName.trim();
-    if (trimmed.isEmpty) {
-      return 'Gestor';
-    }
-    final parts = trimmed.split(RegExp(r'\s+'));
-    return parts.first;
-  }
-
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
 
+  String _greetingFirstName(String fullName) {
+    final trimmed = fullName.trim();
+    if (trimmed.isEmpty) return 'Gestor';
+    return trimmed.split(RegExp(r'\s+')).first;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<DashboardController>.value(
       value: _controller,
-      child:
-          Consumer3<
-            AuthController,
-            CurrentUserContextController,
-            DashboardController
-          >(
-            builder:
-                (
-                  context,
-                  authController,
-                  userContext,
-                  dashboardController,
-                  child,
-                ) {
-                  final theme = Theme.of(context);
-                  final tokens = theme.extension<AppThemeTokens>()!;
-                  final session = authController.session;
-                  final selectedStoreResult = userContext.resolveStore(
-                    preferredStoreId: widget.storeId,
-                  );
-                  final selectedStore = selectedStoreResult.getOrElse(
-                    (_) => userContext.activeStore,
-                  );
-                  final overview = dashboardController.overview;
-                  final showSkeleton =
-                      dashboardController.isLoadingInitial && overview == null;
-                  final resolvedOverview = overview ?? _skeletonOverview;
-                  final shouldShowOverview = showSkeleton || overview != null;
-                  if (session != null &&
-                      !userContext.isLoadingInitial &&
-                      !UserContextPlaceholders.isLoadingStoreId(
-                        selectedStore.id,
-                      )) {
-                    dashboardController.scheduleOverviewLoadIfNeeded(
-                      userId: session.userId,
-                      storeId: StoreId(selectedStore.id),
-                    );
-                  }
+      child: Consumer3<AuthController, CurrentUserContextController,
+          DashboardController>(
+        builder: (
+          context,
+          authController,
+          userContext,
+          dashboardController,
+          _,
+        ) {
+          final theme = Theme.of(context);
+          final tokens = theme.extension<AppThemeTokens>()!;
+          final session = authController.session;
+          final overview = dashboardController.overview;
+          final showSkeleton =
+              dashboardController.isLoadingInitial && overview == null;
+          final resolvedOverview = overview ?? _skeletonOverview;
+          final hasContent = showSkeleton || overview != null;
 
-                  final greetingName = _greetingFirstName(
-                    userContext.userScope.name,
-                  );
-                  final sessionUserId = session?.userId;
+          if (session != null && !userContext.isLoadingInitial) {
+            dashboardController.scheduleOverviewLoadIfNeeded(
+              userId: session.userId,
+            );
+          }
 
-                  Future<void> onRefresh() async {
-                    final currentSession = authController.session;
-                    if (currentSession == null ||
-                        UserContextPlaceholders.isLoadingStoreId(
-                          selectedStore.id,
-                        )) {
-                      return;
-                    }
-                    await dashboardController.refreshOverview(
-                      userId: currentSession.userId,
-                      storeId: StoreId(selectedStore.id),
-                    );
-                  }
+          final greetingName = _greetingFirstName(userContext.userScope.name);
+          final sessionUserId = session?.userId;
 
-                  return RefreshIndicator(
-                    onRefresh: onRefresh,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: context.pageScrollPadding(tokens),
-                      children: <Widget>[
-                        AppShellPageIntro(
-                          eyebrow: 'Ola, $greetingName',
-                          title: 'Dashboard Executivo',
-                          subtitle:
-                              'Resumo operacional das ultimas horas para a '
-                              'loja selecionada.',
-                          footer: AllowedStoreSelectorStrip(
-                            stores: userContext.userScope.allowedStores,
-                            selectedStoreId: selectedStore.id,
-                            isLoading: userContext.isLoadingInitial,
-                            isRefreshing: userContext.isRefreshing,
-                            errorMessage: userContext.errorMessage,
-                            onRetry: session == null
-                                ? null
-                                : () => _retryUserStores(
-                                    context,
-                                    userContext,
-                                  ),
-                            onStoreSelected: (store) {
-                              userContext
-                                  .selectStore(store.id)
-                                  .fold(
-                                    (_) {
-                                      context.goToData(
-                                        DashboardStoreRouteData(
-                                          storeId: StoreId(store.id),
-                                        ),
-                                      );
-                                    },
-                                    (failure) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            failure.displayMessage,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  );
-                            },
-                          ),
-                        ),
-                        if (selectedStoreResult.exceptionOrNull()
-                            case final failure?) ...<Widget>[
-                          SizedBox(height: tokens.gapMd),
-                          AppInlineErrorPanel(
-                            title: 'Loja indisponivel',
-                            message: failure.displayMessage,
-                            onRetry: session != null
-                                ? () {
-                                    unawaited(
-                                      userContext.reloadUserContext(),
-                                    );
-                                  }
-                                : null,
-                          ),
-                        ],
-                        if (dashboardController.errorMessage
-                            case final String errorMessage) ...<Widget>[
-                          SizedBox(height: tokens.gapMd),
-                          AppInlineErrorPanel(
-                            title: 'Nao foi possivel carregar o dashboard',
-                            message: errorMessage,
-                            onRetry:
-                                sessionUserId != null &&
-                                    !UserContextPlaceholders.isLoadingStoreId(
-                                      selectedStore.id,
-                                    )
-                                ? () {
-                                    unawaited(
-                                      dashboardController.retryOverview(
-                                        userId: sessionUserId,
-                                        storeId: StoreId(selectedStore.id),
-                                      ),
-                                    );
-                                  }
-                                : null,
-                          ),
-                        ],
-                        SizedBox(height: tokens.sectionSpacing),
-                        if (shouldShowOverview) ...<Widget>[
-                          ..._summaryMetricWidgets(
-                            context: context,
-                            metrics: resolvedOverview.summaryMetrics,
-                            showSkeleton: showSkeleton,
-                            tokens: tokens,
-                          ),
-                          SizedBox(height: tokens.sectionSpacing),
-                          AppSkeleton(
-                            enabled: showSkeleton,
-                            showDelay: _dashboardCriticalSkeletonDelay,
-                            loadingSemanticsLabel:
-                                'Carregando gráfico de tendência de vendas...',
-                            child: DashboardSalesTrendCard(
-                              points: resolvedOverview.revenuePoints,
-                            ),
-                          ),
-                          SizedBox(height: tokens.sectionSpacing),
-                          AppSkeleton(
-                            enabled: showSkeleton,
-                            showDelay: _dashboardSecondarySkeletonDelay,
-                            loadingSemanticsLabel:
-                                'Carregando destaques secundarios '
-                                'do dashboard...',
-                            child: _buildOverviewSecondarySection(
-                              context: context,
-                              overview: resolvedOverview,
-                              showSkeleton: showSkeleton,
-                            ),
-                          ),
-                        ],
-                      ],
+          Future<void> onRefresh() async {
+            final current = authController.session;
+            if (current == null) return;
+            await dashboardController.refreshOverview(userId: current.userId);
+          }
+
+          final periodLabel = hasContent
+              ? '${AppBrFormatters.shortDate(resolvedOverview.periodStart)}'
+                    ' – '
+                    '${AppBrFormatters.shortDate(resolvedOverview.periodEnd)}'
+              : null;
+
+          return RefreshIndicator(
+            onRefresh: onRefresh,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: context.pageScrollPadding(tokens),
+              children: <Widget>[
+                AppShellPageIntro(
+                  eyebrow: 'Ola, $greetingName',
+                  title: 'Dashboard de Pagamentos',
+                  subtitle: 'Resumo consolidado de todas as filiais.',
+                  footer: periodLabel != null
+                      ? AppTagChip(
+                          label: periodLabel,
+                          icon: Icons.calendar_today_outlined,
+                        )
+                      : null,
+                ),
+                if (dashboardController.errorMessage case final String msg) ...<
+                    Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  AppInlineErrorPanel(
+                    title: 'Nao foi possivel carregar o dashboard',
+                    message: msg,
+                    onRetry: sessionUserId != null
+                        ? () => unawaited(
+                              dashboardController.retryOverview(
+                                userId: sessionUserId,
+                              ),
+                            )
+                        : null,
+                  ),
+                ],
+                if (hasContent) ...<Widget>[
+                  SizedBox(height: tokens.sectionSpacing),
+                  AppSkeleton(
+                    enabled: showSkeleton,
+                    loadingSemanticsLabel:
+                        'Carregando indicadores de pagamento...',
+                    child: _KpiBar(kpis: resolvedOverview.kpis),
+                  ),
+                  SizedBox(height: tokens.sectionSpacing),
+                  AppSkeleton(
+                    enabled: showSkeleton,
+                    showDelay: Duration.zero,
+                    loadingSemanticsLabel:
+                        'Carregando mix de formas de pagamento...',
+                    child: _PaymentMixCard(
+                      methods: resolvedOverview.paymentMethods,
                     ),
-                  );
-                },
-          ),
+                  ),
+                  SizedBox(height: tokens.sectionSpacing),
+                  AppSkeleton(
+                    enabled: showSkeleton,
+                    showDelay: const Duration(milliseconds: 80),
+                    loadingSemanticsLabel:
+                        'Carregando faturamento por forma de pagamento...',
+                    child: _PaymentBarChart(
+                      methods: resolvedOverview.paymentMethods,
+                    ),
+                  ),
+                  SizedBox(height: tokens.sectionSpacing),
+                  AppSkeleton(
+                    enabled: showSkeleton,
+                    showDelay: const Duration(milliseconds: 120),
+                    loadingSemanticsLabel: 'Carregando rankings...',
+                    child: _RankingsSection(
+                      filialRankings: resolvedOverview.filialRankings,
+                      userRankings: resolvedOverview.userRankings,
+                    ),
+                  ),
+                  SizedBox(height: tokens.sectionSpacing),
+                  AppSkeleton(
+                    enabled: showSkeleton,
+                    showDelay: const Duration(milliseconds: 160),
+                    loadingSemanticsLabel:
+                        'Carregando tabela de formas de pagamento...',
+                    child: _PaymentSummaryTable(
+                      methods: resolvedOverview.paymentMethods,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
 
-List<Widget> _summaryMetricWidgets({
-  required BuildContext context,
-  required List<DashboardSummaryMetric> metrics,
-  required bool showSkeleton,
-  required AppThemeTokens tokens,
-}) {
-  if (metrics.isEmpty) {
-    return <Widget>[];
-  }
+// ---------------------------------------------------------------------------
+// KPI bar
+// ---------------------------------------------------------------------------
 
-  if (metrics.length == 1) {
-    final m = metrics.single;
-    return <Widget>[
-      AppSkeleton(
-        enabled: showSkeleton,
-        showDelay: _dashboardCriticalSkeletonDelay,
-        loadingSemanticsLabel: 'Carregando métricas do dashboard...',
-        child: DashboardSummaryCard(
-          title: m.title,
-          value: m.value,
-          deltaLabel: m.deltaLabel,
-          icon: m.icon,
-          emphasis: DashboardSummaryCardEmphasis.hero,
+class _KpiBar extends StatelessWidget {
+  const _KpiBar({required this.kpis});
+
+  final DashboardPaymentKpis kpis;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppReportSummaryBar(
+      items: <AppReportSummaryItem>[
+        AppReportSummaryItem(
+          label: 'Faturamento total',
+          value: AppBrFormatters.currency(kpis.totalAmount),
+          icon: Icons.payments_outlined,
         ),
-      ),
-    ];
-  }
-
-  if (!AppBreakpoints.isMobile(context) && metrics.length >= 3) {
-    final primaryMetrics = metrics.take(3).toList(growable: false);
-    final remainingMetrics = metrics.skip(3).toList(growable: false);
-
-    return <Widget>[
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          for (
-            var index = 0;
-            index < primaryMetrics.length;
-            index++
-          ) ...<Widget>[
-            Expanded(
-              child: AppSkeleton(
-                enabled: showSkeleton,
-                showDelay: _dashboardCriticalSkeletonDelay,
-                loadingSemanticsLabel: 'Carregando metricas do dashboard...',
-                child: DashboardSummaryCard(
-                  title: primaryMetrics[index].title,
-                  value: primaryMetrics[index].value,
-                  deltaLabel: primaryMetrics[index].deltaLabel,
-                  icon: primaryMetrics[index].icon,
-                  emphasis: index == 0
-                      ? DashboardSummaryCardEmphasis.hero
-                      : DashboardSummaryCardEmphasis.standard,
-                ),
-              ),
-            ),
-            if (index < primaryMetrics.length - 1)
-              SizedBox(width: tokens.gapSm),
-          ],
-        ],
-      ),
-      ...remainingMetrics.expand((metric) {
-        return <Widget>[
-          SizedBox(height: tokens.contentSpacing),
-          AppSkeleton(
-            enabled: showSkeleton,
-            showDelay: _dashboardSecondarySkeletonDelay,
-            loadingSemanticsLabel: 'Carregando metricas do dashboard...',
-            child: DashboardSummaryCard(
-              title: metric.title,
-              value: metric.value,
-              deltaLabel: metric.deltaLabel,
-              icon: metric.icon,
-            ),
-          ),
-        ];
-      }),
-    ];
-  }
-
-  final first = metrics[0];
-  final second = metrics[1];
-  final rest = <Widget>[];
-  for (var i = 2; i < metrics.length; i++) {
-    final m = metrics[i];
-    rest
-      ..add(SizedBox(height: tokens.contentSpacing))
-      ..add(
-        AppSkeleton(
-          enabled: showSkeleton,
-          showDelay: _dashboardSecondarySkeletonDelay,
-          loadingSemanticsLabel: 'Carregando métricas do dashboard...',
-          child: DashboardSummaryCard(
-            title: m.title,
-            value: m.value,
-            deltaLabel: m.deltaLabel,
-            icon: m.icon,
-          ),
+        AppReportSummaryItem(
+          label: 'Vendas',
+          value: kpis.totalSalesCount.toString(),
+          icon: Icons.receipt_long_outlined,
         ),
-      );
-  }
-
-  final pairRow = Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: <Widget>[
-      Expanded(
-        child: AppSkeleton(
-          enabled: showSkeleton,
-          showDelay: _dashboardCriticalSkeletonDelay,
-          loadingSemanticsLabel: 'Carregando métricas do dashboard...',
-          child: DashboardSummaryCard(
-            title: first.title,
-            value: first.value,
-            deltaLabel: first.deltaLabel,
-            icon: first.icon,
-            emphasis: DashboardSummaryCardEmphasis.hero,
-          ),
+        AppReportSummaryItem(
+          label: 'Ticket medio',
+          value: AppBrFormatters.currency(kpis.averageTicket),
+          icon: Icons.local_offer_outlined,
         ),
-      ),
-      SizedBox(width: tokens.gapSm),
-      Expanded(
-        child: AppSkeleton(
-          enabled: showSkeleton,
-          showDelay: _dashboardCriticalSkeletonDelay,
-          loadingSemanticsLabel: 'Carregando métricas do dashboard...',
-          child: DashboardSummaryCard(
-            title: second.title,
-            value: second.value,
-            deltaLabel: second.deltaLabel,
-            icon: second.icon,
-          ),
+        AppReportSummaryItem(
+          label: 'Formas de pagamento',
+          value: kpis.paymentMethodCount.toString(),
+          icon: Icons.credit_card_outlined,
         ),
-      ),
-    ],
-  );
-
-  final pairColumn = Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: <Widget>[
-      AppSkeleton(
-        enabled: showSkeleton,
-        showDelay: _dashboardCriticalSkeletonDelay,
-        loadingSemanticsLabel: 'Carregando métricas do dashboard...',
-        child: DashboardSummaryCard(
-          title: first.title,
-          value: first.value,
-          deltaLabel: first.deltaLabel,
-          icon: first.icon,
-          emphasis: DashboardSummaryCardEmphasis.hero,
-        ),
-      ),
-      SizedBox(height: tokens.contentSpacing),
-      AppSkeleton(
-        enabled: showSkeleton,
-        showDelay: _dashboardCriticalSkeletonDelay,
-        loadingSemanticsLabel: 'Carregando métricas do dashboard...',
-        child: DashboardSummaryCard(
-          title: second.title,
-          value: second.value,
-          deltaLabel: second.deltaLabel,
-          icon: second.icon,
-        ),
-      ),
-    ],
-  );
-
-  return <Widget>[
-    if (AppBreakpoints.isMobile(context)) pairColumn else pairRow,
-    ...rest,
-  ];
-}
-
-Widget _buildOverviewSecondarySection({
-  required BuildContext context,
-  required DashboardOverview overview,
-  required bool showSkeleton,
-}) {
-  final insightCard = DashboardAiInsightCard(
-    insight: overview.aiInsight,
-    onApply: showSkeleton
-        ? null
-        : () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Sugestao enviada para a equipe.'),
-              ),
-            );
-          },
-  );
-  final categoryCard = DashboardCategoryMixCard(
-    shares: overview.categoryShares,
-    fallbackTotalRevenue: overview.categoryMixTotalRevenue,
-  );
-
-  if (AppBreakpoints.isMobile(context)) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        categoryCard,
-        SizedBox(
-          height: Theme.of(context).extension<AppThemeTokens>()!.sectionSpacing,
-        ),
-        insightCard,
       ],
     );
   }
+}
 
-  final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-  return Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: <Widget>[
-      Expanded(
-        flex: 5,
-        child: categoryCard,
+// ---------------------------------------------------------------------------
+// Payment mix donut
+// ---------------------------------------------------------------------------
+
+class _PaymentMixCard extends StatelessWidget {
+  const _PaymentMixCard({required this.methods});
+
+  final List<DashboardPaymentMethodBreakdown> methods;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = methods.fold<double>(0, (sum, m) => sum + m.totalAmount);
+
+    return AppCategoryDonutCard(
+      title: 'Mix por forma de pagamento',
+      subtitle: 'Participacao percentual no faturamento do periodo.',
+      segments: methods
+          .map(
+            (m) => AppCategoryDonutSegment(
+              label: m.label,
+              value: m.totalAmount,
+              valueLabel: AppBrFormatters.currency(m.totalAmount),
+              percentLabel: '${m.sharePercent.toStringAsFixed(1)}%',
+            ),
+          )
+          .toList(growable: false),
+      centerPrimaryLabel:
+          total > 0 ? AppBrFormatters.compactCurrency(total) : null,
+      centerSecondaryLabel: 'TOTAL',
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Payment bar chart
+// ---------------------------------------------------------------------------
+
+class _PaymentBarChart extends StatelessWidget {
+  const _PaymentBarChart({required this.methods});
+
+  final List<DashboardPaymentMethodBreakdown> methods;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppComparisonBarChart<DashboardPaymentMethodBreakdown>(
+      title: 'Faturamento por forma de pagamento',
+      subtitle: 'Valor total acumulado no periodo.',
+      items: methods,
+      labelBuilder: (m) => m.label,
+      valueBuilder: (m) => m.totalAmount,
+      tooltipLabelBuilder: (m, v) =>
+          '${m.label}: ${AppBrFormatters.currency(v)}',
+      dataLabelBuilder: (m, v) => AppBrFormatters.compactCurrency(v),
+      style: const AppComparisonBarChartStyle(
+        showDataLabels: true,
       ),
-      SizedBox(width: tokens.gapMd),
-      Expanded(
-        flex: 4,
-        child: insightCard,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rankings section (filial + user)
+// ---------------------------------------------------------------------------
+
+class _RankingsSection extends StatelessWidget {
+  const _RankingsSection({
+    required this.filialRankings,
+    required this.userRankings,
+  });
+
+  final List<DashboardFilialRanking> filialRankings;
+  final List<DashboardUserRanking> userRankings;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final filialCard = _FilialRankingCard(filialRankings: filialRankings);
+    final userCard = _UserRankingCard(userRankings: userRankings);
+
+    if (AppBreakpoints.isMobile(context)) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          filialCard,
+          SizedBox(height: tokens.sectionSpacing),
+          userCard,
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(child: filialCard),
+        SizedBox(width: tokens.gapMd),
+        Expanded(child: userCard),
+      ],
+    );
+  }
+}
+
+class _FilialRankingCard extends StatelessWidget {
+  const _FilialRankingCard({required this.filialRankings});
+
+  final List<DashboardFilialRanking> filialRankings;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppComparisonBarChart<DashboardFilialRanking>(
+      title: 'Ranking por filial',
+      subtitle: 'Faturamento por filial no periodo.',
+      items: filialRankings,
+      labelBuilder: (f) => 'Fil. ${f.codFilial}',
+      valueBuilder: (f) => f.totalAmount,
+      tooltipLabelBuilder: (f, v) =>
+          '${f.label}: ${AppBrFormatters.currency(v)}',
+      style: AppComparisonBarChartStyle(
+        yAxisFormat: AppBrFormatters.compactCurrencyFormat,
       ),
-    ],
-  );
+    );
+  }
+}
+
+class _UserRankingCard extends StatelessWidget {
+  const _UserRankingCard({required this.userRankings});
+
+  final List<DashboardUserRanking> userRankings;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppComparisonBarChart<DashboardUserRanking>(
+      title: 'Ranking por operador',
+      subtitle: 'Faturamento por operador no periodo.',
+      items: userRankings,
+      labelBuilder: (u) => u.userName,
+      valueBuilder: (u) => u.totalAmount,
+      tooltipLabelBuilder: (u, v) =>
+          '${u.userName}: ${AppBrFormatters.currency(v)}',
+      style: AppComparisonBarChartStyle(
+        yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Payment summary table
+// ---------------------------------------------------------------------------
+
+class _PaymentSummaryTable extends StatelessWidget {
+  const _PaymentSummaryTable({required this.methods});
+
+  final List<DashboardPaymentMethodBreakdown> methods;
+
+  @override
+  Widget build(BuildContext context) {
+    if (methods.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return AppSectionCardWithHeading(
+      title: 'Resumo por forma de pagamento',
+      subtitle: 'Detalhamento de vendas, ticket medio e participacao.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const _PaymentTableHeader(),
+          ...methods.map((m) => _PaymentTableRow(method: m)),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentTableHeader extends StatelessWidget {
+  const _PaymentTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
+    final cs = theme.colorScheme;
+
+    final style = typography.utilityOverline.copyWith(
+      color: cs.onSurfaceVariant,
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: tokens.gapSm),
+      child: Row(
+        children: <Widget>[
+          const Expanded(flex: 3, child: SizedBox.shrink()),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'FATURAMENTO',
+              style: style,
+              textAlign: TextAlign.right,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              'VENDAS',
+              style: style,
+              textAlign: TextAlign.right,
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'TICKET MEDIO',
+              style: style,
+              textAlign: TextAlign.right,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              '%',
+              style: style,
+              textAlign: TextAlign.right,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentTableRow extends StatelessWidget {
+  const _PaymentTableRow({required this.method});
+
+  final DashboardPaymentMethodBreakdown method;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
+    final cs = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.gapSm),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              flex: 3,
+              child: Text(
+                method.label,
+                style: typography.body.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                AppBrFormatters.currency(method.totalAmount),
+                style: typography.body,
+                textAlign: TextAlign.right,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                method.totalSalesCount.toString(),
+                style: typography.body,
+                textAlign: TextAlign.right,
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                AppBrFormatters.currency(method.averageTicket),
+                style: typography.body,
+                textAlign: TextAlign.right,
+              ),
+            ),
+            Expanded(
+              child: Text(
+                '${method.sharePercent.toStringAsFixed(1)}%',
+                style: typography.body.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

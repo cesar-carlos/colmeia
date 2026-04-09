@@ -1,0 +1,235 @@
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_pagination_result.dart';
+
+class AgentSqlRpcErrorDetails {
+  const AgentSqlRpcErrorDetails({
+    required this.userMessage,
+    required this.message,
+    this.code,
+    this.reason,
+    this.category,
+    this.retryable = false,
+    this.technicalMessage,
+    this.correlationId,
+    this.timestamp,
+  });
+
+  final String userMessage;
+  final String message;
+  final int? code;
+  final String? reason;
+  final String? category;
+  final bool retryable;
+  final String? technicalMessage;
+  final String? correlationId;
+  final DateTime? timestamp;
+}
+
+/// Thrown when the hub returns HTTP 200 but the bridge reports an RPC failure
+/// (`response.success == false`).
+final class AgentSqlRpcException implements Exception {
+  AgentSqlRpcException(this.details);
+
+  final AgentSqlRpcErrorDetails details;
+
+  @override
+  String toString() => details.userMessage;
+}
+
+/// Parses the JSON body of `POST /agents/commands` for a single `sql.execute`.
+abstract final class AgentSqlBridgeResponse {
+  static AgentSqlExecutionResult parseSuccess(Map<String, dynamic> json) {
+    final response = json['response'];
+    if (response is! Map<String, dynamic>) {
+      throw const FormatException('Bridge response missing "response" object');
+    }
+
+    if (response['success'] != true) {
+      throw AgentSqlRpcException(_readRpcErrorDetails(response));
+    }
+
+    final item = response['item'];
+    if (item is! Map<String, dynamic>) {
+      throw const FormatException('Bridge response missing "item" object');
+    }
+
+    if (item['success'] != true) {
+      throw AgentSqlRpcException(_readItemErrorDetails(item));
+    }
+
+    final result = item['result'];
+    if (result is! Map<String, dynamic>) {
+      throw const FormatException('Bridge item missing "result" object');
+    }
+
+    final rawRows = result['rows'];
+    final rows = <Map<String, dynamic>>[];
+    if (rawRows is List<dynamic>) {
+      for (final row in rawRows) {
+        if (row is Map<String, dynamic>) {
+          rows.add(row);
+        } else if (row is Map) {
+          rows.add(Map<String, dynamic>.from(row));
+        }
+      }
+    }
+
+    final rowCount = _readInt(result['row_count']) ?? rows.length;
+    final executionId = result['execution_id']?.toString();
+    final affectedRows = _readInt(result['affected_rows']);
+    final pagination = _parsePagination(result['pagination']);
+
+    return AgentSqlExecutionResult(
+      rows: rows,
+      rowCount: rowCount,
+      executionId: executionId,
+      affectedRows: affectedRows,
+      pagination: pagination,
+    );
+  }
+
+  static AgentSqlPaginationResult? _parsePagination(Object? raw) {
+    if (raw is! Map) {
+      return null;
+    }
+    final map = Map<String, dynamic>.from(raw);
+    bool? readBool(String a, String b) {
+      final v = map[a] ?? map[b];
+      if (v is bool) {
+        return v;
+      }
+      return null;
+    }
+
+    String? readString(String a, String b) {
+      final v = map[a] ?? map[b];
+      if (v is String && v.isNotEmpty) {
+        return v;
+      }
+      return null;
+    }
+
+    final parsed = AgentSqlPaginationResult(
+      page: _readInt(map['page']),
+      pageSize: _readInt(map['page_size'] ?? map['pageSize']),
+      returnedRows: _readInt(map['returned_rows'] ?? map['returnedRows']),
+      hasNextPage: readBool('has_next_page', 'hasNextPage'),
+      hasPreviousPage: readBool('has_previous_page', 'hasPreviousPage'),
+      currentCursor: readString('current_cursor', 'currentCursor'),
+      nextCursor: readString('next_cursor', 'nextCursor'),
+    );
+    if (parsed.page == null &&
+        parsed.pageSize == null &&
+        parsed.returnedRows == null &&
+        parsed.hasNextPage == null &&
+        parsed.hasPreviousPage == null &&
+        parsed.currentCursor == null &&
+        parsed.nextCursor == null) {
+      return null;
+    }
+    return parsed;
+  }
+
+  static AgentSqlRpcErrorDetails _readRpcErrorDetails(
+    Map<String, dynamic> response,
+  ) {
+    final item = response['item'];
+    if (item is Map<String, dynamic>) {
+      return _readItemErrorDetails(item);
+    }
+    return const AgentSqlRpcErrorDetails(
+      userMessage: 'A consulta no agente nao foi concluida.',
+      message: 'Agent SQL RPC failed without item payload',
+    );
+  }
+
+  static AgentSqlRpcErrorDetails _readItemErrorDetails(
+    Map<String, dynamic> item,
+  ) {
+    final error = item['error'];
+    if (error is! Map) {
+      return const AgentSqlRpcErrorDetails(
+        userMessage: 'A consulta no agente nao foi concluida.',
+        message: 'Agent SQL RPC failed without error payload',
+      );
+    }
+    final errorMap = Map<String, dynamic>.from(error);
+    final data = errorMap['data'];
+    final dataMap = data is Map ? Map<String, dynamic>.from(data) : null;
+    final userMessage =
+        _readNonEmptyString(
+          dataMap,
+          const <String>['user_message', 'userMessage'],
+        ) ??
+        _readNonEmptyString(errorMap, const <String>['message']) ??
+        'A consulta no agente nao foi concluida.';
+    final message =
+        _readNonEmptyString(errorMap, const <String>['message']) ?? userMessage;
+
+    return AgentSqlRpcErrorDetails(
+      userMessage: userMessage,
+      message: message,
+      code: _readInt(errorMap['code']),
+      reason: _readNonEmptyString(dataMap, const <String>['reason']),
+      category: _readNonEmptyString(dataMap, const <String>['category']),
+      retryable: _readBool(dataMap, const <String>['retryable']) ?? false,
+      technicalMessage: _readNonEmptyString(
+        dataMap,
+        const <String>['technical_message', 'technicalMessage'],
+      ),
+      correlationId: _readNonEmptyString(
+        dataMap,
+        const <String>['correlation_id', 'correlationId'],
+      ),
+      timestamp: _readDateTime(
+        _readNonEmptyString(dataMap, const <String>['timestamp']),
+      ),
+    );
+  }
+
+  static int? _readInt(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return null;
+  }
+
+  static bool? _readBool(Map<String, dynamic>? json, List<String> keys) {
+    if (json == null) {
+      return null;
+    }
+    for (final key in keys) {
+      final value = json[key];
+      if (value is bool) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  static String? _readNonEmptyString(
+    Map<String, dynamic>? json,
+    List<String> keys,
+  ) {
+    if (json == null) {
+      return null;
+    }
+    for (final key in keys) {
+      final value = json[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
+  static DateTime? _readDateTime(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    return DateTime.tryParse(raw);
+  }
+}

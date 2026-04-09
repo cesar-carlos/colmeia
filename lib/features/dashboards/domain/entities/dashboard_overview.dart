@@ -1,28 +1,31 @@
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_ai_insight.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_category_share.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_chart_point.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_detail_highlight.dart';
-import 'package:colmeia/features/dashboards/domain/entities/dashboard_summary_metric.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_filial_ranking.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_kpis.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_payment_method_breakdown.dart';
+import 'package:colmeia/features/dashboards/domain/entities/dashboard_user_ranking.dart';
 
 class DashboardOverview {
   const DashboardOverview({
-    required this.summaryMetrics,
-    required this.revenuePoints,
-    required this.sellerPerformancePoints,
-    required this.operationalHighlights,
-    required this.aiInsight,
-    required this.categoryShares,
-    this.categoryMixTotalRevenue,
+    required this.periodStart,
+    required this.periodEnd,
+    required this.kpis,
+    required this.paymentMethods,
+    required this.filialRankings,
+    required this.userRankings,
   });
 
-  final List<DashboardSummaryMetric> summaryMetrics;
-  final List<DashboardChartPoint> revenuePoints;
-  final List<DashboardChartPoint> sellerPerformancePoints;
-  final List<DashboardDetailHighlight> operationalHighlights;
-  final DashboardAiInsight aiInsight;
-  final List<DashboardCategoryShare> categoryShares;
+  final DateTime periodStart;
+  final DateTime periodEnd;
+  final DashboardPaymentKpis kpis;
+  final List<DashboardPaymentMethodBreakdown> paymentMethods;
+  final List<DashboardFilialRanking> filialRankings;
+  final List<DashboardUserRanking> userRankings;
 
-  /// Total revenue for the category mix when the API sends percent-only rows.
-  /// Used to scale estimated amounts in the donut; optional.
-  final double? categoryMixTotalRevenue;
+  bool get hasRows => paymentMethods.isNotEmpty;
+
+  DashboardPaymentMethodBreakdown? get leadingPaymentMethod {
+    if (paymentMethods.isEmpty) {
+      return null;
+    }
+    return paymentMethods.first;
+  }
 }

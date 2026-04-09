@@ -1,5 +1,4 @@
 import 'package:colmeia/core/errors/app_result.dart';
-import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 
 enum DashboardLoadPolicy {
@@ -11,7 +10,6 @@ enum DashboardLoadPolicy {
 abstract interface class DashboardRepository {
   Future<AppResult<DashboardOverview>> loadOverview({
     required String userId,
-    required StoreId storeId,
     DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
   });
 }

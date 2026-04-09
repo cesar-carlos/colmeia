@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/application/usecases/load_dashboard_overview_use_case.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/repositories/dashboard_repository.dart';
@@ -43,12 +42,11 @@ class DashboardController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   /// Schedules [loadOverview] after the current frame when the
-  /// user/store pair changes. Safe to call from widget build methods.
+  /// user changes. Safe to call from widget build methods.
   void scheduleOverviewLoadIfNeeded({
     required String userId,
-    required StoreId storeId,
   }) {
-    final signature = _signatureFor(userId: userId, storeId: storeId);
+    final signature = _signatureFor(userId: userId);
     if (_requestedOverviewSignature == signature) {
       return;
     }
@@ -60,7 +58,6 @@ class DashboardController extends ChangeNotifier {
       unawaited(
         loadOverview(
           userId: userId,
-          storeId: storeId,
         ),
       );
     });
@@ -68,11 +65,9 @@ class DashboardController extends ChangeNotifier {
 
   Future<void> loadOverview({
     required String userId,
-    required StoreId storeId,
   }) async {
     await _loadOverview(
       userId: userId,
-      storeId: storeId,
       policy: DashboardLoadPolicy.defaultLoad,
       keepContentVisible: false,
     );
@@ -80,14 +75,12 @@ class DashboardController extends ChangeNotifier {
 
   Future<void> refreshOverview({
     required String userId,
-    required StoreId storeId,
   }) async {
-    final signature = _signatureFor(userId: userId, storeId: storeId);
+    final signature = _signatureFor(userId: userId);
     final keepContentVisible =
         _loadedOverviewSignature == signature && _overview != null;
     await _loadOverview(
       userId: userId,
-      storeId: storeId,
       policy: DashboardLoadPolicy.forceRefresh,
       keepContentVisible: keepContentVisible,
     );
@@ -95,14 +88,12 @@ class DashboardController extends ChangeNotifier {
 
   Future<void> retryOverview({
     required String userId,
-    required StoreId storeId,
   }) async {
-    final signature = _signatureFor(userId: userId, storeId: storeId);
+    final signature = _signatureFor(userId: userId);
     final keepContentVisible =
         _loadedOverviewSignature == signature && _overview != null;
     await _loadOverview(
       userId: userId,
-      storeId: storeId,
       policy: keepContentVisible
           ? DashboardLoadPolicy.forceRefresh
           : DashboardLoadPolicy.defaultLoad,
@@ -112,11 +103,10 @@ class DashboardController extends ChangeNotifier {
 
   Future<void> _loadOverview({
     required String userId,
-    required StoreId storeId,
     required DashboardLoadPolicy policy,
     required bool keepContentVisible,
   }) async {
-    final signature = _signatureFor(userId: userId, storeId: storeId);
+    final signature = _signatureFor(userId: userId);
     _requestedOverviewSignature = signature;
     final generation = ++_loadGeneration;
 
@@ -125,7 +115,6 @@ class DashboardController extends ChangeNotifier {
       context: <String, Object?>{
         'operation': 'loadDashboardOverview',
         'userId': userId,
-        'storeId': storeId.value,
         'policy': policy.name,
         'keepContentVisible': keepContentVisible,
       },
@@ -145,7 +134,6 @@ class DashboardController extends ChangeNotifier {
 
     final result = await _loadDashboardOverviewUseCase(
       userId: userId,
-      storeId: storeId,
       policy: policy,
     );
     if (_disposed || generation != _loadGeneration) {
@@ -161,8 +149,7 @@ class DashboardController extends ChangeNotifier {
           context: <String, Object?>{
             'operation': 'loadDashboardOverview',
             'userId': userId,
-            'storeId': storeId.value,
-            'metrics': overview.summaryMetrics.length,
+            'paymentMethods': overview.paymentMethods.length,
             'policy': policy.name,
           },
         );
@@ -178,7 +165,6 @@ class DashboardController extends ChangeNotifier {
           context: <String, Object?>{
             'operation': 'loadDashboardOverview',
             'userId': userId,
-            'storeId': storeId.value,
             'policy': policy.name,
             'keepContentVisible': keepContentVisible,
             'technicalMessage': failure.message,
@@ -199,8 +185,7 @@ class DashboardController extends ChangeNotifier {
 
   String _signatureFor({
     required String userId,
-    required StoreId storeId,
   }) {
-    return '$userId:${storeId.value}';
+    return userId;
   }
 }

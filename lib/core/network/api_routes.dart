@@ -3,6 +3,11 @@ abstract final class ApiRoutes {
   static const String onlineAgents = '/agents';
 }
 
+/// Hub bridge: `POST /api/v1/agents/commands` (base URL already includes `/api/v1`).
+abstract final class AgentCommandsApiRoutes {
+  static const String commands = '/agents/commands';
+}
+
 abstract final class AgentCatalogApiRoutes {
   static const String catalog = '/agents/catalog';
 

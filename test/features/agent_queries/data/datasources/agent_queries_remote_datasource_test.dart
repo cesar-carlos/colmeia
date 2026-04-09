@@ -1,0 +1,82 @@
+import 'package:checks/checks.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockDio extends Mock implements Dio {}
+
+void main() {
+  late _MockDio dio;
+  late ApiAgentQueriesRemoteDataSource dataSource;
+
+  setUp(() {
+    dio = _MockDio();
+    dataSource = ApiAgentQueriesRemoteDataSource(dio);
+  });
+
+  test(
+    'should build normalized bridge payload when request has options',
+    () async {
+      when(
+        () => dio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/agents/commands'),
+          data: const <String, dynamic>{},
+        ),
+      );
+
+      const request = AgentSqlExecuteRequest(
+        agentId: ' agent-1 ',
+        sql: ' SELECT * FROM table ',
+        namedParams: <String, Object?>{'id': 7},
+        clientToken: ' token-abc ',
+        bridgeTimeoutMs: 45000,
+        pagination: AgentSqlPagePagination(page: 2, pageSize: 50),
+        executeOptions: AgentSqlExecuteOptions(
+          maxRows: 1000,
+          sqlTimeoutMs: 5000,
+          executionMode: AgentSqlExecutionMode.managed,
+        ),
+      );
+
+      await dataSource.postSqlExecute(request);
+
+      final captured = verify(
+        () => dio.post<Map<String, dynamic>>(
+          captureAny(),
+          data: captureAny(named: 'data'),
+        ),
+      ).captured;
+
+      check(captured[0]).equals('/agents/commands');
+      final body = captured[1]! as Map<String, Object?>;
+      final command = body['command']! as Map<String, Object?>;
+      final params = command['params']! as Map<String, Object?>;
+      final options = params['options']! as Map<String, Object?>;
+      final pagination = body['pagination']! as Map<String, Object?>;
+
+      check(body['agentId']).equals('agent-1');
+      check(body['timeoutMs']).equals(45000);
+      check(pagination['page']).equals(2);
+      check(pagination['pageSize']).equals(50);
+      check(command['jsonrpc']).equals('2.0');
+      check(command['method']).equals('sql.execute');
+      check(command['id']).isA<String>();
+      check(params['sql']).equals('SELECT * FROM table');
+      final namedParams = params['params']! as Map<String, Object?>;
+      check(namedParams['id']).equals(7);
+      check(params['client_token']).equals('token-abc');
+      check(options['max_rows']).equals(1000);
+      check(options['timeout_ms']).equals(5000);
+      check(options['execution_mode']).equals('managed');
+    },
+  );
+}

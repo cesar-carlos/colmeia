@@ -1,5 +1,4 @@
 import 'package:colmeia/core/errors/app_result.dart';
-import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/domain/entities/dashboard_overview.dart';
 import 'package:colmeia/features/dashboards/domain/repositories/dashboard_repository.dart';
 
@@ -10,12 +9,10 @@ class LoadDashboardOverviewUseCase {
 
   Future<AppResult<DashboardOverview>> call({
     required String userId,
-    required StoreId storeId,
     DashboardLoadPolicy policy = DashboardLoadPolicy.defaultLoad,
   }) {
     return _dashboardRepository.loadOverview(
       userId: userId,
-      storeId: storeId,
       policy: policy,
     );
   }

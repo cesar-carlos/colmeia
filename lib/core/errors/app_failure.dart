@@ -65,6 +65,31 @@ final class NetworkFailure extends AppFailure {
   });
 }
 
+final class RpcFailure extends AppFailure {
+  const RpcFailure({
+    required super.message,
+    required super.userMessage,
+    required this.rpcCode,
+    required this.retryable,
+    this.reason,
+    this.category,
+    this.technicalMessage,
+    this.correlationId,
+    this.timestamp,
+    super.cause,
+    super.stackTrace,
+    super.context,
+  }) : super(isTransient: retryable);
+
+  final int? rpcCode;
+  final bool retryable;
+  final String? reason;
+  final String? category;
+  final String? technicalMessage;
+  final String? correlationId;
+  final DateTime? timestamp;
+}
+
 final class UnknownFailure extends AppFailure {
   const UnknownFailure({
     required super.message,

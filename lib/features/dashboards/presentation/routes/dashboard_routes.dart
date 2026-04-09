@@ -4,6 +4,11 @@ import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/dashboards/presentation/pages/dashboard_home_page.dart';
 import 'package:go_router/go_router.dart';
 
+/// Route data for the store-scoped dashboard URL.
+///
+/// The new consolidated dashboard ignores [storeId] at the page level, but
+/// the route is kept to avoid breaking any deep-links or in-app navigation
+/// that still targets this path.
 final class DashboardStoreRouteData implements AppRouteData {
   DashboardStoreRouteData({
     required this.storeId,
@@ -24,8 +29,8 @@ final class DashboardStoreRouteData implements AppRouteData {
 
   @override
   Map<String, String> get pathParameters => <String, String>{
-    storeIdParameter: storeId.value,
-  };
+        storeIdParameter: storeId.value,
+      };
 
   @override
   Map<String, dynamic> get queryParameters => const <String, dynamic>{};
@@ -36,18 +41,12 @@ List<RouteBase> buildDashboardRoutes() {
     GoRoute(
       name: AppRoute.dashboardStore.name,
       path: AppRoute.dashboardStore.path,
-      builder: (context, state) {
-        final routeData = DashboardStoreRouteData.fromState(state);
-
-        return DashboardHomePage(storeId: routeData.storeId);
-      },
+      builder: (context, state) => const DashboardHomePage(),
     ),
     GoRoute(
       name: AppRoute.dashboard.name,
       path: AppRoute.dashboard.path,
-      builder: (context, state) {
-        return const DashboardHomePage();
-      },
+      builder: (context, state) => const DashboardHomePage(),
     ),
   ];
 }

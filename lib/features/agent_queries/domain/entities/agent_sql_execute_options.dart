@@ -1,0 +1,57 @@
+/// Agent-side execution flags for `sql.execute` (`params.options` in JSON-RPC).
+class AgentSqlExecuteOptions {
+  const AgentSqlExecuteOptions({
+    this.maxRows,
+    this.sqlTimeoutMs,
+    this.executionMode,
+  });
+
+  /// Maps to `options.max_rows` on the agent.
+  final int? maxRows;
+
+  /// Maps to `options.timeout_ms` (SQL execution timeout on the agent).
+  final int? sqlTimeoutMs;
+
+  /// Maps to `options.execution_mode` (`managed` is the agent default).
+  final AgentSqlExecutionMode? executionMode;
+
+  String? validationError() {
+    final max = maxRows;
+    if (max != null && max < 1) {
+      return 'maxRows must be >= 1';
+    }
+
+    final timeout = sqlTimeoutMs;
+    if (timeout != null && timeout < 1) {
+      return 'sqlTimeoutMs must be >= 1';
+    }
+
+    return null;
+  }
+
+  /// `null` when every field is null (omit `options` in the payload).
+  Map<String, Object?>? toRpcOptions() {
+    final map = <String, Object?>{};
+    final max = maxRows;
+    if (max != null) {
+      map['max_rows'] = max;
+    }
+    final timeout = sqlTimeoutMs;
+    if (timeout != null) {
+      map['timeout_ms'] = timeout;
+    }
+    final mode = executionMode;
+    if (mode != null) {
+      map['execution_mode'] = switch (mode) {
+        AgentSqlExecutionMode.managed => 'managed',
+        AgentSqlExecutionMode.preserve => 'preserve',
+      };
+    }
+    return map.isEmpty ? null : map;
+  }
+}
+
+enum AgentSqlExecutionMode {
+  managed,
+  preserve,
+}
