@@ -1,5 +1,5 @@
-class ResumoParcelaProdutoVendidoFormaPagamentoFilter {
-  const ResumoParcelaProdutoVendidoFormaPagamentoFilter({
+class ResumoParcelaFormaPagamentoFilter {
+  const ResumoParcelaFormaPagamentoFilter({
     required this.dataVendaInicio,
     required this.dataVendaFim,
     this.origem = 'FrenteLoja',

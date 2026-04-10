@@ -199,10 +199,6 @@ AgentSqlRpcUserMessageResolution resolveAgentSqlRpcUserMessage(
   }
 
   switch (code) {
-    case -32602:
-      return _sqlValidationResolution(bridge);
-    case -32101:
-      return _sqlValidationResolution(bridge);
     case -32102:
       return const AgentSqlRpcUserMessageResolution(
         userMessage: _En.sqlExecutionFailed,

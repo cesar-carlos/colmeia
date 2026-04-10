@@ -1,7 +1,7 @@
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 
-class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
-  const ResumoParcelaProdutoVendidoFormaPagamentoRowModel({
+class ResumoParcelaFormaPagamentoRowModel {
+  const ResumoParcelaFormaPagamentoRowModel({
     required this.codEmpresa,
     required this.codFilial,
     required this.nomeUsuario,
@@ -14,7 +14,7 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
     required this.valorParcela,
   });
 
-  factory ResumoParcelaProdutoVendidoFormaPagamentoRowModel.fromMap(
+  factory ResumoParcelaFormaPagamentoRowModel.fromMap(
     Map<String, dynamic> map,
   ) {
     final anoDataVenda = _readRequiredIntKeys(
@@ -27,27 +27,19 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
     );
     final anoMesDataVenda = _readRequiredAnoMesDataVenda(map);
 
-    assert(
-      () {
-        if (!anoMesDataVenda.contains('/')) {
-          return true;
-        }
-        if (!ResumoParcelaProdutoVendidoFormaPagamentoRow.isAnoMesConsistent(
+    if (anoMesDataVenda.contains('/') &&
+        !ResumoParcelaFormaPagamentoRow.isAnoMesConsistent(
           anoMesDataVenda: anoMesDataVenda,
           anoDataVenda: anoDataVenda,
           mesDataVenda: mesDataVenda,
         )) {
-          throw StateError(
-            'AnoMesDataVenda "$anoMesDataVenda" is inconsistent with '
-            'AnoDataVenda=$anoDataVenda MesDataVenda=$mesDataVenda',
-          );
-        }
-        return true;
-      }(),
-      'AnoMesDataVenda must match AnoDataVenda/MesDataVenda when it uses /',
-    );
+      throw FormatException(
+        'AnoMesDataVenda "$anoMesDataVenda" is inconsistent with '
+        'AnoDataVenda=$anoDataVenda MesDataVenda=$mesDataVenda',
+      );
+    }
 
-    return ResumoParcelaProdutoVendidoFormaPagamentoRowModel(
+    return ResumoParcelaFormaPagamentoRowModel(
       codEmpresa: _readRequiredIntKeys(map, _keysCodEmpresaStyle('CodEmpresa')),
       codFilial: _readRequiredIntKeys(map, _keysCodEmpresaStyle('CodFilial')),
       nomeUsuario: _readNomeUsuario(map),
@@ -81,8 +73,8 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRowModel {
   final int qtdVendas;
   final double valorParcela;
 
-  ResumoParcelaProdutoVendidoFormaPagamentoRow toEntity() {
-    return ResumoParcelaProdutoVendidoFormaPagamentoRow(
+  ResumoParcelaFormaPagamentoRow toEntity() {
+    return ResumoParcelaFormaPagamentoRow(
       codEmpresa: codEmpresa,
       codFilial: codFilial,
       nomeUsuario: nomeUsuario,

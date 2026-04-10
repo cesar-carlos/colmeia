@@ -1,5 +1,5 @@
-class ResumoParcelaProdutoVendidoFormaPagamentoRow {
-  const ResumoParcelaProdutoVendidoFormaPagamentoRow({
+class ResumoParcelaFormaPagamentoRow {
+  const ResumoParcelaFormaPagamentoRow({
     required this.codEmpresa,
     required this.codFilial,
     required this.nomeUsuario,
@@ -34,7 +34,7 @@ class ResumoParcelaProdutoVendidoFormaPagamentoRow {
   /// True when [anoMesDataVenda] parses as `year/month` and matches
   /// [anoDataVenda] / [mesDataVenda].
   bool get isAnoMesConsistentWithParts {
-    return ResumoParcelaProdutoVendidoFormaPagamentoRow.isAnoMesConsistent(
+    return ResumoParcelaFormaPagamentoRow.isAnoMesConsistent(
       anoMesDataVenda: anoMesDataVenda,
       anoDataVenda: anoDataVenda,
       mesDataVenda: mesDataVenda,

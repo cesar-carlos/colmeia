@@ -1,4 +1,6 @@
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_http_receive_timeout.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:dio/dio.dart';
@@ -44,14 +46,46 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
       },
     };
 
+    final receiveTimeout = agentSqlHttpReceiveTimeout(
+      bridgeTimeoutMs: request.bridgeTimeoutMs,
+    );
     final response = await _dio.post<Map<String, dynamic>>(
       AgentCommandsApiRoutes.commands,
       data: body,
+      options: Options(
+        receiveTimeout: receiveTimeout,
+        sendTimeout: receiveTimeout,
+      ),
     );
-    return response.data ?? const <String, dynamic>{};
+
+    final payload = response.data;
+    if (payload == null) {
+      AppLogger.warning(
+        'Agent SQL bridge returned null JSON body',
+        context: <String, Object?>{
+          'operation': 'postSqlExecute',
+          'path': AgentCommandsApiRoutes.commands,
+          'statusCode': response.statusCode,
+        },
+      );
+    } else if (payload.isEmpty) {
+      AppLogger.debug(
+        'Agent SQL bridge returned empty JSON object',
+        context: <String, Object?>{
+          'operation': 'postSqlExecute',
+          'path': AgentCommandsApiRoutes.commands,
+          'statusCode': response.statusCode,
+        },
+      );
+    }
+
+    return payload ?? const <String, dynamic>{};
   }
 }
 
+/// Deterministic bridge-shaped payloads for local / fake backend runs.
+/// RPC error paths are covered by `AgentSqlBridgeResponse` unit tests and e2e
+/// runs against the real hub.
 class FakeAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
   @override
   Future<Map<String, dynamic>> postSqlExecute(

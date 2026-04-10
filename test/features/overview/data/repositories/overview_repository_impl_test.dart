@@ -1,8 +1,8 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_produto_vendido_forma_pagamento_use_case.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
@@ -28,7 +28,7 @@ class _MockClientAgentsRepository extends Mock
     implements ClientAgentsRepository {}
 
 class _MockLoadResumo extends Mock
-    implements LoadResumoParcelaProdutoVendidoFormaPagamentoUseCase {}
+    implements LoadResumoParcelaFormaPagamentoUseCase {}
 
 class _MockLocalAgentClientTokenStore extends Mock
     implements LocalAgentClientTokenStore {}
@@ -45,7 +45,7 @@ void main() {
     registerFallbackValue(const PaginatedQuery(pageSize: 1));
     registerFallbackValue(false);
     registerFallbackValue(
-      ResumoParcelaProdutoVendidoFormaPagamentoFilter(
+      ResumoParcelaFormaPagamentoFilter(
         dataVendaInicio: DateTime(2026, 3, 10),
         dataVendaFim: DateTime(2026, 4, 8),
       ),
@@ -178,11 +178,11 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Success<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
-                <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
-                  ResumoParcelaProdutoVendidoFormaPagamentoRow(
+                <ResumoParcelaFormaPagamentoRow>[
+                  ResumoParcelaFormaPagamentoRow(
                     codEmpresa: 1,
                     codFilial: 1,
                     nomeUsuario: 'Caixa 01',
@@ -194,7 +194,7 @@ void main() {
                     qtdVendas: 10,
                     valorParcela: 900,
                   ),
-                  ResumoParcelaProdutoVendidoFormaPagamentoRow(
+                  ResumoParcelaFormaPagamentoRow(
                     codEmpresa: 1,
                     codFilial: 1,
                     nomeUsuario: 'Caixa 01',
@@ -206,7 +206,7 @@ void main() {
                     qtdVendas: 5,
                     valorParcela: 600,
                   ),
-                  ResumoParcelaProdutoVendidoFormaPagamentoRow(
+                  ResumoParcelaFormaPagamentoRow(
                     codEmpresa: 1,
                     codFilial: 2,
                     nomeUsuario: 'Caixa 02',
@@ -301,7 +301,7 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Failure<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
                 NetworkFailure(
@@ -357,7 +357,7 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Failure<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
                 NetworkFailure(
@@ -413,11 +413,11 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Success<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
-                <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
-                  ResumoParcelaProdutoVendidoFormaPagamentoRow(
+                <ResumoParcelaFormaPagamentoRow>[
+                  ResumoParcelaFormaPagamentoRow(
                     codEmpresa: 1,
                     codFilial: 1,
                     nomeUsuario: 'Caixa',
@@ -485,7 +485,7 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Failure<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
                 RpcFailure(
@@ -506,11 +506,11 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Success<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
-                <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
-                  ResumoParcelaProdutoVendidoFormaPagamentoRow(
+                <ResumoParcelaFormaPagamentoRow>[
+                  ResumoParcelaFormaPagamentoRow(
                     codEmpresa: 1,
                     codFilial: 1,
                     nomeUsuario: 'Caixa',
@@ -590,11 +590,11 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Success<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
-                <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
-                  ResumoParcelaProdutoVendidoFormaPagamentoRow(
+                <ResumoParcelaFormaPagamentoRow>[
+                  ResumoParcelaFormaPagamentoRow(
                     codEmpresa: 1,
                     codFilial: 1,
                     nomeUsuario: 'Caixa',
@@ -772,11 +772,11 @@ void main() {
       ).thenAnswer(
         (_) async =>
             const Success<
-              List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+              List<ResumoParcelaFormaPagamentoRow>,
               AppFailure
             >(
-              <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
-                ResumoParcelaProdutoVendidoFormaPagamentoRow(
+              <ResumoParcelaFormaPagamentoRow>[
+                ResumoParcelaFormaPagamentoRow(
                   codEmpresa: 1,
                   codFilial: 1,
                   nomeUsuario: 'Caixa',
@@ -801,11 +801,11 @@ void main() {
       ).thenAnswer(
         (_) async =>
             const Success<
-              List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+              List<ResumoParcelaFormaPagamentoRow>,
               AppFailure
             >(
-              <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
-                ResumoParcelaProdutoVendidoFormaPagamentoRow(
+              <ResumoParcelaFormaPagamentoRow>[
+                ResumoParcelaFormaPagamentoRow(
                   codEmpresa: 1,
                   codFilial: 1,
                   nomeUsuario: 'Caixa',
@@ -862,7 +862,7 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Failure<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
                 SessionFailure(
@@ -916,11 +916,11 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Success<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
-                <ResumoParcelaProdutoVendidoFormaPagamentoRow>[
-                  ResumoParcelaProdutoVendidoFormaPagamentoRow(
+                <ResumoParcelaFormaPagamentoRow>[
+                  ResumoParcelaFormaPagamentoRow(
                     codEmpresa: 1,
                     codFilial: 1,
                     nomeUsuario: 'Caixa',
@@ -976,10 +976,10 @@ void main() {
         ).thenAnswer(
           (_) async =>
               const Success<
-                List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+                List<ResumoParcelaFormaPagamentoRow>,
                 AppFailure
               >(
-                <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+                <ResumoParcelaFormaPagamentoRow>[],
               ),
         );
 

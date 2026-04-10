@@ -1,4 +1,4 @@
-abstract final class ResumoParcelaProdutoVendidoFormaPagamentoSql {
+abstract final class ResumoParcelaFormaPagamentoSql {
   /// Named-parameter version of the original report query.
   static const String query = '''
 SELECT
@@ -53,7 +53,7 @@ FROM (
   INNER JOIN TipoOperacaoSaida tos ON
     tos.CodEmpresa = pv.CodEmpresa
     AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
-) ResumoParcelaProdutoVendidoFormaPagamento
+) ResumoParcelaFormaPagamento
 WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
   AND Origem LIKE :origem
   AND GeraFinanceiro = :geraFinanceiro

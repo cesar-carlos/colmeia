@@ -1,5 +1,5 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_produto_vendido_forma_pagamento_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
@@ -18,7 +18,7 @@ void registerInjectorOverview(GetIt getIt) {
         clientAgentsRepository: getIt(),
         clientTokenStore: getIt<LocalAgentClientTokenStore>(),
         loadResumo:
-            getIt<LoadResumoParcelaProdutoVendidoFormaPagamentoUseCase>(),
+            getIt<LoadResumoParcelaFormaPagamentoUseCase>(),
       ),
     )
     ..registerLazySingleton<LoadOverviewUseCase>(

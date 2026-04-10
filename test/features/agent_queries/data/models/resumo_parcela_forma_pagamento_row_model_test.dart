@@ -1,12 +1,12 @@
 import 'package:checks/checks.dart';
-import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_produto_vendido_forma_pagamento_row_model.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('ResumoParcelaProdutoVendidoFormaPagamentoRowModel', () {
+  group('ResumoParcelaFormaPagamentoRowModel', () {
     test('fromMap accepts camelCase keys', () {
-      final model = ResumoParcelaProdutoVendidoFormaPagamentoRowModel.fromMap(
+      final model = ResumoParcelaFormaPagamentoRowModel.fromMap(
         <String, dynamic>{
           'codEmpresa': 10,
           'codFilial': 20,
@@ -26,7 +26,7 @@ void main() {
     });
 
     test('fromMap accepts all-lowercase keys (bridge JSON)', () {
-      final model = ResumoParcelaProdutoVendidoFormaPagamentoRowModel.fromMap(
+      final model = ResumoParcelaFormaPagamentoRowModel.fromMap(
         <String, dynamic>{
           'codempresa': 1,
           'codfilial': 2,
@@ -47,7 +47,7 @@ void main() {
     });
 
     test('fromMap parses ValorParcela from decimal string', () {
-      final model = ResumoParcelaProdutoVendidoFormaPagamentoRowModel.fromMap(
+      final model = ResumoParcelaFormaPagamentoRowModel.fromMap(
         <String, dynamic>{
           'codEmpresa': 1,
           'codFilial': 1,
@@ -63,12 +63,33 @@ void main() {
       );
       check(model.valorParcela).equals(14704.29);
     });
+
+    test('fromMap throws FormatException when AnoMes disagrees with parts', () {
+        expect(
+          () => ResumoParcelaFormaPagamentoRowModel.fromMap(
+            <String, dynamic>{
+              'codEmpresa': 1,
+              'codFilial': 1,
+              'nomeUsuario': 'U',
+              'anoDataVenda': 2026,
+              'mesDataVenda': 4,
+              'anoMesDataVenda': '2026/05',
+              'codFormaPagamento': 'X',
+              'descricaoFormaPagamento': 'Y',
+              'qtdVendas': 1,
+              'valorParcela': 1.0,
+            },
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
   });
 
-  group('ResumoParcelaProdutoVendidoFormaPagamentoRow.isAnoMesConsistent', () {
+  group('ResumoParcelaFormaPagamentoRow.isAnoMesConsistent', () {
     test('returns true for padded month label', () {
       check(
-        ResumoParcelaProdutoVendidoFormaPagamentoRow.isAnoMesConsistent(
+        ResumoParcelaFormaPagamentoRow.isAnoMesConsistent(
           anoMesDataVenda: '2026/04',
           anoDataVenda: 2026,
           mesDataVenda: 4,
@@ -78,7 +99,7 @@ void main() {
 
     test('returns false when parts do not match ints', () {
       check(
-        ResumoParcelaProdutoVendidoFormaPagamentoRow.isAnoMesConsistent(
+        ResumoParcelaFormaPagamentoRow.isAnoMesConsistent(
           anoMesDataVenda: '2026/05',
           anoDataVenda: 2026,
           mesDataVenda: 4,

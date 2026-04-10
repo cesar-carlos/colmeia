@@ -1,19 +1,21 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_produto_vendido_forma_pagamento_use_case.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
+import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_payment_resumo_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
@@ -24,7 +26,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required OverviewLocalDataSource localDataSource,
     required ClientAgentsRepository clientAgentsRepository,
     required LocalAgentClientTokenStore clientTokenStore,
-    required LoadResumoParcelaProdutoVendidoFormaPagamentoUseCase loadResumo,
+    required LoadResumoParcelaFormaPagamentoUseCase loadResumo,
     DateTime Function()? now,
   }) : _localDataSource = localDataSource,
        _clientAgentsRepository = clientAgentsRepository,
@@ -35,7 +37,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   final OverviewLocalDataSource _localDataSource;
   final ClientAgentsRepository _clientAgentsRepository;
   final LocalAgentClientTokenStore _clientTokenStore;
-  final LoadResumoParcelaProdutoVendidoFormaPagamentoUseCase _loadResumo;
+  final LoadResumoParcelaFormaPagamentoUseCase _loadResumo;
   final DateTime Function() _now;
 
   static const int _approvedAgentsPageSize = 50;
@@ -89,11 +91,11 @@ class OverviewRepositoryImpl implements OverviewRepository {
       if (effectiveAgents.isEmpty) {
         return Success<Overview, AppFailure>(
           _buildOverview(
-            const <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+            const <OverviewPaymentResumoRow>[],
             rowsByAgentId:
                 const <
                   String,
-                  List<ResumoParcelaProdutoVendidoFormaPagamentoRow>
+                  List<OverviewPaymentResumoRow>
                 >{},
             approvedAgentsById: const <String, ClientAgent>{},
             periodStart: period.start,
@@ -115,7 +117,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       final resumoBatch = await _loadResumoQueryResults(
         userId: userId,
         sortedAgentIds: sortedAgentIds,
-        filter: period.filter,
+        filter: _resumoFilter(period),
       );
       final queryResults = resumoBatch.results;
       final agentIdsMissingClientToken = resumoBatch.agentIdsMissingClientToken;
@@ -136,11 +138,11 @@ class OverviewRepositoryImpl implements OverviewRepository {
         );
       }
 
-      final rows = <ResumoParcelaProdutoVendidoFormaPagamentoRow>[];
+      final rows = <OverviewPaymentResumoRow>[];
       final rowsByAgentId =
-          <String, List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>{
+          <String, List<OverviewPaymentResumoRow>>{
             for (final String id in sortedAgentIds)
-              id: <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+              id: <OverviewPaymentResumoRow>[],
           };
       final failedQueryAgentIds = <String>[];
       var hasAnySuccess = false;
@@ -156,7 +158,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           hasAnySuccess = true;
           rows.addAll(batch);
           rowsByAgentId[agentId] =
-              List<ResumoParcelaProdutoVendidoFormaPagamentoRow>.of(
+              List<OverviewPaymentResumoRow>.of(
                 batch,
                 growable: false,
               );
@@ -196,10 +198,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
 
         return Success<Overview, AppFailure>(
           _buildOverview(
-            const <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+            const <OverviewPaymentResumoRow>[],
             rowsByAgentId: {
               for (final String id in sortedAgentIds)
-                id: <ResumoParcelaProdutoVendidoFormaPagamentoRow>[],
+                id: <OverviewPaymentResumoRow>[],
             },
             approvedAgentsById: approvedAgentsById,
             periodStart: period.start,
@@ -313,6 +315,29 @@ class OverviewRepositoryImpl implements OverviewRepository {
     }
   }
 
+  ResumoParcelaFormaPagamentoFilter _resumoFilter(_OverviewPeriod period) {
+    return ResumoParcelaFormaPagamentoFilter(
+      dataVendaInicio: period.start,
+      dataVendaFim: period.end,
+    );
+  }
+
+  AppResult<List<OverviewPaymentResumoRow>> _mapResumoToOverviewRows(
+    AppResult<List<ResumoParcelaFormaPagamentoRow>> result,
+  ) {
+    return result.fold(
+      (rows) => Success<
+        List<OverviewPaymentResumoRow>,
+        AppFailure
+      >(
+        rows
+            .map(overviewPaymentResumoRowFromAgentRow)
+            .toList(growable: false),
+      ),
+      Failure<List<OverviewPaymentResumoRow>, AppFailure>.new,
+    );
+  }
+
   /// Loads resumo rows per agent with bounded parallelism to avoid spiking the
   /// SQL bridge when many agents are approved.
   ///
@@ -321,7 +346,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   /// missing-token id list.
   Future<
     ({
-      List<AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>>
+      List<AppResult<List<OverviewPaymentResumoRow>>>
       results,
       List<String> agentIdsMissingClientToken,
     })
@@ -329,7 +354,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   _loadResumoQueryResults({
     required String userId,
     required List<String> sortedAgentIds,
-    required ResumoParcelaProdutoVendidoFormaPagamentoFilter filter,
+    required ResumoParcelaFormaPagamentoFilter filter,
   }) async {
     // Keys are trimmed agent ids (same ids as sortedAgentIds); see
     // LocalAgentClientTokenStore.readMany.
@@ -341,7 +366,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     final missingTokenIds = <String>[];
     final slot =
         List<
-          AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>?
+          AppResult<List<OverviewPaymentResumoRow>>?
         >.filled(
           sortedAgentIds.length,
           null,
@@ -376,14 +401,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
         }),
       );
       for (var j = 0; j < chunkIndices.length; j++) {
-        slot[chunkIndices[j]] = chunkResults[j];
+        slot[chunkIndices[j]] = _mapResumoToOverviewRows(chunkResults[j]);
       }
     }
 
     return (
       results:
           List<
-            AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>
+            AppResult<List<OverviewPaymentResumoRow>>
           >.from(
             slot.map(
               (r) => r!,
@@ -393,10 +418,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
     );
   }
 
-  AppResult<List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>
+  AppResult<List<OverviewPaymentResumoRow>>
   _missingLocalClientTokenFailure({required String agentId}) {
     return Failure<
-      List<ResumoParcelaProdutoVendidoFormaPagamentoRow>,
+      List<OverviewPaymentResumoRow>,
       AppFailure
     >(
       ValidationFailure(
@@ -742,10 +767,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
     return _OverviewPeriod(
       start: start,
       end: end,
-      filter: ResumoParcelaProdutoVendidoFormaPagamentoFilter(
-        dataVendaInicio: start,
-        dataVendaFim: end,
-      ),
     );
   }
 
@@ -755,8 +776,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
   /// totals may be double-counted; the backend is expected to partition
   /// work per agent.
   Overview _buildOverview(
-    List<ResumoParcelaProdutoVendidoFormaPagamentoRow> rows, {
-    required Map<String, List<ResumoParcelaProdutoVendidoFormaPagamentoRow>>
+    List<OverviewPaymentResumoRow> rows, {
+    required Map<String, List<OverviewPaymentResumoRow>>
     rowsByAgentId,
     required Map<String, ClientAgent> approvedAgentsById,
     required DateTime periodStart,
@@ -903,7 +924,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }
 
   String _resolvePaymentMethodLabel(
-    ResumoParcelaProdutoVendidoFormaPagamentoRow row,
+    OverviewPaymentResumoRow row,
   ) {
     final description = row.descricaoFormaPagamento.trim();
     if (description.isNotEmpty) {
@@ -973,12 +994,10 @@ class _OverviewPeriod {
   const _OverviewPeriod({
     required this.start,
     required this.end,
-    required this.filter,
   });
 
   final DateTime start;
   final DateTime end;
-  final ResumoParcelaProdutoVendidoFormaPagamentoFilter filter;
 }
 
 class _PaymentMethodAggregate {

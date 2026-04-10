@@ -1,8 +1,8 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_produto_vendido_forma_pagamento_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/e2e_dependency_bootstrap.dart';
@@ -13,10 +13,10 @@ import 'support/e2e_dependency_bootstrap.dart';
 /// - client login (when `E2E_CLIENT_EMAIL` / `E2E_CLIENT_PASSWORD` are set)
 /// - `POST /agents/commands`
 /// - SQL text + named params in
-///   `ResumoParcelaProdutoVendidoFormaPagamentoRepositoryImpl`
+///   `ResumoParcelaFormaPagamentoRepositoryImpl`
 /// - row parsing into domain entities
 void main() {
-  group('ResumoParcelaProdutoVendidoFormaPagamentoRepository (e2e)', () {
+  group('ResumoParcelaFormaPagamentoRepository (e2e)', () {
     test(
       'load executes the real resumo query through the repository',
       () async {
@@ -35,7 +35,7 @@ void main() {
         addTearDown(e2eTeardownDependencies);
 
         final repository =
-            getIt<ResumoParcelaProdutoVendidoFormaPagamentoRepository>();
+            getIt<ResumoParcelaFormaPagamentoRepository>();
         final today = DateTime.now();
         final periodEnd = DateTime(today.year, today.month, today.day);
         final periodStart = periodEnd.subtract(const Duration(days: 14));
@@ -43,7 +43,7 @@ void main() {
         final result = await repository.load(
           agentId: AppEnvironment.e2eAgentId,
           clientToken: AppEnvironment.e2eClientToken,
-          filter: ResumoParcelaProdutoVendidoFormaPagamentoFilter(
+          filter: ResumoParcelaFormaPagamentoFilter(
             dataVendaInicio: periodStart,
             dataVendaFim: periodEnd,
           ),

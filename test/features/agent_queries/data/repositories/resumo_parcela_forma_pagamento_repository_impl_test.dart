@@ -1,9 +1,9 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_produto_vendido_forma_pagamento_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_produto_vendido_forma_pagamento_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,7 +14,7 @@ class _MockAgentQueriesRepository extends Mock
 
 void main() {
   late _MockAgentQueriesRepository agentQueriesRepository;
-  late ResumoParcelaProdutoVendidoFormaPagamentoRepositoryImpl repository;
+  late ResumoParcelaFormaPagamentoRepositoryImpl repository;
 
   setUpAll(() {
     registerFallbackValue(
@@ -27,7 +27,7 @@ void main() {
 
   setUp(() {
     agentQueriesRepository = _MockAgentQueriesRepository();
-    repository = ResumoParcelaProdutoVendidoFormaPagamentoRepositoryImpl(
+    repository = ResumoParcelaFormaPagamentoRepositoryImpl(
       agentQueriesRepository,
     );
   });
@@ -35,7 +35,7 @@ void main() {
   test('should return validation failure when date range is invalid', () async {
     final result = await repository.load(
       agentId: 'agent-1',
-      filter: ResumoParcelaProdutoVendidoFormaPagamentoFilter(
+      filter: ResumoParcelaFormaPagamentoFilter(
         dataVendaInicio: DateTime.utc(2026, 4, 30),
         dataVendaFim: DateTime.utc(2026, 4),
       ),
@@ -77,7 +77,7 @@ void main() {
     final result = await repository.load(
       agentId: ' agent-1 ',
       clientToken: ' token-123 ',
-      filter: ResumoParcelaProdutoVendidoFormaPagamentoFilter(
+      filter: ResumoParcelaFormaPagamentoFilter(
         dataVendaInicio: DateTime.utc(2026, 4),
         dataVendaFim: DateTime.utc(2026, 4, 30),
       ),
@@ -115,7 +115,7 @@ void main() {
     check(capturedRequest.namedParams['geraFinanceiro']).equals('S');
     check(capturedRequest.namedParams['preVenda']).equals('N');
     check(capturedRequest.sql).contains(
-      'ResumoParcelaProdutoVendidoFormaPagamento',
+      'ResumoParcelaFormaPagamento',
     );
     check(rows.single.isAnoMesConsistentWithParts).isTrue();
   });
@@ -147,7 +147,7 @@ void main() {
 
     final result = await repository.load(
       agentId: 'agent-1',
-      filter: ResumoParcelaProdutoVendidoFormaPagamentoFilter(
+      filter: ResumoParcelaFormaPagamentoFilter(
         dataVendaInicio: DateTime.utc(2026, 4),
         dataVendaFim: DateTime.utc(2026, 4, 30),
       ),
@@ -185,7 +185,7 @@ void main() {
 
     final result = await repository.load(
       agentId: 'agent-1',
-      filter: ResumoParcelaProdutoVendidoFormaPagamentoFilter(
+      filter: ResumoParcelaFormaPagamentoFilter(
         dataVendaInicio: DateTime.utc(2025, 12),
         dataVendaFim: DateTime.utc(2025, 12, 31),
       ),
