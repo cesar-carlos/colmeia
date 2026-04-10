@@ -3,7 +3,7 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -11,18 +11,18 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.d
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
-class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
-    implements ResumoParcelaFormaPagamentoAcrossAgentsRepository {
-  ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl({
+class ResumoVendasDiariasPorVendedorAcrossAgentsRepositoryImpl
+    implements ResumoVendasDiariasPorVendedorAcrossAgentsRepository {
+  ResumoVendasDiariasPorVendedorAcrossAgentsRepositoryImpl({
     required AgentQueryTargetResolver targetResolver,
     required AgentQueryPlanBuilder planBuilder,
-    required AgentQueryExecutor<ResumoParcelaFormaPagamentoRow> executor,
-    required LoadResumoParcelaFormaPagamentoUseCase loadResumo,
+    required AgentQueryExecutor<ResumoVendasDiariasPorVendedorRow> executor,
+    required LoadResumoVendasDiariasPorVendedorUseCase loadResumo,
   }) : _targetResolver = targetResolver,
        _planBuilder = planBuilder,
        _executor = executor,
@@ -30,16 +30,20 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;
-  final AgentQueryExecutor<ResumoParcelaFormaPagamentoRow> _executor;
-  final LoadResumoParcelaFormaPagamentoUseCase _loadResumo;
+  final AgentQueryExecutor<ResumoVendasDiariasPorVendedorRow> _executor;
+  final LoadResumoVendasDiariasPorVendedorUseCase _loadResumo;
 
   static const String _sourceAgentIdsContextField = 'sourceAgentIds';
+  static const String _operation =
+      'loadResumoVendasDiariasPorVendedorAcrossAgents';
 
   @override
-  Future<AppResult<AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>>>
+  Future<
+    AppResult<AgentQueryExecutionReport<ResumoVendasDiariasPorVendedorRow>>
+  >
   load({
     required String userId,
-    required ResumoParcelaFormaPagamentoFilter filter,
+    required ResumoVendasDiariasPorVendedorFilter filter,
     Set<String>? selectedAgentIds,
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
@@ -58,9 +62,9 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
       AppLogger.warning(
         'Agent query target resolution failed',
         context: <String, Object?>{
-          'operation': 'loadResumoAcrossAgents',
+          'operation': _operation,
           'userId': userId,
-          'queryKey': AgentQueryKey.resumoParcelaFormaPagamento.name,
+          'queryKey': AgentQueryKey.resumoVendasDiariasPorVendedor.name,
           'strategy': strategy.name,
           'selectedAgentCount': selectedAgentIds?.length ?? 0,
           'failureType': failure.runtimeType.toString(),
@@ -69,13 +73,13 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
         stackTrace: failure.stackTrace,
       );
       return Failure<
-        AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+        AgentQueryExecutionReport<ResumoVendasDiariasPorVendedorRow>,
         AppFailure
       >(failure);
     }
 
     final planResult = _planBuilder.build(
-      queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
+      queryKey: AgentQueryKey.resumoVendasDiariasPorVendedor,
       strategy: strategy,
       resolution: resolution,
       bridgeTimeoutMs: bridgeTimeoutMs,
@@ -90,9 +94,9 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
       AppLogger.warning(
         'Agent query plan build failed',
         context: <String, Object?>{
-          'operation': 'loadResumoAcrossAgents',
+          'operation': _operation,
           'userId': userId,
-          'queryKey': AgentQueryKey.resumoParcelaFormaPagamento.name,
+          'queryKey': AgentQueryKey.resumoVendasDiariasPorVendedor.name,
           'strategy': strategy.name,
           'consideredApprovedAgentCount':
               resolution.consideredApprovedAgentCount,
@@ -104,7 +108,7 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
         stackTrace: failure.stackTrace,
       );
       return Failure<
-        AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+        AgentQueryExecutionReport<ResumoVendasDiariasPorVendedorRow>,
         AppFailure
       >(failure);
     }
@@ -136,7 +140,7 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
         },
       );
       return Success<
-        AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+        AgentQueryExecutionReport<ResumoVendasDiariasPorVendedorRow>,
         AppFailure
       >(report);
     }
@@ -155,7 +159,7 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
       stackTrace: failure.stackTrace,
     );
     return Failure<
-      AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+      AgentQueryExecutionReport<ResumoVendasDiariasPorVendedorRow>,
       AppFailure
     >(failure);
   }
@@ -163,10 +167,11 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
   Map<String, Object?> _buildExecutionContext({
     required String userId,
     required AgentQueryExecutionStrategy strategy,
-    required AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow> report,
+    required AgentQueryExecutionReport<ResumoVendasDiariasPorVendedorRow>
+    report,
   }) {
     return <String, Object?>{
-      'operation': 'loadResumoAcrossAgents',
+      'operation': _operation,
       'userId': userId,
       'queryKey': report.queryKey.name,
       'strategy': strategy.name,
@@ -190,7 +195,7 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl
       missingClientTokenTargets: plan.missingClientTokenTargets,
     );
     return <String, Object?>{
-      'operation': 'loadResumoAcrossAgents',
+      'operation': _operation,
       'userId': userId,
       'queryKey': plan.queryKey.name,
       'strategy': plan.strategy.name,

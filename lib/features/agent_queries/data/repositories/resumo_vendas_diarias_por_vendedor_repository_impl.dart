@@ -2,42 +2,43 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
-import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql.dart';
+import 'package:colmeia/features/agent_queries/data/models/resumo_vendas_diarias_por_vendedor_row_model.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diarias_por_vendedor_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
-class ResumoParcelaFormaPagamentoRepositoryImpl
-    implements ResumoParcelaFormaPagamentoRepository {
-  ResumoParcelaFormaPagamentoRepositoryImpl(
+class ResumoVendasDiariasPorVendedorRepositoryImpl
+    implements ResumoVendasDiariasPorVendedorRepository {
+  ResumoVendasDiariasPorVendedorRepositoryImpl(
     this._agentQueriesRepository,
   );
 
   static const int _defaultBridgeTimeoutMs = 120000;
+  static const String _operation = 'loadResumoVendasDiariasPorVendedor';
 
   final AgentQueriesRepository _agentQueriesRepository;
 
   @override
-  Future<AppResult<List<ResumoParcelaFormaPagamentoRow>>> load({
+  Future<AppResult<List<ResumoVendasDiariasPorVendedorRow>>> load({
     required String agentId,
-    required ResumoParcelaFormaPagamentoFilter filter,
+    required ResumoVendasDiariasPorVendedorFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
-      return Failure<List<ResumoParcelaFormaPagamentoRow>, AppFailure>(
+      return Failure<List<ResumoVendasDiariasPorVendedorRow>, AppFailure>(
         ValidationFailure(
           message: validationError,
           userMessage: 'Os filtros da consulta sao invalidos.',
           context: <String, Object?>{
-            'operation': 'loadResumoParcelaFormaPagamento',
+            'operation': _operation,
             'agentId': agentId.trim(),
           },
         ),
@@ -46,16 +47,16 @@ class ResumoParcelaFormaPagamentoRepositoryImpl
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
-      sql: ResumoParcelaFormaPagamentoSql.query,
+      sql: ResumoVendasDiariasPorVendedorSql.query,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
       namedParams: <String, Object?>{
         'dataVendaInicio':
             AgentQueriesSqlLocalDate.format(filter.dataVendaInicio),
         'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-        'origem': filter.trimmedOrigem,
-        'geraFinanceiro': filter.trimmedGeraFinanceiro,
-        'preVenda': filter.trimmedPreVenda,
+        'codVendedor': filter.sqlCodVendedor,
+        'bairro': filter.sqlBairro,
+        'municipio': filter.sqlMunicipio,
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
@@ -68,11 +69,11 @@ class ResumoParcelaFormaPagamentoRepositoryImpl
         executionResult,
         agentId: agentId.trim(),
       ),
-      Failure<List<ResumoParcelaFormaPagamentoRow>, AppFailure>.new,
+      Failure<List<ResumoVendasDiariasPorVendedorRow>, AppFailure>.new,
     );
   }
 
-  AppResult<List<ResumoParcelaFormaPagamentoRow>> _mapExecutionToRows(
+  AppResult<List<ResumoVendasDiariasPorVendedorRow>> _mapExecutionToRows(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
   }) {
@@ -80,21 +81,21 @@ class ResumoParcelaFormaPagamentoRepositoryImpl
       final rows = executionResult.rows
           .map(
             (row) =>
-                ResumoParcelaFormaPagamentoRowModel.fromMap(row).toEntity(),
+                ResumoVendasDiariasPorVendedorRowModel.fromMap(row).toEntity(),
           )
           .toList(growable: false);
-      return Success<List<ResumoParcelaFormaPagamentoRow>, AppFailure>(rows);
+      return Success<List<ResumoVendasDiariasPorVendedorRow>, AppFailure>(rows);
     } on FormatException catch (error, stackTrace) {
       AppLogger.error(
-        'Unexpected row shape for ResumoParcelaFormaPagamento',
+        'Unexpected row shape for ResumoVendasDiariasPorVendedor',
         context: <String, Object?>{
-          'operation': 'loadResumoParcelaFormaPagamento',
+          'operation': _operation,
           'agentId': agentId,
         },
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure<List<ResumoParcelaFormaPagamentoRow>, AppFailure>(
+      return Failure<List<ResumoVendasDiariasPorVendedorRow>, AppFailure>(
         UnknownFailure(
           message: error.message,
           userMessage:
@@ -103,7 +104,7 @@ class ResumoParcelaFormaPagamentoRepositoryImpl
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{
-            'operation': 'loadResumoParcelaFormaPagamento',
+            'operation': _operation,
             'agentId': agentId,
           },
         ),

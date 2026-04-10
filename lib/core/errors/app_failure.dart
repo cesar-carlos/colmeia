@@ -127,6 +127,79 @@ final class UnknownFailure extends AppFailure {
   });
 }
 
+/// Returns [failure] with [extra] merged into [AppFailure.context].
+///
+/// Later keys in [extra] overwrite earlier context entries.
+AppFailure appFailureWithMergedContext(
+  AppFailure failure,
+  Map<String, Object?> extra,
+) {
+  final mergedContext = <String, Object?>{
+    ...failure.context,
+    ...extra,
+  };
+
+  return switch (failure) {
+    ValidationFailure() => ValidationFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: mergedContext,
+    ),
+    SessionFailure() => SessionFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: mergedContext,
+    ),
+    AuthorizationFailure() => AuthorizationFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: mergedContext,
+    ),
+    StorageFailure() => StorageFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: mergedContext,
+    ),
+    NetworkFailure() => NetworkFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: mergedContext,
+      isTransient: failure.isTransient,
+    ),
+    RpcFailure() => RpcFailure(
+      message: failure.message,
+      userMessage: failure.userMessage ?? failure.message,
+      rpcCode: failure.rpcCode,
+      retryable: failure.retryable,
+      reason: failure.reason,
+      category: failure.category,
+      technicalMessage: failure.technicalMessage,
+      correlationId: failure.correlationId,
+      timestamp: failure.timestamp,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: mergedContext,
+    ),
+    UnknownFailure() => UnknownFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: mergedContext,
+    ),
+  };
+}
+
 /// Maps low-level failures to [AppFailure].
 ///
 /// [DioException] with HTTP 401 becomes [SessionFailure] and 403 becomes
