@@ -3,6 +3,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
 
+// Type name encodes feature scope; formatter keeps declaration on one line.
+// ignore: lines_longer_than_80_chars
 abstract interface class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository {
   Future<AppResult<List<ResumoVendasDiariasPorVendedorVendedorOption>>>
   loadVendedorOptions({
