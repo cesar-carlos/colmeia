@@ -1,12 +1,13 @@
 import 'dart:collection';
 
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Persists per-agent `client_token` values locally (never sent to the Colmeia
 /// backend). Keys are scoped by user id and agent id.
-class LocalAgentClientTokenStore {
+class LocalAgentClientTokenStore implements AgentClientTokenReader {
   LocalAgentClientTokenStore(this._secureStorage);
 
   static const String _keyPrefix = 'colmeia.agent_client_token.v1';
@@ -107,6 +108,7 @@ class LocalAgentClientTokenStore {
   ///
   /// Keys are trimmed agent ids (same normalization as [read]). Reads run in
   /// parallel to reduce latency when many ids are requested (e.g. dashboard).
+  @override
   Future<Map<String, String>> readMany({
     required String userId,
     required Iterable<String> agentIds,

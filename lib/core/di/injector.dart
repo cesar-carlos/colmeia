@@ -20,8 +20,8 @@ Future<void> setupDependencies() async {
   registerInjectorAuth(getIt);
   registerInjectorUserContext(getIt);
   registerInjectorClientAgents(getIt);
-  registerInjectorOverview(getIt);
   registerInjectorAgentQueries(getIt);
+  registerInjectorOverview(getIt);
   registerInjectorPresentation(getIt);
 }
 

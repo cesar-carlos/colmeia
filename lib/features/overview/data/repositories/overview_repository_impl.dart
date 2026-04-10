@@ -1,13 +1,11 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
-import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
-import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
-import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
-import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
@@ -24,26 +22,19 @@ import 'package:result_dart/result_dart.dart';
 class OverviewRepositoryImpl implements OverviewRepository {
   OverviewRepositoryImpl({
     required OverviewLocalDataSource localDataSource,
-    required ClientAgentsRepository clientAgentsRepository,
-    required LocalAgentClientTokenStore clientTokenStore,
-    required LoadResumoParcelaFormaPagamentoUseCase loadResumo,
+    required ResumoParcelaFormaPagamentoAcrossAgentsRepository
+    resumoAcrossAgentsRepository,
     DateTime Function()? now,
   }) : _localDataSource = localDataSource,
-       _clientAgentsRepository = clientAgentsRepository,
-       _clientTokenStore = clientTokenStore,
-       _loadResumo = loadResumo,
+       _resumoAcrossAgentsRepository = resumoAcrossAgentsRepository,
        _now = now ?? DateTime.now;
 
   final OverviewLocalDataSource _localDataSource;
-  final ClientAgentsRepository _clientAgentsRepository;
-  final LocalAgentClientTokenStore _clientTokenStore;
-  final LoadResumoParcelaFormaPagamentoUseCase _loadResumo;
+  final ResumoParcelaFormaPagamentoAcrossAgentsRepository
+  _resumoAcrossAgentsRepository;
   final DateTime Function() _now;
 
-  static const int _approvedAgentsPageSize = 50;
-  static const int _maxApprovedAgentsPaginationPages = 400;
-  static const int _resumoLoadConcurrency = 4;
-  static const String _paginationSignatureSeparator = '\u001f';
+  static const String _sourceAgentIdsContextField = 'sourceAgentIds';
   static const Duration _overviewCacheMaxAge = Duration(hours: 48);
 
   @override
@@ -54,50 +45,36 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }) async {
     final period = _buildPeriod(filter);
     try {
-      final approvedAgentsResult = await _loadAllApprovedAgents(userId: userId);
-      final approvedAgents = approvedAgentsResult.getOrNull();
-      if (approvedAgents == null) {
-        final failure = approvedAgentsResult.exceptionOrNull()!;
+      final reportResult = await _resumoAcrossAgentsRepository.load(
+        userId: userId,
+        filter: _resumoFilter(period),
+        selectedAgentIds: filter.selectedAgentIds,
+        strategy: _resolveExecutionStrategy(filter),
+      );
+      final report = reportResult.getOrNull();
+      if (report == null) {
+        final failure = _mapOverviewFailure(
+          reportResult.exceptionOrNull()!,
+          userId: userId,
+        );
         return _recoverOrFail(
           failure: failure,
           userId: userId,
           policy: policy,
           period: period,
-          sourceAgentIds: null,
-        );
-      }
-      if (approvedAgents.isEmpty) {
-        return Failure<Overview, AppFailure>(
-          ValidationFailure(
-            message: 'No approved agents available for overview',
-            context: <String, Object?>{
-              'operation': 'loadOverview',
-              'userId': userId,
-              OverviewFailureUiKey.field: OverviewFailureUiKey.noApprovedAgents,
-            },
+          sourceAgentIds: _resolveFailureSourceAgentIds(
+            failure,
+            fallbackSelectedAgentIds: filter.selectedAgentIds,
           ),
         );
       }
 
-      // When [selectedAgentIds] is set, restrict to those agents only.
-      final filteredAgents = filter.selectedAgentIds == null
-          ? approvedAgents
-          : approvedAgents
-                .where((a) => filter.selectedAgentIds!.contains(a.agentId))
-                .toList(growable: false);
-
-      final effectiveAgents = filteredAgents;
-
-      if (effectiveAgents.isEmpty) {
+      if (report.consideredApprovedAgentCount == 0) {
         return Success<Overview, AppFailure>(
           _buildOverview(
             const <OverviewPaymentResumoRow>[],
-            rowsByAgentId:
-                const <
-                  String,
-                  List<OverviewPaymentResumoRow>
-                >{},
-            approvedAgentsById: const <String, ClientAgent>{},
+            rowsByAgentId: const <String, List<OverviewPaymentResumoRow>>{},
+            agentDisplayNamesById: const <String, String>{},
             periodStart: period.start,
             periodEnd: period.end,
             approvedAgentCount: 0,
@@ -105,162 +82,69 @@ class OverviewRepositoryImpl implements OverviewRepository {
         );
       }
 
-      final sortedApprovedAgents = effectiveAgents.toList(growable: false)
-        ..sort((left, right) => left.agentId.compareTo(right.agentId));
-      final sortedAgentIds = sortedApprovedAgents
-          .map((a) => a.agentId)
-          .toList(growable: false);
-      final approvedAgentsById = <String, ClientAgent>{
-        for (final agent in sortedApprovedAgents) agent.agentId: agent,
-      };
-
-      final resumoBatch = await _loadResumoQueryResults(
-        userId: userId,
-        sortedAgentIds: sortedAgentIds,
-        filter: _resumoFilter(period),
-      );
-      final queryResults = resumoBatch.results;
-      final agentIdsMissingClientToken = resumoBatch.agentIdsMissingClientToken;
-      final agentNamesMissingClientToken = _resolveAgentNames(
-        agentIdsMissingClientToken,
-        approvedAgentsById: approvedAgentsById,
-      );
-
-      if (agentIdsMissingClientToken.isNotEmpty) {
+      final sourceAgentIds = _resolveSourceAgentIds(report);
+      if (report.missingClientTokenAgentIds.isNotEmpty) {
         AppLogger.warning(
           'Overview: agents skipped (no local client_token)',
           context: <String, Object?>{
             'operation': 'loadOverview',
             'userId': userId,
-            'missingTokenCount': agentIdsMissingClientToken.length,
-            'missingTokenAgentIds': agentIdsMissingClientToken.join(', '),
+            'missingTokenCount': report.missingClientTokenAgentIds.length,
+            'missingTokenAgentIds': report.missingClientTokenAgentIds.join(
+              ', ',
+            ),
           },
         );
       }
 
-      final rows = <OverviewPaymentResumoRow>[];
-      final rowsByAgentId =
-          <String, List<OverviewPaymentResumoRow>>{
-            for (final String id in sortedAgentIds)
-              id: <OverviewPaymentResumoRow>[],
-          };
-      final failedQueryAgentIds = <String>[];
-      var hasAnySuccess = false;
-      AppFailure? firstFailure;
-      String? firstFailedAgentId;
-      final missingTokenSet = agentIdsMissingClientToken.toSet();
-
-      for (var i = 0; i < queryResults.length; i++) {
-        final queryResult = queryResults[i];
-        final agentId = sortedAgentIds[i];
-        final batch = queryResult.getOrNull();
-        if (batch != null) {
-          hasAnySuccess = true;
-          rows.addAll(batch);
-          rowsByAgentId[agentId] =
-              List<OverviewPaymentResumoRow>.of(
-                batch,
-                growable: false,
-              );
-          continue;
-        }
-        final failure = queryResult.exceptionOrNull()!;
-        if (missingTokenSet.contains(agentId)) {
-          firstFailure ??= failure;
-          firstFailedAgentId ??= agentId;
-          continue;
-        }
-        failedQueryAgentIds.add(agentId);
-        firstFailure ??= failure;
-        firstFailedAgentId ??= agentId;
-      }
-
-      final failedQueryAgentNames = _resolveAgentNames(
-        failedQueryAgentIds,
-        approvedAgentsById: approvedAgentsById,
-      );
-
-      if (!hasAnySuccess &&
-          failedQueryAgentIds.isEmpty &&
-          agentIdsMissingClientToken.isNotEmpty) {
+      if (report.requiresClientTokenSetup) {
         final cachedOverview = await _readCachedOverviewForMissingClientTokens(
           userId: userId,
           policy: policy,
           period: period,
-          expectedSortedAgentIds: sortedAgentIds,
-          agentIdsMissingClientToken: agentIdsMissingClientToken,
-          agentNamesMissingClientToken: agentNamesMissingClientToken,
-          approvedAgentsById: approvedAgentsById,
+          expectedSortedAgentIds: sourceAgentIds,
+          agentIdsMissingClientToken: report.missingClientTokenAgentIds,
+          agentNamesMissingClientToken: report.missingClientTokenAgentNames,
         );
         if (cachedOverview != null) {
           return Success<Overview, AppFailure>(cachedOverview);
         }
-
-        return Success<Overview, AppFailure>(
-          _buildOverview(
-            const <OverviewPaymentResumoRow>[],
-            rowsByAgentId: {
-              for (final String id in sortedAgentIds)
-                id: <OverviewPaymentResumoRow>[],
-            },
-            approvedAgentsById: approvedAgentsById,
-            periodStart: period.start,
-            periodEnd: period.end,
-            approvedAgentCount: sortedAgentIds.length,
-            agentIdsMissingClientToken: agentIdsMissingClientToken,
-            agentNamesMissingClientToken: agentNamesMissingClientToken,
-          ),
-        );
       }
 
-      if (!hasAnySuccess && firstFailure != null) {
-        return _recoverOrFail(
-          failure: firstFailure,
-          userId: userId,
-          policy: policy,
-          period: period,
-          sourceAgentIds: sortedAgentIds,
-          failedAgentId: firstFailedAgentId,
-        );
-      }
-
-      if (failedQueryAgentIds.isNotEmpty) {
+      if (report.failedAgentIds.isNotEmpty) {
         AppLogger.warning(
           'Overview: partial agent resumo results',
           context: <String, Object?>{
             'operation': 'loadOverview',
             'userId': userId,
-            'failedAgentCount': failedQueryAgentIds.length,
-            'failedAgentIds': failedQueryAgentIds.join(', '),
+            'failedAgentCount': report.failedAgentIds.length,
+            'failedAgentIds': report.failedAgentIds.join(', '),
           },
         );
       }
 
       final overview = _buildOverview(
-        rows,
-        rowsByAgentId: rowsByAgentId,
-        approvedAgentsById: approvedAgentsById,
+        _mapOverviewRows(report.mergedRows),
+        rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
+        agentDisplayNamesById: _resolveAgentDisplayNames(report),
         periodStart: period.start,
         periodEnd: period.end,
-        approvedAgentCount: sortedAgentIds.length,
-        agentIdsExcludedFromQueryFailure: failedQueryAgentIds,
-        agentNamesExcludedFromQueryFailure: failedQueryAgentNames,
-        agentIdsMissingClientToken: agentIdsMissingClientToken,
-        agentNamesMissingClientToken: agentNamesMissingClientToken,
+        approvedAgentCount: report.consideredApprovedAgentCount,
+        agentIdsExcludedFromQueryFailure: report.failedAgentIds,
+        agentNamesExcludedFromQueryFailure: report.failedAgentNames,
+        agentIdsMissingClientToken: report.missingClientTokenAgentIds,
+        agentNamesMissingClientToken: report.missingClientTokenAgentNames,
       );
 
       final stamp = _now();
       final model = OverviewModel.fromEntity(
         overview,
         cachedAt: stamp,
-        sourceAgentIds: sortedAgentIds,
+        sourceAgentIds: sourceAgentIds,
       );
 
       try {
-        await _localDataSource.saveOverview(
-          userId: userId,
-          overview: model,
-        );
+        await _localDataSource.saveOverview(userId: userId, overview: model);
       } on Object catch (error, stackTrace) {
         AppLogger.warning(
           'Overview cache save failed; returning computed overview',
@@ -278,7 +162,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         context: <String, Object?>{
           'operation': 'loadOverview',
           'userId': userId,
-          'agentCount': sortedAgentIds.length,
+          'agentCount': report.consideredApprovedAgentCount,
           'periodStart': period.start.toIso8601String(),
           'periodEnd': period.end.toIso8601String(),
           'paymentMethods': overview.paymentMethods.length,
@@ -308,11 +192,24 @@ class OverviewRepositoryImpl implements OverviewRepository {
         userId: userId,
         policy: policy,
         period: period,
-        sourceAgentIds: null,
+        sourceAgentIds: _resolveFailureSourceAgentIds(
+          failure,
+          fallbackSelectedAgentIds: filter.selectedAgentIds,
+        ),
         error: error,
         stackTrace: stackTrace,
       );
     }
+  }
+
+  AgentQueryExecutionStrategy _resolveExecutionStrategy(
+    OverviewFilter filter,
+  ) {
+    final selectedAgentIds = filter.selectedAgentIds;
+    if (selectedAgentIds != null && selectedAgentIds.length == 1) {
+      return AgentQueryExecutionStrategy.singleSource;
+    }
+    return AgentQueryExecutionStrategy.mergeAll;
   }
 
   ResumoParcelaFormaPagamentoFilter _resumoFilter(_OverviewPeriod period) {
@@ -322,187 +219,95 @@ class OverviewRepositoryImpl implements OverviewRepository {
     );
   }
 
-  AppResult<List<OverviewPaymentResumoRow>> _mapResumoToOverviewRows(
-    AppResult<List<ResumoParcelaFormaPagamentoRow>> result,
+  List<OverviewPaymentResumoRow> _mapOverviewRows(
+    List<ResumoParcelaFormaPagamentoRow> rows,
   ) {
-    return result.fold(
-      (rows) => Success<
-        List<OverviewPaymentResumoRow>,
-        AppFailure
-      >(
-        rows
-            .map(overviewPaymentResumoRowFromAgentRow)
-            .toList(growable: false),
-      ),
-      Failure<List<OverviewPaymentResumoRow>, AppFailure>.new,
-    );
+    return rows
+        .map(overviewPaymentResumoRowFromAgentRow)
+        .toList(growable: false);
   }
 
-  /// Loads resumo rows per agent with bounded parallelism to avoid spiking the
-  /// SQL bridge when many agents are approved.
-  ///
-  /// Agents without a locally stored client token do not call the bridge; they
-  /// surface as `ValidationFailure` results and are listed in the returned
-  /// missing-token id list.
-  Future<
-    ({
-      List<AppResult<List<OverviewPaymentResumoRow>>>
-      results,
-      List<String> agentIdsMissingClientToken,
-    })
-  >
-  _loadResumoQueryResults({
+  Map<String, List<OverviewPaymentResumoRow>> _mapRowsByAgentId(
+    Map<String, List<ResumoParcelaFormaPagamentoRow>> rowsByAgentId,
+  ) {
+    return <String, List<OverviewPaymentResumoRow>>{
+      for (final entry in rowsByAgentId.entries)
+        entry.key: _mapOverviewRows(entry.value),
+    };
+  }
+
+  Map<String, String> _resolveAgentDisplayNames(
+    AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow> report,
+  ) {
+    return <String, String>{
+      for (final target in report.plannedTargets)
+        target.agentId: target.displayName,
+      for (final target in report.missingClientTokenTargets)
+        target.agentId: target.displayName,
+    };
+  }
+
+  List<String> _resolveSourceAgentIds(
+    AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow> report,
+  ) {
+    final ids = <String>{
+      for (final target in report.plannedTargets) target.agentId,
+      for (final target in report.missingClientTokenTargets) target.agentId,
+    }.toList(growable: false)..sort();
+    return ids;
+  }
+
+  List<String>? _normalizeSelectedAgentIds(Set<String>? selectedAgentIds) {
+    if (selectedAgentIds == null) {
+      return null;
+    }
+    final ids =
+        selectedAgentIds
+            .map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false)
+          ..sort();
+    return ids;
+  }
+
+  List<String>? _resolveFailureSourceAgentIds(
+    AppFailure failure, {
+    required Set<String>? fallbackSelectedAgentIds,
+  }) {
+    final rawSourceAgentIds = failure.context[_sourceAgentIdsContextField];
+    if (rawSourceAgentIds is Iterable<Object?>) {
+      final ids =
+          rawSourceAgentIds
+              .map((id) => id?.toString().trim() ?? '')
+              .where((id) => id.isNotEmpty)
+              .toList(growable: false)
+            ..sort();
+      return ids;
+    }
+    return _normalizeSelectedAgentIds(fallbackSelectedAgentIds);
+  }
+
+  AppFailure _mapOverviewFailure(
+    AppFailure failure, {
     required String userId,
-    required List<String> sortedAgentIds,
-    required ResumoParcelaFormaPagamentoFilter filter,
-  }) async {
-    // Keys are trimmed agent ids (same ids as sortedAgentIds); see
-    // LocalAgentClientTokenStore.readMany.
-    final tokensByAgentId = await _clientTokenStore.readMany(
-      userId: userId,
-      agentIds: sortedAgentIds,
-    );
-
-    final missingTokenIds = <String>[];
-    final slot =
-        List<
-          AppResult<List<OverviewPaymentResumoRow>>?
-        >.filled(
-          sortedAgentIds.length,
-          null,
-        );
-
-    final indicesWithToken = <int>[];
-    for (var i = 0; i < sortedAgentIds.length; i++) {
-      final id = sortedAgentIds[i];
-      final token = tokensByAgentId[id];
-      if (token == null || token.isEmpty) {
-        missingTokenIds.add(id);
-        slot[i] = _missingLocalClientTokenFailure(agentId: id);
-      } else {
-        indicesWithToken.add(i);
-      }
-    }
-
-    const concurrency = _resumoLoadConcurrency;
-    for (var start = 0; start < indicesWithToken.length; start += concurrency) {
-      final end = start + concurrency > indicesWithToken.length
-          ? indicesWithToken.length
-          : start + concurrency;
-      final chunkIndices = indicesWithToken.sublist(start, end);
-      final chunkResults = await Future.wait(
-        chunkIndices.map((i) {
-          final id = sortedAgentIds[i];
-          return _loadResumo(
-            agentId: id,
-            filter: filter,
-            clientToken: tokensByAgentId[id],
-          );
-        }),
-      );
-      for (var j = 0; j < chunkIndices.length; j++) {
-        slot[chunkIndices[j]] = _mapResumoToOverviewRows(chunkResults[j]);
-      }
-    }
-
-    return (
-      results:
-          List<
-            AppResult<List<OverviewPaymentResumoRow>>
-          >.from(
-            slot.map(
-              (r) => r!,
-            ),
-          ),
-      agentIdsMissingClientToken: missingTokenIds,
-    );
-  }
-
-  AppResult<List<OverviewPaymentResumoRow>>
-  _missingLocalClientTokenFailure({required String agentId}) {
-    return Failure<
-      List<OverviewPaymentResumoRow>,
-      AppFailure
-    >(
-      ValidationFailure(
-        message: 'Missing local client token for agent $agentId',
+  }) {
+    if (failure is ValidationFailure &&
+        failure.context['reason'] == 'no_approved_agents') {
+      return ValidationFailure(
+        message: 'No approved agents available for overview',
+        userMessage: failure.userMessage,
+        cause: failure.cause ?? failure,
+        stackTrace: failure.stackTrace,
         context: <String, Object?>{
-          'operation': 'loadOverviewResumo',
-          'agentId': agentId,
-          'reason': 'missing_local_client_token',
-          OverviewFailureUiKey.field:
-              OverviewFailureUiKey.missingLocalClientToken,
+          ...failure.context,
+          'operation': 'loadOverview',
+          'userId': userId,
+          OverviewFailureUiKey.field: OverviewFailureUiKey.noApprovedAgents,
         },
-      ),
-    );
-  }
-
-  Future<AppResult<List<ClientAgent>>> _loadAllApprovedAgents({
-    required String userId,
-  }) async {
-    final agents = <ClientAgent>[];
-    var page = 1;
-    String? previousPageSignature;
-    while (true) {
-      if (page > _maxApprovedAgentsPaginationPages) {
-        AppLogger.warning(
-          'Approved agents pagination stopped at safety page limit',
-          context: <String, Object?>{
-            'operation': 'loadOverviewApprovedAgents',
-            'userId': userId,
-            'maxPages': _maxApprovedAgentsPaginationPages,
-            'loadedCount': agents.length,
-          },
-        );
-        break;
-      }
-      final query = PaginatedQuery(
-        page: page,
-        pageSize: _approvedAgentsPageSize,
       );
-      final result = await _clientAgentsRepository.loadApprovedAgents(
-        userId: userId,
-        query: query,
-        includeOnlineStatus: false,
-      );
-      final batch = result.getOrNull();
-      if (batch == null) {
-        final failure = result.exceptionOrNull()!;
-        return Failure<List<ClientAgent>, AppFailure>(failure);
-      }
-      if (batch.items.isEmpty) {
-        break;
-      }
-
-      final pageItemsSignature = batch.items
-          .map((a) => a.agentId)
-          .join(_paginationSignatureSeparator);
-      final pageSignature =
-          '${batch.page}$_paginationSignatureSeparator$pageItemsSignature';
-      if (pageSignature == previousPageSignature) {
-        AppLogger.warning(
-          'Approved agents pagination: duplicate page payload; stopping',
-          context: <String, Object?>{
-            'operation': 'loadOverviewApprovedAgents',
-            'userId': userId,
-            'page': batch.page,
-          },
-        );
-        break;
-      }
-      previousPageSignature = pageSignature;
-
-      agents.addAll(batch.items);
-
-      final loadedAllKnownTotal =
-          batch.total > 0 && agents.length >= batch.total;
-      final lastPage = batch.items.length < query.pageSize;
-      if (loadedAllKnownTotal || lastPage) {
-        break;
-      }
-      page++;
     }
-    return Success<List<ClientAgent>, AppFailure>(agents);
+
+    return failure;
   }
 
   Future<AppResult<Overview>> _recoverOrFail({
@@ -511,7 +316,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required OverviewLoadPolicy policy,
     required _OverviewPeriod period,
     required List<String>? sourceAgentIds,
-    String? failedAgentId,
     Object? error,
     StackTrace? stackTrace,
   }) async {
@@ -523,38 +327,63 @@ class OverviewRepositoryImpl implements OverviewRepository {
       expectedSortedAgentIds: sourceAgentIds,
       error: error ?? failure.cause ?? failure,
       stackTrace: stackTrace ?? failure.stackTrace ?? StackTrace.current,
-      failedAgentId: failedAgentId,
     );
     if (cachedOverview != null) {
-      var entity = cachedOverview.toEntity(isStaleCache: true);
-      final agentsResult = await _loadAllApprovedAgents(userId: userId);
-      final agents = agentsResult.getOrNull();
-      if (agents != null && agents.isNotEmpty) {
-        final byId = <String, ClientAgent>{
-          for (final a in agents) a.agentId: a,
-        };
-        entity = _remapAgentRankingDisplayNames(entity, byId);
-      }
-      return Success<Overview, AppFailure>(entity);
+      return Success<Overview, AppFailure>(
+        cachedOverview.toEntity(isStaleCache: true),
+      );
     }
 
-    final logContext = <String, Object?>{
+    _logTerminalFailure(
+      failure: failure,
+      userId: userId,
+      policy: policy,
+      error: error ?? failure.cause ?? failure,
+      stackTrace: stackTrace ?? failure.stackTrace,
+    );
+    return Failure<Overview, AppFailure>(failure);
+  }
+
+  void _logTerminalFailure({
+    required AppFailure failure,
+    required String userId,
+    required OverviewLoadPolicy policy,
+    required Object error,
+    required StackTrace? stackTrace,
+  }) {
+    final context = <String, Object?>{
       'operation': 'loadOverview',
       'userId': userId,
       'policy': policy.name,
       'failureType': failure.runtimeType.toString(),
     };
-    if (failedAgentId != null) {
-      logContext['agentId'] = failedAgentId;
+
+    if (_isNoApprovedAgentsFailure(failure)) {
+      AppLogger.info(
+        'Overview unavailable: no approved agents',
+        context: context,
+      );
+      return;
+    }
+
+    if (failure is ValidationFailure ||
+        failure is SessionFailure ||
+        failure is AuthorizationFailure) {
+      AppLogger.warning(
+        'Unable to load overview',
+        context: context,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return;
     }
 
     AppLogger.error(
       'Unable to load overview',
-      context: logContext,
-      error: error ?? failure.cause ?? failure,
-      stackTrace: stackTrace ?? failure.stackTrace,
+      context: context,
+      error: error,
+      stackTrace: stackTrace,
     );
-    return Failure<Overview, AppFailure>(failure);
   }
 
   Future<OverviewModel?> _readCachedOverviewIfAllowed({
@@ -565,7 +394,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required List<String>? expectedSortedAgentIds,
     required Object error,
     required StackTrace stackTrace,
-    String? failedAgentId,
   }) async {
     if (!_shouldFallbackToCache(policy: policy, failure: failure)) {
       return null;
@@ -590,9 +418,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
       'policy': policy.name,
       'failureType': failure.runtimeType.toString(),
     };
-    if (failedAgentId != null) {
-      warningContext['agentId'] = failedAgentId;
-    }
     if (cachedOverview.sourceAgentIds == null) {
       warningContext['legacyCacheMissingAgentSignature'] = true;
     }
@@ -613,7 +438,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required List<String> expectedSortedAgentIds,
     required List<String> agentIdsMissingClientToken,
     required List<String> agentNamesMissingClientToken,
-    required Map<String, ClientAgent> approvedAgentsById,
   }) async {
     if (policy == OverviewLoadPolicy.forceRefresh) {
       return null;
@@ -643,46 +467,13 @@ class OverviewRepositoryImpl implements OverviewRepository {
       },
     );
 
-    final entity = cachedOverview
+    return cachedOverview
         .toEntity(isStaleCache: true)
         .copyWith(
           approvedAgentCount: expectedSortedAgentIds.length,
           agentIdsMissingClientToken: agentIdsMissingClientToken,
           agentNamesMissingClientToken: agentNamesMissingClientToken,
         );
-    return _remapAgentRankingDisplayNames(entity, approvedAgentsById);
-  }
-
-  Overview _remapAgentRankingDisplayNames(
-    Overview overview,
-    Map<String, ClientAgent> approvedAgentsById,
-  ) {
-    if (approvedAgentsById.isEmpty || overview.agentRankings.isEmpty) {
-      return overview;
-    }
-    var changed = false;
-    final next = <OverviewAgentRanking>[];
-    for (final r in overview.agentRankings) {
-      final resolved = _resolveAgentDisplayName(
-        approvedAgentsById[r.agentId],
-        r.agentId,
-      );
-      if (resolved != r.displayName) {
-        changed = true;
-      }
-      next.add(
-        OverviewAgentRanking(
-          agentId: r.agentId,
-          displayName: resolved,
-          totalSalesCount: r.totalSalesCount,
-          totalAmount: r.totalAmount,
-        ),
-      );
-    }
-    if (!changed) {
-      return overview;
-    }
-    return overview.copyWith(agentRankings: next);
   }
 
   bool _isCacheAcceptable({
@@ -706,9 +497,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
       if (cached.sourceAgentIds == null) {
         return false;
       }
-      final a = List<String>.from(expectedSortedAgentIds)..sort();
-      final b = List<String>.from(cached.sourceAgentIds!)..sort();
-      if (!_listEquals(a, b)) {
+      final actual = List<String>.from(cached.sourceAgentIds!)..sort();
+      final expected = List<String>.from(expectedSortedAgentIds)..sort();
+      if (!_listEquals(expected, actual)) {
         return false;
       }
     }
@@ -750,6 +541,12 @@ class OverviewRepositoryImpl implements OverviewRepository {
     return failure.isTransient || failure is UnknownFailure;
   }
 
+  bool _isNoApprovedAgentsFailure(AppFailure failure) {
+    return failure is ValidationFailure &&
+        failure.context[OverviewFailureUiKey.field] ==
+            OverviewFailureUiKey.noApprovedAgents;
+  }
+
   _OverviewPeriod _buildPeriod(OverviewFilter filter) {
     final yearMonth = filter.yearMonth;
     final DateTime start;
@@ -764,22 +561,13 @@ class OverviewRepositoryImpl implements OverviewRepository {
       start = end.subtract(const Duration(days: 29));
     }
 
-    return _OverviewPeriod(
-      start: start,
-      end: end,
-    );
+    return _OverviewPeriod(start: start, end: end);
   }
 
-  /// Aggregates SQL rows across agents by summing measures into shared buckets.
-  ///
-  /// If two agents expose overlapping business data for the same sale,
-  /// totals may be double-counted; the backend is expected to partition
-  /// work per agent.
   Overview _buildOverview(
     List<OverviewPaymentResumoRow> rows, {
-    required Map<String, List<OverviewPaymentResumoRow>>
-    rowsByAgentId,
-    required Map<String, ClientAgent> approvedAgentsById,
+    required Map<String, List<OverviewPaymentResumoRow>> rowsByAgentId,
+    required Map<String, String> agentDisplayNamesById,
     required DateTime periodStart,
     required DateTime periodEnd,
     required int approvedAgentCount,
@@ -841,26 +629,21 @@ class OverviewRepositoryImpl implements OverviewRepository {
 
     final agentRankings =
         rowsByAgentId.entries
-            .map(
-              (e) {
-                final agentId = e.key;
-                var sales = 0;
-                var amount = 0.0;
-                for (final row in e.value) {
-                  sales += row.qtdVendas;
-                  amount += row.valorParcela;
-                }
-                return OverviewAgentRanking(
-                  agentId: agentId,
-                  displayName: _resolveAgentDisplayName(
-                    approvedAgentsById[agentId],
-                    agentId,
-                  ),
-                  totalSalesCount: sales,
-                  totalAmount: amount,
-                );
-              },
-            )
+            .map((entry) {
+              final agentId = entry.key;
+              var sales = 0;
+              var amount = 0.0;
+              for (final row in entry.value) {
+                sales += row.qtdVendas;
+                amount += row.valorParcela;
+              }
+              return OverviewAgentRanking(
+                agentId: agentId,
+                displayName: agentDisplayNamesById[agentId] ?? agentId.trim(),
+                totalSalesCount: sales,
+                totalAmount: amount,
+              );
+            })
             .toList(growable: false)
           ..sort(_compareAgents);
 
@@ -897,35 +680,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     );
   }
 
-  List<String> _resolveAgentNames(
-    Iterable<String> agentIds, {
-    required Map<String, ClientAgent> approvedAgentsById,
-  }) {
-    return agentIds
-        .map(
-          (agentId) =>
-              _resolveAgentDisplayName(approvedAgentsById[agentId], agentId),
-        )
-        .toList(growable: false);
-  }
-
-  String _resolveAgentDisplayName(ClientAgent? agent, String fallbackAgentId) {
-    final legalName = agent?.name.trim();
-    if (legalName != null && legalName.isNotEmpty) {
-      return legalName;
-    }
-
-    final tradeName = agent?.tradeName?.trim();
-    if (tradeName != null && tradeName.isNotEmpty) {
-      return tradeName;
-    }
-
-    return fallbackAgentId.trim();
-  }
-
-  String _resolvePaymentMethodLabel(
-    OverviewPaymentResumoRow row,
-  ) {
+  String _resolvePaymentMethodLabel(OverviewPaymentResumoRow row) {
     final description = row.descricaoFormaPagamento.trim();
     if (description.isNotEmpty) {
       return description;

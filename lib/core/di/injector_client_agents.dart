@@ -14,6 +14,7 @@ import 'package:colmeia/features/client_agents/data/datasources/client_agents_lo
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
 import 'package:colmeia/features/client_agents/data/repositories/client_agents_repository_impl.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -23,6 +24,9 @@ void registerInjectorClientAgents(GetIt getIt) {
   getIt
     ..registerLazySingleton<LocalAgentClientTokenStore>(
       () => LocalAgentClientTokenStore(getIt<FlutterSecureStorage>()),
+    )
+    ..registerLazySingleton<AgentClientTokenReader>(
+      () => getIt<LocalAgentClientTokenStore>(),
     )
     ..registerLazySingleton<ClientAgentsLocalDataSource>(
       () => ClientAgentsLocalDataSource(getIt<AppCacheStore>()),
