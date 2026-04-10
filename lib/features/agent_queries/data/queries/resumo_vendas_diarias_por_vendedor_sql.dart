@@ -1,4 +1,8 @@
 abstract final class ResumoVendasDiariasPorVendedorSql {
+  /// Inner slice follows the ERP `ResumoVendasDiarioVendedor` report: `Cliente`
+  /// and `Municipio` are required joins. Lookups on `GrupoCliente` / `Regiao`
+  /// stay out of this text so agents without read access to those resources
+  /// can still run the query.
   static const String query = '''
 SELECT
   CodEmpresa,
@@ -18,9 +22,9 @@ FROM (
     pv.Origem,
     pv.CodOrigem,
     pv.CodTipoOperacaoSaida,
-    pv.PreVenda,
+    tos.Descricao AS DescricaoTipoOperacaoSaida,
     tos.GeraFinanceiro,
-    CAST(pv.DataVenda AS DATE) AS DataVenda,
+    pv.PreVenda,
     pv.CodVendedor,
     COALESCE(
       NULLIF(LTRIM(RTRIM(v.Nome)), ''),
@@ -28,10 +32,14 @@ FROM (
     ) AS NomeVendedor,
     pv.CodCliente,
     pv.NomeCliente,
-    pv.CnpjCpf,
-    pv.Bairro,
+    pv.CnpjCpf AS CnpjCpfCliente,
+    c.CodGrupoCliente,
+    pv.Bairro AS Bairro,
+    pv.CodMunicipio,
     m.Nome AS NomeMunicipio,
     m.UF AS UFMunicipio,
+    c.CodRegiao,
+    CAST(pv.DataVenda AS DATE) AS DataVenda,
     pv.QtdeItens,
     pv.PercentualAcrescimo,
     pv.ValorAcrescimo,
@@ -43,11 +51,13 @@ FROM (
   INNER JOIN TipoOperacaoSaida tos ON
     tos.CodEmpresa = pv.CodEmpresa
     AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
+  INNER JOIN Cliente c ON
+    c.CodCliente = pv.CodCliente
+  INNER JOIN Municipio m ON
+    m.CodMunicipio = pv.CodMunicipio
   LEFT JOIN Vendedor v ON
     v.CodVendedor = pv.CodVendedor
-  LEFT JOIN Municipio m ON
-    m.CodMunicipio = pv.CodMunicipio
-) ResumoVendasDiario
+) ResumoVendasDiarioVendedor
 WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
   AND Origem LIKE 'FrenteLoja'
   AND GeraFinanceiro = 'S'
