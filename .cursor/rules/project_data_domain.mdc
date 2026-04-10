@@ -20,6 +20,16 @@ fluxo de dados.
   beneficiem disso
 - O app deve continuar funcionando sem conectividade em tempo real
 
+## Hub Plug (plug_server) — documentacao de apoio no repo
+
+A especificacao normativa do bridge vive no repositorio **plug_server** (e schemas
+no **plug_agente**). No Colmeia, use estes resumos para nao depender só da memoria:
+
+- `docs/plug_server_docs_index_for_colmeia.md` — mapa da pasta `docs` do hub
+  (REST vs Socket, relay, Client/Agent, limites, escala)
+- `docs/bridge_agent_sql_api_options.md` — `sql.execute`: `multi_result`,
+  `sql.executeBatch`, batch JSON-RPC, paginacao, `execution_mode`
+
 ## Cache Local
 
 - Comece com cache leve focado em performance de leitura
@@ -79,3 +89,6 @@ fluxo de dados.
 - Fronteiras universais de arquitetura: `clean_architecture.mdc`
 - Escopo do produto e estado dos modulos: `project_product_scope.mdc`
 - Formularios, erros e strings especificos do repo: `project_conventions.mdc`
+- Payloads SQL do agente: `project_agent_sql.mdc`
+- Docs do hub (indice e opcoes SQL): `docs/plug_server_docs_index_for_colmeia.md`,
+  `docs/bridge_agent_sql_api_options.md`

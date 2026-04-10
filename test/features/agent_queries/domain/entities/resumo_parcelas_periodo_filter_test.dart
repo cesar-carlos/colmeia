@@ -3,6 +3,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_periodo_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -60,6 +61,14 @@ void main() {
         dataVendaFim: DateTime.utc(2026, 12, 31),
       );
       check(f.validationError()).isNull();
+    });
+
+    test('mensal filter typedef shares validation', () {
+      final m = ResumoParcelasMensalFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+      );
+      check(m.validationError()).isNull();
     });
   });
 }

@@ -62,6 +62,14 @@ entra no MVP e quais modulos estao ativos ou previstos.
 - `notifications` ou `realtime`: eventos de atualizacao e invalidacao de cache
 - `settings` ou `profile`: preferencias, dados basicos do usuario e sessao
 
+## Integracao com agentes (Plug)
+
+Consultas ao SQL Server via hub seguem o contrato JSON-RPC do plug_server
+(`sql.execute`, tokens de cliente, limites de payload). Resumos no repositorio
+Colmeia: `docs/plug_server_docs_index_for_colmeia.md` (mapa da API/docs do hub)
+e `docs/bridge_agent_sql_api_options.md` (opcoes de execucao e batch). Detalhe
+de implementacao de SQL: `project_agent_sql.mdc`.
+
 ## Referencias
 
 - Arquitetura e DI especificas do repo: `project_architecture.mdc`

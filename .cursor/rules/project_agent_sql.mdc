@@ -11,6 +11,9 @@ Esta rule cobre apenas consultas SQL enviadas ao backend via `sql.execute`.
 
 ## Payload RPC
 
+- Consultas agregadas com cardinalidade limitada podem definir `max_rows` em
+  `AgentSqlExecuteOptions` como rede de seguranca (ex. constantes em
+  `lib/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart`)
 - Pode manter a SQL multiline nos arquivos de query para legibilidade
 - Antes de enviar o payload para `POST /agents/commands`, normalize a SQL para
   linha unica
@@ -31,3 +34,11 @@ Esta rule cobre apenas consultas SQL enviadas ao backend via `sql.execute`.
 ```dart
 final payloadSql = sql.replaceAll(RegExp(r'\s*\r?\n\s*'), ' ').trim();
 ```
+
+## Referencias
+
+- Opcoes do bridge relevantes ao RPC (`multi_result`, `sql.executeBatch`, batch
+  JSON-RPC, paginacao, `execution_mode`): `docs/bridge_agent_sql_api_options.md`
+- Mapa da documentacao do plug_server: `docs/plug_server_docs_index_for_colmeia.md`
+- Especificacao normativa do hub: `plug_server/docs/api_rest_bridge.md` (repo
+  irmao); alinhamento agente/hub: `plug_server/docs/communication_sync_plug_agente.md`

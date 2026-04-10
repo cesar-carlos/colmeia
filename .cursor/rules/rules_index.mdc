@@ -59,9 +59,9 @@ Use estas rules apenas quando o codebase for Dart/Flutter.
 - **`project_platform_dependencies.mdc`**: foco de plataforma, dependencias
   preferenciais e dependencias fora de escopo
 - **`project_data_domain.mdc`**: REST, cache, auth, dashboards, relatorios e
-  value objects
+  value objects; aponta para `docs/plug_server_docs_index_for_colmeia.md`
 - **`project_agent_sql.mdc`**: payloads `sql.execute`, normalizacao de SQL e
- testes do bridge
+  testes do bridge; aponta para `docs/bridge_agent_sql_api_options.md`
 - **`project_shared_components.mdc`**: criacao, promocao, especializacao e
   evolucao segura de componentes compartilhados de UI
 - **`project_conventions.mdc`**: formularios, strings, design system

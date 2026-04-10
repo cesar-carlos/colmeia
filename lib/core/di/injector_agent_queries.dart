@@ -11,6 +11,8 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_anual_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_anual_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_use_case.dart';
@@ -32,6 +34,8 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_dia_semana_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_forma_pagamento_anual_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_forma_pagamento_anual_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_mensal_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_mensal_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
@@ -41,6 +45,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
@@ -55,6 +60,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcel
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_anual_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_anual_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository.dart';
@@ -123,6 +130,16 @@ void registerInjectorAgentQueries(GetIt getIt) {
         getIt<ResumoParcelasFormaPagamentoAnualRepository>(),
       ),
     )
+    ..registerLazySingleton<ResumoParcelasMensalRepository>(
+      () => ResumoParcelasMensalRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelasMensalUseCase>(
+      () => LoadResumoParcelasMensalUseCase(
+        getIt<ResumoParcelasMensalRepository>(),
+      ),
+    )
     ..registerLazySingleton<ResumoVendasDiariasPorVendedorRepository>(
       () => ResumoVendasDiariasPorVendedorRepositoryImpl(
         getIt<AgentQueriesRepository>(),
@@ -160,6 +177,9 @@ void registerInjectorAgentQueries(GetIt getIt) {
       AgentQueryExecutor<ResumoParcelasFormaPagamentoAnualRow>
     >(
       AgentQueryExecutor<ResumoParcelasFormaPagamentoAnualRow>.new,
+    )
+    ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasMensalRow>>(
+      AgentQueryExecutor<ResumoParcelasMensalRow>.new,
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoVendasDiariasPorVendedorRow>
@@ -239,6 +259,19 @@ void registerInjectorAgentQueries(GetIt getIt) {
     >(
       () => LoadResumoParcelasFormaPagamentoAnualAcrossAgentsUseCase(
         getIt<ResumoParcelasFormaPagamentoAnualAcrossAgentsRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ResumoParcelasMensalAcrossAgentsRepository>(
+      () => ResumoParcelasMensalAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor: getIt<AgentQueryExecutor<ResumoParcelasMensalRow>>(),
+        loadResumo: getIt<LoadResumoParcelasMensalUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelasMensalAcrossAgentsUseCase>(
+      () => LoadResumoParcelasMensalAcrossAgentsUseCase(
+        getIt<ResumoParcelasMensalAcrossAgentsRepository>(),
       ),
     )
     ..registerLazySingleton<

@@ -65,3 +65,4 @@ Use these for repository-specific decisions:
 ## Notes
 
 - The correct folder is `./.cursor/rules`, not `./.cursor/roles`
+- Plug hub API summaries (markdown, not rules): `./docs/plug_server_docs_index_for_colmeia.md`, `./docs/bridge_agent_sql_api_options.md`

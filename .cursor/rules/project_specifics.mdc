@@ -24,6 +24,9 @@ este arquivo como um novo monolito.
   relatorios e value objects
 - `project_agent_sql.mdc`: payloads `sql.execute`, normalizacao da SQL e testes
   do bridge
+- `docs/plug_server_docs_index_for_colmeia.md` e
+  `docs/bridge_agent_sql_api_options.md`: resumos do hub Plug (repo irmao
+  plug_server), complementam `project_agent_sql.mdc` e `project_data_domain.mdc`
 - `project_shared_components.mdc`: criacao, promocao, especializacao e evolucao
   segura de componentes compartilhados
 - `project_conventions.mdc`: formularios, strings, design system especifico,
