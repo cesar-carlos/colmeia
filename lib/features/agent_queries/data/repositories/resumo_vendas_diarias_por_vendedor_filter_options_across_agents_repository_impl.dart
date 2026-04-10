@@ -381,14 +381,20 @@ List<ResumoVendasDiariasPorVendedorVendedorOption> _postDedupeVendedorOptions(
   List<ResumoVendasDiariasPorVendedorVendedorOption> merged,
   int effectiveLimit,
 ) {
-  return ResumoVendasDiariasPorVendedorFilterOptionsMerger
-      .dedupeVendedorOptions(merged, effectiveLimit);
+  final deduped =
+      ResumoVendasDiariasPorVendedorFilterOptionsMerger.dedupeVendedorOptions(
+        merged,
+        effectiveLimit,
+      );
+  return deduped;
 }
 
 List<ResumoVendasDiariasPorVendedorTextOption> _postDedupeTextOptions(
   List<ResumoVendasDiariasPorVendedorTextOption> merged,
   int effectiveLimit,
 ) {
-  return ResumoVendasDiariasPorVendedorFilterOptionsMerger
-      .dedupeTextOptions(merged, effectiveLimit);
+  return ResumoVendasDiariasPorVendedorFilterOptionsMerger.dedupeTextOptions(
+    merged,
+    effectiveLimit,
+  );
 }

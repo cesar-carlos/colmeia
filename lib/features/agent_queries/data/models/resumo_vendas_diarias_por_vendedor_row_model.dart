@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_reader.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 
 class ResumoVendasDiariasPorVendedorRowModel {
@@ -20,7 +21,7 @@ class ResumoVendasDiariasPorVendedorRowModel {
     return ResumoVendasDiariasPorVendedorRowModel(
       codEmpresa: _readRequiredIntKeys(map, _keys('CodEmpresa')),
       codFilial: _readRequiredIntKeys(map, _keys('CodFilial')),
-      dataVenda: _readDataVenda(map),
+      dataVenda: AgentQueriesSqlRowMapReader.readDataVendaCalendarDate(map),
       codVendedor: _readOptionalIntKeys(map, _keys('CodVendedor')),
       nomeVendedor: _readNomeVendedor(map),
       qtdeItens: _readRequiredDoubleKeys(map, _keys('QtdeItens')),
@@ -79,32 +80,6 @@ class ResumoVendasDiariasPorVendedorRowModel {
       }
     }
     return null;
-  }
-
-  static DateTime _readDataVenda(Map<String, dynamic> map) {
-    final raw = _lookupFirst(map, _keys('DataVenda'));
-    if (raw is DateTime) {
-      return DateTime(raw.year, raw.month, raw.day);
-    }
-    if (raw is String) {
-      final trimmed = raw.trim();
-      if (trimmed.length >= 10) {
-        final datePart = trimmed.length >= 10
-            ? trimmed.substring(0, 10)
-            : trimmed;
-        final parsed = DateTime.tryParse(datePart);
-        if (parsed != null) {
-          return DateTime(parsed.year, parsed.month, parsed.day);
-        }
-      }
-      final parsed = DateTime.tryParse(trimmed);
-      if (parsed != null) {
-        return DateTime(parsed.year, parsed.month, parsed.day);
-      }
-    }
-    throw const FormatException(
-      'Invalid or missing "DataVenda" in agent SQL row',
-    );
   }
 
   static String _readNomeVendedor(Map<String, dynamic> map) {

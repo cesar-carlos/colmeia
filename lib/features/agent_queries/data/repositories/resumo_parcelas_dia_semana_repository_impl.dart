@@ -2,38 +2,37 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
-import 'package:colmeia/features/agent_queries/data/models/resumo_vendas_diarias_por_vendedor_row_model.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diarias_por_vendedor_sql.dart';
+import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_dia_semana_row_model.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart';
 
-class ResumoVendasDiariasPorVendedorRepositoryImpl
-    implements ResumoVendasDiariasPorVendedorRepository {
-  ResumoVendasDiariasPorVendedorRepositoryImpl(
-    this._agentQueriesRepository,
-  );
+class ResumoParcelasDiaSemanaRepositoryImpl
+    implements ResumoParcelasDiaSemanaRepository {
+  ResumoParcelasDiaSemanaRepositoryImpl(this._agentQueriesRepository);
 
   static const int _defaultBridgeTimeoutMs = 120000;
-  static const String _operation = 'loadResumoVendasDiariasPorVendedor';
+  static const String _operation = 'loadResumoParcelasDiaSemana';
 
   final AgentQueriesRepository _agentQueriesRepository;
 
   @override
-  Future<AppResult<List<ResumoVendasDiariasPorVendedorRow>>> load({
+  Future<AppResult<List<ResumoParcelasDiaSemanaRow>>> load({
     required String agentId,
-    required ResumoVendasDiariasPorVendedorFilter filter,
+    required ResumoParcelasDiaSemanaFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
-      return Failure<List<ResumoVendasDiariasPorVendedorRow>, AppFailure>(
+      return Failure<List<ResumoParcelasDiaSemanaRow>, AppFailure>(
         ValidationFailure(
           message: validationError,
           userMessage: 'Os filtros da consulta sao invalidos.',
@@ -47,7 +46,7 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
-      sql: ResumoVendasDiariasPorVendedorSql.query,
+      sql: ResumoParcelasDiaSemanaSql.query,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
       namedParams: <String, Object?>{
@@ -55,9 +54,9 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
           filter.dataVendaInicio,
         ),
         'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-        'codVendedor': filter.sqlCodVendedor,
-        'bairro': filter.sqlBairro,
-        'municipio': filter.sqlMunicipio,
+        'origem': filter.trimmedOrigem,
+        'geraFinanceiro': filter.trimmedGeraFinanceiro,
+        'preVenda': filter.trimmedPreVenda,
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
@@ -70,11 +69,11 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
         executionResult,
         agentId: agentId.trim(),
       ),
-      Failure<List<ResumoVendasDiariasPorVendedorRow>, AppFailure>.new,
+      Failure<List<ResumoParcelasDiaSemanaRow>, AppFailure>.new,
     );
   }
 
-  AppResult<List<ResumoVendasDiariasPorVendedorRow>> _mapExecutionToRows(
+  AppResult<List<ResumoParcelasDiaSemanaRow>> _mapExecutionToRows(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
   }) {
@@ -82,13 +81,26 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
       final rows = executionResult.rows
           .map(
             (row) =>
-                ResumoVendasDiariasPorVendedorRowModel.fromMap(row).toEntity(),
+                ResumoParcelasDiaSemanaRowModel.fromMap(row).toEntity(),
           )
           .toList(growable: false);
-      return Success<List<ResumoVendasDiariasPorVendedorRow>, AppFailure>(rows);
+      if (kDebugMode && rows.isNotEmpty) {
+        final numeros = rows.map((r) => r.diaSemanaNumero).toList()..sort();
+        AppLogger.debug(
+          'ResumoParcelasDiaSemana load summary',
+          context: <String, Object?>{
+            'operation': _operation,
+            'agentId': agentId,
+            'rowCount': rows.length,
+            'diaSemanaNumeroMin': numeros.first,
+            'diaSemanaNumeroMax': numeros.last,
+          },
+        );
+      }
+      return Success<List<ResumoParcelasDiaSemanaRow>, AppFailure>(rows);
     } on FormatException catch (error, stackTrace) {
       AppLogger.error(
-        'Unexpected row shape for ResumoVendasDiariasPorVendedor',
+        'Unexpected row shape for ResumoParcelasDiaSemana',
         context: <String, Object?>{
           'operation': _operation,
           'agentId': agentId,
@@ -96,7 +108,7 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure<List<ResumoVendasDiariasPorVendedorRow>, AppFailure>(
+      return Failure<List<ResumoParcelasDiaSemanaRow>, AppFailure>(
         UnknownFailure(
           message: error.message,
           userMessage:

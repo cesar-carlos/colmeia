@@ -50,8 +50,9 @@ class ResumoParcelaFormaPagamentoRepositoryImpl
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
       namedParams: <String, Object?>{
-        'dataVendaInicio':
-            AgentQueriesSqlLocalDate.format(filter.dataVendaInicio),
+        'dataVendaInicio': AgentQueriesSqlLocalDate.format(
+          filter.dataVendaInicio,
+        ),
         'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
         'origem': filter.trimmedOrigem,
         'geraFinanceiro': filter.trimmedGeraFinanceiro,

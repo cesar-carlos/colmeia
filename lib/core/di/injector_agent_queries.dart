@@ -2,9 +2,15 @@ import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_anual_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_anual_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_anual_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_anual_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_use_case.dart';
@@ -17,23 +23,38 @@ import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_re
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_anual_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_anual_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_dia_semana_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_dia_semana_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_forma_pagamento_anual_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_forma_pagamento_anual_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_anual_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_anual_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_anual_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_anual_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository.dart';
@@ -62,6 +83,26 @@ void registerInjectorAgentQueries(GetIt getIt) {
         getIt<ResumoParcelaFormaPagamentoRepository>(),
       ),
     )
+    ..registerLazySingleton<ResumoParcelaFormaPagamentoDiarioRepository>(
+      () => ResumoParcelaFormaPagamentoDiarioRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelaFormaPagamentoDiarioUseCase>(
+      () => LoadResumoParcelaFormaPagamentoDiarioUseCase(
+        getIt<ResumoParcelaFormaPagamentoDiarioRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ResumoParcelasDiaSemanaRepository>(
+      () => ResumoParcelasDiaSemanaRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelasDiaSemanaUseCase>(
+      () => LoadResumoParcelasDiaSemanaUseCase(
+        getIt<ResumoParcelasDiaSemanaRepository>(),
+      ),
+    )
     ..registerLazySingleton<ResumoParcelasAnualRepository>(
       () => ResumoParcelasAnualRepositoryImpl(
         getIt<AgentQueriesRepository>(),
@@ -70,6 +111,16 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ..registerLazySingleton<LoadResumoParcelasAnualUseCase>(
       () => LoadResumoParcelasAnualUseCase(
         getIt<ResumoParcelasAnualRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ResumoParcelasFormaPagamentoAnualRepository>(
+      () => ResumoParcelasFormaPagamentoAnualRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelasFormaPagamentoAnualUseCase>(
+      () => LoadResumoParcelasFormaPagamentoAnualUseCase(
+        getIt<ResumoParcelasFormaPagamentoAnualRepository>(),
       ),
     )
     ..registerLazySingleton<ResumoVendasDiariasPorVendedorRepository>(
@@ -94,8 +145,21 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>>(
       AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>.new,
     )
+    ..registerLazySingleton<
+      AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow>
+    >(
+      AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow>.new,
+    )
+    ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasDiaSemanaRow>>(
+      AgentQueryExecutor<ResumoParcelasDiaSemanaRow>.new,
+    )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasAnualRow>>(
       AgentQueryExecutor<ResumoParcelasAnualRow>.new,
+    )
+    ..registerLazySingleton<
+      AgentQueryExecutor<ResumoParcelasFormaPagamentoAnualRow>
+    >(
+      AgentQueryExecutor<ResumoParcelasFormaPagamentoAnualRow>.new,
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoVendasDiariasPorVendedorRow>
@@ -115,6 +179,37 @@ void registerInjectorAgentQueries(GetIt getIt) {
         getIt<ResumoParcelaFormaPagamentoAcrossAgentsRepository>(),
       ),
     )
+    ..registerLazySingleton<
+      ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepository
+    >(
+      () => ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor:
+            getIt<AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow>>(),
+        loadResumo: getIt<LoadResumoParcelaFormaPagamentoDiarioUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<
+      LoadResumoParcelaFormaPagamentoDiarioAcrossAgentsUseCase
+    >(
+      () => LoadResumoParcelaFormaPagamentoDiarioAcrossAgentsUseCase(
+        getIt<ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ResumoParcelasDiaSemanaAcrossAgentsRepository>(
+      () => ResumoParcelasDiaSemanaAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor: getIt<AgentQueryExecutor<ResumoParcelasDiaSemanaRow>>(),
+        loadResumo: getIt<LoadResumoParcelasDiaSemanaUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelasDiaSemanaAcrossAgentsUseCase>(
+      () => LoadResumoParcelasDiaSemanaAcrossAgentsUseCase(
+        getIt<ResumoParcelasDiaSemanaAcrossAgentsRepository>(),
+      ),
+    )
     ..registerLazySingleton<ResumoParcelasAnualAcrossAgentsRepository>(
       () => ResumoParcelasAnualAcrossAgentsRepositoryImpl(
         targetResolver: getIt<AgentQueryTargetResolver>(),
@@ -126,6 +221,24 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ..registerLazySingleton<LoadResumoParcelasAnualAcrossAgentsUseCase>(
       () => LoadResumoParcelasAnualAcrossAgentsUseCase(
         getIt<ResumoParcelasAnualAcrossAgentsRepository>(),
+      ),
+    )
+    ..registerLazySingleton<
+      ResumoParcelasFormaPagamentoAnualAcrossAgentsRepository
+    >(
+      () => ResumoParcelasFormaPagamentoAnualAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor:
+            getIt<AgentQueryExecutor<ResumoParcelasFormaPagamentoAnualRow>>(),
+        loadResumo: getIt<LoadResumoParcelasFormaPagamentoAnualUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<
+      LoadResumoParcelasFormaPagamentoAnualAcrossAgentsUseCase
+    >(
+      () => LoadResumoParcelasFormaPagamentoAnualAcrossAgentsUseCase(
+        getIt<ResumoParcelasFormaPagamentoAnualAcrossAgentsRepository>(),
       ),
     )
     ..registerLazySingleton<

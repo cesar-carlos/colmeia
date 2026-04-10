@@ -273,10 +273,11 @@ void main() {
             bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           ),
         ).thenAnswer(
-          (_) async => const Success<
-            List<ResumoVendasDiariasPorVendedorVendedorOption>,
-            AppFailure
-          >(<ResumoVendasDiariasPorVendedorVendedorOption>[]),
+          (_) async =>
+              const Success<
+                List<ResumoVendasDiariasPorVendedorVendedorOption>,
+                AppFailure
+              >(<ResumoVendasDiariasPorVendedorVendedorOption>[]),
         );
 
         final expectedPerAgent =

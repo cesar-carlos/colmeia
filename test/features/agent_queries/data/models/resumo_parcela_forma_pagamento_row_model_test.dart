@@ -64,7 +64,9 @@ void main() {
       check(model.valorParcela).equals(14704.29);
     });
 
-    test('fromMap throws FormatException when AnoMes disagrees with parts', () {
+    test(
+      'fromMap throws FormatException when AnoMes disagrees with parts',
+      () {
         expect(
           () => ResumoParcelaFormaPagamentoRowModel.fromMap(
             <String, dynamic>{
