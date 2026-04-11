@@ -34,6 +34,15 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const PaginatedQuery());
     registerFallbackValue(
+      AgentCatalogRecordDto.fromJson(<String, dynamic>{
+        'agentId': 'fallback',
+        'name': 'Fallback',
+        'status': 'active',
+        'createdAt': '2020-01-01T00:00:00.000Z',
+        'updatedAt': '2020-01-01T00:00:00.000Z',
+      }),
+    );
+    registerFallbackValue(
       const ClientApprovedAgentsResponseDto(
         agents: [],
         agentIds: <String>{},
@@ -155,7 +164,7 @@ void main() {
         count: 0,
         total: 0,
         page: 1,
-        pageSize: 100,
+        pageSize: 50,
       ),
     );
     when(
@@ -173,7 +182,7 @@ void main() {
         count: 0,
         total: 0,
         page: 1,
-        pageSize: 100,
+        pageSize: 50,
       ),
     );
     when(
@@ -324,6 +333,13 @@ void main() {
           payload: any(named: 'payload'),
         ),
       ).thenAnswer((_) async {});
+      when(
+        () => local.saveCatalogAgentById(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
 
       final result = await repository.loadCatalogAgentById(
         userId: 'user-1',
@@ -333,6 +349,57 @@ void main() {
       check(result.isSuccess()).isTrue();
       check(result.getOrNull()?.agent.agentId).equals('cat-1');
       check(result.getOrNull()?.agent.name).equals('Catalog Agent');
+      verify(
+        () => local.saveCatalogAgentById(
+          userId: 'user-1',
+          agentId: 'cat-1',
+          payload: any(named: 'payload'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'loadCatalogAgentById returns cached catalog agent when remote fails',
+    () async {
+      final catalogJson = <String, dynamic>{
+        'agentId': 'cat-1',
+        'name': 'Cached Catalog Agent',
+        'status': 'active',
+        'createdAt': now.toIso8601String(),
+        'updatedAt': now.toIso8601String(),
+      };
+      final cached = AgentCatalogRecordDto.fromJson(catalogJson);
+      when(() => remote.fetchCatalogAgentById(any())).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/catalog/cat-1'),
+          type: DioExceptionType.connectionError,
+        ),
+      );
+      when(
+        () => local.readCatalogAgentById(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer((_) async => cached);
+      when(
+        () => local.readOnlineAgents(userId: any(named: 'userId')),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.loadCatalogAgentById(
+        userId: 'user-1',
+        agentId: 'cat-1',
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrNull()?.agent.name).equals('Cached Catalog Agent');
+      verifyNever(
+        () => local.saveCatalogAgentById(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          payload: any(named: 'payload'),
+        ),
+      );
     },
   );
 

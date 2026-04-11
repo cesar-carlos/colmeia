@@ -13,6 +13,7 @@ import 'package:colmeia/features/client_agents/domain/entities/client_access_sta
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_catalog_item.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agents_list_page_size.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -30,7 +31,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
 
   static const Duration _onlineStatusMaxAge = Duration(minutes: 1);
   static const PaginatedQuery _defaultRefreshQuery = PaginatedQuery(
-    pageSize: 100,
+    pageSize: kClientAgentsListPageSize,
   );
 
   final ClientAgentsRemoteDataSource _remoteDataSource;
@@ -160,6 +161,11 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     }
     try {
       final remote = await _remoteDataSource.fetchCatalogAgentById(trimmed);
+      await _localDataSource.saveCatalogAgentById(
+        userId: userId,
+        agentId: trimmed,
+        payload: remote,
+      );
       final onlineIds = await _loadOnlineAgentIds(userId: userId);
       return Success<ClientAgentCatalogItem, AppFailure>(
         ClientAgentCatalogItem(
@@ -167,6 +173,35 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     } on DioException catch (error, stackTrace) {
+      if (isDioUnauthorizedOrForbidden(error)) {
+        return Failure<ClientAgentCatalogItem, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load catalog agent by id',
+            fallbackUserMessage: 'Could not load catalog agent details.',
+            context: <String, Object?>{
+              'operation': 'loadCatalogAgentById',
+              'userId': userId,
+              'agentId': trimmed,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadCatalogAgentById,
+            },
+          ),
+        );
+      }
+      final cached = await _localDataSource.readCatalogAgentById(
+        userId: userId,
+        agentId: trimmed,
+      );
+      if (cached != null) {
+        final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
+        return Success<ClientAgentCatalogItem, AppFailure>(
+          ClientAgentCatalogItem(
+            agent: _mapProfile(cached, onlineIds: onlineIds),
+          ),
+        );
+      }
       return Failure<ClientAgentCatalogItem, AppFailure>(
         mapToAppFailure(
           error,
@@ -183,6 +218,35 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     } on Object catch (error, stackTrace) {
+      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
+        return Failure<ClientAgentCatalogItem, AppFailure>(
+          mapToAppFailure(
+            error,
+            stackTrace: stackTrace,
+            fallbackMessage: 'Unable to load catalog agent by id',
+            fallbackUserMessage: 'Could not load catalog agent details.',
+            context: <String, Object?>{
+              'operation': 'loadCatalogAgentById',
+              'userId': userId,
+              'agentId': trimmed,
+              ClientAgentsFailureUiKey.field:
+                  ClientAgentsFailureUiKey.loadCatalogAgentById,
+            },
+          ),
+        );
+      }
+      final cached = await _localDataSource.readCatalogAgentById(
+        userId: userId,
+        agentId: trimmed,
+      );
+      if (cached != null) {
+        final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
+        return Success<ClientAgentCatalogItem, AppFailure>(
+          ClientAgentCatalogItem(
+            agent: _mapProfile(cached, onlineIds: onlineIds),
+          ),
+        );
+      }
       return Failure<ClientAgentCatalogItem, AppFailure>(
         mapToAppFailure(
           error,
@@ -938,15 +1002,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       userId: userId,
       query: _defaultRefreshQuery,
     );
-    if (approved != null) {
-      return approved.agentIds;
-    }
-
-    final fallbackApproved = await _localDataSource.readApprovedAgents(
-      userId: userId,
-      query: const PaginatedQuery(pageSize: 50),
-    );
-    return fallbackApproved?.agentIds ?? const <String>{};
+    return approved?.agentIds ?? const <String>{};
   }
 
   List<PendingAgentAction> _enqueueActions({
@@ -1012,7 +1068,19 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         query: _defaultRefreshQuery,
         payload: approved,
       );
-    } on Object catch (_) {}
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Post-sync refresh of approved agents snapshot failed',
+        context: <String, Object?>{
+          'operation': 'refreshSnapshotsAfterSync',
+          'step': 'approvedAgents',
+          'userId': userId,
+          'errorType': error.runtimeType.toString(),
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
 
     try {
       final requests = await _remoteDataSource.fetchAccessRequests(
@@ -1023,7 +1091,19 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         query: _defaultRefreshQuery,
         payload: requests,
       );
-    } on Object catch (_) {}
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Post-sync refresh of access requests snapshot failed',
+        context: <String, Object?>{
+          'operation': 'refreshSnapshotsAfterSync',
+          'step': 'accessRequests',
+          'userId': userId,
+          'errorType': error.runtimeType.toString(),
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
 
     await _loadOnlineAgentIds(userId: userId);
   }

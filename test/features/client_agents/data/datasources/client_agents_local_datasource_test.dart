@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 class _InMemoryCacheStore implements AppCacheStore {
   final Map<String, String> _values = <String, String>{};
 
+  Iterable<String> get keys => _values.keys;
+
   @override
   Future<void> clearAll() async => _values.clear();
 
@@ -83,5 +85,31 @@ void main() {
     check(secondResult).isNotNull();
     check(secondResult!.count).equals(2);
     check(missingResult).isNull();
+  });
+
+  test('readCatalog returns null when stored value is invalid JSON', () async {
+    final store = _InMemoryCacheStore();
+    datasource = ClientAgentsLocalDataSource(store);
+    const payload = PaginatedAgentCatalogResponseDto(
+      agents: [],
+      count: 0,
+      total: 0,
+      page: 1,
+      pageSize: 20,
+    );
+    await datasource.saveCatalog(
+      userId: 'user_x',
+      query: const PaginatedQuery(),
+      payload: payload,
+    );
+    final key = store.keys.single;
+    await store.putString(key: key, value: '{not-json');
+
+    final result = await datasource.readCatalog(
+      userId: 'user_x',
+      query: const PaginatedQuery(),
+    );
+
+    check(result).isNull();
   });
 }

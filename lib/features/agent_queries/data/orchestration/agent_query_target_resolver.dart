@@ -5,6 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_targe
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/client_agents/domain/client_agent_display_name.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agents_list_page_size.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
@@ -20,7 +21,6 @@ class AgentQueryTargetResolver {
   final ClientAgentsRepository _clientAgentsRepository;
   final AgentClientTokenReader _clientTokenReader;
 
-  static const int _approvedAgentsPageSize = 50;
   static const int _maxApprovedAgentsPaginationPages = 400;
   static const String _paginationSignatureSeparator = '\u001f';
 
@@ -130,7 +130,7 @@ class AgentQueryTargetResolver {
 
       final query = PaginatedQuery(
         page: page,
-        pageSize: _approvedAgentsPageSize,
+        pageSize: kClientAgentsListPageSize,
       );
       final result = await _clientAgentsRepository.loadApprovedAgents(
         userId: userId,

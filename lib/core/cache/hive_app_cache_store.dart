@@ -32,7 +32,12 @@ class HiveAppCacheStore implements AppCacheStore {
     } on Object catch (error, stackTrace) {
       AppLogger.warning(
         'Hive cache write failed',
-        context: <String, Object?>{'operation': 'putString', 'key': key},
+        context: <String, Object?>{
+          'operation': 'putString',
+          'severity': 'writeFailed',
+          'cacheKeyLength': key.length,
+          'cacheKeyHash': key.hashCode,
+        },
         error: error,
         stackTrace: stackTrace,
       );

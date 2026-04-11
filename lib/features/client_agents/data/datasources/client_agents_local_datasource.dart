@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/cache/app_kv_cache_key_prefixes.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/client_agents/data/models/agent_catalog_record_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_access_requests_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
@@ -48,6 +50,25 @@ class ClientAgentsLocalDataSource {
       ),
       payload.toJson(),
     );
+  }
+
+  Future<AgentCatalogRecordDto?> readCatalogAgentById({
+    required String userId,
+    required String agentId,
+  }) async {
+    final json = await _readMap(_catalogAgentKey(userId, agentId));
+    if (json == null) {
+      return null;
+    }
+    return AgentCatalogRecordDto.fromJson(json);
+  }
+
+  Future<void> saveCatalogAgentById({
+    required String userId,
+    required String agentId,
+    required AgentCatalogRecordDto payload,
+  }) {
+    return _writeMap(_catalogAgentKey(userId, agentId), payload.toJson());
   }
 
   Future<ClientApprovedAgentsResponseDto?> readApprovedAgents({
@@ -209,11 +230,33 @@ class ClientAgentsLocalDataSource {
     if (raw == null || raw.isEmpty) {
       return null;
     }
-    final decoded = jsonDecode(raw);
-    if (decoded is! Map<String, dynamic>) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        AppLogger.warning(
+          'Client agents cache value is not a JSON object',
+          context: _readMapLogContext(key),
+        );
+        return null;
+      }
+      return decoded;
+    } on FormatException catch (error, stackTrace) {
+      AppLogger.warning(
+        'Client agents cache JSON decode failed; treating as miss',
+        context: _readMapLogContext(key),
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Client agents cache read failed',
+        context: _readMapLogContext(key),
+        error: error,
+        stackTrace: stackTrace,
+      );
       return null;
     }
-    return decoded;
   }
 
   Future<void> _writeMap(String key, Map<String, Object?> data) {
@@ -259,6 +302,11 @@ class ClientAgentsLocalDataSource {
         '_st$normalizedStatus';
   }
 
+  String _catalogAgentKey(String userId, String agentId) {
+    return '${AppKvCacheKeyPrefixes.clientAgentsCatalogAgent}'
+        '${userId}_$agentId';
+  }
+
   String _detailKey(String userId, String agentId) {
     return '${AppKvCacheKeyPrefixes.clientAgentsDetail}${userId}_$agentId';
   }
@@ -272,10 +320,21 @@ class ClientAgentsLocalDataSource {
   }
 
   String _normalizeOptionalSegment(String? value) {
-    final normalized = value?.trim().toLowerCase();
-    if (normalized == null || normalized.isEmpty) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
       return 'all';
     }
-    return normalized.replaceAll(RegExp('[^a-z0-9]+'), '_');
+    final lower = trimmed.toLowerCase();
+    final slug = lower.replaceAll(RegExp('[^a-z0-9]+'), '_');
+    final digest = Object.hash(trimmed, trimmed.length).toUnsigned(32);
+    return '${slug}_h$digest';
+  }
+
+  Map<String, Object?> _readMapLogContext(String key) {
+    return <String, Object?>{
+      'operation': 'readClientAgentsCache',
+      'cacheKeyLength': key.length,
+      'cacheKeyHash': key.hashCode,
+    };
   }
 }

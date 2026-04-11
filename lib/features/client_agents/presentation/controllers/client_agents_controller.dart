@@ -15,6 +15,7 @@ import 'package:colmeia/features/client_agents/data/storage/local_agent_client_t
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agents_list_page_size.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -53,7 +54,7 @@ class ClientAgentsController extends ChangeNotifier {
   static const Duration _approvalPollingInterval = Duration(seconds: 10);
   static const Duration _approvalPollingTimeout = Duration(minutes: 3);
   static const PaginatedQuery _approvalPollingQuery = PaginatedQuery(
-    pageSize: 50,
+    pageSize: kClientAgentsListPageSize,
   );
 
   final AuthController _authController;
@@ -97,6 +98,19 @@ class ClientAgentsController extends ChangeNotifier {
       <String, DateTime>{};
   Timer? _approvalPollingTimer;
   int _refreshAllToken = 0;
+  Future<void> _pendingMutationTail = Future.value();
+
+  Future<T> _runPendingMutationSerialized<T>(Future<T> Function() action) {
+    final completer = Completer<T>();
+    _pendingMutationTail = _pendingMutationTail.then((_) async {
+      try {
+        completer.complete(await action());
+      } on Object catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    });
+    return completer.future;
+  }
 
   bool get isLoading => _isLoadingInitial || _isRefreshing;
   bool get isLoadingInitial => _isLoadingInitial;
@@ -151,7 +165,7 @@ class ClientAgentsController extends ChangeNotifier {
     _clearSectionErrors();
     _notifyListenersIfAlive();
 
-    const query = PaginatedQuery(pageSize: 50);
+    const query = PaginatedQuery(pageSize: kClientAgentsListPageSize);
     try {
       late AppResult<PaginatedResult<ClientAgent>> approvedResult;
       late AppResult<PaginatedResult<ClientAgentAccessRequest>> requestsResult;
@@ -292,35 +306,41 @@ class ClientAgentsController extends ChangeNotifier {
       _notifyListenersIfAlive();
       return false;
     }
-    _isSyncing = true;
-    _actionErrorMessage = null;
-    _clearActionFeedback();
-    _notifyListenersIfAlive();
 
-    final classification = _classifyRequestAgentIds(agentIds);
-    if (classification.allowed.isEmpty) {
-      _isSyncing = false;
-      _actionErrorMessage = _buildBlockedRequestMessage(classification);
+    return _runPendingMutationSerialized(() async {
+      if (_isDisposed) {
+        return false;
+      }
+      _isSyncing = true;
+      _actionErrorMessage = null;
+      _clearActionFeedback();
       _notifyListenersIfAlive();
-      return false;
-    }
 
-    final queueResult = await _queueRequestAccessUseCase(
-      userId: userId,
-      agentIds: classification.allowed,
-    );
-    _actionErrorMessage = _consumeResult(
-      result: queueResult,
-      operation: 'queueClientAgentRequestAccess',
-    );
-    if (_actionErrorMessage == null) {
-      _setActionFeedback(
-        message: _buildQueuedRequestMessage(classification),
-        kind: ClientAgentsActionFeedbackKind.info,
+      final classification = _classifyRequestAgentIds(agentIds);
+      if (classification.allowed.isEmpty) {
+        _isSyncing = false;
+        _actionErrorMessage = _buildBlockedRequestMessage(classification);
+        _notifyListenersIfAlive();
+        return false;
+      }
+
+      final queueResult = await _queueRequestAccessUseCase(
+        userId: userId,
+        agentIds: classification.allowed,
       );
-    }
-    await _reloadPendingAfterEnqueue(userId: userId);
-    return _actionErrorMessage == null;
+      _actionErrorMessage = _consumeResult(
+        result: queueResult,
+        operation: 'queueClientAgentRequestAccess',
+      );
+      if (_actionErrorMessage == null) {
+        _setActionFeedback(
+          message: _buildQueuedRequestMessage(classification),
+          kind: ClientAgentsActionFeedbackKind.info,
+        );
+      }
+      await _reloadPendingAfterEnqueue(userId: userId);
+      return _actionErrorMessage == null;
+    });
   }
 
   Future<void> removeAccess({
@@ -336,34 +356,39 @@ class ClientAgentsController extends ChangeNotifier {
       return;
     }
 
-    _isSyncing = true;
-    _actionErrorMessage = null;
-    _clearActionFeedback();
-    _notifyListenersIfAlive();
-
-    final classification = _classifyRemoveAgentIds(agentIds);
-    if (classification.allowed.isEmpty) {
-      _isSyncing = false;
-      _actionErrorMessage = _buildBlockedRemoveMessage(classification);
+    await _runPendingMutationSerialized(() async {
+      if (_isDisposed) {
+        return;
+      }
+      _isSyncing = true;
+      _actionErrorMessage = null;
+      _clearActionFeedback();
       _notifyListenersIfAlive();
-      return;
-    }
 
-    final queueResult = await _queueRemoveAccessUseCase(
-      userId: userId,
-      agentIds: classification.allowed,
-    );
-    _actionErrorMessage = _consumeResult(
-      result: queueResult,
-      operation: 'queueClientAgentRemoveAccess',
-    );
-    if (_actionErrorMessage == null) {
-      _setActionFeedback(
-        message: _buildQueuedRemoveMessage(classification),
-        kind: ClientAgentsActionFeedbackKind.info,
+      final classification = _classifyRemoveAgentIds(agentIds);
+      if (classification.allowed.isEmpty) {
+        _isSyncing = false;
+        _actionErrorMessage = _buildBlockedRemoveMessage(classification);
+        _notifyListenersIfAlive();
+        return;
+      }
+
+      final queueResult = await _queueRemoveAccessUseCase(
+        userId: userId,
+        agentIds: classification.allowed,
       );
-    }
-    await _reloadPendingAfterEnqueue(userId: userId);
+      _actionErrorMessage = _consumeResult(
+        result: queueResult,
+        operation: 'queueClientAgentRemoveAccess',
+      );
+      if (_actionErrorMessage == null) {
+        _setActionFeedback(
+          message: _buildQueuedRemoveMessage(classification),
+          kind: ClientAgentsActionFeedbackKind.info,
+        );
+      }
+      await _reloadPendingAfterEnqueue(userId: userId);
+    });
   }
 
   Future<void> syncPending({
@@ -375,59 +400,62 @@ class ClientAgentsController extends ChangeNotifier {
       _notifyListenersIfAlive();
       return;
     }
-    if (_isSyncing) {
-      return;
-    }
 
-    final pendingCount = _pendingActions
-        .where(
-          (action) =>
-              action.state == PendingAgentActionState.queued ||
-              action.state == PendingAgentActionState.failed,
-        )
-        .length;
-    if (pendingCount == 0) {
+    await _runPendingMutationSerialized(() async {
+      if (_isDisposed) {
+        return;
+      }
+
+      final pendingCount = _pendingActions
+          .where(
+            (action) =>
+                action.state == PendingAgentActionState.queued ||
+                action.state == PendingAgentActionState.failed,
+          )
+          .length;
+      if (pendingCount == 0) {
+        if (!autoTriggered) {
+          _setActionFeedback(
+            message: _s.clientAgentsNoLocalPendingToSync,
+            kind: ClientAgentsActionFeedbackKind.info,
+          );
+          _notifyListenersIfAlive();
+        }
+        return;
+      }
+
+      _isSyncing = true;
+      _actionErrorMessage = null;
       if (!autoTriggered) {
+        _clearActionFeedback();
+      }
+      _notifyListenersIfAlive();
+      final syncResult = await _syncPendingActionsUseCase(userId: userId);
+      final syncedRequestAccessAgentIds = syncResult.fold(
+        (value) => value.successfulRequestAccessAgentIds,
+        (_) => const <String>{},
+      );
+      _actionErrorMessage = _consumeResult(
+        result: syncResult,
+        operation: 'syncPendingClientAgentActions',
+      );
+      await _refreshAfterMutation(userId: userId);
+      if (_actionErrorMessage == null) {
         _setActionFeedback(
-          message: _s.clientAgentsNoLocalPendingToSync,
-          kind: ClientAgentsActionFeedbackKind.info,
+          message: _buildSyncSuccessMessage(
+            pendingCount: pendingCount,
+            autoTriggered: autoTriggered,
+            watchingApproval: syncedRequestAccessAgentIds.isNotEmpty,
+          ),
+          kind: ClientAgentsActionFeedbackKind.success,
+        );
+        _startApprovalPolling(
+          userId: userId,
+          agentIds: syncedRequestAccessAgentIds,
         );
         _notifyListenersIfAlive();
       }
-      return;
-    }
-
-    _isSyncing = true;
-    _actionErrorMessage = null;
-    if (!autoTriggered) {
-      _clearActionFeedback();
-    }
-    _notifyListenersIfAlive();
-    final syncResult = await _syncPendingActionsUseCase(userId: userId);
-    final syncedRequestAccessAgentIds = syncResult.fold(
-      (value) => value.successfulRequestAccessAgentIds,
-      (_) => const <String>{},
-    );
-    _actionErrorMessage = _consumeResult(
-      result: syncResult,
-      operation: 'syncPendingClientAgentActions',
-    );
-    await _refreshAfterMutation(userId: userId);
-    if (_actionErrorMessage == null) {
-      _setActionFeedback(
-        message: _buildSyncSuccessMessage(
-          pendingCount: pendingCount,
-          autoTriggered: autoTriggered,
-          watchingApproval: syncedRequestAccessAgentIds.isNotEmpty,
-        ),
-        kind: ClientAgentsActionFeedbackKind.success,
-      );
-      _startApprovalPolling(
-        userId: userId,
-        agentIds: syncedRequestAccessAgentIds,
-      );
-      _notifyListenersIfAlive();
-    }
+    });
   }
 
   Future<void> _reloadPendingAfterEnqueue({
@@ -447,7 +475,7 @@ class ClientAgentsController extends ChangeNotifier {
   Future<void> _refreshAfterMutation({
     required String userId,
   }) async {
-    const query = PaginatedQuery(pageSize: 50);
+    const query = PaginatedQuery(pageSize: kClientAgentsListPageSize);
     late AppResult<PaginatedResult<ClientAgent>> approvedResult;
     late AppResult<PaginatedResult<ClientAgentAccessRequest>> requestsResult;
     late AppResult<List<PendingAgentAction>> pendingResult;
@@ -734,7 +762,7 @@ class ClientAgentsController extends ChangeNotifier {
 
     final result = await _loadAccessRequestsUseCase(
       userId: userId,
-      query: const PaginatedQuery(),
+      query: const PaginatedQuery(pageSize: kClientAgentsListPageSize),
       search: agentId,
     );
     return result.fold((value) {

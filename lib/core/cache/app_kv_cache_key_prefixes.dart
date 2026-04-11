@@ -4,6 +4,7 @@
 abstract final class AppKvCacheKeyPrefixes {
   static const String dashboardOverview = 'dashboard_overview_';
   static const String clientAgentsCatalog = 'client_agents_catalog_';
+  static const String clientAgentsCatalogAgent = 'client_agents_catalog_agent_';
   static const String clientAgentsApproved = 'client_agents_approved_';
   static const String clientAgentsRequests = 'client_agents_requests_';
   static const String clientAgentsDetail = 'client_agents_detail_';
