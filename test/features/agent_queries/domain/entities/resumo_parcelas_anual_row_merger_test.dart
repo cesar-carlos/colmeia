@@ -11,47 +11,92 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ResumoParcelasAnualRowMerger', () {
-    test('merge sums quantidade and valorTotal per ano', () {
+    test('merge sums qtdVendas and valorParcela per composite key', () {
+      const base = (
+        codEmpresa: 1,
+        codFilial: 6,
+        anoDataVenda: 2026,
+        codFormaPagamento: 'BL',
+        descricaoFormaPagamento: 'BOLETO',
+      );
       final merged = ResumoParcelasAnualRowMerger.merge(
         <ResumoParcelasAnualRow>[
-          const ResumoParcelasAnualRow(
-            ano: 2025,
-            quantidade: 2,
-            valorTotal: 10,
+          ResumoParcelasAnualRow(
+            codEmpresa: base.codEmpresa,
+            codFilial: base.codFilial,
+            anoDataVenda: base.anoDataVenda,
+            codFormaPagamento: base.codFormaPagamento,
+            descricaoFormaPagamento: base.descricaoFormaPagamento,
+            qtdVendas: 2,
+            valorParcela: 10,
           ),
-          const ResumoParcelasAnualRow(ano: 2025, quantidade: 3, valorTotal: 5),
-          const ResumoParcelasAnualRow(ano: 2026, quantidade: 1, valorTotal: 7),
+          ResumoParcelasAnualRow(
+            codEmpresa: base.codEmpresa,
+            codFilial: base.codFilial,
+            anoDataVenda: base.anoDataVenda,
+            codFormaPagamento: base.codFormaPagamento,
+            descricaoFormaPagamento: base.descricaoFormaPagamento,
+            qtdVendas: 3,
+            valorParcela: 5,
+          ),
+          const ResumoParcelasAnualRow(
+            codEmpresa: 1,
+            codFilial: 6,
+            anoDataVenda: 2027,
+            codFormaPagamento: 'CC',
+            descricaoFormaPagamento: 'CARTÃO',
+            qtdVendas: 1,
+            valorParcela: 7,
+          ),
         ],
       );
       check(merged.length).equals(2);
-      check(merged.firstWhere((r) => r.ano == 2025).quantidade).equals(5);
-      check(merged.firstWhere((r) => r.ano == 2025).valorTotal).equals(15);
-      check(merged.firstWhere((r) => r.ano == 2026).quantidade).equals(1);
+      final y2026 = merged.firstWhere((r) => r.anoDataVenda == 2026);
+      check(y2026.qtdVendas).equals(5);
+      check(y2026.valorParcela).equals(15);
+      check(
+        merged.firstWhere((r) => r.anoDataVenda == 2027).qtdVendas,
+      ).equals(1);
     });
   });
 
   group('AgentQueryExecutionReportResumoParcelasAnualRowsX', () {
     test('aggregatedMergedRows delegates to merger', () {
-      const report = AgentQueryExecutionReport<ResumoParcelasAnualRow>(
+      const row2025 = ResumoParcelasAnualRow(
+        codEmpresa: 1,
+        codFilial: 1,
+        anoDataVenda: 2025,
+        codFormaPagamento: 'DH',
+        descricaoFormaPagamento: 'DINHEIRO',
+        qtdVendas: 1,
+        valorParcela: 2,
+      );
+      final report = AgentQueryExecutionReport<ResumoParcelasAnualRow>(
         queryKey: AgentQueryKey.resumoParcelasAnual,
         strategy: AgentQueryExecutionStrategy.mergeAll,
         consideredApprovedAgentCount: 2,
         plannedTargets: <AgentQueryTarget>[],
         missingClientTokenTargets: <AgentQueryTarget>[],
         participants: <AgentQueryExecutionParticipant<ResumoParcelasAnualRow>>[
-          AgentQueryExecutionParticipant<ResumoParcelasAnualRow>(
+          const AgentQueryExecutionParticipant<ResumoParcelasAnualRow>(
             agentId: 'a',
             displayName: 'a',
-            rows: <ResumoParcelasAnualRow>[
-              ResumoParcelasAnualRow(ano: 2025, quantidade: 1, valorTotal: 2),
-            ],
+            rows: <ResumoParcelasAnualRow>[row2025],
             elapsedMs: 1,
           ),
           AgentQueryExecutionParticipant<ResumoParcelasAnualRow>(
             agentId: 'b',
             displayName: 'b',
             rows: <ResumoParcelasAnualRow>[
-              ResumoParcelasAnualRow(ano: 2025, quantidade: 4, valorTotal: 8),
+              ResumoParcelasAnualRow(
+                codEmpresa: row2025.codEmpresa,
+                codFilial: row2025.codFilial,
+                anoDataVenda: row2025.anoDataVenda,
+                codFormaPagamento: row2025.codFormaPagamento,
+                descricaoFormaPagamento: row2025.descricaoFormaPagamento,
+                qtdVendas: 4,
+                valorParcela: 8,
+              ),
             ],
             elapsedMs: 1,
           ),
@@ -60,8 +105,8 @@ void main() {
       );
       check(report.mergedRows.length).equals(2);
       check(report.aggregatedMergedRows.length).equals(1);
-      check(report.aggregatedMergedRows.single.quantidade).equals(5);
-      check(report.aggregatedMergedRows.single.valorTotal).equals(10);
+      check(report.aggregatedMergedRows.single.qtdVendas).equals(5);
+      check(report.aggregatedMergedRows.single.valorParcela).equals(10);
     });
   });
 }

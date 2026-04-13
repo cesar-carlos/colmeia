@@ -4,50 +4,85 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ResumoParcelasAnualRowModel', () {
+    test('fromMap accepts PascalCase keys', () {
+      final model = ResumoParcelasAnualRowModel.fromMap(
+        <String, dynamic>{
+          'CodEmpresa': 1,
+          'CodFilial': 6,
+          'AnoDataVenda': 2026,
+          'CodFormaPagamento': 'BL',
+          'DescricaoFormaPagamento': 'BOLETO',
+          'QtdVendas': 566,
+          'ValorParcela': 2939701.8,
+        },
+      );
+      check(model.codEmpresa).equals(1);
+      check(model.codFilial).equals(6);
+      check(model.anoDataVenda).equals(2026);
+      check(model.codFormaPagamento).equals('BL');
+      check(model.descricaoFormaPagamento).equals('BOLETO');
+      check(model.qtdVendas).equals(566);
+      check(model.valorParcela).equals(2939701.8);
+      final entity = model.toEntity();
+      check(entity.qtdVendas).equals(566);
+    });
+
     test('fromMap accepts camelCase keys', () {
       final model = ResumoParcelasAnualRowModel.fromMap(
         <String, dynamic>{
-          'ano': 2026,
-          'quantidade': 42,
-          'valorTotal': 150.5,
+          'codEmpresa': 1,
+          'codFilial': 6,
+          'anoDataVenda': 2026,
+          'codFormaPagamento': 'CC',
+          'descricaoFormaPagamento': 'CARTÃO CRÉDITO',
+          'qtdVendas': '1',
+          'valorParcela': 259.536013,
         },
       );
-      check(model.ano).equals(2026);
-      check(model.quantidade).equals(42);
-      check(model.valorTotal).equals(150.5);
-      check(model.toEntity().ano).equals(2026);
+      check(model.qtdVendas).equals(1);
+      check(model.codFormaPagamento).equals('CC');
     });
 
-    test('fromMap accepts all-lowercase keys (bridge JSON)', () {
+    test('fromMap parses CodFormaPagamento from int', () {
       final model = ResumoParcelasAnualRowModel.fromMap(
         <String, dynamic>{
-          'ano': 2025,
-          'quantidade': '10',
-          'valortotal': '123.4500000',
+          'CodEmpresa': 1,
+          'CodFilial': 1,
+          'AnoDataVenda': 2025,
+          'CodFormaPagamento': 99,
+          'DescricaoFormaPagamento': 'X',
+          'QtdVendas': 0,
+          'ValorParcela': 0,
         },
       );
-      check(model.ano).equals(2025);
-      check(model.quantidade).equals(10);
-      check(model.valorTotal).equals(123.45);
+      check(model.codFormaPagamento).equals('99');
     });
 
-    test('fromMap parses ValorTotal from decimal string with comma', () {
+    test('fromMap parses ValorParcela from decimal string with comma', () {
       final model = ResumoParcelasAnualRowModel.fromMap(
         <String, dynamic>{
-          'Ano': 2024,
-          'Quantidade': 1,
-          'ValorTotal': '1234,56',
+          'CodEmpresa': 1,
+          'CodFilial': 1,
+          'AnoDataVenda': 2024,
+          'CodFormaPagamento': 'DH',
+          'DescricaoFormaPagamento': 'DINHEIRO',
+          'QtdVendas': 1,
+          'ValorParcela': '1234,56',
         },
       );
-      check(model.valorTotal).equals(1234.56);
+      check(model.valorParcela).equals(1234.56);
     });
 
-    test('fromMap throws FormatException when Ano is missing', () {
+    test('fromMap throws FormatException when AnoDataVenda is missing', () {
       expect(
         () => ResumoParcelasAnualRowModel.fromMap(
           <String, dynamic>{
-            'quantidade': 1,
-            'valorTotal': 1.0,
+            'CodEmpresa': 1,
+            'CodFilial': 1,
+            'CodFormaPagamento': 'BL',
+            'DescricaoFormaPagamento': 'BOLETO',
+            'QtdVendas': 1,
+            'ValorParcela': 1.0,
           },
         ),
         throwsA(isA<FormatException>()),

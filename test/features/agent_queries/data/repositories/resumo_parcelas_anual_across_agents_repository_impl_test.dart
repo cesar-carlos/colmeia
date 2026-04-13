@@ -113,9 +113,13 @@ void main() {
         (_) async => const Success<List<ResumoParcelasAnualRow>, AppFailure>(
           <ResumoParcelasAnualRow>[
             ResumoParcelasAnualRow(
-              ano: 2026,
-              quantidade: 10,
-              valorTotal: 500,
+              codEmpresa: 1,
+              codFilial: 1,
+              anoDataVenda: 2026,
+              codFormaPagamento: 'BL',
+              descricaoFormaPagamento: 'BOLETO',
+              qtdVendas: 10,
+              valorParcela: 500,
             ),
           ],
         ),

@@ -3,37 +3,85 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_a
 
 class ResumoParcelasAnualRowModel {
   const ResumoParcelasAnualRowModel({
-    required this.ano,
-    required this.quantidade,
-    required this.valorTotal,
+    required this.codEmpresa,
+    required this.codFilial,
+    required this.anoDataVenda,
+    required this.codFormaPagamento,
+    required this.descricaoFormaPagamento,
+    required this.qtdVendas,
+    required this.valorParcela,
   });
 
   factory ResumoParcelasAnualRowModel.fromMap(Map<String, dynamic> map) {
     return ResumoParcelasAnualRowModel(
-      ano: AgentQueriesSqlRowMapReader.readRequiredInt(
+      codEmpresa: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Ano'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodEmpresa'),
       ),
-      quantidade: AgentQueriesSqlRowMapReader.readRequiredInt(
+      codFilial: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Quantidade'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodFilial'),
       ),
-      valorTotal: AgentQueriesSqlRowMapReader.readRequiredDouble(
+      anoDataVenda: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorTotal'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('AnoDataVenda'),
+      ),
+      codFormaPagamento: _readCodFormaPagamento(map),
+      descricaoFormaPagamento:
+          AgentQueriesSqlRowMapReader.readRequiredNonEmptyString(
+            map,
+            AgentQueriesSqlRowMapReader.keysCodEmpresaStyle(
+              'DescricaoFormaPagamento',
+            ),
+          ),
+      qtdVendas: AgentQueriesSqlRowMapReader.readRequiredInt(
+        map,
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('QtdVendas'),
+      ),
+      valorParcela: AgentQueriesSqlRowMapReader.readRequiredDouble(
+        map,
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorParcela'),
       ),
     );
   }
 
-  final int ano;
-  final int quantidade;
-  final double valorTotal;
+  static String _readCodFormaPagamento(Map<String, dynamic> map) {
+    final keys = AgentQueriesSqlRowMapReader.keysCodEmpresaStyle(
+      'CodFormaPagamento',
+    );
+    final raw = AgentQueriesSqlRowMapReader.lookupFirst(map, keys);
+    if (raw is String && raw.trim().isNotEmpty) {
+      return raw.trim();
+    }
+    if (raw is num) {
+      final n = raw.toDouble();
+      if (n == n.roundToDouble()) {
+        return n.toInt().toString();
+      }
+      return raw.toString();
+    }
+    throw FormatException(
+      'Invalid or missing "${keys.first}" in agent SQL row',
+    );
+  }
+
+  final int codEmpresa;
+  final int codFilial;
+  final int anoDataVenda;
+  final String codFormaPagamento;
+  final String descricaoFormaPagamento;
+  final int qtdVendas;
+  final double valorParcela;
 
   ResumoParcelasAnualRow toEntity() {
     return ResumoParcelasAnualRow(
-      ano: ano,
-      quantidade: quantidade,
-      valorTotal: valorTotal,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+      anoDataVenda: anoDataVenda,
+      codFormaPagamento: codFormaPagamento,
+      descricaoFormaPagamento: descricaoFormaPagamento,
+      qtdVendas: qtdVendas,
+      valorParcela: valorParcela,
     );
   }
 }

@@ -10,4 +10,7 @@ abstract final class AgentQueriesBoundedResultMaxRows {
 
   /// One row per calendar month in the filtered range.
   static const int resumoParcelasMensal = aggregateMultiBranchCap;
+
+  /// Company, branch, sale year, and payment method buckets in the range.
+  static const int resumoParcelasAnual = aggregateMultiBranchCap;
 }

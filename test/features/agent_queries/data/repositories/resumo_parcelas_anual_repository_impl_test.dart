@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_anual_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -46,19 +47,25 @@ void main() {
     verifyNever(() => agentQueriesRepository.executeSql(any()));
   });
 
+  Map<String, dynamic> sampleRowPascal() {
+    return <String, dynamic>{
+      'CodEmpresa': 1,
+      'CodFilial': 6,
+      'AnoDataVenda': 2026,
+      'CodFormaPagamento': 'BL',
+      'DescricaoFormaPagamento': 'BOLETO',
+      'QtdVendas': 42,
+      'ValorParcela': 1250.5,
+    };
+  }
+
   test('builds request and maps rows for the report query', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+      (_) async => Success<AgentSqlExecutionResult, AppFailure>(
         AgentSqlExecutionResult(
-          rows: <Map<String, dynamic>>[
-            <String, dynamic>{
-              'Ano': 2026,
-              'Quantidade': 42,
-              'ValorTotal': 1250.5,
-            },
-          ],
+          rows: <Map<String, dynamic>>[sampleRowPascal()],
           rowCount: 1,
         ),
       ),
@@ -76,9 +83,14 @@ void main() {
     check(result.isSuccess()).isTrue();
     final rows = result.getOrNull()!;
     check(rows).has((it) => it.length, 'length').equals(1);
-    check(rows.single.ano).equals(2026);
-    check(rows.single.quantidade).equals(42);
-    check(rows.single.valorTotal).equals(1250.5);
+    final row = rows.single;
+    check(row.codEmpresa).equals(1);
+    check(row.codFilial).equals(6);
+    check(row.anoDataVenda).equals(2026);
+    check(row.codFormaPagamento).equals('BL');
+    check(row.descricaoFormaPagamento).equals('BOLETO');
+    check(row.qtdVendas).equals(42);
+    check(row.valorParcela).equals(1250.5);
 
     final capturedRequest =
         verify(
@@ -91,11 +103,17 @@ void main() {
     check(capturedRequest.executeOptions!.executionMode?.name).equals(
       'preserve',
     );
+    check(capturedRequest.executeOptions!.maxRows).equals(
+      AgentQueriesBoundedResultMaxRows.resumoParcelasAnual,
+    );
     check(capturedRequest.namedParams['dataVendaInicio']).equals('2026-01-01');
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
     check(capturedRequest.namedParams['origem']).equals('FrenteLoja');
     check(capturedRequest.namedParams['geraFinanceiro']).equals('S');
     check(capturedRequest.namedParams['preVenda']).equals('N');
+    check(capturedRequest.namedParams['codEmpresa']).isNull();
+    check(capturedRequest.namedParams['codFilial']).isNull();
+    check(capturedRequest.namedParams['codVendedor']).isNull();
     check(capturedRequest.sql).contains('ResumoParcelasAnual');
   });
 
@@ -107,9 +125,13 @@ void main() {
         AgentSqlExecutionResult(
           rows: <Map<String, dynamic>>[
             <String, dynamic>{
-              'ano': 2025,
-              'quantidade': 1,
-              'valorTotal': 10,
+              'codEmpresa': 1,
+              'codFilial': 1,
+              'anoDataVenda': 2025,
+              'codFormaPagamento': 'DH',
+              'descricaoFormaPagamento': 'DINHEIRO',
+              'qtdVendas': 1,
+              'valorParcela': 10,
             },
           ],
           rowCount: 1,
@@ -126,8 +148,10 @@ void main() {
     );
 
     check(result.isSuccess()).isTrue();
-    check(result.getOrNull()!.single.ano).equals(2025);
-    check(result.getOrNull()!.single.valorTotal).equals(10);
+    final row = result.getOrNull()!.single;
+    check(row.anoDataVenda).equals(2025);
+    check(row.valorParcela).equals(10);
+    check(row.qtdVendas).equals(1);
   });
 
   test('returns UnknownFailure when row mapping fails', () async {
@@ -137,7 +161,7 @@ void main() {
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
         AgentSqlExecutionResult(
           rows: <Map<String, dynamic>>[
-            <String, dynamic>{'Ano': 2026},
+            <String, dynamic>{'AnoDataVenda': 2026},
           ],
           rowCount: 1,
         ),

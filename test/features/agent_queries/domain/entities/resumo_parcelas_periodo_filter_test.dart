@@ -34,7 +34,7 @@ void main() {
       check(filter.validationError()).isNull();
     });
 
-    test('forma pagamento filter delegates validation to periodo filter', () {
+    test('anual and forma pagamento por mes filters delegate period', () {
       final a = ResumoParcelasAnualFilter(
         dataVendaInicio: DateTime.utc(2026),
         dataVendaFim: DateTime.utc(2026, 12, 31),
@@ -45,6 +45,35 @@ void main() {
       );
       check(a.validationError()).isNull();
       check(b.validationError()).isNull();
+    });
+
+    test('anual filter rejects non-positive codEmpresa', () {
+      final filter = ResumoParcelasAnualFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+        codEmpresa: 0,
+      );
+      check(filter.validationError()).isNotNull();
+    });
+
+    test('anual filter rejects codFilial without codEmpresa', () {
+      final filter = ResumoParcelasAnualFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+        codFilial: 1,
+      );
+      check(filter.validationError()).isNotNull();
+    });
+
+    test('anual filter accepts empresa, filial, vendedor', () {
+      final filter = ResumoParcelasAnualFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+        codEmpresa: 1,
+        codFilial: 2,
+        codVendedor: 3,
+      );
+      check(filter.validationError()).isNull();
     });
 
     test('por mes filter rejects non-positive codEmpresa', () {

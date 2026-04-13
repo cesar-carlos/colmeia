@@ -31,7 +31,15 @@ void main() {
 
   test('forwards arguments to the repository', () async {
     const expectedRows = <ResumoParcelasAnualRow>[
-      ResumoParcelasAnualRow(ano: 2026, quantidade: 1, valorTotal: 10),
+      ResumoParcelasAnualRow(
+        codEmpresa: 1,
+        codFilial: 1,
+        anoDataVenda: 2026,
+        codFormaPagamento: 'DH',
+        descricaoFormaPagamento: 'DINHEIRO',
+        qtdVendas: 1,
+        valorParcela: 10,
+      ),
     ];
     when(
       () => repository.load(

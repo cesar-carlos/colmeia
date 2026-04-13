@@ -15,7 +15,12 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 
 extension AgentQueryExecutionReportResumoParcelasAnualRowsX
     on AgentQueryExecutionReport<ResumoParcelasAnualRow> {
-  /// Per-year totals aggregated from all successful participant rows.
+  /// Per company, branch, sale year, and payment method, aggregated from all
+  /// successful participant rows.
+  ///
+  /// Summing `qtdVendas` across agents can overcount distinct sales if the
+  /// same sale appears in more than one agent result. See
+  /// [ResumoParcelasAnualRowMerger].
   ///
   /// Import this library so the getter is in scope for the UI layer.
   List<ResumoParcelasAnualRow> get aggregatedMergedRows =>
