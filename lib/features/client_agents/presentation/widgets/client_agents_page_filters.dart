@@ -117,8 +117,8 @@ class ClientAgentsPageSessionState {
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       approvedAgentFilters: approvedAgentFilters ?? this.approvedAgentFilters,
       requestsFilters: requestsFilters ?? this.requestsFilters,
-      requestAccessDraftAgentIdSlots: requestAccessDraftAgentIdSlots ??
-          this.requestAccessDraftAgentIdSlots,
+      requestAccessDraftAgentIdSlots:
+          requestAccessDraftAgentIdSlots ?? this.requestAccessDraftAgentIdSlots,
     );
   }
 }

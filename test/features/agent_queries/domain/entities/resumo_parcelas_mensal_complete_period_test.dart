@@ -20,22 +20,27 @@ void main() {
         dataVendaFim: DateTime.utc(2026, 3, 10),
         rows: <ResumoParcelasMensalRow>[
           const ResumoParcelasMensalRow(
+            codEmpresa: 1,
+            codFilial: 1,
             ano: 2026,
             mes: 2,
             anoMes: '2026/02',
-            quantidade: 3,
-            valorTotal: 30,
+            qtdVendas: 3,
+            valorParcela: 30,
           ),
         ],
       );
       check(filled.length).equals(3);
       check(filled[0].mes).equals(1);
-      check(filled[0].quantidade).equals(0);
+      check(filled[0].qtdVendas).equals(0);
+      check(filled[0].codEmpresa).equals(
+        ResumoParcelasMensalRow.aggregatedBranchSentinel,
+      );
       check(filled[1].mes).equals(2);
-      check(filled[1].quantidade).equals(3);
-      check(filled[1].valorTotal).equals(30);
+      check(filled[1].qtdVendas).equals(3);
+      check(filled[1].valorParcela).equals(30);
       check(filled[2].mes).equals(3);
-      check(filled[2].quantidade).equals(0);
+      check(filled[2].qtdVendas).equals(0);
     });
 
     test('fill spans year boundary', () {
@@ -49,30 +54,64 @@ void main() {
       check(filled.last.anoMes).equals('2026/02');
     });
 
-    test('fill sums duplicate ano/mes in input', () {
+    test('fill sums duplicate ano/mes across filiais in input', () {
       final filled = ResumoParcelasMensalCompletePeriod.fill(
         dataVendaInicio: DateTime.utc(2026, 5),
         dataVendaFim: DateTime.utc(2026, 5, 31),
         rows: <ResumoParcelasMensalRow>[
           const ResumoParcelasMensalRow(
+            codEmpresa: 1,
+            codFilial: 1,
             ano: 2026,
             mes: 5,
             anoMes: '2026/05',
-            quantidade: 1,
-            valorTotal: 1,
+            qtdVendas: 1,
+            valorParcela: 1,
           ),
           const ResumoParcelasMensalRow(
+            codEmpresa: 1,
+            codFilial: 2,
             ano: 2026,
             mes: 5,
             anoMes: '2026/05',
-            quantidade: 2,
-            valorTotal: 4,
+            qtdVendas: 2,
+            valorParcela: 4,
           ),
         ],
       );
       check(filled.length).equals(1);
-      check(filled.single.quantidade).equals(3);
-      check(filled.single.valorTotal).equals(5);
+      check(filled.single.qtdVendas).equals(3);
+      check(filled.single.valorParcela).equals(5);
+    });
+
+    test('fill sums duplicate ano/mes in input for same filial', () {
+      final filled = ResumoParcelasMensalCompletePeriod.fill(
+        dataVendaInicio: DateTime.utc(2026, 5),
+        dataVendaFim: DateTime.utc(2026, 5, 31),
+        rows: <ResumoParcelasMensalRow>[
+          const ResumoParcelasMensalRow(
+            codEmpresa: 1,
+            codFilial: 1,
+            ano: 2026,
+            mes: 5,
+            anoMes: '2026/05',
+            qtdVendas: 1,
+            valorParcela: 1,
+          ),
+          const ResumoParcelasMensalRow(
+            codEmpresa: 1,
+            codFilial: 1,
+            ano: 2026,
+            mes: 5,
+            anoMes: '2026/05',
+            qtdVendas: 2,
+            valorParcela: 4,
+          ),
+        ],
+      );
+      check(filled.length).equals(1);
+      check(filled.single.qtdVendas).equals(3);
+      check(filled.single.valorParcela).equals(5);
     });
 
     test('fill skips invalid mes and invalid ano when aggregating input', () {
@@ -81,22 +120,26 @@ void main() {
         dataVendaFim: DateTime.utc(2026, 6, 30),
         rows: <ResumoParcelasMensalRow>[
           const ResumoParcelasMensalRow(
+            codEmpresa: 1,
+            codFilial: 1,
             ano: 2026,
             mes: 0,
             anoMes: 'x',
-            quantidade: 9,
-            valorTotal: 9,
+            qtdVendas: 9,
+            valorParcela: 9,
           ),
           const ResumoParcelasMensalRow(
+            codEmpresa: 1,
+            codFilial: 1,
             ano: 1899,
             mes: 6,
             anoMes: 'x',
-            quantidade: 9,
-            valorTotal: 9,
+            qtdVendas: 9,
+            valorParcela: 9,
           ),
         ],
       );
-      check(filled.single.quantidade).equals(0);
+      check(filled.single.qtdVendas).equals(0);
     });
   });
 }

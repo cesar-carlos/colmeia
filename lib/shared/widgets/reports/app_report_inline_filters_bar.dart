@@ -43,8 +43,7 @@ class AppReportInlineFiltersBar extends StatefulWidget {
       _AppReportInlineFiltersBarState();
 }
 
-class _AppReportInlineFiltersBarState
-    extends State<AppReportInlineFiltersBar> {
+class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
   late final Map<String, TextEditingController> _textControllers;
   final Map<String, Timer> _textDebouncers = <String, Timer>{};
   late Map<String, Object?> _currentValues;

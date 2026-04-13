@@ -43,35 +43,41 @@ class OverviewModel {
         averageTicket: (kpisJson['averageTicket'] as num).toDouble(),
         paymentMethodCount: kpisJson['paymentMethodCount'] as int,
       ),
-      paymentMethods: paymentMethodsJson.map((item) {
-        final row = item as Map<String, dynamic>;
-        return OverviewPaymentMethodBreakdown(
-          code: row['code'] as String,
-          label: row['label'] as String,
-          totalSalesCount: row['totalSalesCount'] as int,
-          totalAmount: (row['totalAmount'] as num).toDouble(),
-          averageTicket: (row['averageTicket'] as num).toDouble(),
-          sharePercent: (row['sharePercent'] as num).toDouble(),
-        );
-      }).toList(growable: false),
-      agentRankings: agentRankingsJson.map((item) {
-        final row = item as Map<String, dynamic>;
-        return OverviewAgentRanking(
-          agentId: row['agentId'] as String,
-          displayName: row['displayName'] as String,
-          totalSalesCount: row['totalSalesCount'] as int,
-          totalAmount: (row['totalAmount'] as num).toDouble(),
-        );
-      }).toList(growable: false),
-      userRankings: userRankingsJson.map((item) {
-        final row = item as Map<String, dynamic>;
-        return OverviewUserRanking(
-          userName: row['userName'] as String,
-          totalSalesCount: row['totalSalesCount'] as int,
-          totalAmount: (row['totalAmount'] as num).toDouble(),
-          averageTicket: (row['averageTicket'] as num).toDouble(),
-        );
-      }).toList(growable: false),
+      paymentMethods: paymentMethodsJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return OverviewPaymentMethodBreakdown(
+              code: row['code'] as String,
+              label: row['label'] as String,
+              totalSalesCount: row['totalSalesCount'] as int,
+              totalAmount: (row['totalAmount'] as num).toDouble(),
+              averageTicket: (row['averageTicket'] as num).toDouble(),
+              sharePercent: (row['sharePercent'] as num).toDouble(),
+            );
+          })
+          .toList(growable: false),
+      agentRankings: agentRankingsJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return OverviewAgentRanking(
+              agentId: row['agentId'] as String,
+              displayName: row['displayName'] as String,
+              totalSalesCount: row['totalSalesCount'] as int,
+              totalAmount: (row['totalAmount'] as num).toDouble(),
+            );
+          })
+          .toList(growable: false),
+      userRankings: userRankingsJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return OverviewUserRanking(
+              userName: row['userName'] as String,
+              totalSalesCount: row['totalSalesCount'] as int,
+              totalAmount: (row['totalAmount'] as num).toDouble(),
+              averageTicket: (row['averageTicket'] as num).toDouble(),
+            );
+          })
+          .toList(growable: false),
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -135,32 +141,38 @@ class OverviewModel {
         'averageTicket': kpis.averageTicket,
         'paymentMethodCount': kpis.paymentMethodCount,
       },
-      'paymentMethods': paymentMethods.map((item) {
-        return <String, Object?>{
-          'code': item.code,
-          'label': item.label,
-          'totalSalesCount': item.totalSalesCount,
-          'totalAmount': item.totalAmount,
-          'averageTicket': item.averageTicket,
-          'sharePercent': item.sharePercent,
-        };
-      }).toList(growable: false),
-      'agentRankings': agentRankings.map((item) {
-        return <String, Object?>{
-          'agentId': item.agentId,
-          'displayName': item.displayName,
-          'totalSalesCount': item.totalSalesCount,
-          'totalAmount': item.totalAmount,
-        };
-      }).toList(growable: false),
-      'userRankings': userRankings.map((item) {
-        return <String, Object?>{
-          'userName': item.userName,
-          'totalSalesCount': item.totalSalesCount,
-          'totalAmount': item.totalAmount,
-          'averageTicket': item.averageTicket,
-        };
-      }).toList(growable: false),
+      'paymentMethods': paymentMethods
+          .map((item) {
+            return <String, Object?>{
+              'code': item.code,
+              'label': item.label,
+              'totalSalesCount': item.totalSalesCount,
+              'totalAmount': item.totalAmount,
+              'averageTicket': item.averageTicket,
+              'sharePercent': item.sharePercent,
+            };
+          })
+          .toList(growable: false),
+      'agentRankings': agentRankings
+          .map((item) {
+            return <String, Object?>{
+              'agentId': item.agentId,
+              'displayName': item.displayName,
+              'totalSalesCount': item.totalSalesCount,
+              'totalAmount': item.totalAmount,
+            };
+          })
+          .toList(growable: false),
+      'userRankings': userRankings
+          .map((item) {
+            return <String, Object?>{
+              'userName': item.userName,
+              'totalSalesCount': item.totalSalesCount,
+              'totalAmount': item.totalAmount,
+              'averageTicket': item.averageTicket,
+            };
+          })
+          .toList(growable: false),
       if (cachedAt != null) 'cachedAt': cachedAt!.toIso8601String(),
       if (sourceAgentIds != null) 'sourceAgentIds': sourceAgentIds,
     };

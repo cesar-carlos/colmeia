@@ -236,9 +236,8 @@ class AppReportGridSource<T> extends DataGridSource {
             final displayText = col?.formatValue(cell.value) ?? '${cell.value}';
             final alignment = _resolveAlignment(col?.effectiveAlignment);
             final cellStyle = col?.cellStyle ?? AppReportCellStyle.plain;
-            final leading = (col != null &&
-                    col.leadingBuilder != null &&
-                    sourceRow != null)
+            final leading =
+                (col != null && col.leadingBuilder != null && sourceRow != null)
                 ? col.leadingBuilder!(_context, sourceRow, cell.value)
                 : null;
 
@@ -295,11 +294,13 @@ class AppReportGridSource<T> extends DataGridSource {
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHigh,
-                    borderRadius:
-                        BorderRadius.circular(tokens.formFieldRadius / 2),
+                    borderRadius: BorderRadius.circular(
+                      tokens.formFieldRadius / 2,
+                    ),
                     border: Border.all(
-                      color: theme.colorScheme.outlineVariant
-                          .withValues(alpha: 0.5),
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                   ),
                   child: Padding(

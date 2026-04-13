@@ -112,8 +112,8 @@ abstract final class AppReportExportHandler {
   }) async {
     final doc = pw.Document();
     final l10n = context != null ? AppLocalizations.of(context) : null;
-    final filtersTitle = l10n?.reportFiltersAppliedSectionTitle ??
-        'Applied filters';
+    final filtersTitle =
+        l10n?.reportFiltersAppliedSectionTitle ?? 'Applied filters';
     final useLandscape =
         request.landscape ||
         (request.autoLandscape &&
@@ -373,8 +373,8 @@ abstract final class AppReportExportHandler {
     BuildContext? context,
   }) async {
     final l10n = context != null ? AppLocalizations.of(context) : null;
-    final filtersTitle = l10n?.reportFiltersAppliedSectionTitle ??
-        'Applied filters';
+    final filtersTitle =
+        l10n?.reportFiltersAppliedSectionTitle ?? 'Applied filters';
     final workbook = xlsio.Workbook();
     final sheet = workbook.worksheets[0]
       ..name = _sanitizeSheetName(title ?? 'Relatório');

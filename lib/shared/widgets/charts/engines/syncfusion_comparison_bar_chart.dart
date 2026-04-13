@@ -325,8 +325,7 @@ class _HorizontalScrollFadeState extends State<_HorizontalScrollFade> {
     if (!_controller.hasClients) return;
     final pos = _controller.position;
     final showLeft = pos.pixels > _kScrollEdgeThreshold;
-    final showRight =
-        pos.pixels < pos.maxScrollExtent - _kScrollEdgeThreshold;
+    final showRight = pos.pixels < pos.maxScrollExtent - _kScrollEdgeThreshold;
     if (showLeft == _showLeftFade && showRight == _showRightFade) return;
     setState(() {
       _showLeftFade = showLeft;

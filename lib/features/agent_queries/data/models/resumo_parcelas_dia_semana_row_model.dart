@@ -4,44 +4,71 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 
 class ResumoParcelasDiaSemanaRowModel {
   const ResumoParcelasDiaSemanaRowModel({
+    required this.codEmpresa,
+    required this.codFilial,
     required this.diaSemanaNumero,
     required this.diaSemana,
-    required this.quantidade,
-    required this.valorTotal,
+    required this.qtdVendas,
+    required this.valorParcela,
   });
 
   factory ResumoParcelasDiaSemanaRowModel.fromMap(Map<String, dynamic> map) {
+    final codEmpresa = AgentQueriesSqlRowMapReader.readRequiredInt(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodEmpresa'),
+    );
+    final codFilial = AgentQueriesSqlRowMapReader.readRequiredInt(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodFilial'),
+    );
+    final diaSemanaNumero = AgentQueriesSqlRowMapReader.readRequiredInt(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('DiaSemanaNumero'),
+    );
+    final diaSemana = AgentQueriesSqlRowMapReader.readRequiredNonEmptyString(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('DiaSemana'),
+    );
+    final expectedDiaSemana = ResumoParcelasDiaSemanaLabels.labelFor(
+      diaSemanaNumero,
+    );
+    if (diaSemana != expectedDiaSemana) {
+      throw FormatException(
+        'DiaSemana "$diaSemana" does not match DiaSemanaNumero '
+        '$diaSemanaNumero (expected "$expectedDiaSemana")',
+      );
+    }
     return ResumoParcelasDiaSemanaRowModel(
-      diaSemanaNumero: AgentQueriesSqlRowMapReader.readRequiredInt(
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+      diaSemanaNumero: diaSemanaNumero,
+      diaSemana: diaSemana,
+      qtdVendas: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('DiaSemanaNumero'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('QtdVendas'),
       ),
-      diaSemana: AgentQueriesSqlRowMapReader.readRequiredNonEmptyString(
+      valorParcela: AgentQueriesSqlRowMapReader.readRequiredDouble(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('DiaSemana'),
-      ),
-      quantidade: AgentQueriesSqlRowMapReader.readRequiredInt(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Quantidade'),
-      ),
-      valorTotal: AgentQueriesSqlRowMapReader.readRequiredDouble(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorTotal'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorParcela'),
       ),
     );
   }
 
+  final int codEmpresa;
+  final int codFilial;
   final int diaSemanaNumero;
   final String diaSemana;
-  final int quantidade;
-  final double valorTotal;
+  final int qtdVendas;
+  final double valorParcela;
 
   ResumoParcelasDiaSemanaRow toEntity() {
     return ResumoParcelasDiaSemanaRow(
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
       diaSemanaNumero: diaSemanaNumero,
       diaSemana: ResumoParcelasDiaSemanaLabels.labelFor(diaSemanaNumero),
-      quantidade: quantidade,
-      valorTotal: valorTotal,
+      qtdVendas: qtdVendas,
+      valorParcela: valorParcela,
     );
   }
 }

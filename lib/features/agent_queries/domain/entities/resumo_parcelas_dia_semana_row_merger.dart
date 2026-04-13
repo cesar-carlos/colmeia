@@ -3,36 +3,76 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 
 /// Combines [ResumoParcelasDiaSemanaRow] from multiple agents.
 ///
-/// Groups by weekday number. `diaSemana` always comes from
-/// `ResumoParcelasDiaSemanaLabels` so merged rows stay consistent.
+/// Groups by company, branch, and weekday number. The `diaSemana` field always
+/// comes from [ResumoParcelasDiaSemanaLabels] so merged rows stay consistent.
+///
+/// Summing `qtdVendas` across agents assumes each agent contributes disjoint
+/// sale sets for the same key; overlapping mirrored data can inflate counts.
 abstract final class ResumoParcelasDiaSemanaRowMerger {
   static List<ResumoParcelasDiaSemanaRow> merge(
     Iterable<ResumoParcelasDiaSemanaRow> rows,
   ) {
-    final byNumero = <int, ({int quantidade, double valorTotal})>{};
+    final byKey =
+        <
+          String,
+          ({
+            int codEmpresa,
+            int codFilial,
+            int diaSemanaNumero,
+            int qtdVendas,
+            double valorParcela,
+          })
+        >{};
     for (final row in rows) {
       final n = row.diaSemanaNumero;
       if (n < 1 || n > 7) {
         continue;
       }
-      final existing = byNumero[n];
+      final key = '${row.codEmpresa}|${row.codFilial}|$n';
+      final existing = byKey[key];
       if (existing == null) {
-        byNumero[n] = (quantidade: row.quantidade, valorTotal: row.valorTotal);
+        byKey[key] = (
+          codEmpresa: row.codEmpresa,
+          codFilial: row.codFilial,
+          diaSemanaNumero: n,
+          qtdVendas: row.qtdVendas,
+          valorParcela: row.valorParcela,
+        );
       } else {
-        byNumero[n] = (
-          quantidade: existing.quantidade + row.quantidade,
-          valorTotal: existing.valorTotal + row.valorTotal,
+        byKey[key] = (
+          codEmpresa: existing.codEmpresa,
+          codFilial: existing.codFilial,
+          diaSemanaNumero: existing.diaSemanaNumero,
+          qtdVendas: existing.qtdVendas + row.qtdVendas,
+          valorParcela: existing.valorParcela + row.valorParcela,
         );
       }
     }
-    final numeros = byNumero.keys.toList(growable: false)..sort();
+    final sortedKeys = byKey.keys.toList(growable: false)
+      ..sort((a, b) {
+        final va = byKey[a]!;
+        final vb = byKey[b]!;
+        final c = va.codEmpresa.compareTo(vb.codEmpresa);
+        if (c != 0) {
+          return c;
+        }
+        final f = va.codFilial.compareTo(vb.codFilial);
+        if (f != 0) {
+          return f;
+        }
+        return va.diaSemanaNumero.compareTo(vb.diaSemanaNumero);
+      });
     return <ResumoParcelasDiaSemanaRow>[
-      for (final n in numeros)
+      for (final key in sortedKeys)
         ResumoParcelasDiaSemanaRow(
-          diaSemanaNumero: n,
-          diaSemana: ResumoParcelasDiaSemanaLabels.labelFor(n),
-          quantidade: byNumero[n]!.quantidade,
-          valorTotal: byNumero[n]!.valorTotal,
+          codEmpresa: byKey[key]!.codEmpresa,
+          codFilial: byKey[key]!.codFilial,
+          diaSemanaNumero: byKey[key]!.diaSemanaNumero,
+          diaSemana: ResumoParcelasDiaSemanaLabels.labelFor(
+            byKey[key]!.diaSemanaNumero,
+          ),
+          qtdVendas: byKey[key]!.qtdVendas,
+          valorParcela: byKey[key]!.valorParcela,
         ),
     ];
   }

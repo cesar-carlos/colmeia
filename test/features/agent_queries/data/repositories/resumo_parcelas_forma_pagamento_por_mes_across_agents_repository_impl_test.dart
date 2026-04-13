@@ -2,16 +2,16 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_anual_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_por_mes_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_forma_pagamento_anual_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_forma_pagamento_por_mes_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_row.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,18 +22,18 @@ class _MockTargetResolver extends Mock implements AgentQueryTargetResolver {}
 class _MockPlanBuilder extends Mock implements AgentQueryPlanBuilder {}
 
 class _MockLoadResumo extends Mock
-    implements LoadResumoParcelasFormaPagamentoAnualUseCase {}
+    implements LoadResumoParcelasFormaPagamentoPorMesUseCase {}
 
 void main() {
   late _MockTargetResolver targetResolver;
   late _MockPlanBuilder planBuilder;
-  late AgentQueryExecutor<ResumoParcelasFormaPagamentoAnualRow> executor;
+  late AgentQueryExecutor<ResumoParcelasFormaPagamentoPorMesRow> executor;
   late _MockLoadResumo loadResumo;
-  late ResumoParcelasFormaPagamentoAnualAcrossAgentsRepositoryImpl repository;
+  late ResumoParcelasFormaPagamentoPorMesAcrossAgentsRepositoryImpl repository;
 
   setUpAll(() {
     registerFallbackValue(
-      ResumoParcelasFormaPagamentoAnualFilter(
+      ResumoParcelasFormaPagamentoPorMesFilter(
         dataVendaInicio: DateTime.utc(2026),
         dataVendaFim: DateTime.utc(2026, 12, 31),
       ),
@@ -45,16 +45,16 @@ void main() {
         consideredApprovedAgentCount: 0,
       ),
     );
-    registerFallbackValue(AgentQueryKey.resumoParcelasFormaPagamentoAnual);
+    registerFallbackValue(AgentQueryKey.resumoParcelasFormaPagamentoPorMes);
     registerFallbackValue(AgentQueryExecutionStrategy.mergeAll);
   });
 
   setUp(() {
     targetResolver = _MockTargetResolver();
     planBuilder = _MockPlanBuilder();
-    executor = AgentQueryExecutor<ResumoParcelasFormaPagamentoAnualRow>();
+    executor = AgentQueryExecutor<ResumoParcelasFormaPagamentoPorMesRow>();
     loadResumo = _MockLoadResumo();
-    repository = ResumoParcelasFormaPagamentoAnualAcrossAgentsRepositoryImpl(
+    repository = ResumoParcelasFormaPagamentoPorMesAcrossAgentsRepositoryImpl(
       targetResolver: targetResolver,
       planBuilder: planBuilder,
       executor: executor,
@@ -77,7 +77,7 @@ void main() {
         consideredApprovedAgentCount: 2,
       );
       final plan = AgentQueryPlan(
-        queryKey: AgentQueryKey.resumoParcelasFormaPagamentoAnual,
+        queryKey: AgentQueryKey.resumoParcelasFormaPagamentoPorMes,
         strategy: AgentQueryExecutionStrategy.mergeAll,
         consideredApprovedAgentCount: 2,
         plannedTargets: <AgentQueryTarget>[targetWithToken],
@@ -113,21 +113,25 @@ void main() {
       ).thenAnswer(
         (_) async =>
             const Success<
-              List<ResumoParcelasFormaPagamentoAnualRow>,
+              List<ResumoParcelasFormaPagamentoPorMesRow>,
               AppFailure
             >(
-              <ResumoParcelasFormaPagamentoAnualRow>[
-                ResumoParcelasFormaPagamentoAnualRow(
-                  ano: 2026,
+              <ResumoParcelasFormaPagamentoPorMesRow>[
+                ResumoParcelasFormaPagamentoPorMesRow(
+                  codEmpresa: 1,
+                  codFilial: 1,
+                  nomeUsuario: 'U',
+                  anoMesDataVenda: '2026/01',
+                  codFormaPagamento: 'PX',
                   descricaoFormaPagamento: 'Pix',
-                  quantidade: 2,
-                  valorTotal: 100,
+                  qtdVendas: 2,
+                  valorParcela: 100,
                 ),
               ],
             ),
       );
 
-      final filter = ResumoParcelasFormaPagamentoAnualFilter(
+      final filter = ResumoParcelasFormaPagamentoPorMesFilter(
         dataVendaInicio: DateTime.utc(2026),
         dataVendaFim: DateTime.utc(2026, 12, 31),
       );
@@ -188,7 +192,7 @@ void main() {
 
     final result = await repository.load(
       userId: 'user-1',
-      filter: ResumoParcelasFormaPagamentoAnualFilter(
+      filter: ResumoParcelasFormaPagamentoPorMesFilter(
         dataVendaInicio: DateTime.utc(2026),
         dataVendaFim: DateTime.utc(2026, 12, 31),
       ),
@@ -219,7 +223,7 @@ void main() {
         consideredApprovedAgentCount: 2,
       );
       final plan = AgentQueryPlan(
-        queryKey: AgentQueryKey.resumoParcelasFormaPagamentoAnual,
+        queryKey: AgentQueryKey.resumoParcelasFormaPagamentoPorMes,
         strategy: AgentQueryExecutionStrategy.mergeAll,
         consideredApprovedAgentCount: 2,
         plannedTargets: <AgentQueryTarget>[
@@ -258,7 +262,7 @@ void main() {
       ).thenAnswer(
         (_) async =>
             const Failure<
-              List<ResumoParcelasFormaPagamentoAnualRow>,
+              List<ResumoParcelasFormaPagamentoPorMesRow>,
               AppFailure
             >(
               NetworkFailure(message: 'failed', userMessage: 'failed'),
@@ -267,7 +271,7 @@ void main() {
 
       final result = await repository.load(
         userId: 'user-1',
-        filter: ResumoParcelasFormaPagamentoAnualFilter(
+        filter: ResumoParcelasFormaPagamentoPorMesFilter(
           dataVendaInicio: DateTime.utc(2026),
           dataVendaFim: DateTime.utc(2026, 12, 31),
         ),

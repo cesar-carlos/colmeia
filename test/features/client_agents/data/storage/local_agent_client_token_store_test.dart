@@ -30,7 +30,8 @@ void main() {
 
     verify(
       () => secure.write(
-        key: 'colmeia.agent_client_token.v1|user-1|'
+        key:
+            'colmeia.agent_client_token.v1|user-1|'
             '11111111-1111-1111-8111-111111111111',
         value: 'abc',
       ),
@@ -48,31 +49,38 @@ void main() {
 
     verify(
       () => secure.delete(
-        key: 'colmeia.agent_client_token.v1|u|'
+        key:
+            'colmeia.agent_client_token.v1|u|'
             '11111111-1111-1111-8111-111111111111',
       ),
     ).called(1);
     verifyNever(
-      () => secure.write(key: any(named: 'key'), value: any(named: 'value')),
+      () => secure.write(
+        key: any(named: 'key'),
+        value: any(named: 'value'),
+      ),
     );
   });
 
   test('readMany returns only agents with non-empty tokens', () async {
     when(
       () => secure.read(
-        key: 'colmeia.agent_client_token.v1|u|'
+        key:
+            'colmeia.agent_client_token.v1|u|'
             '11111111-1111-1111-8111-111111111111',
       ),
     ).thenAnswer((_) async => 'one');
     when(
       () => secure.read(
-        key: 'colmeia.agent_client_token.v1|u|'
+        key:
+            'colmeia.agent_client_token.v1|u|'
             '22222222-2222-2222-8222-222222222222',
       ),
     ).thenAnswer((_) async => '  ');
     when(
       () => secure.read(
-        key: 'colmeia.agent_client_token.v1|u|'
+        key:
+            'colmeia.agent_client_token.v1|u|'
             '33333333-3333-3333-8333-333333333333',
       ),
     ).thenAnswer((_) async => null);

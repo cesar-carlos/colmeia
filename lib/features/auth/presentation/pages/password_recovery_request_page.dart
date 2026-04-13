@@ -56,8 +56,8 @@ class _PasswordRecoveryRequestPageBodyState
     }
 
     await context.read<PasswordRecoveryRequestPageController>().submit(
-          email: _emailController.text,
-        );
+      email: _emailController.text,
+    );
   }
 
   @override
@@ -106,11 +106,11 @@ class _PasswordRecoveryRequestPageBodyState
                             label: 'E-mail da conta',
                             icon: Icons.alternate_email_rounded,
                           ),
-                          if (controller.errorMessage case final String message)
-                            ...<Widget>[
-                              SizedBox(height: tokens.contentSpacing),
-                              InlineAlertBanner(message: message),
-                            ],
+                          if (controller.errorMessage
+                              case final String message) ...<Widget>[
+                            SizedBox(height: tokens.contentSpacing),
+                            InlineAlertBanner(message: message),
+                          ],
                           if (controller.successMessage
                               case final String message) ...<Widget>[
                             SizedBox(height: tokens.contentSpacing),
@@ -196,8 +196,8 @@ class _SuccessBanner extends StatelessWidget {
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onTertiaryContainer,
-                  ),
+                color: colorScheme.onTertiaryContainer,
+              ),
             ),
           ),
         ],

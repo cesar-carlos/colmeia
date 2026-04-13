@@ -18,8 +18,7 @@ class OverviewSalesTrendCard extends StatefulWidget {
   final List<OverviewChartPoint> points;
 
   @override
-  State<OverviewSalesTrendCard> createState() =>
-      _OverviewSalesTrendCardState();
+  State<OverviewSalesTrendCard> createState() => _OverviewSalesTrendCardState();
 }
 
 class _OverviewSalesTrendCardState extends State<OverviewSalesTrendCard> {

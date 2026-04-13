@@ -29,8 +29,8 @@ final class OverviewStoreRouteData implements AppRouteData {
 
   @override
   Map<String, String> get pathParameters => <String, String>{
-        storeIdParameter: storeId.value,
-      };
+    storeIdParameter: storeId.value,
+  };
 
   @override
   Map<String, dynamic> get queryParameters => const <String, dynamic>{};

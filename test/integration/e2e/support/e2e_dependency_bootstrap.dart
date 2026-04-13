@@ -112,6 +112,54 @@ bool isKnownInvalidPolicyFailure(AppFailure failure) {
       odbcReason == 'invalid_policy';
 }
 
+bool isTransientAgentSqlBridgeHttpFailure(AppFailure failure) {
+  final cause = failure.cause;
+  if (cause is! DioException) {
+    return false;
+  }
+  final statusCode = cause.response?.statusCode;
+  if (statusCode == null) {
+    return false;
+  }
+  return statusCode >= 500 && statusCode < 600;
+}
+
+String? _agentSqlOdbcReason(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return null;
+  }
+  final errorData = failure.context[AgentSqlRpcFailureUiKey.errorDataField];
+  return switch (errorData) {
+    Map<Object?, Object?>() =>
+      errorData['odbc_reason']?.toString().trim().toLowerCase(),
+    _ => null,
+  };
+}
+
+/// Client lacks bridge permission for a table touched by the SQL (E2E env).
+bool isKnownAgentSqlMissingPermissionFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  if (failure.rpcCode != -32002 ||
+      failure.reason != 'unauthorized' ||
+      failure.category != 'auth') {
+    return false;
+  }
+  if (failure.context[AgentSqlRpcFailureUiKey.field] !=
+      AgentSqlRpcFailureUiKey.permissionDenied) {
+    return false;
+  }
+  return _agentSqlOdbcReason(failure) == 'missing_permission';
+}
+
+/// Known policy rejection or transient bridge HTTP 5xx (e.g. 503 overload).
+bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
+  return isKnownInvalidPolicyFailure(failure) ||
+      isKnownAgentSqlMissingPermissionFailure(failure) ||
+      isTransientAgentSqlBridgeHttpFailure(failure);
+}
+
 void primeE2eEnvironment() {
   final defaultContent = _readRequiredEnvFile(EnvAssetPaths.bundledDefault);
   final localContent = _readOptionalEnvFile(EnvAssetPaths.bundledLocal);

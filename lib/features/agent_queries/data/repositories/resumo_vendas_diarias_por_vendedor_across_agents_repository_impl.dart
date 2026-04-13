@@ -43,10 +43,10 @@ class ResumoVendasDiariasPorVendedorAcrossAgentsRepositoryImpl
     int? bridgeTimeoutMs,
     int? raceMaxSources,
   }) {
-    return AgentQueryListReportAcrossAgentsCoordinator
-        .execute<
-            ResumoVendasDiariasPorVendedorFilter,
-            ResumoVendasDiariasPorVendedorRow>(
+    return AgentQueryListReportAcrossAgentsCoordinator.execute<
+      ResumoVendasDiariasPorVendedorFilter,
+      ResumoVendasDiariasPorVendedorRow
+    >(
       operation: _operation,
       queryKey: AgentQueryKey.resumoVendasDiariasPorVendedor,
       userId: userId,

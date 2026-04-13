@@ -22,6 +22,12 @@ Esta rule cobre apenas consultas SQL enviadas ao backend via `sql.execute`.
 - Preserve `client_token`, `params` nomeados e `options` do RPC; a
   normalizacao deve mudar apenas o formato da string SQL
 
+## Politica e escopo SQL
+
+- Consultas com varios joins ou subconsultas correlacionadas devem documentar no
+  dartdoc da classe `*Sql` quais tabelas sao lidas, para revisar politicas do
+  agente/bridge quando a consulta evoluir
+
 ## Testes
 
 - Quando tocar o datasource de `agent_queries`, cubra em teste o payload final

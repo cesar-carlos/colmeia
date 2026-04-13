@@ -113,15 +113,17 @@ void main() {
       ).thenAnswer(
         (_) async =>
             const Success<List<ResumoParcelasDiaSemanaRow>, AppFailure>(
-          <ResumoParcelasDiaSemanaRow>[
-            ResumoParcelasDiaSemanaRow(
-              diaSemanaNumero: 2,
-              diaSemana: 'Segunda',
-              quantidade: 2,
-              valorTotal: 100,
+              <ResumoParcelasDiaSemanaRow>[
+                ResumoParcelasDiaSemanaRow(
+                  codEmpresa: 1,
+                  codFilial: 1,
+                  diaSemanaNumero: 2,
+                  diaSemana: 'Segunda',
+                  qtdVendas: 2,
+                  valorParcela: 100,
+                ),
+              ],
             ),
-          ],
-        ),
       );
 
       final filter = ResumoParcelasDiaSemanaFilter(

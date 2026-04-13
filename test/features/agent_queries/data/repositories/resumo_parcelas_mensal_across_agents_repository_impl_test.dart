@@ -110,15 +110,16 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         ),
       ).thenAnswer(
-        (_) async =>
-            const Success<List<ResumoParcelasMensalRow>, AppFailure>(
+        (_) async => const Success<List<ResumoParcelasMensalRow>, AppFailure>(
           <ResumoParcelasMensalRow>[
             ResumoParcelasMensalRow(
+              codEmpresa: 1,
+              codFilial: 1,
               ano: 2026,
               mes: 2,
               anoMes: '2026/02',
-              quantidade: 10,
-              valorTotal: 500,
+              qtdVendas: 10,
+              valorParcela: 500,
             ),
           ],
         ),

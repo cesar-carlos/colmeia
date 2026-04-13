@@ -32,11 +32,13 @@ void main() {
   test('forwards arguments to the repository', () async {
     const expectedRows = <ResumoParcelasMensalRow>[
       ResumoParcelasMensalRow(
+        codEmpresa: 1,
+        codFilial: 1,
         ano: 2026,
         mes: 3,
         anoMes: '2026/03',
-        quantidade: 1,
-        valorTotal: 10,
+        qtdVendas: 1,
+        valorParcela: 10,
       ),
     ];
     when(
@@ -47,8 +49,7 @@ void main() {
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       ),
     ).thenAnswer(
-      (_) async =>
-          const Success<List<ResumoParcelasMensalRow>, AppFailure>(
+      (_) async => const Success<List<ResumoParcelasMensalRow>, AppFailure>(
         expectedRows,
       ),
     );

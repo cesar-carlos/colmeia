@@ -25,8 +25,9 @@ void main() {
           '/api/v1/client-auth/registration/review',
         ),
       ).isTrue();
-      check(isExternalClientRegistrationReviewPath('/client-auth/register'))
-          .isFalse();
+      check(
+        isExternalClientRegistrationReviewPath('/client-auth/register'),
+      ).isFalse();
     });
 
     test('should match external client password recovery review paths', () {

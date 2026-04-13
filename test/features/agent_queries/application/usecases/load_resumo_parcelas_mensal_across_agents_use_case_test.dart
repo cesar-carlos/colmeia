@@ -34,8 +34,7 @@ void main() {
   });
 
   test('should forward arguments to the repository', () async {
-    const expectedReport =
-        AgentQueryExecutionReport<ResumoParcelasMensalRow>(
+    const expectedReport = AgentQueryExecutionReport<ResumoParcelasMensalRow>(
       queryKey: AgentQueryKey.resumoParcelasMensal,
       strategy: AgentQueryExecutionStrategy.mergeAll,
       consideredApprovedAgentCount: 1,

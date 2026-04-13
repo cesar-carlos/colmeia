@@ -52,10 +52,12 @@ void main() {
         AgentSqlExecutionResult(
           rows: <Map<String, dynamic>>[
             <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 6,
               'DiaSemanaNumero': 2,
               'DiaSemana': 'Segunda',
-              'Quantidade': 5,
-              'ValorTotal': 200.25,
+              'QtdVendas': 5,
+              'ValorParcela': 200.25,
             },
           ],
           rowCount: 1,
@@ -75,10 +77,12 @@ void main() {
     check(result.isSuccess()).isTrue();
     final rows = result.getOrNull()!;
     check(rows).has((it) => it.length, 'length').equals(1);
+    check(rows.single.codEmpresa).equals(1);
+    check(rows.single.codFilial).equals(6);
     check(rows.single.diaSemanaNumero).equals(2);
     check(rows.single.diaSemana).equals('Segunda');
-    check(rows.single.quantidade).equals(5);
-    check(rows.single.valorTotal).equals(200.25);
+    check(rows.single.qtdVendas).equals(5);
+    check(rows.single.valorParcela).equals(200.25);
 
     final capturedRequest =
         verify(
@@ -91,9 +95,12 @@ void main() {
     check(capturedRequest.executeOptions!.executionMode?.name).equals(
       'preserve',
     );
-    check(capturedRequest.executeOptions!.maxRows).equals(32);
+    check(capturedRequest.executeOptions!.maxRows).equals(1600);
     check(capturedRequest.namedParams['dataVendaInicio']).equals('2026-01-01');
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
+    check(capturedRequest.namedParams['codEmpresa']).isNull();
+    check(capturedRequest.namedParams['codFilial']).isNull();
+    check(capturedRequest.namedParams['codVendedor']).isNull();
     check(capturedRequest.sql).contains('ResumoParcelasDiaSemana');
     check(capturedRequest.sql).contains('DATEDIFF');
   });

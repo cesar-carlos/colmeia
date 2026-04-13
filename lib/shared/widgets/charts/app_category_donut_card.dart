@@ -346,11 +346,12 @@ class _CategoryDonutCardHeader extends StatelessWidget {
       children: <Widget>[
         Text(
           title,
-          style: _tightenTypographyFontSize(
-            typography.sectionHeaderH2,
-          ).copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style:
+              _tightenTypographyFontSize(
+                typography.sectionHeaderH2,
+              ).copyWith(
+                fontWeight: FontWeight.w700,
+              ),
         ),
         if (subtitle != null) ...<Widget>[
           SizedBox(height: tokens.gapXs),
@@ -526,11 +527,12 @@ class _DonutSection extends StatelessWidget {
                     Text(
                       centerSecondary!,
                       textAlign: TextAlign.center,
-                      style: _tightenTypographyFontSize(
-                        typography.utilityOverline,
-                      ).copyWith(
-                        color: context.appColors.onSurfaceVariant,
-                      ),
+                      style:
+                          _tightenTypographyFontSize(
+                            typography.utilityOverline,
+                          ).copyWith(
+                            color: context.appColors.onSurfaceVariant,
+                          ),
                     ),
                   ],
                 ],
@@ -679,16 +681,16 @@ class _LegendRow extends StatelessWidget {
                       valueLabel,
                       style: _tightenTypographyFontSize(typography.body)
                           .copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                            fontWeight: FontWeight.w800,
+                          ),
                     ),
                     Text(
                       percentLabel,
                       style: _tightenTypographyFontSize(typography.caption)
                           .copyWith(
-                        color: swatchColor,
-                        fontWeight: FontWeight.w700,
-                      ),
+                            color: swatchColor,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                   ],
                 ),

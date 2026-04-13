@@ -45,9 +45,11 @@ class AppReportSummaryBar extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth < 640) {
-            final scrollTileWidth = (constraints.maxWidth *
-                    _scrollTileWidthFraction)
-                .clamp(_minScrollTileWidth, _maxScrollTileWidth);
+            final scrollTileWidth =
+                (constraints.maxWidth * _scrollTileWidthFraction).clamp(
+                  _minScrollTileWidth,
+                  _maxScrollTileWidth,
+                );
             return SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(

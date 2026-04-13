@@ -25,7 +25,7 @@ class ClientAgentsRequestAccessTab extends StatefulWidget {
   final List<String> initialAgentIdSlots;
 
   final Future<bool> Function(List<ClientAgentAccessRequestRowInput> rows)
-      onSubmitRows;
+  onSubmitRows;
   final VoidCallback onClearMessages;
   final bool isMutating;
   final ValueChanged<List<String>> onDraftSlotsChanged;

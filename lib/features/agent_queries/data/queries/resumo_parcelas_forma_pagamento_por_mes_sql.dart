@@ -1,11 +1,10 @@
-abstract final class ResumoParcelasMensalSql {
-  /// Monthly parcel summary by company, branch, and calendar month, with
-  /// distinct sale counts and net parcel totals after troco allocation.
+abstract final class ResumoParcelasFormaPagamentoPorMesSql {
+  /// Parcel summary by company, branch, user, sale year/month, and payment
+  /// method, with distinct sale counts and net parcel totals after troco
+  /// allocation.
   ///
   /// Includes optional dimension filters (`:codEmpresa`, `:codFilial`,
-  /// `:codVendedor`). Unused dimensions must be sent as SQL nulls in the
-  /// execute payload so `IS NULL` branches apply (same contract as
-  /// `ResumoParcelasSqlDimensionFilters.namedParams`).
+  /// `:codVendedor`) bound as null until the app passes concrete values.
   ///
   /// **Agent policy review**: driving rows are `ParcelaProdutoVendido` joined
   /// to `ProdutoVendido`, `FormaPagamento`, `TipoOperacaoSaida`, `Cliente`,
@@ -21,12 +20,10 @@ abstract final class ResumoParcelasMensalSql {
 SELECT
   CodEmpresa,
   CodFilial,
-  Ano,
-  Mes,
-  MAX(
-    CAST(Ano AS VARCHAR(4)) + '/' +
-      CASE WHEN Mes < 10 THEN '0' ELSE '' END + CAST(Mes AS VARCHAR(2))
-  ) AS AnoMes,
+  NomeUsuario,
+  AnoMesDataVenda,
+  CodFormaPagamento,
+  DescricaoFormaPagamento,
   COUNT(DISTINCT Id) AS QtdVendas,
   SUM(ValorParcela - ValorTrocoParcela) AS ValorParcela
 FROM (
@@ -51,8 +48,6 @@ FROM (
     CodRegiao,
     NomeRegiao,
     DataVenda,
-    YEAR(DataVenda) AS Ano,
-    MONTH(DataVenda) AS Mes,
     DataEmissao,
     DataVencimento,
     NumeroDocumento,
@@ -157,7 +152,7 @@ FROM (
     LEFT JOIN Vendedor v
       ON v.CodVendedor = pv.CodVendedor
   ) Detalhe
-) ResumoParcelasMensal
+) ResumoParcelasFormaPagamentoPorMes
 WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
   AND Origem LIKE :origem
   AND GeraFinanceiro = :geraFinanceiro
@@ -168,12 +163,16 @@ WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
 GROUP BY
   CodEmpresa,
   CodFilial,
-  Ano,
-  Mes
+  NomeUsuario,
+  AnoMesDataVenda,
+  CodFormaPagamento,
+  DescricaoFormaPagamento
 ORDER BY
-  Ano,
-  Mes,
+  AnoMesDataVenda,
   CodEmpresa,
-  CodFilial
+  CodFilial,
+  NomeUsuario,
+  CodFormaPagamento,
+  DescricaoFormaPagamento
 ''';
 }

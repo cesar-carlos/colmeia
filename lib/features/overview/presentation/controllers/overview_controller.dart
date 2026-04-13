@@ -243,9 +243,7 @@ class OverviewController extends ChangeNotifier {
     for (final r in overview.agentRankings) {
       seen[r.agentId] = r.displayName;
     }
-    for (var i = 0;
-        i < overview.agentIdsExcludedFromQueryFailure.length;
-        i++) {
+    for (var i = 0; i < overview.agentIdsExcludedFromQueryFailure.length; i++) {
       final id = overview.agentIdsExcludedFromQueryFailure[i];
       final name = i < overview.agentNamesExcludedFromQueryFailure.length
           ? overview.agentNamesExcludedFromQueryFailure[i]
@@ -271,9 +269,10 @@ class OverviewController extends ChangeNotifier {
       return;
     }
 
-    _availableAgents = merged.entries
-        .map((e) => OverviewAgentOption(agentId: e.key, name: e.value))
-        .toList(growable: false)
-      ..sort((a, b) => a.name.compareTo(b.name));
+    _availableAgents =
+        merged.entries
+            .map((e) => OverviewAgentOption(agentId: e.key, name: e.value))
+            .toList(growable: false)
+          ..sort((a, b) => a.name.compareTo(b.name));
   }
 }

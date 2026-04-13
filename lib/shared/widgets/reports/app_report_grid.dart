@@ -489,8 +489,9 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     final tokens = theme.extension<AppThemeTokens>()!;
     final density = widget.style.density;
     final visible = _visibleColumns;
-    final borderAlpha =
-        widget.style.variant == AppReportViewerVariant.minimal ? 0.28 : 0.48;
+    final borderAlpha = widget.style.variant == AppReportViewerVariant.minimal
+        ? 0.28
+        : 0.48;
 
     if (widget.rows.isEmpty) {
       if (widget.isLoading) {

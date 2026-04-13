@@ -40,8 +40,10 @@ class ResumoParcelasDiaSemanaAcrossAgentsRepositoryImpl
     int? bridgeTimeoutMs,
     int? raceMaxSources,
   }) {
-    return AgentQueryListReportAcrossAgentsCoordinator
-        .execute<ResumoParcelasDiaSemanaFilter, ResumoParcelasDiaSemanaRow>(
+    return AgentQueryListReportAcrossAgentsCoordinator.execute<
+      ResumoParcelasDiaSemanaFilter,
+      ResumoParcelasDiaSemanaRow
+    >(
       operation: _operation,
       queryKey: AgentQueryKey.resumoParcelasDiaSemana,
       userId: userId,

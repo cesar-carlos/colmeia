@@ -1,14 +1,14 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 
-/// Filters for the monthly parcel summary SQL.
+/// Filters for the parcel × payment method summary SQL.
 ///
 /// Period and flags match [ResumoParcelasPeriodoFilter]. Optional dimension
 /// filters are forwarded as named parameters (null means no restriction).
 /// When [codFilial] is set, [codEmpresa] must also be set so the branch filter
 /// is well scoped.
-class ResumoParcelasMensalFilter {
-  const ResumoParcelasMensalFilter({
+class ResumoParcelasFormaPagamentoPorMesFilter {
+  const ResumoParcelasFormaPagamentoPorMesFilter({
     required this.dataVendaInicio,
     required this.dataVendaFim,
     this.origem = 'FrenteLoja',

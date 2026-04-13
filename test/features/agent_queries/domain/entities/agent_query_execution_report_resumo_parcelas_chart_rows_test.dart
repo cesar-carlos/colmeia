@@ -34,10 +34,12 @@ void main() {
                 elapsedMs: 0,
                 rows: <ResumoParcelasDiaSemanaRow>[
                   ResumoParcelasDiaSemanaRow(
+                    codEmpresa: 1,
+                    codFilial: 1,
                     diaSemanaNumero: 2,
                     diaSemana: 'Segunda',
-                    quantidade: 3,
-                    valorTotal: 9,
+                    qtdVendas: 3,
+                    valorParcela: 9,
                   ),
                 ],
               ),
@@ -48,10 +50,10 @@ void main() {
       final chart = report.chartRowsWeek;
       check(chart).has((it) => it.length, 'length').equals(7);
       check(chart.first.diaSemanaNumero).equals(1);
-      check(chart.first.quantidade).equals(0);
+      check(chart.first.qtdVendas).equals(0);
       check(chart[1].diaSemanaNumero).equals(2);
-      check(chart[1].quantidade).equals(3);
-      check(chart[1].valorTotal).equals(9);
+      check(chart[1].qtdVendas).equals(3);
+      check(chart[1].valorParcela).equals(9);
     });
   });
 
@@ -80,11 +82,13 @@ void main() {
             elapsedMs: 0,
             rows: <ResumoParcelasMensalRow>[
               ResumoParcelasMensalRow(
+                codEmpresa: 1,
+                codFilial: 1,
                 ano: 2026,
                 mes: 4,
                 anoMes: '2026/04',
-                quantidade: 2,
-                valorTotal: 4,
+                qtdVendas: 2,
+                valorParcela: 4,
               ),
             ],
           ),
@@ -95,9 +99,12 @@ void main() {
       final chart = report.chartRowsFilledPeriod(filter);
       check(chart).has((it) => it.length, 'length').equals(3);
       check(chart.map((r) => r.mes).toList()).deepEquals(<int>[3, 4, 5]);
-      check(chart[0].quantidade).equals(0);
-      check(chart[1].quantidade).equals(2);
-      check(chart[2].quantidade).equals(0);
+      check(chart[0].qtdVendas).equals(0);
+      check(chart[1].qtdVendas).equals(2);
+      check(chart[2].qtdVendas).equals(0);
+      check(chart[0].codEmpresa).equals(
+        ResumoParcelasMensalRow.aggregatedBranchSentinel,
+      );
     });
   });
 }

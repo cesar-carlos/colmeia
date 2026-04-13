@@ -2,38 +2,41 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
-import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_forma_pagamento_anual_row_model.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_forma_pagamento_anual_sql.dart';
+import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_forma_pagamento_por_mes_row_model.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_forma_pagamento_por_mes_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_anual_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_por_mes_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
-class ResumoParcelasFormaPagamentoAnualRepositoryImpl
-    implements ResumoParcelasFormaPagamentoAnualRepository {
-  ResumoParcelasFormaPagamentoAnualRepositoryImpl(
+class ResumoParcelasFormaPagamentoPorMesRepositoryImpl
+    implements ResumoParcelasFormaPagamentoPorMesRepository {
+  ResumoParcelasFormaPagamentoPorMesRepositoryImpl(
     this._agentQueriesRepository,
   );
 
   static const int _defaultBridgeTimeoutMs = 120000;
-  static const String _operation = 'loadResumoParcelasFormaPagamentoAnual';
+
+  /// Bridge operation id; keep in sync with the agent command allowlist.
+  static const String _operation = 'loadResumoParcelasFormaPagamentoPorMes';
 
   final AgentQueriesRepository _agentQueriesRepository;
 
   @override
-  Future<AppResult<List<ResumoParcelasFormaPagamentoAnualRow>>> load({
+  Future<AppResult<List<ResumoParcelasFormaPagamentoPorMesRow>>> load({
     required String agentId,
-    required ResumoParcelasFormaPagamentoAnualFilter filter,
+    required ResumoParcelasFormaPagamentoPorMesFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
-      return Failure<List<ResumoParcelasFormaPagamentoAnualRow>, AppFailure>(
+      return Failure<List<ResumoParcelasFormaPagamentoPorMesRow>, AppFailure>(
         ValidationFailure(
           message: validationError,
           userMessage: 'Os filtros da consulta sao invalidos.',
@@ -47,7 +50,7 @@ class ResumoParcelasFormaPagamentoAnualRepositoryImpl
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
-      sql: ResumoParcelasFormaPagamentoAnualSql.query,
+      sql: ResumoParcelasFormaPagamentoPorMesSql.query,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
       namedParams: <String, Object?>{
@@ -58,6 +61,11 @@ class ResumoParcelasFormaPagamentoAnualRepositoryImpl
         'origem': filter.trimmedOrigem,
         'geraFinanceiro': filter.trimmedGeraFinanceiro,
         'preVenda': filter.trimmedPreVenda,
+        ...ResumoParcelasSqlDimensionFilters.namedParams(
+          codEmpresa: filter.codEmpresa,
+          codFilial: filter.codFilial,
+          codVendedor: filter.codVendedor,
+        ),
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
@@ -70,28 +78,28 @@ class ResumoParcelasFormaPagamentoAnualRepositoryImpl
         executionResult,
         agentId: agentId.trim(),
       ),
-      Failure<List<ResumoParcelasFormaPagamentoAnualRow>, AppFailure>.new,
+      Failure<List<ResumoParcelasFormaPagamentoPorMesRow>, AppFailure>.new,
     );
   }
 
-  AppResult<List<ResumoParcelasFormaPagamentoAnualRow>> _mapExecutionToRows(
+  AppResult<List<ResumoParcelasFormaPagamentoPorMesRow>> _mapExecutionToRows(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
   }) {
     try {
       final rows = executionResult.rows
           .map(
-            (row) => ResumoParcelasFormaPagamentoAnualRowModel.fromMap(
+            (row) => ResumoParcelasFormaPagamentoPorMesRowModel.fromMap(
               row,
             ).toEntity(),
           )
           .toList(growable: false);
-      return Success<List<ResumoParcelasFormaPagamentoAnualRow>, AppFailure>(
+      return Success<List<ResumoParcelasFormaPagamentoPorMesRow>, AppFailure>(
         rows,
       );
     } on FormatException catch (error, stackTrace) {
       AppLogger.error(
-        'Unexpected row shape for ResumoParcelasFormaPagamentoAnual',
+        'Unexpected row shape for ResumoParcelasFormaPagamentoPorMes',
         context: <String, Object?>{
           'operation': _operation,
           'agentId': agentId,
@@ -99,7 +107,7 @@ class ResumoParcelasFormaPagamentoAnualRepositoryImpl
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure<List<ResumoParcelasFormaPagamentoAnualRow>, AppFailure>(
+      return Failure<List<ResumoParcelasFormaPagamentoPorMesRow>, AppFailure>(
         UnknownFailure(
           message: error.message,
           userMessage:

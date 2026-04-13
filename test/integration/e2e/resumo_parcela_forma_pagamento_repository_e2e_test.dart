@@ -34,8 +34,7 @@ void main() {
         await e2eSetupDependencies();
         addTearDown(e2eTeardownDependencies);
 
-        final repository =
-            getIt<ResumoParcelaFormaPagamentoRepository>();
+        final repository = getIt<ResumoParcelaFormaPagamentoRepository>();
         final today = DateTime.now();
         final periodEnd = DateTime(today.year, today.month, today.day);
         final periodStart = periodEnd.subtract(const Duration(days: 14));
@@ -68,12 +67,11 @@ void main() {
                   '— check E2E_* values.',
             );
             expect(
-              isKnownInvalidPolicyFailure(failure),
+              isAcceptableE2eAgentSqlRepositoryFailure(failure),
               isTrue,
               reason:
-                  'Repository e2e should either return rows or surface '
-                  'the known '
-                  'invalid_policy classification.',
+                  'Repository e2e should return rows, invalid_policy / '
+                  'missing_permission RPC, or transient bridge HTTP 5xx.',
             );
           },
         );

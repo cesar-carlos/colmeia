@@ -43,10 +43,10 @@ class ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl
     int? bridgeTimeoutMs,
     int? raceMaxSources,
   }) {
-    return AgentQueryListReportAcrossAgentsCoordinator
-        .execute<
-            ResumoParcelaFormaPagamentoDiarioFilter,
-            ResumoParcelaFormaPagamentoDiarioRow>(
+    return AgentQueryListReportAcrossAgentsCoordinator.execute<
+      ResumoParcelaFormaPagamentoDiarioFilter,
+      ResumoParcelaFormaPagamentoDiarioRow
+    >(
       operation: _operation,
       queryKey: AgentQueryKey.resumoParcelaFormaPagamentoDiario,
       userId: userId,

@@ -10,7 +10,8 @@ class ClientAccessStatusResponseDto {
   });
 
   factory ClientAccessStatusResponseDto.fromJson(Map<String, dynamic> json) {
-    final status = (json['status'] as String?)?.trim() ??
+    final status =
+        (json['status'] as String?)?.trim() ??
         (json['requestStatus'] as String?)?.trim() ??
         (json['state'] as String?)?.trim() ??
         '';

@@ -1,27 +1,27 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_anual_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_por_mes_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_anual_row.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_anual_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_row.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_por_mes_across_agents_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
 class _MockResumoAcrossAgentsRepository extends Mock
-    implements ResumoParcelasFormaPagamentoAnualAcrossAgentsRepository {}
+    implements ResumoParcelasFormaPagamentoPorMesAcrossAgentsRepository {}
 
 void main() {
   late _MockResumoAcrossAgentsRepository repository;
-  late LoadResumoParcelasFormaPagamentoAnualAcrossAgentsUseCase useCase;
+  late LoadResumoParcelasFormaPagamentoPorMesAcrossAgentsUseCase useCase;
 
   setUpAll(() {
     registerFallbackValue(AgentQueryExecutionStrategy.mergeAll);
     registerFallbackValue(
-      ResumoParcelasFormaPagamentoAnualFilter(
+      ResumoParcelasFormaPagamentoPorMesFilter(
         dataVendaInicio: DateTime.utc(2026),
         dataVendaFim: DateTime.utc(2026, 12, 31),
       ),
@@ -30,15 +30,15 @@ void main() {
 
   setUp(() {
     repository = _MockResumoAcrossAgentsRepository();
-    useCase = LoadResumoParcelasFormaPagamentoAnualAcrossAgentsUseCase(
+    useCase = LoadResumoParcelasFormaPagamentoPorMesAcrossAgentsUseCase(
       repository,
     );
   });
 
   test('should forward arguments to the repository', () async {
     const expectedReport =
-        AgentQueryExecutionReport<ResumoParcelasFormaPagamentoAnualRow>(
-          queryKey: AgentQueryKey.resumoParcelasFormaPagamentoAnual,
+        AgentQueryExecutionReport<ResumoParcelasFormaPagamentoPorMesRow>(
+          queryKey: AgentQueryKey.resumoParcelasFormaPagamentoPorMes,
           strategy: AgentQueryExecutionStrategy.mergeAll,
           consideredApprovedAgentCount: 1,
           plannedTargets: [],
@@ -58,12 +58,12 @@ void main() {
     ).thenAnswer(
       (_) async =>
           const Success<
-            AgentQueryExecutionReport<ResumoParcelasFormaPagamentoAnualRow>,
+            AgentQueryExecutionReport<ResumoParcelasFormaPagamentoPorMesRow>,
             AppFailure
           >(expectedReport),
     );
 
-    final filter = ResumoParcelasFormaPagamentoAnualFilter(
+    final filter = ResumoParcelasFormaPagamentoPorMesFilter(
       dataVendaInicio: DateTime.utc(2026),
       dataVendaFim: DateTime.utc(2026, 12, 31),
     );

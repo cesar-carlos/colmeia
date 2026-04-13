@@ -190,7 +190,8 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   }
 
   int get _activeFilterCount {
-    final values = widget.filterValues ??
+    final values =
+        widget.filterValues ??
         widget.query?.filters ??
         const <String, Object?>{};
     return widget.filters

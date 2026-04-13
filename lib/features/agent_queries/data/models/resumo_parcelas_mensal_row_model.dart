@@ -4,45 +4,77 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 
 class ResumoParcelasMensalRowModel {
   const ResumoParcelasMensalRowModel({
+    required this.codEmpresa,
+    required this.codFilial,
     required this.ano,
     required this.mes,
-    required this.quantidade,
-    required this.valorTotal,
+    required this.qtdVendas,
+    required this.valorParcela,
   });
 
   factory ResumoParcelasMensalRowModel.fromMap(Map<String, dynamic> map) {
+    final ano = AgentQueriesSqlRowMapReader.readRequiredInt(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Ano'),
+    );
+    final mes = AgentQueriesSqlRowMapReader.readRequiredInt(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Mes'),
+    );
+    final anoMesRaw = AgentQueriesSqlRowMapReader.lookupFirst(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('AnoMes'),
+    );
+    if (anoMesRaw != null) {
+      final expected = ResumoParcelasMensalLabels.format(ano, mes);
+      final actual = switch (anoMesRaw) {
+        final String s => s.trim(),
+        _ => anoMesRaw.toString(),
+      };
+      if (actual != expected) {
+        throw FormatException(
+          'AnoMes "$actual" does not match Ano/Mes (expected "$expected")',
+        );
+      }
+    }
     return ResumoParcelasMensalRowModel(
-      ano: AgentQueriesSqlRowMapReader.readRequiredInt(
+      codEmpresa: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Ano'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodEmpresa'),
       ),
-      mes: AgentQueriesSqlRowMapReader.readRequiredInt(
+      codFilial: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Mes'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodFilial'),
       ),
-      quantidade: AgentQueriesSqlRowMapReader.readRequiredInt(
+      ano: ano,
+      mes: mes,
+      qtdVendas: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Quantidade'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('QtdVendas'),
       ),
-      valorTotal: AgentQueriesSqlRowMapReader.readRequiredDouble(
+      valorParcela: AgentQueriesSqlRowMapReader.readRequiredDouble(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorTotal'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorParcela'),
       ),
     );
   }
 
+  final int codEmpresa;
+  final int codFilial;
   final int ano;
   final int mes;
-  final int quantidade;
-  final double valorTotal;
+  final int qtdVendas;
+  final double valorParcela;
 
   ResumoParcelasMensalRow toEntity() {
     return ResumoParcelasMensalRow(
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
       ano: ano,
       mes: mes,
       anoMes: ResumoParcelasMensalLabels.format(ano, mes),
-      quantidade: quantidade,
-      valorTotal: valorTotal,
+      qtdVendas: qtdVendas,
+      valorParcela: valorParcela,
     );
   }
 }

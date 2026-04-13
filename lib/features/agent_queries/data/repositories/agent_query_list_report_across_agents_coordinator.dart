@@ -30,7 +30,8 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       required Filter filter,
       String? clientToken,
       int? bridgeTimeoutMs,
-    }) loadRowsForTarget,
+    })
+    loadRowsForTarget,
     Set<String>? selectedAgentIds,
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,

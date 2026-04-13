@@ -178,8 +178,7 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                           _OverviewFilterBar(
                             l10n: l10n,
                             filter: overviewController.activeFilter,
-                            availableAgents:
-                                overviewController.availableAgents,
+                            availableAgents: overviewController.availableAgents,
                             onFilterChanged: sessionUserId == null
                                 ? null
                                 : (f) => unawaited(
@@ -1055,12 +1054,12 @@ class _PaymentSummaryTable extends StatelessWidget {
         children: <Widget>[
           _PaymentTableHeader(l10n: l10n),
           ...methods.asMap().entries.map(
-                (e) => _PaymentTableRow(
-                  l10n: l10n,
-                  method: e.value,
-                  showTopDivider: e.key > 0,
-                ),
-              ),
+            (e) => _PaymentTableRow(
+              l10n: l10n,
+              method: e.value,
+              showTopDivider: e.key > 0,
+            ),
+          ),
         ],
       );
     } else {
@@ -1246,13 +1245,15 @@ class _PaymentTableRow extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
-    final bodyStyle =
-        _tabularFigures(_scaledPaymentSummaryTextStyle(typography.body));
+    final bodyStyle = _tabularFigures(
+      _scaledPaymentSummaryTextStyle(typography.body),
+    );
     final highlightStyle = bodyStyle.copyWith(fontWeight: FontWeight.w600);
     final percentText = method.sharePercent.toStringAsFixed(1);
     final lang = Localizations.localeOf(context).languageCode;
-    final percentSemanticsValue =
-        lang == 'en' ? percentText : percentText.replaceAll('.', ',');
+    final percentSemanticsValue = lang == 'en'
+        ? percentText
+        : percentText.replaceAll('.', ',');
     final amountStyle = _tabularFigures(
       bodyStyle.copyWith(fontWeight: FontWeight.w600),
     );

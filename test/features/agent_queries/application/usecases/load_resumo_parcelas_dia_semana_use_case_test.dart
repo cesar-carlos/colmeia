@@ -32,10 +32,12 @@ void main() {
   test('forwards arguments to the repository', () async {
     final expectedRows = <ResumoParcelasDiaSemanaRow>[
       const ResumoParcelasDiaSemanaRow(
+        codEmpresa: 1,
+        codFilial: 1,
         diaSemanaNumero: 2,
         diaSemana: 'Segunda',
-        quantidade: 1,
-        valorTotal: 10,
+        qtdVendas: 1,
+        valorParcela: 10,
       ),
     ];
     when(

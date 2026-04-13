@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -58,6 +59,11 @@ class ResumoParcelasDiaSemanaRepositoryImpl
         'origem': filter.trimmedOrigem,
         'geraFinanceiro': filter.trimmedGeraFinanceiro,
         'preVenda': filter.trimmedPreVenda,
+        ...ResumoParcelasSqlDimensionFilters.namedParams(
+          codEmpresa: filter.codEmpresa,
+          codFilial: filter.codFilial,
+          codVendedor: filter.codVendedor,
+        ),
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
@@ -70,6 +76,7 @@ class ResumoParcelasDiaSemanaRepositoryImpl
       (executionResult) => _mapExecutionToRows(
         executionResult,
         agentId: agentId.trim(),
+        filter: filter,
       ),
       Failure<List<ResumoParcelasDiaSemanaRow>, AppFailure>.new,
     );
@@ -78,16 +85,26 @@ class ResumoParcelasDiaSemanaRepositoryImpl
   AppResult<List<ResumoParcelasDiaSemanaRow>> _mapExecutionToRows(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
+    required ResumoParcelasDiaSemanaFilter filter,
   }) {
     try {
       final rows = executionResult.rows
           .map(
-            (row) =>
-                ResumoParcelasDiaSemanaRowModel.fromMap(row).toEntity(),
+            (row) => ResumoParcelasDiaSemanaRowModel.fromMap(row).toEntity(),
           )
           .toList(growable: false);
       if (kDebugMode && rows.isNotEmpty) {
         final numeros = rows.map((r) => r.diaSemanaNumero).toList()..sort();
+        final branchKeys = <String>{};
+        final weekdayNums = <int>{};
+        final compoundKeys = <String>{};
+        for (final r in rows) {
+          branchKeys.add('${r.codEmpresa}:${r.codFilial}');
+          weekdayNums.add(r.diaSemanaNumero);
+          compoundKeys.add(
+            '${r.codEmpresa}|${r.codFilial}|${r.diaSemanaNumero}',
+          );
+        }
         AppLogger.debug(
           'ResumoParcelasDiaSemana load summary',
           context: <String, Object?>{
@@ -96,11 +113,21 @@ class ResumoParcelasDiaSemanaRepositoryImpl
             'rowCount': rows.length,
             'diaSemanaNumeroMin': numeros.first,
             'diaSemanaNumeroMax': numeros.last,
+            'distinctDiaSemanaNumeroCount': weekdayNums.length,
+            'distinctBranchKeyCount': branchKeys.length,
+            'distinctCompoundKeyCount': compoundKeys.length,
+            'sqlDimensionFiltersActive':
+                filter.codEmpresa != null ||
+                filter.codFilial != null ||
+                filter.codVendedor != null,
           },
         );
       }
       return Success<List<ResumoParcelasDiaSemanaRow>, AppFailure>(rows);
-    } on FormatException catch (error, stackTrace) {
+    } catch (error, stackTrace) {
+      if (error is! FormatException && error is! ArgumentError) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
       AppLogger.error(
         'Unexpected row shape for ResumoParcelasDiaSemana',
         context: <String, Object?>{
@@ -110,9 +137,12 @@ class ResumoParcelasDiaSemanaRepositoryImpl
         error: error,
         stackTrace: stackTrace,
       );
+      final message = error is FormatException
+          ? error.message
+          : error.toString();
       return Failure<List<ResumoParcelasDiaSemanaRow>, AppFailure>(
         UnknownFailure(
-          message: error.message,
+          message: message,
           userMessage:
               'Resposta do agente estava em formato inesperado. '
               'Tente novamente.',

@@ -41,8 +41,9 @@ class ApiUserContextRemoteDataSource implements UserContextRemoteDataSource {
       responseBody,
       wrapperKeys: const <String>['data', 'profile'],
     );
-    final resolvedAccessPayload =
-        resolveClientUserContextAccessPayload(payload);
+    final resolvedAccessPayload = resolveClientUserContextAccessPayload(
+      payload,
+    );
     final accessPayload = resolvedAccessPayload.payload;
     final parsedAccess = UserAccessScopeModel.fromJson(accessPayload);
     final resolvedAccess = resolvedAccessPayload.hasExplicitAccessData

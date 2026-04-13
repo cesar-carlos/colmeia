@@ -11,6 +11,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_executi
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_labels.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -61,6 +62,11 @@ class ResumoParcelasMensalRepositoryImpl
         'origem': filter.trimmedOrigem,
         'geraFinanceiro': filter.trimmedGeraFinanceiro,
         'preVenda': filter.trimmedPreVenda,
+        ...ResumoParcelasSqlDimensionFilters.namedParams(
+          codEmpresa: filter.codEmpresa,
+          codFilial: filter.codFilial,
+          codVendedor: filter.codVendedor,
+        ),
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
@@ -73,6 +79,7 @@ class ResumoParcelasMensalRepositoryImpl
       (executionResult) => _mapExecutionToRows(
         executionResult,
         agentId: agentId.trim(),
+        filter: filter,
       ),
       Failure<List<ResumoParcelasMensalRow>, AppFailure>.new,
     );
@@ -80,8 +87,9 @@ class ResumoParcelasMensalRepositoryImpl
 
   AppResult<List<ResumoParcelasMensalRow>> _mapExecutionToRows(
     AgentSqlExecutionResult executionResult, {
-      required String agentId,
-    }) {
+    required String agentId,
+    required ResumoParcelasMensalFilter filter,
+  }) {
     try {
       final rows = executionResult.rows
           .map(
@@ -99,6 +107,12 @@ class ResumoParcelasMensalRepositoryImpl
               (r) => !ResumoParcelasMensalLabels.isValidCalendarYear(r.ano),
             )
             .length;
+        final monthKeys = <String>{};
+        final branchKeys = <String>{};
+        for (final r in rows) {
+          monthKeys.add('${r.ano}-${r.mes}');
+          branchKeys.add('${r.codEmpresa}:${r.codFilial}');
+        }
         AppLogger.debug(
           'ResumoParcelasMensal load summary',
           context: <String, Object?>{
@@ -108,6 +122,12 @@ class ResumoParcelasMensalRepositoryImpl
             'anoMesFirst': sorted.first.anoMes,
             'anoMesLast': sorted.last.anoMes,
             'calendarOutOfRangeRowCount': calendarOutOfRangeRowCount,
+            'distinctCalendarMonthKeyCount': monthKeys.length,
+            'distinctBranchKeyCount': branchKeys.length,
+            'sqlDimensionFiltersActive':
+                filter.codEmpresa != null ||
+                filter.codFilial != null ||
+                filter.codVendedor != null,
           },
         );
       }

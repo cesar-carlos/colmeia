@@ -54,10 +54,12 @@ void main() {
         AgentSqlExecutionResult(
           rows: <Map<String, dynamic>>[
             <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 6,
               'Ano': 2026,
               'Mes': 4,
-              'Quantidade': 42,
-              'ValorTotal': 1250.5,
+              'QtdVendas': 42,
+              'ValorParcela': 1250.5,
             },
           ],
           rowCount: 1,
@@ -77,11 +79,13 @@ void main() {
     check(result.isSuccess()).isTrue();
     final rows = result.getOrNull()!;
     check(rows).has((it) => it.length, 'length').equals(1);
+    check(rows.single.codEmpresa).equals(1);
+    check(rows.single.codFilial).equals(6);
     check(rows.single.ano).equals(2026);
     check(rows.single.mes).equals(4);
     check(rows.single.anoMes).equals('2026/04');
-    check(rows.single.quantidade).equals(42);
-    check(rows.single.valorTotal).equals(1250.5);
+    check(rows.single.qtdVendas).equals(42);
+    check(rows.single.valorParcela).equals(1250.5);
 
     final capturedRequest =
         verify(
@@ -100,6 +104,9 @@ void main() {
     check(capturedRequest.namedParams['origem']).equals('FrenteLoja');
     check(capturedRequest.namedParams['geraFinanceiro']).equals('S');
     check(capturedRequest.namedParams['preVenda']).equals('N');
+    check(capturedRequest.namedParams['codEmpresa']).isNull();
+    check(capturedRequest.namedParams['codFilial']).isNull();
+    check(capturedRequest.namedParams['codVendedor']).isNull();
     check(capturedRequest.sql).contains('ResumoParcelasMensal');
     check(capturedRequest.sql).contains(':dataVendaInicio');
   });
@@ -112,10 +119,12 @@ void main() {
         AgentSqlExecutionResult(
           rows: <Map<String, dynamic>>[
             <String, dynamic>{
+              'codEmpresa': 1,
+              'codFilial': 2,
               'ano': 2025,
               'mes': 8,
-              'quantidade': 1,
-              'valorTotal': 10,
+              'qtdVendas': 1,
+              'valorParcela': 10,
             },
           ],
           rowCount: 1,
@@ -135,7 +144,7 @@ void main() {
     check(result.getOrNull()!.single.ano).equals(2025);
     check(result.getOrNull()!.single.mes).equals(8);
     check(result.getOrNull()!.single.anoMes).equals('2025/08');
-    check(result.getOrNull()!.single.valorTotal).equals(10);
+    check(result.getOrNull()!.single.valorParcela).equals(10);
   });
 
   test('returns UnknownFailure when row mapping fails', () async {
@@ -172,10 +181,12 @@ void main() {
         AgentSqlExecutionResult(
           rows: <Map<String, dynamic>>[
             <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 1,
               'Ano': 2026,
               'Mes': 13,
-              'Quantidade': 1,
-              'ValorTotal': 1.0,
+              'QtdVendas': 1,
+              'ValorParcela': 1.0,
             },
           ],
           rowCount: 1,

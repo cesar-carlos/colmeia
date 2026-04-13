@@ -7,52 +7,66 @@ void main() {
     test('fromMap accepts camelCase keys', () {
       final model = ResumoParcelasDiaSemanaRowModel.fromMap(
         <String, dynamic>{
+          'codEmpresa': 1,
+          'codFilial': 6,
           'diaSemanaNumero': 2,
           'diaSemana': 'Segunda',
-          'quantidade': 10,
-          'valorTotal': 99.5,
+          'qtdVendas': 10,
+          'valorParcela': 99.5,
         },
       );
+      check(model.codEmpresa).equals(1);
+      check(model.codFilial).equals(6);
       check(model.diaSemanaNumero).equals(2);
       check(model.diaSemana).equals('Segunda');
-      check(model.quantidade).equals(10);
-      check(model.valorTotal).equals(99.5);
+      check(model.qtdVendas).equals(10);
+      check(model.valorParcela).equals(99.5);
     });
 
     test('fromMap parses string DiaSemanaNumero and lowercase keys', () {
       final model = ResumoParcelasDiaSemanaRowModel.fromMap(
         <String, dynamic>{
+          'CodEmpresa': '1',
+          'CodFilial': '6',
           'DiaSemanaNumero': '3',
           'diasemana': 'Terça',
-          'quantidade': '5',
-          'valortotal': '12.5',
+          'qtdvendas': '5',
+          'valorparcela': '12.5',
         },
       );
+      check(model.codEmpresa).equals(1);
+      check(model.codFilial).equals(6);
       check(model.diaSemanaNumero).equals(3);
       check(model.diaSemana).equals('Terça');
-      check(model.quantidade).equals(5);
-      check(model.valorTotal).equals(12.5);
+      check(model.qtdVendas).equals(5);
+      check(model.valorParcela).equals(12.5);
     });
 
-    test('toEntity uses canonical weekday label from numero', () {
-      final model = ResumoParcelasDiaSemanaRowModel.fromMap(
-        <String, dynamic>{
-          'DiaSemanaNumero': 2,
-          'DiaSemana': 'WrongLabel',
-          'Quantidade': 1,
-          'ValorTotal': 1.0,
-        },
+    test('fromMap throws when DiaSemana mismatches DiaSemanaNumero', () {
+      expect(
+        () => ResumoParcelasDiaSemanaRowModel.fromMap(
+          <String, dynamic>{
+            'CodEmpresa': 1,
+            'CodFilial': 1,
+            'DiaSemanaNumero': 2,
+            'DiaSemana': 'WrongLabel',
+            'QtdVendas': 1,
+            'ValorParcela': 1.0,
+          },
+        ),
+        throwsFormatException,
       );
-      check(model.toEntity().diaSemana).equals('Segunda');
     });
 
     test('fromMap throws when DiaSemana missing', () {
       expect(
         () => ResumoParcelasDiaSemanaRowModel.fromMap(
           <String, dynamic>{
+            'CodEmpresa': 1,
+            'CodFilial': 1,
             'DiaSemanaNumero': 1,
-            'Quantidade': 1,
-            'ValorTotal': 1.0,
+            'QtdVendas': 1,
+            'ValorParcela': 1.0,
           },
         ),
         throwsFormatException,

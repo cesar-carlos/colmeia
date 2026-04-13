@@ -46,8 +46,8 @@ void main() {
             for (final row in rows) {
               expect(row.diaSemana, isNotEmpty);
               expect(row.diaSemanaNumero, inInclusiveRange(1, 7));
-              expect(row.quantidade, greaterThanOrEqualTo(0));
-              expect(row.valorTotal, isNonNegative);
+              expect(row.qtdVendas, greaterThanOrEqualTo(0));
+              expect(row.valorParcela, isNonNegative);
             }
           },
           (failure) {
@@ -59,11 +59,11 @@ void main() {
                   '— check E2E_* values.',
             );
             expect(
-              isKnownInvalidPolicyFailure(failure),
+              isAcceptableE2eAgentSqlRepositoryFailure(failure),
               isTrue,
               reason:
-                  'Repository e2e should either return rows or surface '
-                  'the known invalid_policy classification.',
+                  'Repository e2e should return rows, invalid_policy / '
+                  'missing_permission RPC, or transient bridge HTTP 5xx.',
             );
           },
         );

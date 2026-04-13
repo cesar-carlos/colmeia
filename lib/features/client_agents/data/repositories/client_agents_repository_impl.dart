@@ -279,8 +279,9 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
     }
     try {
-      final remote =
-          await _remoteDataSource.fetchClientAccessStatus(token: trimmed);
+      final remote = await _remoteDataSource.fetchClientAccessStatus(
+        token: trimmed,
+      );
       return Success<ClientAccessStatusSnapshot, AppFailure>(
         remote.toEntity(),
       );
@@ -670,8 +671,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to read pending actions',
-          fallbackUserMessage:
-              'Could not load pending submissions to sync.',
+          fallbackUserMessage: 'Could not load pending submissions to sync.',
           context: <String, Object?>{
             'operation': 'readPendingClientAgentActions',
             'userId': userId,
@@ -708,8 +708,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unable to queue request-access actions',
-          fallbackUserMessage:
-              'Could not queue the access request for sync.',
+          fallbackUserMessage: 'Could not queue the access request for sync.',
           context: <String, Object?>{
             'operation': 'queueRequestAccess',
             'userId': userId,

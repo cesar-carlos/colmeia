@@ -39,8 +39,10 @@ class ResumoParcelasMensalAcrossAgentsRepositoryImpl
     int? bridgeTimeoutMs,
     int? raceMaxSources,
   }) {
-    return AgentQueryListReportAcrossAgentsCoordinator
-        .execute<ResumoParcelasMensalFilter, ResumoParcelasMensalRow>(
+    return AgentQueryListReportAcrossAgentsCoordinator.execute<
+      ResumoParcelasMensalFilter,
+      ResumoParcelasMensalRow
+    >(
       operation: _operation,
       queryKey: AgentQueryKey.resumoParcelasMensal,
       userId: userId,

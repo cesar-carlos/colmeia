@@ -114,8 +114,8 @@ void main() {
         (_) async =>
             Success<List<ResumoParcelaFormaPagamentoDiarioRow>, AppFailure>(
               <ResumoParcelaFormaPagamentoDiarioRow>[
-            ResumoParcelaFormaPagamentoDiarioRow(
-              dataVenda: DateTime(2026, 4),
+                ResumoParcelaFormaPagamentoDiarioRow(
+                  dataVenda: DateTime(2026, 4),
                   descricaoFormaPagamento: 'Pix',
                   quantidade: 2,
                   valorTotal: 100,

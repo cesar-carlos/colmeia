@@ -64,8 +64,9 @@ class _PasswordRecoveryResetPageBodyState
   @override
   void initState() {
     super.initState();
-    final initialToken =
-        context.read<PasswordRecoveryResetPageController>().token;
+    final initialToken = context
+        .read<PasswordRecoveryResetPageController>()
+        .token;
     _tokenController = TextEditingController(text: initialToken);
     if (initialToken.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -89,8 +90,8 @@ class _PasswordRecoveryResetPageBodyState
 
   Future<void> _loadStatus() async {
     await context.read<PasswordRecoveryResetPageController>().resolveToken(
-          _tokenController.text,
-        );
+      _tokenController.text,
+    );
   }
 
   Future<void> _submit() async {
@@ -153,25 +154,25 @@ class _PasswordRecoveryResetPageBodyState
                             enabled: !controller.isLoading,
                             label: 'Token de recuperacao',
                             icon: Icons.vpn_key_outlined,
-                            onFieldSubmitted: (_) =>
-                                unawaited(_loadStatus()),
+                            onFieldSubmitted: (_) => unawaited(_loadStatus()),
                             validator: (value) =>
                                 AppFormValidators.requiredText(
-                              value,
-                              message: 'Informe o token para continuar.',
-                            ),
+                                  value,
+                                  message: 'Informe o token para continuar.',
+                                ),
                           ),
                           SizedBox(height: tokens.gapSm),
                           OutlinedButton(
-                            onPressed:
-                                controller.isLoading ? null : _loadStatus,
+                            onPressed: controller.isLoading
+                                ? null
+                                : _loadStatus,
                             child: const Text('Validar token'),
                           ),
-                          if (controller.errorMessage case final String message)
-                            ...<Widget>[
-                              SizedBox(height: tokens.contentSpacing),
-                              InlineAlertBanner(message: message),
-                            ],
+                          if (controller.errorMessage
+                              case final String message) ...<Widget>[
+                            SizedBox(height: tokens.contentSpacing),
+                            InlineAlertBanner(message: message),
+                          ],
                           if (controller.successMessage
                               case final String message) ...<Widget>[
                             SizedBox(height: tokens.contentSpacing),
@@ -193,8 +194,7 @@ class _PasswordRecoveryResetPageBodyState
                             enabled: !controller.isLoading,
                             label: 'Nova senha',
                             icon: Icons.lock_outline_rounded,
-                            validator: (value) =>
-                                AppFormValidators.password(
+                            validator: (value) => AppFormValidators.password(
                               value,
                               minLength: 8,
                             ),
@@ -214,17 +214,16 @@ class _PasswordRecoveryResetPageBodyState
                             icon: Icons.lock_reset_outlined,
                             validator: (value) =>
                                 AppFormValidators.confirmPassword(
-                              value,
-                              password: _passwordController.text,
-                            ),
+                                  value,
+                                  password: _passwordController.text,
+                                ),
                             onFieldSubmitted: (_) => unawaited(_submit()),
                           ),
                           SizedBox(height: tokens.authLoginGapMajorSection),
                           SizedBox(
                             width: double.infinity,
                             child: FilledButton(
-                              onPressed:
-                                  controller.isLoading ? null : _submit,
+                              onPressed: controller.isLoading ? null : _submit,
                               child: controller.isLoading
                                   ? const SizedBox(
                                       width: 18,
@@ -326,8 +325,8 @@ class _PasswordRecoveryStatusCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(message),
@@ -371,8 +370,8 @@ class _RecoverySuccessBanner extends StatelessWidget {
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onTertiaryContainer,
-                  ),
+                color: colorScheme.onTertiaryContainer,
+              ),
             ),
           ),
         ],

@@ -9,18 +9,26 @@ void main() {
       final filled = ResumoParcelasDiaSemanaCompleteWeek.fill(
         <ResumoParcelasDiaSemanaRow>[
           const ResumoParcelasDiaSemanaRow(
+            codEmpresa: 1,
+            codFilial: 6,
             diaSemanaNumero: 2,
             diaSemana: 'Segunda',
-            quantidade: 5,
-            valorTotal: 10,
+            qtdVendas: 5,
+            valorParcela: 10,
           ),
         ],
       );
       check(filled.length).equals(7);
+      check(filled.first.codEmpresa).equals(
+        ResumoParcelasDiaSemanaRow.aggregatedBranchSentinel,
+      );
+      check(filled.first.codFilial).equals(
+        ResumoParcelasDiaSemanaRow.aggregatedBranchSentinel,
+      );
       check(filled.first.diaSemanaNumero).equals(1);
-      check(filled.first.quantidade).equals(0);
-      check(filled[1].quantidade).equals(5);
-      check(filled[1].valorTotal).equals(10);
+      check(filled.first.qtdVendas).equals(0);
+      check(filled[1].qtdVendas).equals(5);
+      check(filled[1].valorParcela).equals(10);
       check(filled.last.diaSemanaNumero).equals(7);
     });
 
@@ -28,35 +36,41 @@ void main() {
       final filled = ResumoParcelasDiaSemanaCompleteWeek.fill(
         <ResumoParcelasDiaSemanaRow>[
           const ResumoParcelasDiaSemanaRow(
+            codEmpresa: 1,
+            codFilial: 1,
             diaSemanaNumero: 3,
             diaSemana: 'Terça',
-            quantidade: 1,
-            valorTotal: 1,
+            qtdVendas: 1,
+            valorParcela: 1,
           ),
           const ResumoParcelasDiaSemanaRow(
+            codEmpresa: 1,
+            codFilial: 2,
             diaSemanaNumero: 3,
             diaSemana: 'Terça',
-            quantidade: 2,
-            valorTotal: 4,
+            qtdVendas: 2,
+            valorParcela: 4,
           ),
         ],
       );
-      check(filled[2].quantidade).equals(3);
-      check(filled[2].valorTotal).equals(5);
+      check(filled[2].qtdVendas).equals(3);
+      check(filled[2].valorParcela).equals(5);
     });
 
     test('fill skips invalid weekday numbers', () {
       final filled = ResumoParcelasDiaSemanaCompleteWeek.fill(
         <ResumoParcelasDiaSemanaRow>[
           const ResumoParcelasDiaSemanaRow(
+            codEmpresa: 1,
+            codFilial: 1,
             diaSemanaNumero: 99,
             diaSemana: 'X',
-            quantidade: 9,
-            valorTotal: 9,
+            qtdVendas: 9,
+            valorParcela: 9,
           ),
         ],
       );
-      check(filled.every((r) => r.quantidade == 0)).isTrue();
+      check(filled.every((r) => r.qtdVendas == 0)).isTrue();
     });
   });
 }
