@@ -234,6 +234,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get overviewComparisonChartLoading =>
+      'Carregando gráfico comparativo…';
+
+  @override
   String get overviewComparisonBarHorizontalScrollHint =>
       'Deslize horizontalmente para ver todos os itens.';
 
@@ -1725,6 +1729,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String overviewPaymentBarTooltip(String label, String amount) {
     return '$label: $amount';
   }
+
+  @override
+  String get overviewComparisonChartLoading =>
+      'Carregando gráfico comparativo…';
 
   @override
   String get overviewComparisonBarHorizontalScrollHint =>

@@ -489,6 +489,12 @@ abstract class AppLocalizations {
   /// **'{label}: {amount}'**
   String overviewPaymentBarTooltip(String label, String amount);
 
+  /// No description provided for @overviewComparisonChartLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading comparison chart…'**
+  String get overviewComparisonChartLoading;
+
   /// No description provided for @overviewComparisonBarHorizontalScrollHint.
   ///
   /// In en, this message translates to:

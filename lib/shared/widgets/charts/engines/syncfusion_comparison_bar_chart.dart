@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
@@ -88,11 +89,11 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
     }
 
     // --- build the inner Syncfusion chart --------------------------------
-    Widget buildChart(double slotWidth) {
+    Widget buildChart(BuildContext chartContext, double slotWidth) {
       final resolvedSpacing = spacingForSlotWidth(slotWidth);
       final resolvedRotation = xLabelRotationForSlotWidth(slotWidth);
       return SfCartesianChart(
-        margin: style.chartPadding ?? EdgeInsets.zero,
+        margin: _comparisonBarChartMargin(chartContext, style),
         plotAreaBorderWidth: 0,
         plotAreaBackgroundColor: style.plotAreaBackgroundColor,
         onDataLabelRender: style.showDataLabels
@@ -199,6 +200,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
               isVisible: style.showDataLabels,
               textStyle: style.dataLabelTextStyle,
               labelAlignment: style.dataLabelAlignment,
+              offset: style.dataLabelOffset ?? Offset.zero,
             ),
             onPointTap: onPointTap == null
                 ? null
@@ -230,7 +232,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             return SizedBox(
               width: availableWidth,
               height: resolvedHeight,
-              child: buildChart(slotWidth),
+              child: buildChart(context, slotWidth),
             );
           }
 
@@ -246,34 +248,17 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           final chartBox = SizedBox(
             width: requiredWidth,
             height: resolvedHeight,
-            child: buildChart(slotWidth),
+            child: buildChart(context, slotWidth),
           );
 
           if (!needsScroll) {
             return chartBox;
           }
 
-          final hint = style.horizontalScrollSemanticsHint;
-          Widget wrapScroll(Widget scrollable) {
-            if (hint == null || hint.isEmpty) return scrollable;
-            return Semantics(
-              hint: hint,
-              child: scrollable,
-            );
-          }
-
-          if (!style.showScrollFade) {
-            return wrapScroll(
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: chartBox,
-              ),
-            );
-          }
-
-          return _HorizontalScrollFade(
+          return _ComparisonBarChartHorizontalScroll(
             chartContent: chartBox,
-            scrollSemanticsHint: hint,
+            showFade: style.showScrollFade,
+            semanticsHint: style.horizontalScrollSemanticsHint,
           );
         },
       ),
@@ -286,6 +271,45 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.92)
         : Colors.black.withValues(alpha: 0.88);
   }
+}
+
+/// Outer/auto data labels sit above column tops; a positive label offset moves
+/// them further up. Reserve extra chart margin at the top so labels are not
+/// clipped by the plot bounds.
+EdgeInsets _comparisonBarChartMargin(
+  BuildContext context,
+  AppComparisonBarChartStyle style,
+) {
+  final base = style.chartPadding ?? EdgeInsets.zero;
+  if (!_needsOuterDataLabelHeadroom(style)) {
+    return base;
+  }
+  final theme = Theme.of(context);
+  final tokens = theme.extension<AppThemeTokens>();
+  final bodyStyle =
+      theme.textTheme.bodySmall ??
+      theme.textTheme.bodyMedium ??
+      theme.textTheme.bodyLarge;
+  final fontSize = bodyStyle?.fontSize ?? 12.0;
+  final heightFactor = bodyStyle?.height ?? 1.25;
+  final estimatedLineHeight = (fontSize * heightFactor).clamp(14.0, 32.0);
+  final extraGap = tokens?.gapSm ?? 8.0;
+  final lift = style.dataLabelOffset?.dy ?? 0;
+  final minTop = estimatedLineHeight + lift + extraGap;
+  final top = math.max(base.top, minTop);
+  return EdgeInsets.fromLTRB(base.left, top, base.right, base.bottom);
+}
+
+bool _needsOuterDataLabelHeadroom(AppComparisonBarChartStyle style) {
+  if (!style.showDataLabels) {
+    return false;
+  }
+  return switch (style.dataLabelAlignment) {
+    ChartDataLabelAlignment.middle ||
+    ChartDataLabelAlignment.top ||
+    ChartDataLabelAlignment.bottom => false,
+    ChartDataLabelAlignment.auto || ChartDataLabelAlignment.outer => true,
+  };
 }
 
 // Minimum pixel width reserved per bar slot (bar + gap).
@@ -303,40 +327,55 @@ const double _kScrollFadeWidth = 32;
 // Threshold below which scroll position is considered "at end" (float noise).
 const double _kScrollEdgeThreshold = 0.5;
 
-/// Wraps a horizontally scrollable chart with reactive edge-fade overlays.
-///
-/// A right-edge gradient is shown while the user has not yet scrolled to
-/// the end. A left-edge gradient appears once the user has scrolled past
-/// the start. Both fades disappear as the corresponding edge is reached,
-/// giving a clear affordance without obscuring content after scrolling.
-class _HorizontalScrollFade extends StatefulWidget {
-  const _HorizontalScrollFade({
+bool _comparisonChartScrollbarThumbVisible(BuildContext context) {
+  switch (Theme.of(context).platform) {
+    case TargetPlatform.windows:
+    case TargetPlatform.macOS:
+    case TargetPlatform.linux:
+      return true;
+    case TargetPlatform.android:
+    case TargetPlatform.fuchsia:
+    case TargetPlatform.iOS:
+      return false;
+  }
+}
+
+/// Horizontal scroll for wide bar charts: [Scrollbar] on desktop, optional
+/// edge fades, optional semantics hint for the scroll gesture.
+class _ComparisonBarChartHorizontalScroll extends StatefulWidget {
+  const _ComparisonBarChartHorizontalScroll({
     required this.chartContent,
-    this.scrollSemanticsHint,
+    this.showFade = true,
+    this.semanticsHint,
   });
 
   final Widget chartContent;
-  final String? scrollSemanticsHint;
+  final bool showFade;
+  final String? semanticsHint;
 
   @override
-  State<_HorizontalScrollFade> createState() => _HorizontalScrollFadeState();
+  State<_ComparisonBarChartHorizontalScroll> createState() =>
+      _ComparisonBarChartHorizontalScrollState();
 }
 
-class _HorizontalScrollFadeState extends State<_HorizontalScrollFade> {
-  final ScrollController _controller = ScrollController();
-
-  // Right fade visible by default: we only reach here when scroll is needed.
+class _ComparisonBarChartHorizontalScrollState
+    extends State<_ComparisonBarChartHorizontalScroll> {
+  late final ScrollController _controller;
   bool _showLeftFade = false;
   bool _showRightFade = true;
 
   @override
   void initState() {
     super.initState();
-    _controller.addListener(_onScroll);
-    // Check initial state after the first frame so maxScrollExtent is known.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _onScroll();
-    });
+    _controller = ScrollController();
+    if (widget.showFade) {
+      _controller.addListener(_onScroll);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _onScroll();
+        }
+      });
+    }
   }
 
   void _onScroll() {
@@ -353,28 +392,37 @@ class _HorizontalScrollFadeState extends State<_HorizontalScrollFade> {
 
   @override
   void dispose() {
-    _controller
-      ..removeListener(_onScroll)
-      ..dispose();
+    if (widget.showFade) {
+      _controller.removeListener(_onScroll);
+    }
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final fadeColor = Theme.of(context).colorScheme.surface;
-    final scrollView = SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
+    Widget scrollable = Scrollbar(
       controller: _controller,
-      child: widget.chartContent,
+      thumbVisibility: _comparisonChartScrollbarThumbVisible(context),
+      child: SingleChildScrollView(
+        controller: _controller,
+        scrollDirection: Axis.horizontal,
+        child: widget.chartContent,
+      ),
     );
-    final hint = widget.scrollSemanticsHint;
-    final scrollChild = hint != null && hint.isNotEmpty
-        ? Semantics(hint: hint, child: scrollView)
-        : scrollView;
+    final hint = widget.semanticsHint;
+    if (hint != null && hint.isNotEmpty) {
+      scrollable = Semantics(hint: hint, child: scrollable);
+    }
 
+    if (!widget.showFade) {
+      return scrollable;
+    }
+
+    final fadeColor = Theme.of(context).colorScheme.surface;
     return Stack(
       children: <Widget>[
-        scrollChild,
+        scrollable,
         if (_showLeftFade) _buildFade(fadeColor, isLeft: true),
         if (_showRightFade) _buildFade(fadeColor, isLeft: false),
       ],

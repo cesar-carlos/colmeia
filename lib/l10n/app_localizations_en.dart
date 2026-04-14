@@ -232,6 +232,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get overviewComparisonChartLoading => 'Loading comparison chart…';
+
+  @override
   String get overviewComparisonBarHorizontalScrollHint =>
       'Swipe horizontally to see all items.';
 

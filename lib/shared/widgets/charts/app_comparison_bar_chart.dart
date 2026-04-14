@@ -40,6 +40,7 @@ class AppComparisonBarChartStyle {
     this.showDataLabels = false,
     this.dataLabelTextStyle,
     this.dataLabelAlignment = ChartDataLabelAlignment.outer,
+    this.dataLabelOffset,
     this.autoRotateXLabels = true,
     this.xLabelMaxChars,
     this.wrapXAxisLabelsInTwoLines = false,
@@ -50,6 +51,7 @@ class AppComparisonBarChartStyle {
     this.minBarWidth,
     this.showScrollFade = true,
     this.horizontalScrollSemanticsHint,
+    this.tooltipLabelMaxChars,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -95,6 +97,10 @@ class AppComparisonBarChartStyle {
   final Color? plotAreaBackgroundColor;
 
   /// Outer chart margin.
+  ///
+  /// For column charts with outer or auto label alignment and visible data
+  /// labels, the Syncfusion engine merges in extra top inset so labels are not
+  /// clipped.
   final EdgeInsets? chartPadding;
 
   /// Animation duration for the series.
@@ -148,6 +154,11 @@ class AppComparisonBarChartStyle {
   /// Syncfusion [ColumnSeries]: [ChartDataLabelAlignment.outer] places labels
   /// above the bar; [ChartDataLabelAlignment.top] is inside the bar's top edge.
   final ChartDataLabelAlignment dataLabelAlignment;
+
+  /// Extra offset for data labels on Cartesian charts. Syncfusion applies this
+  /// after layout: positive Y moves labels upward (more clearance above column
+  /// tops when labels sit outside the bar). When null, no extra offset is set.
+  final Offset? dataLabelOffset;
 
   /// Whether to automatically rotate X-axis labels when they would overflow
   /// the bar slot width.
@@ -208,10 +219,13 @@ class AppComparisonBarChartStyle {
   /// when horizontal scrolling is active. Defaults to `true`.
   final bool showScrollFade;
 
-  /// When horizontal scrolling is active, announced as a [Semantics] hint on
-  /// the scrollable (e.g. screen readers). When `null`, no extra semantics
-  /// wrapper is applied.
+  /// When horizontal scrolling is active, announced as a Semantics hint on the
+  /// scrollable. When null, no extra semantics wrapper is applied.
   final String? horizontalScrollSemanticsHint;
+
+  /// Truncates tooltip text to this length (ellipsis). When null, tooltips are
+  /// unchanged. Helps avoid layout overflow for long category names.
+  final int? tooltipLabelMaxChars;
 }
 
 /// Structured payload emitted when the user taps a bar.
@@ -369,8 +383,10 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     final tooltipLabels = tooltipLabelBuilder != null
         ? items.indexed
               .map(
-                (entry) =>
-                    tooltipLabelBuilder!.call(entry.$2, values[entry.$1]),
+                (entry) => _truncateComparisonTooltipLabel(
+                  tooltipLabelBuilder!.call(entry.$2, values[entry.$1]),
+                  style.tooltipLabelMaxChars,
+                ),
               )
               .toList(growable: false)
         : null;
@@ -418,6 +434,22 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       child: innerChart,
     );
   }
+}
+
+String? _truncateComparisonTooltipLabel(String? raw, int? maxChars) {
+  if (raw == null) {
+    return null;
+  }
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return raw;
+  }
+  final max = maxChars;
+  if (max == null || trimmed.length <= max) {
+    return raw;
+  }
+  final cap = math.max(4, max);
+  return '${trimmed.substring(0, cap)}\u2026';
 }
 
 /// Formats a category label for [AppComparisonBarChart] using at most two

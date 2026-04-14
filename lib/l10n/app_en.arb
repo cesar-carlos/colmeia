@@ -91,6 +91,7 @@
       "amount": {"type": "String"}
     }
   },
+  "overviewComparisonChartLoading": "Loading comparison chart…",
   "overviewComparisonBarHorizontalScrollHint": "Swipe horizontally to see all items.",
   "overviewSemanticsPaymentMethodRow": "Payment method {label}",
   "@overviewSemanticsPaymentMethodRow": {

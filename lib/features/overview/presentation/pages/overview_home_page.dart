@@ -865,21 +865,23 @@ enum _OverviewHomeBarChartKind {
   ranking,
 }
 
-/// Shared [AppComparisonBarChartStyle] for overview bar charts: compact Y axis,
-/// data labels, two-line category labels, optional ranking-only density/height.
 AppComparisonBarChartStyle _overviewHomeComparisonBarChartStyle({
   required AppThemeTokens tokens,
   required _OverviewHomeBarChartKind kind,
-  required String horizontalScrollSemanticsHint,
+  required AppLocalizations l10n,
 }) {
   final isRanking = kind == _OverviewHomeBarChartKind.ranking;
   return AppComparisonBarChartStyle(
     yAxisFormat: AppBrFormatters.compactCurrencyFormat,
-    horizontalScrollSemanticsHint: horizontalScrollSemanticsHint,
+    horizontalScrollSemanticsHint:
+        l10n.overviewComparisonBarHorizontalScrollHint,
+    loadingLabel: l10n.overviewComparisonChartLoading,
     showDataLabels: true,
     autoRotateXLabels: false,
     wrapXAxisLabelsInTwoLines: true,
     wrapXAxisCharsPerLine: isRanking ? 14 : 12,
+    dataLabelOffset: Offset(0, tokens.gapMd),
+    tooltipLabelMaxChars: 56,
     minBarWidth: isRanking ? 84 : null,
     height: isRanking
         ? tokens.chartStandardHeight + tokens.contentSpacing * 3
@@ -910,8 +912,7 @@ class _PaymentBarChart extends StatelessWidget {
       style: _overviewHomeComparisonBarChartStyle(
         tokens: tokens,
         kind: _OverviewHomeBarChartKind.payment,
-        horizontalScrollSemanticsHint:
-            l10n.overviewComparisonBarHorizontalScrollHint,
+        l10n: l10n,
       ),
     );
   }
@@ -976,8 +977,7 @@ class _AgentRankingCard extends StatelessWidget {
       style: _overviewHomeComparisonBarChartStyle(
         tokens: tokens,
         kind: _OverviewHomeBarChartKind.ranking,
-        horizontalScrollSemanticsHint:
-            l10n.overviewComparisonBarHorizontalScrollHint,
+        l10n: l10n,
       ),
     );
   }
@@ -1007,8 +1007,7 @@ class _UserRankingCard extends StatelessWidget {
       style: _overviewHomeComparisonBarChartStyle(
         tokens: tokens,
         kind: _OverviewHomeBarChartKind.ranking,
-        horizontalScrollSemanticsHint:
-            l10n.overviewComparisonBarHorizontalScrollHint,
+        l10n: l10n,
       ),
     );
   }
