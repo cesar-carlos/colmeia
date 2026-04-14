@@ -1,0 +1,53 @@
+name: Setup Colmeia Flutter
+description: Resolve Flutter version, optional local.env asset, install SDK, pub get
+
+inputs:
+  flutter-version:
+    description: >-
+      Optional override (e.g. repository Variable FLUTTER_CI_VERSION).
+      When empty, uses tool/flutter_ci_version.txt.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve Flutter version
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -n "${{ inputs.flutter-version }}" ]; then
+          v="${{ inputs.flutter-version }}"
+        else
+          v=$(tr -d ' \r\n' < tool/flutter_ci_version.txt)
+        fi
+        echo "version=$v" >> "$GITHUB_OUTPUT"
+
+    - name: Ensure optional local env asset exists
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ ! -f assets/env/local.env ]; then
+          cp assets/env/.env.example assets/env/local.env
+        fi
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ steps.resolve.outputs.version }}
+        channel: stable
+        cache: true
+
+    - name: Flutter toolchain
+      shell: bash
+      run: |
+        set -euo pipefail
+        flutter --version
+        dart --version
+
+    - name: Flutter pub get
+      shell: bash
+      run: |
+        set -euo pipefail
+        flutter pub get
