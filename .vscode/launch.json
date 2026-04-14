@@ -1,6 +1,7 @@
 {
     // https://go.microsoft.com/fwlink/?linkid=830387
-    // Android emulator id (emulator-5554, etc.) comes from `flutter devices` — update if launch fails after starting another AVD.
+    // Android emulator ids (`emulator-5554`, `emulator-5556`, …) come from `flutter devices` — update if launch fails
+    // (e.g. only Pixel Tablet running may use 5554; with phone + tablet, tablet is often the second port).
     "version": "0.2.0",
     "configurations": [
         {
@@ -16,6 +17,15 @@
             "request": "launch",
             "type": "dart",
             "deviceId": "emulator-5554",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
+        },
+        {
+            "name": "colmeia (Android Pixel Tablet)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "emulator-5556",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]

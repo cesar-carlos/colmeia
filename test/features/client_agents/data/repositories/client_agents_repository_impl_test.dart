@@ -207,7 +207,9 @@ void main() {
         userId: any(named: 'userId'),
       ),
     ).thenAnswer((_) async => null);
-    when(() => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId'))).thenAnswer(
+    when(
+      () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
+    ).thenAnswer(
       (_) async => const OnlineAgentsResponseDto(
         agents: [],
         count: 0,
@@ -286,7 +288,9 @@ void main() {
           userId: any(named: 'userId'),
         ),
       ).thenAnswer((_) async => null);
-      when(() => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId'))).thenThrow(
+      when(
+        () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
+      ).thenThrow(
         DioException(
           requestOptions: RequestOptions(path: '/agents'),
           type: DioExceptionType.connectionError,
@@ -328,7 +332,9 @@ void main() {
       when(
         () => local.readOnlineAgents(userId: any(named: 'userId')),
       ).thenAnswer((_) async => null);
-      when(() => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId'))).thenAnswer(
+      when(
+        () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
+      ).thenAnswer(
         (_) async => const OnlineAgentsResponseDto(agents: [], count: 0),
       );
       when(
@@ -387,7 +393,10 @@ void main() {
         ),
       ).thenAnswer((_) async => cached);
       when(
-        () => local.readOnlineAgents(userId: any(named: 'userId')),
+        () => local.readOnlineAgents(
+          userId: any(named: 'userId'),
+          maxAge: any(named: 'maxAge'),
+        ),
       ).thenAnswer((_) async => null);
 
       final result = await repository.loadCatalogAgentById(

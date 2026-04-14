@@ -9,8 +9,13 @@ import 'package:colmeia/core/value_objects/report_id.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/core/value_objects/value_object_validation_exception.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('pt_BR');
+  });
+
   group('EmailAddress', () {
     test('should normalize email when value is valid', () {
       final email = EmailAddress('  CAMILA@EXAMPLE.COM  ');

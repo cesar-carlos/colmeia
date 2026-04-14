@@ -502,7 +502,7 @@ void main() {
     );
 
     test(
-      'falls back to cache on force refresh when all approved agents lack local token',
+      'falls back to cache on force refresh without local client token',
       () async {
         _stubLoad(
           resumoAcrossAgentsRepository,

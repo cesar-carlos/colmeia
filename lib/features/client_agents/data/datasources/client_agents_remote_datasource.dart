@@ -180,7 +180,7 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     final logContext = <String, Object?>{
       'operation': 'fetchOnlineAgents',
       'path': ApiRoutes.onlineAgents,
-      if (logUserId != null) 'userId': logUserId,
+      'userId': ?logUserId,
     };
     if (dto.malformedAgentRowCount > 0) {
       AppLogger.warning(

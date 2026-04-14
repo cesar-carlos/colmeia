@@ -8,23 +8,26 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('skippedOnlyDueToMissingClientTokens is true when nothing is runnable', () {
-    const report = AgentQueryExecutionReport<int>(
-      queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
-      strategy: AgentQueryExecutionStrategy.mergeAll,
-      consideredApprovedAgentCount: 1,
-      plannedTargets: <AgentQueryTarget>[],
-      missingClientTokenTargets: <AgentQueryTarget>[
-        AgentQueryTarget(
-          agentId: 'x',
-          displayName: 'X',
-          connectionStatus: AgentConnectionStatus.unknown,
-        ),
-      ],
-      participants: const <AgentQueryExecutionParticipant<int>>[],
-      totalElapsedMs: 0,
-    );
-    check(report.skippedOnlyDueToMissingClientTokens).isTrue();
-    check(report.requiresClientTokenSetup).isTrue();
-  });
+  test(
+    'skippedOnlyDueToMissingClientTokens is true when nothing is runnable',
+    () {
+      const report = AgentQueryExecutionReport<int>(
+        queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
+        strategy: AgentQueryExecutionStrategy.mergeAll,
+        consideredApprovedAgentCount: 1,
+        plannedTargets: <AgentQueryTarget>[],
+        missingClientTokenTargets: <AgentQueryTarget>[
+          AgentQueryTarget(
+            agentId: 'x',
+            displayName: 'X',
+            connectionStatus: AgentConnectionStatus.unknown,
+          ),
+        ],
+        participants: <AgentQueryExecutionParticipant<int>>[],
+        totalElapsedMs: 0,
+      );
+      check(report.skippedOnlyDueToMissingClientTokens).isTrue();
+      check(report.requiresClientTokenSetup).isTrue();
+    },
+  );
 }
