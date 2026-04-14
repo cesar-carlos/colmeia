@@ -469,63 +469,38 @@ class _OverviewFilterBar extends StatelessWidget {
     final colors = theme.appColors;
     final monthOptions = _buildMonthOptions();
     final isDisabled = onFilterChanged == null;
+    final hasActiveFilter = !filter.isDefault;
+    final hasAgentFilter = filter.selectedAgentIds != null;
 
-    final labelStyle = typography.utilityOverline.copyWith(
-      color: colors.onSurfaceVariant,
-      fontSize: 10,
+    final actionStyle = typography.caption.copyWith(
+      color: cs.primary,
+      decoration: TextDecoration.underline,
+      decorationColor: cs.primary,
+      fontSize: 11,
     );
 
-    Widget buildLabel(String text) => Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text(text, style: labelStyle),
-    );
+    // Agent field data
+    final agentOptions = availableAgents
+        .map((a) => AppDropdownOption<String>(
+              value: a.agentId,
+              label: a.name,
+            ))
+        .toList(growable: false);
+    final selectedAgentIds =
+        filter.selectedAgentIds?.toList() ?? <String>[];
 
-    // Month dropdown
-    final monthValue = filter.yearMonth;
-    final monthItems = <DropdownMenuItem<OverviewYearMonth?>>[
-      DropdownMenuItem<OverviewYearMonth?>(
-        child: Text(
-          l10n.dashboardHomeFiltersPeriodLast30Days,
-          style: typography.body.copyWith(fontSize: 13),
-        ),
+    // Month field data
+    final monthDropdownOptions = <AppDropdownOption<OverviewYearMonth?>>[
+      AppDropdownOption<OverviewYearMonth?>(
+        value: null,
+        label: l10n.dashboardHomeFiltersPeriodLast30Days,
       ),
       for (final ym in monthOptions)
-        DropdownMenuItem<OverviewYearMonth?>(
+        AppDropdownOption<OverviewYearMonth?>(
           value: ym,
-          child: Text(
-            _monthLabel(context, ym),
-            style: typography.body.copyWith(fontSize: 13),
-          ),
+          label: _monthLabel(context, ym),
         ),
     ];
-
-    final inputDecoration = InputDecoration(
-      isDense: true,
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: tokens.gapSm,
-        vertical: tokens.gapSm,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-        borderSide: BorderSide(
-          color: cs.outlineVariant.withValues(alpha: 0.6),
-        ),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-        borderSide: BorderSide(
-          color: cs.outlineVariant.withValues(alpha: 0.6),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-        borderSide: BorderSide(color: cs.primary),
-      ),
-      filled: true,
-      fillColor: cs.surfaceContainerLow,
-    );
-
-    final hasActiveFilter = !filter.isDefault;
 
     return AppSectionCard(
       color: cs.surfaceContainerLow,
@@ -550,132 +525,96 @@ class _OverviewFilterBar extends StatelessWidget {
                   color: hasActiveFilter ? cs.primary : colors.onSurfaceVariant,
                 ),
               ),
-              if (hasActiveFilter) ...<Widget>[
+              const Spacer(),
+              if (hasAgentFilter) ...<Widget>[
+                GestureDetector(
+                  onTap: isDisabled
+                      ? null
+                      : () => onFilterChanged!(
+                            filter.copyWith(selectedAgentIds: null),
+                          ),
+                  child: Text(
+                    l10n.reportInlineFiltersAllOption,
+                    style: actionStyle,
+                  ),
+                ),
                 SizedBox(width: tokens.gapSm),
+              ],
+              if (hasActiveFilter)
                 GestureDetector(
                   onTap: isDisabled
                       ? null
                       : () => onFilterChanged!(const OverviewFilter()),
                   child: Text(
                     l10n.reportFiltersClearAction,
-                    style: typography.caption.copyWith(
-                      color: cs.primary,
-                      decoration: TextDecoration.underline,
-                      decorationColor: cs.primary,
-                      fontSize: 11,
-                    ),
+                    style: actionStyle,
                   ),
                 ),
-              ],
             ],
           ),
           SizedBox(height: tokens.gapSm),
           LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 480;
-              final agentOptions = availableAgents
-                  .map((a) => AppDropdownOption<String>(
-                        value: a.agentId,
-                        label: a.name,
-                      ))
-                  .toList(growable: false);
-              final selectedAgentIds =
-                  filter.selectedAgentIds?.toList() ?? <String>[];
-              final agentField = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: <Widget>[
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(
-                            l10n.dashboardHomeFiltersAgentsLabel,
-                            style: labelStyle,
-                          ),
-                        ),
-                      ),
-                      if (!isDisabled &&
-                          availableAgents.isNotEmpty &&
-                          filter.selectedAgentIds != null)
-                        TextButton(
-                          onPressed: () => onFilterChanged!(
-                            filter.copyWith(selectedAgentIds: null),
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            l10n.reportInlineFiltersAllOption,
-                            style: typography.caption.copyWith(
-                              color: cs.primary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  if (availableAgents.isEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.gapXs),
-                      child: Text(
-                        l10n.dashboardHomeFiltersAgentsEmptyHint,
-                        style: typography.caption.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  else
-                    AppMultiSelectSearchField<String>(
-                      options: agentOptions,
-                      selectedValues: selectedAgentIds,
-                      enabled: !isDisabled,
-                      density: AppTextFieldDensity.compact,
-                      onChanged: (ids) {
-                        if (ids.isEmpty) return;
-                        final allIds =
-                            availableAgents.map((e) => e.agentId).toSet();
-                        if (ids.length == allIds.length &&
-                            ids.toSet().containsAll(allIds)) {
-                          onFilterChanged?.call(
-                            filter.copyWith(selectedAgentIds: null),
-                          );
-                        } else {
-                          onFilterChanged?.call(
-                            filter.copyWith(
-                              selectedAgentIds: Set<String>.from(ids),
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                ],
-              );
 
-              final monthField = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  buildLabel(l10n.dashboardHomeFiltersYearMonthLabel),
-                  DropdownButtonFormField<OverviewYearMonth?>(
-                    initialValue: monthValue,
-                    items: monthItems,
-                    isExpanded: true,
-                    decoration: inputDecoration,
-                    style: typography.body.copyWith(
-                      fontSize: 13,
-                      color: cs.onSurface,
+              final Widget agentField;
+              if (availableAgents.isEmpty) {
+                agentField = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+                      style: typography.utilityOverline.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
-                    onChanged: isDisabled
-                        ? null
-                        : (v) => onFilterChanged!(
-                            filter.copyWith(yearMonth: v),
-                          ),
-                  ),
-                ],
+                    SizedBox(height: tokens.gapXs),
+                    Text(
+                      l10n.dashboardHomeFiltersAgentsEmptyHint,
+                      style: typography.caption.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                agentField = AppMultiSelectSearchField<String>(
+                  label: l10n.dashboardHomeFiltersAgentsLabel,
+                  options: agentOptions,
+                  selectedValues: selectedAgentIds,
+                  enabled: !isDisabled,
+                  density: AppTextFieldDensity.compact,
+                  searchHintText: l10n.reportInlineFiltersHint,
+                  onChanged: (ids) {
+                    if (ids.isEmpty) return;
+                    final allIds =
+                        availableAgents.map((e) => e.agentId).toSet();
+                    if (ids.length == allIds.length &&
+                        ids.toSet().containsAll(allIds)) {
+                      onFilterChanged?.call(
+                        filter.copyWith(selectedAgentIds: null),
+                      );
+                    } else {
+                      onFilterChanged?.call(
+                        filter.copyWith(
+                          selectedAgentIds: Set<String>.from(ids),
+                        ),
+                      );
+                    }
+                  },
+                );
+              }
+
+              final monthField = AppDropdownField<OverviewYearMonth?>(
+                label: l10n.dashboardHomeFiltersYearMonthLabel,
+                value: filter.yearMonth,
+                options: monthDropdownOptions,
+                enabled: !isDisabled,
+                density: AppTextFieldDensity.compact,
+                onChanged: (v) => onFilterChanged!(
+                      filter.copyWith(yearMonth: v),
+                    ),
               );
 
               if (isNarrow) {
