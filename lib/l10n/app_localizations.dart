@@ -489,6 +489,12 @@ abstract class AppLocalizations {
   /// **'{label}: {amount}'**
   String overviewPaymentBarTooltip(String label, String amount);
 
+  /// No description provided for @overviewComparisonBarHorizontalScrollHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe horizontally to see all items.'**
+  String get overviewComparisonBarHorizontalScrollHint;
+
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///
   /// In en, this message translates to:

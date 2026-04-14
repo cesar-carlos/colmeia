@@ -4,7 +4,6 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -861,6 +860,33 @@ class _PaymentMixCard extends StatelessWidget {
 // Payment bar chart
 // ---------------------------------------------------------------------------
 
+enum _OverviewHomeBarChartKind {
+  payment,
+  ranking,
+}
+
+/// Shared [AppComparisonBarChartStyle] for overview bar charts: compact Y axis,
+/// data labels, two-line category labels, optional ranking-only density/height.
+AppComparisonBarChartStyle _overviewHomeComparisonBarChartStyle({
+  required AppThemeTokens tokens,
+  required _OverviewHomeBarChartKind kind,
+  required String horizontalScrollSemanticsHint,
+}) {
+  final isRanking = kind == _OverviewHomeBarChartKind.ranking;
+  return AppComparisonBarChartStyle(
+    yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+    horizontalScrollSemanticsHint: horizontalScrollSemanticsHint,
+    showDataLabels: true,
+    autoRotateXLabels: false,
+    wrapXAxisLabelsInTwoLines: true,
+    wrapXAxisCharsPerLine: isRanking ? 14 : 12,
+    minBarWidth: isRanking ? 84 : null,
+    height: isRanking
+        ? tokens.chartStandardHeight + tokens.contentSpacing * 3
+        : null,
+  );
+}
+
 class _PaymentBarChart extends StatelessWidget {
   const _PaymentBarChart({required this.l10n, required this.methods});
 
@@ -869,6 +895,7 @@ class _PaymentBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     return AppComparisonBarChart<OverviewPaymentMethodBreakdown>(
       title: l10n.overviewPaymentBarTitle,
       subtitle: l10n.overviewPaymentBarSubtitle,
@@ -880,11 +907,11 @@ class _PaymentBarChart extends StatelessWidget {
         AppBrFormatters.currency(v),
       ),
       dataLabelBuilder: (m, v) => AppBrFormatters.compactCurrency(v),
-      style: const AppComparisonBarChartStyle(
-        showDataLabels: true,
-        autoRotateXLabels: false,
-        wrapXAxisLabelsInTwoLines: true,
-        wrapXAxisCharsPerLine: 12,
+      style: _overviewHomeComparisonBarChartStyle(
+        tokens: tokens,
+        kind: _OverviewHomeBarChartKind.payment,
+        horizontalScrollSemanticsHint:
+            l10n.overviewComparisonBarHorizontalScrollHint,
       ),
     );
   }
@@ -908,32 +935,18 @@ class _RankingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final agentCard = _AgentRankingCard(
-      l10n: l10n,
-      agentRankings: agentRankings,
-    );
-    final userCard = _UserRankingCard(
-      l10n: l10n,
-      userRankings: userRankings,
-    );
-
-    if (AppBreakpoints.isMobile(context)) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          agentCard,
-          SizedBox(height: tokens.sectionSpacing),
-          userCard,
-        ],
-      );
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Expanded(child: agentCard),
-        SizedBox(width: tokens.gapMd),
-        Expanded(child: userCard),
+        _AgentRankingCard(
+          l10n: l10n,
+          agentRankings: agentRankings,
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        _UserRankingCard(
+          l10n: l10n,
+          userRankings: userRankings,
+        ),
       ],
     );
   }
@@ -950,6 +963,7 @@ class _AgentRankingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     return AppComparisonBarChart<OverviewAgentRanking>(
       title: l10n.dashboardAgentRankingTitle,
       subtitle: l10n.dashboardAgentRankingSubtitle,
@@ -958,8 +972,12 @@ class _AgentRankingCard extends StatelessWidget {
       valueBuilder: (a) => a.totalAmount,
       tooltipLabelBuilder: (a, v) =>
           '${a.displayName}: ${AppBrFormatters.currency(v)}',
-      style: AppComparisonBarChartStyle(
-        yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+      dataLabelBuilder: (a, v) => AppBrFormatters.compactCurrency(v),
+      style: _overviewHomeComparisonBarChartStyle(
+        tokens: tokens,
+        kind: _OverviewHomeBarChartKind.ranking,
+        horizontalScrollSemanticsHint:
+            l10n.overviewComparisonBarHorizontalScrollHint,
       ),
     );
   }
@@ -976,6 +994,7 @@ class _UserRankingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     return AppComparisonBarChart<OverviewUserRanking>(
       title: l10n.dashboardUserRankingTitle,
       subtitle: l10n.dashboardUserRankingSubtitle,
@@ -984,8 +1003,12 @@ class _UserRankingCard extends StatelessWidget {
       valueBuilder: (u) => u.totalAmount,
       tooltipLabelBuilder: (u, v) =>
           '${u.userName}: ${AppBrFormatters.currency(v)}',
-      style: AppComparisonBarChartStyle(
-        yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+      dataLabelBuilder: (u, v) => AppBrFormatters.compactCurrency(v),
+      style: _overviewHomeComparisonBarChartStyle(
+        tokens: tokens,
+        kind: _OverviewHomeBarChartKind.ranking,
+        horizontalScrollSemanticsHint:
+            l10n.overviewComparisonBarHorizontalScrollHint,
       ),
     );
   }

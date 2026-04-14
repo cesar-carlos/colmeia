@@ -49,6 +49,7 @@ class AppComparisonBarChartStyle {
     this.enableAutoScroll = true,
     this.minBarWidth,
     this.showScrollFade = true,
+    this.horizontalScrollSemanticsHint,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -206,6 +207,11 @@ class AppComparisonBarChartStyle {
   /// Whether to show a subtle fade gradient on the trailing edge of the chart
   /// when horizontal scrolling is active. Defaults to `true`.
   final bool showScrollFade;
+
+  /// When horizontal scrolling is active, announced as a [Semantics] hint on
+  /// the scrollable (e.g. screen readers). When `null`, no extra semantics
+  /// wrapper is applied.
+  final String? horizontalScrollSemanticsHint;
 }
 
 /// Structured payload emitted when the user taps a bar.

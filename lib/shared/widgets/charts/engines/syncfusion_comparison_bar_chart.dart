@@ -253,14 +253,28 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             return chartBox;
           }
 
-          if (!style.showScrollFade) {
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: chartBox,
+          final hint = style.horizontalScrollSemanticsHint;
+          Widget wrapScroll(Widget scrollable) {
+            if (hint == null || hint.isEmpty) return scrollable;
+            return Semantics(
+              hint: hint,
+              child: scrollable,
             );
           }
 
-          return _HorizontalScrollFade(chartContent: chartBox);
+          if (!style.showScrollFade) {
+            return wrapScroll(
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: chartBox,
+              ),
+            );
+          }
+
+          return _HorizontalScrollFade(
+            chartContent: chartBox,
+            scrollSemanticsHint: hint,
+          );
         },
       ),
     );
@@ -296,9 +310,13 @@ const double _kScrollEdgeThreshold = 0.5;
 /// the start. Both fades disappear as the corresponding edge is reached,
 /// giving a clear affordance without obscuring content after scrolling.
 class _HorizontalScrollFade extends StatefulWidget {
-  const _HorizontalScrollFade({required this.chartContent});
+  const _HorizontalScrollFade({
+    required this.chartContent,
+    this.scrollSemanticsHint,
+  });
 
   final Widget chartContent;
+  final String? scrollSemanticsHint;
 
   @override
   State<_HorizontalScrollFade> createState() => _HorizontalScrollFadeState();
@@ -344,13 +362,19 @@ class _HorizontalScrollFadeState extends State<_HorizontalScrollFade> {
   @override
   Widget build(BuildContext context) {
     final fadeColor = Theme.of(context).colorScheme.surface;
+    final scrollView = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      controller: _controller,
+      child: widget.chartContent,
+    );
+    final hint = widget.scrollSemanticsHint;
+    final scrollChild = hint != null && hint.isNotEmpty
+        ? Semantics(hint: hint, child: scrollView)
+        : scrollView;
+
     return Stack(
       children: <Widget>[
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          controller: _controller,
-          child: widget.chartContent,
-        ),
+        scrollChild,
         if (_showLeftFade) _buildFade(fadeColor, isLeft: true),
         if (_showRightFade) _buildFade(fadeColor, isLeft: false),
       ],

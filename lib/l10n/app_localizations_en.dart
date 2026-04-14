@@ -232,6 +232,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get overviewComparisonBarHorizontalScrollHint =>
+      'Swipe horizontally to see all items.';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Payment method $label';
   }

@@ -234,6 +234,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get overviewComparisonBarHorizontalScrollHint =>
+      'Deslize horizontalmente para ver todos os itens.';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Forma de pagamento $label';
   }
@@ -1721,6 +1725,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String overviewPaymentBarTooltip(String label, String amount) {
     return '$label: $amount';
   }
+
+  @override
+  String get overviewComparisonBarHorizontalScrollHint =>
+      'Deslize horizontalmente para ver todos os itens.';
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {

@@ -91,6 +91,7 @@
       "amount": {"type": "String"}
     }
   },
+  "overviewComparisonBarHorizontalScrollHint": "Deslize horizontalmente para ver todos os itens.",
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
