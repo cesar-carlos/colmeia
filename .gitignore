@@ -5,6 +5,7 @@
 assets/env/local.env
 
 # Miscellaneous
+.claude/
 *.class
 *.log
 *.pyc
