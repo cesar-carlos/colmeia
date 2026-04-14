@@ -40,6 +40,15 @@
             ]
         },
         {
+            "name": "colmeia (Pixel Tablet)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "emulator-5554",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
+        },
+        {
             "name": "colmeia (Chrome)",
             "request": "launch",
             "type": "dart",
