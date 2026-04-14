@@ -45,6 +45,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavSignOutSemanticsLoading => 'Encerrando sessao';
 
   @override
+  String get shellSignOutDialogTitle => 'Sair da conta?';
+
+  @override
+  String get shellSignOutDialogConfirm => 'Sair';
+
+  @override
+  String get shellSignOutDialogMessage =>
+      'Voce precisara entrar novamente para acessar os dados.';
+
+  @override
   String get shellNavMainSemantics => 'Navegacao principal';
 
   @override
@@ -1055,6 +1065,432 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get agentSqlErrorGeneric =>
       'Nao foi possivel concluir a consulta no agente.';
+
+  @override
+  String get formsDemoEyebrow => 'Formularios';
+
+  @override
+  String get formsDemoTitle => 'Campos compartilhados';
+
+  @override
+  String get formsDemoIntroSubtitle =>
+      'Validacao, estados habilitado/desabilitado, date pickers no Form, FormBuilder como nos relatorios e agrupamentos.';
+
+  @override
+  String get formsDemoFieldLibraryOverline => 'Biblioteca de campos';
+
+  @override
+  String get formsDemoSharedFormControlsTitle =>
+      'Campos de formulario compartilhados';
+
+  @override
+  String get formsDemoPreviewBadge => 'Preview';
+
+  @override
+  String get formsDemoShowcaseSubtitle =>
+      'Campos base, seletores e wrappers de calendario no mesmo ritmo visual do sistema.';
+
+  @override
+  String get formsDemoFieldsEnabledLabel => 'Campos habilitados';
+
+  @override
+  String get formsDemoShowcaseFieldsEnabledHelper =>
+      'Ativa ou desativa toda a superficie de exemplos abaixo.';
+
+  @override
+  String get formsDemoFormStateTitle => 'Estado do formulario';
+
+  @override
+  String get formsDemoFormStateSubtitle =>
+      'Desligue para inspecionar campos desabilitados.';
+
+  @override
+  String get formsDemoFormStateFieldsEnabledHelper =>
+      'Aplica o estado disabled em todos os exemplos abaixo.';
+
+  @override
+  String get formsDemoTextEmailPasswordTitle => 'AppTextField, e-mail e senha';
+
+  @override
+  String get formsDemoTextEmailPasswordSubtitle =>
+      'Dados fake; enviar dispara validacao.';
+
+  @override
+  String get formsDemoFullNameLabel => 'Nome completo';
+
+  @override
+  String get formsDemoFullNameHint => 'Como no cadastro';
+
+  @override
+  String get formsDemoNameValidatorMinLength =>
+      'Informe pelo menos 3 caracteres.';
+
+  @override
+  String get formsDemoCorporateEmailLabel => 'E-mail corporativo';
+
+  @override
+  String get formsDemoPasswordLabel => 'Senha';
+
+  @override
+  String get formsDemoNotesLabel => 'Observacoes';
+
+  @override
+  String get formsDemoNotesHint => 'Opcional';
+
+  @override
+  String get formsDemoDatePickersFormTitle => 'Date pickers no Form';
+
+  @override
+  String get formsDemoDatePickersFormSubtitle =>
+      'Validacao ao enviar; limpe o campo e valide para ver erro. Intervalo com datas explicitas na demo.';
+
+  @override
+  String get formsDemoReferenceDateLabel => 'Data de referencia';
+
+  @override
+  String get formsDemoReferenceDateHelper =>
+      'Abre em bottom sheet com calendario estilizado.';
+
+  @override
+  String get formsDemoSelectReferenceDateTitle =>
+      'Selecionar data de referencia';
+
+  @override
+  String get formsDemoReferenceDateRequiredError =>
+      'Selecione a data de referencia.';
+
+  @override
+  String get formsDemoAssessmentPeriodLabel => 'Periodo de captacao desejado';
+
+  @override
+  String get formsDemoAssessmentPeriodHelper =>
+      'Ideal para filtros e consultas analiticas.';
+
+  @override
+  String get formsDemoSelectPeriodTitle => 'Selecionar periodo';
+
+  @override
+  String get formsDemoAssessmentPeriodRequiredError =>
+      'Selecione o periodo de captacao completo.';
+
+  @override
+  String get formsDemoDateRangeMiddle => ' a ';
+
+  @override
+  String get formsDemoCheckboxTitle => 'AppCheckboxField';
+
+  @override
+  String get formsDemoCheckboxSubtitle => 'Aceite ficticio.';
+
+  @override
+  String get formsDemoCheckboxLabel => 'Receber resumo semanal por e-mail';
+
+  @override
+  String get formsDemoCheckboxHelper =>
+      'Envia alertas, resumos e atualizacoes de indicadores.';
+
+  @override
+  String get formsDemoRadioCompactTitle => 'AppRadioGroup compacto';
+
+  @override
+  String get formsDemoRadioCompactSubtitle =>
+      'Selecao unica no padrao inline do design system.';
+
+  @override
+  String get formsDemoPeriodDaily => 'Diario';
+
+  @override
+  String get formsDemoPeriodMonthly => 'Mensal';
+
+  @override
+  String get formsDemoPeriodQuarterly => 'Trimestral';
+
+  @override
+  String get formsDemoChoiceChipTitle => 'AppChoiceChip';
+
+  @override
+  String get formsDemoChoiceChipSubtitle =>
+      'Selecao pontual em chips para contexto, loja ou escopo.';
+
+  @override
+  String get formsDemoScopeHeadquarters => 'Matriz';
+
+  @override
+  String get formsDemoScopeStoreCenter => 'Loja Centro';
+
+  @override
+  String get formsDemoScopeStoreSouth => 'Loja Sul';
+
+  @override
+  String get formsDemoDropdownMenusTitle => 'Dropdown menus';
+
+  @override
+  String get formsDemoDropdownMenusSubtitle =>
+      'Selecao unica e multi-select search no mesmo padrao visual das referencias light/dark.';
+
+  @override
+  String get formsDemoStandardSelectLabel => 'Standard Select';
+
+  @override
+  String get formsDemoSelectHiveNodeHint => 'Select Hive Node...';
+
+  @override
+  String get formsDemoMultiSelectSearchLabel => 'Multi-Select Search';
+
+  @override
+  String get formsDemoHiveNodeAlphaCore => 'Alpha Core';
+
+  @override
+  String get formsDemoHiveNodeDeltaNode => 'Delta Node';
+
+  @override
+  String get formsDemoHiveNodeSigmaGrid => 'Sigma Grid';
+
+  @override
+  String get formsDemoTagAnalytics => 'Analytics';
+
+  @override
+  String get formsDemoTagCloud => 'Cloud';
+
+  @override
+  String get formsDemoTagAutomation => 'Automation';
+
+  @override
+  String get formsDemoTagSecurity => 'Security';
+
+  @override
+  String get formsDemoFormBuilderSectionTitle =>
+      'FormBuilder + dropdowns e datas';
+
+  @override
+  String get formsDemoFormBuilderSectionSubtitle =>
+      'Mesmos wrappers usados em relatorios parametrizados, agora com dropdown compartilhado.';
+
+  @override
+  String get formsDemoFormBuilderNodeLabel => 'Select node (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderNodeHelper =>
+      'Selecao unica com o wrapper compartilhado.';
+
+  @override
+  String get formsDemoFormBuilderTagsLabel => 'Tags (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderTagsHelper =>
+      'Busca inline com chips removiveis.';
+
+  @override
+  String get formsDemoFormBuilderDateRequiredLabel =>
+      'Data obrigatoria (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderDateRequiredHelper =>
+      'Validacao com form_builder_validators.';
+
+  @override
+  String get formsDemoFormBuilderSelectDateTitle =>
+      'Selecionar data (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderRangeLabel => 'Periodo (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderRangeHelper => 'Opcional nesta demo.';
+
+  @override
+  String get formsDemoFormBuilderSelectRangeTitle =>
+      'Selecionar periodo (FormBuilder)';
+
+  @override
+  String get formsDemoValidateFormBuilderButton => 'Validar FormBuilder';
+
+  @override
+  String get formsDemoValidateFormSubmitButton => 'Validar envio (Form)';
+
+  @override
+  String formsDemoFormValidSnackbar(String refLabel, String rangeLabel) {
+    return 'Formulario valido (demo fake). Ref: $refLabel. Periodo: $rangeLabel.';
+  }
+
+  @override
+  String formsDemoFormBuilderValidSnackbar(
+    String dateLabel,
+    String rangeLabel,
+  ) {
+    return 'FormBuilder valido (demo fake). Data: $dateLabel. Periodo: $rangeLabel.';
+  }
+
+  @override
+  String get formsDemoLegendInput => 'Input';
+
+  @override
+  String get formsDemoLegendSelection => 'Selection';
+
+  @override
+  String get formsDemoLegendDate => 'Date';
+
+  @override
+  String get formsDemoLegendFormBuilder => 'FormBuilder';
+
+  @override
+  String get datePickerPlaceholderSelectDate => 'Selecione uma data';
+
+  @override
+  String get dateRangePickerPlaceholderSelectPeriod => 'Selecione o periodo';
+
+  @override
+  String get datePickerSheetDefaultTitle => 'Selecionar data';
+
+  @override
+  String get dateRangePickerSheetDefaultTitle => 'Selecionar periodo';
+
+  @override
+  String get datePickerClearSelectionTooltip => 'Limpar selecao';
+
+  @override
+  String get datePickerSheetRemoveDate => 'Remover data';
+
+  @override
+  String get dateRangePickerSheetRemovePeriod => 'Remover periodo';
+
+  @override
+  String get datePickerSheetCloseTooltip => 'Fechar';
+
+  @override
+  String get datePickerSheetApply => 'Aplicar';
+
+  @override
+  String get datePickerSemanticsFallbackLabel => 'Data';
+
+  @override
+  String get areaTrendDemoIntroEyebrow => 'Graficos de area';
+
+  @override
+  String get areaTrendDemoIntroTitle => 'AppAreaTrendChart';
+
+  @override
+  String get areaTrendDemoIntroSubtitle =>
+      'Tendencia temporal com area preenchida: gradiente, marcadores, zoom, variantes de estilo e evento estruturado por serie/ponto.';
+
+  @override
+  String get areaTrendDemoShowcaseTitle =>
+      'Tendencia temporal com preenchimento';
+
+  @override
+  String get areaTrendDemoShowcaseSubtitle =>
+      'Grafico de area para volume, crescimento e comparativos no tempo, com boa leitura de massa e intensidade.';
+
+  @override
+  String get areaTrendDemoShowcaseBadge => 'Trend';
+
+  @override
+  String get areaTrendDemoShowcaseHighlightTimeSeries => 'Serie temporal';
+
+  @override
+  String get areaTrendDemoShowcaseHighlightGradientMarkers =>
+      'Gradiente e markers';
+
+  @override
+  String get areaTrendDemoShowcaseHighlightMultiseries => 'Multiseries';
+
+  @override
+  String get areaTrendDemoS01Title => '1. Faturamento semanal';
+
+  @override
+  String get areaTrendDemoS01Subtitle =>
+      'Area com gradiente, eixo formatado, tooltip e tap.';
+
+  @override
+  String get areaTrendDemoS02Title => '2. Com marcadores de ponto';
+
+  @override
+  String get areaTrendDemoS02Subtitle =>
+      'Cada ponto recebe um marcador visivel.';
+
+  @override
+  String get areaTrendDemoS03Title => '3. Sem gradiente (area solida)';
+
+  @override
+  String get areaTrendDemoS03Subtitle =>
+      'showGradientFill: false para area plana.';
+
+  @override
+  String get areaTrendDemoS04Title => '4. Pedidos por hora';
+
+  @override
+  String get areaTrendDemoS04Subtitle =>
+      'Pico operacional do dia — escala de unidades.';
+
+  @override
+  String get areaTrendDemoS05Title => '5. Compacto sem shell';
+
+  @override
+  String get areaTrendDemoS05Subtitle =>
+      'Preset compact, sem eixos e sem shell interno.';
+
+  @override
+  String get areaTrendDemoS06Title => '6. Estado de loading';
+
+  @override
+  String get areaTrendDemoS07Title => '7. Estado vazio';
+
+  @override
+  String get areaTrendDemoEmptyMessage =>
+      'Sem dados para o periodo selecionado.';
+
+  @override
+  String get areaTrendDemoS08Title => '8. Multi-series (comparativo de lojas)';
+
+  @override
+  String get areaTrendDemoS08Subtitle =>
+      'Tres lojas sobrepostas com palette automatica. Legenda ativada.';
+
+  @override
+  String get areaTrendDemoS09Title => '9. Multi-series com trackball';
+
+  @override
+  String get areaTrendDemoS09Subtitle =>
+      'Toque na area para ver os valores de todas as series na mesma posicao do eixo X.';
+
+  @override
+  String get areaTrendDemoS10Title => '10. Cores por entrada';
+
+  @override
+  String get areaTrendDemoS10Subtitle =>
+      'Cor customizada por AppAreaTrendEntry.';
+
+  @override
+  String get areaTrendDemoSeriesRevenue => 'Faturamento';
+
+  @override
+  String get areaTrendDemoSeriesTarget => 'Meta';
+
+  @override
+  String get areaTrendDemoStoreCenter => 'Centro';
+
+  @override
+  String get areaTrendDemoStoreNorth => 'Norte';
+
+  @override
+  String get areaTrendDemoStoreSouth => 'Sul';
+
+  @override
+  String get areaTrendDemoDefaultSeriesName => 'serie principal';
+
+  @override
+  String areaTrendDemoTapSnackbar(
+    String seriesLabel,
+    String pointLabel,
+    String valueLabel,
+  ) {
+    return 'Area: $seriesLabel • $pointLabel = $valueLabel';
+  }
+
+  @override
+  String areaTrendDemoA11ySection(int sectionIndex, String sectionTitle) {
+    return 'Demonstracao de grafico $sectionIndex: $sectionTitle';
+  }
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -1096,6 +1532,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get shellNavSignOutSemanticsLoading => 'Encerrando sessao';
+
+  @override
+  String get shellSignOutDialogTitle => 'Sair da conta?';
+
+  @override
+  String get shellSignOutDialogConfirm => 'Sair';
+
+  @override
+  String get shellSignOutDialogMessage =>
+      'Voce precisara entrar novamente para acessar os dados.';
 
   @override
   String get shellNavMainSemantics => 'Navegacao principal';
@@ -2108,4 +2554,430 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get agentSqlErrorGeneric =>
       'Nao foi possivel concluir a consulta no agente.';
+
+  @override
+  String get formsDemoEyebrow => 'Formularios';
+
+  @override
+  String get formsDemoTitle => 'Campos compartilhados';
+
+  @override
+  String get formsDemoIntroSubtitle =>
+      'Validacao, estados habilitado/desabilitado, date pickers no Form, FormBuilder como nos relatorios e agrupamentos.';
+
+  @override
+  String get formsDemoFieldLibraryOverline => 'Biblioteca de campos';
+
+  @override
+  String get formsDemoSharedFormControlsTitle =>
+      'Campos de formulario compartilhados';
+
+  @override
+  String get formsDemoPreviewBadge => 'Preview';
+
+  @override
+  String get formsDemoShowcaseSubtitle =>
+      'Campos base, seletores e wrappers de calendario no mesmo ritmo visual do sistema.';
+
+  @override
+  String get formsDemoFieldsEnabledLabel => 'Campos habilitados';
+
+  @override
+  String get formsDemoShowcaseFieldsEnabledHelper =>
+      'Ativa ou desativa toda a superficie de exemplos abaixo.';
+
+  @override
+  String get formsDemoFormStateTitle => 'Estado do formulario';
+
+  @override
+  String get formsDemoFormStateSubtitle =>
+      'Desligue para inspecionar campos desabilitados.';
+
+  @override
+  String get formsDemoFormStateFieldsEnabledHelper =>
+      'Aplica o estado disabled em todos os exemplos abaixo.';
+
+  @override
+  String get formsDemoTextEmailPasswordTitle => 'AppTextField, e-mail e senha';
+
+  @override
+  String get formsDemoTextEmailPasswordSubtitle =>
+      'Dados fake; enviar dispara validacao.';
+
+  @override
+  String get formsDemoFullNameLabel => 'Nome completo';
+
+  @override
+  String get formsDemoFullNameHint => 'Como no cadastro';
+
+  @override
+  String get formsDemoNameValidatorMinLength =>
+      'Informe pelo menos 3 caracteres.';
+
+  @override
+  String get formsDemoCorporateEmailLabel => 'E-mail corporativo';
+
+  @override
+  String get formsDemoPasswordLabel => 'Senha';
+
+  @override
+  String get formsDemoNotesLabel => 'Observacoes';
+
+  @override
+  String get formsDemoNotesHint => 'Opcional';
+
+  @override
+  String get formsDemoDatePickersFormTitle => 'Date pickers no Form';
+
+  @override
+  String get formsDemoDatePickersFormSubtitle =>
+      'Validacao ao enviar; limpe o campo e valide para ver erro. Intervalo com datas explicitas na demo.';
+
+  @override
+  String get formsDemoReferenceDateLabel => 'Data de referencia';
+
+  @override
+  String get formsDemoReferenceDateHelper =>
+      'Abre em bottom sheet com calendario estilizado.';
+
+  @override
+  String get formsDemoSelectReferenceDateTitle =>
+      'Selecionar data de referencia';
+
+  @override
+  String get formsDemoReferenceDateRequiredError =>
+      'Selecione a data de referencia.';
+
+  @override
+  String get formsDemoAssessmentPeriodLabel => 'Periodo de captacao desejado';
+
+  @override
+  String get formsDemoAssessmentPeriodHelper =>
+      'Ideal para filtros e consultas analiticas.';
+
+  @override
+  String get formsDemoSelectPeriodTitle => 'Selecionar periodo';
+
+  @override
+  String get formsDemoAssessmentPeriodRequiredError =>
+      'Selecione o periodo de captacao completo.';
+
+  @override
+  String get formsDemoDateRangeMiddle => ' a ';
+
+  @override
+  String get formsDemoCheckboxTitle => 'AppCheckboxField';
+
+  @override
+  String get formsDemoCheckboxSubtitle => 'Aceite ficticio.';
+
+  @override
+  String get formsDemoCheckboxLabel => 'Receber resumo semanal por e-mail';
+
+  @override
+  String get formsDemoCheckboxHelper =>
+      'Envia alertas, resumos e atualizacoes de indicadores.';
+
+  @override
+  String get formsDemoRadioCompactTitle => 'AppRadioGroup compacto';
+
+  @override
+  String get formsDemoRadioCompactSubtitle =>
+      'Selecao unica no padrao inline do design system.';
+
+  @override
+  String get formsDemoPeriodDaily => 'Diario';
+
+  @override
+  String get formsDemoPeriodMonthly => 'Mensal';
+
+  @override
+  String get formsDemoPeriodQuarterly => 'Trimestral';
+
+  @override
+  String get formsDemoChoiceChipTitle => 'AppChoiceChip';
+
+  @override
+  String get formsDemoChoiceChipSubtitle =>
+      'Selecao pontual em chips para contexto, loja ou escopo.';
+
+  @override
+  String get formsDemoScopeHeadquarters => 'Matriz';
+
+  @override
+  String get formsDemoScopeStoreCenter => 'Loja Centro';
+
+  @override
+  String get formsDemoScopeStoreSouth => 'Loja Sul';
+
+  @override
+  String get formsDemoDropdownMenusTitle => 'Dropdown menus';
+
+  @override
+  String get formsDemoDropdownMenusSubtitle =>
+      'Selecao unica e multi-select search no mesmo padrao visual das referencias light/dark.';
+
+  @override
+  String get formsDemoStandardSelectLabel => 'Standard Select';
+
+  @override
+  String get formsDemoSelectHiveNodeHint => 'Select Hive Node...';
+
+  @override
+  String get formsDemoMultiSelectSearchLabel => 'Multi-Select Search';
+
+  @override
+  String get formsDemoHiveNodeAlphaCore => 'Alpha Core';
+
+  @override
+  String get formsDemoHiveNodeDeltaNode => 'Delta Node';
+
+  @override
+  String get formsDemoHiveNodeSigmaGrid => 'Sigma Grid';
+
+  @override
+  String get formsDemoTagAnalytics => 'Analytics';
+
+  @override
+  String get formsDemoTagCloud => 'Cloud';
+
+  @override
+  String get formsDemoTagAutomation => 'Automation';
+
+  @override
+  String get formsDemoTagSecurity => 'Security';
+
+  @override
+  String get formsDemoFormBuilderSectionTitle =>
+      'FormBuilder + dropdowns e datas';
+
+  @override
+  String get formsDemoFormBuilderSectionSubtitle =>
+      'Mesmos wrappers usados em relatorios parametrizados, agora com dropdown compartilhado.';
+
+  @override
+  String get formsDemoFormBuilderNodeLabel => 'Select node (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderNodeHelper =>
+      'Selecao unica com o wrapper compartilhado.';
+
+  @override
+  String get formsDemoFormBuilderTagsLabel => 'Tags (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderTagsHelper =>
+      'Busca inline com chips removiveis.';
+
+  @override
+  String get formsDemoFormBuilderDateRequiredLabel =>
+      'Data obrigatoria (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderDateRequiredHelper =>
+      'Validacao com form_builder_validators.';
+
+  @override
+  String get formsDemoFormBuilderSelectDateTitle =>
+      'Selecionar data (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderRangeLabel => 'Periodo (FormBuilder)';
+
+  @override
+  String get formsDemoFormBuilderRangeHelper => 'Opcional nesta demo.';
+
+  @override
+  String get formsDemoFormBuilderSelectRangeTitle =>
+      'Selecionar periodo (FormBuilder)';
+
+  @override
+  String get formsDemoValidateFormBuilderButton => 'Validar FormBuilder';
+
+  @override
+  String get formsDemoValidateFormSubmitButton => 'Validar envio (Form)';
+
+  @override
+  String formsDemoFormValidSnackbar(String refLabel, String rangeLabel) {
+    return 'Formulario valido (demo fake). Ref: $refLabel. Periodo: $rangeLabel.';
+  }
+
+  @override
+  String formsDemoFormBuilderValidSnackbar(
+    String dateLabel,
+    String rangeLabel,
+  ) {
+    return 'FormBuilder valido (demo fake). Data: $dateLabel. Periodo: $rangeLabel.';
+  }
+
+  @override
+  String get formsDemoLegendInput => 'Input';
+
+  @override
+  String get formsDemoLegendSelection => 'Selection';
+
+  @override
+  String get formsDemoLegendDate => 'Date';
+
+  @override
+  String get formsDemoLegendFormBuilder => 'FormBuilder';
+
+  @override
+  String get datePickerPlaceholderSelectDate => 'Selecione uma data';
+
+  @override
+  String get dateRangePickerPlaceholderSelectPeriod => 'Selecione o periodo';
+
+  @override
+  String get datePickerSheetDefaultTitle => 'Selecionar data';
+
+  @override
+  String get dateRangePickerSheetDefaultTitle => 'Selecionar periodo';
+
+  @override
+  String get datePickerClearSelectionTooltip => 'Limpar selecao';
+
+  @override
+  String get datePickerSheetRemoveDate => 'Remover data';
+
+  @override
+  String get dateRangePickerSheetRemovePeriod => 'Remover periodo';
+
+  @override
+  String get datePickerSheetCloseTooltip => 'Fechar';
+
+  @override
+  String get datePickerSheetApply => 'Aplicar';
+
+  @override
+  String get datePickerSemanticsFallbackLabel => 'Data';
+
+  @override
+  String get areaTrendDemoIntroEyebrow => 'Graficos de area';
+
+  @override
+  String get areaTrendDemoIntroTitle => 'AppAreaTrendChart';
+
+  @override
+  String get areaTrendDemoIntroSubtitle =>
+      'Tendencia temporal com area preenchida: gradiente, marcadores, zoom, variantes de estilo e evento estruturado por serie/ponto.';
+
+  @override
+  String get areaTrendDemoShowcaseTitle =>
+      'Tendencia temporal com preenchimento';
+
+  @override
+  String get areaTrendDemoShowcaseSubtitle =>
+      'Grafico de area para volume, crescimento e comparativos no tempo, com boa leitura de massa e intensidade.';
+
+  @override
+  String get areaTrendDemoShowcaseBadge => 'Trend';
+
+  @override
+  String get areaTrendDemoShowcaseHighlightTimeSeries => 'Serie temporal';
+
+  @override
+  String get areaTrendDemoShowcaseHighlightGradientMarkers =>
+      'Gradiente e markers';
+
+  @override
+  String get areaTrendDemoShowcaseHighlightMultiseries => 'Multiseries';
+
+  @override
+  String get areaTrendDemoS01Title => '1. Faturamento semanal';
+
+  @override
+  String get areaTrendDemoS01Subtitle =>
+      'Area com gradiente, eixo formatado, tooltip e tap.';
+
+  @override
+  String get areaTrendDemoS02Title => '2. Com marcadores de ponto';
+
+  @override
+  String get areaTrendDemoS02Subtitle =>
+      'Cada ponto recebe um marcador visivel.';
+
+  @override
+  String get areaTrendDemoS03Title => '3. Sem gradiente (area solida)';
+
+  @override
+  String get areaTrendDemoS03Subtitle =>
+      'showGradientFill: false para area plana.';
+
+  @override
+  String get areaTrendDemoS04Title => '4. Pedidos por hora';
+
+  @override
+  String get areaTrendDemoS04Subtitle =>
+      'Pico operacional do dia — escala de unidades.';
+
+  @override
+  String get areaTrendDemoS05Title => '5. Compacto sem shell';
+
+  @override
+  String get areaTrendDemoS05Subtitle =>
+      'Preset compact, sem eixos e sem shell interno.';
+
+  @override
+  String get areaTrendDemoS06Title => '6. Estado de loading';
+
+  @override
+  String get areaTrendDemoS07Title => '7. Estado vazio';
+
+  @override
+  String get areaTrendDemoEmptyMessage =>
+      'Sem dados para o periodo selecionado.';
+
+  @override
+  String get areaTrendDemoS08Title => '8. Multi-series (comparativo de lojas)';
+
+  @override
+  String get areaTrendDemoS08Subtitle =>
+      'Tres lojas sobrepostas com palette automatica. Legenda ativada.';
+
+  @override
+  String get areaTrendDemoS09Title => '9. Multi-series com trackball';
+
+  @override
+  String get areaTrendDemoS09Subtitle =>
+      'Toque na area para ver os valores de todas as series na mesma posicao do eixo X.';
+
+  @override
+  String get areaTrendDemoS10Title => '10. Cores por entrada';
+
+  @override
+  String get areaTrendDemoS10Subtitle =>
+      'Cor customizada por AppAreaTrendEntry.';
+
+  @override
+  String get areaTrendDemoSeriesRevenue => 'Faturamento';
+
+  @override
+  String get areaTrendDemoSeriesTarget => 'Meta';
+
+  @override
+  String get areaTrendDemoStoreCenter => 'Centro';
+
+  @override
+  String get areaTrendDemoStoreNorth => 'Norte';
+
+  @override
+  String get areaTrendDemoStoreSouth => 'Sul';
+
+  @override
+  String get areaTrendDemoDefaultSeriesName => 'serie principal';
+
+  @override
+  String areaTrendDemoTapSnackbar(
+    String seriesLabel,
+    String pointLabel,
+    String valueLabel,
+  ) {
+    return 'Area: $seriesLabel • $pointLabel = $valueLabel';
+  }
+
+  @override
+  String areaTrendDemoA11ySection(int sectionIndex, String sectionTitle) {
+    return 'Demonstracao de grafico $sectionIndex: $sectionTitle';
+  }
 }

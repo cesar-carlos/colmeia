@@ -3,8 +3,8 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 
-class AppShellDrawerMenuItem extends StatelessWidget {
-  const AppShellDrawerMenuItem({
+class AppShellNavMenuItem extends StatelessWidget {
+  const AppShellNavMenuItem({
     required this.icon,
     required this.title,
     super.key,

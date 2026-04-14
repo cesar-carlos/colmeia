@@ -6,6 +6,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_brand_icon.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_user_avatar.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_user_summary.dart';
 import 'package:flutter/material.dart';
@@ -45,27 +46,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     final brandTitle = Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.primary,
-            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: colors.primary.withValues(alpha: 0.2),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: const SizedBox(
-            width: 28,
-            height: 28,
-            child: Icon(
-              Icons.hexagon_rounded,
-              size: 18,
-            ),
-          ),
-        ),
+        const AppShellBrandIcon(),
         SizedBox(width: tokens.gapSm),
         Semantics(
           header: true,

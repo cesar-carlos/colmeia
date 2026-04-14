@@ -1,9 +1,9 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
-/// Scrollable list of drawer navigation rows; add items via [children].
-class AppShellDrawerMenuList extends StatelessWidget {
-  const AppShellDrawerMenuList({
+/// Scrollable list of navigation rows; add items via [children].
+class AppShellNavMenuList extends StatelessWidget {
+  const AppShellNavMenuList({
     required this.children,
     super.key,
   });

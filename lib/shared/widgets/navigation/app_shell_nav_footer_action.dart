@@ -6,10 +6,10 @@ class AppShellNavFooterAction extends StatelessWidget {
   const AppShellNavFooterAction({
     required this.icon,
     required this.label,
+    required this.loadingSemanticsLabel,
     super.key,
     this.onTap,
     this.isLoading = false,
-    this.loadingSemanticsLabel = 'Encerrando sessao',
   });
 
   final IconData icon;

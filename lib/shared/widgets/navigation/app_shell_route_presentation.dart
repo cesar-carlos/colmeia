@@ -6,16 +6,12 @@ class AppShellRoutePresentation {
   const AppShellRoutePresentation({
     required this.route,
     required this.label,
-    required this.selectedIcon,
-    required this.unselectedIcon,
     this.subtitle,
   });
 
   final AppRoute route;
   final String label;
   final String? subtitle;
-  final IconData selectedIcon;
-  final IconData unselectedIcon;
 }
 
 String _shellRouteLabel(AppRoute route, AppLocalizations l10n) {
@@ -56,8 +52,6 @@ AppShellRoutePresentation appShellRoutePresentation(
     route: route,
     label: _shellRouteLabel(route, l10n),
     subtitle: _shellRouteSubtitle(route, l10n),
-    selectedIcon: route.selectedNavigationIcon,
-    unselectedIcon: route.unselectedNavigationIcon,
   );
 }
 

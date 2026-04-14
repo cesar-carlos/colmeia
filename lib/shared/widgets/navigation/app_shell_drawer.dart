@@ -1,4 +1,3 @@
-import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_navigation_panel.dart';
@@ -24,17 +23,7 @@ class AppShellDrawer extends StatelessWidget {
         child: AppShellNavigationPanel(
           currentRoute: currentRoute,
           visibleShellRoutes: visibleShellRoutes,
-          closeOverlayBeforeSignOut: true,
-          onShellRouteSelected: (context, route) async {
-            Navigator.of(context).pop();
-            if (route.shellIndex != currentRoute.shellIndex) {
-              context.goTo(route);
-            }
-          },
-          onProfileOpen: (context) async {
-            Navigator.of(context).pop();
-            context.goTo(AppRoute.settings);
-          },
+          closeOverlayBeforeNavigate: true,
         ),
       ),
     );

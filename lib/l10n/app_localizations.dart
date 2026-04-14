@@ -171,6 +171,24 @@ abstract class AppLocalizations {
   /// **'Ending session'**
   String get shellNavSignOutSemanticsLoading;
 
+  /// No description provided for @shellSignOutDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out?'**
+  String get shellSignOutDialogTitle;
+
+  /// No description provided for @shellSignOutDialogConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get shellSignOutDialogConfirm;
+
+  /// No description provided for @shellSignOutDialogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You will need to sign in again to access your data.'**
+  String get shellSignOutDialogMessage;
+
   /// No description provided for @shellNavMainSemantics.
   ///
   /// In en, this message translates to:
@@ -1784,6 +1802,754 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The query could not be completed on the agent.'**
   String get agentSqlErrorGeneric;
+
+  /// No description provided for @formsDemoEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Forms'**
+  String get formsDemoEyebrow;
+
+  /// No description provided for @formsDemoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared fields'**
+  String get formsDemoTitle;
+
+  /// No description provided for @formsDemoIntroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Validation, enabled and disabled states, date pickers in Form, FormBuilder as in reports and groupings.'**
+  String get formsDemoIntroSubtitle;
+
+  /// No description provided for @formsDemoFieldLibraryOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'Field library'**
+  String get formsDemoFieldLibraryOverline;
+
+  /// No description provided for @formsDemoSharedFormControlsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared form controls'**
+  String get formsDemoSharedFormControlsTitle;
+
+  /// No description provided for @formsDemoPreviewBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get formsDemoPreviewBadge;
+
+  /// No description provided for @formsDemoShowcaseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Base fields, selectors, and calendar wrappers in the same visual rhythm as the system.'**
+  String get formsDemoShowcaseSubtitle;
+
+  /// No description provided for @formsDemoFieldsEnabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Fields enabled'**
+  String get formsDemoFieldsEnabledLabel;
+
+  /// No description provided for @formsDemoShowcaseFieldsEnabledHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Turns the entire example surface below on or off.'**
+  String get formsDemoShowcaseFieldsEnabledHelper;
+
+  /// No description provided for @formsDemoFormStateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Form state'**
+  String get formsDemoFormStateTitle;
+
+  /// No description provided for @formsDemoFormStateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to inspect disabled fields.'**
+  String get formsDemoFormStateSubtitle;
+
+  /// No description provided for @formsDemoFormStateFieldsEnabledHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies the disabled state to every example below.'**
+  String get formsDemoFormStateFieldsEnabledHelper;
+
+  /// No description provided for @formsDemoTextEmailPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AppTextField, email, and password'**
+  String get formsDemoTextEmailPasswordTitle;
+
+  /// No description provided for @formsDemoTextEmailPasswordSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fake data; submit runs validation.'**
+  String get formsDemoTextEmailPasswordSubtitle;
+
+  /// No description provided for @formsDemoFullNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Full name'**
+  String get formsDemoFullNameLabel;
+
+  /// No description provided for @formsDemoFullNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'As in registration'**
+  String get formsDemoFullNameHint;
+
+  /// No description provided for @formsDemoNameValidatorMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least 3 characters.'**
+  String get formsDemoNameValidatorMinLength;
+
+  /// No description provided for @formsDemoCorporateEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Work email'**
+  String get formsDemoCorporateEmailLabel;
+
+  /// No description provided for @formsDemoPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get formsDemoPasswordLabel;
+
+  /// No description provided for @formsDemoNotesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get formsDemoNotesLabel;
+
+  /// No description provided for @formsDemoNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get formsDemoNotesHint;
+
+  /// No description provided for @formsDemoDatePickersFormTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Date pickers in Form'**
+  String get formsDemoDatePickersFormTitle;
+
+  /// No description provided for @formsDemoDatePickersFormSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Validation on submit; clear the field and validate to see the error. Range with explicit dates in the demo.'**
+  String get formsDemoDatePickersFormSubtitle;
+
+  /// No description provided for @formsDemoReferenceDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference date'**
+  String get formsDemoReferenceDateLabel;
+
+  /// No description provided for @formsDemoReferenceDateHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in a bottom sheet with a styled calendar.'**
+  String get formsDemoReferenceDateHelper;
+
+  /// No description provided for @formsDemoSelectReferenceDateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select reference date'**
+  String get formsDemoSelectReferenceDateTitle;
+
+  /// No description provided for @formsDemoReferenceDateRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the reference date.'**
+  String get formsDemoReferenceDateRequiredError;
+
+  /// No description provided for @formsDemoAssessmentPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Desired capture period'**
+  String get formsDemoAssessmentPeriodLabel;
+
+  /// No description provided for @formsDemoAssessmentPeriodHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Ideal for filters and analytical queries.'**
+  String get formsDemoAssessmentPeriodHelper;
+
+  /// No description provided for @formsDemoSelectPeriodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select period'**
+  String get formsDemoSelectPeriodTitle;
+
+  /// No description provided for @formsDemoAssessmentPeriodRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the full period.'**
+  String get formsDemoAssessmentPeriodRequiredError;
+
+  /// No description provided for @formsDemoDateRangeMiddle.
+  ///
+  /// In en, this message translates to:
+  /// **' to '**
+  String get formsDemoDateRangeMiddle;
+
+  /// No description provided for @formsDemoCheckboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AppCheckboxField'**
+  String get formsDemoCheckboxTitle;
+
+  /// No description provided for @formsDemoCheckboxSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fictitious consent.'**
+  String get formsDemoCheckboxSubtitle;
+
+  /// No description provided for @formsDemoCheckboxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive a weekly summary by email'**
+  String get formsDemoCheckboxLabel;
+
+  /// No description provided for @formsDemoCheckboxHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Sends alerts, summaries, and indicator updates.'**
+  String get formsDemoCheckboxHelper;
+
+  /// No description provided for @formsDemoRadioCompactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact AppRadioGroup'**
+  String get formsDemoRadioCompactTitle;
+
+  /// No description provided for @formsDemoRadioCompactSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single selection using the design system inline pattern.'**
+  String get formsDemoRadioCompactSubtitle;
+
+  /// No description provided for @formsDemoPeriodDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get formsDemoPeriodDaily;
+
+  /// No description provided for @formsDemoPeriodMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get formsDemoPeriodMonthly;
+
+  /// No description provided for @formsDemoPeriodQuarterly.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarterly'**
+  String get formsDemoPeriodQuarterly;
+
+  /// No description provided for @formsDemoChoiceChipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AppChoiceChip'**
+  String get formsDemoChoiceChipTitle;
+
+  /// No description provided for @formsDemoChoiceChipSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Point-in-time chips for context, store, or scope.'**
+  String get formsDemoChoiceChipSubtitle;
+
+  /// No description provided for @formsDemoScopeHeadquarters.
+  ///
+  /// In en, this message translates to:
+  /// **'Head office'**
+  String get formsDemoScopeHeadquarters;
+
+  /// No description provided for @formsDemoScopeStoreCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Downtown store'**
+  String get formsDemoScopeStoreCenter;
+
+  /// No description provided for @formsDemoScopeStoreSouth.
+  ///
+  /// In en, this message translates to:
+  /// **'South store'**
+  String get formsDemoScopeStoreSouth;
+
+  /// No description provided for @formsDemoDropdownMenusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropdown menus'**
+  String get formsDemoDropdownMenusTitle;
+
+  /// No description provided for @formsDemoDropdownMenusSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Single-select and multi-select search in the same light/dark visual pattern as the references.'**
+  String get formsDemoDropdownMenusSubtitle;
+
+  /// No description provided for @formsDemoStandardSelectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard select'**
+  String get formsDemoStandardSelectLabel;
+
+  /// No description provided for @formsDemoSelectHiveNodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Hive node…'**
+  String get formsDemoSelectHiveNodeHint;
+
+  /// No description provided for @formsDemoMultiSelectSearchLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-select search'**
+  String get formsDemoMultiSelectSearchLabel;
+
+  /// No description provided for @formsDemoHiveNodeAlphaCore.
+  ///
+  /// In en, this message translates to:
+  /// **'Alpha Core'**
+  String get formsDemoHiveNodeAlphaCore;
+
+  /// No description provided for @formsDemoHiveNodeDeltaNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Delta Node'**
+  String get formsDemoHiveNodeDeltaNode;
+
+  /// No description provided for @formsDemoHiveNodeSigmaGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Sigma Grid'**
+  String get formsDemoHiveNodeSigmaGrid;
+
+  /// No description provided for @formsDemoTagAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get formsDemoTagAnalytics;
+
+  /// No description provided for @formsDemoTagCloud.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud'**
+  String get formsDemoTagCloud;
+
+  /// No description provided for @formsDemoTagAutomation.
+  ///
+  /// In en, this message translates to:
+  /// **'Automation'**
+  String get formsDemoTagAutomation;
+
+  /// No description provided for @formsDemoTagSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get formsDemoTagSecurity;
+
+  /// No description provided for @formsDemoFormBuilderSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FormBuilder with dropdowns and dates'**
+  String get formsDemoFormBuilderSectionTitle;
+
+  /// No description provided for @formsDemoFormBuilderSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Same wrappers used in parameterized reports, now with the shared dropdown.'**
+  String get formsDemoFormBuilderSectionSubtitle;
+
+  /// No description provided for @formsDemoFormBuilderNodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select node (FormBuilder)'**
+  String get formsDemoFormBuilderNodeLabel;
+
+  /// No description provided for @formsDemoFormBuilderNodeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Single selection with the shared wrapper.'**
+  String get formsDemoFormBuilderNodeHelper;
+
+  /// No description provided for @formsDemoFormBuilderTagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags (FormBuilder)'**
+  String get formsDemoFormBuilderTagsLabel;
+
+  /// No description provided for @formsDemoFormBuilderTagsHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Inline search with removable chips.'**
+  String get formsDemoFormBuilderTagsHelper;
+
+  /// No description provided for @formsDemoFormBuilderDateRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Required date (FormBuilder)'**
+  String get formsDemoFormBuilderDateRequiredLabel;
+
+  /// No description provided for @formsDemoFormBuilderDateRequiredHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Validation with form_builder_validators.'**
+  String get formsDemoFormBuilderDateRequiredHelper;
+
+  /// No description provided for @formsDemoFormBuilderSelectDateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date (FormBuilder)'**
+  String get formsDemoFormBuilderSelectDateTitle;
+
+  /// No description provided for @formsDemoFormBuilderRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Period (FormBuilder)'**
+  String get formsDemoFormBuilderRangeLabel;
+
+  /// No description provided for @formsDemoFormBuilderRangeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional in this demo.'**
+  String get formsDemoFormBuilderRangeHelper;
+
+  /// No description provided for @formsDemoFormBuilderSelectRangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select period (FormBuilder)'**
+  String get formsDemoFormBuilderSelectRangeTitle;
+
+  /// No description provided for @formsDemoValidateFormBuilderButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Validate FormBuilder'**
+  String get formsDemoValidateFormBuilderButton;
+
+  /// No description provided for @formsDemoValidateFormSubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Validate submit (Form)'**
+  String get formsDemoValidateFormSubmitButton;
+
+  /// No description provided for @formsDemoFormValidSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid form (fake demo). Ref: {refLabel}. Period: {rangeLabel}.'**
+  String formsDemoFormValidSnackbar(String refLabel, String rangeLabel);
+
+  /// No description provided for @formsDemoFormBuilderValidSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Valid FormBuilder (fake demo). Date: {dateLabel}. Period: {rangeLabel}.'**
+  String formsDemoFormBuilderValidSnackbar(String dateLabel, String rangeLabel);
+
+  /// No description provided for @formsDemoLegendInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get formsDemoLegendInput;
+
+  /// No description provided for @formsDemoLegendSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection'**
+  String get formsDemoLegendSelection;
+
+  /// No description provided for @formsDemoLegendDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get formsDemoLegendDate;
+
+  /// No description provided for @formsDemoLegendFormBuilder.
+  ///
+  /// In en, this message translates to:
+  /// **'FormBuilder'**
+  String get formsDemoLegendFormBuilder;
+
+  /// No description provided for @datePickerPlaceholderSelectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a date'**
+  String get datePickerPlaceholderSelectDate;
+
+  /// No description provided for @dateRangePickerPlaceholderSelectPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the period'**
+  String get dateRangePickerPlaceholderSelectPeriod;
+
+  /// No description provided for @datePickerSheetDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get datePickerSheetDefaultTitle;
+
+  /// No description provided for @dateRangePickerSheetDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select period'**
+  String get dateRangePickerSheetDefaultTitle;
+
+  /// No description provided for @datePickerClearSelectionTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get datePickerClearSelectionTooltip;
+
+  /// No description provided for @datePickerSheetRemoveDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove date'**
+  String get datePickerSheetRemoveDate;
+
+  /// No description provided for @dateRangePickerSheetRemovePeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove period'**
+  String get dateRangePickerSheetRemovePeriod;
+
+  /// No description provided for @datePickerSheetCloseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get datePickerSheetCloseTooltip;
+
+  /// No description provided for @datePickerSheetApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get datePickerSheetApply;
+
+  /// No description provided for @datePickerSemanticsFallbackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get datePickerSemanticsFallbackLabel;
+
+  /// No description provided for @areaTrendDemoIntroEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Area charts'**
+  String get areaTrendDemoIntroEyebrow;
+
+  /// No description provided for @areaTrendDemoIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AppAreaTrendChart'**
+  String get areaTrendDemoIntroTitle;
+
+  /// No description provided for @areaTrendDemoIntroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporal trend with filled area: gradient, markers, zoom, style variants, and structured per-series/point tap event.'**
+  String get areaTrendDemoIntroSubtitle;
+
+  /// No description provided for @areaTrendDemoShowcaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporal trend with fill'**
+  String get areaTrendDemoShowcaseTitle;
+
+  /// No description provided for @areaTrendDemoShowcaseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Area chart for volume, growth, and comparisons over time, with good mass and intensity reading.'**
+  String get areaTrendDemoShowcaseSubtitle;
+
+  /// No description provided for @areaTrendDemoShowcaseBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Trend'**
+  String get areaTrendDemoShowcaseBadge;
+
+  /// No description provided for @areaTrendDemoShowcaseHighlightTimeSeries.
+  ///
+  /// In en, this message translates to:
+  /// **'Time series'**
+  String get areaTrendDemoShowcaseHighlightTimeSeries;
+
+  /// No description provided for @areaTrendDemoShowcaseHighlightGradientMarkers.
+  ///
+  /// In en, this message translates to:
+  /// **'Gradient and markers'**
+  String get areaTrendDemoShowcaseHighlightGradientMarkers;
+
+  /// No description provided for @areaTrendDemoShowcaseHighlightMultiseries.
+  ///
+  /// In en, this message translates to:
+  /// **'Multi-series'**
+  String get areaTrendDemoShowcaseHighlightMultiseries;
+
+  /// No description provided for @areaTrendDemoS01Title.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Weekly revenue'**
+  String get areaTrendDemoS01Title;
+
+  /// No description provided for @areaTrendDemoS01Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Area with gradient, formatted axis, tooltip, and tap.'**
+  String get areaTrendDemoS01Subtitle;
+
+  /// No description provided for @areaTrendDemoS02Title.
+  ///
+  /// In en, this message translates to:
+  /// **'2. With point markers'**
+  String get areaTrendDemoS02Title;
+
+  /// No description provided for @areaTrendDemoS02Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Each point shows a visible marker.'**
+  String get areaTrendDemoS02Subtitle;
+
+  /// No description provided for @areaTrendDemoS03Title.
+  ///
+  /// In en, this message translates to:
+  /// **'3. No gradient (solid area)'**
+  String get areaTrendDemoS03Title;
+
+  /// No description provided for @areaTrendDemoS03Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'showGradientFill: false for a flat fill.'**
+  String get areaTrendDemoS03Subtitle;
+
+  /// No description provided for @areaTrendDemoS04Title.
+  ///
+  /// In en, this message translates to:
+  /// **'4. Orders by hour'**
+  String get areaTrendDemoS04Title;
+
+  /// No description provided for @areaTrendDemoS04Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operational peak of the day — unit scale.'**
+  String get areaTrendDemoS04Subtitle;
+
+  /// No description provided for @areaTrendDemoS05Title.
+  ///
+  /// In en, this message translates to:
+  /// **'5. Compact without shell'**
+  String get areaTrendDemoS05Title;
+
+  /// No description provided for @areaTrendDemoS05Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact preset, no axes and no inner shell.'**
+  String get areaTrendDemoS05Subtitle;
+
+  /// No description provided for @areaTrendDemoS06Title.
+  ///
+  /// In en, this message translates to:
+  /// **'6. Loading state'**
+  String get areaTrendDemoS06Title;
+
+  /// No description provided for @areaTrendDemoS07Title.
+  ///
+  /// In en, this message translates to:
+  /// **'7. Empty state'**
+  String get areaTrendDemoS07Title;
+
+  /// No description provided for @areaTrendDemoEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No data for the selected period.'**
+  String get areaTrendDemoEmptyMessage;
+
+  /// No description provided for @areaTrendDemoS08Title.
+  ///
+  /// In en, this message translates to:
+  /// **'8. Multi-series (store comparison)'**
+  String get areaTrendDemoS08Title;
+
+  /// No description provided for @areaTrendDemoS08Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Three overlaid stores with automatic palette. Legend on.'**
+  String get areaTrendDemoS08Subtitle;
+
+  /// No description provided for @areaTrendDemoS09Title.
+  ///
+  /// In en, this message translates to:
+  /// **'9. Multi-series with trackball'**
+  String get areaTrendDemoS09Title;
+
+  /// No description provided for @areaTrendDemoS09Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the area to see values for all series at the same X position.'**
+  String get areaTrendDemoS09Subtitle;
+
+  /// No description provided for @areaTrendDemoS10Title.
+  ///
+  /// In en, this message translates to:
+  /// **'10. Colors per entry'**
+  String get areaTrendDemoS10Title;
+
+  /// No description provided for @areaTrendDemoS10Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom color per AppAreaTrendEntry.'**
+  String get areaTrendDemoS10Subtitle;
+
+  /// No description provided for @areaTrendDemoSeriesRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get areaTrendDemoSeriesRevenue;
+
+  /// No description provided for @areaTrendDemoSeriesTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get areaTrendDemoSeriesTarget;
+
+  /// No description provided for @areaTrendDemoStoreCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Downtown'**
+  String get areaTrendDemoStoreCenter;
+
+  /// No description provided for @areaTrendDemoStoreNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'North'**
+  String get areaTrendDemoStoreNorth;
+
+  /// No description provided for @areaTrendDemoStoreSouth.
+  ///
+  /// In en, this message translates to:
+  /// **'South'**
+  String get areaTrendDemoStoreSouth;
+
+  /// No description provided for @areaTrendDemoDefaultSeriesName.
+  ///
+  /// In en, this message translates to:
+  /// **'primary series'**
+  String get areaTrendDemoDefaultSeriesName;
+
+  /// No description provided for @areaTrendDemoTapSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Area: {seriesLabel} • {pointLabel} = {valueLabel}'**
+  String areaTrendDemoTapSnackbar(
+    String seriesLabel,
+    String pointLabel,
+    String valueLabel,
+  );
+
+  /// No description provided for @areaTrendDemoA11ySection.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart demo {sectionIndex}: {sectionTitle}'**
+  String areaTrendDemoA11ySection(int sectionIndex, String sectionTitle);
 }
 
 class _AppLocalizationsDelegate

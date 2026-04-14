@@ -1,10 +1,11 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/navigation/app_shell_brand_icon.dart';
 import 'package:flutter/material.dart';
 
-class AppShellDrawerHeader extends StatelessWidget {
-  const AppShellDrawerHeader({
+class AppShellNavHeader extends StatelessWidget {
+  const AppShellNavHeader({
     required this.title,
     super.key,
     this.subtitle,
@@ -26,28 +27,7 @@ class AppShellDrawerHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.primary,
-              borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.22),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: SizedBox(
-              width: 28,
-              height: 28,
-              child: Icon(
-                Icons.hexagon_rounded,
-                size: 18,
-                color: colors.onPrimary,
-              ),
-            ),
-          ),
+          const AppShellBrandIcon(),
           SizedBox(width: tokens.gapSm),
           Expanded(
             child: Column(

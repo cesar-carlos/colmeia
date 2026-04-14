@@ -1,4 +1,3 @@
-import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -33,15 +32,7 @@ class AppShellRail extends StatelessWidget {
         child: AppShellNavigationPanel(
           currentRoute: currentRoute,
           visibleShellRoutes: visibleShellRoutes,
-          closeOverlayBeforeSignOut: false,
-          onShellRouteSelected: (context, route) async {
-            if (route.shellIndex != currentRoute.shellIndex) {
-              context.goTo(route);
-            }
-          },
-          onProfileOpen: (context) async {
-            context.goTo(AppRoute.settings);
-          },
+          closeOverlayBeforeNavigate: false,
         ),
       ),
     );

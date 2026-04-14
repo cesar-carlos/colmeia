@@ -42,6 +42,9 @@ class AppShellScaffold extends StatelessWidget {
       ).colorScheme.outlineVariant.withValues(alpha: 0.22);
 
       return Scaffold(
+        // SafeArea here protects the desktop body (rail + app bar + content).
+        // The Drawer (mobile path below) has its own SafeArea inside
+        // AppShellDrawer — both are intentional and not redundant.
         body: SafeArea(
           bottom: false,
           child: Row(
