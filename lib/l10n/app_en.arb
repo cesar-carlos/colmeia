@@ -56,6 +56,26 @@
   "dashboardHomeFiltersAgentsEmptyHint": "Load the overview to list agents.",
   "dashboardHomeFiltersYearMonthLabel": "YEAR / MONTH",
   "dashboardHomeFiltersPeriodLast30Days": "Last 30 days",
+  "overviewAgentFilterAllAgentsSummary": "All agents ({count})",
+  "@overviewAgentFilterAllAgentsSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "overviewAgentFilterSelectedCount": "{count} agents selected",
+  "@overviewAgentFilterSelectedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "overviewAgentFilterRefineAction": "Refine selection",
+  "overviewAgentFilterEditAction": "Edit",
+  "overviewAgentFilterSheetTitle": "Select agents",
+  "overviewAgentFilterSheetSearchHint": "Search agents…",
+  "overviewAgentFilterSelectMatching": "Select all matching",
+  "overviewAgentFilterApply": "Apply",
+  "overviewAgentFilterCancel": "Cancel",
+  "overviewAgentFilterNoSearchResults": "No agents match your search.",
   "dashboardAgentRankingTitle": "Ranking by agent",
   "dashboardAgentRankingSubtitle": "Total revenue by agent in the period.",
   "dashboardUserRankingTitle": "Ranking by operator",

@@ -959,6 +959,11 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     }
   }
 
+  @override
+  Future<Set<String>?> loadOnlineAgentIds({required String userId}) {
+    return _loadOnlineAgentIds(userId: userId);
+  }
+
   PaginatedResult<ClientAgentCatalogItem> _mapCatalog(
     PaginatedAgentCatalogResponseDto response, {
     required Set<String>? onlineIds,

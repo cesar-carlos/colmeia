@@ -1,4 +1,5 @@
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_home_agent_filter_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -60,21 +61,6 @@ class OverviewFilterBar extends StatelessWidget {
       decorationColor: cs.primary,
       fontSize: 11,
     );
-
-    final agentOptions = availableAgents
-        .map(
-          (a) => AppDropdownOption<String>(
-            value: a.agentId,
-            label: a.name,
-          ),
-        )
-        .toList(growable: false);
-    // `null` in the domain means "all agents". The multi-select needs an
-    // explicit id list to render chips and row selection; mapping null → all
-    // ids keeps UI in sync when we normalize a full explicit pick to `null`.
-    final multiSelectSelectedAgentIds = filter.selectedAgentIds == null
-        ? availableAgents.map((a) => a.agentId).toList(growable: false)
-        : filter.selectedAgentIds!.toList(growable: false);
 
     final monthDropdownOptions = <AppDropdownOption<OverviewYearMonth?>>[
       AppDropdownOption<OverviewYearMonth?>(
@@ -139,13 +125,11 @@ class OverviewFilterBar extends StatelessWidget {
             ],
           ),
           SizedBox(height: tokens.gapXs),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 480;
-
-              final Widget agentField;
-              if (availableAgents.isEmpty) {
-                agentField = Column(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              if (availableAgents.isEmpty)
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -163,43 +147,27 @@ class OverviewFilterBar extends StatelessWidget {
                       ),
                     ),
                   ],
-                );
-              } else {
-                agentField = AppMultiSelectSearchField<String>(
-                  label: l10n.dashboardHomeFiltersAgentsLabel,
-                  options: agentOptions,
-                  selectedValues: multiSelectSelectedAgentIds,
+                )
+              else
+                OverviewHomeAgentFilterControl(
+                  l10n: l10n,
+                  availableAgents: availableAgents,
+                  selectedAgentIds: filter.selectedAgentIds,
                   enabled: !isDisabled,
-                  density: AppTextFieldDensity.compact,
-                  searchHintText: l10n.reportInlineFiltersHint,
-                  onChanged: (ids) {
-                    // Empty selection maps to null ("all agents"). Removing
-                    // the last chip triggers a full-agent load again.
-                    if (ids.isEmpty) {
+                  onSelectionChanged: (ids) {
+                    if (ids == null) {
                       onFilterChanged?.call(
                         filter.copyWith(selectedAgentIds: null),
                       );
                       return;
                     }
-                    final allIds =
-                        availableAgents.map((e) => e.agentId).toSet();
-                    if (ids.length == allIds.length &&
-                        ids.toSet().containsAll(allIds)) {
-                      onFilterChanged?.call(
-                        filter.copyWith(selectedAgentIds: null),
-                      );
-                    } else {
-                      onFilterChanged?.call(
-                        filter.copyWith(
-                          selectedAgentIds: Set<String>.from(ids),
-                        ),
-                      );
-                    }
+                    onFilterChanged?.call(
+                      filter.copyWith(selectedAgentIds: ids),
+                    );
                   },
-                );
-              }
-
-              final monthField = AppDropdownField<OverviewYearMonth?>(
+                ),
+              SizedBox(height: tokens.gapMd),
+              AppDropdownField<OverviewYearMonth?>(
                 label: l10n.dashboardHomeFiltersYearMonthLabel,
                 value: filter.yearMonth,
                 options: monthDropdownOptions,
@@ -208,28 +176,8 @@ class OverviewFilterBar extends StatelessWidget {
                 onChanged: (v) => onFilterChanged!(
                   filter.copyWith(yearMonth: v),
                 ),
-              );
-
-              if (isNarrow) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    agentField,
-                    SizedBox(height: tokens.gapMd),
-                    monthField,
-                  ],
-                );
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: agentField),
-                  SizedBox(width: tokens.gapMd),
-                  Expanded(child: monthField),
-                ],
-              );
-            },
+              ),
+            ],
           ),
         ],
       ),

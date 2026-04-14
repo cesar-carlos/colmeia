@@ -273,7 +273,11 @@ class AppMultiSelectSearchField<T> extends StatefulWidget {
     this.density = AppTextFieldDensity.comfortable,
     this.menuMaxHeight = 220,
     this.semanticsLabel,
-  });
+    this.minimumSelectionCount = 0,
+  }) : assert(
+          minimumSelectionCount >= 0,
+          'minimumSelectionCount must be non-negative',
+        );
 
   final List<AppDropdownOption<T>> options;
   final List<T> selectedValues;
@@ -287,6 +291,10 @@ class AppMultiSelectSearchField<T> extends StatefulWidget {
   final AppTextFieldDensity density;
   final double menuMaxHeight;
   final String? semanticsLabel;
+
+  /// When greater than zero, the user cannot deselect below this many items
+  /// (dropdown toggles and chip remove controls respect this).
+  final int minimumSelectionCount;
 
   @override
   State<AppMultiSelectSearchField<T>> createState() =>
@@ -342,6 +350,9 @@ class _AppMultiSelectSearchFieldState<T>
     final next = widget.selectedValues.toList(growable: true);
     if (next.contains(value)) {
       next.removeWhere((e) => e == value);
+      if (next.length < widget.minimumSelectionCount) {
+        return;
+      }
     } else {
       next.add(value);
     }
@@ -450,7 +461,7 @@ class _AppMultiSelectSearchFieldState<T>
                         ),
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: Wrap(
+                            child: Wrap(
                             spacing: chipWrapSpacing,
                             runSpacing: chipWrapSpacing,
                             children: widget.selectedValues
@@ -465,10 +476,16 @@ class _AppMultiSelectSearchFieldState<T>
                                     return const SizedBox.shrink();
                                   }
 
+                                  final canRemove = widget.selectedValues
+                                          .length >
+                                      widget.minimumSelectionCount;
+
                                   return _MultiSelectChip(
                                     label: option.label.toUpperCase(),
                                     enabled: widget.enabled,
-                                    onRemove: () => _toggleValue(value),
+                                    onRemove: canRemove
+                                        ? () => _toggleValue(value)
+                                        : null,
                                   );
                                 })
                                 .toList(growable: false),
@@ -665,12 +682,12 @@ class _MultiSelectChip extends StatelessWidget {
   const _MultiSelectChip({
     required this.label,
     required this.enabled,
-    required this.onRemove,
+    this.onRemove,
   });
 
   final String label;
   final bool enabled;
-  final VoidCallback onRemove;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -688,7 +705,7 @@ class _MultiSelectChip extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.only(
           left: tokens.gapMd,
-          right: tokens.gapXs,
+          right: onRemove != null ? tokens.gapXs : tokens.gapMd,
           top: tokens.gapXs,
           bottom: tokens.gapXs,
         ),
@@ -702,19 +719,21 @@ class _MultiSelectChip extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
-            SizedBox(width: tokens.gapXs),
-            InkWell(
-              onTap: enabled ? onRemove : null,
-              borderRadius: BorderRadius.circular(999),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 14,
-                  color: scheme.onPrimary,
+            if (onRemove != null) ...<Widget>[
+              SizedBox(width: tokens.gapXs),
+              InkWell(
+                onTap: enabled ? onRemove : null,
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: scheme.onPrimary,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

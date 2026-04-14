@@ -1,19 +1,27 @@
+import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:flutter/foundation.dart';
 
 /// Represents a named agent option available for overview filtering.
 @immutable
 class OverviewAgentOption {
-  const OverviewAgentOption({required this.agentId, required this.name});
+  const OverviewAgentOption({
+    required this.agentId,
+    required this.name,
+    this.connectionStatus = AgentConnectionStatus.unknown,
+  });
 
   final String agentId;
   final String name;
+  final AgentConnectionStatus connectionStatus;
 
   @override
   bool operator ==(Object other) =>
-      other is OverviewAgentOption && other.agentId == agentId;
+      other is OverviewAgentOption &&
+      other.agentId == agentId &&
+      other.connectionStatus == connectionStatus;
 
   @override
-  int get hashCode => agentId.hashCode;
+  int get hashCode => Object.hash(agentId, connectionStatus);
 }
 
 /// Year/month period selected by the user.

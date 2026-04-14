@@ -72,6 +72,7 @@ class AppFormBuilderMultiSelectSearchField<T> extends StatelessWidget {
     this.emptyResultsLabel = 'Nenhum resultado encontrado.',
     this.density = AppTextFieldDensity.comfortable,
     this.menuMaxHeight = 220,
+    this.minimumSelectionCount = 0,
   });
 
   final String name;
@@ -86,6 +87,7 @@ class AppFormBuilderMultiSelectSearchField<T> extends StatelessWidget {
   final String emptyResultsLabel;
   final AppTextFieldDensity density;
   final double menuMaxHeight;
+  final int minimumSelectionCount;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +109,7 @@ class AppFormBuilderMultiSelectSearchField<T> extends StatelessWidget {
           menuMaxHeight: menuMaxHeight,
           searchHintText: searchHintText,
           emptyResultsLabel: emptyResultsLabel,
+          minimumSelectionCount: minimumSelectionCount,
           onChanged: field.didChange,
         );
       },

@@ -70,4 +70,8 @@ abstract interface class ClientAgentsRepository {
   Future<AppResult<SyncPendingAgentActionsResult>> syncPendingActions({
     required String userId,
   });
+
+  /// Agent ids currently reported as connected (hub/cache), or `null` when
+  /// presence could not be resolved.
+  Future<Set<String>?> loadOnlineAgentIds({required String userId});
 }

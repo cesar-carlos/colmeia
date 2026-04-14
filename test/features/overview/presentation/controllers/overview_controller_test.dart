@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -12,9 +13,24 @@ import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
+class _MockClientAgentsRepository extends Mock
+    implements ClientAgentsRepository {}
+
 void main() {
+  late _MockClientAgentsRepository clientAgentsRepository;
+
+  setUp(() {
+    clientAgentsRepository = _MockClientAgentsRepository();
+    when(
+      () => clientAgentsRepository.loadOnlineAgentIds(
+        userId: any(named: 'userId'),
+      ),
+    ).thenAnswer((_) async => null);
+  });
+
   group('OverviewController', () {
     test('should load overview from use case', () async {
       final repository = _QueuedOverviewRepository(
@@ -26,6 +42,7 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
+        clientAgentsRepository,
       );
 
       await controller.loadOverview(userId: 'demo-user');
@@ -56,6 +73,7 @@ void main() {
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
+          clientAgentsRepository,
         );
 
         await controller.loadOverview(userId: 'demo-user');
@@ -105,6 +123,7 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
+        clientAgentsRepository,
       );
 
       await controller.loadOverview(userId: 'demo-user');
@@ -139,6 +158,7 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
+        clientAgentsRepository,
       );
 
       final firstLoadFuture = controller.loadOverview(userId: 'demo-user');
@@ -169,6 +189,7 @@ void main() {
         LoadOverviewUseCase(
           _PendingOverviewRepository(completer.future),
         ),
+        clientAgentsRepository,
       );
 
       final loadFuture = controller.loadOverview(userId: 'demo-user');

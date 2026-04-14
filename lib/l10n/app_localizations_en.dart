@@ -147,6 +147,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardHomeFiltersPeriodLast30Days => 'Last 30 days';
 
   @override
+  String overviewAgentFilterAllAgentsSummary(int count) {
+    return 'All agents ($count)';
+  }
+
+  @override
+  String overviewAgentFilterSelectedCount(int count) {
+    return '$count agents selected';
+  }
+
+  @override
+  String get overviewAgentFilterRefineAction => 'Refine selection';
+
+  @override
+  String get overviewAgentFilterEditAction => 'Edit';
+
+  @override
+  String get overviewAgentFilterSheetTitle => 'Select agents';
+
+  @override
+  String get overviewAgentFilterSheetSearchHint => 'Search agents…';
+
+  @override
+  String get overviewAgentFilterSelectMatching => 'Select all matching';
+
+  @override
+  String get overviewAgentFilterApply => 'Apply';
+
+  @override
+  String get overviewAgentFilterCancel => 'Cancel';
+
+  @override
+  String get overviewAgentFilterNoSearchResults =>
+      'No agents match your search.';
+
+  @override
   String get dashboardAgentRankingTitle => 'Ranking by agent';
 
   @override

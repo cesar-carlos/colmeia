@@ -345,6 +345,66 @@ abstract class AppLocalizations {
   /// **'Last 30 days'**
   String get dashboardHomeFiltersPeriodLast30Days;
 
+  /// No description provided for @overviewAgentFilterAllAgentsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'All agents ({count})'**
+  String overviewAgentFilterAllAgentsSummary(int count);
+
+  /// No description provided for @overviewAgentFilterSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} agents selected'**
+  String overviewAgentFilterSelectedCount(int count);
+
+  /// No description provided for @overviewAgentFilterRefineAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Refine selection'**
+  String get overviewAgentFilterRefineAction;
+
+  /// No description provided for @overviewAgentFilterEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get overviewAgentFilterEditAction;
+
+  /// No description provided for @overviewAgentFilterSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select agents'**
+  String get overviewAgentFilterSheetTitle;
+
+  /// No description provided for @overviewAgentFilterSheetSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search agents…'**
+  String get overviewAgentFilterSheetSearchHint;
+
+  /// No description provided for @overviewAgentFilterSelectMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all matching'**
+  String get overviewAgentFilterSelectMatching;
+
+  /// No description provided for @overviewAgentFilterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get overviewAgentFilterApply;
+
+  /// No description provided for @overviewAgentFilterCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get overviewAgentFilterCancel;
+
+  /// No description provided for @overviewAgentFilterNoSearchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No agents match your search.'**
+  String get overviewAgentFilterNoSearchResults;
+
   /// No description provided for @dashboardAgentRankingTitle.
   ///
   /// In en, this message translates to:

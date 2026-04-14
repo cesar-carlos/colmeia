@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/localization/app_localizations_fallback.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
@@ -12,9 +14,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
 class OverviewController extends ChangeNotifier {
-  OverviewController(this._loadOverviewUseCase);
+  OverviewController(
+    this._loadOverviewUseCase,
+    this._clientAgentsRepository,
+  );
 
   final LoadOverviewUseCase _loadOverviewUseCase;
+  final ClientAgentsRepository _clientAgentsRepository;
 
   AppLocalizations? _l10n;
 
@@ -182,22 +188,23 @@ class OverviewController extends ChangeNotifier {
       return;
     }
 
-    result.fold(
-      (overview) {
-        _overview = overview;
-        _loadedOverviewSignature = signature;
-        _updateAvailableAgents(overview);
-        AppLogger.info(
-          'Overview loaded in controller',
-          context: <String, Object?>{
-            'operation': 'loadOverview',
-            'userId': userId,
-            'paymentMethods': overview.paymentMethods.length,
-            'policy': policy.name,
-          },
-        );
-      },
-      (failure) {
+    final overview = result.getOrNull();
+    if (overview != null) {
+      _overview = overview;
+      _loadedOverviewSignature = signature;
+      await _updateAvailableAgents(overview, userId);
+      AppLogger.info(
+        'Overview loaded in controller',
+        context: <String, Object?>{
+          'operation': 'loadOverview',
+          'userId': userId,
+          'paymentMethods': overview.paymentMethods.length,
+          'policy': policy.name,
+        },
+      );
+    } else {
+      final failure = result.exceptionOrNull();
+      if (failure != null) {
         if (!keepContentVisible) {
           _overview = null;
           _loadedOverviewSignature = null;
@@ -218,8 +225,8 @@ class OverviewController extends ChangeNotifier {
           error: failure.cause ?? failure,
           stackTrace: failure.stackTrace,
         );
-      },
-    );
+      }
+    }
 
     if (keepContentVisible) {
       _isRefreshing = false;
@@ -239,7 +246,7 @@ class OverviewController extends ChangeNotifier {
 
   /// Rebuilds [_availableAgents] from the overview (per-agent rankings and
   /// failure metadata). Uses names resolved by the repository.
-  void _updateAvailableAgents(Overview overview) {
+  Future<void> _updateAvailableAgents(Overview overview, String userId) async {
     final seen = <String, String>{};
     for (final r in overview.agentRankings) {
       seen[r.agentId] = r.displayName;
@@ -270,10 +277,36 @@ class OverviewController extends ChangeNotifier {
       return;
     }
 
+    final onlineIds = await _clientAgentsRepository.loadOnlineAgentIds(
+      userId: userId,
+    );
+
+    if (_disposed) {
+      return;
+    }
+
     _availableAgents =
         merged.entries
-            .map((e) => OverviewAgentOption(agentId: e.key, name: e.value))
+            .map(
+              (e) => OverviewAgentOption(
+                agentId: e.key,
+                name: e.value,
+                connectionStatus: _connectionStatusFor(onlineIds, e.key),
+              ),
+            )
             .toList(growable: false)
           ..sort((a, b) => a.name.compareTo(b.name));
+  }
+
+  static AgentConnectionStatus _connectionStatusFor(
+    Set<String>? onlineIds,
+    String agentId,
+  ) {
+    if (onlineIds == null) {
+      return AgentConnectionStatus.unknown;
+    }
+    return onlineIds.contains(agentId)
+        ? AgentConnectionStatus.online
+        : AgentConnectionStatus.offline;
   }
 }

@@ -149,6 +149,42 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
 
   @override
+  String overviewAgentFilterAllAgentsSummary(int count) {
+    return 'Todos os agentes ($count)';
+  }
+
+  @override
+  String overviewAgentFilterSelectedCount(int count) {
+    return '$count agentes selecionados';
+  }
+
+  @override
+  String get overviewAgentFilterRefineAction => 'Refinar seleção';
+
+  @override
+  String get overviewAgentFilterEditAction => 'Editar';
+
+  @override
+  String get overviewAgentFilterSheetTitle => 'Selecionar agentes';
+
+  @override
+  String get overviewAgentFilterSheetSearchHint => 'Buscar agentes…';
+
+  @override
+  String get overviewAgentFilterSelectMatching =>
+      'Selecionar todos os filtrados';
+
+  @override
+  String get overviewAgentFilterApply => 'Aplicar';
+
+  @override
+  String get overviewAgentFilterCancel => 'Cancelar';
+
+  @override
+  String get overviewAgentFilterNoSearchResults =>
+      'Nenhum agente corresponde à busca.';
+
+  @override
   String get dashboardAgentRankingTitle => 'Ranking por agente';
 
   @override
@@ -1644,6 +1680,42 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
+
+  @override
+  String overviewAgentFilterAllAgentsSummary(int count) {
+    return 'Todos os agentes ($count)';
+  }
+
+  @override
+  String overviewAgentFilterSelectedCount(int count) {
+    return '$count agentes selecionados';
+  }
+
+  @override
+  String get overviewAgentFilterRefineAction => 'Refinar seleção';
+
+  @override
+  String get overviewAgentFilterEditAction => 'Editar';
+
+  @override
+  String get overviewAgentFilterSheetTitle => 'Selecionar agentes';
+
+  @override
+  String get overviewAgentFilterSheetSearchHint => 'Buscar agentes…';
+
+  @override
+  String get overviewAgentFilterSelectMatching =>
+      'Selecionar todos os filtrados';
+
+  @override
+  String get overviewAgentFilterApply => 'Aplicar';
+
+  @override
+  String get overviewAgentFilterCancel => 'Cancelar';
+
+  @override
+  String get overviewAgentFilterNoSearchResults =>
+      'Nenhum agente corresponde à busca.';
 
   @override
   String get dashboardAgentRankingTitle => 'Ranking por agente';

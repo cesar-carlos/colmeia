@@ -56,6 +56,26 @@
   "dashboardHomeFiltersAgentsEmptyHint": "Carregue a visao geral para listar os agentes.",
   "dashboardHomeFiltersYearMonthLabel": "ANO / MÊS",
   "dashboardHomeFiltersPeriodLast30Days": "Últimos 30 dias",
+  "overviewAgentFilterAllAgentsSummary": "Todos os agentes ({count})",
+  "@overviewAgentFilterAllAgentsSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "overviewAgentFilterSelectedCount": "{count} agentes selecionados",
+  "@overviewAgentFilterSelectedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "overviewAgentFilterRefineAction": "Refinar seleção",
+  "overviewAgentFilterEditAction": "Editar",
+  "overviewAgentFilterSheetTitle": "Selecionar agentes",
+  "overviewAgentFilterSheetSearchHint": "Buscar agentes…",
+  "overviewAgentFilterSelectMatching": "Selecionar todos os filtrados",
+  "overviewAgentFilterApply": "Aplicar",
+  "overviewAgentFilterCancel": "Cancelar",
+  "overviewAgentFilterNoSearchResults": "Nenhum agente corresponde à busca.",
   "dashboardAgentRankingTitle": "Ranking por agente",
   "dashboardAgentRankingSubtitle": "Faturamento total por agente no periodo.",
   "dashboardUserRankingTitle": "Ranking por operador",

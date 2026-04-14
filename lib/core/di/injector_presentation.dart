@@ -9,6 +9,7 @@ import 'package:colmeia/features/client_agents/application/usecases/read_pending
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
@@ -30,7 +31,10 @@ void registerInjectorPresentation(GetIt getIt) {
       ),
     )
     ..registerFactory<OverviewController>(
-      () => OverviewController(getIt<LoadOverviewUseCase>()),
+      () => OverviewController(
+        getIt<LoadOverviewUseCase>(),
+        getIt<ClientAgentsRepository>(),
+      ),
     )
     ..registerFactory<ClientAgentsController>(
       () => ClientAgentsController(
