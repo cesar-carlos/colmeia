@@ -27,6 +27,27 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavSettingsSubtitle => 'Conta e preferencias';
 
   @override
+  String get shellAppBrandName => 'Colmeia';
+
+  @override
+  String get shellOpenSettingsSemantics => 'Abrir configuracoes';
+
+  @override
+  String get shellOpenProfileSemantics => 'Abrir perfil e conta';
+
+  @override
+  String get shellNavSignOut => 'Sair';
+
+  @override
+  String get shellNavSigningOut => 'Saindo...';
+
+  @override
+  String get shellNavSignOutSemanticsLoading => 'Encerrando sessao';
+
+  @override
+  String get shellNavMainSemantics => 'Navegacao principal';
+
+  @override
   String get userPermissionViewDashboard => 'Visao geral';
 
   @override
@@ -1057,6 +1078,27 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get shellNavSettingsSubtitle => 'Conta e preferencias';
+
+  @override
+  String get shellAppBrandName => 'Colmeia';
+
+  @override
+  String get shellOpenSettingsSemantics => 'Abrir configuracoes';
+
+  @override
+  String get shellOpenProfileSemantics => 'Abrir perfil e conta';
+
+  @override
+  String get shellNavSignOut => 'Sair';
+
+  @override
+  String get shellNavSigningOut => 'Saindo...';
+
+  @override
+  String get shellNavSignOutSemanticsLoading => 'Encerrando sessao';
+
+  @override
+  String get shellNavMainSemantics => 'Navegacao principal';
 
   @override
   String get userPermissionViewDashboard => 'Visao geral';

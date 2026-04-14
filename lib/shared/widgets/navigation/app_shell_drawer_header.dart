@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 
 class AppShellDrawerHeader extends StatelessWidget {
   const AppShellDrawerHeader({
+    required this.title,
     super.key,
-    this.title = 'Colmeia',
     this.subtitle,
   });
 
@@ -20,56 +20,60 @@ class AppShellDrawerHeader extends StatelessWidget {
     final colors = theme.appColors;
     final typography = theme.appTypography;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.primary,
-            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: colors.primary.withValues(alpha: 0.22),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: SizedBox(
-            width: 28,
-            height: 28,
-            child: Icon(
-              Icons.hexagon_rounded,
-              size: 18,
-              color: colors.onPrimary,
-            ),
-          ),
-        ),
-        SizedBox(width: tokens.gapSm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                title,
-                style: typography.sectionHeaderH2.copyWith(
-                  fontSize: theme.textTheme.titleMedium?.fontSize,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              if (subtitle != null && subtitle!.isNotEmpty) ...<Widget>[
-                SizedBox(height: tokens.gapXs),
-                Text(
-                  subtitle!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
+    return Semantics(
+      header: true,
+      label: title,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.primary,
+              borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.22),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
-            ],
+            ),
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: Icon(
+                Icons.hexagon_rounded,
+                size: 18,
+                color: colors.onPrimary,
+              ),
+            ),
           ),
-        ),
-      ],
+          SizedBox(width: tokens.gapSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: typography.sectionHeaderH2.copyWith(
+                    fontSize: theme.textTheme.titleMedium?.fontSize,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (subtitle != null && subtitle!.isNotEmpty) ...<Widget>[
+                  SizedBox(height: tokens.gapXs),
+                  Text(
+                    subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

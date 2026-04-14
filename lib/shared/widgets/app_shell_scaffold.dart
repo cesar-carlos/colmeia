@@ -26,6 +26,7 @@ class AppShellScaffold extends StatelessWidget {
           (controller) => controller.availableShellRoutes,
         );
     final showShellNav = visibleShellRoutes.length > 1;
+    // Rail only on desktop; phone + tablet use drawer (not always visible).
     final useRail = AppBreakpoints.useRail(context);
 
     final body = HoneycombHexBackground(

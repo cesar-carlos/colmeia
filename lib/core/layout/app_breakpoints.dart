@@ -16,7 +16,7 @@ abstract final class AppBreakpoints {
   /// Hides a report column when grid width is below this (large phones / small tablets).
   static const double reportColumnHideMedium = 540;
 
-  /// Hides a column when grid width is below [mobile] (rail threshold).
+  /// Hides a column when grid width is below [mobile] (compact layouts).
   static const double reportColumnHideWide = mobile;
 
   static bool isMobile(BuildContext context) =>
@@ -31,9 +31,11 @@ abstract final class AppBreakpoints {
   static bool isDesktop(BuildContext context) =>
       MediaQuery.sizeOf(context).width >= desktop;
 
-  /// True on tablet or desktop (where the navigation rail is shown).
-  static bool useRail(BuildContext context) =>
-      isTablet(context) || isDesktop(context);
+  /// Fixed shell navigation (sidebar rail): **only desktop** — hidden on phone
+  /// and tablet. Non-desktop uses [Scaffold.drawer] (menu behind hamburger).
+  ///
+  /// Threshold: [desktop] (>= 1200 logical px). See [isDesktop].
+  static bool useRail(BuildContext context) => isDesktop(context);
 
   static bool isLandscape(BuildContext context) =>
       MediaQuery.orientationOf(context) == Orientation.landscape;

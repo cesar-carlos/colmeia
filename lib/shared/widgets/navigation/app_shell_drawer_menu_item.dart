@@ -56,7 +56,7 @@ class AppShellDrawerMenuItem extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: tokens.gapMd,
-              vertical: tokens.gapSm + 4,
+              vertical: tokens.gapSm + tokens.gapXs,
             ),
             child: Row(
               children: <Widget>[

@@ -8,13 +8,17 @@ class AppShellNavProfileCard extends StatelessWidget {
   const AppShellNavProfileCard({
     required this.name,
     required this.roleLabel,
+    required this.semanticsLabel,
     super.key,
     this.thumbnailUrl,
+    this.onTap,
   });
 
   final String name;
   final String roleLabel;
+  final String semanticsLabel;
   final String? thumbnailUrl;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +26,7 @@ class AppShellNavProfileCard extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
 
-    return AppSectionCard(
+    final Widget card = AppSectionCard(
       color: colors.surface,
       borderRadius: BorderRadius.circular(tokens.cardRadius),
       borderSide: BorderSide(
@@ -72,6 +76,27 @@ class AppShellNavProfileCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+
+    if (onTap != null) {
+      return Semantics(
+        button: true,
+        label: semanticsLabel,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(tokens.cardRadius),
+            onTap: onTap,
+            child: card,
+          ),
+        ),
+      );
+    }
+
+    return Semantics(
+      container: true,
+      label: semanticsLabel,
+      child: card,
     );
   }
 }

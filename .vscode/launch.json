@@ -34,7 +34,7 @@
             "name": "colmeia (Android emulator)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "emulator-5554",
+            "deviceId": "emulator-5556",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]

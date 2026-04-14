@@ -135,6 +135,48 @@ abstract class AppLocalizations {
   /// **'Account and preferences'**
   String get shellNavSettingsSubtitle;
 
+  /// No description provided for @shellAppBrandName.
+  ///
+  /// In en, this message translates to:
+  /// **'Colmeia'**
+  String get shellAppBrandName;
+
+  /// No description provided for @shellOpenSettingsSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get shellOpenSettingsSemantics;
+
+  /// No description provided for @shellOpenProfileSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Open profile and account'**
+  String get shellOpenProfileSemantics;
+
+  /// No description provided for @shellNavSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get shellNavSignOut;
+
+  /// No description provided for @shellNavSigningOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Signing out...'**
+  String get shellNavSigningOut;
+
+  /// No description provided for @shellNavSignOutSemanticsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Ending session'**
+  String get shellNavSignOutSemanticsLoading;
+
+  /// No description provided for @shellNavMainSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Main navigation'**
+  String get shellNavMainSemantics;
+
   /// No description provided for @userPermissionViewDashboard.
   ///
   /// In en, this message translates to:

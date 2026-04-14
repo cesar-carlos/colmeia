@@ -183,7 +183,7 @@ abstract final class AppTheme {
         ),
       ),
       drawerTheme: DrawerThemeData(
-        backgroundColor: colorScheme.surfaceContainerLow,
+        backgroundColor: colorScheme.surfaceContainerLowest,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),

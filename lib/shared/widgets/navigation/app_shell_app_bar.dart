@@ -2,6 +2,7 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -17,7 +18,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBrandTitle = true,
   });
 
-  /// When `false`, use next to [NavigationRail] inside the body (no duplicate
+  /// When `false`, sits beside the desktop rail in the body (no duplicate
   /// top status-bar padding). When `true` (default), used as [Scaffold.appBar].
   final bool primary;
 
@@ -32,6 +33,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     final colors = theme.appColors;
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
+    final l10n = AppLocalizations.of(context);
     final userData = context
         .select<CurrentUserContextController, AppShellUserSummary>(
           selectAppShellUserSummary,
@@ -67,9 +69,9 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
         SizedBox(width: tokens.gapSm),
         Semantics(
           header: true,
-          label: 'Colmeia',
+          label: l10n.shellAppBrandName,
           child: Text(
-            'Colmeia',
+            l10n.shellAppBrandName,
             style: typography.sectionHeaderH2.copyWith(
               fontSize: theme.textTheme.titleMedium?.fontSize,
               fontWeight: FontWeight.w800,
@@ -100,6 +102,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
             name: userData.name,
             thumbnailUrl: userData.thumbnailUrl,
             subtitle: showUserDetails ? userData.roleLabel : null,
+            semanticsLabel: l10n.shellOpenSettingsSemantics,
             onTap: () => context.goTo(AppRoute.settings),
           ),
         ),
@@ -112,11 +115,13 @@ class _ShellUserChip extends StatelessWidget {
   const _ShellUserChip({
     required this.name,
     required this.onTap,
+    required this.semanticsLabel,
     this.thumbnailUrl,
     this.subtitle,
   });
 
   final String name;
+  final String semanticsLabel;
   final String? thumbnailUrl;
   final String? subtitle;
   final VoidCallback onTap;
@@ -129,7 +134,7 @@ class _ShellUserChip extends StatelessWidget {
     final showSubtitle = subtitle != null && subtitle!.trim().isNotEmpty;
 
     return Semantics(
-      label: 'Abrir configuracoes',
+      label: semanticsLabel,
       button: true,
       child: Material(
         color: Colors.transparent,

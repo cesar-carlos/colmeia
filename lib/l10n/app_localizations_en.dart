@@ -27,6 +27,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shellNavSettingsSubtitle => 'Account and preferences';
 
   @override
+  String get shellAppBrandName => 'Colmeia';
+
+  @override
+  String get shellOpenSettingsSemantics => 'Open settings';
+
+  @override
+  String get shellOpenProfileSemantics => 'Open profile and account';
+
+  @override
+  String get shellNavSignOut => 'Sign out';
+
+  @override
+  String get shellNavSigningOut => 'Signing out...';
+
+  @override
+  String get shellNavSignOutSemanticsLoading => 'Ending session';
+
+  @override
+  String get shellNavMainSemantics => 'Main navigation';
+
+  @override
   String get userPermissionViewDashboard => 'Overview';
 
   @override
