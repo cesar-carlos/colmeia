@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -229,6 +230,19 @@ class AgentQueryExecutor<Row> {
     required AgentQueryPlan plan,
     required int totalElapsedMs,
   }) {
+    if (plan.skippedOnlyDueToMissingClientTokens) {
+      AppLogger.warning(
+        'Agent query skipped: no runnable targets (missing local client_token)',
+        context: <String, Object?>{
+          'queryKey': plan.queryKey.name,
+          'strategy': plan.strategy.name,
+          'consideredApprovedAgentCount': plan.consideredApprovedAgentCount,
+          'missingClientTokenAgentIds': plan.missingClientTokenTargets
+              .map((t) => t.agentId)
+              .join(', '),
+        },
+      );
+    }
     return AgentQueryExecutionReport<Row>(
       queryKey: plan.queryKey,
       strategy: plan.strategy,

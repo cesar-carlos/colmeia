@@ -108,6 +108,8 @@ class AgentQueryTargetResolver {
     );
   }
 
+  /// Approved agents are loaded without hub presence so target resolution stays
+  /// fast; each agent's connection status is not resolved in this path.
   Future<AppResult<List<ClientAgent>>> _loadAllApprovedAgents({
     required String userId,
   }) async {

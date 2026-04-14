@@ -1,31 +1,12 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    // https://go.microsoft.com/fwlink/?linkid=830387
+    // Android emulator id (emulator-5554, etc.) comes from `flutter devices` — update if launch fails after starting another AVD.
     "version": "0.2.0",
     "configurations": [
         {
             "name": "colmeia",
             "request": "launch",
             "type": "dart",
-            "deviceId": "iPhone 17",
-            "toolArgs": [
-                "--dart-define=USE_FAKE_BACKEND=false"
-            ]
-        },
-        {
-            "name": "colmeia (pick device)",
-            "request": "launch",
-            "type": "dart",
-            "toolArgs": [
-                "--dart-define=USE_FAKE_BACKEND=false"
-            ]
-        },
-        {
-            "name": "colmeia (Xiaomi Wi-Fi)",
-            "request": "launch",
-            "type": "dart",
-            "deviceId": "192.168.3.208:35985",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
@@ -34,16 +15,25 @@
             "name": "colmeia (Android emulator)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "emulator-5556",
+            "deviceId": "emulator-5554",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
         },
         {
-            "name": "colmeia (Pixel Tablet)",
+            "name": "colmeia (Xiaomi Wi-Fi)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "emulator-5554",
+            "deviceId": "192.168.3.208:40619",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
+        },
+        {
+            "name": "colmeia (iOS Simulator)",
+            "request": "launch",
+            "type": "dart",
+            "deviceId": "iPhone 17",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]

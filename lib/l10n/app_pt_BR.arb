@@ -32,8 +32,8 @@
       "agents": {"type": "String"}
     }
   },
-  "dashboardSetupRequiredTitle": "Configuracao pendente para consultar dados",
-  "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ({agents}). Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.",
+  "dashboardSetupRequiredTitle": "Salve um token de cliente para carregar os dados",
+  "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ({agents}). Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.",
   "@dashboardSetupRequiredMessage": {
     "placeholders": {
       "agents": {"type": "String"}
@@ -54,14 +54,14 @@
   "dashboardPaymentSummaryLoadingSemantics": "Carregando resumo por forma de pagamento…",
   "dashboardHomeFiltersAgentsLabel": "AGENTES",
   "dashboardHomeFiltersAgentsEmptyHint": "Carregue a visao geral para listar os agentes.",
-  "dashboardHomeFiltersYearMonthLabel": "ANO / MES",
-  "dashboardHomeFiltersPeriodLast30Days": "Ultimos 30 dias",
+  "dashboardHomeFiltersYearMonthLabel": "ANO / MÊS",
+  "dashboardHomeFiltersPeriodLast30Days": "Últimos 30 dias",
   "dashboardAgentRankingTitle": "Ranking por agente",
   "dashboardAgentRankingSubtitle": "Faturamento total por agente no periodo.",
   "dashboardUserRankingTitle": "Ranking por operador",
   "dashboardUserRankingSubtitle": "Faturamento por operador no periodo.",
   "overviewDefaultGreetingName": "Gestor",
-  "overviewGreetingEyebrow": "Ola, {name}",
+  "overviewGreetingEyebrow": "Olá, {name}",
   "@overviewGreetingEyebrow": {
     "placeholders": {
       "name": {"type": "String"}
@@ -145,7 +145,7 @@
   "agentCatalogActive": "ativo",
   "agentConnectionOnline": "online",
   "agentConnectionOffline": "offline",
-  "agentConnectionUnknown": "status operacional indisponivel",
+  "agentConnectionUnknown": "Estado de ligação desconhecido",
   "clientAgentsRemoveAccess": "Remover acesso",
   "clientAgentsRequestAccessIntro1": "Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.",
   "clientAgentsRequestAccessIntro2": "O agentId deve ser informado pelo responsavel do agente ou por um fluxo externo. Quando a solicitacao for aprovada, o agente sera liberado automaticamente para esta conta.",
@@ -169,7 +169,7 @@
   "clientAgentsRequestStatusApproved": "Aprovado",
   "clientAgentsRequestStatusRejected": "Rejeitado",
   "clientAgentsRequestStatusExpired": "Expirado",
-  "clientAgentsRequestStatusUnknown": "Status indisponivel",
+  "clientAgentsRequestStatusUnknown": "Desconhecido",
   "clientAgentsRequestDescPending": "Em analise pelo responsavel do agente.",
   "clientAgentsRequestDescApproved": "Aprovado e disponivel para esta conta.",
   "clientAgentsRequestDescRejected": "Nao foi aprovado pelo responsavel do agente.",
@@ -269,7 +269,7 @@
   "clientAgentsFilterConnectionLabel": "Conexao",
   "clientAgentsFilterConnectionOnline": "Online",
   "clientAgentsFilterConnectionOffline": "Offline",
-  "clientAgentsFilterConnectionUnknown": "Indisponivel",
+  "clientAgentsFilterConnectionUnknown": "Desconhecido",
   "clientAgentsFilterCatalogLabel": "Catalogo",
   "clientAgentsFilterCatalogActive": "Ativo",
   "clientAgentsFilterCatalogInactive": "Inativo",

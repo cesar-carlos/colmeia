@@ -20,4 +20,7 @@ class AgentQueryPlan {
   final List<AgentQueryTarget> missingClientTokenTargets;
   final int bridgeTimeoutMs;
   final int? raceMaxSources;
+
+  bool get skippedOnlyDueToMissingClientTokens =>
+      plannedTargets.isEmpty && missingClientTokenTargets.isNotEmpty;
 }

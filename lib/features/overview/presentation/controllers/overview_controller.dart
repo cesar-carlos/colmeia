@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/localization/app_localizations_fallback.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_failure_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -24,7 +24,8 @@ class OverviewController extends ChangeNotifier {
 
   set activeLocalizations(AppLocalizations value) => _l10n = value;
 
-  AppLocalizations get _s => _l10n ?? AppLocalizationsEn();
+  AppLocalizations get _s =>
+      _l10n ?? fallbackAppLocalizationsForPlatform();
 
   Overview? _overview;
   bool _isLoadingInitial = false;

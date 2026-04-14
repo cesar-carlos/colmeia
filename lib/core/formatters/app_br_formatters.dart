@@ -15,8 +15,13 @@ abstract final class AppBrFormatters {
         decimalDigits: 1,
       );
 
-  static final DateFormat shortDateFormat = DateFormat('dd/MM/yyyy');
-  static final DateFormat shortDateTimeFormat = DateFormat('dd/MM/yyyy HH:mm');
+  /// Brazilian calendar display; locale fixed so formatting does not follow
+  /// a mismatched UI language (e.g. English app copy with BR-style dates).
+  static final DateFormat shortDateFormat =
+      DateFormat('dd/MM/yyyy', 'pt_BR');
+
+  static final DateFormat shortDateTimeFormat =
+      DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
 
   static List<TextInputFormatter> get cpfInputFormatters =>
       <TextInputFormatter>[

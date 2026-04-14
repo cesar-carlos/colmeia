@@ -439,10 +439,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required List<String> agentIdsMissingClientToken,
     required List<String> agentNamesMissingClientToken,
   }) async {
-    if (policy == OverviewLoadPolicy.forceRefresh) {
-      return null;
-    }
-
     final cachedOverview = await _localDataSource.readOverview(userId: userId);
     if (cachedOverview == null) {
       return null;
@@ -457,7 +453,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
     }
 
     AppLogger.warning(
-      'Overview fallback to cached data (missing local client token)',
+      policy == OverviewLoadPolicy.forceRefresh
+          ? 'Overview fallback to cached data (missing local client_token; '
+              'force refresh cannot run queries)'
+          : 'Overview fallback to cached data (missing local client token)',
       context: <String, Object?>{
         'operation': 'loadOverview',
         'userId': userId,

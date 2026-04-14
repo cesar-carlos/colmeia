@@ -83,11 +83,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardSetupRequiredTitle =>
-      'Configuracao pendente para consultar dados';
+      'Salve um token de cliente para carregar os dados';
 
   @override
   String dashboardSetupRequiredMessage(String agents) {
-    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.';
+    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.';
   }
 
   @override
@@ -143,10 +143,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Carregue a visao geral para listar os agentes.';
 
   @override
-  String get dashboardHomeFiltersYearMonthLabel => 'ANO / MES';
+  String get dashboardHomeFiltersYearMonthLabel => 'ANO / MÊS';
 
   @override
-  String get dashboardHomeFiltersPeriodLast30Days => 'Ultimos 30 dias';
+  String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
 
   @override
   String get dashboardAgentRankingTitle => 'Ranking por agente';
@@ -167,7 +167,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String overviewGreetingEyebrow(String name) {
-    return 'Ola, $name';
+    return 'Olá, $name';
   }
 
   @override
@@ -350,7 +350,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentConnectionOffline => 'offline';
 
   @override
-  String get agentConnectionUnknown => 'status operacional indisponivel';
+  String get agentConnectionUnknown => 'Estado de ligação desconhecido';
 
   @override
   String get clientAgentsRemoveAccess => 'Remover acesso';
@@ -435,7 +435,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsRequestStatusExpired => 'Expirado';
 
   @override
-  String get clientAgentsRequestStatusUnknown => 'Status indisponivel';
+  String get clientAgentsRequestStatusUnknown => 'Desconhecido';
 
   @override
   String get clientAgentsRequestDescPending =>
@@ -721,7 +721,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Token removido deste dispositivo.';
 
   @override
-  String get clientAgentDetailSectionEditProfile => 'Perfil no catalogo';
+  String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
 
   @override
   String get clientAgentDetailSaveProfile => 'Salvar perfil';
@@ -731,13 +731,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailProfileNameRequired =>
-      'Informe o nome / razao social.';
+      'Informe o nome / razão social.';
 
   @override
-  String get clientAgentFieldLegalName => 'Nome / razao social';
+  String get clientAgentFieldLegalName => 'Nome / razão social';
 
   @override
-  String get clientAgentFieldNumber => 'Numero';
+  String get clientAgentFieldNumber => 'Número';
 
   @override
   String get clientAgentFieldId => 'Agent ID';
@@ -800,7 +800,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsFilterConnectionOffline => 'Offline';
 
   @override
-  String get clientAgentsFilterConnectionUnknown => 'Indisponivel';
+  String get clientAgentsFilterConnectionUnknown => 'Desconhecido';
 
   @override
   String get clientAgentsFilterCatalogLabel => 'Catalogo';
@@ -1580,11 +1580,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardSetupRequiredTitle =>
-      'Configuracao pendente para consultar dados';
+      'Salve um token de cliente para carregar os dados';
 
   @override
   String dashboardSetupRequiredMessage(String agents) {
-    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.';
+    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.';
   }
 
   @override
@@ -1640,10 +1640,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Carregue a visao geral para listar os agentes.';
 
   @override
-  String get dashboardHomeFiltersYearMonthLabel => 'ANO / MES';
+  String get dashboardHomeFiltersYearMonthLabel => 'ANO / MÊS';
 
   @override
-  String get dashboardHomeFiltersPeriodLast30Days => 'Ultimos 30 dias';
+  String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
 
   @override
   String get dashboardAgentRankingTitle => 'Ranking por agente';
@@ -1664,7 +1664,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String overviewGreetingEyebrow(String name) {
-    return 'Ola, $name';
+    return 'Olá, $name';
   }
 
   @override
@@ -1847,7 +1847,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get agentConnectionOffline => 'offline';
 
   @override
-  String get agentConnectionUnknown => 'status operacional indisponivel';
+  String get agentConnectionUnknown => 'Estado de ligação desconhecido';
 
   @override
   String get clientAgentsRemoveAccess => 'Remover acesso';
@@ -1932,7 +1932,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsRequestStatusExpired => 'Expirado';
 
   @override
-  String get clientAgentsRequestStatusUnknown => 'Status indisponivel';
+  String get clientAgentsRequestStatusUnknown => 'Desconhecido';
 
   @override
   String get clientAgentsRequestDescPending =>
@@ -2297,7 +2297,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsFilterConnectionOffline => 'Offline';
 
   @override
-  String get clientAgentsFilterConnectionUnknown => 'Indisponivel';
+  String get clientAgentsFilterConnectionUnknown => 'Desconhecido';
 
   @override
   String get clientAgentsFilterCatalogLabel => 'Catalogo';

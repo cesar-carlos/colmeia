@@ -81,8 +81,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dashboardSetupRequiredTitle =>
-      'Setup required before loading data';
+  String get dashboardSetupRequiredTitle => 'Save a client token to load data';
 
   @override
   String dashboardSetupRequiredMessage(String agents) {
@@ -344,7 +343,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentConnectionOffline => 'offline';
 
   @override
-  String get agentConnectionUnknown => 'operational status unavailable';
+  String get agentConnectionUnknown => 'Connection status unknown';
 
   @override
   String get clientAgentsRemoveAccess => 'Remove access';
@@ -428,7 +427,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentsRequestStatusExpired => 'Expired';
 
   @override
-  String get clientAgentsRequestStatusUnknown => 'Status unavailable';
+  String get clientAgentsRequestStatusUnknown => 'Unknown';
 
   @override
   String get clientAgentsRequestDescPending =>
@@ -787,7 +786,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentsFilterConnectionOffline => 'Offline';
 
   @override
-  String get clientAgentsFilterConnectionUnknown => 'Unavailable';
+  String get clientAgentsFilterConnectionUnknown => 'Unknown';
 
   @override
   String get clientAgentsFilterCatalogLabel => 'Catalog';

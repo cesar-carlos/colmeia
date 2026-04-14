@@ -1,3 +1,4 @@
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
 import 'package:colmeia/features/client_agents/data/models/agent_catalog_record_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_access_requests_response_dto.dart';
@@ -45,7 +46,7 @@ abstract interface class ClientAgentsRemoteDataSource {
     required Set<String> agentIds,
   });
 
-  Future<OnlineAgentsResponseDto> fetchOnlineAgents();
+  Future<OnlineAgentsResponseDto> fetchOnlineAgents({String? logUserId});
 
   Future<ClientAccessStatusResponseDto> fetchClientAccessStatus({
     required String token,
@@ -169,13 +170,39 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   }
 
   @override
-  Future<OnlineAgentsResponseDto> fetchOnlineAgents() async {
+  Future<OnlineAgentsResponseDto> fetchOnlineAgents({String? logUserId}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       ApiRoutes.onlineAgents,
     );
-    return OnlineAgentsResponseDto.fromJson(
+    final dto = OnlineAgentsResponseDto.fromJson(
       response.data ?? const <String, dynamic>{},
     );
+    final logContext = <String, Object?>{
+      'operation': 'fetchOnlineAgents',
+      'path': ApiRoutes.onlineAgents,
+      if (logUserId != null) 'userId': logUserId,
+    };
+    if (dto.malformedAgentRowCount > 0) {
+      AppLogger.warning(
+        'Online agents response omitted malformed rows',
+        context: <String, Object?>{
+          ...logContext,
+          'malformedRowCount': dto.malformedAgentRowCount,
+          'parsedAgentCount': dto.agents.length,
+        },
+      );
+    }
+    if (dto.count != dto.agents.length) {
+      AppLogger.warning(
+        'Online agents response count does not match parsed list length',
+        context: <String, Object?>{
+          ...logContext,
+          'declaredCount': dto.count,
+          'parsedAgentCount': dto.agents.length,
+        },
+      );
+    }
+    return dto;
   }
 
   @override
@@ -431,7 +458,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   }
 
   @override
-  Future<OnlineAgentsResponseDto> fetchOnlineAgents() async {
+  Future<OnlineAgentsResponseDto> fetchOnlineAgents({String? logUserId}) async {
     final onlineIds = _approvedAgentIds.take(1).toSet();
     return OnlineAgentsResponseDto(
       agents: onlineIds

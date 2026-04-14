@@ -207,7 +207,7 @@ void main() {
         userId: any(named: 'userId'),
       ),
     ).thenAnswer((_) async => null);
-    when(() => remote.fetchOnlineAgents()).thenAnswer(
+    when(() => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId'))).thenAnswer(
       (_) async => const OnlineAgentsResponseDto(
         agents: [],
         count: 0,
@@ -286,7 +286,7 @@ void main() {
           userId: any(named: 'userId'),
         ),
       ).thenAnswer((_) async => null);
-      when(() => remote.fetchOnlineAgents()).thenThrow(
+      when(() => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId'))).thenThrow(
         DioException(
           requestOptions: RequestOptions(path: '/agents'),
           type: DioExceptionType.connectionError,
@@ -328,7 +328,7 @@ void main() {
       when(
         () => local.readOnlineAgents(userId: any(named: 'userId')),
       ).thenAnswer((_) async => null);
-      when(() => remote.fetchOnlineAgents()).thenAnswer(
+      when(() => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId'))).thenAnswer(
         (_) async => const OnlineAgentsResponseDto(agents: [], count: 0),
       );
       when(
@@ -519,7 +519,9 @@ void main() {
         ),
       );
       verifyNever(() => local.readOnlineAgents(userId: any(named: 'userId')));
-      verifyNever(() => remote.fetchOnlineAgents());
+      verifyNever(
+        () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
+      );
     },
   );
 

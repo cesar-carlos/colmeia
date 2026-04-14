@@ -502,6 +502,47 @@ void main() {
     );
 
     test(
+      'falls back to cache on force refresh when all approved agents lack local token',
+      () async {
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              consideredApprovedAgentCount: 1,
+              missingClientTokenTargets: <AgentQueryTarget>[
+                _target(
+                  'agent-42',
+                  name: 'Agente cacheado',
+                  clientToken: null,
+                ),
+              ],
+            ),
+          ),
+        );
+        when(
+          () => local.readOverview(userId: any(named: 'userId')),
+        ).thenAnswer((_) async => _cachedModel());
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(
+          userId: 'user-1',
+          policy: OverviewLoadPolicy.forceRefresh,
+        );
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.isStaleCache).isTrue();
+        check(overview.kpis.totalSalesCount).equals(50);
+        check(overview.agentNamesMissingClientToken.single).equals(
+          'Agente cacheado',
+        );
+      },
+    );
+
+    test(
       'returns empty overview when selected ids match no approved agent',
       () async {
         _stubLoad(

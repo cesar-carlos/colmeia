@@ -74,6 +74,9 @@ class AgentQueryExecutionReport<Row> {
   bool get requiresClientTokenSetup =>
       mergedRows.isEmpty && missingClientTokenTargets.isNotEmpty;
 
+  bool get skippedOnlyDueToMissingClientTokens =>
+      plannedTargets.isEmpty && missingClientTokenTargets.isNotEmpty;
+
   bool get hasPartialFailure =>
       mergedRows.isNotEmpty &&
       participants.any((participant) => !participant.isSuccess);

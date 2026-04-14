@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppBreakpoints {
+  /// Upper bound (exclusive) for compact / single-column layouts.
   static const double mobile = 600;
+
+  /// Lower bound for layouts below [desktop] (non-rail shell). Currently
+  /// identical to [mobile] because the app does not use a distinct tablet tier.
   static const double tablet = mobile;
+
+  /// Minimum width for persistent sidebar rail (shell + content constraint).
   static const double desktop = 1200;
 
   static const double pageContentMaxWidth = 960;

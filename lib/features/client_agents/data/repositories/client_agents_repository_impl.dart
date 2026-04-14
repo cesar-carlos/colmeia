@@ -31,6 +31,10 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
        _localDataSource = localDataSource;
 
   static const Duration _onlineStatusMaxAge = Duration(minutes: 1);
+
+  /// When the hub cannot be reached, use cached online presence only if it is
+  /// newer than this limit; otherwise treat presence as unknown.
+  static const Duration _onlineStatusOfflineFallbackMaxAge = Duration(days: 7);
   static const PaginatedQuery _defaultRefreshQuery = PaginatedQuery(
     pageSize: kClientAgentsListPageSize,
   );
@@ -1030,7 +1034,9 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     }
 
     try {
-      final online = await _remoteDataSource.fetchOnlineAgents();
+      final online = await _remoteDataSource.fetchOnlineAgents(
+        logUserId: userId,
+      );
       await _localDataSource.saveOnlineAgents(userId: userId, payload: online);
       return online.agents.map((item) => item.agentId).toSet();
     } on Object catch (error, stackTrace) {
@@ -1050,7 +1056,10 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
   Future<Set<String>?> _readCachedOnlineAgentIds({
     required String userId,
   }) async {
-    final cached = await _localDataSource.readOnlineAgents(userId: userId);
+    final cached = await _localDataSource.readOnlineAgents(
+      userId: userId,
+      maxAge: _onlineStatusOfflineFallbackMaxAge,
+    );
     if (cached == null) {
       return null;
     }

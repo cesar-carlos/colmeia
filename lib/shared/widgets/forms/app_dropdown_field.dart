@@ -341,7 +341,7 @@ class _AppMultiSelectSearchFieldState<T>
   void _toggleValue(T value) {
     final next = widget.selectedValues.toList(growable: true);
     if (next.contains(value)) {
-      next.remove(value);
+      next.removeWhere((e) => e == value);
     } else {
       next.add(value);
     }
@@ -357,7 +357,24 @@ class _AppMultiSelectSearchFieldState<T>
     final scheme = theme.colorScheme;
     final hasError = widget.errorText?.trim().isNotEmpty ?? false;
     final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
-    final fieldPadding = _contentPadding(tokens, widget.density);
+    final fieldPadding = widget.density == AppTextFieldDensity.compact
+        ? EdgeInsets.symmetric(
+            horizontal: tokens.formFieldPaddingHorizontal,
+            vertical: tokens.gapSm,
+          )
+        : _contentPadding(tokens, widget.density);
+    final labelToFieldGap =
+        widget.density == AppTextFieldDensity.compact
+            ? tokens.gapXs
+            : tokens.gapSm;
+    final chipSectionBottomGap =
+        widget.density == AppTextFieldDensity.compact
+            ? tokens.gapXs
+            : tokens.gapSm;
+    final chipWrapSpacing =
+        widget.density == AppTextFieldDensity.compact
+            ? tokens.gapXs
+            : tokens.gapSm;
     final borderSide = _resolveBorderSide(
       colors: colors,
       scheme: scheme,
@@ -366,6 +383,18 @@ class _AppMultiSelectSearchFieldState<T>
       hasError: hasError,
     );
     final query = _searchController.text.trim().toLowerCase();
+    final searchFieldStyle = widget.density == AppTextFieldDensity.compact
+        ? typography.caption.copyWith(
+            color: colors.onSurface,
+            height: 1.25,
+          )
+        : typography.body.copyWith(color: colors.onSurface);
+    final searchHintStyle = widget.density == AppTextFieldDensity.compact
+        ? typography.caption.copyWith(
+            color: colors.onSurfaceVariant,
+            height: 1.25,
+          )
+        : typography.body.copyWith(color: colors.onSurfaceVariant);
     final filteredOptions = widget.options
         .where((option) {
           if (query.isEmpty) {
@@ -390,7 +419,7 @@ class _AppMultiSelectSearchFieldState<T>
                 color: hasError ? scheme.error : colors.onSurfaceVariant,
               ),
             ),
-            SizedBox(height: tokens.gapSm),
+            SizedBox(height: labelToFieldGap),
           ],
           TapRegion(
             onTapOutside: (_) => _setExpanded(false),
@@ -417,13 +446,13 @@ class _AppMultiSelectSearchFieldState<T>
                           fieldPadding.left,
                           fieldPadding.top,
                           fieldPadding.right,
-                          tokens.gapSm,
+                          chipSectionBottomGap,
                         ),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Wrap(
-                            spacing: tokens.gapSm,
-                            runSpacing: tokens.gapSm,
+                            spacing: chipWrapSpacing,
+                            runSpacing: chipWrapSpacing,
                             children: widget.selectedValues
                                 .map((value) {
                                   final option = widget.options
@@ -453,48 +482,56 @@ class _AppMultiSelectSearchFieldState<T>
                       ),
                     Padding(
                       padding: fieldPadding,
-                      child: Row(
-                        children: <Widget>[
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              focusNode: _searchFocusNode,
-                              enabled: widget.enabled,
-                              onTap: () => _setExpanded(true),
-                              onChanged: (_) =>
-                                  setState(() => _expanded = true),
-                              style: typography.body.copyWith(
-                                color: colors.onSurface,
-                              ),
-                              decoration: InputDecoration(
-                                isCollapsed: true,
-                                border: InputBorder.none,
-                                hintText: widget.searchHintText,
-                                hintStyle: typography.body.copyWith(
-                                  color: colors.onSurfaceVariant,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: widget.density ==
+                                  AppTextFieldDensity.compact
+                              ? kMinInteractiveDimension
+                              : 0,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                focusNode: _searchFocusNode,
+                                enabled: widget.enabled,
+                                onTap: () => _setExpanded(true),
+                                onChanged: (_) =>
+                                    setState(() => _expanded = true),
+                                style: searchFieldStyle,
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  border: InputBorder.none,
+                                  hintText: widget.searchHintText,
+                                  hintStyle: searchHintStyle,
                                 ),
                               ),
                             ),
-                          ),
-                          SizedBox(width: tokens.gapSm),
-                          InkWell(
-                            onTap: widget.enabled
-                                ? () => _setExpanded(!_expanded)
-                                : null,
-                            borderRadius: BorderRadius.circular(999),
-                            child: Padding(
-                              padding: const EdgeInsets.all(2),
-                              child: AnimatedRotation(
-                                duration: const Duration(milliseconds: 140),
-                                turns: _expanded ? 0.5 : 0,
-                                child: Icon(
-                                  Icons.expand_more_rounded,
-                                  color: colors.outline,
+                            SizedBox(width: tokens.gapSm),
+                            InkWell(
+                              onTap: widget.enabled
+                                  ? () => _setExpanded(!_expanded)
+                                  : null,
+                              borderRadius: BorderRadius.circular(999),
+                              child: Padding(
+                                padding: const EdgeInsets.all(2),
+                                child: AnimatedRotation(
+                                  duration: const Duration(milliseconds: 140),
+                                  turns: _expanded ? 0.5 : 0,
+                                  child: Icon(
+                                    Icons.expand_more_rounded,
+                                    size: widget.density ==
+                                            AppTextFieldDensity.compact
+                                        ? 20
+                                        : 24,
+                                    color: colors.outline,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     _AnimatedDropdownMenu(
@@ -600,9 +637,19 @@ class _DropdownOptionTile extends StatelessWidget {
                   ),
                 ),
               ),
-              if (selected && showSelectedIcon)
+              if (multiSelect)
                 Icon(
-                  multiSelect ? Icons.check_box_rounded : Icons.check_rounded,
+                  selected
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
+                  size: 18,
+                  color: selected
+                      ? selectedForeground
+                      : scheme.onSurfaceVariant,
+                )
+              else if (selected && showSelectedIcon)
+                Icon(
+                  Icons.check_rounded,
                   size: 18,
                   color: selectedForeground,
                 ),

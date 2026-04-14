@@ -234,7 +234,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardSetupRequiredTitle.
   ///
   /// In en, this message translates to:
-  /// **'Setup required before loading data'**
+  /// **'Save a client token to load data'**
   String get dashboardSetupRequiredTitle;
 
   /// No description provided for @dashboardSetupRequiredMessage.
@@ -666,7 +666,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentConnectionUnknown.
   ///
   /// In en, this message translates to:
-  /// **'operational status unavailable'**
+  /// **'Connection status unknown'**
   String get agentConnectionUnknown;
 
   /// No description provided for @clientAgentsRemoveAccess.
@@ -810,7 +810,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsRequestStatusUnknown.
   ///
   /// In en, this message translates to:
-  /// **'Status unavailable'**
+  /// **'Unknown'**
   String get clientAgentsRequestStatusUnknown;
 
   /// No description provided for @clientAgentsRequestDescPending.
@@ -1410,7 +1410,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsFilterConnectionUnknown.
   ///
   /// In en, this message translates to:
-  /// **'Unavailable'**
+  /// **'Unknown'**
   String get clientAgentsFilterConnectionUnknown;
 
   /// No description provided for @clientAgentsFilterCatalogLabel.
