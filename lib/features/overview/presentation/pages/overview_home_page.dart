@@ -28,6 +28,8 @@ import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_summary_bar.dart';
@@ -438,42 +440,6 @@ class _OverviewFilterBar extends StatelessWidget {
   final List<OverviewAgentOption> availableAgents;
   final ValueChanged<OverviewFilter>? onFilterChanged;
 
-  static bool _isAgentChecked(
-    OverviewFilter filter,
-    String agentId,
-    Set<String> allAgentIds,
-  ) {
-    final sel = filter.selectedAgentIds;
-    if (sel == null) {
-      return true;
-    }
-    return sel.contains(agentId);
-  }
-
-  static void _toggleAgentSelection({
-    required OverviewFilter filter,
-    required String agentId,
-    required List<OverviewAgentOption> availableAgents,
-    required ValueChanged<OverviewFilter> onFilterChanged,
-  }) {
-    final allIds = availableAgents.map((e) => e.agentId).toSet();
-    final current = filter.selectedAgentIds ?? allIds;
-    final next = Set<String>.from(current);
-    if (next.contains(agentId)) {
-      next.remove(agentId);
-    } else {
-      next.add(agentId);
-    }
-    if (next.isEmpty) {
-      return;
-    }
-    if (next.length == allIds.length && next.containsAll(allIds)) {
-      onFilterChanged(filter.copyWith(selectedAgentIds: null));
-    } else {
-      onFilterChanged(filter.copyWith(selectedAgentIds: next));
-    }
-  }
-
   // Generates the last 13 months (current + 12 previous) as options.
   static List<OverviewYearMonth> _buildMonthOptions() {
     final now = DateTime.now();
@@ -560,7 +526,6 @@ class _OverviewFilterBar extends StatelessWidget {
     );
 
     final hasActiveFilter = !filter.isDefault;
-    final allAgentIds = availableAgents.map((e) => e.agentId).toSet();
 
     return AppSectionCard(
       color: cs.surfaceContainerLow,
@@ -608,6 +573,14 @@ class _OverviewFilterBar extends StatelessWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 480;
+              final agentOptions = availableAgents
+                  .map((a) => AppDropdownOption<String>(
+                        value: a.agentId,
+                        label: a.name,
+                      ))
+                  .toList(growable: false);
+              final selectedAgentIds =
+                  filter.selectedAgentIds?.toList() ?? <String>[];
               final agentField = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -656,30 +629,28 @@ class _OverviewFilterBar extends StatelessWidget {
                       ),
                     )
                   else
-                    ...availableAgents.map(
-                      (a) => CheckboxListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                        value: _isAgentChecked(filter, a.agentId, allAgentIds),
-                        onChanged: isDisabled
-                            ? null
-                            : (_) {
-                                _toggleAgentSelection(
-                                  filter: filter,
-                                  agentId: a.agentId,
-                                  availableAgents: availableAgents,
-                                  onFilterChanged: onFilterChanged!,
-                                );
-                              },
-                        title: Text(
-                          a.name,
-                          style: typography.body.copyWith(fontSize: 13),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                      ),
+                    AppMultiSelectSearchField<String>(
+                      options: agentOptions,
+                      selectedValues: selectedAgentIds,
+                      enabled: !isDisabled,
+                      density: AppTextFieldDensity.compact,
+                      onChanged: (ids) {
+                        if (ids.isEmpty) return;
+                        final allIds =
+                            availableAgents.map((e) => e.agentId).toSet();
+                        if (ids.length == allIds.length &&
+                            ids.toSet().containsAll(allIds)) {
+                          onFilterChanged?.call(
+                            filter.copyWith(selectedAgentIds: null),
+                          );
+                        } else {
+                          onFilterChanged?.call(
+                            filter.copyWith(
+                              selectedAgentIds: Set<String>.from(ids),
+                            ),
+                          );
+                        }
+                      },
                     ),
                 ],
               );
