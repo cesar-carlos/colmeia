@@ -37,7 +37,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
           selectAppShellUserSummary,
         );
 
-    final showUserDetails = !AppBreakpoints.isMobile(context);
+    final showUserDetails = AppBreakpoints.useRail(context);
     final titleSpacing = showBrandTitle ? 0.0 : tokens.contentSpacing;
 
     final brandTitle = Row(

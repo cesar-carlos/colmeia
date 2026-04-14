@@ -9,6 +9,7 @@ import 'package:colmeia/features/client_agents/application/usecases/queue_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
 import 'package:colmeia/features/client_agents/data/repositories/client_agents_repository_impl.dart';
@@ -55,6 +56,9 @@ void registerInjectorClientAgents(GetIt getIt) {
     )
     ..registerLazySingleton<LoadClientAgentDetailUseCase>(
       () => LoadClientAgentDetailUseCase(getIt<ClientAgentsRepository>()),
+    )
+    ..registerLazySingleton<UpdateClientAgentProfileUseCase>(
+      () => UpdateClientAgentProfileUseCase(getIt<ClientAgentsRepository>()),
     )
     ..registerLazySingleton<QueueClientAgentRequestAccessUseCase>(
       () =>

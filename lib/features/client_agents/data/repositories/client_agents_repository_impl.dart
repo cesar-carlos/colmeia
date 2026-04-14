@@ -9,6 +9,7 @@ import 'package:colmeia/features/client_agents/data/models/client_approved_agent
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
 import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_key.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_access_status_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
@@ -259,6 +260,68 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
             'agentId': trimmed,
             ClientAgentsFailureUiKey.field:
                 ClientAgentsFailureUiKey.loadCatalogAgentById,
+          },
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<AppResult<ClientAgent>> updateCatalogAgentProfile({
+    required String userId,
+    required String agentId,
+    required AgentProfileUpdateRequest request,
+  }) async {
+    final trimmed = agentId.trim();
+    if (trimmed.isEmpty) {
+      return const Failure<ClientAgent, AppFailure>(
+        ValidationFailure(
+          message: 'Agent id is empty',
+          userMessage: 'Invalid agent identifier.',
+        ),
+      );
+    }
+    try {
+      final remote = await _remoteDataSource.patchAgentProfile(
+        agentId: trimmed,
+        body: request.toWireJson(),
+      );
+      await _localDataSource.saveCatalogAgentById(
+        userId: userId,
+        agentId: trimmed,
+        payload: remote,
+      );
+      final onlineIds = await _loadOnlineAgentIds(userId: userId);
+      return Success<ClientAgent, AppFailure>(
+        _mapProfile(remote, onlineIds: onlineIds),
+      );
+    } on DioException catch (error, stackTrace) {
+      return Failure<ClientAgent, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to update catalog agent profile',
+          fallbackUserMessage:
+              'Nao foi possivel atualizar o perfil do agente no servidor.',
+          context: <String, Object?>{
+            'operation': 'updateCatalogAgentProfile',
+            'userId': userId,
+            'agentId': trimmed,
+          },
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      return Failure<ClientAgent, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to update catalog agent profile',
+          fallbackUserMessage:
+              'Nao foi possivel atualizar o perfil do agente no servidor.',
+          context: <String, Object?>{
+            'operation': 'updateCatalogAgentProfile',
+            'userId': userId,
+            'agentId': trimmed,
           },
         ),
       );

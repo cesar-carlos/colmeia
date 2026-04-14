@@ -4,6 +4,7 @@ import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
@@ -19,12 +20,16 @@ class _MockAuthController extends Mock implements AuthController {}
 class _MockLoadClientAgentDetailUseCase extends Mock
     implements LoadClientAgentDetailUseCase {}
 
+class _MockUpdateClientAgentProfileUseCase extends Mock
+    implements UpdateClientAgentProfileUseCase {}
+
 class _MockLocalAgentClientTokenStore extends Mock
     implements LocalAgentClientTokenStore {}
 
 void main() {
   late _MockAuthController auth;
   late _MockLoadClientAgentDetailUseCase loadDetail;
+  late _MockUpdateClientAgentProfileUseCase updateProfile;
   late _MockLocalAgentClientTokenStore tokenStore;
   late ClientAgentDetailController controller;
 
@@ -50,11 +55,13 @@ void main() {
   setUp(() {
     auth = _MockAuthController();
     loadDetail = _MockLoadClientAgentDetailUseCase();
+    updateProfile = _MockUpdateClientAgentProfileUseCase();
     tokenStore = _MockLocalAgentClientTokenStore();
     controller = ClientAgentDetailController(
       authController: auth,
       clientTokenStore: tokenStore,
       loadClientAgentDetailUseCase: loadDetail,
+      updateClientAgentProfileUseCase: updateProfile,
     )..activeLocalizations = AppLocalizationsEn();
     when(() => auth.session).thenReturn(session);
   });

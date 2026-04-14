@@ -6,6 +6,12 @@ String clientAgentsFailureUserMessage(
   AppFailure failure,
   AppLocalizations l10n,
 ) {
+  if (failure is ValidationFailure) {
+    final code = failure.context[ApiErrorContext.apiErrorCode] as String?;
+    if (code == ApiConflictErrorCode.agentDocumentConflict) {
+      return l10n.clientAgentsErrorAgentDocumentConflict;
+    }
+  }
   final key = failure.context[ClientAgentsFailureUiKey.field] as String?;
   if (key == null) {
     return failure.displayMessage;

@@ -63,6 +63,9 @@ void main() {
                     'and hub access.',
               );
             }
+            if (isAcceptableE2eAgentSqlRepositoryFailure(failure)) {
+              return;
+            }
             fail(
               'Bridge e2e failed with ${failure.runtimeType}: '
               '${failure.displayMessage}',

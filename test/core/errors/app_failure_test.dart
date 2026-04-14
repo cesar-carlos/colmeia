@@ -103,6 +103,52 @@ void main() {
         'email: must be a valid email\npassword: must contain uppercase',
       );
     });
+
+    test(
+      'should map 409 AGENT_DOCUMENT_CONFLICT to validation failure',
+      () {
+        final failure = mapToAppFailure(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/v1/agents/x/profile'),
+            response: Response<Map<String, dynamic>>(
+              requestOptions: RequestOptions(path: '/api/v1/agents/x/profile'),
+              statusCode: 409,
+              data: <String, dynamic>{
+                'code': 'AGENT_DOCUMENT_CONFLICT',
+                'message': 'ignored for this branch',
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        check(failure).isA<ValidationFailure>();
+        check(failure.displayMessage).equals('Agent document conflict');
+        check(failure.context['httpStatusCode']).equals(409);
+        check(failure.context['apiErrorCode']).equals(
+          'AGENT_DOCUMENT_CONFLICT',
+        );
+      },
+    );
+
+    test('should map other 409 responses to network failure', () {
+      final failure = mapToAppFailure(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/other'),
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(path: '/api/v1/other'),
+            statusCode: 409,
+            data: <String, dynamic>{
+              'message': 'Some other conflict',
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      check(failure).isA<NetworkFailure>();
+      check(failure.displayMessage).equals('Some other conflict');
+    });
   });
 }
 

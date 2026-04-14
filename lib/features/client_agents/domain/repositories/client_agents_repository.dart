@@ -1,4 +1,5 @@
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_access_status_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
@@ -19,6 +20,12 @@ abstract interface class ClientAgentsRepository {
   Future<AppResult<ClientAgentCatalogItem>> loadCatalogAgentById({
     required String userId,
     required String agentId,
+  });
+
+  Future<AppResult<ClientAgent>> updateCatalogAgentProfile({
+    required String userId,
+    required String agentId,
+    required AgentProfileUpdateRequest request,
   });
 
   Future<AppResult<PaginatedResult<ClientAgent>>> loadApprovedAgents({

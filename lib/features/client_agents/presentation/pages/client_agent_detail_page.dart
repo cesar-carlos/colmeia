@@ -8,6 +8,7 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_address.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agent_profile_edit_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -136,6 +137,13 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                     SizedBox(height: tokens.gapMd),
                   ],
                   if (agent != null) ...<Widget>[
+                    ClientAgentProfileEditCard(
+                      agent: agent,
+                      controller: controller,
+                      l10n: l10n,
+                      tokens: tokens,
+                    ),
+                    SizedBox(height: tokens.gapMd),
                     _IdentityCard(agent: agent, l10n: l10n),
                     SizedBox(height: tokens.gapMd),
                     _ContactCard(agent: agent, l10n: l10n),

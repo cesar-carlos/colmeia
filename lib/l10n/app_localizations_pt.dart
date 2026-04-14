@@ -682,6 +682,25 @@ class AppLocalizationsPt extends AppLocalizations {
       'Token removido deste dispositivo.';
 
   @override
+  String get clientAgentDetailSectionEditProfile => 'Perfil no catalogo';
+
+  @override
+  String get clientAgentDetailSaveProfile => 'Salvar perfil';
+
+  @override
+  String get clientAgentDetailProfileSaved => 'Perfil salvo no servidor.';
+
+  @override
+  String get clientAgentDetailProfileNameRequired =>
+      'Informe o nome / razao social.';
+
+  @override
+  String get clientAgentFieldLegalName => 'Nome / razao social';
+
+  @override
+  String get clientAgentFieldNumber => 'Numero';
+
+  @override
   String get clientAgentFieldId => 'Agent ID';
 
   @override
@@ -948,6 +967,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentsErrorSyncPending =>
       'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+
+  @override
+  String get clientAgentsErrorAgentDocumentConflict =>
+      'Este CPF/CNPJ ja esta vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.';
 
   @override
   String get agentSqlErrorAuthenticationFailed =>
@@ -1691,6 +1714,25 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Token removido deste dispositivo.';
 
   @override
+  String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
+
+  @override
+  String get clientAgentDetailSaveProfile => 'Salvar perfil';
+
+  @override
+  String get clientAgentDetailProfileSaved => 'Perfil salvo no servidor.';
+
+  @override
+  String get clientAgentDetailProfileNameRequired =>
+      'Informe o nome / razão social.';
+
+  @override
+  String get clientAgentFieldLegalName => 'Nome / razão social';
+
+  @override
+  String get clientAgentFieldNumber => 'Número';
+
+  @override
   String get clientAgentFieldId => 'Agent ID';
 
   @override
@@ -1957,6 +1999,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsErrorSyncPending =>
       'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+
+  @override
+  String get clientAgentsErrorAgentDocumentConflict =>
+      'Este CPF/CNPJ ja esta vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.';
 
   @override
   String get agentSqlErrorAuthenticationFailed =>

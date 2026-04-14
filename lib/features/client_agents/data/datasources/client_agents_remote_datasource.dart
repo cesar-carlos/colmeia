@@ -50,6 +50,11 @@ abstract interface class ClientAgentsRemoteDataSource {
   Future<ClientAccessStatusResponseDto> fetchClientAccessStatus({
     required String token,
   });
+
+  Future<AgentCatalogRecordDto> patchAgentProfile({
+    required String agentId,
+    required Map<String, Object?> body,
+  });
 }
 
 class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
@@ -185,6 +190,18 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     return ClientAccessStatusResponseDto.fromJson(
       response.data ?? const <String, dynamic>{},
     );
+  }
+
+  @override
+  Future<AgentCatalogRecordDto> patchAgentProfile({
+    required String agentId,
+    required Map<String, Object?> body,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      AgentCatalogApiRoutes.profileByAgentId(agentId),
+      data: body,
+    );
+    return _parseCatalogAgentBody(response.data ?? const <String, dynamic>{});
   }
 
   Set<String> _resolveMutatedAgentIds({
@@ -441,6 +458,87 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
       statusWire: wire,
       agentId: '6ac362c2-72b5-4f2f-a071-96fe6f5f5080',
     );
+  }
+
+  @override
+  Future<AgentCatalogRecordDto> patchAgentProfile({
+    required String agentId,
+    required Map<String, Object?> body,
+  }) async {
+    final index = _catalog.indexWhere((e) => e['agentId'] == agentId);
+    if (index < 0) {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: AgentCatalogApiRoutes.profileByAgentId(agentId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: AgentCatalogApiRoutes.profileByAgentId(agentId),
+          ),
+          statusCode: 404,
+          data: <String, dynamic>{'message': 'Agent not found'},
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+
+    final cnpj =
+        body['cnpjCpf'] as String? ?? body['document'] as String? ?? '';
+    final digits = cnpj.replaceAll(RegExp(r'\D'), '');
+    if (digits == '11111111111111') {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: AgentCatalogApiRoutes.profileByAgentId(agentId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: AgentCatalogApiRoutes.profileByAgentId(agentId),
+          ),
+          statusCode: 409,
+          data: <String, dynamic>{
+            'code': 'AGENT_DOCUMENT_CONFLICT',
+            'message': 'Document already in use',
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+
+    final current = Map<String, dynamic>.from(_catalog[index]);
+    final now = DateTime.now().toIso8601String();
+    final addressBody = body['address'];
+    if (addressBody is Map<String, dynamic>) {
+      final previousAddress = current['address'] as Map<String, dynamic>?;
+      current['address'] = <String, dynamic>{
+        ...?previousAddress,
+        ...addressBody,
+      };
+    }
+    void put(String key) {
+      if (body.containsKey(key) && body[key] != null) {
+        current[key] = body[key];
+      }
+    }
+
+    put('name');
+    put('tradeName');
+    put('document');
+    put('cnpjCpf');
+    put('documentType');
+    put('phone');
+    put('mobile');
+    put('email');
+    put('notes');
+    put('observation');
+    current['updatedAt'] = now;
+    current['profileUpdatedAt'] = now;
+    if (current['cnpjCpf'] != null) {
+      final v = current['cnpjCpf']!.toString().replaceAll(RegExp(r'\D'), '');
+      current['cnpjCpf'] = v.isEmpty ? null : v;
+      current['document'] = current['cnpjCpf'];
+    }
+    _catalog[index] = current;
+    return AgentCatalogRecordDto.fromJson(current);
   }
 
   static Map<String, dynamic> _agentRecord({

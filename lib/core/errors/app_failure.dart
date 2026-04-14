@@ -71,6 +71,16 @@ bool isDioUnauthorizedOrForbidden(DioException error) {
   return code == 401 || code == 403;
 }
 
+/// Wire-level API error `code` values mapped by [mapToAppFailure] for HTTP 409.
+abstract final class ApiConflictErrorCode {
+  static const String agentDocumentConflict = 'AGENT_DOCUMENT_CONFLICT';
+}
+
+/// Context keys for conflict and API error mapping.
+abstract final class ApiErrorContext {
+  static const String apiErrorCode = 'apiErrorCode';
+}
+
 final class StorageFailure extends AppFailure {
   const StorageFailure({
     required super.message,
@@ -275,6 +285,32 @@ AppFailure mapToAppFailure(
         },
       );
     }
+    if (statusCode == 409) {
+      final apiCode = _extractApiErrorCode(responseData);
+      if (apiCode == ApiConflictErrorCode.agentDocumentConflict) {
+        return ValidationFailure(
+          message: 'Agent document conflict',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            ...context,
+            'httpStatusCode': statusCode,
+            ApiErrorContext.apiErrorCode:
+                ApiConflictErrorCode.agentDocumentConflict,
+          },
+        );
+      }
+      return NetworkFailure(
+        message: fallbackMessage ?? 'Conflict request',
+        userMessage: resolvedUserMessage,
+        cause: error,
+        stackTrace: stackTrace,
+        context: <String, Object?>{
+          ...context,
+          'httpStatusCode': statusCode,
+        },
+      );
+    }
     return NetworkFailure(
       message: fallbackMessage ?? 'Network request failed',
       userMessage: resolvedUserMessage,
@@ -324,6 +360,16 @@ String _resolveDioUserMessage(
 String _resolveBlockedAccountUserMessage({String? fallbackUserMessage}) {
   return fallbackUserMessage ??
       'Sua conta esta bloqueada. Entre em contato com o administrador.';
+}
+
+String? _extractApiErrorCode(Object? responseData) {
+  if (responseData is! Map<String, dynamic>) {
+    return null;
+  }
+  return _readFirstNonEmptyString(
+    responseData,
+    const <String>['code', 'errorCode', 'failure_code'],
+  );
 }
 
 String? _extractApiErrorMessage(Object? responseData) {

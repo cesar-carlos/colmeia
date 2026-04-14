@@ -416,6 +416,23 @@ List<ClientAgent> filterClientAgentsApprovedList(
   return filtered;
 }
 
+/// Drops approved rows when that agent is not in the current approved-agents
+/// list (e.g. after the user removed access). Other statuses are kept so
+/// pending and historical rejected/expired rows still show.
+List<ClientAgentAccessRequest> excludeApprovedRequestsWithoutActiveAgent(
+  List<ClientAgentAccessRequest> requests,
+  Set<String> activeApprovedAgentIds,
+) {
+  return requests
+      .where((request) {
+        if (request.status != AgentAccessRequestStatus.approved) {
+          return true;
+        }
+        return activeApprovedAgentIds.contains(request.agentId);
+      })
+      .toList(growable: false);
+}
+
 List<ClientAgentAccessRequest> filterClientAgentsRequestsList(
   List<ClientAgentAccessRequest> requests,
   Map<String, Object?> requestsFilters,

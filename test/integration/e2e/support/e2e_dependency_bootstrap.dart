@@ -153,11 +153,22 @@ bool isKnownAgentSqlMissingPermissionFailure(AppFailure failure) {
   return _agentSqlOdbcReason(failure) == 'missing_permission';
 }
 
-/// Known policy rejection or transient bridge HTTP 5xx (e.g. 503 overload).
+/// Hub or bridge denied the call with HTTP 403 (e.g. client token cannot use
+/// this agent). Same e2e run may hit this when credentials lack hub access.
+bool isKnownE2eAgentSqlHttpForbiddenFailure(AppFailure failure) {
+  if (failure is! AuthorizationFailure) {
+    return false;
+  }
+  return failure.context['operation'] == 'executeAgentSql';
+}
+
+/// Known policy rejection, missing table permission RPC, transient bridge
+/// HTTP 5xx, or HTTP 403 forbidden on agent SQL (environment / hub access).
 bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
   return isKnownInvalidPolicyFailure(failure) ||
       isKnownAgentSqlMissingPermissionFailure(failure) ||
-      isTransientAgentSqlBridgeHttpFailure(failure);
+      isTransientAgentSqlBridgeHttpFailure(failure) ||
+      isKnownE2eAgentSqlHttpForbiddenFailure(failure);
 }
 
 void primeE2eEnvironment() {

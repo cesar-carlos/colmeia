@@ -12,6 +12,8 @@ abstract final class AgentCatalogApiRoutes {
   static const String catalog = '/agents/catalog';
 
   static String catalogByAgentId(String agentId) => '$catalog/$agentId';
+
+  static String profileByAgentId(String agentId) => '/agents/$agentId/profile';
 }
 
 abstract final class ClientAgentApiRoutes {

@@ -109,13 +109,20 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
         builder: (context, controller, _) {
           final l10n = AppLocalizations.of(context);
           final pendingCount = controller.pendingActions.length;
-          final requests =
+          final rawRequests =
               controller.accessRequests?.items ??
               const <ClientAgentAccessRequest>[];
+          final approvedSnapshot = controller.approvedAgents;
+          final requestsForRequestsTab = approvedSnapshot == null
+              ? rawRequests
+              : excludeApprovedRequestsWithoutActiveAgent(
+                  rawRequests,
+                  approvedSnapshot.items.map((a) => a.agentId).toSet(),
+                );
           final approvedAgents =
               controller.approvedAgents?.items ?? const <ClientAgent>[];
           final filteredRequests = filterClientAgentsRequestsList(
-            requests,
+            requestsForRequestsTab,
             _pageSession.requestsFilters,
           );
           final filteredPendingActions = filterClientAgentsPendingActionsList(

@@ -7,6 +7,7 @@ import 'package:colmeia/features/client_agents/application/usecases/queue_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
@@ -53,6 +54,8 @@ void registerInjectorPresentation(GetIt getIt) {
         authController: getIt<AuthController>(),
         clientTokenStore: getIt<LocalAgentClientTokenStore>(),
         loadClientAgentDetailUseCase: getIt<LoadClientAgentDetailUseCase>(),
+        updateClientAgentProfileUseCase:
+            getIt<UpdateClientAgentProfileUseCase>(),
       ),
     );
 }

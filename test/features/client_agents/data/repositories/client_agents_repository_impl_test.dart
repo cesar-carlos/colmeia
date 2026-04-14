@@ -12,6 +12,7 @@ import 'package:colmeia/features/client_agents/data/models/online_agents_respons
 import 'package:colmeia/features/client_agents/data/repositories/client_agents_repository_impl.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
@@ -68,6 +69,9 @@ void main() {
       ),
     );
     registerFallbackValue(<PendingAgentAction>[]);
+    registerFallbackValue(
+      const AgentProfileUpdateRequest(name: 'fallback'),
+    );
   });
 
   setUp(() {
@@ -516,6 +520,96 @@ void main() {
       );
       verifyNever(() => local.readOnlineAgents(userId: any(named: 'userId')));
       verifyNever(() => remote.fetchOnlineAgents());
+    },
+  );
+
+  test(
+    'updateCatalogAgentProfile saves payload and returns mapped agent',
+    () async {
+      final dto = AgentCatalogRecordDto.fromJson(<String, dynamic>{
+        'agentId': 'agent-patch-1',
+        'name': 'Patched Name',
+        'status': 'active',
+        'createdAt': '2020-01-01T00:00:00.000Z',
+        'updatedAt': '2020-01-02T00:00:00.000Z',
+      });
+      when(
+        () => remote.patchAgentProfile(
+          agentId: any(named: 'agentId'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => dto);
+      when(
+        () => local.saveCatalogAgentById(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => local.readOnlineAgents(
+          userId: any(named: 'userId'),
+          maxAge: any(named: 'maxAge'),
+        ),
+      ).thenAnswer(
+        (_) async => const OnlineAgentsResponseDto(agents: [], count: 0),
+      );
+
+      final result = await repository.updateCatalogAgentProfile(
+        userId: 'user-1',
+        agentId: 'agent-patch-1',
+        request: const AgentProfileUpdateRequest(name: 'Patched Name'),
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrNull()?.name).equals('Patched Name');
+      verify(
+        () => local.saveCatalogAgentById(
+          userId: 'user-1',
+          agentId: 'agent-patch-1',
+          payload: dto,
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'updateCatalogAgentProfile maps 409 AGENT_DOCUMENT_CONFLICT to validation',
+    () async {
+      when(
+        () => remote.patchAgentProfile(
+          agentId: any(named: 'agentId'),
+          body: any(named: 'body'),
+        ),
+      ).thenThrow(
+        DioException(
+          requestOptions: RequestOptions(path: '/agents/x/profile'),
+          response: Response<dynamic>(
+            requestOptions: RequestOptions(path: '/agents/x/profile'),
+            statusCode: 409,
+            data: <String, dynamic>{'code': 'AGENT_DOCUMENT_CONFLICT'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      final result = await repository.updateCatalogAgentProfile(
+        userId: 'user-1',
+        agentId: 'agent-patch-1',
+        request: const AgentProfileUpdateRequest(name: 'X'),
+      );
+
+      check(result.isError()).isTrue();
+      final failure = result.exceptionOrNull()!;
+      check(failure).isA<ValidationFailure>();
+      check(failure.displayMessage).equals('Agent document conflict');
+      verifyNever(
+        () => local.saveCatalogAgentById(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          payload: any(named: 'payload'),
+        ),
+      );
     },
   );
 }

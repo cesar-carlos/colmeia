@@ -671,6 +671,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Token removed from this device.';
 
   @override
+  String get clientAgentDetailSectionEditProfile => 'Catalog profile';
+
+  @override
+  String get clientAgentDetailSaveProfile => 'Save profile';
+
+  @override
+  String get clientAgentDetailProfileSaved => 'Profile saved on the server.';
+
+  @override
+  String get clientAgentDetailProfileNameRequired => 'Legal name is required.';
+
+  @override
+  String get clientAgentFieldLegalName => 'Legal name';
+
+  @override
+  String get clientAgentFieldNumber => 'Number';
+
+  @override
   String get clientAgentFieldId => 'Agent ID';
 
   @override
@@ -936,6 +954,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clientAgentsErrorSyncPending =>
       'Could not sync pending agent actions.';
+
+  @override
+  String get clientAgentsErrorAgentDocumentConflict =>
+      'This CNPJ/CPF is already linked to another agent in the catalog. To change the link, contact support.';
 
   @override
   String get agentSqlErrorAuthenticationFailed =>

@@ -1179,6 +1179,42 @@ abstract class AppLocalizations {
   /// **'Token removed from this device.'**
   String get clientAgentDetailLocalTokenRemoved;
 
+  /// No description provided for @clientAgentDetailSectionEditProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog profile'**
+  String get clientAgentDetailSectionEditProfile;
+
+  /// No description provided for @clientAgentDetailSaveProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Save profile'**
+  String get clientAgentDetailSaveProfile;
+
+  /// No description provided for @clientAgentDetailProfileSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile saved on the server.'**
+  String get clientAgentDetailProfileSaved;
+
+  /// No description provided for @clientAgentDetailProfileNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal name is required.'**
+  String get clientAgentDetailProfileNameRequired;
+
+  /// No description provided for @clientAgentFieldLegalName.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal name'**
+  String get clientAgentFieldLegalName;
+
+  /// No description provided for @clientAgentFieldNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get clientAgentFieldNumber;
+
   /// No description provided for @clientAgentFieldId.
   ///
   /// In en, this message translates to:
@@ -1604,6 +1640,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not sync pending agent actions.'**
   String get clientAgentsErrorSyncPending;
+
+  /// No description provided for @clientAgentsErrorAgentDocumentConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'This CNPJ/CPF is already linked to another agent in the catalog. To change the link, contact support.'**
+  String get clientAgentsErrorAgentDocumentConflict;
 
   /// No description provided for @agentSqlErrorAuthenticationFailed.
   ///
