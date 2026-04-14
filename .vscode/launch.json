@@ -8,6 +8,15 @@
             "name": "colmeia",
             "request": "launch",
             "type": "dart",
+            "deviceId": "iPhone 17",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false"
+            ]
+        },
+        {
+            "name": "colmeia (pick device)",
+            "request": "launch",
+            "type": "dart",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
