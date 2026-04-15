@@ -1,9 +1,9 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 
-/// Filters for the annual parcel summary by payment method SQL.
+/// Filters for the annual parcel summary SQL (company, branch, calendar year).
 ///
-/// Period and flags match [ResumoParcelasPeriodoFilter]. Optional dimension
+/// Period and flags match `ResumoParcelasPeriodoFilter`. Optional dimension
 /// filters are forwarded as named parameters (null means no restriction).
 /// When [codFilial] is set, [codEmpresa] must also be set so the branch filter
 /// is well scoped.

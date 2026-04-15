@@ -37,7 +37,7 @@ void main() {
 
   test('forwards arguments to the repository', () async {
     const expectedReport =
-        AgentQueryExecutionReport<ResumoParcelaFormaPagamentoDiarioRow>(
+        AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow>(
           queryKey: AgentQueryKey.resumoParcelaFormaPagamentoDiario,
           strategy: AgentQueryExecutionStrategy.mergeAll,
           consideredApprovedAgentCount: 1,
@@ -58,7 +58,7 @@ void main() {
     ).thenAnswer(
       (_) async =>
           const Success<
-            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoDiarioRow>,
+            AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow>,
             AppFailure
           >(expectedReport),
     );

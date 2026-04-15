@@ -5,7 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 // Query-specific repository entry point; more report methods may be added here.
 // ignore: one_member_abstracts
 abstract interface class ResumoParcelaFormaPagamentoDiarioRepository {
-  Future<AppResult<List<ResumoParcelaFormaPagamentoDiarioRow>>> load({
+  Future<AppResult<List<ResumoVendaProdutoDiarioRow>>> load({
     required String agentId,
     required ResumoParcelaFormaPagamentoDiarioFilter filter,
     String? clientToken,

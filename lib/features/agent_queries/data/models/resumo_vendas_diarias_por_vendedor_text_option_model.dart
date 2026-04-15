@@ -7,7 +7,10 @@ class ResumoVendasDiariasPorVendedorTextOptionModel {
     Map<String, dynamic> map,
   ) {
     return ResumoVendasDiariasPorVendedorTextOptionModel(
-      value: _readRequiredStringKeys(map, _keys('Bairro')),
+      value: _readRequiredStringKeys(
+        map,
+        <String>[..._keys('NomeBairro'), ..._keys('Bairro')],
+      ),
     );
   }
 

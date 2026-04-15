@@ -6,10 +6,8 @@ class ResumoParcelasAnualRowModel {
     required this.codEmpresa,
     required this.codFilial,
     required this.anoDataVenda,
-    required this.codFormaPagamento,
-    required this.descricaoFormaPagamento,
     required this.qtdVendas,
-    required this.valorParcela,
+    required this.valorTotalVenda,
   });
 
   factory ResumoParcelasAnualRowModel.fromMap(Map<String, dynamic> map) {
@@ -26,62 +24,30 @@ class ResumoParcelasAnualRowModel {
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('AnoDataVenda'),
       ),
-      codFormaPagamento: _readCodFormaPagamento(map),
-      descricaoFormaPagamento:
-          AgentQueriesSqlRowMapReader.readRequiredNonEmptyString(
-            map,
-            AgentQueriesSqlRowMapReader.keysCodEmpresaStyle(
-              'DescricaoFormaPagamento',
-            ),
-          ),
       qtdVendas: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('QtdVendas'),
       ),
-      valorParcela: AgentQueriesSqlRowMapReader.readRequiredDouble(
+      valorTotalVenda: AgentQueriesSqlRowMapReader.readRequiredDouble(
         map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorParcela'),
+        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorTotalVenda'),
       ),
-    );
-  }
-
-  static String _readCodFormaPagamento(Map<String, dynamic> map) {
-    final keys = AgentQueriesSqlRowMapReader.keysCodEmpresaStyle(
-      'CodFormaPagamento',
-    );
-    final raw = AgentQueriesSqlRowMapReader.lookupFirst(map, keys);
-    if (raw is String && raw.trim().isNotEmpty) {
-      return raw.trim();
-    }
-    if (raw is num) {
-      final n = raw.toDouble();
-      if (n == n.roundToDouble()) {
-        return n.toInt().toString();
-      }
-      return raw.toString();
-    }
-    throw FormatException(
-      'Invalid or missing "${keys.first}" in agent SQL row',
     );
   }
 
   final int codEmpresa;
   final int codFilial;
   final int anoDataVenda;
-  final String codFormaPagamento;
-  final String descricaoFormaPagamento;
   final int qtdVendas;
-  final double valorParcela;
+  final double valorTotalVenda;
 
   ResumoParcelasAnualRow toEntity() {
     return ResumoParcelasAnualRow(
       codEmpresa: codEmpresa,
       codFilial: codFilial,
       anoDataVenda: anoDataVenda,
-      codFormaPagamento: codFormaPagamento,
-      descricaoFormaPagamento: descricaoFormaPagamento,
       qtdVendas: qtdVendas,
-      valorParcela: valorParcela,
+      valorTotalVenda: valorTotalVenda,
     );
   }
 }

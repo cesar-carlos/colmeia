@@ -58,4 +58,52 @@ void main() {
       ).equals(20);
     });
   });
+
+  group('buildSearchPattern', () {
+    test('returns null for null or blank', () {
+      check(ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(null))
+          .isNull();
+      check(ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern('  '))
+          .isNull();
+    });
+
+    test('wraps trimmed term with percent wildcards', () {
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern('  ab '),
+      ).equals('%ab%');
+    });
+
+    test('escapes LIKE metacharacters', () {
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern('a%b_c[d'),
+      ).equals('%a[%]b[_]c[[]d%');
+    });
+  });
+
+  group('buildPrefixSearchPattern', () {
+    test('returns null for null or blank', () {
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(null),
+      ).isNull();
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern('  '),
+      ).isNull();
+    });
+
+    test('uses trailing percent only', () {
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(
+          ' Cur ',
+        ),
+      ).equals('Cur%');
+    });
+
+    test('escapes LIKE metacharacters', () {
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(
+          'a%b_c[d',
+        ),
+      ).equals('a[%]b[_]c[[]d%');
+    });
+  });
 }

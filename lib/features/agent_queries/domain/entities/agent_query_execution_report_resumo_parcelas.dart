@@ -12,15 +12,17 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row_merger.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row_merger.dart';
 
 extension AgentQueryExecutionReportResumoParcelasAnualRowsX
     on AgentQueryExecutionReport<ResumoParcelasAnualRow> {
-  /// Per company, branch, sale year, and payment method, aggregated from all
+  /// Per company, branch, and sale calendar year, aggregated from all
   /// successful participant rows.
   ///
   /// Summing `qtdVendas` across agents can overcount distinct sales if the
   /// same sale appears in more than one agent result. See
-  /// [ResumoParcelasAnualRowMerger].
+  /// `ResumoParcelasAnualRowMerger`.
   ///
   /// Import this library so the getter is in scope for the UI layer.
   List<ResumoParcelasAnualRow> get aggregatedMergedRows =>
@@ -62,13 +64,27 @@ extension AgentQueryExecutionReportResumoParcelasMensalRowsX
   }
 }
 
-extension AgentQueryExecutionReportResumoParcelaFormaPagamentoDiarioRowsX
-    on AgentQueryExecutionReport<ResumoParcelaFormaPagamentoDiarioRow> {
-  /// Per calendar day and payment method, aggregated from participant rows.
+extension AgentQueryExecutionReportResumoVendaProdutoDiarioRowsX
+    on AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow> {
+  /// Per sold product line and calendar day (and related dimensions),
+  /// aggregated from participant rows. See
+  /// [ResumoVendaProdutoDiarioRowMerger] for merge semantics across agents.
   ///
   /// Import this library so the getter is in scope for the UI layer.
-  List<ResumoParcelaFormaPagamentoDiarioRow> get aggregatedMergedRows =>
-      ResumoParcelaFormaPagamentoDiarioRowMerger.merge(mergedRows);
+  List<ResumoVendaProdutoDiarioRow> get aggregatedMergedRows =>
+      ResumoVendaProdutoDiarioRowMerger.merge(mergedRows);
+}
+
+extension AgentQueryExecutionReportResumoVendasDiariasPorVendedorRowsX
+    on AgentQueryExecutionReport<ResumoVendasDiariasPorVendedorRow> {
+  /// Per company, branch, calendar day, month label, and seller dimensions,
+  /// aggregated from participant rows. See
+  /// [ResumoVendasDiariasPorVendedorRowMerger] for merge semantics across
+  /// agents.
+  ///
+  /// Import this library so the getter is in scope for the UI layer.
+  List<ResumoVendasDiariasPorVendedorRow> get aggregatedMergedRows =>
+      ResumoVendasDiariasPorVendedorRowMerger.merge(mergedRows);
 }
 
 extension AgentQueryExecutionReportResumoParcelasDiaSemanaRowsX

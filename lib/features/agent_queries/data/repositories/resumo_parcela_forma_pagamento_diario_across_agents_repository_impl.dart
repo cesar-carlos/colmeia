@@ -16,7 +16,7 @@ class ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl
   ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl({
     required AgentQueryTargetResolver targetResolver,
     required AgentQueryPlanBuilder planBuilder,
-    required AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow> executor,
+    required AgentQueryExecutor<ResumoVendaProdutoDiarioRow> executor,
     required LoadResumoParcelaFormaPagamentoDiarioUseCase loadResumo,
   }) : _targetResolver = targetResolver,
        _planBuilder = planBuilder,
@@ -25,16 +25,14 @@ class ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;
-  final AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow> _executor;
+  final AgentQueryExecutor<ResumoVendaProdutoDiarioRow> _executor;
   final LoadResumoParcelaFormaPagamentoDiarioUseCase _loadResumo;
 
   static const String _operation =
       'loadResumoParcelaFormaPagamentoDiarioAcrossAgents';
 
   @override
-  Future<
-    AppResult<AgentQueryExecutionReport<ResumoParcelaFormaPagamentoDiarioRow>>
-  >
+  Future<AppResult<AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow>>>
   load({
     required String userId,
     required ResumoParcelaFormaPagamentoDiarioFilter filter,
@@ -45,7 +43,7 @@ class ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.execute<
       ResumoParcelaFormaPagamentoDiarioFilter,
-      ResumoParcelaFormaPagamentoDiarioRow
+      ResumoVendaProdutoDiarioRow
     >(
       operation: _operation,
       queryKey: AgentQueryKey.resumoParcelaFormaPagamentoDiario,

@@ -46,9 +46,15 @@ abstract final class ResumoVendasDiariasSuggestionSqlParams {
     return multiplied;
   }
 
-  /// SQL Server LIKE pattern with `%` wildcards.
-  ///
-  /// Escapes `%`, `_`, and `[` for LIKE.
+  /// Escapes `%`, `_`, and `[` for SQL Server / SAP SQL Anywhere `LIKE`.
+  static String _escapeForLike(String trimmed) {
+    return trimmed
+        .replaceAll('[', '[[]')
+        .replaceAll('%', '[%]')
+        .replaceAll('_', '[_]');
+  }
+
+  /// SQL `LIKE` pattern with leading and trailing `%` (substring match).
   static String? buildSearchPattern(String? searchTerm) {
     if (searchTerm == null) {
       return null;
@@ -57,10 +63,23 @@ abstract final class ResumoVendasDiariasSuggestionSqlParams {
     if (trimmed.isEmpty) {
       return null;
     }
-    final escaped = trimmed
-        .replaceAll('[', '[[]')
-        .replaceAll('%', '[%]')
-        .replaceAll('_', '[_]');
+    final escaped = _escapeForLike(trimmed);
     return '%$escaped%';
+  }
+
+  /// Prefix `LIKE` pattern (`term%`) for large catalogs (e.g. municipio list).
+  ///
+  /// Favors index seeks on `Nome`-like columns; use [buildSearchPattern] when
+  /// substring matching is required (smaller option lists).
+  static String? buildPrefixSearchPattern(String? searchTerm) {
+    if (searchTerm == null) {
+      return null;
+    }
+    final trimmed = searchTerm.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    final escaped = _escapeForLike(trimmed);
+    return '$escaped%';
   }
 }

@@ -23,6 +23,13 @@ void main() {
       check(lower.value).equals('Norte');
     });
 
+    test('prefers NomeBairro when both keys are present', () {
+      final model = ResumoVendasDiariasPorVendedorTextOptionModel.fromBairroMap(
+        <String, dynamic>{'NomeBairro': 'Oficial', 'Bairro': 'Legado'},
+      );
+      check(model.value).equals('Oficial');
+    });
+
     test('throws when bairro missing or blank', () {
       expect(
         () => ResumoVendasDiariasPorVendedorTextOptionModel.fromBairroMap(

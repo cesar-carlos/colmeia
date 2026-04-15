@@ -35,10 +35,8 @@ void main() {
         codEmpresa: 1,
         codFilial: 1,
         anoDataVenda: 2026,
-        codFormaPagamento: 'DH',
-        descricaoFormaPagamento: 'DINHEIRO',
         qtdVendas: 1,
-        valorParcela: 10,
+        valorTotalVenda: 10,
       ),
     ];
     when(

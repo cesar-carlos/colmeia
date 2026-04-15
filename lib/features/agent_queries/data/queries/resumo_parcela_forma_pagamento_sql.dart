@@ -84,6 +84,8 @@ GROUP BY
   CodFormaPagamento,
   DescricaoFormaPagamento
 ORDER BY
+  CodEmpresa,
+  CodFilial,
   AnoDataVenda,
   MesDataVenda
 ''';

@@ -8,7 +8,7 @@ class LoadResumoParcelaFormaPagamentoDiarioUseCase {
 
   final ResumoParcelaFormaPagamentoDiarioRepository _repository;
 
-  Future<AppResult<List<ResumoParcelaFormaPagamentoDiarioRow>>> call({
+  Future<AppResult<List<ResumoVendaProdutoDiarioRow>>> call({
     required String agentId,
     required ResumoParcelaFormaPagamentoDiarioFilter filter,
     String? clientToken,

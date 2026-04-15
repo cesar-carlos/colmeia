@@ -25,7 +25,7 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
   final AgentQueriesRepository _agentQueriesRepository;
 
   @override
-  Future<AppResult<List<ResumoParcelaFormaPagamentoDiarioRow>>> load({
+  Future<AppResult<List<ResumoVendaProdutoDiarioRow>>> load({
     required String agentId,
     required ResumoParcelaFormaPagamentoDiarioFilter filter,
     String? clientToken,
@@ -33,7 +33,7 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
-      return Failure<List<ResumoParcelaFormaPagamentoDiarioRow>, AppFailure>(
+      return Failure<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
         ValidationFailure(
           message: validationError,
           userMessage: 'Os filtros da consulta sao invalidos.',
@@ -70,28 +70,28 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
         executionResult,
         agentId: agentId.trim(),
       ),
-      Failure<List<ResumoParcelaFormaPagamentoDiarioRow>, AppFailure>.new,
+      Failure<List<ResumoVendaProdutoDiarioRow>, AppFailure>.new,
     );
   }
 
-  AppResult<List<ResumoParcelaFormaPagamentoDiarioRow>> _mapExecutionToRows(
+  AppResult<List<ResumoVendaProdutoDiarioRow>> _mapExecutionToRows(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
   }) {
     try {
       final rows = executionResult.rows
           .map(
-            (row) => ResumoParcelaFormaPagamentoDiarioRowModel.fromMap(
+            (row) => ResumoVendaProdutoDiarioRowModel.fromMap(
               row,
             ).toEntity(),
           )
           .toList(growable: false);
-      return Success<List<ResumoParcelaFormaPagamentoDiarioRow>, AppFailure>(
+      return Success<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
         rows,
       );
     } on FormatException catch (error, stackTrace) {
       AppLogger.error(
-        'Unexpected row shape for ResumoParcelaFormaPagamentoDiario',
+        'Unexpected row shape for ResumoVendaProdutoDiario',
         context: <String, Object?>{
           'operation': _operation,
           'agentId': agentId,
@@ -99,7 +99,7 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
         error: error,
         stackTrace: stackTrace,
       );
-      return Failure<List<ResumoParcelaFormaPagamentoDiarioRow>, AppFailure>(
+      return Failure<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
         UnknownFailure(
           message: error.message,
           userMessage:

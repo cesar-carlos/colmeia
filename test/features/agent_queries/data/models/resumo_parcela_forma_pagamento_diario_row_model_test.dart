@@ -3,44 +3,132 @@ import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('ResumoParcelaFormaPagamentoDiarioRowModel', () {
+  group('ResumoVendaProdutoDiarioRowModel', () {
     test('fromMap accepts camelCase keys and DateTime DataVenda', () {
-      final model = ResumoParcelaFormaPagamentoDiarioRowModel.fromMap(
+      final model = ResumoVendaProdutoDiarioRowModel.fromMap(
         <String, dynamic>{
+          'codEmpresa': 1,
+          'codFilial': 6,
+          'codProdutoVendido': 266255,
+          'origem': 'OB',
+          'codOrigem': 275134,
           'dataVenda': DateTime.utc(2026, 4, 10, 15, 30),
-          'descricaoFormaPagamento': 'Pix',
-          'quantidade': 3,
-          'valorTotal': 99.5,
+          'anoMesDataVenda': '2026/04',
+          'nomeUsuario': 'Welber',
+          'codVendedor': 248,
+          'nomeVendedor': 'MARCELO - PI',
+          'qtdVendas': 1,
+          'valorTotalVenda': 4159.04,
         },
       );
       check(model.dataVenda).equals(DateTime(2026, 4, 10));
-      check(model.descricaoFormaPagamento).equals('Pix');
-      check(model.quantidade).equals(3);
-      check(model.valorTotal).equals(99.5);
+      check(model.codEmpresa).equals(1);
+      check(model.codFilial).equals(6);
+      check(model.codProdutoVendido).equals(266255);
+      check(model.origem).equals('OB');
+      check(model.codOrigem).equals(275134);
+      check(model.anoMesDataVenda).equals('2026/04');
+      check(model.nomeUsuario).equals('Welber');
+      check(model.codVendedor).equals(248);
+      check(model.nomeVendedor).equals('MARCELO - PI');
+      check(model.qtdVendas).equals(1);
+      check(model.valorTotalVenda).equals(4159.04);
     });
 
     test('fromMap parses DataVenda from yyyy-MM-dd string', () {
-      final model = ResumoParcelaFormaPagamentoDiarioRowModel.fromMap(
+      final model = ResumoVendaProdutoDiarioRowModel.fromMap(
         <String, dynamic>{
           'DataVenda': '2025-03-01T00:00:00',
-          'descricaoformapagamento': 'Dinheiro',
-          'quantidade': '10',
-          'valortotal': '50.2500000',
+          'CodEmpresa': 1,
+          'CodFilial': 2,
+          'CodProdutoVendido': 3,
+          'Origem': 'OB',
+          'CodOrigem': 9,
+          'AnoMesDataVenda': '2025/03',
+          'NomeUsuario': 'U',
+          'qtdvendas': '10',
+          'valortotalvenda': '50.2500000',
         },
       );
       check(model.dataVenda).equals(DateTime(2025, 3));
-      check(model.descricaoFormaPagamento).equals('Dinheiro');
-      check(model.quantidade).equals(10);
-      check(model.valorTotal).equals(50.25);
+      check(model.qtdVendas).equals(10);
+      check(model.valorTotalVenda).equals(50.25);
     });
 
-    test('fromMap throws when DescricaoFormaPagamento missing', () {
+    test('fromMap leaves codVendedor and nomeVendedor null when absent', () {
+      final model = ResumoVendaProdutoDiarioRowModel.fromMap(
+        <String, dynamic>{
+          'DataVenda': '2026-01-01',
+          'CodEmpresa': 1,
+          'CodFilial': 1,
+          'CodProdutoVendido': 1,
+          'Origem': 'OB',
+          'CodOrigem': 1,
+          'AnoMesDataVenda': '2026/01',
+          'NomeUsuario': 'U',
+          'QtdVendas': 1,
+          'ValorTotalVenda': 1.0,
+        },
+      );
+      check(model.codVendedor).isNull();
+      check(model.nomeVendedor).isNull();
+    });
+
+    test('fromMap throws when CodVendedor is non-numeric string', () {
       expect(
-        () => ResumoParcelaFormaPagamentoDiarioRowModel.fromMap(
+        () => ResumoVendaProdutoDiarioRowModel.fromMap(
           <String, dynamic>{
-            'dataVenda': '2026-01-01',
-            'quantidade': 1,
-            'valorTotal': 1.0,
+            'DataVenda': '2026-01-01',
+            'CodEmpresa': 1,
+            'CodFilial': 1,
+            'CodProdutoVendido': 1,
+            'Origem': 'OB',
+            'CodOrigem': 1,
+            'AnoMesDataVenda': '2026/01',
+            'NomeUsuario': 'U',
+            'CodVendedor': 'not-a-number',
+            'QtdVendas': 1,
+            'ValorTotalVenda': 1.0,
+          },
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('fromMap throws when NomeVendedor is num', () {
+      expect(
+        () => ResumoVendaProdutoDiarioRowModel.fromMap(
+          <String, dynamic>{
+            'DataVenda': '2026-01-01',
+            'CodEmpresa': 1,
+            'CodFilial': 1,
+            'CodProdutoVendido': 1,
+            'Origem': 'OB',
+            'CodOrigem': 1,
+            'AnoMesDataVenda': '2026/01',
+            'NomeUsuario': 'U',
+            'NomeVendedor': 42,
+            'QtdVendas': 1,
+            'ValorTotalVenda': 1.0,
+          },
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('fromMap throws when CodEmpresa missing', () {
+      expect(
+        () => ResumoVendaProdutoDiarioRowModel.fromMap(
+          <String, dynamic>{
+            'DataVenda': '2026-01-01',
+            'CodFilial': 1,
+            'CodProdutoVendido': 1,
+            'Origem': 'OB',
+            'CodOrigem': 1,
+            'AnoMesDataVenda': '2026/01',
+            'NomeUsuario': 'U',
+            'QtdVendas': 1,
+            'ValorTotalVenda': 1.0,
           },
         ),
         throwsA(isA<FormatException>()),

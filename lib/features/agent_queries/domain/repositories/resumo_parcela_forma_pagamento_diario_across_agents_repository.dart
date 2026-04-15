@@ -9,7 +9,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 // ignore: one_member_abstracts, lines_longer_than_80_chars
 abstract interface class ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepository {
   Future<
-    AppResult<AgentQueryExecutionReport<ResumoParcelaFormaPagamentoDiarioRow>>
+    AppResult<AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow>>
   >
   load({
     required String userId,

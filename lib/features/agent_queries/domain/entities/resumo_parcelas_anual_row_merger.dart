@@ -4,15 +4,13 @@ typedef _Key = ({
   int codEmpresa,
   int codFilial,
   int anoDataVenda,
-  String codFormaPagamento,
-  String descricaoFormaPagamento,
 });
 
-/// Combines [ResumoParcelasAnualRow] from multiple agents.
+/// Combines `ResumoParcelasAnualRow` values from multiple agents.
 ///
-/// Groups by company, branch, sale year, and payment method (exact string
-/// match as returned from SQL). Sums `qtdVendas` and `valorParcela` for
-/// matching keys.
+/// Groups by company, branch, and sale calendar year. Sums `qtdVendas` and
+/// `valorTotalVenda` for matching keys. Result order follows
+/// `ResumoParcelasAnualSql` (`CodEmpresa`, `CodFilial`, `AnoDataVenda`).
 ///
 /// If the same real-world sale could appear in more than one agent result,
 /// summing `qtdVendas` across agents may overcount distinct sales.
@@ -20,30 +18,24 @@ abstract final class ResumoParcelasAnualRowMerger {
   static List<ResumoParcelasAnualRow> merge(
     Iterable<ResumoParcelasAnualRow> rows,
   ) {
-    final byKey = <_Key, ({int qtdVendas, double valorParcela})>{};
+    final byKey = <_Key, ({int qtdVendas, double valorTotalVenda})>{};
     for (final row in rows) {
       final key = (
         codEmpresa: row.codEmpresa,
         codFilial: row.codFilial,
         anoDataVenda: row.anoDataVenda,
-        codFormaPagamento: row.codFormaPagamento,
-        descricaoFormaPagamento: row.descricaoFormaPagamento,
       );
       final acc = byKey.putIfAbsent(
         key,
-        () => (qtdVendas: 0, valorParcela: 0),
+        () => (qtdVendas: 0, valorTotalVenda: 0),
       );
       byKey[key] = (
         qtdVendas: acc.qtdVendas + row.qtdVendas,
-        valorParcela: acc.valorParcela + row.valorParcela,
+        valorTotalVenda: acc.valorTotalVenda + row.valorTotalVenda,
       );
     }
     final keys = byKey.keys.toList(growable: false)
       ..sort((a, b) {
-        final y = a.anoDataVenda.compareTo(b.anoDataVenda);
-        if (y != 0) {
-          return y;
-        }
         final e = a.codEmpresa.compareTo(b.codEmpresa);
         if (e != 0) {
           return e;
@@ -52,11 +44,7 @@ abstract final class ResumoParcelasAnualRowMerger {
         if (f != 0) {
           return f;
         }
-        final c = a.codFormaPagamento.compareTo(b.codFormaPagamento);
-        if (c != 0) {
-          return c;
-        }
-        return a.descricaoFormaPagamento.compareTo(b.descricaoFormaPagamento);
+        return a.anoDataVenda.compareTo(b.anoDataVenda);
       });
     return <ResumoParcelasAnualRow>[
       for (final key in keys)
@@ -64,10 +52,8 @@ abstract final class ResumoParcelasAnualRowMerger {
           codEmpresa: key.codEmpresa,
           codFilial: key.codFilial,
           anoDataVenda: key.anoDataVenda,
-          codFormaPagamento: key.codFormaPagamento,
-          descricaoFormaPagamento: key.descricaoFormaPagamento,
           qtdVendas: byKey[key]!.qtdVendas,
-          valorParcela: byKey[key]!.valorParcela,
+          valorTotalVenda: byKey[key]!.valorTotalVenda,
         ),
     ];
   }

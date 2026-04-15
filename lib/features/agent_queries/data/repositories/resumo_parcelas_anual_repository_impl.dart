@@ -98,10 +98,6 @@ class ResumoParcelasAnualRepositoryImpl
       if (kDebugMode && rows.isNotEmpty) {
         final sorted = List<ResumoParcelasAnualRow>.of(rows)
           ..sort((a, b) {
-            final y = a.anoDataVenda.compareTo(b.anoDataVenda);
-            if (y != 0) {
-              return y;
-            }
             final e = a.codEmpresa.compareTo(b.codEmpresa);
             if (e != 0) {
               return e;
@@ -110,13 +106,21 @@ class ResumoParcelasAnualRepositoryImpl
             if (f != 0) {
               return f;
             }
-            return a.codFormaPagamento.compareTo(b.codFormaPagamento);
+            return a.anoDataVenda.compareTo(b.anoDataVenda);
           });
         final branchKeys = <String>{};
-        final yearFormaKeys = <String>{};
+        final yearKeys = <int>{};
+        var minAno = rows.first.anoDataVenda;
+        var maxAno = rows.first.anoDataVenda;
         for (final r in rows) {
           branchKeys.add('${r.codEmpresa}:${r.codFilial}');
-          yearFormaKeys.add('${r.anoDataVenda}|${r.codFormaPagamento}');
+          yearKeys.add(r.anoDataVenda);
+          if (r.anoDataVenda < minAno) {
+            minAno = r.anoDataVenda;
+          }
+          if (r.anoDataVenda > maxAno) {
+            maxAno = r.anoDataVenda;
+          }
         }
         AppLogger.debug(
           'ResumoParcelasAnual load summary',
@@ -124,10 +128,16 @@ class ResumoParcelasAnualRepositoryImpl
             'operation': _operation,
             'agentId': agentId,
             'rowCount': rows.length,
-            'anoDataVendaFirst': sorted.first.anoDataVenda,
-            'anoDataVendaLast': sorted.last.anoDataVenda,
+            'anoDataVendaMin': minAno,
+            'anoDataVendaMax': maxAno,
+            'orderedFirstKey':
+                '${sorted.first.codEmpresa}:${sorted.first.codFilial}:'
+                '${sorted.first.anoDataVenda}',
+            'orderedLastKey':
+                '${sorted.last.codEmpresa}:${sorted.last.codFilial}:'
+                '${sorted.last.anoDataVenda}',
             'distinctBranchKeyCount': branchKeys.length,
-            'distinctYearFormaKeyCount': yearFormaKeys.length,
+            'distinctYearKeyCount': yearKeys.length,
             'sqlDimensionFiltersActive':
                 filter.codEmpresa != null ||
                 filter.codFilial != null ||

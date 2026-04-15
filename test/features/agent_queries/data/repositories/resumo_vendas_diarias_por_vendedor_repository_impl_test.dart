@@ -68,6 +68,9 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
+    check(captured.namedParams['origem']).equals('FrenteLoja');
+    check(captured.namedParams['geraFinanceiro']).equals('S');
+    check(captured.namedParams['preVenda']).equals('N');
     check(captured.namedParams['codVendedor']).isNull();
     check(captured.namedParams['bairro']).isNull();
     check(captured.namedParams['municipio']).isNull();
@@ -169,13 +172,11 @@ void main() {
               'CodEmpresa': 1,
               'CodFilial': 2,
               'DataVenda': '2026-04-15',
+              'AnoMesDataVenda': '2026/04',
               'CodVendedor': 3,
               'NomeVendedor': 'Bob',
-              'QtdeItens': 2,
-              'ValorAcrescimo': 0,
-              'ValorDesconto': 0,
-              'ValorBruto': 50,
-              'ValorLiquido': 50,
+              'QtdVendas': 2,
+              'ValorTotalVenda': 50,
             },
           ],
           rowCount: 1,
@@ -194,6 +195,8 @@ void main() {
     check(result.isSuccess()).isTrue();
     final row = result.getOrNull()!.single;
     check(row.nomeVendedor).equals('Bob');
-    check(row.valorLiquido).equals(50);
+    check(row.anoMesDataVenda).equals('2026/04');
+    check(row.qtdVendas).equals(2);
+    check(row.valorTotalVenda).equals(50);
   });
 }

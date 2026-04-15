@@ -1,26 +1,25 @@
-/// One row per company, branch, sale year, and payment method in the annual
-/// parcel summary.
+/// One row per company, branch, and sale calendar year in the annual parcel
+/// summary (no payment-method dimension).
 ///
 /// [qtdVendas] matches SQL `COUNT(DISTINCT Id)` (distinct sales in the group).
 ///
-/// [valorParcela] matches SQL `SUM(ValorParcela - ValorTrocoParcela)` (net
-/// parcel total after troco allocation), not a single installment line amount.
+/// [valorTotalVenda] matches SQL `SUM(ValorParcela - ValorTrocoParcela)` (net
+/// total after troco allocation on parcel lines).
+///
+/// Uses `double` like other agent SQL money aggregates; it mirrors ERP or
+/// bridge numeric precision and is not a fixed decimal type.
 class ResumoParcelasAnualRow {
   const ResumoParcelasAnualRow({
     required this.codEmpresa,
     required this.codFilial,
     required this.anoDataVenda,
-    required this.codFormaPagamento,
-    required this.descricaoFormaPagamento,
     required this.qtdVendas,
-    required this.valorParcela,
+    required this.valorTotalVenda,
   });
 
   final int codEmpresa;
   final int codFilial;
   final int anoDataVenda;
-  final String codFormaPagamento;
-  final String descricaoFormaPagamento;
   final int qtdVendas;
-  final double valorParcela;
+  final double valorTotalVenda;
 }

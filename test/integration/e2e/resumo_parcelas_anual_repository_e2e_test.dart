@@ -53,9 +53,7 @@ void main() {
               expect(row.codFilial, greaterThanOrEqualTo(0));
               expect(row.anoDataVenda, greaterThan(1900));
               expect(row.qtdVendas, greaterThanOrEqualTo(0));
-              expect(row.valorParcela, isNonNegative);
-              expect(row.codFormaPagamento, isNotEmpty);
-              expect(row.descricaoFormaPagamento, isNotEmpty);
+              expect(row.valorTotalVenda, isNonNegative);
             }
           },
           (failure) {

@@ -1,6 +1,7 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_use_case.dart';
@@ -24,6 +25,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_repository_impl.dart';
@@ -50,6 +52,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/municipio_list_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_repository.dart';
@@ -79,6 +82,16 @@ void registerInjectorAgentQueries(GetIt getIt) {
     )
     ..registerLazySingleton<AgentQueriesRepository>(
       () => AgentQueriesRepositoryImpl(getIt<AgentQueriesRemoteDataSource>()),
+    )
+    ..registerLazySingleton<MunicipioListRepository>(
+      () => MunicipioListRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+    )
+    ..registerLazySingleton<LoadMunicipiosPageUseCase>(
+      () => LoadMunicipiosPageUseCase(
+        getIt<MunicipioListRepository>(),
+      ),
     )
     ..registerLazySingleton<ResumoParcelaFormaPagamentoRepository>(
       () => ResumoParcelaFormaPagamentoRepositoryImpl(
@@ -162,10 +175,8 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>>(
       AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>.new,
     )
-    ..registerLazySingleton<
-      AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow>
-    >(
-      AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow>.new,
+    ..registerLazySingleton<AgentQueryExecutor<ResumoVendaProdutoDiarioRow>>(
+      AgentQueryExecutor<ResumoVendaProdutoDiarioRow>.new,
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasDiaSemanaRow>>(
       AgentQueryExecutor<ResumoParcelasDiaSemanaRow>.new,
@@ -205,8 +216,7 @@ void registerInjectorAgentQueries(GetIt getIt) {
       () => ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl(
         targetResolver: getIt<AgentQueryTargetResolver>(),
         planBuilder: getIt<AgentQueryPlanBuilder>(),
-        executor:
-            getIt<AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow>>(),
+        executor: getIt<AgentQueryExecutor<ResumoVendaProdutoDiarioRow>>(),
         loadResumo: getIt<LoadResumoParcelaFormaPagamentoDiarioUseCase>(),
       ),
     )

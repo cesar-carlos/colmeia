@@ -27,7 +27,7 @@ class _MockLoadResumo extends Mock
 void main() {
   late _MockTargetResolver targetResolver;
   late _MockPlanBuilder planBuilder;
-  late AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow> executor;
+  late AgentQueryExecutor<ResumoVendaProdutoDiarioRow> executor;
   late _MockLoadResumo loadResumo;
   late ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl repository;
 
@@ -52,7 +52,7 @@ void main() {
   setUp(() {
     targetResolver = _MockTargetResolver();
     planBuilder = _MockPlanBuilder();
-    executor = AgentQueryExecutor<ResumoParcelaFormaPagamentoDiarioRow>();
+    executor = AgentQueryExecutor<ResumoVendaProdutoDiarioRow>();
     loadResumo = _MockLoadResumo();
     repository = ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepositoryImpl(
       targetResolver: targetResolver,
@@ -112,13 +112,21 @@ void main() {
         ),
       ).thenAnswer(
         (_) async =>
-            Success<List<ResumoParcelaFormaPagamentoDiarioRow>, AppFailure>(
-              <ResumoParcelaFormaPagamentoDiarioRow>[
-                ResumoParcelaFormaPagamentoDiarioRow(
+            Success<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
+              <ResumoVendaProdutoDiarioRow>[
+                ResumoVendaProdutoDiarioRow(
+                  codEmpresa: 1,
+                  codFilial: 6,
+                  codProdutoVendido: 1,
+                  origem: 'OB',
+                  codOrigem: 1,
                   dataVenda: DateTime(2026, 4),
-                  descricaoFormaPagamento: 'Pix',
-                  quantidade: 2,
-                  valorTotal: 100,
+                  anoMesDataVenda: '2026/04',
+                  nomeUsuario: 'U',
+                  codVendedor: 1,
+                  nomeVendedor: 'Pix',
+                  qtdVendas: 2,
+                  valorTotalVenda: 100,
                 ),
               ],
             ),
@@ -199,7 +207,7 @@ void main() {
       ).thenAnswer(
         (_) async =>
             const Failure<
-              List<ResumoParcelaFormaPagamentoDiarioRow>,
+              List<ResumoVendaProdutoDiarioRow>,
               AppFailure
             >(
               NetworkFailure(message: 'failed', userMessage: 'failed'),

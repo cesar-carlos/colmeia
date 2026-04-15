@@ -1,47 +1,93 @@
+import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vendido_detalhe_sql.dart';
+
 abstract final class ResumoParcelaFormaPagamentoDiarioSql {
-  /// Daily aggregation of parcel lines by sale date and payment method.
+  /// One row per sold product line (CodProdutoVendido) in the filtered period,
+  /// with distinct sale count and net value after troco on parcel lines.
   ///
-  /// Omits `GrupoCliente`, `Regiao`, and `Vendedor` joins so stricter agent
-  /// policies can still authorize the query (see other parcel report SQL in
-  /// this feature).
-  static const String query = '''
+  /// Inner slice uses LEFT JOIN for GrupoCliente, Regiao, and Vendedor; columns
+  /// from those joins may be SQL NULL when no matching row exists.
+  ///
+  /// The inner query selects many columns for future filters; when those land,
+  /// push predicates into the inner slice where possible and validate indexes
+  /// on the ERP side if this becomes hot.
+  static const String _queryHead = '''
 SELECT
+  CodEmpresa,
+  CodFilial,
+  CodProdutoVendido,
+  Origem,
+  CodOrigem,
   DataVenda,
-  DescricaoFormaPagamento,
-  COUNT(*) AS Quantidade,
-  SUM(ValorParcela) AS ValorTotal
+  AnoMesDataVenda,
+  NomeUsuario,
+  CodVendedor,
+  NomeVendedor,
+  COUNT(DISTINCT Id) AS QtdVendas,
+  SUM(ValorParcela - ValorTrocoParcela) AS ValorTotalVenda
 FROM (
   SELECT
-    CAST(pv.DataVenda AS DATE) AS DataVenda,
-    pv.Origem,
-    COALESCE(SUBSTRING(ppv.GeraFinanceiro, 1, 1), tos.GeraFinanceiro)
-      AS GeraFinanceiro,
-    pv.PreVenda,
-    fp.Descricao AS DescricaoFormaPagamento,
-    ppv.ValorParcela
-  FROM ParcelaProdutoVendido ppv
-  INNER JOIN ProdutoVendido pv ON
-    pv.CodEmpresa = ppv.CodEmpresa
-    AND pv.CodProdutoVendido = ppv.CodProdutoVendido
-  INNER JOIN FormaPagamento fp ON
-    fp.CodFormaPagamento = ppv.CodFormaPagamento
-  INNER JOIN TipoOperacaoSaida tos ON
-    tos.CodEmpresa = pv.CodEmpresa
-    AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
-  INNER JOIN Cliente c ON
-    c.CodCliente = pv.CodCliente
-  INNER JOIN Municipio m ON
-    m.CodMunicipio = pv.CodMunicipio
-) ResumoParcelaFormaPagamentoDiario
+    CodEmpresa,
+    CodFilial,
+    CodProdutoVendido,
+    Id,
+    Origem,
+    CodOrigem,
+    GeraFinanceiro,
+    PreVenda,
+    CodVendedor,
+    NomeVendedor,
+    CodCliente,
+    NomeCliente,
+    CodGrupoCliente,
+    NomeGrupoCliente,
+    CodMunicipio,
+    NomeMunicipio,
+    UFMunicipio,
+    CodRegiao,
+    NomeRegiao,
+    DataVenda,
+    DataEmissao,
+    DataVencimento,
+    NumeroDocumento,
+    NomeUsuario,
+    NumeroParcela,
+    AnoDataVenda,
+    MesDataVenda,
+    AnoMesDataVenda,
+    CodFormaPagamento,
+    DescricaoFormaPagamento,
+    ValorTrocoParcela,
+    ValorParcela
+  FROM (
+''';
+
+  static const String _queryTail = '''
+  ) Detalhe
+) ResumoVendaProdutoDiario
 WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
   AND Origem LIKE :origem
   AND GeraFinanceiro = :geraFinanceiro
   AND PreVenda = :preVenda
 GROUP BY
+  CodEmpresa,
+  CodFilial,
+  CodProdutoVendido,
+  Origem,
+  CodOrigem,
   DataVenda,
-  DescricaoFormaPagamento
+  AnoMesDataVenda,
+  NomeUsuario,
+  CodVendedor,
+  NomeVendedor
 ORDER BY
-  DataVenda,
-  DescricaoFormaPagamento
+  CodEmpresa,
+  CodFilial,
+  CodProdutoVendido,
+  DataVenda
 ''';
+
+  static const String query =
+      _queryHead +
+      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
+      _queryTail;
 }

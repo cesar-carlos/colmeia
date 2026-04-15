@@ -13,4 +13,8 @@ abstract final class AgentQueriesBoundedResultMaxRows {
 
   /// Company, branch, sale year, and payment method buckets in the range.
   static const int resumoParcelasAnual = aggregateMultiBranchCap;
+
+  /// One page of `Municipio` list rows (same order of magnitude as list filter
+  /// max page size in domain).
+  static const int municipioListPage = 100;
 }

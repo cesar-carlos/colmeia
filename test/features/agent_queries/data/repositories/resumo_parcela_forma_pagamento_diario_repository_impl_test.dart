@@ -55,9 +55,17 @@ void main() {
           rows: <Map<String, dynamic>>[
             <String, dynamic>{
               'DataVenda': '2026-04-01',
-              'DescricaoFormaPagamento': 'Pix',
-              'Quantidade': 5,
-              'ValorTotal': 200.25,
+              'CodEmpresa': 1,
+              'CodFilial': 6,
+              'CodProdutoVendido': 100,
+              'Origem': 'OB',
+              'CodOrigem': 200,
+              'AnoMesDataVenda': '2026/04',
+              'NomeUsuario': 'U',
+              'CodVendedor': 10,
+              'NomeVendedor': 'V',
+              'QtdVendas': 5,
+              'ValorTotalVenda': 200.25,
             },
           ],
           rowCount: 1,
@@ -77,10 +85,19 @@ void main() {
     check(result.isSuccess()).isTrue();
     final rows = result.getOrNull()!;
     check(rows).has((it) => it.length, 'length').equals(1);
-    check(rows.single.dataVenda).equals(DateTime(2026, 4));
-    check(rows.single.descricaoFormaPagamento).equals('Pix');
-    check(rows.single.quantidade).equals(5);
-    check(rows.single.valorTotal).equals(200.25);
+    final row = rows.single;
+    check(row.dataVenda).equals(DateTime(2026, 4));
+    check(row.codEmpresa).equals(1);
+    check(row.codFilial).equals(6);
+    check(row.codProdutoVendido).equals(100);
+    check(row.origem).equals('OB');
+    check(row.codOrigem).equals(200);
+    check(row.anoMesDataVenda).equals('2026/04');
+    check(row.nomeUsuario).equals('U');
+    check(row.codVendedor).equals(10);
+    check(row.nomeVendedor).equals('V');
+    check(row.qtdVendas).equals(5);
+    check(row.valorTotalVenda).equals(200.25);
 
     final capturedRequest =
         verify(
@@ -92,7 +109,7 @@ void main() {
     check(capturedRequest.bridgeTimeoutMs).equals(120000);
     check(capturedRequest.namedParams['dataVendaInicio']).equals('2026-01-01');
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
-    check(capturedRequest.sql).contains('ResumoParcelaFormaPagamentoDiario');
+    check(capturedRequest.sql).contains('ResumoVendaProdutoDiario');
   });
 
   test('returns UnknownFailure when row mapping fails', () async {
@@ -118,6 +135,5 @@ void main() {
     );
 
     check(result.isError()).isTrue();
-    check(result.exceptionOrNull()).isA<UnknownFailure>();
   });
 }

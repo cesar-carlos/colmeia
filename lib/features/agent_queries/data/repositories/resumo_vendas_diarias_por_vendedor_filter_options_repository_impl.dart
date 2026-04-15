@@ -78,6 +78,10 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       limit: limit,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      namedParamsOverride: _bairroSuggestionNamedParams(
+        searchTerm: searchTerm,
+        limit: limit,
+      ),
       mapRows: (rows) => rows
           .map(
             (row) =>
@@ -110,6 +114,10 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       limit: limit,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      namedParamsOverride: _municipioSuggestionNamedParams(
+        searchTerm: searchTerm,
+        limit: limit,
+      ),
       mapRows: (rows) => rows
           .map(
             (row) =>
@@ -119,6 +127,38 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
           )
           .toList(growable: false),
     );
+  }
+
+  Map<String, Object?> _bairroSuggestionNamedParams({
+    required String? searchTerm,
+    required int limit,
+  }) {
+    final effectiveLimit = ResumoVendasDiariasSuggestionSqlParams.clampLimit(
+      limit,
+    );
+    return <String, Object?>{
+      'searchPattern':
+          ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(
+            searchTerm,
+          ),
+      'limit': effectiveLimit,
+    };
+  }
+
+  Map<String, Object?> _municipioSuggestionNamedParams({
+    required String? searchTerm,
+    required int limit,
+  }) {
+    final effectiveLimit = ResumoVendasDiariasSuggestionSqlParams.clampLimit(
+      limit,
+    );
+    return <String, Object?>{
+      'searchPattern':
+          ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(
+            searchTerm,
+          ),
+      'limit': effectiveLimit,
+    };
   }
 
   Future<AppResult<List<T>>> _execute<T>({
@@ -132,6 +172,7 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
     required String? clientToken,
     required int? bridgeTimeoutMs,
     required List<T> Function(List<Map<String, dynamic>> rows) mapRows,
+    Map<String, Object?>? namedParamsOverride,
   }) async {
     final rangeError = ResumoVendasDiariasSuggestionSqlParams.validateDateRange(
       dataVendaInicio: dataVendaInicio,
@@ -158,15 +199,17 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       sql: sql,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
-      namedParams: <String, Object?>{
-        'dataVendaInicio': AgentQueriesSqlLocalDate.format(dataVendaInicio),
-        'dataVendaFim': AgentQueriesSqlLocalDate.format(dataVendaFim),
-        'searchPattern':
-            ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(
-              searchTerm,
-            ),
-        'limit': effectiveLimit,
-      },
+      namedParams:
+          namedParamsOverride ??
+          <String, Object?>{
+            'dataVendaInicio': AgentQueriesSqlLocalDate.format(dataVendaInicio),
+            'dataVendaFim': AgentQueriesSqlLocalDate.format(dataVendaFim),
+            'searchPattern':
+                ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(
+                  searchTerm,
+                ),
+            'limit': effectiveLimit,
+          },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
       ),

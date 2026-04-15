@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/e2e_dependency_bootstrap.dart';
 
-/// Direct repository smoke for the daily parcel summary by payment method.
+/// Direct repository smoke for the daily resumo (sold line + net value).
 ///
 /// Same bridge path as ResumoParcelasAnual repository e2e.
 void main() {
@@ -47,9 +47,10 @@ void main() {
         result.fold(
           (rows) {
             for (final row in rows) {
-              expect(row.descricaoFormaPagamento, isNotEmpty);
-              expect(row.quantidade, greaterThanOrEqualTo(0));
-              expect(row.valorTotal, isNonNegative);
+              expect(row.origem, isNotEmpty);
+              expect(row.nomeUsuario, isNotEmpty);
+              expect(row.qtdVendas, greaterThanOrEqualTo(0));
+              expect(row.valorTotalVenda, isNonNegative);
             }
           },
           (failure) {

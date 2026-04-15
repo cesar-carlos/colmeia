@@ -1,5 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diarias_por_vendedor_bairro_options_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diarias_por_vendedor_municipio_options_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diarias_por_vendedor_vendedor_options_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/resumo_vendas_diarias_suggestion_sql_params.dart';
@@ -110,9 +112,73 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
-    check(captured.namedParams['searchPattern']).equals('%a[_][%]b%');
+    check(captured.namedParams['searchPattern']).equals('a[_][%]b%');
     check(captured.namedParams['limit']).equals(1);
   });
+
+  test(
+    'loadBairroOptions sends only searchPattern and limit in namedParams',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
+
+      await repository.loadBairroOptions(
+        agentId: 'agent-1',
+        dataVendaInicio: dataInicio,
+        dataVendaFim: dataFim,
+      );
+
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(captured.namedParams.keys.toSet()).deepEquals(<String>{
+        'searchPattern',
+        'limit',
+      });
+      check(captured.sql).equals(
+        ResumoVendasDiariasPorVendedorBairroOptionsSql.query,
+      );
+    },
+  );
+
+  test(
+    'loadMunicipioOptions sends only searchPattern and limit in namedParams',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
+
+      await repository.loadMunicipioOptions(
+        agentId: 'agent-1',
+        dataVendaInicio: dataInicio,
+        dataVendaFim: dataFim,
+      );
+
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(captured.namedParams.keys.toSet()).deepEquals(<String>{
+        'searchPattern',
+        'limit',
+      });
+      check(captured.sql).equals(
+        ResumoVendasDiariasPorVendedorMunicipioOptionsSql.query,
+      );
+    },
+  );
 
   test('caps limit at maxSuggestionFetchLimit', () async {
     when(

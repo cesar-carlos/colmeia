@@ -30,12 +30,20 @@ void main() {
   });
 
   test('forwards arguments to the repository', () async {
-    final expectedRows = <ResumoParcelaFormaPagamentoDiarioRow>[
-      ResumoParcelaFormaPagamentoDiarioRow(
+    final expectedRows = <ResumoVendaProdutoDiarioRow>[
+      ResumoVendaProdutoDiarioRow(
+        codEmpresa: 1,
+        codFilial: 1,
+        codProdutoVendido: 1,
+        origem: 'OB',
+        codOrigem: 1,
         dataVenda: DateTime(2026, 1, 5),
-        descricaoFormaPagamento: 'Pix',
-        quantidade: 1,
-        valorTotal: 10,
+        anoMesDataVenda: '2026/01',
+        nomeUsuario: 'U',
+        codVendedor: 1,
+        nomeVendedor: 'Pix',
+        qtdVendas: 1,
+        valorTotalVenda: 10,
       ),
     ];
     when(
@@ -47,7 +55,7 @@ void main() {
       ),
     ).thenAnswer(
       (_) async =>
-          Success<List<ResumoParcelaFormaPagamentoDiarioRow>, AppFailure>(
+          Success<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
             expectedRows,
           ),
     );

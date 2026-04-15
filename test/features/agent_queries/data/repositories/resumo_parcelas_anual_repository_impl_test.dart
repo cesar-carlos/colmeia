@@ -52,10 +52,8 @@ void main() {
       'CodEmpresa': 1,
       'CodFilial': 6,
       'AnoDataVenda': 2026,
-      'CodFormaPagamento': 'BL',
-      'DescricaoFormaPagamento': 'BOLETO',
       'QtdVendas': 42,
-      'ValorParcela': 1250.5,
+      'ValorTotalVenda': 1250.5,
     };
   }
 
@@ -87,10 +85,8 @@ void main() {
     check(row.codEmpresa).equals(1);
     check(row.codFilial).equals(6);
     check(row.anoDataVenda).equals(2026);
-    check(row.codFormaPagamento).equals('BL');
-    check(row.descricaoFormaPagamento).equals('BOLETO');
     check(row.qtdVendas).equals(42);
-    check(row.valorParcela).equals(1250.5);
+    check(row.valorTotalVenda).equals(1250.5);
 
     final capturedRequest =
         verify(
@@ -128,10 +124,8 @@ void main() {
               'codEmpresa': 1,
               'codFilial': 1,
               'anoDataVenda': 2025,
-              'codFormaPagamento': 'DH',
-              'descricaoFormaPagamento': 'DINHEIRO',
               'qtdVendas': 1,
-              'valorParcela': 10,
+              'valorTotalVenda': 10,
             },
           ],
           rowCount: 1,
@@ -150,7 +144,7 @@ void main() {
     check(result.isSuccess()).isTrue();
     final row = result.getOrNull()!.single;
     check(row.anoDataVenda).equals(2025);
-    check(row.valorParcela).equals(10);
+    check(row.valorTotalVenda).equals(10);
     check(row.qtdVendas).equals(1);
   });
 

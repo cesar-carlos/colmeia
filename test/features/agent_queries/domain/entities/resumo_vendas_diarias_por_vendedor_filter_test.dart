@@ -42,5 +42,23 @@ void main() {
       check(filter.sqlBairro).equals('Centro');
       check(filter.sqlMunicipio).isNull();
     });
+
+    test('validationError when origem is empty', () {
+      final filter = ResumoVendasDiariasPorVendedorFilter(
+        dataVendaInicio: DateTime.utc(2026, 4),
+        dataVendaFim: DateTime.utc(2026, 4, 30),
+        origem: '   ',
+      );
+      check(filter.validationError()).isNotNull();
+    });
+
+    test('validationError when geraFinanceiro is not S or N', () {
+      final filter = ResumoVendasDiariasPorVendedorFilter(
+        dataVendaInicio: DateTime.utc(2026, 4),
+        dataVendaFim: DateTime.utc(2026, 4, 30),
+        geraFinanceiro: 'X',
+      );
+      check(filter.validationError()).isNotNull();
+    });
   });
 }
