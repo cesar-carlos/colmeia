@@ -19,26 +19,20 @@
   "userPermissionViewDashboard": "Overview",
   "userPermissionManageAgents": "Agent management",
   "dashboardPartialAgentQueriesTitle": "Incomplete overview data",
-  "dashboardPartialAgentQueriesMessage": "Some approved agents did not return data ({agents}). Totals may be incomplete.",
-  "@dashboardPartialAgentQueriesMessage": {
-    "placeholders": {
-      "agents": {"type": "String"}
-    }
-  },
+  "dashboardPartialAgentQueriesMessage": "Some approved agents did not return data. Totals may be incomplete.",
   "dashboardMissingClientTokenTitle": "Agents without a saved client token",
-  "dashboardMissingClientTokenMessage": "These approved agents were skipped because no local client token was saved ({agents}). Add the token on the agent screen to include their data.",
-  "@dashboardMissingClientTokenMessage": {
-    "placeholders": {
-      "agents": {"type": "String"}
-    }
-  },
+  "dashboardMissingClientTokenMessage": "These approved agents were skipped because no local client token was saved. Add the token on the agent screen to include their data.",
   "dashboardSetupRequiredTitle": "Save a client token to load data",
-  "dashboardSetupRequiredMessage": "None of the approved agents has a client token saved on this device ({agents}). Open agent management to save the token and enable overview queries.",
-  "@dashboardSetupRequiredMessage": {
+  "dashboardSetupRequiredMessage": "None of the approved agents has a client token saved on this device. Open agent management to save the token and enable overview queries.",
+  "dashboardViewAffectedAgentsList": "View list ({count})",
+  "@dashboardViewAffectedAgentsList": {
     "placeholders": {
-      "agents": {"type": "String"}
+      "count": {"type": "int"}
     }
   },
+  "dashboardAffectedAgentsSheetTitlePartialFailure": "Agents that did not return data",
+  "dashboardAffectedAgentsSheetTitleMissingToken": "Agents without a saved client token",
+  "dashboardAffectedAgentsSheetTitleSetupRequired": "Approved agents without a client token on this device",
   "dashboardMultiAgentAggregationTitle": "Multiple agents",
   "dashboardMultiAgentAggregationMessage": "This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.",
   "dashboardPaymentSummaryTitle": "Summary by payment method",
@@ -88,6 +82,7 @@
     }
   },
   "overviewHomeSubtitle": "Consolidated summary of approved agents (all connected branches).",
+  "overviewHomeAlertsSectionTitle": "Notices",
   "overviewLoadErrorTitle": "Unable to load the overview",
   "overviewStaleCacheTitle": "Data saved on this device",
   "overviewStaleCacheMessage": "Could not refresh right now. The numbers below reflect the last summary fetched successfully.",

@@ -68,27 +68,41 @@ class AppLocalizationsPt extends AppLocalizations {
       'Dados da visao geral incompletos';
 
   @override
-  String dashboardPartialAgentQueriesMessage(String agents) {
-    return 'Alguns agentes aprovados nao retornaram dados ($agents). Os totais podem estar incompletos.';
-  }
+  String get dashboardPartialAgentQueriesMessage =>
+      'Alguns agentes aprovados nao retornaram dados. Os totais podem estar incompletos.';
 
   @override
   String get dashboardMissingClientTokenTitle =>
       'Agentes sem token de cliente salvo';
 
   @override
-  String dashboardMissingClientTokenMessage(String agents) {
-    return 'Estes agentes aprovados foram ignorados porque nao ha token de cliente local ($agents). Cadastre o token na tela do agente para incluir os dados.';
-  }
+  String get dashboardMissingClientTokenMessage =>
+      'Estes agentes aprovados foram ignorados porque nao ha token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
 
   @override
   String get dashboardSetupRequiredTitle =>
       'Salve um token de cliente para carregar os dados';
 
   @override
-  String dashboardSetupRequiredMessage(String agents) {
-    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.';
+  String get dashboardSetupRequiredMessage =>
+      'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.';
+
+  @override
+  String dashboardViewAffectedAgentsList(int count) {
+    return 'Ver lista ($count)';
   }
+
+  @override
+  String get dashboardAffectedAgentsSheetTitlePartialFailure =>
+      'Agentes que nao retornaram dados';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleMissingToken =>
+      'Agentes sem token de cliente salvo';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleSetupRequired =>
+      'Agentes aprovados sem token de cliente neste dispositivo';
 
   @override
   String get dashboardMultiAgentAggregationTitle => 'Varios agentes';
@@ -209,6 +223,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get overviewHomeSubtitle =>
       'Resumo consolidado dos agentes aprovados (todas as filiais conectadas).';
+
+  @override
+  String get overviewHomeAlertsSectionTitle => 'Avisos';
 
   @override
   String get overviewLoadErrorTitle =>
@@ -1601,27 +1618,41 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Dados da visao geral incompletos';
 
   @override
-  String dashboardPartialAgentQueriesMessage(String agents) {
-    return 'Alguns agentes aprovados nao retornaram dados ($agents). Os totais podem estar incompletos.';
-  }
+  String get dashboardPartialAgentQueriesMessage =>
+      'Alguns agentes aprovados nao retornaram dados. Os totais podem estar incompletos.';
 
   @override
   String get dashboardMissingClientTokenTitle =>
       'Agentes sem token de cliente salvo';
 
   @override
-  String dashboardMissingClientTokenMessage(String agents) {
-    return 'Estes agentes aprovados foram ignorados porque nao ha token de cliente local ($agents). Cadastre o token na tela do agente para incluir os dados.';
-  }
+  String get dashboardMissingClientTokenMessage =>
+      'Estes agentes aprovados foram ignorados porque nao ha token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
 
   @override
   String get dashboardSetupRequiredTitle =>
       'Salve um token de cliente para carregar os dados';
 
   @override
-  String dashboardSetupRequiredMessage(String agents) {
-    return 'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ($agents). Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.';
+  String get dashboardSetupRequiredMessage =>
+      'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.';
+
+  @override
+  String dashboardViewAffectedAgentsList(int count) {
+    return 'Ver lista ($count)';
   }
+
+  @override
+  String get dashboardAffectedAgentsSheetTitlePartialFailure =>
+      'Agentes que nao retornaram dados';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleMissingToken =>
+      'Agentes sem token de cliente salvo';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleSetupRequired =>
+      'Agentes aprovados sem token de cliente neste dispositivo';
 
   @override
   String get dashboardMultiAgentAggregationTitle => 'Varios agentes';
@@ -1742,6 +1773,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewHomeSubtitle =>
       'Resumo consolidado dos agentes aprovados (todas as filiais conectadas).';
+
+  @override
+  String get overviewHomeAlertsSectionTitle => 'Avisos';
 
   @override
   String get overviewLoadErrorTitle =>

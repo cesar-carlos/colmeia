@@ -216,8 +216,8 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardPartialAgentQueriesMessage.
   ///
   /// In en, this message translates to:
-  /// **'Some approved agents did not return data ({agents}). Totals may be incomplete.'**
-  String dashboardPartialAgentQueriesMessage(String agents);
+  /// **'Some approved agents did not return data. Totals may be incomplete.'**
+  String get dashboardPartialAgentQueriesMessage;
 
   /// No description provided for @dashboardMissingClientTokenTitle.
   ///
@@ -228,8 +228,8 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardMissingClientTokenMessage.
   ///
   /// In en, this message translates to:
-  /// **'These approved agents were skipped because no local client token was saved ({agents}). Add the token on the agent screen to include their data.'**
-  String dashboardMissingClientTokenMessage(String agents);
+  /// **'These approved agents were skipped because no local client token was saved. Add the token on the agent screen to include their data.'**
+  String get dashboardMissingClientTokenMessage;
 
   /// No description provided for @dashboardSetupRequiredTitle.
   ///
@@ -240,8 +240,32 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardSetupRequiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'None of the approved agents has a client token saved on this device ({agents}). Open agent management to save the token and enable overview queries.'**
-  String dashboardSetupRequiredMessage(String agents);
+  /// **'None of the approved agents has a client token saved on this device. Open agent management to save the token and enable overview queries.'**
+  String get dashboardSetupRequiredMessage;
+
+  /// No description provided for @dashboardViewAffectedAgentsList.
+  ///
+  /// In en, this message translates to:
+  /// **'View list ({count})'**
+  String dashboardViewAffectedAgentsList(int count);
+
+  /// No description provided for @dashboardAffectedAgentsSheetTitlePartialFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents that did not return data'**
+  String get dashboardAffectedAgentsSheetTitlePartialFailure;
+
+  /// No description provided for @dashboardAffectedAgentsSheetTitleMissingToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents without a saved client token'**
+  String get dashboardAffectedAgentsSheetTitleMissingToken;
+
+  /// No description provided for @dashboardAffectedAgentsSheetTitleSetupRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved agents without a client token on this device'**
+  String get dashboardAffectedAgentsSheetTitleSetupRequired;
 
   /// No description provided for @dashboardMultiAgentAggregationTitle.
   ///
@@ -446,6 +470,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Consolidated summary of approved agents (all connected branches).'**
   String get overviewHomeSubtitle;
+
+  /// No description provided for @overviewHomeAlertsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notices'**
+  String get overviewHomeAlertsSectionTitle;
 
   /// No description provided for @overviewLoadErrorTitle.
   ///

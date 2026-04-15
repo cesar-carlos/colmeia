@@ -19,26 +19,20 @@
   "userPermissionViewDashboard": "Visao geral",
   "userPermissionManageAgents": "Gestao de agentes",
   "dashboardPartialAgentQueriesTitle": "Dados da visao geral incompletos",
-  "dashboardPartialAgentQueriesMessage": "Alguns agentes aprovados nao retornaram dados ({agents}). Os totais podem estar incompletos.",
-  "@dashboardPartialAgentQueriesMessage": {
-    "placeholders": {
-      "agents": {"type": "String"}
-    }
-  },
+  "dashboardPartialAgentQueriesMessage": "Alguns agentes aprovados nao retornaram dados. Os totais podem estar incompletos.",
   "dashboardMissingClientTokenTitle": "Agentes sem token de cliente salvo",
-  "dashboardMissingClientTokenMessage": "Estes agentes aprovados foram ignorados porque nao ha token de cliente local ({agents}). Cadastre o token na tela do agente para incluir os dados.",
-  "@dashboardMissingClientTokenMessage": {
-    "placeholders": {
-      "agents": {"type": "String"}
-    }
-  },
+  "dashboardMissingClientTokenMessage": "Estes agentes aprovados foram ignorados porque nao ha token de cliente local. Cadastre o token na tela do agente para incluir os dados.",
   "dashboardSetupRequiredTitle": "Salve um token de cliente para carregar os dados",
-  "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo ({agents}). Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.",
-  "@dashboardSetupRequiredMessage": {
+  "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.",
+  "dashboardViewAffectedAgentsList": "Ver lista ({count})",
+  "@dashboardViewAffectedAgentsList": {
     "placeholders": {
-      "agents": {"type": "String"}
+      "count": {"type": "int"}
     }
   },
+  "dashboardAffectedAgentsSheetTitlePartialFailure": "Agentes que nao retornaram dados",
+  "dashboardAffectedAgentsSheetTitleMissingToken": "Agentes sem token de cliente salvo",
+  "dashboardAffectedAgentsSheetTitleSetupRequired": "Agentes aprovados sem token de cliente neste dispositivo",
   "dashboardMultiAgentAggregationTitle": "Varios agentes",
   "dashboardMultiAgentAggregationMessage": "Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.",
   "dashboardPaymentSummaryTitle": "Resumo por forma de pagamento",
@@ -88,6 +82,7 @@
     }
   },
   "overviewHomeSubtitle": "Resumo consolidado dos agentes aprovados (todas as filiais conectadas).",
+  "overviewHomeAlertsSectionTitle": "Avisos",
   "overviewLoadErrorTitle": "Nao foi possivel carregar a visao geral",
   "overviewStaleCacheTitle": "Dados salvos neste aparelho",
   "overviewStaleCacheMessage": "Nao foi possivel atualizar agora. Os numeros abaixo refletem o ultimo resumo obtido com sucesso.",

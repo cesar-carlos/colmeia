@@ -18,10 +18,11 @@ class OverviewAgentOption {
   bool operator ==(Object other) =>
       other is OverviewAgentOption &&
       other.agentId == agentId &&
+      other.name == name &&
       other.connectionStatus == connectionStatus;
 
   @override
-  int get hashCode => Object.hash(agentId, connectionStatus);
+  int get hashCode => Object.hash(agentId, name, connectionStatus);
 }
 
 /// Year/month period selected by the user.

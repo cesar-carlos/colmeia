@@ -27,6 +27,7 @@ class AppInlineErrorPanel extends StatelessWidget {
     required this.message,
     super.key,
     this.title,
+    this.belowMessage,
     this.onRetry,
     this.actions,
     this.retryLabel = 'Tentar novamente',
@@ -36,6 +37,9 @@ class AppInlineErrorPanel extends StatelessWidget {
 
   final String? title;
   final String message;
+
+  /// Optional content between the message and primary actions (e.g. a link).
+  final Widget? belowMessage;
   final VoidCallback? onRetry;
   final Widget? actions;
   final String retryLabel;
@@ -75,6 +79,10 @@ class AppInlineErrorPanel extends StatelessWidget {
             color: colors.onSurface,
           ),
         ),
+        if (belowMessage != null) ...<Widget>[
+          SizedBox(height: tokens.gapSm),
+          belowMessage!,
+        ],
         if (actions != null) ...<Widget>[
           SizedBox(height: tokens.gapMd),
           actions!,

@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/localization/app_localizations_fallback.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_failure_l10n.dart';
+import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -53,6 +54,41 @@ class OverviewController extends ChangeNotifier {
   /// agent names. Empty until data arrives.
   List<OverviewAgentOption> _availableAgents = const <OverviewAgentOption>[];
   List<OverviewAgentOption> get availableAgents => _availableAgents;
+
+  Overview? _normalizedNamesCacheRef;
+  List<String> _missingTokenNamesNormalized = const <String>[];
+  List<String> _partialFailureNamesNormalized = const <String>[];
+
+  /// Normalized display names for missing-token alerts (trim, sort, dedupe).
+  List<String> get missingTokenAgentNamesNormalized {
+    _ensureNormalizedAlertNamesCache();
+    return _missingTokenNamesNormalized;
+  }
+
+  /// Normalized display names for partial query failure alerts.
+  List<String> get partialQueryFailureAgentNamesNormalized {
+    _ensureNormalizedAlertNamesCache();
+    return _partialFailureNamesNormalized;
+  }
+
+  void _ensureNormalizedAlertNamesCache() {
+    final o = _overview;
+    if (identical(o, _normalizedNamesCacheRef)) {
+      return;
+    }
+    _normalizedNamesCacheRef = o;
+    if (o == null) {
+      _missingTokenNamesNormalized = const <String>[];
+      _partialFailureNamesNormalized = const <String>[];
+      return;
+    }
+    _missingTokenNamesNormalized = normalizeOverviewAgentNames(
+      o.agentNamesMissingClientToken,
+    );
+    _partialFailureNamesNormalized = normalizeOverviewAgentNames(
+      o.agentNamesExcludedFromQueryFailure,
+    );
+  }
 
   @override
   void dispose() {
@@ -247,36 +283,6 @@ class OverviewController extends ChangeNotifier {
   /// Rebuilds [_availableAgents] from the overview (per-agent rankings and
   /// failure metadata). Uses names resolved by the repository.
   Future<void> _updateAvailableAgents(Overview overview, String userId) async {
-    final seen = <String, String>{};
-    for (final r in overview.agentRankings) {
-      seen[r.agentId] = r.displayName;
-    }
-    for (var i = 0; i < overview.agentIdsExcludedFromQueryFailure.length; i++) {
-      final id = overview.agentIdsExcludedFromQueryFailure[i];
-      final name = i < overview.agentNamesExcludedFromQueryFailure.length
-          ? overview.agentNamesExcludedFromQueryFailure[i]
-          : id;
-      seen[id] = name;
-    }
-    for (var i = 0; i < overview.agentIdsMissingClientToken.length; i++) {
-      final id = overview.agentIdsMissingClientToken[i];
-      final name = i < overview.agentNamesMissingClientToken.length
-          ? overview.agentNamesMissingClientToken[i]
-          : id;
-      seen[id] = name;
-    }
-
-    // The overview itself doesn't carry the full agent list, so we keep
-    // whatever we already have and merge new names in.
-    final merged = <String, String>{
-      for (final opt in _availableAgents) opt.agentId: opt.name,
-      ...seen,
-    };
-
-    if (merged.isEmpty) {
-      return;
-    }
-
     final onlineIds = await _clientAgentsRepository.loadOnlineAgentIds(
       userId: userId,
     );
@@ -285,28 +291,14 @@ class OverviewController extends ChangeNotifier {
       return;
     }
 
-    _availableAgents =
-        merged.entries
-            .map(
-              (e) => OverviewAgentOption(
-                agentId: e.key,
-                name: e.value,
-                connectionStatus: _connectionStatusFor(onlineIds, e.key),
-              ),
-            )
-            .toList(growable: false)
-          ..sort((a, b) => a.name.compareTo(b.name));
-  }
-
-  static AgentConnectionStatus _connectionStatusFor(
-    Set<String>? onlineIds,
-    String agentId,
-  ) {
-    if (onlineIds == null) {
-      return AgentConnectionStatus.unknown;
+    final assembled = OverviewAvailableAgentsAssembler.assemble(
+      overview: overview,
+      previousOptions: _availableAgents,
+      onlineAgentIds: onlineIds,
+    );
+    if (assembled.isEmpty) {
+      return;
     }
-    return onlineIds.contains(agentId)
-        ? AgentConnectionStatus.online
-        : AgentConnectionStatus.offline;
+    _availableAgents = assembled;
   }
 }

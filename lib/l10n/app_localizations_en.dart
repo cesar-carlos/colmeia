@@ -67,26 +67,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardPartialAgentQueriesTitle => 'Incomplete overview data';
 
   @override
-  String dashboardPartialAgentQueriesMessage(String agents) {
-    return 'Some approved agents did not return data ($agents). Totals may be incomplete.';
-  }
+  String get dashboardPartialAgentQueriesMessage =>
+      'Some approved agents did not return data. Totals may be incomplete.';
 
   @override
   String get dashboardMissingClientTokenTitle =>
       'Agents without a saved client token';
 
   @override
-  String dashboardMissingClientTokenMessage(String agents) {
-    return 'These approved agents were skipped because no local client token was saved ($agents). Add the token on the agent screen to include their data.';
-  }
+  String get dashboardMissingClientTokenMessage =>
+      'These approved agents were skipped because no local client token was saved. Add the token on the agent screen to include their data.';
 
   @override
   String get dashboardSetupRequiredTitle => 'Save a client token to load data';
 
   @override
-  String dashboardSetupRequiredMessage(String agents) {
-    return 'None of the approved agents has a client token saved on this device ($agents). Open agent management to save the token and enable overview queries.';
+  String get dashboardSetupRequiredMessage =>
+      'None of the approved agents has a client token saved on this device. Open agent management to save the token and enable overview queries.';
+
+  @override
+  String dashboardViewAffectedAgentsList(int count) {
+    return 'View list ($count)';
   }
+
+  @override
+  String get dashboardAffectedAgentsSheetTitlePartialFailure =>
+      'Agents that did not return data';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleMissingToken =>
+      'Agents without a saved client token';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleSetupRequired =>
+      'Approved agents without a client token on this device';
 
   @override
   String get dashboardMultiAgentAggregationTitle => 'Multiple agents';
@@ -206,6 +220,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overviewHomeSubtitle =>
       'Consolidated summary of approved agents (all connected branches).';
+
+  @override
+  String get overviewHomeAlertsSectionTitle => 'Notices';
 
   @override
   String get overviewLoadErrorTitle => 'Unable to load the overview';
