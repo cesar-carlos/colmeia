@@ -363,6 +363,12 @@ abstract class AppLocalizations {
   /// **'YEAR / MONTH'**
   String get dashboardHomeFiltersYearMonthLabel;
 
+  /// No description provided for @dashboardHomeFiltersCurrentMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Current month'**
+  String get dashboardHomeFiltersCurrentMonth;
+
   /// No description provided for @dashboardHomeFiltersPeriodLast30Days.
   ///
   /// In en, this message translates to:

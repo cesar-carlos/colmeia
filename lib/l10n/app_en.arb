@@ -49,6 +49,7 @@
   "dashboardHomeFiltersAgentsLabel": "Agents",
   "dashboardHomeFiltersAgentsEmptyHint": "Load the overview to list agents.",
   "dashboardHomeFiltersYearMonthLabel": "YEAR / MONTH",
+  "dashboardHomeFiltersCurrentMonth": "Current month",
   "dashboardHomeFiltersPeriodLast30Days": "Last 30 days",
   "overviewAgentFilterAllAgentsSummary": "All agents ({count})",
   "@overviewAgentFilterAllAgentsSummary": {

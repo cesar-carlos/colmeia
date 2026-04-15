@@ -24,10 +24,11 @@ class OverviewFilterBar extends StatelessWidget {
   final List<OverviewAgentOption> availableAgents;
   final ValueChanged<OverviewFilter>? onFilterChanged;
 
-  static List<OverviewYearMonth> _buildMonthOptions() {
+  /// Months strictly before [OverviewYearMonth.fromDate] (no current month).
+  static List<OverviewYearMonth> _buildPastMonthOptions({int monthsBack = 12}) {
     final now = DateTime.now();
-    return List<OverviewYearMonth>.generate(13, (i) {
-      var month = now.month - i;
+    return List<OverviewYearMonth>.generate(monthsBack, (i) {
+      var month = now.month - (i + 1);
       var year = now.year;
       while (month < 1) {
         month += 12;
@@ -50,7 +51,8 @@ class OverviewFilterBar extends StatelessWidget {
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
     final colors = theme.appColors;
-    final monthOptions = _buildMonthOptions();
+    final currentYm = OverviewYearMonth.fromDate(DateTime.now());
+    final pastMonthOptions = _buildPastMonthOptions();
     final isDisabled = onFilterChanged == null;
     final hasActiveFilter = !filter.isDefault;
     final hasAgentFilter = filter.selectedAgentIds != null;
@@ -62,13 +64,14 @@ class OverviewFilterBar extends StatelessWidget {
       fontSize: 11,
     );
 
-    final monthDropdownOptions = <AppDropdownOption<OverviewYearMonth?>>[
-      AppDropdownOption<OverviewYearMonth?>(
-        value: null,
-        label: l10n.dashboardHomeFiltersPeriodLast30Days,
+    final selectedYm = filter.yearMonth ?? currentYm;
+    final monthDropdownOptions = <AppDropdownOption<OverviewYearMonth>>[
+      AppDropdownOption<OverviewYearMonth>(
+        value: currentYm,
+        label: l10n.dashboardHomeFiltersCurrentMonth,
       ),
-      for (final ym in monthOptions)
-        AppDropdownOption<OverviewYearMonth?>(
+      for (final ym in pastMonthOptions)
+        AppDropdownOption<OverviewYearMonth>(
           value: ym,
           label: _monthLabel(context, ym),
         ),
@@ -116,7 +119,7 @@ class OverviewFilterBar extends StatelessWidget {
                 GestureDetector(
                   onTap: isDisabled
                       ? null
-                      : () => onFilterChanged!(const OverviewFilter()),
+                      : () => onFilterChanged!(OverviewFilter.initial()),
                   child: Text(
                     l10n.reportFiltersClearAction,
                     style: actionStyle,
@@ -167,15 +170,18 @@ class OverviewFilterBar extends StatelessWidget {
                   },
                 ),
               SizedBox(height: tokens.gapMd),
-              AppDropdownField<OverviewYearMonth?>(
+              AppDropdownField<OverviewYearMonth>(
                 label: l10n.dashboardHomeFiltersYearMonthLabel,
-                value: filter.yearMonth,
+                value: selectedYm,
                 options: monthDropdownOptions,
                 enabled: !isDisabled,
                 density: AppTextFieldDensity.compact,
-                onChanged: (v) => onFilterChanged!(
-                  filter.copyWith(yearMonth: v),
-                ),
+                onChanged: (v) {
+                  if (v == null) {
+                    return;
+                  }
+                  onFilterChanged!(filter.copyWith(yearMonth: v));
+                },
               ),
             ],
           ),

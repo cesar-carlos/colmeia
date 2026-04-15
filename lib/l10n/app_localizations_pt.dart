@@ -160,6 +160,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dashboardHomeFiltersYearMonthLabel => 'ANO / MÊS';
 
   @override
+  String get dashboardHomeFiltersCurrentMonth => 'Mês atual';
+
+  @override
   String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
 
   @override
@@ -1708,6 +1711,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardHomeFiltersYearMonthLabel => 'ANO / MÊS';
+
+  @override
+  String get dashboardHomeFiltersCurrentMonth => 'Mês atual';
 
   @override
   String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';

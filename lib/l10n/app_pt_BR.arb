@@ -49,6 +49,7 @@
   "dashboardHomeFiltersAgentsLabel": "AGENTES",
   "dashboardHomeFiltersAgentsEmptyHint": "Carregue a visao geral para listar os agentes.",
   "dashboardHomeFiltersYearMonthLabel": "ANO / MÊS",
+  "dashboardHomeFiltersCurrentMonth": "Mês atual",
   "dashboardHomeFiltersPeriodLast30Days": "Últimos 30 dias",
   "overviewAgentFilterAllAgentsSummary": "Todos os agentes ({count})",
   "@overviewAgentFilterAllAgentsSummary": {

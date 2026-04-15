@@ -158,6 +158,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardHomeFiltersYearMonthLabel => 'YEAR / MONTH';
 
   @override
+  String get dashboardHomeFiltersCurrentMonth => 'Current month';
+
+  @override
   String get dashboardHomeFiltersPeriodLast30Days => 'Last 30 days';
 
   @override

@@ -63,18 +63,40 @@ class OverviewYearMonth {
 ///
 /// [selectedAgentIds] — null means "all approved agents" (implicitly selected).
 /// When non-null, only these agent ids are queried and shown.
-/// [yearMonth] — null means "last 30 days" (default behaviour).
+/// [yearMonth] — null means a rolling **last 30 days** window (see repository).
+/// The overview home uses [OverviewFilter.initial] so the default period is
+/// the current calendar month instead.
 @immutable
 class OverviewFilter {
   const OverviewFilter({this.selectedAgentIds, this.yearMonth});
 
+  /// All agents and the current local calendar month (app open / after clear).
+  factory OverviewFilter.initial({DateTime? now}) {
+    final n = now ?? DateTime.now();
+    return OverviewFilter(
+      yearMonth: OverviewYearMonth.fromDate(n),
+    );
+  }
+
   /// null = all agents. Non-null = restrict to this set (must be non-empty).
   final Set<String>? selectedAgentIds;
 
-  /// null = default rolling 30-day window
+  /// null = rolling 30-day window; non-null = that calendar month (local).
   final OverviewYearMonth? yearMonth;
 
-  bool get isDefault => selectedAgentIds == null && yearMonth == null;
+  /// True when showing all agents and the period is the current local month.
+  /// [yearMonth] null ("last 30 days") is not the default baseline.
+  bool get isDefault {
+    if (selectedAgentIds != null) {
+      return false;
+    }
+    final ym = yearMonth;
+    if (ym == null) {
+      return false;
+    }
+    final n = DateTime.now();
+    return ym.year == n.year && ym.month == n.month;
+  }
 
   OverviewFilter copyWith({
     Object? selectedAgentIds = _sentinel,

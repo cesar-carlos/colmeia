@@ -18,7 +18,6 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_home_ale
 import 'package:colmeia/features/overview/presentation/widgets/overview_kpi_bar.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_bar_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_payment_summary_table.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_rankings_section.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -211,18 +210,6 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                                   l10n: l10n,
                                   agentRankings: displayOverview.agentRankings,
                                   userRankings: displayOverview.userRankings,
-                                ),
-                              ),
-                              SizedBox(height: tokens.sectionSpacing),
-                              AppSkeleton(
-                                enabled: showSkeleton,
-                                showDelay: const Duration(milliseconds: 160),
-                                loadingSemanticsLabel: l10n
-                                    .dashboardPaymentSummaryLoadingSemantics,
-                                child: OverviewPaymentSummaryTable(
-                                  l10n: l10n,
-                                  methods: displayOverview.paymentMethods,
-                                  showSkeleton: showSkeleton,
                                 ),
                               ),
                             ],

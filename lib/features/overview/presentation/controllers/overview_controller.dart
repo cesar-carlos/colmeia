@@ -43,7 +43,7 @@ class OverviewController extends ChangeNotifier {
   int _loadGeneration = 0;
   bool _disposed = false;
 
-  OverviewFilter _activeFilter = const OverviewFilter();
+  OverviewFilter _activeFilter = OverviewFilter.initial();
 
   /// The filter currently applied to the overview.
   OverviewFilter get activeFilter => _activeFilter;
