@@ -17,6 +17,22 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcel
 import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart';
 
+int _compareResumoParcelasMensalRowsSqlOrder(
+  ResumoParcelasMensalRow a,
+  ResumoParcelasMensalRow b,
+) {
+  final byEmpresa = a.codEmpresa.compareTo(b.codEmpresa);
+  if (byEmpresa != 0) {
+    return byEmpresa;
+  }
+  final byFilial = a.codFilial.compareTo(b.codFilial);
+  if (byFilial != 0) {
+    return byFilial;
+  }
+  final byAno = a.ano.compareTo(b.ano);
+  return byAno != 0 ? byAno : a.mes.compareTo(b.mes);
+}
+
 class ResumoParcelasMensalRepositoryImpl
     implements ResumoParcelasMensalRepository {
   ResumoParcelasMensalRepositoryImpl(
@@ -95,13 +111,9 @@ class ResumoParcelasMensalRepositoryImpl
           .map(
             (row) => ResumoParcelasMensalRowModel.fromMap(row).toEntity(),
           )
-          .toList(growable: false);
+          .toList()
+        ..sort(_compareResumoParcelasMensalRowsSqlOrder);
       if (kDebugMode && rows.isNotEmpty) {
-        final sorted = List<ResumoParcelasMensalRow>.of(rows)
-          ..sort((a, b) {
-            final byAno = a.ano.compareTo(b.ano);
-            return byAno != 0 ? byAno : a.mes.compareTo(b.mes);
-          });
         final calendarOutOfRangeRowCount = rows
             .where(
               (r) => !ResumoParcelasMensalLabels.isValidCalendarYear(r.ano),
@@ -119,8 +131,8 @@ class ResumoParcelasMensalRepositoryImpl
             'operation': _operation,
             'agentId': agentId,
             'rowCount': rows.length,
-            'anoMesFirst': sorted.first.anoMes,
-            'anoMesLast': sorted.last.anoMes,
+            'anoMesFirst': rows.first.anoMes,
+            'anoMesLast': rows.last.anoMes,
             'calendarOutOfRangeRowCount': calendarOutOfRangeRowCount,
             'distinctCalendarMonthKeyCount': monthKeys.length,
             'distinctBranchKeyCount': branchKeys.length,
