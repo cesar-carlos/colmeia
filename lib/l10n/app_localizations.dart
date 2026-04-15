@@ -525,6 +525,54 @@ abstract class AppLocalizations {
   /// **'Loading rankings…'**
   String get overviewLoadingRankingsSemantics;
 
+  /// No description provided for @overviewLoadingMonthlyParcelsSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading last 12 months chart…'**
+  String get overviewLoadingMonthlyParcelsSemantics;
+
+  /// No description provided for @overviewMonthlyParcelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 12 months'**
+  String get overviewMonthlyParcelsTitle;
+
+  /// No description provided for @overviewMonthlyParcelsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales count and parcel totals by month (all branches in scope).'**
+  String get overviewMonthlyParcelsSubtitle;
+
+  /// No description provided for @overviewMonthlyParcelsSalesSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get overviewMonthlyParcelsSalesSeriesLabel;
+
+  /// No description provided for @overviewMonthlyParcelsAmountSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parcel amount'**
+  String get overviewMonthlyParcelsAmountSeriesLabel;
+
+  /// No description provided for @overviewMonthlyParcelsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No monthly data for this period.'**
+  String get overviewMonthlyParcelsEmpty;
+
+  /// No description provided for @overviewMonthlyParcelsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the monthly chart. Try again later.'**
+  String get overviewMonthlyParcelsLoadFailed;
+
+  /// No description provided for @overviewMonthlyParcelsChartSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Last twelve months sales and parcel amount chart'**
+  String get overviewMonthlyParcelsChartSemantics;
+
   /// No description provided for @overviewKpiTotalRevenue.
   ///
   /// In en, this message translates to:

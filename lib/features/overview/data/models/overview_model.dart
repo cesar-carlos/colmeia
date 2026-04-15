@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
@@ -14,6 +15,8 @@ class OverviewModel {
     required this.paymentMethods,
     required this.agentRankings,
     required this.userRankings,
+    this.monthlyParcelTrend = const <OverviewMonthlyParcelPoint>[],
+    this.monthlyParcelTrendLoadFailed = false,
     this.cachedAt,
     this.sourceAgentIds,
   });
@@ -26,6 +29,10 @@ class OverviewModel {
         json['agentRankings'] as List<dynamic>? ?? const <dynamic>[];
     final userRankingsJson =
         json['userRankings'] as List<dynamic>? ?? const <dynamic>[];
+    final monthlyJson =
+        json['monthlyParcelTrend'] as List<dynamic>? ?? const <dynamic>[];
+    final monthlyParcelTrendLoadFailed =
+        json['monthlyParcelTrendLoadFailed'] as bool? ?? false;
 
     final cachedAt = json['cachedAt'] is String
         ? DateTime.tryParse(json['cachedAt'] as String)
@@ -78,6 +85,17 @@ class OverviewModel {
             );
           })
           .toList(growable: false),
+      monthlyParcelTrend: monthlyJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return OverviewMonthlyParcelPoint(
+              anoMes: row['anoMes'] as String,
+              qtdVendas: row['qtdVendas'] as int,
+              valorParcela: (row['valorParcela'] as num).toDouble(),
+            );
+          })
+          .toList(growable: false),
+      monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -101,6 +119,8 @@ class OverviewModel {
       paymentMethods: overview.paymentMethods,
       agentRankings: overview.agentRankings,
       userRankings: overview.userRankings,
+      monthlyParcelTrend: overview.monthlyParcelTrend,
+      monthlyParcelTrendLoadFailed: overview.monthlyParcelTrendLoadFailed,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -112,6 +132,10 @@ class OverviewModel {
   final List<OverviewPaymentMethodBreakdown> paymentMethods;
   final List<OverviewAgentRanking> agentRankings;
   final List<OverviewUserRanking> userRankings;
+
+  final List<OverviewMonthlyParcelPoint> monthlyParcelTrend;
+
+  final bool monthlyParcelTrendLoadFailed;
 
   /// When the overview was persisted locally (for TTL / signature checks).
   final DateTime? cachedAt;
@@ -127,6 +151,8 @@ class OverviewModel {
       paymentMethods: paymentMethods,
       agentRankings: agentRankings,
       userRankings: userRankings,
+      monthlyParcelTrend: monthlyParcelTrend,
+      monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
       isStaleCache: isStaleCache,
     );
   }
@@ -173,6 +199,16 @@ class OverviewModel {
             };
           })
           .toList(growable: false),
+      'monthlyParcelTrend': monthlyParcelTrend
+          .map(
+            (p) => <String, Object?>{
+              'anoMes': p.anoMes,
+              'qtdVendas': p.qtdVendas,
+              'valorParcela': p.valorParcela,
+            },
+          )
+          .toList(growable: false),
+      'monthlyParcelTrendLoadFailed': monthlyParcelTrendLoadFailed,
       if (cachedAt != null) 'cachedAt': cachedAt!.toIso8601String(),
       if (sourceAgentIds != null) 'sourceAgentIds': sourceAgentIds,
     };

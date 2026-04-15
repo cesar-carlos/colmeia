@@ -2,6 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
@@ -32,6 +33,11 @@ void main() {
 
         check(decoded.userRankings).length.equals(1);
         check(decoded.userRankings.first.userName).equals('Caixa 01');
+
+        check(decoded.monthlyParcelTrend).length.equals(1);
+        check(decoded.monthlyParcelTrend.single.anoMes).equals('2026/03');
+        check(decoded.monthlyParcelTrend.single.qtdVendas).equals(5);
+        check(decoded.monthlyParcelTrendLoadFailed).isFalse();
       });
 
       test('preserves cache metadata through encode/decode', () {
@@ -73,6 +79,8 @@ void main() {
         check(decoded.agentRankings).isEmpty();
         check(decoded.userRankings).isEmpty();
         check(decoded.kpis.totalSalesCount).equals(0);
+        check(decoded.monthlyParcelTrend).isEmpty();
+        check(decoded.monthlyParcelTrendLoadFailed).isFalse();
       });
     });
 
@@ -87,6 +95,8 @@ void main() {
         check(entity.paymentMethods.first.code).equals('PIX');
         check(entity.agentRankings.single.agentId).equals('a1');
         check(entity.userRankings.single.averageTicket).equals(90);
+        check(entity.monthlyParcelTrend.single.anoMes).equals('2026/03');
+        check(entity.monthlyParcelTrendLoadFailed).isFalse();
       });
 
       test('fromEntity preserves overview data', () {
@@ -111,6 +121,14 @@ void main() {
           ],
           agentRankings: const <OverviewAgentRanking>[],
           userRankings: const <OverviewUserRanking>[],
+          monthlyParcelTrend: const <OverviewMonthlyParcelPoint>[
+            OverviewMonthlyParcelPoint(
+              anoMes: '2026/04',
+              qtdVendas: 3,
+              valorParcela: 99,
+            ),
+          ],
+          monthlyParcelTrendLoadFailed: true,
         );
 
         final model = OverviewModel.fromEntity(entity);
@@ -118,6 +136,8 @@ void main() {
         check(model.kpis.totalSalesCount).equals(50);
         check(model.paymentMethods.single.code).equals('DIN');
         check(model.agentRankings).isEmpty();
+        check(model.monthlyParcelTrend.single.anoMes).equals('2026/04');
+        check(model.monthlyParcelTrendLoadFailed).isTrue();
       });
     });
 
@@ -223,6 +243,13 @@ OverviewModel _fullModel() {
         totalSalesCount: 100,
         totalAmount: 9000,
         averageTicket: 90,
+      ),
+    ],
+    monthlyParcelTrend: const <OverviewMonthlyParcelPoint>[
+      OverviewMonthlyParcelPoint(
+        anoMes: '2026/03',
+        qtdVendas: 5,
+        valorParcela: 150.25,
       ),
     ],
   );

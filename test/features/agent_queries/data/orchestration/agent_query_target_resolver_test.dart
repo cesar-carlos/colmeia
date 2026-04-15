@@ -51,6 +51,7 @@ void main() {
         search: any(named: 'search'),
         status: any(named: 'status'),
         includeOnlineStatus: any(named: 'includeOnlineStatus'),
+        refresh: any(named: 'refresh'),
       ),
     ).thenAnswer(
       (_) async => const Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -80,6 +81,7 @@ void main() {
           search: any(named: 'search'),
           status: any(named: 'status'),
           includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          refresh: any(named: 'refresh'),
         ),
       ).thenAnswer(
         (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -132,6 +134,7 @@ void main() {
           search: any(named: 'search'),
           status: any(named: 'status'),
           includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          refresh: any(named: 'refresh'),
         ),
       );
     },
@@ -145,6 +148,7 @@ void main() {
         search: any(named: 'search'),
         status: any(named: 'status'),
         includeOnlineStatus: any(named: 'includeOnlineStatus'),
+        refresh: any(named: 'refresh'),
       ),
     ).thenAnswer(
       (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -192,6 +196,7 @@ void main() {
         search: any(named: 'search'),
         status: any(named: 'status'),
         includeOnlineStatus: any(named: 'includeOnlineStatus'),
+        refresh: any(named: 'refresh'),
       ),
     ).thenAnswer(
       (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -214,6 +219,7 @@ void main() {
         search: any(named: 'search'),
         status: any(named: 'status'),
         includeOnlineStatus: false,
+        refresh: false,
       ),
     ).called(1);
   });

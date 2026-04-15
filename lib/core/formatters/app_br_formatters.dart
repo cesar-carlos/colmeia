@@ -15,6 +15,15 @@ abstract final class AppBrFormatters {
         decimalDigits: 1,
       );
 
+  /// Compact BRL for chart axes when the UI locale should drive grouping.
+  static NumberFormat compactCurrencyFormatForLocale(String localeName) {
+    return NumberFormat.compactCurrency(
+      locale: localeName,
+      symbol: r'R$',
+      decimalDigits: 1,
+    );
+  }
+
   /// Brazilian calendar display; locale fixed so formatting does not follow
   /// a mismatched UI language (e.g. English app copy with BR-style dates).
   static final DateFormat shortDateFormat =

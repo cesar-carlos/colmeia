@@ -19,6 +19,7 @@ class AgentCatalogRecordDto extends ClientAgentProfileDto {
     super.notes,
     super.observation,
     super.profileUpdatedAt,
+    super.isHubConnected,
   });
 
   factory AgentCatalogRecordDto.fromJson(Map<String, dynamic> json) {
@@ -40,6 +41,7 @@ class AgentCatalogRecordDto extends ClientAgentProfileDto {
       notes: base.notes,
       observation: base.observation,
       profileUpdatedAt: base.profileUpdatedAt,
+      isHubConnected: base.isHubConnected,
       lastLoginUserId: json['lastLoginUserId'] as String?,
     );
   }

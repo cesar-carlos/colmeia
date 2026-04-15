@@ -1,21 +1,28 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report_resumo_parcelas.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
+import 'package:colmeia/features/overview/data/mappers/overview_monthly_parcel_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_resumo_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
+import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -24,14 +31,20 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required OverviewLocalDataSource localDataSource,
     required ResumoParcelaFormaPagamentoAcrossAgentsRepository
     resumoAcrossAgentsRepository,
+    required LoadResumoParcelasMensalAcrossAgentsUseCase
+    loadResumoParcelasMensalAcrossAgents,
     DateTime Function()? now,
   }) : _localDataSource = localDataSource,
        _resumoAcrossAgentsRepository = resumoAcrossAgentsRepository,
+       _loadResumoParcelasMensalAcrossAgents =
+           loadResumoParcelasMensalAcrossAgents,
        _now = now ?? DateTime.now;
 
   final OverviewLocalDataSource _localDataSource;
   final ResumoParcelaFormaPagamentoAcrossAgentsRepository
   _resumoAcrossAgentsRepository;
+  final LoadResumoParcelasMensalAcrossAgentsUseCase
+  _loadResumoParcelasMensalAcrossAgents;
   final DateTime Function() _now;
 
   static const String _sourceAgentIdsContextField = 'sourceAgentIds';
@@ -44,15 +57,31 @@ class OverviewRepositoryImpl implements OverviewRepository {
     OverviewFilter filter = const OverviewFilter(),
   }) async {
     final period = _buildPeriod(filter);
+    final last12Range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
+      filter,
+      clock: _now,
+    );
+    final mensalFilter = ResumoParcelasMensalFilter(
+      dataVendaInicio: last12Range.dataVendaInicio,
+      dataVendaFim: last12Range.dataVendaFim,
+    );
+    final executionStrategy = _resolveExecutionStrategy(filter);
+    final monthlyParcelFuture = _loadResumoParcelasMensalAcrossAgents(
+      userId: userId,
+      filter: mensalFilter,
+      selectedAgentIds: filter.selectedAgentIds,
+      strategy: executionStrategy,
+    );
     try {
       final reportResult = await _resumoAcrossAgentsRepository.load(
         userId: userId,
         filter: _resumoFilter(period),
         selectedAgentIds: filter.selectedAgentIds,
-        strategy: _resolveExecutionStrategy(filter),
+        strategy: executionStrategy,
       );
       final report = reportResult.getOrNull();
       if (report == null) {
+        await monthlyParcelFuture;
         final failure = _mapOverviewFailure(
           reportResult.exceptionOrNull()!,
           userId: userId,
@@ -70,6 +99,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
       }
 
       if (report.consideredApprovedAgentCount == 0) {
+        final monthly = await _resolveMonthlyParcelTrend(
+          monthlyParcelFuture,
+          mensalFilter,
+        );
         return Success<Overview, AppFailure>(
           _buildOverview(
             const <OverviewPaymentResumoRow>[],
@@ -78,6 +111,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
             periodStart: period.start,
             periodEnd: period.end,
             approvedAgentCount: 0,
+            monthlyParcelTrend: monthly.points,
+            monthlyParcelTrendLoadFailed: monthly.loadFailed,
           ),
         );
       }
@@ -107,6 +142,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           agentNamesMissingClientToken: report.missingClientTokenAgentNames,
         );
         if (cachedOverview != null) {
+          await monthlyParcelFuture;
           return Success<Overview, AppFailure>(cachedOverview);
         }
       }
@@ -123,6 +159,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
         );
       }
 
+      final monthly = await _resolveMonthlyParcelTrend(
+        monthlyParcelFuture,
+        mensalFilter,
+      );
       final overview = _buildOverview(
         _mapOverviewRows(report.mergedRows),
         rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
@@ -134,6 +174,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         agentNamesExcludedFromQueryFailure: report.failedAgentNames,
         agentIdsMissingClientToken: report.missingClientTokenAgentIds,
         agentNamesMissingClientToken: report.missingClientTokenAgentNames,
+        monthlyParcelTrend: monthly.points,
+        monthlyParcelTrendLoadFailed: monthly.loadFailed,
       );
 
       final stamp = _now();
@@ -175,6 +217,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
 
       return Success<Overview, AppFailure>(overview);
     } on Object catch (error, stackTrace) {
+      await monthlyParcelFuture;
       final failure = mapToAppFailure(
         error,
         stackTrace: stackTrace,
@@ -202,6 +245,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
     }
   }
 
+  /// Merge-all loads every planned agent in parallel and merges rows (required
+  /// for consolidated KPIs). Race would keep only the first successful agent.
+  /// Single-source when exactly one agent is selected.
   AgentQueryExecutionStrategy _resolveExecutionStrategy(
     OverviewFilter filter,
   ) {
@@ -210,6 +256,41 @@ class OverviewRepositoryImpl implements OverviewRepository {
       return AgentQueryExecutionStrategy.singleSource;
     }
     return AgentQueryExecutionStrategy.mergeAll;
+  }
+
+  Future<
+    ({
+      List<OverviewMonthlyParcelPoint> points,
+      bool loadFailed,
+    })
+  >
+  _resolveMonthlyParcelTrend(
+    Future<AppResult<AgentQueryExecutionReport<ResumoParcelasMensalRow>>>
+    monthlyParcelFuture,
+    ResumoParcelasMensalFilter mensalFilter,
+  ) async {
+    final result = await monthlyParcelFuture;
+    return result.fold(
+      (report) {
+        final rows = report.chartRowsFilledPeriod(mensalFilter);
+        final points = overviewMonthlyParcelPointsFromRows(rows);
+        return (points: points, loadFailed: false);
+      },
+      (failure) {
+        AppLogger.warning(
+          'Overview: monthly parcel trend query failed',
+          context: <String, Object?>{
+            'operation': 'loadOverview',
+            'failureType': failure.runtimeType.toString(),
+          },
+          error: failure,
+        );
+        return (
+          points: const <OverviewMonthlyParcelPoint>[],
+          loadFailed: true,
+        );
+      },
+    );
   }
 
   ResumoParcelaFormaPagamentoFilter _resumoFilter(_OverviewPeriod period) {
@@ -455,7 +536,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     AppLogger.warning(
       policy == OverviewLoadPolicy.forceRefresh
           ? 'Overview fallback to cached data (missing local client_token; '
-              'force refresh cannot run queries)'
+                'force refresh cannot run queries)'
           : 'Overview fallback to cached data (missing local client token)',
       context: <String, Object?>{
         'operation': 'loadOverview',
@@ -574,6 +655,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<String> agentNamesExcludedFromQueryFailure = const <String>[],
     List<String> agentIdsMissingClientToken = const <String>[],
     List<String> agentNamesMissingClientToken = const <String>[],
+    List<OverviewMonthlyParcelPoint> monthlyParcelTrend =
+        const <OverviewMonthlyParcelPoint>[],
+    bool monthlyParcelTrendLoadFailed = false,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final userBuckets = <String, _UserAggregate>{};
@@ -671,6 +755,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
       paymentMethods: paymentMethods,
       agentRankings: agentRankings,
       userRankings: userRankings,
+      monthlyParcelTrend: monthlyParcelTrend,
+      monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
       approvedAgentCount: approvedAgentCount,
       agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
       agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,

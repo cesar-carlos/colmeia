@@ -13,13 +13,19 @@ import 'package:result_dart/result_dart.dart';
 typedef AgentQueryTargetLoader<Row> =
     Future<AppResult<List<Row>>> Function(AgentQueryTarget target);
 
+/// Runs agent-query plans. Merge-all issues parallel bridge calls in waves
+/// (`Future.wait`). Race fires all loads but keeps only the first success for
+/// the report — use that only when a single agent answer is enough, not for
+/// consolidated multi-branch KPIs.
 class AgentQueryExecutor<Row> {
-  AgentQueryExecutor({this.mergeAllConcurrency = 4})
+  /// Default concurrency tuned to reduce bridge/agent overload on wide merges.
+  AgentQueryExecutor({this.mergeAllConcurrency = 16})
     : assert(
         mergeAllConcurrency > 0,
         'mergeAllConcurrency must be greater than zero',
       );
 
+  /// Max concurrent `loadTarget` calls per wave in merge-all mode.
   final int mergeAllConcurrency;
 
   Future<AppResult<AgentQueryExecutionReport<Row>>> execute({
@@ -134,7 +140,10 @@ class AgentQueryExecutor<Row> {
     for (final participant in resolvedParticipants) {
       firstFailure ??= participant.failure;
     }
-    if (!report.hasRows && firstFailure != null) {
+    final everyParticipantFailed = resolvedParticipants.every(
+      (participant) => participant.failure != null,
+    );
+    if (!report.hasRows && firstFailure != null && everyParticipantFailed) {
       return Failure<AgentQueryExecutionReport<Row>, AppFailure>(firstFailure);
     }
     return Success<AgentQueryExecutionReport<Row>, AppFailure>(report);

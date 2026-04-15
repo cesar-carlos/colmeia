@@ -1,6 +1,7 @@
 /// Shared inner SELECT for parcel-line resumo queries (troco inputs + joins).
 ///
-/// Used by `ResumoParcelaFormaPagamentoDiarioSql`,
+/// Used by `ResumoParcelaFormaPagamentoSql`,
+/// `ResumoParcelaFormaPagamentoDiarioSql`,
 /// `ResumoParcelasFormaPagamentoPorMesSql`, `ResumoParcelasDiaSemanaSql`,
 /// `ResumoParcelasMensalSql`, `ResumoVendasDiariasPorVendedorSql`, and
 /// `ResumoParcelasAnualSql`. When changing troco logic or joins, update this
@@ -8,14 +9,16 @@
 /// `ValorTrocoParcela` is computed here from
 /// parcel totals and `TipoForma` so callers only pass it through.
 ///
-/// The outer `SELECT * FROM (…) … ORDER BY` matches the ERP-style shape. On
-/// SQL Server, `ORDER BY` in a derived table requires `TOP`; we use
-/// `TOP 100 PERCENT` so every row is kept (same set as a plain inner
-/// `SELECT`). Final report ordering still comes from each caller's outer
-/// `ORDER BY`.
+/// **Performance:** per-sale totals (`ValorTotalParcelas`, troco inputs) use
+/// `LEFT JOIN` to pre-aggregated subqueries instead of correlated scalar
+/// subqueries on each parcel row — friendlier to SQL Server and SAP SQL
+/// Anywhere 16 optimizers while preserving semantics.
+///
+/// The outer shape is `SELECT * FROM (…) alias`. No `ORDER BY` inside this
+/// fragment: callers aggregate or sort in their outer query.
 abstract final class ParcelaProdutoVendidoDetalheSql {
   static const String selectFromParcelLinesThroughJoins = '''
-    SELECT TOP 100 PERCENT *
+    SELECT *
     FROM (
       SELECT
         det.*,
@@ -68,33 +71,9 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
         ppv.TipoForma,
         ppv.CodFormaPagamento,
         fp.Descricao AS DescricaoFormaPagamento,
-        (
-          SELECT SUM(sppv.ValorParcela)
-          FROM ParcelaProdutoVendido sppv
-          WHERE sppv.CodEmpresa = ppv.CodEmpresa
-            AND sppv.CodProdutoVendido = ppv.CodProdutoVendido
-        ) AS ValorTotalParcelas,
-        COALESCE((
-          SELECT SUM(subppv.ValorParcela)
-          FROM ParcelaProdutoVendido subppv
-          WHERE subppv.CodEmpresa = ppv.CodEmpresa
-            AND subppv.CodProdutoVendido = ppv.CodProdutoVendido
-            AND subppv.TipoForma IN ('DH', 'CH', 'VL', 'PX', 'PIX')
-        ), 0) AS ValorTotalParcelasRateioTroco,
-        COALESCE((
-          SELECT SUM(subpvtfp.Valor)
-          FROM ProdutoVendidoTrocoFormaPagamento subpvtfp
-          WHERE subpvtfp.CodEmpresa = ppv.CodEmpresa
-            AND subpvtfp.CodProdutoVendido = ppv.CodProdutoVendido
-        ), 0)
-        +
-        COALESCE((
-          SELECT SUM(subvl.Valor)
-          FROM Vale subvl
-          WHERE subvl.CodEmpresa = pv.CodEmpresa
-            AND subvl.CodOrigem = pv.CodOrigem
-            AND subvl.Origem = 'OB'
-        ), 0) AS ValorTotalTrocoVenda,
+        COALESCE(par_tot.ValorTotalParcelas, 0) AS ValorTotalParcelas,
+        COALESCE(par_tot.ValorTotalParcelasRateioTroco, 0) AS ValorTotalParcelasRateioTroco,
+        COALESCE(troco_fp.TotalTrocoForma, 0) + COALESCE(vale_ob.ValeOb, 0) AS ValorTotalTrocoVenda,
         ppv.ValorParcela
       FROM ParcelaProdutoVendido ppv
       INNER JOIN ProdutoVendido pv ON
@@ -115,11 +94,44 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
         r.CodRegiao = c.CodRegiao
       LEFT JOIN Vendedor v ON
         v.CodVendedor = pv.CodVendedor
+      LEFT JOIN (
+        SELECT
+          CodEmpresa,
+          CodProdutoVendido,
+          SUM(ValorParcela) AS ValorTotalParcelas,
+          SUM(
+            CASE WHEN TipoForma IN ('DH', 'CH', 'VL', 'PX', 'PIX')
+              THEN ValorParcela
+              ELSE 0
+            END
+          ) AS ValorTotalParcelasRateioTroco
+        FROM ParcelaProdutoVendido
+        GROUP BY CodEmpresa, CodProdutoVendido
+      ) par_tot ON
+        par_tot.CodEmpresa = ppv.CodEmpresa
+        AND par_tot.CodProdutoVendido = ppv.CodProdutoVendido
+      LEFT JOIN (
+        SELECT
+          CodEmpresa,
+          CodProdutoVendido,
+          SUM(Valor) AS TotalTrocoForma
+        FROM ProdutoVendidoTrocoFormaPagamento
+        GROUP BY CodEmpresa, CodProdutoVendido
+      ) troco_fp ON
+        troco_fp.CodEmpresa = ppv.CodEmpresa
+        AND troco_fp.CodProdutoVendido = ppv.CodProdutoVendido
+      LEFT JOIN (
+        SELECT
+          CodEmpresa,
+          CodOrigem,
+          SUM(Valor) AS ValeOb
+        FROM Vale
+        WHERE Origem = 'OB'
+        GROUP BY CodEmpresa, CodOrigem
+      ) vale_ob ON
+        vale_ob.CodEmpresa = pv.CodEmpresa
+        AND vale_ob.CodOrigem = pv.CodOrigem
       ) det
     ) ParcelaProdutoVendidoDetalhe
-    ORDER BY
-      CodEmpresa,
-      CodFilial,
-      CodProdutoVendido
     ''';
 }

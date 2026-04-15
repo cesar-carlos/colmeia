@@ -26,6 +26,7 @@ abstract interface class ClientAgentsRemoteDataSource {
     required PaginatedQuery query,
     String? search,
     String? status,
+    bool refresh = false,
   });
 
   Future<ClientApprovedAgentDetailResponseDto> fetchApprovedAgentById(
@@ -94,6 +95,7 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     required PaginatedQuery query,
     String? search,
     String? status,
+    bool refresh = false,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       ClientAgentApiRoutes.approvedAgents,
@@ -102,6 +104,7 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
         'pageSize': query.pageSize,
         if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
         if (status != null && status.trim().isNotEmpty) 'status': status.trim(),
+        if (refresh) 'refresh': true,
       },
     );
     return ClientApprovedAgentsResponseDto.fromJson(
@@ -351,6 +354,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     required PaginatedQuery query,
     String? search,
     String? status,
+    bool refresh = false,
   }) async {
     final approved = _catalog
         .where((item) {
@@ -459,7 +463,9 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
 
   @override
   Future<OnlineAgentsResponseDto> fetchOnlineAgents({String? logUserId}) async {
-    final onlineIds = _approvedAgentIds.take(1).toSet();
+    // Simulate hub presence for every approved agent (real API returns all
+    // connected agent ids; do not use take(1) or only the first id is online).
+    final onlineIds = _approvedAgentIds.toSet();
     return OnlineAgentsResponseDto(
       agents: onlineIds
           .map(

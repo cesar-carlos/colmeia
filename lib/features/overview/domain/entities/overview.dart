@@ -1,4 +1,5 @@
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
@@ -11,6 +12,8 @@ class Overview {
     required this.paymentMethods,
     required this.agentRankings,
     required this.userRankings,
+    this.monthlyParcelTrend = const <OverviewMonthlyParcelPoint>[],
+    this.monthlyParcelTrendLoadFailed = false,
     this.isStaleCache = false,
     this.approvedAgentCount = 0,
     this.agentIdsExcludedFromQueryFailure = const <String>[],
@@ -25,6 +28,14 @@ class Overview {
   final List<OverviewPaymentMethodBreakdown> paymentMethods;
   final List<OverviewAgentRanking> agentRankings;
   final List<OverviewUserRanking> userRankings;
+
+  /// Last 12 calendar months of parcel totals (sales count and amount) for
+  /// the home chart. Empty when unavailable or not loaded (e.g. stale cache).
+  final List<OverviewMonthlyParcelPoint> monthlyParcelTrend;
+
+  /// True when the monthly resumo query failed; [monthlyParcelTrend] may be
+  /// empty for this reason instead of genuinely having no rows.
+  final bool monthlyParcelTrendLoadFailed;
 
   /// True when recovered from local cache after a remote error.
   final bool isStaleCache;
@@ -79,6 +90,8 @@ class Overview {
     List<String>? agentNamesExcludedFromQueryFailure,
     List<String>? agentIdsMissingClientToken,
     List<String>? agentNamesMissingClientToken,
+    List<OverviewMonthlyParcelPoint>? monthlyParcelTrend,
+    bool? monthlyParcelTrendLoadFailed,
   }) {
     return Overview(
       periodStart: periodStart ?? this.periodStart,
@@ -87,6 +100,9 @@ class Overview {
       paymentMethods: paymentMethods ?? this.paymentMethods,
       agentRankings: agentRankings ?? this.agentRankings,
       userRankings: userRankings ?? this.userRankings,
+      monthlyParcelTrend: monthlyParcelTrend ?? this.monthlyParcelTrend,
+      monthlyParcelTrendLoadFailed:
+          monthlyParcelTrendLoadFailed ?? this.monthlyParcelTrendLoadFailed,
       isStaleCache: isStaleCache ?? this.isStaleCache,
       approvedAgentCount: approvedAgentCount ?? this.approvedAgentCount,
       agentIdsExcludedFromQueryFailure:

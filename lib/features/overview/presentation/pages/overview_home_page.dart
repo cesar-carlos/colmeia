@@ -16,6 +16,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_auto_loa
 import 'package:colmeia/features/overview/presentation/widgets/overview_filter_bar.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_alerts_section.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_kpi_bar.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_bar_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_rankings_section.dart';
@@ -198,6 +199,19 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                                 child: OverviewPaymentBarChart(
                                   l10n: l10n,
                                   methods: displayOverview.paymentMethods,
+                                ),
+                              ),
+                              SizedBox(height: tokens.sectionSpacing),
+                              AppSkeleton(
+                                enabled: showSkeleton,
+                                showDelay: const Duration(milliseconds: 40),
+                                loadingSemanticsLabel:
+                                    l10n.overviewLoadingMonthlyParcelsSemantics,
+                                child: OverviewMonthlyParcelsComboChart(
+                                  l10n: l10n,
+                                  points: displayOverview.monthlyParcelTrend,
+                                  loadFailed: displayOverview
+                                      .monthlyParcelTrendLoadFailed,
                                 ),
                               ),
                               SizedBox(height: tokens.sectionSpacing),

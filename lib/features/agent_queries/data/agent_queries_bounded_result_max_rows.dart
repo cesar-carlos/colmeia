@@ -14,6 +14,21 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Company, branch, sale year, and payment method buckets in the range.
   static const int resumoParcelasAnual = aggregateMultiBranchCap;
 
+  /// Payment method × month × user (and similar); overview forma pagamento.
+  static const int resumoParcelaFormaPagamento = 5000;
+
+  /// Same cardinality as `resumoParcelaFormaPagamento` (por-mes report).
+  static const int resumoParcelasFormaPagamentoPorMes = 5000;
+
+  /// One row per sold product line in the filtered period.
+  static const int resumoParcelaFormaPagamentoDiario = 10000;
+
+  /// Daily sales by seller grid rows.
+  static const int resumoVendasDiariasPorVendedor = 5000;
+
+  /// Suggestion lists for vendedor/bairro/município (`TOP` limits; bridge cap).
+  static const int vendasDiariasSuggestionOptions = 128;
+
   /// One page of `Municipio` list rows (same order of magnitude as list filter
   /// max page size in domain).
   static const int municipioListPage = 100;

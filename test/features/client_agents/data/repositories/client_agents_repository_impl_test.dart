@@ -160,7 +160,12 @@ void main() {
       ),
     );
     when(
-      () => remote.fetchApprovedAgents(query: any(named: 'query')),
+      () => remote.fetchApprovedAgents(
+        query: any(named: 'query'),
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+        refresh: any(named: 'refresh'),
+      ),
     ).thenAnswer(
       (_) async => const ClientApprovedAgentsResponseDto(
         agents: [],
@@ -207,20 +212,6 @@ void main() {
         userId: any(named: 'userId'),
       ),
     ).thenAnswer((_) async => null);
-    when(
-      () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
-    ).thenAnswer(
-      (_) async => const OnlineAgentsResponseDto(
-        agents: [],
-        count: 0,
-      ),
-    );
-    when(
-      () => local.saveOnlineAgents(
-        userId: any(named: 'userId'),
-        payload: any(named: 'payload'),
-      ),
-    ).thenAnswer((_) async {});
 
     final result = await repository.syncPendingActions(userId: 'user-1');
 
@@ -235,10 +226,13 @@ void main() {
     check(storedActions).has((it) => it.length, 'length').equals(1);
     check(storedActions.first.agentId).equals('agent-2');
     check(storedActions.first.state).equals(PendingAgentActionState.failed);
+    verifyNever(
+      () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
+    );
   });
 
   test(
-    'should degrade approved agents to unknown when online endpoint fails',
+    'should map approved agents to unknown when no hub field and no online cache',
     () async {
       final response = ClientApprovedAgentsResponseDto(
         agents: <ClientAccessibleAgentDto>[
@@ -266,6 +260,7 @@ void main() {
           query: any(named: 'query'),
           search: any(named: 'search'),
           status: any(named: 'status'),
+          refresh: any(named: 'refresh'),
         ),
       ).thenAnswer((_) async => response);
       when(
@@ -288,14 +283,6 @@ void main() {
           userId: any(named: 'userId'),
         ),
       ).thenAnswer((_) async => null);
-      when(
-        () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
-      ).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: '/agents'),
-          type: DioExceptionType.connectionError,
-        ),
-      );
 
       final result = await repository.loadApprovedAgents(
         userId: 'user-1',
@@ -306,6 +293,9 @@ void main() {
       check(result.getOrNull()).isNotNull();
       check(result.getOrNull()!.items.single.connectionStatus).equals(
         AgentConnectionStatus.unknown,
+      );
+      verifyNever(
+        () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
       );
     },
   );
@@ -333,17 +323,6 @@ void main() {
         () => local.readOnlineAgents(userId: any(named: 'userId')),
       ).thenAnswer((_) async => null);
       when(
-        () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
-      ).thenAnswer(
-        (_) async => const OnlineAgentsResponseDto(agents: [], count: 0),
-      );
-      when(
-        () => local.saveOnlineAgents(
-          userId: any(named: 'userId'),
-          payload: any(named: 'payload'),
-        ),
-      ).thenAnswer((_) async {});
-      when(
         () => local.saveCatalogAgentById(
           userId: any(named: 'userId'),
           agentId: any(named: 'agentId'),
@@ -366,6 +345,9 @@ void main() {
           payload: any(named: 'payload'),
         ),
       ).called(1);
+      verifyNever(
+        () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
+      );
     },
   );
 
@@ -455,6 +437,7 @@ void main() {
           query: any(named: 'query'),
           search: any(named: 'search'),
           status: any(named: 'status'),
+          refresh: any(named: 'refresh'),
         ),
       ).thenThrow(
         DioException(
@@ -494,6 +477,7 @@ void main() {
           query: any(named: 'query'),
           search: any(named: 'search'),
           status: any(named: 'status'),
+          refresh: any(named: 'refresh'),
         ),
       ).thenAnswer(
         (_) async => const ClientApprovedAgentsResponseDto(

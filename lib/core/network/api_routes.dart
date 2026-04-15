@@ -1,5 +1,8 @@
 abstract final class ApiRoutes {
   static const String dashboardsOverview = '/dashboards/overview';
+
+  /// Hub operator route: requires a **user** principal. Client JWTs must not
+  /// call this; use `/client/me/agents` payload (e.g. `isHubConnected`) instead.
   static const String onlineAgents = '/agents';
 }
 

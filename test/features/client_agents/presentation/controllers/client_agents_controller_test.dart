@@ -175,6 +175,7 @@ void main() {
       () => loadApprovedAgentsUseCase(
         userId: any(named: 'userId'),
         query: any(named: 'query'),
+        refresh: any(named: 'refresh'),
       ),
     ).thenAnswer(
       (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
@@ -338,6 +339,7 @@ void main() {
         () => loadApprovedAgentsUseCase(
           userId: any(named: 'userId'),
           query: any(named: 'query'),
+          refresh: any(named: 'refresh'),
         ),
       ).thenAnswer((_) => approvedRefreshCompleter.future);
 
@@ -383,6 +385,7 @@ void main() {
         () => loadApprovedAgentsUseCase(
           userId: any(named: 'userId'),
           query: any(named: 'query'),
+          refresh: any(named: 'refresh'),
         ),
       ).thenAnswer((_) {
         approvedCallCount += 1;
@@ -432,6 +435,7 @@ void main() {
         () => loadApprovedAgentsUseCase(
           userId: any(named: 'userId'),
           query: any(named: 'query'),
+          refresh: any(named: 'refresh'),
         ),
       ).thenAnswer(
         (_) async => const Failure<PaginatedResult<ClientAgent>, AppFailure>(

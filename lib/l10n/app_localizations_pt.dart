@@ -257,6 +257,35 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewLoadingRankingsSemantics => 'Carregando rankings…';
 
   @override
+  String get overviewLoadingMonthlyParcelsSemantics =>
+      'Carregando grafico dos ultimos 12 meses…';
+
+  @override
+  String get overviewMonthlyParcelsTitle => 'Ultimos 12 meses';
+
+  @override
+  String get overviewMonthlyParcelsSubtitle =>
+      'Quantidade de vendas e total em parcelas por mes (todas as filiais no escopo).';
+
+  @override
+  String get overviewMonthlyParcelsSalesSeriesLabel => 'Vendas';
+
+  @override
+  String get overviewMonthlyParcelsAmountSeriesLabel => 'Valor em parcelas';
+
+  @override
+  String get overviewMonthlyParcelsEmpty =>
+      'Sem dados mensais para este periodo.';
+
+  @override
+  String get overviewMonthlyParcelsLoadFailed =>
+      'Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.';
+
+  @override
+  String get overviewMonthlyParcelsChartSemantics =>
+      'Grafico dos ultimos doze meses de vendas e valor em parcelas';
+
+  @override
   String get overviewKpiTotalRevenue => 'Faturamento total';
 
   @override
@@ -1808,6 +1837,35 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLoadingRankingsSemantics => 'Carregando rankings…';
+
+  @override
+  String get overviewLoadingMonthlyParcelsSemantics =>
+      'Carregando grafico dos ultimos 12 meses…';
+
+  @override
+  String get overviewMonthlyParcelsTitle => 'Ultimos 12 meses';
+
+  @override
+  String get overviewMonthlyParcelsSubtitle =>
+      'Quantidade de vendas e total em parcelas por mes (todas as filiais no escopo).';
+
+  @override
+  String get overviewMonthlyParcelsSalesSeriesLabel => 'Vendas';
+
+  @override
+  String get overviewMonthlyParcelsAmountSeriesLabel => 'Valor em parcelas';
+
+  @override
+  String get overviewMonthlyParcelsEmpty =>
+      'Sem dados mensais para este periodo.';
+
+  @override
+  String get overviewMonthlyParcelsLoadFailed =>
+      'Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.';
+
+  @override
+  String get overviewMonthlyParcelsChartSemantics =>
+      'Grafico dos ultimos doze meses de vendas e valor em parcelas';
 
   @override
   String get overviewKpiTotalRevenue => 'Faturamento total';

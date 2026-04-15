@@ -15,6 +15,7 @@ class LoadClientApprovedAgentsUseCase {
     String? search,
     String? status,
     bool includeOnlineStatus = true,
+    bool refresh = false,
   }) {
     return _repository.loadApprovedAgents(
       userId: userId,
@@ -22,6 +23,7 @@ class LoadClientApprovedAgentsUseCase {
       search: search,
       status: status,
       includeOnlineStatus: includeOnlineStatus,
+      refresh: refresh,
     );
   }
 }

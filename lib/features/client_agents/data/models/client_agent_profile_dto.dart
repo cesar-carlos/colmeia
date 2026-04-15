@@ -3,6 +3,32 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_sta
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 
+/// Hub presence fields the API may send on `GET /client/me/agents` rows.
+bool? _parseOptionalHubConnectedFromJson(Map<String, dynamic> json) {
+  const keys = <String>[
+    'isHubConnected',
+    'hubConnected',
+    'isConnected',
+    'online',
+  ];
+  for (final key in keys) {
+    final v = json[key];
+    if (v is bool) {
+      return v;
+    }
+    if (v is String) {
+      final s = v.trim().toLowerCase();
+      if (s == 'true' || s == 'online' || s == 'connected') {
+        return true;
+      }
+      if (s == 'false' || s == 'offline' || s == 'disconnected') {
+        return false;
+      }
+    }
+  }
+  return null;
+}
+
 class ClientAgentProfileDto {
   const ClientAgentProfileDto({
     required this.agentId,
@@ -21,6 +47,7 @@ class ClientAgentProfileDto {
     this.notes,
     this.observation,
     this.profileUpdatedAt,
+    this.isHubConnected,
   });
 
   factory ClientAgentProfileDto.fromJson(Map<String, dynamic> json) {
@@ -51,6 +78,7 @@ class ClientAgentProfileDto {
       profileUpdatedAt: DateTime.tryParse(
         json['profileUpdatedAt'] as String? ?? '',
       ),
+      isHubConnected: _parseOptionalHubConnectedFromJson(json),
     );
   }
 
@@ -70,6 +98,9 @@ class ClientAgentProfileDto {
   final String? notes;
   final String? observation;
   final DateTime? profileUpdatedAt;
+
+  /// Null: hub did not send per-row presence; UI may fall back to cached ids.
+  final bool? isHubConnected;
 
   ClientAgent toEntity({
     AgentConnectionStatus connectionStatus = AgentConnectionStatus.unknown,
@@ -114,6 +145,7 @@ class ClientAgentProfileDto {
       'notes': notes,
       'observation': observation,
       'profileUpdatedAt': profileUpdatedAt?.toIso8601String(),
+      if (isHubConnected != null) 'isHubConnected': isHubConnected,
     };
   }
 }

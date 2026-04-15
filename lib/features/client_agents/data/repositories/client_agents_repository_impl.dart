@@ -6,6 +6,8 @@ import 'package:colmeia/features/client_agents/data/datasources/client_agents_re
 import 'package:colmeia/features/client_agents/data/models/client_access_requests_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_profile_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/online_agent_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
 import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_key.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
@@ -58,6 +60,10 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         query: query,
         search: search,
         payload: remote,
+      );
+      await _persistHubPresenceCacheFromProfiles(
+        userId: userId,
+        profiles: remote.agents,
       );
       final onlineIds = await _loadOnlineAgentIds(userId: userId);
       return Success<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
@@ -392,12 +398,14 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     String? search,
     String? status,
     bool includeOnlineStatus = true,
+    bool refresh = false,
   }) async {
     try {
       final remote = await _remoteDataSource.fetchApprovedAgents(
         query: query,
         search: search,
         status: status,
+        refresh: refresh,
       );
       await _localDataSource.saveApprovedAgents(
         userId: userId,
@@ -406,6 +414,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         status: status,
         payload: remote,
       );
+      if (includeOnlineStatus) {
+        await _persistHubPresenceCacheFromProfiles(
+          userId: userId,
+          profiles: remote.agents,
+        );
+      }
       final onlineIds = includeOnlineStatus
           ? await _loadOnlineAgentIds(userId: userId)
           : null;
@@ -1018,6 +1032,14 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     ClientAgentProfileDto profile, {
     required Set<String>? onlineIds,
   }) {
+    final hub = profile.isHubConnected;
+    if (hub != null) {
+      return profile.toEntity(
+        connectionStatus: hub
+            ? AgentConnectionStatus.online
+            : AgentConnectionStatus.offline,
+      );
+    }
     final connectionStatus = switch (onlineIds) {
       null => AgentConnectionStatus.unknown,
       final ids when ids.contains(profile.agentId) =>
@@ -1027,6 +1049,33 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     return profile.toEntity(connectionStatus: connectionStatus);
   }
 
+  /// Writes a synthetic [OnlineAgentsResponseDto] when profile rows include
+  /// [ClientAgentProfileDto.isHubConnected], so [loadOnlineAgentIds] and
+  /// overview can resolve online ids without `GET /api/v1/agents` (user-only).
+  Future<void> _persistHubPresenceCacheFromProfiles({
+    required String userId,
+    required Iterable<ClientAgentProfileDto> profiles,
+  }) async {
+    if (!profiles.any((a) => a.isHubConnected != null)) {
+      return;
+    }
+    final stamp = DateTime.now();
+    final online = <OnlineAgentDto>[
+      for (final a in profiles)
+        if (a.isHubConnected == true)
+          OnlineAgentDto(
+            agentId: a.agentId,
+            connectedAt: stamp,
+            lastSeenAt: stamp,
+          ),
+    ];
+    await _localDataSource.saveOnlineAgents(
+      userId: userId,
+      payload: OnlineAgentsResponseDto(agents: online, count: online.length),
+    );
+  }
+
+  /// Cached hub presence only (no `GET /api/v1/agents` — client JWT is 403).
   Future<Set<String>?> _loadOnlineAgentIds({
     required String userId,
   }) async {
@@ -1037,25 +1086,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     if (freshCached != null) {
       return freshCached.agents.map((item) => item.agentId).toSet();
     }
-
-    try {
-      final online = await _remoteDataSource.fetchOnlineAgents(
-        logUserId: userId,
-      );
-      await _localDataSource.saveOnlineAgents(userId: userId, payload: online);
-      return online.agents.map((item) => item.agentId).toSet();
-    } on Object catch (error, stackTrace) {
-      AppLogger.warning(
-        'Unable to refresh online agent status',
-        context: <String, Object?>{
-          'operation': 'refreshOnlineAgentStatus',
-          'userId': userId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return _readCachedOnlineAgentIds(userId: userId);
-    }
+    return _readCachedOnlineAgentIds(userId: userId);
   }
 
   Future<Set<String>?> _readCachedOnlineAgentIds({
@@ -1065,10 +1096,15 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       userId: userId,
       maxAge: _onlineStatusOfflineFallbackMaxAge,
     );
-    if (cached == null) {
+    final resolved =
+        cached ??
+        await _localDataSource.readOnlineAgents(
+          userId: userId,
+        );
+    if (resolved == null) {
       return null;
     }
-    return cached.agents.map((item) => item.agentId).toSet();
+    return resolved.agents.map((item) => item.agentId).toSet();
   }
 
   Future<Set<String>> _readApprovedIds({
@@ -1143,6 +1179,10 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         userId: userId,
         query: _defaultRefreshQuery,
         payload: approved,
+      );
+      await _persistHubPresenceCacheFromProfiles(
+        userId: userId,
+        profiles: approved.agents,
       );
     } on Object catch (error, stackTrace) {
       AppLogger.warning(

@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_diario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_diario_sql.dart';
@@ -61,6 +62,8 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
+        maxRows:
+            AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamentoDiario,
       ),
     );
 

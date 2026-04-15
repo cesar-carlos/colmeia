@@ -645,7 +645,7 @@ Color _overviewAgentNameColor(
 ) {
   return switch (status) {
     AgentConnectionStatus.offline => scheme.error,
-    AgentConnectionStatus.unknown => scheme.onSurfaceVariant,
-    AgentConnectionStatus.online => scheme.onSurface,
+    AgentConnectionStatus.online || AgentConnectionStatus.unknown =>
+      scheme.onSurface,
   };
 }

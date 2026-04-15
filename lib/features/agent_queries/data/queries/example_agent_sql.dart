@@ -1,7 +1,8 @@
 /// Named SQL templates for JSON-RPC `sql.execute` via the plug_server bridge.
 ///
-/// Split domain-heavy query groups into separate files under `data/queries/`
-/// (for example `sales_agent_sql.dart`) as the catalog grows.
+/// Not wired through the agent queries repository / DI — for docs and manual smoke
+/// only. Split domain-heavy query groups into separate files under
+/// `data/queries/` as the catalog grows.
 abstract final class ExampleAgentSql {
   /// Sanity check against the connected agent; safe for smoke tests.
   static const String selectOne = 'SELECT 1 AS value';

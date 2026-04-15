@@ -252,6 +252,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewLoadingRankingsSemantics => 'Loading rankings…';
 
   @override
+  String get overviewLoadingMonthlyParcelsSemantics =>
+      'Loading last 12 months chart…';
+
+  @override
+  String get overviewMonthlyParcelsTitle => 'Last 12 months';
+
+  @override
+  String get overviewMonthlyParcelsSubtitle =>
+      'Sales count and parcel totals by month (all branches in scope).';
+
+  @override
+  String get overviewMonthlyParcelsSalesSeriesLabel => 'Sales';
+
+  @override
+  String get overviewMonthlyParcelsAmountSeriesLabel => 'Parcel amount';
+
+  @override
+  String get overviewMonthlyParcelsEmpty => 'No monthly data for this period.';
+
+  @override
+  String get overviewMonthlyParcelsLoadFailed =>
+      'Could not load the monthly chart. Try again later.';
+
+  @override
+  String get overviewMonthlyParcelsChartSemantics =>
+      'Last twelve months sales and parcel amount chart';
+
+  @override
   String get overviewKpiTotalRevenue => 'Total revenue';
 
   @override

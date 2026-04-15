@@ -17,6 +17,35 @@ void main() {
   });
 
   test(
+    'should succeed with empty merged rows when at least one target succeeds '
+    'without rows while another fails',
+    () async {
+      final result = await executor.execute(
+        plan: _plan(
+          strategy: AgentQueryExecutionStrategy.mergeAll,
+          plannedTargets: <AgentQueryTarget>[
+            _target('agent-a'),
+            _target('agent-b'),
+          ],
+        ),
+        loadTarget: (target) async {
+          if (target.agentId == 'agent-a') {
+            return const Success<List<int>, AppFailure>(<int>[]);
+          }
+          return const Failure<List<int>, AppFailure>(
+            NetworkFailure(message: 'failed', userMessage: 'failed'),
+          );
+        },
+      );
+
+      check(result.isSuccess()).isTrue();
+      final report = result.getOrThrow();
+      check(report.hasRows).isFalse();
+      check(report.failedAgentIds).deepEquals(const <String>['agent-b']);
+    },
+  );
+
+  test(
     'should aggregate successes and preserve failures in merge all',
     () async {
       final result = await executor.execute(

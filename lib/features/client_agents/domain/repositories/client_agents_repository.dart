@@ -34,6 +34,7 @@ abstract interface class ClientAgentsRepository {
     String? search,
     String? status,
     bool includeOnlineStatus = true,
+    bool refresh = false,
   });
 
   Future<AppResult<ClientAgent>> loadApprovedAgentById({

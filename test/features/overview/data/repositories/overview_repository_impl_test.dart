@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -7,6 +8,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.d
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
@@ -26,9 +29,14 @@ class _MockOverviewLocalDataSource extends Mock
 class _MockResumoAcrossAgentsRepository extends Mock
     implements ResumoParcelaFormaPagamentoAcrossAgentsRepository {}
 
+class _MockLoadResumoParcelasMensalAcrossAgents extends Mock
+    implements LoadResumoParcelasMensalAcrossAgentsUseCase {}
+
 void main() {
   late _MockOverviewLocalDataSource local;
   late _MockResumoAcrossAgentsRepository resumoAcrossAgentsRepository;
+  late _MockLoadResumoParcelasMensalAcrossAgents
+      loadResumoParcelasMensalAcrossAgents;
 
   final fixedNow = DateTime(2026, 4, 8);
 
@@ -40,6 +48,12 @@ void main() {
       ),
     );
     registerFallbackValue(AgentQueryExecutionStrategy.mergeAll);
+    registerFallbackValue(
+      ResumoParcelasMensalFilter(
+        dataVendaInicio: DateTime(2025, 5),
+        dataVendaFim: DateTime(2026, 4, 30),
+      ),
+    );
     registerFallbackValue(<String>{'agent-fallback'});
     registerFallbackValue(
       OverviewModel(
@@ -61,6 +75,23 @@ void main() {
   setUp(() {
     local = _MockOverviewLocalDataSource();
     resumoAcrossAgentsRepository = _MockResumoAcrossAgentsRepository();
+    loadResumoParcelasMensalAcrossAgents =
+        _MockLoadResumoParcelasMensalAcrossAgents();
+    when(
+      () => loadResumoParcelasMensalAcrossAgents(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+      ),
+    ).thenAnswer(
+      (_) async => Success<
+        AgentQueryExecutionReport<ResumoParcelasMensalRow>,
+        AppFailure
+      >(_emptyMensalReport()),
+    );
 
     when(
       () => local.saveOverview(
@@ -77,6 +108,8 @@ void main() {
     return OverviewRepositoryImpl(
       localDataSource: local,
       resumoAcrossAgentsRepository: resumoAcrossAgentsRepository,
+      loadResumoParcelasMensalAcrossAgents:
+          loadResumoParcelasMensalAcrossAgents,
       now: () => fixedNow,
     );
   }
@@ -594,6 +627,18 @@ void _stubLoad(
       strategy: any(named: 'strategy'),
     ),
   ).thenAnswer((_) async => result);
+}
+
+AgentQueryExecutionReport<ResumoParcelasMensalRow> _emptyMensalReport() {
+  return const AgentQueryExecutionReport<ResumoParcelasMensalRow>(
+    queryKey: AgentQueryKey.resumoParcelasMensal,
+    strategy: AgentQueryExecutionStrategy.mergeAll,
+    consideredApprovedAgentCount: 0,
+    plannedTargets: <AgentQueryTarget>[],
+    missingClientTokenTargets: <AgentQueryTarget>[],
+    participants: <AgentQueryExecutionParticipant<ResumoParcelasMensalRow>>[],
+    totalElapsedMs: 0,
+  );
 }
 
 AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow> _report({

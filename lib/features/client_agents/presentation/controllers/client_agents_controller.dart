@@ -175,6 +175,7 @@ class ClientAgentsController extends ChangeNotifier {
         _loadApprovedAgentsUseCase(
           userId: userId,
           query: query,
+          refresh: keepContentVisible,
         ).then((value) => approvedResult = value),
         _loadAccessRequestsUseCase(
           userId: userId,
@@ -484,6 +485,7 @@ class ClientAgentsController extends ChangeNotifier {
       _loadApprovedAgentsUseCase(
         userId: userId,
         query: query,
+        refresh: true,
       ).then((value) => approvedResult = value),
       _loadAccessRequestsUseCase(
         userId: userId,
