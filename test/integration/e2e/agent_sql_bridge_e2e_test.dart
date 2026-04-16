@@ -5,74 +5,79 @@ import 'package:colmeia/core/errors/app_failure.dart'
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart' hide group;
+import 'package:test_api/scaffolding.dart' show group;
 
 import 'support/e2e_dependency_bootstrap.dart';
 
 void main() {
-  group('Agent SQL bridge (e2e)', () {
-    test(
-      'executeSql loads Cliente with page pagination',
-      () async {
-        final missingKeys = missingE2eBridgeKeys();
-        if (missingKeys.isNotEmpty) {
-          // Console hint when dart-defines are absent (integration runs only).
-          // ignore: avoid_print
-          print(
-            'SKIP agent_sql_bridge_e2e: missing ${missingKeys.join(', ')}. '
-            'Set them in assets/env/local.env, process env, or --dart-define.',
-          );
-          return;
-        }
-
-        await e2eSetupDependencies();
-        addTearDown(e2eTeardownDependencies);
-        expect(AppEnvironment.apiBaseUrl, isNotEmpty);
-
-        final repo = getIt<AgentQueriesRepository>();
-        final result = await repo.executeSql(
-          AgentSqlExecuteRequest(
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            sql: 'SELECT * FROM Cliente ORDER BY CodCliente',
-            pagination: const AgentSqlPagePagination(page: 1, pageSize: 10),
-          ),
-        );
-
-        result.fold(
-          (success) {
-            expect(success.rows, isNotEmpty);
-            expect(success.rows.length, lessThanOrEqualTo(10));
-            expect(success.pagination, isNotNull);
-            expect(success.pagination?.page, 1);
-            expect(success.pagination?.pageSize, 10);
-            expect(success.pagination?.returnedRows, success.rows.length);
-          },
-          (failure) {
-            expect(
-              failure,
-              isA<AppFailure>(),
+  group(
+    'Agent SQL bridge (e2e)',
+    () {
+      test(
+        'executeSql loads Cliente with page pagination',
+        () async {
+          final missingKeys = missingE2eBridgeKeys();
+          if (missingKeys.isNotEmpty) {
+            // Console hint when dart-defines are absent (integration runs only).
+            // ignore: avoid_print
+            print(
+              'SKIP agent_sql_bridge_e2e: missing ${missingKeys.join(', ')}. '
+              'Set them in assets/env/local.env, process env, or --dart-define.',
             );
-            if (AppEnvironment.hasE2eAgentBridgeCredentials) {
+            return;
+          }
+
+          await e2eSetupDependencies();
+          addTearDown(e2eTeardownDependencies);
+          expect(AppEnvironment.apiBaseUrl, isNotEmpty);
+
+          final repo = getIt<AgentQueriesRepository>();
+          final result = await repo.executeSql(
+            AgentSqlExecuteRequest(
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              sql: 'SELECT * FROM Cliente ORDER BY CodCliente',
+              pagination: const AgentSqlPagePagination(page: 1, pageSize: 10),
+            ),
+          );
+
+          result.fold(
+            (success) {
+              expect(success.rows, isNotEmpty);
+              expect(success.rows.length, lessThanOrEqualTo(10));
+              expect(success.pagination, isNotNull);
+              expect(success.pagination?.page, 1);
+              expect(success.pagination?.pageSize, 10);
+              expect(success.pagination?.returnedRows, success.rows.length);
+            },
+            (failure) {
               expect(
                 failure,
-                isNot(isA<SessionFailure>()),
-                reason:
-                    'Unexpected HTTP 401 after client login '
-                    '— check E2E_* values '
-                    'and hub access.',
+                isA<AppFailure>(),
               );
-            }
-            if (isAcceptableE2eAgentSqlRepositoryFailure(failure)) {
-              return;
-            }
-            fail(
-              'Bridge e2e failed with ${failure.runtimeType}: '
-              '${failure.displayMessage}',
-            );
-          },
-        );
-      },
-    );
-  });
+              if (AppEnvironment.hasE2eAgentBridgeCredentials) {
+                expect(
+                  failure,
+                  isNot(isA<SessionFailure>()),
+                  reason:
+                      'Unexpected HTTP 401 after client login '
+                      '— check E2E_* values '
+                      'and hub access.',
+                );
+              }
+              if (isAcceptableE2eAgentSqlRepositoryFailure(failure)) {
+                return;
+              }
+              fail(
+                'Bridge e2e failed with ${failure.runtimeType}: '
+                '${failure.displayMessage}',
+              );
+            },
+          );
+        },
+      );
+    },
+    tags: <String>['e2e'],
+  );
 }

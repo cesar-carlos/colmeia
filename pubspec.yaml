@@ -64,6 +64,7 @@ dev_dependencies:
     sdk: flutter
 
   mocktail: ^1.0.4
+  test_api: ^0.7.9
   very_good_analysis: ^10.2.0
 
 flutter_launcher_icons:
