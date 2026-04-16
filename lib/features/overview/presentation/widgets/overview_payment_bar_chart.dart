@@ -19,10 +19,15 @@ class OverviewPaymentBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final sorted = List<OverviewPaymentMethodBreakdown>.of(methods)
+      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
     return AppComparisonBarChart<OverviewPaymentMethodBreakdown>(
       title: l10n.overviewPaymentBarTitle,
       subtitle: l10n.overviewPaymentBarSubtitle,
-      items: methods,
+      items: sorted,
+      plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
+      extremeSpreadAccessibilityNotice:
+          l10n.chartComparisonExtremeValueSpreadNotice,
       labelBuilder: (m) => m.label,
       valueBuilder: (m) => m.totalAmount,
       tooltipLabelBuilder: (m, v) => l10n.overviewPaymentBarTooltip(

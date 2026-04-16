@@ -167,7 +167,11 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
               ? ChartRangePadding.additionalEnd
               : ChartRangePadding.auto,
           axisLine: const AxisLine(width: 0),
-          minimum: style.minY?.toDouble(),
+          // Column charts must anchor at zero when [style.minY] is unset.
+          // Otherwise Syncfusion picks a data-relative minimum (often the
+          // smallest value), which makes the minimum bar height ~0 and looks
+          // like a missing category even though the data label is non-zero.
+          minimum: style.minY?.toDouble() ?? 0,
           maximum: style.maxY?.toDouble(),
           interval: style.interval?.toDouble(),
           majorGridLines: MajorGridLines(
@@ -192,7 +196,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           ColumnSeries<AppChartPoint, String>(
             dataSource: points,
             xValueMapper: (point, _) => point.label,
-            yValueMapper: (point, _) => point.value,
+            yValueMapper: (point, _) => point.plottedValue ?? point.value,
             dataLabelMapper: dataLabels == null
                 ? null
                 : (point, index) => index >= 0 && index < dataLabels!.length

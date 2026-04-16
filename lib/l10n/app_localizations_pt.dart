@@ -327,6 +327,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Deslize horizontalmente para ver todos os itens.';
 
   @override
+  String get chartComparisonPlotFloorNotice =>
+      'Barras muito baixas são exibidas com altura mínima para leitura. Os valores nos rótulos são exatos.';
+
+  @override
+  String get chartComparisonExtremeValueSpreadNotice =>
+      'Há valores em ordens de grandeza muito diferentes; verifique unidades ou agregação se os totais parecerem incorretos.';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Forma de pagamento $label';
   }
@@ -1991,6 +1999,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewComparisonBarHorizontalScrollHint =>
       'Deslize horizontalmente para ver todos os itens.';
+
+  @override
+  String get chartComparisonPlotFloorNotice =>
+      'Barras muito baixas são exibidas com altura mínima para leitura. Os valores nos rótulos são exatos.';
+
+  @override
+  String get chartComparisonExtremeValueSpreadNotice =>
+      'Há valores em ordens de grandeza muito diferentes; verifique unidades ou agregação se os totais parecerem incorretos.';
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {

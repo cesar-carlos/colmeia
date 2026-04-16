@@ -22,17 +22,21 @@ class OverviewRankingsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final sortedAgents = List<OverviewAgentRanking>.of(agentRankings)
+      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+    final sortedUsers = List<OverviewUserRanking>.of(userRankings)
+      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         OverviewAgentRankingCard(
           l10n: l10n,
-          agentRankings: agentRankings,
+          agentRankings: sortedAgents,
         ),
         SizedBox(height: tokens.sectionSpacing),
         OverviewUserRankingCard(
           l10n: l10n,
-          userRankings: userRankings,
+          userRankings: sortedUsers,
         ),
       ],
     );
@@ -56,6 +60,9 @@ class OverviewAgentRankingCard extends StatelessWidget {
       title: l10n.dashboardAgentRankingTitle,
       subtitle: l10n.dashboardAgentRankingSubtitle,
       items: agentRankings,
+      plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
+      extremeSpreadAccessibilityNotice:
+          l10n.chartComparisonExtremeValueSpreadNotice,
       labelBuilder: (a) => a.displayName,
       valueBuilder: (a) => a.totalAmount,
       tooltipLabelBuilder: (a, v) =>
@@ -87,6 +94,9 @@ class OverviewUserRankingCard extends StatelessWidget {
       title: l10n.dashboardUserRankingTitle,
       subtitle: l10n.dashboardUserRankingSubtitle,
       items: userRankings,
+      plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
+      extremeSpreadAccessibilityNotice:
+          l10n.chartComparisonExtremeValueSpreadNotice,
       labelBuilder: (u) => u.userName,
       valueBuilder: (u) => u.totalAmount,
       tooltipLabelBuilder: (u, v) =>

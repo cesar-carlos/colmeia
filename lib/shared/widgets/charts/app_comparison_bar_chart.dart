@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
+import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_comparison_bar_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -54,6 +55,8 @@ class AppComparisonBarChartStyle {
     this.tooltipLabelMaxChars,
     this.stickyPrimaryYAxisWhileScrolling = true,
     this.stickyPrimaryYAxisWidth = 72,
+    this.minPlottedValueShareOfMax = 0.03,
+    this.strictLinearBarHeights = false,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -235,6 +238,17 @@ class AppComparisonBarChartStyle {
 
   /// Width reserved for the sticky primary Y-axis column (tick labels).
   final double stickyPrimaryYAxisWidth;
+
+  /// Minimum column height as a fraction of the largest positive value in the
+  /// series. Positive values below `maxPositive * this` are drawn at that
+  /// floor so tiny outliers stay visible; each point's numeric value field is
+  /// unchanged for data labels, tooltips, and tap payloads. Set to `0` to keep
+  /// strict linear proportions. Ignored when [strictLinearBarHeights] is true.
+  final double minPlottedValueShareOfMax;
+
+  /// When true, column heights match [AppChartPoint.value] exactly (no minimum
+  /// height lift via [AppChartPoint.plottedValue]).
+  final bool strictLinearBarHeights;
 }
 
 /// Structured payload emitted when the user taps a bar.
@@ -253,6 +267,9 @@ class AppComparisonBarPointTapEvent<T> {
 }
 
 /// Generic vertical bar chart for discrete comparisons between labelled items.
+///
+/// [valueBuilder] supplies the true metric; optional minimum-height lifts for
+/// readability are stored on [AppChartPoint.plottedValue] only for drawing.
 ///
 /// Usage:
 /// ```dart
@@ -290,6 +307,8 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.plotFloorAccessibilityNotice,
+    this.extremeSpreadAccessibilityNotice,
   });
 
   /// Data items to plot.
@@ -350,9 +369,18 @@ class AppComparisonBarChart<T> extends StatelessWidget {
   /// Widget rendered when [items] is empty (and not loading).
   final Widget? emptyPlaceholder;
 
+  /// Shown as a header info tooltip and in chart [Semantics] when any bar uses
+  /// a minimum plotted height ([AppChartPoint.plottedValue]).
+  final String? plotFloorAccessibilityNotice;
+
+  /// Appended to chart [Semantics] when values span an extreme ratio (e.g.
+  /// orders of magnitude); use for screen-reader context about possible unit mix-ups.
+  final String? extremeSpreadAccessibilityNotice;
+
   @override
   Widget build(BuildContext context) {
     final values = items.map(valueBuilder).toList(growable: false);
+    debugLogSuspiciousComparisonBarSpread(values);
 
     // X-axis label shaping: optional two-line wrap, else optional single-line
     // truncation. Tooltips still use [tooltipLabelBuilder] with full context.
@@ -368,7 +396,7 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       return '${raw.substring(0, maxChars)}\u2026';
     }
 
-    final points = items.indexed
+    final rawPoints = items.indexed
         .map(
           (entry) => AppChartPoint(
             label: formatXLabel(labelBuilder(entry.$2)),
@@ -376,6 +404,40 @@ class AppComparisonBarChart<T> extends StatelessWidget {
           ),
         )
         .toList(growable: false);
+    final points = applyComparisonBarPlotHeightFloor(
+      rawPoints,
+      style.minPlottedValueShareOfMax,
+      strictLinearBarHeights: style.strictLinearBarHeights,
+    );
+    final hasPlotFloor = points.any((p) => p.plottedValue != null);
+    final hasExtremeSpread = comparisonBarValuesHaveExtremeSpread(values);
+
+    final semanticsParts = <String>[];
+    final floorNotice = plotFloorAccessibilityNotice?.trim();
+    if (hasPlotFloor && floorNotice != null && floorNotice.isNotEmpty) {
+      semanticsParts.add(floorNotice);
+    }
+    final spreadNotice = extremeSpreadAccessibilityNotice?.trim();
+    if (hasExtremeSpread && spreadNotice != null && spreadNotice.isNotEmpty) {
+      semanticsParts.add(spreadNotice);
+    }
+    final semanticsCoordinatorLabel = semanticsParts.isEmpty
+        ? null
+        : semanticsParts.join(' ');
+
+    Widget? floorNoticeTrailing;
+    if (hasPlotFloor && floorNotice != null && floorNotice.isNotEmpty) {
+      floorNoticeTrailing = Tooltip(
+        message: floorNotice,
+        child: Icon(
+          Icons.info_outline,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+    final mergedTitleTrailing =
+        _mergeComparisonTitleTrailing(titleTrailing, floorNoticeTrailing);
 
     final pointColors = colorBuilder != null
         ? items.map(colorBuilder!).toList(growable: false)
@@ -416,7 +478,7 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       onPointTapEvent?.call(event);
     }
 
-    final innerChart = SyncfusionComparisonBarChart(
+    Widget innerChart = SyncfusionComparisonBarChart(
       points: points,
       preset: preset,
       style: style,
@@ -430,6 +492,15 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       emptyPlaceholder: emptyPlaceholder,
     );
 
+    if (semanticsCoordinatorLabel != null &&
+        semanticsCoordinatorLabel.isNotEmpty) {
+      innerChart = Semantics(
+        label: semanticsCoordinatorLabel,
+        excludeSemantics: true,
+        child: innerChart,
+      );
+    }
+
     if (title == null && titleWidget == null) {
       return innerChart;
     }
@@ -438,11 +509,28 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       title: title ?? '',
       titleWidget: titleWidget,
       subtitle: subtitle,
-      titleTrailing: titleTrailing,
+      titleTrailing: mergedTitleTrailing,
       belowSubtitle: belowSubtitle,
       child: innerChart,
     );
   }
+}
+
+Widget? _mergeComparisonTitleTrailing(Widget? primary, Widget? secondary) {
+  if (primary == null) {
+    return secondary;
+  }
+  if (secondary == null) {
+    return primary;
+  }
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: <Widget>[
+      primary,
+      const SizedBox(width: 8),
+      secondary,
+    ],
+  );
 }
 
 String? _truncateComparisonTooltipLabel(String? raw, int? maxChars) {

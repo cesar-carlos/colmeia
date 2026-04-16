@@ -117,6 +117,8 @@
   },
   "overviewComparisonChartLoading": "Carregando gráfico comparativo…",
   "overviewComparisonBarHorizontalScrollHint": "Deslize horizontalmente para ver todos os itens.",
+  "chartComparisonPlotFloorNotice": "Barras muito baixas são exibidas com altura mínima para leitura. Os valores nos rótulos são exatos.",
+  "chartComparisonExtremeValueSpreadNotice": "Há valores em ordens de grandeza muito diferentes; verifique unidades ou agregação se os totais parecerem incorretos.",
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -244,11 +246,6 @@
   "clientAgentsRequestQueuedWatchingSingle": "Solicitacao enviada. Vamos acompanhar a aprovacao automaticamente.",
   "clientAgentsRequestQueuedWatchingPlural": "{count} solicitacoes enviadas. Vamos acompanhar as aprovacoes automaticamente.",
   "clientAgentsRequestQueuedIgnoredSuffix": "{count} IDs foram ignorados porque ja estavam aprovados ou em analise.",
-  "@clientAgentsRequestQueuedIgnoredSuffix": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
   "clientAgentsRequestRelinkUpdatedSingle":
       "Esse agente ja esta aprovado no servidor. A lista de agentes foi atualizada.",
   "clientAgentsRequestRelinkUpdatedPlural":

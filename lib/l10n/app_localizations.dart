@@ -645,6 +645,18 @@ abstract class AppLocalizations {
   /// **'Swipe horizontally to see all items.'**
   String get overviewComparisonBarHorizontalScrollHint;
 
+  /// No description provided for @chartComparisonPlotFloorNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Very small bars are drawn with a minimum height for readability. Values on labels are exact.'**
+  String get chartComparisonPlotFloorNotice;
+
+  /// No description provided for @chartComparisonExtremeValueSpreadNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Some values differ by orders of magnitude; check units or aggregation if totals look wrong.'**
+  String get chartComparisonExtremeValueSpreadNotice;
+
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///
   /// In en, this message translates to:

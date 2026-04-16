@@ -1,4 +1,5 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -14,6 +15,7 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final cs = theme.colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return ListView(
       padding: EdgeInsets.all(tokens.contentSpacing),
@@ -169,6 +171,47 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
             ),
           ),
         ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppComparisonBarChart<_SkewedPayment>(
+          title: '9. Piso visual + avisos (A11y)',
+          subtitle:
+              'Valor miudo vs grandes totais; icone de info e semantica do app.',
+          items: _skewedPaymentSamples,
+          labelBuilder: (item) => item.label,
+          valueBuilder: (item) => item.amount,
+          dataLabelBuilder: (item, value) =>
+              AppBrFormatters.compactCurrency(value).replaceFirst(r'R$ ', ''),
+          plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
+          extremeSpreadAccessibilityNotice:
+              l10n.chartComparisonExtremeValueSpreadNotice,
+          style: AppComparisonBarChartStyle(
+            yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+            showDataLabels: true,
+            minPlottedValueShareOfMax: 0.045,
+            dataLabelTextStyle: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppComparisonBarChart<_SkewedPayment>(
+          title: '10. Alturas estritas (sem piso)',
+          subtitle: 'strictLinearBarHeights: true no estilo.',
+          items: _skewedPaymentSamples,
+          labelBuilder: (item) => item.label,
+          valueBuilder: (item) => item.amount,
+          dataLabelBuilder: (item, value) =>
+              AppBrFormatters.compactCurrency(value).replaceFirst(r'R$ ', ''),
+          style: AppComparisonBarChartStyle(
+            yAxisFormat: AppBrFormatters.compactCurrencyFormat,
+            showDataLabels: true,
+            minPlottedValueShareOfMax: 0.045,
+            strictLinearBarHeights: true,
+            dataLabelTextStyle: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -203,6 +246,19 @@ class _StoreSales {
   final String store;
   final int orders;
 }
+
+class _SkewedPayment {
+  const _SkewedPayment(this.label, this.amount);
+
+  final String label;
+  final double amount;
+}
+
+const List<_SkewedPayment> _skewedPaymentSamples = <_SkewedPayment>[
+  _SkewedPayment('Loja Centro', 52000),
+  _SkewedPayment('Loja Norte', 18000),
+  _SkewedPayment('Ajuste / troco', 4),
+];
 
 const List<_SellerRevenue> _sellerRevenueSamples = <_SellerRevenue>[
   _SellerRevenue(name: 'Amanda', revenue: 21340, color: Color(0xFF6200EE)),

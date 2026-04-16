@@ -117,6 +117,8 @@
   },
   "overviewComparisonChartLoading": "Carregando gráfico comparativo…",
   "overviewComparisonBarHorizontalScrollHint": "Deslize horizontalmente para ver todos os itens.",
+  "chartComparisonPlotFloorNotice": "Barras muito baixas são exibidas com altura mínima para leitura. Os valores nos rótulos são exatos.",
+  "chartComparisonExtremeValueSpreadNotice": "Há valores em ordens de grandeza muito diferentes; verifique unidades ou agregação se os totais parecerem incorretos.",
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {

@@ -2,10 +2,17 @@ class AppChartPoint {
   const AppChartPoint({
     required this.label,
     required this.value,
+    this.plottedValue,
   });
 
   final String label;
+
+  /// True metric for labels, tooltips, and tap payloads.
   final num value;
+
+  /// Optional Y used only for column height in charts that apply a readability
+  /// floor. When null, [value] is used for layout as well.
+  final num? plottedValue;
 }
 
 class AppChartSeries {

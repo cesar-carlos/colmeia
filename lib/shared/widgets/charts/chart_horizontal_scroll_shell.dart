@@ -6,9 +6,10 @@ const double kChartHorizontalScrollFadeWidth = 32;
 /// Threshold below which scroll position is considered "at end" (float noise).
 const double kChartHorizontalScrollEdgeThreshold = 0.5;
 
-/// Vertical space reserved under the chart so the horizontal [Scrollbar] thumb
-/// sits below the plot (including category labels), matching other home charts.
-const double kChartHorizontalScrollBottomTrackSlot = 10;
+/// Vertical strip placed **below** the chart inside the horizontally scrollable
+/// column so the [Scrollbar] thumb sits over this strip instead of over category
+/// labels (see [ChartHorizontalScrollShell]).
+const double kChartHorizontalScrollBottomTrackSlot = 22;
 
 bool chartHorizontalScrollScrollbarThumbVisible(BuildContext context) {
   switch (Theme.of(context).platform) {
@@ -38,11 +39,11 @@ class ChartHorizontalScrollShell extends StatefulWidget {
   final bool showFade;
   final String? semanticsHint;
 
-  /// Insets the bottom of the horizontal scroll viewport so the scrollbar thumb
-  /// sits below the chart (including category labels). When positive, [child]
-  /// height should be `outerHeight - bottomTrackSlot`. Defaults to `0`
-  /// (scrollbar at the bottom edge of the chart). Use
-  /// [kChartHorizontalScrollBottomTrackSlot] with callers that reserve space.
+  /// When positive, a blank strip this tall is stacked **below** [child] inside
+  /// the scrollable so the horizontal scrollbar thumb paints over the strip, not
+  /// over X-axis labels. Callers should size [child] with height
+  /// `outerHeight - bottomTrackSlot`. Defaults to `0` (no strip). Prefer
+  /// [kChartHorizontalScrollBottomTrackSlot] for comparison-style charts.
   final double bottomTrackSlot;
 
   @override
@@ -94,7 +95,23 @@ class _ChartHorizontalScrollShellState
 
   @override
   Widget build(BuildContext context) {
-    final slot = widget.bottomTrackSlot;
+    final baseSlot = widget.bottomTrackSlot;
+    final slot = baseSlot <= 0
+        ? 0.0
+        : MediaQuery.textScalerOf(context).scale(baseSlot).clamp(18.0, 56.0);
+    final scrollChild = slot > 0
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              widget.child,
+              SizedBox(height: slot),
+            ],
+          )
+        : Align(
+            alignment: Alignment.topLeft,
+            child: widget.child,
+          );
     Widget scrollable = Scrollbar(
       controller: _controller,
       thumbVisibility: chartHorizontalScrollScrollbarThumbVisible(context),
@@ -102,11 +119,7 @@ class _ChartHorizontalScrollShellState
         controller: _controller,
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
-        padding: slot > 0 ? EdgeInsets.only(bottom: slot) : EdgeInsets.zero,
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: widget.child,
-        ),
+        child: scrollChild,
       ),
     );
     final hint = widget.semanticsHint;

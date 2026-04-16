@@ -321,6 +321,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Swipe horizontally to see all items.';
 
   @override
+  String get chartComparisonPlotFloorNotice =>
+      'Very small bars are drawn with a minimum height for readability. Values on labels are exact.';
+
+  @override
+  String get chartComparisonExtremeValueSpreadNotice =>
+      'Some values differ by orders of magnitude; check units or aggregation if totals look wrong.';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Payment method $label';
   }
