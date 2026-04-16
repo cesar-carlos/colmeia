@@ -89,6 +89,24 @@ void main() {
       check(model.toEntity().anoMes).equals('2026/09');
     });
 
+    test(
+      'fromMap accepts AnoMes without zero-padded month when Ano/Mes match',
+      () {
+        final model = ResumoParcelasMensalRowModel.fromMap(
+          <String, dynamic>{
+            'CodEmpresa': 1,
+            'CodFilial': 1,
+            'Ano': 2026,
+            'Mes': 9,
+            'AnoMes': '2026/9',
+            'QtdVendas': 1,
+            'ValorParcela': 1.0,
+          },
+        );
+        check(model.toEntity().anoMes).equals('2026/09');
+      },
+    );
+
     test('fromMap throws when AnoMes disagrees with Ano/Mes', () {
       expect(
         () => ResumoParcelasMensalRowModel.fromMap(

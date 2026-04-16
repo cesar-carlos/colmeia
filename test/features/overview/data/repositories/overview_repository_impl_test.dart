@@ -531,6 +531,8 @@ void main() {
         check(overview.agentNamesMissingClientToken.single).equals(
           'Agente cacheado',
         );
+        check(overview.monthlyParcelTrendLoadFailed).isFalse();
+        check(overview.monthlyParcelTrend).isNotEmpty();
       },
     );
 
@@ -572,6 +574,65 @@ void main() {
         check(overview.agentNamesMissingClientToken.single).equals(
           'Agente cacheado',
         );
+        check(overview.monthlyParcelTrendLoadFailed).isFalse();
+        check(overview.monthlyParcelTrend).isNotEmpty();
+      },
+    );
+
+    test(
+      'falls back to cache and propagates monthly query failure flag',
+      () async {
+        when(
+          () => loadResumoParcelasMensalAcrossAgents(
+            userId: any(named: 'userId'),
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).thenAnswer(
+          (_) async => const Failure<
+            AgentQueryExecutionReport<ResumoParcelasMensalRow>,
+            AppFailure
+          >(
+            RpcFailure(
+              message: 'agent sql timeout',
+              userMessage: 'Timeout.',
+              rpcCode: -1,
+              retryable: false,
+            ),
+          ),
+        );
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              consideredApprovedAgentCount: 1,
+              missingClientTokenTargets: <AgentQueryTarget>[
+                _target(
+                  'agent-42',
+                  name: 'Agente cacheado',
+                  clientToken: null,
+                ),
+              ],
+            ),
+          ),
+        );
+        when(
+          () => local.readOverview(userId: any(named: 'userId')),
+        ).thenAnswer((_) async => _cachedModel());
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.monthlyParcelTrendLoadFailed).isTrue();
+        check(overview.monthlyParcelTrend).isEmpty();
       },
     );
 

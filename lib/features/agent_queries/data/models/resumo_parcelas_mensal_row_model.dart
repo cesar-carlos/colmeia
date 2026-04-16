@@ -26,12 +26,12 @@ class ResumoParcelasMensalRowModel {
       AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('AnoMes'),
     );
     if (anoMesRaw != null) {
-      final expected = ResumoParcelasMensalLabels.format(ano, mes);
       final actual = switch (anoMesRaw) {
         final String s => s.trim(),
-        _ => anoMesRaw.toString(),
+        _ => anoMesRaw.toString().trim(),
       };
-      if (actual != expected) {
+      if (!_anoMesConsistentWithCalendarMonth(actual, ano, mes)) {
+        final expected = ResumoParcelasMensalLabels.format(ano, mes);
         throw FormatException(
           'AnoMes "$actual" does not match Ano/Mes (expected "$expected")',
         );
@@ -65,6 +65,28 @@ class ResumoParcelasMensalRowModel {
   final int mes;
   final int qtdVendas;
   final double valorParcela;
+
+  /// When [raw] looks like `YYYY/MM`, require it to match [ano] and [mes].
+  /// Non-matching shapes are ignored so drivers that omit padding or send
+  /// odd spacing do not fail parsing while `Ano` / `Mes` stay authoritative.
+  static bool _anoMesConsistentWithCalendarMonth(
+    String raw,
+    int ano,
+    int mes,
+  ) {
+    final match = RegExp(
+      r'^\s*(\d{4})\s*/\s*(\d{1,2})\s*$',
+    ).firstMatch(raw);
+    if (match == null) {
+      return true;
+    }
+    final y = int.tryParse(match.group(1)!);
+    final m = int.tryParse(match.group(2)!);
+    if (y == null || m == null || m < 1 || m > 12) {
+      return true;
+    }
+    return y == ano && m == mes;
+  }
 
   ResumoParcelasMensalRow toEntity() {
     return ResumoParcelasMensalRow(

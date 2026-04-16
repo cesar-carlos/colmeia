@@ -142,8 +142,16 @@ class OverviewRepositoryImpl implements OverviewRepository {
           agentNamesMissingClientToken: report.missingClientTokenAgentNames,
         );
         if (cachedOverview != null) {
-          await monthlyParcelFuture;
-          return Success<Overview, AppFailure>(cachedOverview);
+          final monthly = await _resolveMonthlyParcelTrend(
+            monthlyParcelFuture,
+            mensalFilter,
+          );
+          return Success<Overview, AppFailure>(
+            cachedOverview.copyWith(
+              monthlyParcelTrend: monthly.points,
+              monthlyParcelTrendLoadFailed: monthly.loadFailed,
+            ),
+          );
         }
       }
 
