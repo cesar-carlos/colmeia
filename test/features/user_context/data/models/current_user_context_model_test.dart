@@ -15,9 +15,14 @@ void main() {
             permissions: <String>['viewDashboard', 'viewReports', 'unknown'],
           ),
         );
-        check(
-          model.permissions,
-        ).deepEquals(<UserPermission>{UserPermission.viewDashboard});
+        check(model.permissions).deepEquals(<UserPermission>{
+          UserPermission.viewDashboard,
+          UserPermission.viewSales,
+          UserPermission.viewReturns,
+          UserPermission.viewFinance,
+          UserPermission.viewPurchases,
+          UserPermission.viewInventory,
+        });
       },
     );
   });
@@ -48,9 +53,14 @@ void main() {
         ),
       );
 
-      check(model.permissions).deepEquals(
-        <UserPermission>{UserPermission.viewDashboard},
-      );
+      check(model.permissions).deepEquals(<UserPermission>{
+        UserPermission.viewDashboard,
+        UserPermission.viewSales,
+        UserPermission.viewReturns,
+        UserPermission.viewFinance,
+        UserPermission.viewPurchases,
+        UserPermission.viewInventory,
+      });
       check(model.dashboardGrants).length.equals(1);
       check(model.allowedStores.single.id).equals('1');
     });

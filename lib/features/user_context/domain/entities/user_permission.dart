@@ -1,6 +1,11 @@
 enum UserPermission {
   viewDashboard,
   manageAgents,
+  viewSales,
+  viewReturns,
+  viewFinance,
+  viewPurchases,
+  viewInventory,
 }
 
 /// Resolves a permission from an API or storage string. Names that do not match

@@ -27,6 +27,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shellNavSettingsSubtitle => 'Account and preferences';
 
   @override
+  String get shellNavSalesLabel => 'Sales';
+
+  @override
+  String get shellNavSalesSubtitle => 'Orders, revenue, and commercial KPIs';
+
+  @override
+  String get shellNavReturnsLabel => 'Returns';
+
+  @override
+  String get shellNavReturnsSubtitle => 'Returns, exchanges, and credit notes';
+
+  @override
+  String get shellNavFinanceLabel => 'Finance';
+
+  @override
+  String get shellNavFinanceSubtitle => 'Cash flow, receivables, and payables';
+
+  @override
+  String get shellNavPurchasesLabel => 'Purchases';
+
+  @override
+  String get shellNavPurchasesSubtitle => 'Suppliers and purchase orders';
+
+  @override
+  String get shellNavInventoryLabel => 'Inventory';
+
+  @override
+  String get shellNavInventorySubtitle => 'Stock levels and movements';
+
+  @override
+  String get shellPlaceholderUnderConstructionTitle => 'Under construction';
+
+  @override
+  String get shellPlaceholderUnderConstructionBody =>
+      'This section will be available in a future update.';
+
+  @override
   String get shellAppBrandName => 'Colmeia';
 
   @override
@@ -62,6 +99,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userPermissionManageAgents => 'Agent management';
+
+  @override
+  String get userPermissionViewSales => 'Sales (module access)';
+
+  @override
+  String get userPermissionViewReturns => 'Returns (module access)';
+
+  @override
+  String get userPermissionViewFinance => 'Finance (module access)';
+
+  @override
+  String get userPermissionViewPurchases => 'Purchases (module access)';
+
+  @override
+  String get userPermissionViewInventory => 'Inventory (module access)';
 
   @override
   String get dashboardPartialAgentQueriesTitle => 'Incomplete overview data';

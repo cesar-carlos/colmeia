@@ -135,6 +135,78 @@ abstract class AppLocalizations {
   /// **'Account and preferences'**
   String get shellNavSettingsSubtitle;
 
+  /// No description provided for @shellNavSalesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get shellNavSalesLabel;
+
+  /// No description provided for @shellNavSalesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders, revenue, and commercial KPIs'**
+  String get shellNavSalesSubtitle;
+
+  /// No description provided for @shellNavReturnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Returns'**
+  String get shellNavReturnsLabel;
+
+  /// No description provided for @shellNavReturnsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Returns, exchanges, and credit notes'**
+  String get shellNavReturnsSubtitle;
+
+  /// No description provided for @shellNavFinanceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance'**
+  String get shellNavFinanceLabel;
+
+  /// No description provided for @shellNavFinanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash flow, receivables, and payables'**
+  String get shellNavFinanceSubtitle;
+
+  /// No description provided for @shellNavPurchasesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases'**
+  String get shellNavPurchasesLabel;
+
+  /// No description provided for @shellNavPurchasesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suppliers and purchase orders'**
+  String get shellNavPurchasesSubtitle;
+
+  /// No description provided for @shellNavInventoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get shellNavInventoryLabel;
+
+  /// No description provided for @shellNavInventorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock levels and movements'**
+  String get shellNavInventorySubtitle;
+
+  /// No description provided for @shellPlaceholderUnderConstructionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Under construction'**
+  String get shellPlaceholderUnderConstructionTitle;
+
+  /// No description provided for @shellPlaceholderUnderConstructionBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This section will be available in a future update.'**
+  String get shellPlaceholderUnderConstructionBody;
+
   /// No description provided for @shellAppBrandName.
   ///
   /// In en, this message translates to:
@@ -206,6 +278,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Agent management'**
   String get userPermissionManageAgents;
+
+  /// No description provided for @userPermissionViewSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales (module access)'**
+  String get userPermissionViewSales;
+
+  /// No description provided for @userPermissionViewReturns.
+  ///
+  /// In en, this message translates to:
+  /// **'Returns (module access)'**
+  String get userPermissionViewReturns;
+
+  /// No description provided for @userPermissionViewFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Finance (module access)'**
+  String get userPermissionViewFinance;
+
+  /// No description provided for @userPermissionViewPurchases.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchases (module access)'**
+  String get userPermissionViewPurchases;
+
+  /// No description provided for @userPermissionViewInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory (module access)'**
+  String get userPermissionViewInventory;
 
   /// No description provided for @dashboardPartialAgentQueriesTitle.
   ///

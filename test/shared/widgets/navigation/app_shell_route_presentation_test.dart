@@ -26,6 +26,26 @@ void main() {
       );
     });
 
+    test('should map placeholder shell routes to shell labels', () {
+      expect(appShellRouteLabel(AppRoute.sales, l10n), l10n.shellNavSalesLabel);
+      expect(
+        appShellRouteLabel(AppRoute.returns, l10n),
+        l10n.shellNavReturnsLabel,
+      );
+      expect(
+        appShellRouteLabel(AppRoute.finance, l10n),
+        l10n.shellNavFinanceLabel,
+      );
+      expect(
+        appShellRouteLabel(AppRoute.purchases, l10n),
+        l10n.shellNavPurchasesLabel,
+      );
+      expect(
+        appShellRouteLabel(AppRoute.inventory, l10n),
+        l10n.shellNavInventoryLabel,
+      );
+    });
+
     test('should use enum title for auth routes', () {
       expect(appShellRouteLabel(AppRoute.login, l10n), AppRoute.login.title);
       expect(
@@ -48,6 +68,29 @@ void main() {
       expect(
         appShellRouteSubtitle(AppRoute.settings, l10n),
         l10n.shellNavSettingsSubtitle,
+      );
+    });
+
+    test('should describe placeholder shell destinations', () {
+      expect(
+        appShellRouteSubtitle(AppRoute.sales, l10n),
+        l10n.shellNavSalesSubtitle,
+      );
+      expect(
+        appShellRouteSubtitle(AppRoute.returns, l10n),
+        l10n.shellNavReturnsSubtitle,
+      );
+      expect(
+        appShellRouteSubtitle(AppRoute.finance, l10n),
+        l10n.shellNavFinanceSubtitle,
+      );
+      expect(
+        appShellRouteSubtitle(AppRoute.purchases, l10n),
+        l10n.shellNavPurchasesSubtitle,
+      );
+      expect(
+        appShellRouteSubtitle(AppRoute.inventory, l10n),
+        l10n.shellNavInventorySubtitle,
       );
     });
 
@@ -77,6 +120,17 @@ void main() {
       expect(
         appShellRouteIcon(AppRoute.settings, selected: true),
         Icons.person_rounded,
+      );
+    });
+
+    test('should switch outline vs filled for sales', () {
+      expect(
+        appShellRouteIcon(AppRoute.sales, selected: false),
+        Icons.point_of_sale_outlined,
+      );
+      expect(
+        appShellRouteIcon(AppRoute.sales, selected: true),
+        Icons.point_of_sale_rounded,
       );
     });
   });

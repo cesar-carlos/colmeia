@@ -5,5 +5,10 @@ extension UserPermissionL10n on UserPermission {
   String displayLabel(AppLocalizations l10n) => switch (this) {
     UserPermission.viewDashboard => l10n.userPermissionViewDashboard,
     UserPermission.manageAgents => l10n.userPermissionManageAgents,
+    UserPermission.viewSales => l10n.userPermissionViewSales,
+    UserPermission.viewReturns => l10n.userPermissionViewReturns,
+    UserPermission.viewFinance => l10n.userPermissionViewFinance,
+    UserPermission.viewPurchases => l10n.userPermissionViewPurchases,
+    UserPermission.viewInventory => l10n.userPermissionViewInventory,
   };
 }

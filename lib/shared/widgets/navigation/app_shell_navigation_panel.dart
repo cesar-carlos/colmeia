@@ -35,7 +35,9 @@ class AppShellNavigationPanel extends StatelessWidget {
   final bool closeOverlayBeforeNavigate;
 
   void _handleRouteSelected(BuildContext context, AppRoute route) {
-    if (route.shellIndex == currentRoute.shellIndex) return;
+    if (route.shellIndex == currentRoute.shellNavSelectionIndex) {
+      return;
+    }
     if (closeOverlayBeforeNavigate) {
       Navigator.of(context).pop();
     }
@@ -107,7 +109,7 @@ class AppShellNavigationPanel extends StatelessWidget {
                       (presentation) {
                         final isSelected =
                             presentation.route.shellIndex ==
-                            currentRoute.shellIndex;
+                            currentRoute.shellNavSelectionIndex;
                         return AppShellNavMenuItem(
                           icon: appShellRouteIcon(
                             presentation.route,

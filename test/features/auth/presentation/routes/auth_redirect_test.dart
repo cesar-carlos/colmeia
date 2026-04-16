@@ -138,5 +138,49 @@ void main() {
         ).equals(AppRoute.dashboard.path);
       },
     );
+
+    test('should redirect guests to login for unmatched locations', () {
+      check(
+        resolveAuthRedirect(
+          isAuthenticated: false,
+          canAccessMatchedRoute: false,
+          canAccessDashboardHome: false,
+          matchedRoute: AppRoute.unmatched,
+          isUserContextLoading: false,
+        ),
+      ).equals(AppRoute.login.path);
+    });
+
+    test(
+      'should redirect authenticated users from unmatched to dashboard '
+      'when overview is allowed',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessMatchedRoute: false,
+            canAccessDashboardHome: true,
+            matchedRoute: AppRoute.unmatched,
+            isUserContextLoading: false,
+          ),
+        ).equals(AppRoute.dashboard.path);
+      },
+    );
+
+    test(
+      'should redirect authenticated users from unmatched to settings '
+      'when overview is denied',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessMatchedRoute: false,
+            canAccessDashboardHome: false,
+            matchedRoute: AppRoute.unmatched,
+            isUserContextLoading: false,
+          ),
+        ).equals(AppRoute.settings.path);
+      },
+    );
   });
 }

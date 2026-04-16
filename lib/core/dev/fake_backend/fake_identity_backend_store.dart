@@ -50,16 +50,58 @@ final class FakeIdentityBackendStore {
         )
         .toList();
 
-    final migratedUsers = users.map(_migrateLegacyEmptyGrants).toList();
-    if (users.any(_needsGrantMigration)) {
+    final afterGrants = users.map(_migrateLegacyEmptyGrants).toList();
+    final migratedUsers = afterGrants.map(_migrateShellModulePermissions).toList();
+    if (users.any(_needsGrantMigration) ||
+        afterGrants.any(_needsShellModuleMigration)) {
       await _saveUsers(migratedUsers);
     }
     return migratedUsers;
   }
 
+  static const Set<UserPermission> _bundledShellModulePermissions =
+      <UserPermission>{
+        UserPermission.viewSales,
+        UserPermission.viewReturns,
+        UserPermission.viewFinance,
+        UserPermission.viewPurchases,
+        UserPermission.viewInventory,
+      };
+
   bool _needsGrantMigration(FakeIdentityUserRecord user) {
     return user.dashboardGrants.isEmpty &&
         user.permissions.contains(UserPermission.viewDashboard);
+  }
+
+  bool _needsShellModuleMigration(FakeIdentityUserRecord user) {
+    final canBundle = user.permissions.contains(UserPermission.viewDashboard) ||
+        user.permissions.contains(UserPermission.manageAgents);
+    if (!canBundle) {
+      return false;
+    }
+    return !_bundledShellModulePermissions.every(user.permissions.contains);
+  }
+
+  FakeIdentityUserRecord _migrateShellModulePermissions(
+    FakeIdentityUserRecord user,
+  ) {
+    if (!_needsShellModuleMigration(user)) {
+      return user;
+    }
+    return FakeIdentityUserRecord(
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      password: user.password,
+      employeeId: user.employeeId,
+      roleLabel: user.roleLabel,
+      allowedStores: user.allowedStores,
+      permissions: {...user.permissions, ..._bundledShellModulePermissions},
+      dashboardGrants: user.dashboardGrants,
+      activeStoreId: user.activeStoreId,
+      phone: user.phone,
+      thumbnailUrl: user.thumbnailUrl,
+    );
   }
 
   FakeIdentityUserRecord _migrateLegacyEmptyGrants(
@@ -134,6 +176,7 @@ final class FakeIdentityBackendStore {
       allowedStores: allowedStores,
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
+        ..._bundledShellModulePermissions,
       },
       dashboardGrants: const <DashboardAccessGrant>[
         DashboardAccessGrant(
@@ -245,6 +288,7 @@ final class FakeIdentityBackendStore {
       ],
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
+        ..._bundledShellModulePermissions,
       },
       dashboardGrants: <DashboardAccessGrant>[
         const DashboardAccessGrant(
@@ -267,6 +311,7 @@ final class FakeIdentityBackendStore {
       ],
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
+        ..._bundledShellModulePermissions,
       },
       dashboardGrants: <DashboardAccessGrant>[
         const DashboardAccessGrant(
@@ -290,6 +335,7 @@ final class FakeIdentityBackendStore {
       ],
       permissions: <UserPermission>{
         UserPermission.viewDashboard,
+        ..._bundledShellModulePermissions,
       },
       dashboardGrants: <DashboardAccessGrant>[
         const DashboardAccessGrant(

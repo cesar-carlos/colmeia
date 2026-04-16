@@ -63,6 +63,13 @@ String? resolveAuthRedirect({
     return isGuestOnlyRoute ? null : AppRoute.login.path;
   }
 
+  if (matchedRoute == AppRoute.unmatched) {
+    if (canAccessDashboardHome) {
+      return AppRoute.dashboard.path;
+    }
+    return AppRoute.settings.path;
+  }
+
   if (isGuestOnlyRoute) {
     if (isUserContextLoading || canAccessDashboardHome) {
       return AppRoute.dashboard.path;

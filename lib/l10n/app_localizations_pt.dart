@@ -27,6 +27,45 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavSettingsSubtitle => 'Conta e preferencias';
 
   @override
+  String get shellNavSalesLabel => 'Vendas';
+
+  @override
+  String get shellNavSalesSubtitle =>
+      'Pedidos, receita e indicadores comerciais';
+
+  @override
+  String get shellNavReturnsLabel => 'Devolucoes';
+
+  @override
+  String get shellNavReturnsSubtitle => 'Devolucoes, trocas e notas de credito';
+
+  @override
+  String get shellNavFinanceLabel => 'Financeiro';
+
+  @override
+  String get shellNavFinanceSubtitle =>
+      'Fluxo de caixa, contas a receber e a pagar';
+
+  @override
+  String get shellNavPurchasesLabel => 'Compras';
+
+  @override
+  String get shellNavPurchasesSubtitle => 'Fornecedores e pedidos de compra';
+
+  @override
+  String get shellNavInventoryLabel => 'Estoque';
+
+  @override
+  String get shellNavInventorySubtitle => 'Niveis de estoque e movimentacoes';
+
+  @override
+  String get shellPlaceholderUnderConstructionTitle => 'Em construcao';
+
+  @override
+  String get shellPlaceholderUnderConstructionBody =>
+      'Esta secao estara disponivel em uma atualizacao futura.';
+
+  @override
   String get shellAppBrandName => 'Colmeia';
 
   @override
@@ -62,6 +101,21 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get userPermissionManageAgents => 'Gestao de agentes';
+
+  @override
+  String get userPermissionViewSales => 'Vendas (acesso ao modulo)';
+
+  @override
+  String get userPermissionViewReturns => 'Devolucoes (acesso ao modulo)';
+
+  @override
+  String get userPermissionViewFinance => 'Financeiro (acesso ao modulo)';
+
+  @override
+  String get userPermissionViewPurchases => 'Compras (acesso ao modulo)';
+
+  @override
+  String get userPermissionViewInventory => 'Estoque (acesso ao modulo)';
 
   @override
   String get dashboardPartialAgentQueriesTitle =>
@@ -1701,6 +1755,45 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get shellNavSettingsSubtitle => 'Conta e preferencias';
 
   @override
+  String get shellNavSalesLabel => 'Vendas';
+
+  @override
+  String get shellNavSalesSubtitle =>
+      'Pedidos, receita e indicadores comerciais';
+
+  @override
+  String get shellNavReturnsLabel => 'Devolucoes';
+
+  @override
+  String get shellNavReturnsSubtitle => 'Devolucoes, trocas e notas de credito';
+
+  @override
+  String get shellNavFinanceLabel => 'Financeiro';
+
+  @override
+  String get shellNavFinanceSubtitle =>
+      'Fluxo de caixa, contas a receber e a pagar';
+
+  @override
+  String get shellNavPurchasesLabel => 'Compras';
+
+  @override
+  String get shellNavPurchasesSubtitle => 'Fornecedores e pedidos de compra';
+
+  @override
+  String get shellNavInventoryLabel => 'Estoque';
+
+  @override
+  String get shellNavInventorySubtitle => 'Niveis de estoque e movimentacoes';
+
+  @override
+  String get shellPlaceholderUnderConstructionTitle => 'Em construcao';
+
+  @override
+  String get shellPlaceholderUnderConstructionBody =>
+      'Esta secao estara disponivel em uma atualizacao futura.';
+
+  @override
   String get shellAppBrandName => 'Colmeia';
 
   @override
@@ -1736,6 +1829,21 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get userPermissionManageAgents => 'Gestao de agentes';
+
+  @override
+  String get userPermissionViewSales => 'Vendas (acesso ao modulo)';
+
+  @override
+  String get userPermissionViewReturns => 'Devolucoes (acesso ao modulo)';
+
+  @override
+  String get userPermissionViewFinance => 'Financeiro (acesso ao modulo)';
+
+  @override
+  String get userPermissionViewPurchases => 'Compras (acesso ao modulo)';
+
+  @override
+  String get userPermissionViewInventory => 'Estoque (acesso ao modulo)';
 
   @override
   String get dashboardPartialAgentQueriesTitle =>

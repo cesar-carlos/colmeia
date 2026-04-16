@@ -16,8 +16,14 @@ class AppShellRoutePresentation {
 
 String _shellRouteLabel(AppRoute route, AppLocalizations l10n) {
   return switch (route) {
+    AppRoute.unmatched => route.title,
     AppRoute.dashboard ||
     AppRoute.dashboardStore => l10n.shellNavDashboardLabel,
+    AppRoute.sales => l10n.shellNavSalesLabel,
+    AppRoute.returns => l10n.shellNavReturnsLabel,
+    AppRoute.finance => l10n.shellNavFinanceLabel,
+    AppRoute.purchases => l10n.shellNavPurchasesLabel,
+    AppRoute.inventory => l10n.shellNavInventoryLabel,
     AppRoute.settings => l10n.shellNavSettingsLabel,
     AppRoute.agents => l10n.shellNavAgentsLabel,
     AppRoute.agentsDetail => l10n.shellNavAgentsLabel,
@@ -31,8 +37,14 @@ String _shellRouteLabel(AppRoute route, AppLocalizations l10n) {
 
 String? _shellRouteSubtitle(AppRoute route, AppLocalizations l10n) {
   return switch (route) {
+    AppRoute.unmatched => null,
     AppRoute.dashboard ||
     AppRoute.dashboardStore => l10n.shellNavDashboardSubtitle,
+    AppRoute.sales => l10n.shellNavSalesSubtitle,
+    AppRoute.returns => l10n.shellNavReturnsSubtitle,
+    AppRoute.finance => l10n.shellNavFinanceSubtitle,
+    AppRoute.purchases => l10n.shellNavPurchasesSubtitle,
+    AppRoute.inventory => l10n.shellNavInventorySubtitle,
     AppRoute.settings => l10n.shellNavSettingsSubtitle,
     AppRoute.agents => l10n.shellNavAgentsSubtitle,
     AppRoute.agentsDetail => null,

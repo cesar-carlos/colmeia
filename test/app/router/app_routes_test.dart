@@ -24,5 +24,29 @@ void main() {
       check(AppRoute.fromLocation('/')).equals(AppRoute.dashboard);
       check(AppRoute.fromLocation('')).equals(AppRoute.dashboard);
     });
+
+    test('should resolve placeholder shell paths', () {
+      check(AppRoute.fromLocation('/sales')).equals(AppRoute.sales);
+      check(AppRoute.fromLocation('/returns')).equals(AppRoute.returns);
+      check(AppRoute.fromLocation('/finance')).equals(AppRoute.finance);
+      check(AppRoute.fromLocation('/purchases')).equals(AppRoute.purchases);
+      check(AppRoute.fromLocation('/inventory')).equals(AppRoute.inventory);
+    });
+
+    test('should resolve unknown paths to unmatched sentinel', () {
+      check(AppRoute.fromLocation('/not-a-real-route')).equals(
+        AppRoute.unmatched,
+      );
+    });
+
+    test('should map agents detail to agents shell highlight index', () {
+      check(AppRoute.agentsDetail.shellNavSelectionIndex).equals(
+        AppRoute.agents.shellIndex,
+      );
+      check(AppRoute.agents.shellNavSelectionIndex).equals(
+        AppRoute.agents.shellIndex,
+      );
+      check(AppRoute.dashboard.shellNavSelectionIndex).equals(0);
+    });
   });
 }

@@ -23,9 +23,11 @@ class UserAccessScopeModel {
   final List<DashboardAccessGrant> dashboardGrants;
 
   UserAccessScope toEntity() {
+    final resolvedPermissions = {...permissions};
+    _grantBundledShellModules(resolvedPermissions);
     return UserAccessScope(
       allowedStores: allowedStores,
-      permissions: permissions,
+      permissions: resolvedPermissions,
       dashboardGrants: dashboardGrants,
     );
   }
@@ -63,9 +65,11 @@ class UserAccessScopeModel {
   static Set<UserPermission> _parsePermissions(Map<String, dynamic> json) {
     final rawPermissions = json['permissions'] as List<dynamic>?;
     if (rawPermissions != null) {
-      return parseUserPermissionNameSet(
+      final parsed = parseUserPermissionNameSet(
         rawPermissions.whereType<String>(),
       );
+      _grantBundledShellModules(parsed);
+      return parsed;
     }
 
     final permissions = <UserPermission>{};
@@ -80,7 +84,23 @@ class UserAccessScopeModel {
     if (_parseDashboardGrants(json).isNotEmpty) {
       permissions.add(UserPermission.viewDashboard);
     }
+    _grantBundledShellModules(permissions);
     return permissions;
+  }
+
+  /// Until the API exposes each shell module separately, grant placeholder
+  /// modules when the user can use the overview or agent management.
+  static void _grantBundledShellModules(Set<UserPermission> permissions) {
+    if (permissions.contains(UserPermission.viewDashboard) ||
+        permissions.contains(UserPermission.manageAgents)) {
+      permissions.addAll(<UserPermission>{
+        UserPermission.viewSales,
+        UserPermission.viewReturns,
+        UserPermission.viewFinance,
+        UserPermission.viewPurchases,
+        UserPermission.viewInventory,
+      });
+    }
   }
 
   static List<DashboardAccessGrant> _parseDashboardGrants(

@@ -8,6 +8,9 @@ void main() {
       check(
         parseUserPermissionName('viewDashboard'),
       ).equals(UserPermission.viewDashboard);
+      check(parseUserPermissionName('viewSales')).equals(
+        UserPermission.viewSales,
+      );
     });
 
     test('should return null for unknown or legacy names', () {

@@ -75,6 +75,11 @@ class CurrentUserContextController extends ChangeNotifier {
             ],
             permissions: <UserPermission>{
               UserPermission.viewDashboard,
+              UserPermission.viewSales,
+              UserPermission.viewReturns,
+              UserPermission.viewFinance,
+              UserPermission.viewPurchases,
+              UserPermission.viewInventory,
             },
             dashboardGrants: <DashboardAccessGrant>[
               DashboardAccessGrant(
@@ -139,6 +144,8 @@ class CurrentUserContextController extends ChangeNotifier {
 
   bool canAccessRoute(AppRoute route) {
     switch (route) {
+      case AppRoute.unmatched:
+        return false;
       case AppRoute.dashboard:
       case AppRoute.dashboardStore:
         return hasAnyDashboardAccess();
@@ -151,6 +158,16 @@ class CurrentUserContextController extends ChangeNotifier {
       case AppRoute.agents:
       case AppRoute.agentsDetail:
         return true;
+      case AppRoute.sales:
+        return hasPermission(UserPermission.viewSales);
+      case AppRoute.returns:
+        return hasPermission(UserPermission.viewReturns);
+      case AppRoute.finance:
+        return hasPermission(UserPermission.viewFinance);
+      case AppRoute.purchases:
+        return hasPermission(UserPermission.viewPurchases);
+      case AppRoute.inventory:
+        return hasPermission(UserPermission.viewInventory);
     }
   }
 
