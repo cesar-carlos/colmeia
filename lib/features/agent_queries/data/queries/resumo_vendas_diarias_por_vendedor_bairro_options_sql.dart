@@ -15,35 +15,35 @@ abstract final class ResumoVendasDiariasPorVendedorBairroOptionsSql {
   static String get query {
     final nomeExpr =
         ResumoVendasDiariasPorVendedorBairroNomeExpression.nomeBairroSql(
-      "COALESCE(BairroOriginal, '')",
-    );
+          "COALESCE(BairroOriginal, '')",
+        );
     return '''
-SELECT TOP (:limit)
-  NomeBairro
-FROM (
-  SELECT DISTINCT NomeBairro
-  FROM (
-    SELECT
-      $nomeExpr AS NomeBairro
-    FROM (
-      SELECT cli.Bairro AS BairroOriginal
-      FROM Cliente cli
-      WHERE cli.Bairro IS NOT NULL
-        AND LTRIM(RTRIM(cli.Bairro)) <> ''
-      UNION ALL
-      SELECT forn.Bairro AS BairroOriginal
-      FROM Fornecedor forn
-      WHERE forn.Bairro IS NOT NULL
-        AND LTRIM(RTRIM(forn.Bairro)) <> ''
-    ) Base
-  ) N
-) R
-WHERE LEN(NomeBairro) > 3
-  AND (
-    :searchPattern IS NULL
-    OR NomeBairro LIKE :searchPattern
-  )
-ORDER BY NomeBairro
-''';
+      SELECT TOP (:limit)
+        NomeBairro
+      FROM (
+        SELECT DISTINCT NomeBairro
+        FROM (
+          SELECT
+            $nomeExpr AS NomeBairro
+          FROM (
+            SELECT cli.Bairro AS BairroOriginal
+            FROM Cliente cli
+            WHERE cli.Bairro IS NOT NULL
+              AND LTRIM(RTRIM(cli.Bairro)) <> ''
+            UNION ALL
+            SELECT forn.Bairro AS BairroOriginal
+            FROM Fornecedor forn
+            WHERE forn.Bairro IS NOT NULL
+              AND LTRIM(RTRIM(forn.Bairro)) <> ''
+          ) Base
+        ) N
+      ) R
+      WHERE LEN(NomeBairro) > 3
+        AND (
+          :searchPattern IS NULL
+          OR NomeBairro LIKE :searchPattern
+        )
+      ORDER BY NomeBairro
+    ''';
   }
 }

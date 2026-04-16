@@ -232,7 +232,8 @@ void main() {
   });
 
   test(
-    'should map approved agents to unknown when no hub field and no online cache',
+    'should map approved agents to unknown when no hub field '
+    'and no online cache',
     () async {
       final response = ClientApprovedAgentsResponseDto(
         agents: <ClientAccessibleAgentDto>[

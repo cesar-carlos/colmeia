@@ -6,7 +6,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_f
 
 // Cross-agent report entry point; more orchestrated queries may be added here.
 // Long type name; `dart format` keeps the interface declaration on one line.
-// ignore: one_member_abstracts, lines_longer_than_80_chars
+// ignore: one_member_abstracts
 abstract interface class ResumoParcelasFormaPagamentoPorMesAcrossAgentsRepository {
   Future<
     AppResult<AgentQueryExecutionReport<ResumoParcelasFormaPagamentoPorMesRow>>

@@ -11,80 +11,80 @@ abstract final class ResumoParcelaFormaPagamentoDiarioSql {
   /// push predicates into the inner slice where possible and validate indexes
   /// on the ERP side if this becomes hot.
   static const String _queryHead = '''
-SELECT
-  CodEmpresa,
-  CodFilial,
-  CodProdutoVendido,
-  Origem,
-  CodOrigem,
-  DataVenda,
-  AnoMesDataVenda,
-  NomeUsuario,
-  CodVendedor,
-  NomeVendedor,
-  COUNT(DISTINCT Id) AS QtdVendas,
-  SUM(ValorParcela - ValorTrocoParcela) AS ValorTotalVenda
-FROM (
-  SELECT
+    SELECT
+      CodEmpresa,
+      CodFilial,
+      CodProdutoVendido,
+      Origem,
+      CodOrigem,
+      DataVenda,
+      AnoMesDataVenda,
+      NomeUsuario,
+      CodVendedor,
+      NomeVendedor,
+      COUNT(DISTINCT Id) AS QtdVendas,
+      SUM(ValorParcela - ValorTrocoParcela) AS ValorTotalVenda
+    FROM (
+      SELECT
+        CodEmpresa,
+        CodFilial,
+        CodProdutoVendido,
+        Id,
+        Origem,
+        CodOrigem,
+        GeraFinanceiro,
+        PreVenda,
+        CodVendedor,
+        NomeVendedor,
+        CodCliente,
+        NomeCliente,
+        CodGrupoCliente,
+        NomeGrupoCliente,
+        CodMunicipio,
+        NomeMunicipio,
+        UFMunicipio,
+        CodRegiao,
+        NomeRegiao,
+        DataVenda,
+        DataEmissao,
+        DataVencimento,
+        NumeroDocumento,
+        NomeUsuario,
+        NumeroParcela,
+        AnoDataVenda,
+        MesDataVenda,
+        AnoMesDataVenda,
+        CodFormaPagamento,
+        DescricaoFormaPagamento,
+        ValorTrocoParcela,
+        ValorParcela
+      FROM (
+  ''';
+
+  static const String _queryTail = '''
+    ) Detalhe
+  ) ResumoVendaProdutoDiario
+  WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+    AND Origem LIKE :origem
+    AND GeraFinanceiro = :geraFinanceiro
+    AND PreVenda = :preVenda
+  GROUP BY
     CodEmpresa,
     CodFilial,
     CodProdutoVendido,
-    Id,
     Origem,
     CodOrigem,
-    GeraFinanceiro,
-    PreVenda,
-    CodVendedor,
-    NomeVendedor,
-    CodCliente,
-    NomeCliente,
-    CodGrupoCliente,
-    NomeGrupoCliente,
-    CodMunicipio,
-    NomeMunicipio,
-    UFMunicipio,
-    CodRegiao,
-    NomeRegiao,
     DataVenda,
-    DataEmissao,
-    DataVencimento,
-    NumeroDocumento,
-    NomeUsuario,
-    NumeroParcela,
-    AnoDataVenda,
-    MesDataVenda,
     AnoMesDataVenda,
-    CodFormaPagamento,
-    DescricaoFormaPagamento,
-    ValorTrocoParcela,
-    ValorParcela
-  FROM (
-''';
-
-  static const String _queryTail = '''
-  ) Detalhe
-) ResumoVendaProdutoDiario
-WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
-  AND Origem LIKE :origem
-  AND GeraFinanceiro = :geraFinanceiro
-  AND PreVenda = :preVenda
-GROUP BY
-  CodEmpresa,
-  CodFilial,
-  CodProdutoVendido,
-  Origem,
-  CodOrigem,
-  DataVenda,
-  AnoMesDataVenda,
-  NomeUsuario,
-  CodVendedor,
-  NomeVendedor
-ORDER BY
-  CodEmpresa,
-  CodFilial,
-  CodProdutoVendido,
-  DataVenda
-''';
+    NomeUsuario,
+    CodVendedor,
+    NomeVendedor
+  ORDER BY
+    CodEmpresa,
+    CodFilial,
+    CodProdutoVendido,
+    DataVenda
+  ''';
 
   static const String query =
       _queryHead +

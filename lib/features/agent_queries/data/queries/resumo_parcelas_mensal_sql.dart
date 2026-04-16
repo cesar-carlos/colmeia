@@ -23,77 +23,77 @@ abstract final class ResumoParcelasMensalSql {
   /// indexes; parcel aggregates benefit from
   /// `(CodEmpresa, CodProdutoVendido)` on `ParcelaProdutoVendido`.
   static const String _queryHead = '''
-SELECT
-  CodEmpresa,
-  CodFilial,
-  Ano,
-  Mes,
-  MAX(
-    CAST(Ano AS VARCHAR(4)) + '/' +
-      CASE WHEN Mes < 10 THEN '0' ELSE '' END + CAST(Mes AS VARCHAR(2))
-  ) AS AnoMes,
-  COUNT(DISTINCT Id) AS QtdVendas,
-  SUM(ValorParcela - ValorTrocoParcela) AS ValorParcela
-FROM (
-  SELECT
-    CodEmpresa,
-    CodFilial,
-    CodProdutoVendido,
-    Id,
-    Origem,
-    CodOrigem,
-    GeraFinanceiro,
-    PreVenda,
-    CodVendedor,
-    NomeVendedor,
-    CodCliente,
-    NomeCliente,
-    CodGrupoCliente,
-    NomeGrupoCliente,
-    CodMunicipio,
-    NomeMunicipio,
-    UFMunicipio,
-    CodRegiao,
-    NomeRegiao,
-    DataVenda,
-    YEAR(DataVenda) AS Ano,
-    MONTH(DataVenda) AS Mes,
-    DataEmissao,
-    DataVencimento,
-    NumeroDocumento,
-    NomeUsuario,
-    NumeroParcela,
-    AnoDataVenda,
-    MesDataVenda,
-    AnoMesDataVenda,
-    CodFormaPagamento,
-    DescricaoFormaPagamento,
-    ValorTrocoParcela,
-    ValorParcela
-  FROM (
-''';
+    SELECT
+      CodEmpresa,
+      CodFilial,
+      Ano,
+      Mes,
+      MAX(
+        CAST(Ano AS VARCHAR(4)) + '/' +
+          CASE WHEN Mes < 10 THEN '0' ELSE '' END + CAST(Mes AS VARCHAR(2))
+      ) AS AnoMes,
+      COUNT(DISTINCT Id) AS QtdVendas,
+      SUM(ValorParcela - ValorTrocoParcela) AS ValorParcela
+    FROM (
+      SELECT
+        CodEmpresa,
+        CodFilial,
+        CodProdutoVendido,
+        Id,
+        Origem,
+        CodOrigem,
+        GeraFinanceiro,
+        PreVenda,
+        CodVendedor,
+        NomeVendedor,
+        CodCliente,
+        NomeCliente,
+        CodGrupoCliente,
+        NomeGrupoCliente,
+        CodMunicipio,
+        NomeMunicipio,
+        UFMunicipio,
+        CodRegiao,
+        NomeRegiao,
+        DataVenda,
+        YEAR(DataVenda) AS Ano,
+        MONTH(DataVenda) AS Mes,
+        DataEmissao,
+        DataVencimento,
+        NumeroDocumento,
+        NomeUsuario,
+        NumeroParcela,
+        AnoDataVenda,
+        MesDataVenda,
+        AnoMesDataVenda,
+        CodFormaPagamento,
+        DescricaoFormaPagamento,
+        ValorTrocoParcela,
+        ValorParcela
+      FROM (
+  ''';
 
   static const String _queryTail = '''
-  ) Detalhe
-) ResumoParcelasMensal
-WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
-  AND Origem LIKE :origem
-  AND GeraFinanceiro = :geraFinanceiro
-  AND PreVenda = :preVenda
-  AND (:codEmpresa IS NULL OR CodEmpresa = :codEmpresa)
-  AND (:codFilial IS NULL OR CodFilial = :codFilial)
-  AND (:codVendedor IS NULL OR CodVendedor = :codVendedor)
-GROUP BY
-  CodEmpresa,
-  CodFilial,
-  Ano,
-  Mes
-ORDER BY
-  CodEmpresa,
-  CodFilial,
-  Ano,
-  Mes
-''';
+      ) Detalhe
+    ) ResumoParcelasMensal
+    WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+      AND Origem LIKE :origem
+      AND GeraFinanceiro = :geraFinanceiro
+      AND PreVenda = :preVenda
+      AND (:codEmpresa IS NULL OR CodEmpresa = :codEmpresa)
+      AND (:codFilial IS NULL OR CodFilial = :codFilial)
+      AND (:codVendedor IS NULL OR CodVendedor = :codVendedor)
+    GROUP BY
+      CodEmpresa,
+      CodFilial,
+      Ano,
+      Mes
+    ORDER BY
+      CodEmpresa,
+      CodFilial,
+      Ano,
+      Mes
+  ''';
 
   static const String query =
       _queryHead +

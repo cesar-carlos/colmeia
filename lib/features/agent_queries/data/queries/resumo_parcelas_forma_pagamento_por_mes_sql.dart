@@ -67,7 +67,7 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
         ValorTrocoParcela,
         ValorParcela
       FROM (
-''';
+    ''';
 
   static const String _queryTail = '''
       ) Detalhe

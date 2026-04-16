@@ -15,27 +15,27 @@ abstract final class ResumoVendasDiariasPorVendedorMunicipioOptionsSql {
           "COALESCE(NomeOriginal, '')",
         );
     return '''
-SELECT TOP (:limit)
-  NomeMunicipio
-FROM (
-  SELECT DISTINCT NomeMunicipio
-  FROM (
-    SELECT
-      $nomeExpr AS NomeMunicipio
-    FROM (
-      SELECT m.Nome AS NomeOriginal
-      FROM Municipio m
-      WHERE m.Nome IS NOT NULL
-        AND LTRIM(RTRIM(m.Nome)) <> ''
-    ) Base
-  ) N
-) R
-WHERE LEN(NomeMunicipio) > 3
-  AND (
-    :searchPattern IS NULL
-    OR NomeMunicipio LIKE :searchPattern
-  )
-ORDER BY NomeMunicipio
-''';
+      SELECT TOP (:limit)
+        NomeMunicipio
+      FROM (
+        SELECT DISTINCT NomeMunicipio
+        FROM (
+          SELECT
+            $nomeExpr AS NomeMunicipio
+          FROM (
+            SELECT m.Nome AS NomeOriginal
+            FROM Municipio m
+            WHERE m.Nome IS NOT NULL
+              AND LTRIM(RTRIM(m.Nome)) <> ''
+          ) Base
+        ) N
+      ) R
+      WHERE LEN(NomeMunicipio) > 3
+        AND (
+          :searchPattern IS NULL
+          OR NomeMunicipio LIKE :searchPattern
+        )
+      ORDER BY NomeMunicipio
+    ''';
   }
 }

@@ -16,37 +16,37 @@
 /// Named params: `:uf`, `:searchPattern`, `:startRow`, `:endRow`.
 abstract final class MunicipioListSql {
   static const String pagedQuery = '''
-WITH Base AS (
-  SELECT
-    m.CodMunicipio,
-    m.Nome AS NomeMunicipio,
-    m.CodigoIBGE,
-    COALESCE(e.Nome, m.UF) AS NomeEstado,
-    m.UF
-  FROM Municipio m
-  LEFT JOIN Estado e ON
-    e.SiglaEstado = m.UF
-  WHERE (:uf IS NULL OR m.UF = :uf)
-    AND (:searchPattern IS NULL OR m.Nome LIKE :searchPattern)
-),
-Tot AS (
-  SELECT COUNT(*) AS TotalCount FROM Base
-),
-Numbered AS (
-  SELECT
-    b.*,
-    ROW_NUMBER() OVER (ORDER BY b.NomeMunicipio) AS Rn
-  FROM Base b
-)
-SELECT
-  Tot.TotalCount,
-  N.CodMunicipio,
-  N.NomeMunicipio,
-  N.CodigoIBGE,
-  N.NomeEstado,
-  N.UF
-FROM Tot
-LEFT JOIN Numbered N ON N.Rn BETWEEN :startRow AND :endRow
-ORDER BY COALESCE(N.Rn, 2147483647)
-''';
+    WITH Base AS (
+      SELECT
+        m.CodMunicipio,
+        m.Nome AS NomeMunicipio,
+        m.CodigoIBGE,
+        COALESCE(e.Nome, m.UF) AS NomeEstado,
+        m.UF
+      FROM Municipio m
+      LEFT JOIN Estado e ON
+        e.SiglaEstado = m.UF
+      WHERE (:uf IS NULL OR m.UF = :uf)
+        AND (:searchPattern IS NULL OR m.Nome LIKE :searchPattern)
+    ),
+    Tot AS (
+      SELECT COUNT(*) AS TotalCount FROM Base
+    ),
+    Numbered AS (
+      SELECT
+        b.*,
+        ROW_NUMBER() OVER (ORDER BY b.NomeMunicipio) AS Rn
+      FROM Base b
+    )
+    SELECT
+      Tot.TotalCount,
+      N.CodMunicipio,
+      N.NomeMunicipio,
+      N.CodigoIBGE,
+      N.NomeEstado,
+      N.UF
+    FROM Tot
+    LEFT JOIN Numbered N ON N.Rn BETWEEN :startRow AND :endRow
+    ORDER BY COALESCE(N.Rn, 2147483647)
+  ''';
 }

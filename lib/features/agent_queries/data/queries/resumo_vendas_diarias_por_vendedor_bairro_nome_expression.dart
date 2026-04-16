@@ -60,23 +60,23 @@ abstract final class ResumoVendasDiariasPorVendedorBairroNomeExpression {
   static String nomeBairroSql(String sourceSql) {
     var inner =
         '''
-REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
-REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
-REPLACE(REPLACE(REPLACE(
-  LTRIM(RTRIM($sourceSql)),
-  '.', ' '),
-  ',', ' '),
-  '-', ' '),
-  '/', ' '),
-  '*', ' '),
-  '"', ' '),
-  CHAR(39), ' '),
-'  ', ' '),
-'  ', ' '),
-'  ', ' '),
-'  ', ' '),
-'  ', ' '),
-'  ', ' ')
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+    REPLACE(REPLACE(REPLACE(
+      LTRIM(RTRIM($sourceSql)),
+      '.', ' '),
+      ',', ' '),
+      '-', ' '),
+      '/', ' '),
+      '*', ' '),
+      '"', ' '),
+      CHAR(39), ' '),
+    '  ', ' '),
+    '  ', ' '),
+    '  ', ' '),
+    '  ', ' '),
+    '  ', ' '),
+    '  ', ' ')
 ''';
     inner = _wrapAccentReplaceChain(inner);
     return 'UPPER($inner)';

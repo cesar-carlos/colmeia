@@ -219,7 +219,6 @@ void main() {
         search: any(named: 'search'),
         status: any(named: 'status'),
         includeOnlineStatus: false,
-        refresh: false,
       ),
     ).called(1);
   });

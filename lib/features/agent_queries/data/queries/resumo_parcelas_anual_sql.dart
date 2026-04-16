@@ -27,69 +27,69 @@ abstract final class ResumoParcelasAnualSql {
   /// slice where possible and re-check indexes on the ERP side if this query
   /// becomes hot.
   static const String _queryHead = '''
-SELECT
-  CodEmpresa,
-  CodFilial,
-  AnoDataVenda,
-  COUNT(DISTINCT Id) AS QtdVendas,
-  SUM(ValorParcela - ValorTrocoParcela) AS ValorTotalVenda
-FROM (
-  SELECT
-    CodEmpresa,
-    CodFilial,
-    CodProdutoVendido,
-    Id,
-    Origem,
-    CodOrigem,
-    GeraFinanceiro,
-    PreVenda,
-    CodVendedor,
-    NomeVendedor,
-    CodCliente,
-    NomeCliente,
-    CodGrupoCliente,
-    NomeGrupoCliente,
-    CodMunicipio,
-    Bairro,
-    NomeMunicipio,
-    UFMunicipio,
-    CodRegiao,
-    NomeRegiao,
-    DataVenda,
-    DataEmissao,
-    DataVencimento,
-    NumeroDocumento,
-    NomeUsuario,
-    NumeroParcela,
-    AnoDataVenda,
-    MesDataVenda,
-    AnoMesDataVenda,
-    CodFormaPagamento,
-    DescricaoFormaPagamento,
-    ValorTrocoParcela,
-    ValorParcela
-  FROM (
-''';
+    SELECT
+      CodEmpresa,
+      CodFilial,
+      AnoDataVenda,
+      COUNT(DISTINCT Id) AS QtdVendas,
+      SUM(ValorParcela - ValorTrocoParcela) AS ValorTotalVenda
+    FROM (
+      SELECT
+        CodEmpresa,
+        CodFilial,
+        CodProdutoVendido,
+        Id,
+        Origem,
+        CodOrigem,
+        GeraFinanceiro,
+        PreVenda,
+        CodVendedor,
+        NomeVendedor,
+        CodCliente,
+        NomeCliente,
+        CodGrupoCliente,
+        NomeGrupoCliente,
+        CodMunicipio,
+        Bairro,
+        NomeMunicipio,
+        UFMunicipio,
+        CodRegiao,
+        NomeRegiao,
+        DataVenda,
+        DataEmissao,
+        DataVencimento,
+        NumeroDocumento,
+        NomeUsuario,
+        NumeroParcela,
+        AnoDataVenda,
+        MesDataVenda,
+        AnoMesDataVenda,
+        CodFormaPagamento,
+        DescricaoFormaPagamento,
+        ValorTrocoParcela,
+        ValorParcela
+      FROM (
+    ''';
 
   static const String _queryTail = '''
-  ) Detalhe
-) ResumoParcelasAnual
-WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
-  AND Origem LIKE :origem
-  AND GeraFinanceiro = :geraFinanceiro
-  AND PreVenda = :preVenda
-  AND (:codEmpresa IS NULL OR CodEmpresa = :codEmpresa)
-  AND (:codFilial IS NULL OR CodFilial = :codFilial)
-  AND (:codVendedor IS NULL OR CodVendedor = :codVendedor)
-GROUP BY
-  CodEmpresa,
-  CodFilial,
-  AnoDataVenda
-ORDER BY
-  CodEmpresa,
-  CodFilial,
-  AnoDataVenda
-''';
+      ) Detalhe
+    ) ResumoParcelasAnual
+    WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+      AND Origem LIKE :origem
+      AND GeraFinanceiro = :geraFinanceiro
+      AND PreVenda = :preVenda
+      AND (:codEmpresa IS NULL OR CodEmpresa = :codEmpresa)
+      AND (:codFilial IS NULL OR CodFilial = :codFilial)
+      AND (:codVendedor IS NULL OR CodVendedor = :codVendedor)
+    GROUP BY
+      CodEmpresa,
+      CodFilial,
+      AnoDataVenda
+    ORDER BY
+      CodEmpresa,
+      CodFilial,
+      AnoDataVenda
+  ''';
 
   static const String query =
       _queryHead +

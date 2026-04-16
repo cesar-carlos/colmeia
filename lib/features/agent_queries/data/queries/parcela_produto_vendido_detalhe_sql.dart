@@ -133,5 +133,5 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
         AND vale_ob.CodOrigem = pv.CodOrigem
       ) det
     ) ParcelaProdutoVendidoDetalhe
-    ''';
+  ''';
 }
