@@ -46,25 +46,36 @@ class ResumoParcelasDiaSemanaRepositoryImpl
       );
     }
 
+    final dimensionFiltersActive =
+        filter.codEmpresa != null ||
+        filter.codFilial != null ||
+        filter.codVendedor != null;
+    final periodAndFlagsParams = <String, Object?>{
+      'dataVendaInicio': AgentQueriesSqlLocalDate.format(
+        filter.dataVendaInicio,
+      ),
+      'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
+      'origem': filter.trimmedOrigem,
+      'geraFinanceiro': filter.trimmedGeraFinanceiro,
+      'preVenda': filter.trimmedPreVenda,
+    };
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
-      sql: ResumoParcelasDiaSemanaSql.query,
+      sql: dimensionFiltersActive
+          ? ResumoParcelasDiaSemanaSql.query
+          : ResumoParcelasDiaSemanaSql.queryWithoutDimensionNamedParams,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
-      namedParams: <String, Object?>{
-        'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-          filter.dataVendaInicio,
-        ),
-        'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-        'origem': filter.trimmedOrigem,
-        'geraFinanceiro': filter.trimmedGeraFinanceiro,
-        'preVenda': filter.trimmedPreVenda,
-        ...ResumoParcelasSqlDimensionFilters.namedParams(
-          codEmpresa: filter.codEmpresa,
-          codFilial: filter.codFilial,
-          codVendedor: filter.codVendedor,
-        ),
-      },
+      namedParams: dimensionFiltersActive
+          ? <String, Object?>{
+              ...periodAndFlagsParams,
+              ...ResumoParcelasSqlDimensionFilters.namedParams(
+                codEmpresa: filter.codEmpresa,
+                codFilial: filter.codFilial,
+                codVendedor: filter.codVendedor,
+              ),
+            }
+          : periodAndFlagsParams,
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemana,

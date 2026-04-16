@@ -27,6 +27,10 @@ abstract final class ResumoParcelasDiaSemanaSql {
   /// `DataVenda`, `Origem`, `CodEmpresa`, and `CodFilial` via supporting
   /// indexes; parcel aggregates benefit from
   /// `(CodEmpresa, CodProdutoVendido)` on `ParcelaProdutoVendido`.
+  ///
+  /// **Bridge named-parameter caps**: some runtimes accept at most five
+  /// binds. [queryWithoutDimensionNamedParams] omits optional dimension
+  /// predicates; use it when company / branch / seller filters are unset.
   static const String _queryHead = '''
     SELECT
       CodEmpresa,
@@ -82,7 +86,7 @@ abstract final class ResumoParcelasDiaSemanaSql {
       FROM (
     ''';
 
-  static const String _queryTail = '''
+  static const String _queryTailWithDimensionNamedParams = '''
       ) Detalhe
     ) ResumoParcelasDiaSemana
     WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
@@ -102,8 +106,34 @@ abstract final class ResumoParcelasDiaSemanaSql {
       DiaSemanaNumero
   ''';
 
+  static const String _queryTailWithoutDimensionNamedParams = '''
+      ) Detalhe
+    ) ResumoParcelasDiaSemana
+    WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+      AND Origem LIKE :origem
+      AND GeraFinanceiro = :geraFinanceiro
+      AND PreVenda = :preVenda
+    GROUP BY
+      CodEmpresa,
+      CodFilial,
+      DiaSemanaNumero
+    ORDER BY
+      CodEmpresa,
+      CodFilial,
+      DiaSemanaNumero
+  ''';
+
+  /// Eight named parameters (includes optional company / branch / seller).
   static const String query =
       _queryHead +
       ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
-      _queryTail;
+      _queryTailWithDimensionNamedParams;
+
+  /// Five named parameters: sale range and parcel flags only (no dimension
+  /// predicates). Use when all dimension filters are unset and the bridge caps
+  /// named binds below eight.
+  static const String queryWithoutDimensionNamedParams =
+      _queryHead +
+      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
+      _queryTailWithoutDimensionNamedParams;
 }

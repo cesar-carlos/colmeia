@@ -3,6 +3,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_monthly_parce
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 
 class Overview {
   const Overview({
@@ -14,6 +15,8 @@ class Overview {
     required this.userRankings,
     this.monthlyParcelTrend = const <OverviewMonthlyParcelPoint>[],
     this.monthlyParcelTrendLoadFailed = false,
+    this.weekdaySalesTrend = const <OverviewWeekdaySalesTrendPoint>[],
+    this.weekdaySalesTrendLoadFailed = false,
     this.isStaleCache = false,
     this.approvedAgentCount = 0,
     this.agentIdsExcludedFromQueryFailure = const <String>[],
@@ -36,6 +39,13 @@ class Overview {
   /// True when the monthly resumo query failed; [monthlyParcelTrend] may be
   /// empty for this reason instead of genuinely having no rows.
   final bool monthlyParcelTrendLoadFailed;
+
+  /// Weekday distribution (Sunday..Saturday) for the selected period.
+  final List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend;
+
+  /// True when the weekday resumo query failed; [weekdaySalesTrend] may be
+  /// empty for this reason instead of genuinely having no rows.
+  final bool weekdaySalesTrendLoadFailed;
 
   /// True when recovered from local cache after a remote error.
   final bool isStaleCache;
@@ -92,6 +102,8 @@ class Overview {
     List<String>? agentNamesMissingClientToken,
     List<OverviewMonthlyParcelPoint>? monthlyParcelTrend,
     bool? monthlyParcelTrendLoadFailed,
+    List<OverviewWeekdaySalesTrendPoint>? weekdaySalesTrend,
+    bool? weekdaySalesTrendLoadFailed,
   }) {
     return Overview(
       periodStart: periodStart ?? this.periodStart,
@@ -103,6 +115,9 @@ class Overview {
       monthlyParcelTrend: monthlyParcelTrend ?? this.monthlyParcelTrend,
       monthlyParcelTrendLoadFailed:
           monthlyParcelTrendLoadFailed ?? this.monthlyParcelTrendLoadFailed,
+      weekdaySalesTrend: weekdaySalesTrend ?? this.weekdaySalesTrend,
+      weekdaySalesTrendLoadFailed:
+          weekdaySalesTrendLoadFailed ?? this.weekdaySalesTrendLoadFailed,
       isStaleCache: isStaleCache ?? this.isStaleCache,
       approvedAgentCount: approvedAgentCount ?? this.approvedAgentCount,
       agentIdsExcludedFromQueryFailure:

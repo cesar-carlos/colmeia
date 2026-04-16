@@ -1,4 +1,5 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
@@ -19,6 +20,8 @@ void registerInjectorOverview(GetIt getIt) {
             getIt<ResumoParcelaFormaPagamentoAcrossAgentsRepository>(),
         loadResumoParcelasMensalAcrossAgents:
             getIt<LoadResumoParcelasMensalAcrossAgentsUseCase>(),
+        loadResumoParcelasDiaSemanaAcrossAgents:
+            getIt<LoadResumoParcelasDiaSemanaAcrossAgentsUseCase>(),
       ),
     )
     ..registerLazySingleton<LoadOverviewUseCase>(

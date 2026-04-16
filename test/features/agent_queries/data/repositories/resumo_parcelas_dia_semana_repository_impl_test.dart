@@ -98,11 +98,41 @@ void main() {
     check(capturedRequest.executeOptions!.maxRows).equals(1600);
     check(capturedRequest.namedParams['dataVendaInicio']).equals('2026-01-01');
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
-    check(capturedRequest.namedParams['codEmpresa']).isNull();
-    check(capturedRequest.namedParams['codFilial']).isNull();
-    check(capturedRequest.namedParams['codVendedor']).isNull();
+    check(capturedRequest.namedParams.length).equals(5);
+    check(capturedRequest.namedParams.containsKey('codEmpresa')).isFalse();
     check(capturedRequest.sql).contains('ResumoParcelasDiaSemana');
     check(capturedRequest.sql).contains('DATEDIFF');
+  });
+
+  test('builds eight named params when a dimension filter is set', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.load(
+      agentId: 'agent-1',
+      filter: ResumoParcelasDiaSemanaFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+        codEmpresa: 10,
+        codFilial: 2,
+      ),
+    );
+
+    final capturedRequest =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+    check(capturedRequest.namedParams.length).equals(8);
+    check(capturedRequest.namedParams['codEmpresa']).equals(10);
+    check(capturedRequest.namedParams['codFilial']).equals(2);
+    check(capturedRequest.namedParams['codVendedor']).isNull();
+    check(capturedRequest.sql).contains(':codEmpresa');
   });
 
   test('returns UnknownFailure when row mapping fails', () async {

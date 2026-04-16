@@ -109,6 +109,10 @@
   "overviewLoadingPaymentBarSemantics": "Loading revenue by payment method…",
   "overviewLoadingRankingsSemantics": "Loading rankings…",
   "overviewLoadingMonthlyParcelsSemantics": "Loading last 12 months chart…",
+  "overviewLoadingWeekdaySalesSemantics": "Loading sales by weekday chart…",
+  "@overviewLoadingWeekdaySalesSemantics": {
+    "description": "Screen reader label while the weekday overview card is loading."
+  },
   "overviewMonthlyParcelsTitle": "Last 12 months",
   "overviewMonthlyParcelsSubtitle": "Sales count and parcel totals by month (all branches in scope).",
   "overviewMonthlyParcelsSalesSeriesLabel": "Sales",
@@ -116,6 +120,103 @@
   "overviewMonthlyParcelsEmpty": "No monthly data for this period.",
   "overviewMonthlyParcelsLoadFailed": "Could not load the monthly chart. Try again later.",
   "overviewMonthlyParcelsChartSemantics": "Last twelve months sales and parcel amount chart",
+  "overviewWeekdaySalesTitle": "Sales by weekday",
+  "@overviewWeekdaySalesTitle": {
+    "description": "Card title when the weekday overview chart is plotting sales count."
+  },
+  "overviewWeekdayRevenueTitle": "Revenue by weekday",
+  "@overviewWeekdayRevenueTitle": {
+    "description": "Card title when the weekday overview chart is plotting parcel amount."
+  },
+  "overviewWeekdaySalesSubtitle": "Weekday distribution in the selected period (all branches in scope).",
+  "@overviewWeekdaySalesSubtitle": {
+    "description": "Shared subtitle for the weekday overview card, clarifying that all branches in scope are aggregated."
+  },
+  "overviewWeekdaySalesEmpty": "No weekday data for this period.",
+  "@overviewWeekdaySalesEmpty": {
+    "description": "Placeholder shown when the weekday overview chart has no data."
+  },
+  "overviewWeekdaySalesLoadFailed": "Could not load the weekday chart. Try again later.",
+  "@overviewWeekdaySalesLoadFailed": {
+    "description": "Placeholder shown when the weekday overview chart query fails."
+  },
+  "overviewWeekdaySalesChartSemantics": "Weekday sales count and parcel amount chart",
+  "@overviewWeekdaySalesChartSemantics": {
+    "description": "Semantic label for the weekday overview chart when the primary metric is sales count."
+  },
+  "overviewWeekdayRevenueChartSemantics": "Weekday revenue and sales count chart",
+  "@overviewWeekdayRevenueChartSemantics": {
+    "description": "Semantic label for the weekday overview chart when the primary metric is parcel amount."
+  },
+  "overviewWeekdayChartScopeHint": "Aggregated across all branches in the selected scope.",
+  "@overviewWeekdayChartScopeHint": {
+    "description": "Additional semantic hint clarifying that the weekday chart aggregates all branches in scope."
+  },
+  "overviewWeekdaySalesTooltip": "{weekday}: {salesCount} sales - {salesAmount}",
+  "@overviewWeekdaySalesTooltip": {
+    "description": "Tooltip for one weekday bar showing sales count and parcel amount.",
+    "placeholders": {
+      "weekday": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesAmount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayMetricSalesCountLabel": "Sales",
+  "@overviewWeekdayMetricSalesCountLabel": {
+    "description": "Segment label for plotting sales count in the weekday overview card."
+  },
+  "overviewWeekdayMetricSalesAmountLabel": "Revenue",
+  "@overviewWeekdayMetricSalesAmountLabel": {
+    "description": "Segment label for plotting parcel amount in the weekday overview card."
+  },
+  "overviewWeekdaySalesSummarySemantics": "Total {totalSalesCount} sales and {totalSalesAmount} in the selected period. Highest day: {topWeekday} with {topSalesCount} sales.",
+  "@overviewWeekdaySalesSummarySemantics": {
+    "description": "Concise screen reader summary for the weekday overview chart when sales count is selected.",
+    "placeholders": {
+      "totalSalesCount": {"type": "String"},
+      "totalSalesAmount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topSalesCount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayRevenueSummarySemantics": "Total {totalSalesAmount} and {totalSalesCount} sales in the selected period. Highest day: {topWeekday} with {topSalesAmount}.",
+  "@overviewWeekdayRevenueSummarySemantics": {
+    "description": "Concise screen reader summary for the weekday overview chart when parcel amount is selected.",
+    "placeholders": {
+      "totalSalesAmount": {"type": "String"},
+      "totalSalesCount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topSalesAmount": {"type": "String"}
+    }
+  },
+  "overviewWeekdaySunday": "Sunday",
+  "@overviewWeekdaySunday": {
+    "description": "Localized label for weekday Sunday in the overview chart."
+  },
+  "overviewWeekdayMonday": "Monday",
+  "@overviewWeekdayMonday": {
+    "description": "Localized label for weekday Monday in the overview chart."
+  },
+  "overviewWeekdayTuesday": "Tuesday",
+  "@overviewWeekdayTuesday": {
+    "description": "Localized label for weekday Tuesday in the overview chart."
+  },
+  "overviewWeekdayWednesday": "Wednesday",
+  "@overviewWeekdayWednesday": {
+    "description": "Localized label for weekday Wednesday in the overview chart."
+  },
+  "overviewWeekdayThursday": "Thursday",
+  "@overviewWeekdayThursday": {
+    "description": "Localized label for weekday Thursday in the overview chart."
+  },
+  "overviewWeekdayFriday": "Friday",
+  "@overviewWeekdayFriday": {
+    "description": "Localized label for weekday Friday in the overview chart."
+  },
+  "overviewWeekdaySaturday": "Saturday",
+  "@overviewWeekdaySaturday": {
+    "description": "Localized label for weekday Saturday in the overview chart."
+  },
   "overviewKpiTotalRevenue": "Total revenue",
   "overviewKpiSales": "Sales",
   "overviewKpiAvgTicket": "Average ticket",

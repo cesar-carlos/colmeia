@@ -308,6 +308,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Loading last 12 months chart…';
 
   @override
+  String get overviewLoadingWeekdaySalesSemantics =>
+      'Loading sales by weekday chart…';
+
+  @override
   String get overviewMonthlyParcelsTitle => 'Last 12 months';
 
   @override
@@ -330,6 +334,91 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overviewMonthlyParcelsChartSemantics =>
       'Last twelve months sales and parcel amount chart';
+
+  @override
+  String get overviewWeekdaySalesTitle => 'Sales by weekday';
+
+  @override
+  String get overviewWeekdayRevenueTitle => 'Revenue by weekday';
+
+  @override
+  String get overviewWeekdaySalesSubtitle =>
+      'Weekday distribution in the selected period (all branches in scope).';
+
+  @override
+  String get overviewWeekdaySalesEmpty => 'No weekday data for this period.';
+
+  @override
+  String get overviewWeekdaySalesLoadFailed =>
+      'Could not load the weekday chart. Try again later.';
+
+  @override
+  String get overviewWeekdaySalesChartSemantics =>
+      'Weekday sales count and parcel amount chart';
+
+  @override
+  String get overviewWeekdayRevenueChartSemantics =>
+      'Weekday revenue and sales count chart';
+
+  @override
+  String get overviewWeekdayChartScopeHint =>
+      'Aggregated across all branches in the selected scope.';
+
+  @override
+  String overviewWeekdaySalesTooltip(
+    String weekday,
+    String salesCount,
+    String salesAmount,
+  ) {
+    return '$weekday: $salesCount sales - $salesAmount';
+  }
+
+  @override
+  String get overviewWeekdayMetricSalesCountLabel => 'Sales';
+
+  @override
+  String get overviewWeekdayMetricSalesAmountLabel => 'Revenue';
+
+  @override
+  String overviewWeekdaySalesSummarySemantics(
+    String totalSalesCount,
+    String totalSalesAmount,
+    String topWeekday,
+    String topSalesCount,
+  ) {
+    return 'Total $totalSalesCount sales and $totalSalesAmount in the selected period. Highest day: $topWeekday with $topSalesCount sales.';
+  }
+
+  @override
+  String overviewWeekdayRevenueSummarySemantics(
+    String totalSalesAmount,
+    String totalSalesCount,
+    String topWeekday,
+    String topSalesAmount,
+  ) {
+    return 'Total $totalSalesAmount and $totalSalesCount sales in the selected period. Highest day: $topWeekday with $topSalesAmount.';
+  }
+
+  @override
+  String get overviewWeekdaySunday => 'Sunday';
+
+  @override
+  String get overviewWeekdayMonday => 'Monday';
+
+  @override
+  String get overviewWeekdayTuesday => 'Tuesday';
+
+  @override
+  String get overviewWeekdayWednesday => 'Wednesday';
+
+  @override
+  String get overviewWeekdayThursday => 'Thursday';
+
+  @override
+  String get overviewWeekdayFriday => 'Friday';
+
+  @override
+  String get overviewWeekdaySaturday => 'Saturday';
 
   @override
   String get overviewKpiTotalRevenue => 'Total revenue';

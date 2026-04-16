@@ -20,6 +20,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_bar_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_rankings_section.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -212,6 +213,19 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                                   points: displayOverview.monthlyParcelTrend,
                                   loadFailed: displayOverview
                                       .monthlyParcelTrendLoadFailed,
+                                ),
+                              ),
+                              SizedBox(height: tokens.sectionSpacing),
+                              AppSkeleton(
+                                enabled: showSkeleton,
+                                showDelay: const Duration(milliseconds: 80),
+                                loadingSemanticsLabel:
+                                    l10n.overviewLoadingWeekdaySalesSemantics,
+                                child: OverviewWeekdaySalesTrendChart(
+                                  l10n: l10n,
+                                  points: displayOverview.weekdaySalesTrend,
+                                  loadFailed: displayOverview
+                                      .weekdaySalesTrendLoadFailed,
                                 ),
                               ),
                               SizedBox(height: tokens.sectionSpacing),

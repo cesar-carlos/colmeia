@@ -1,18 +1,22 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report_resumo_parcelas.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_monthly_parcel_mapper.dart';
+import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -21,6 +25,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_resumo_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
@@ -33,11 +38,15 @@ class OverviewRepositoryImpl implements OverviewRepository {
     resumoAcrossAgentsRepository,
     required LoadResumoParcelasMensalAcrossAgentsUseCase
     loadResumoParcelasMensalAcrossAgents,
+    required LoadResumoParcelasDiaSemanaAcrossAgentsUseCase
+    loadResumoParcelasDiaSemanaAcrossAgents,
     DateTime Function()? now,
   }) : _localDataSource = localDataSource,
        _resumoAcrossAgentsRepository = resumoAcrossAgentsRepository,
        _loadResumoParcelasMensalAcrossAgents =
            loadResumoParcelasMensalAcrossAgents,
+       _loadResumoParcelasDiaSemanaAcrossAgents =
+           loadResumoParcelasDiaSemanaAcrossAgents,
        _now = now ?? DateTime.now;
 
   final OverviewLocalDataSource _localDataSource;
@@ -45,6 +54,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
   _resumoAcrossAgentsRepository;
   final LoadResumoParcelasMensalAcrossAgentsUseCase
   _loadResumoParcelasMensalAcrossAgents;
+  final LoadResumoParcelasDiaSemanaAcrossAgentsUseCase
+  _loadResumoParcelasDiaSemanaAcrossAgents;
   final DateTime Function() _now;
 
   static const String _sourceAgentIdsContextField = 'sourceAgentIds';
@@ -53,6 +64,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   /// Monthly resumo SQL is heavier than the rolling payment mix query; allow
   /// a longer bridge wait so merge-all runs do not all fail on slow agents.
   static const int _overviewMonthlyParcelSqlBridgeTimeoutMs = 300000;
+  static const int _overviewWeekdaySalesSqlBridgeTimeoutMs = 300000;
 
   @override
   Future<AppResult<Overview>> loadOverview({
@@ -69,6 +81,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
       dataVendaInicio: last12Range.dataVendaInicio,
       dataVendaFim: last12Range.dataVendaFim,
     );
+    final weekdayFilter = ResumoParcelasDiaSemanaFilter(
+      dataVendaInicio: period.start,
+      dataVendaFim: period.end,
+    );
     final executionStrategy = _resolveExecutionStrategy(filter);
     final monthlyParcelFuture = _loadResumoParcelasMensalAcrossAgents(
       userId: userId,
@@ -76,6 +92,13 @@ class OverviewRepositoryImpl implements OverviewRepository {
       selectedAgentIds: filter.selectedAgentIds,
       strategy: executionStrategy,
       bridgeTimeoutMs: _overviewMonthlyParcelSqlBridgeTimeoutMs,
+    );
+    final weekdaySalesFuture = _loadResumoParcelasDiaSemanaAcrossAgents(
+      userId: userId,
+      filter: weekdayFilter,
+      selectedAgentIds: filter.selectedAgentIds,
+      strategy: executionStrategy,
+      bridgeTimeoutMs: _overviewWeekdaySalesSqlBridgeTimeoutMs,
     );
     try {
       final reportResult = await _resumoAcrossAgentsRepository.load(
@@ -87,6 +110,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       final report = reportResult.getOrNull();
       if (report == null) {
         await monthlyParcelFuture;
+        await weekdaySalesFuture;
         final failure = _mapOverviewFailure(
           reportResult.exceptionOrNull()!,
           userId: userId,
@@ -108,6 +132,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           monthlyParcelFuture,
           mensalFilter,
         );
+        final weekday = await _resolveWeekdaySalesTrend(weekdaySalesFuture);
         return Success<Overview, AppFailure>(
           _buildOverview(
             const <OverviewPaymentResumoRow>[],
@@ -118,6 +143,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
             approvedAgentCount: 0,
             monthlyParcelTrend: monthly.points,
             monthlyParcelTrendLoadFailed: monthly.loadFailed,
+            weekdaySalesTrend: weekday.points,
+            weekdaySalesTrendLoadFailed: weekday.loadFailed,
           ),
         );
       }
@@ -151,10 +178,13 @@ class OverviewRepositoryImpl implements OverviewRepository {
             monthlyParcelFuture,
             mensalFilter,
           );
+          final weekday = await _resolveWeekdaySalesTrend(weekdaySalesFuture);
           return Success<Overview, AppFailure>(
             cachedOverview.copyWith(
               monthlyParcelTrend: monthly.points,
               monthlyParcelTrendLoadFailed: monthly.loadFailed,
+              weekdaySalesTrend: weekday.points,
+              weekdaySalesTrendLoadFailed: weekday.loadFailed,
             ),
           );
         }
@@ -176,6 +206,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         monthlyParcelFuture,
         mensalFilter,
       );
+      final weekday = await _resolveWeekdaySalesTrend(weekdaySalesFuture);
       final overview = _buildOverview(
         _mapOverviewRows(report.mergedRows),
         rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
@@ -189,6 +220,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         agentNamesMissingClientToken: report.missingClientTokenAgentNames,
         monthlyParcelTrend: monthly.points,
         monthlyParcelTrendLoadFailed: monthly.loadFailed,
+        weekdaySalesTrend: weekday.points,
+        weekdaySalesTrendLoadFailed: weekday.loadFailed,
       );
 
       final stamp = _now();
@@ -231,6 +264,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       return Success<Overview, AppFailure>(overview);
     } on Object catch (error, stackTrace) {
       await monthlyParcelFuture;
+      await weekdaySalesFuture;
       final failure = mapToAppFailure(
         error,
         stackTrace: stackTrace,
@@ -282,26 +316,68 @@ class OverviewRepositoryImpl implements OverviewRepository {
     monthlyParcelFuture,
     ResumoParcelasMensalFilter mensalFilter,
   ) async {
-    final result = await monthlyParcelFuture;
-    return result.fold(
-      (report) {
+    return _resolveOptionalChartData<
+      ResumoParcelasMensalRow,
+      OverviewMonthlyParcelPoint
+    >(
+      future: monthlyParcelFuture,
+      mapSuccess: (report) {
         final rows = report.chartRowsFilledPeriod(mensalFilter);
-        final points = overviewMonthlyParcelPointsFromRows(rows);
-        return (points: points, loadFailed: false);
+        return overviewMonthlyParcelPointsFromRows(rows);
       },
+      failureLogMessage: 'Overview: monthly parcel trend query failed',
+      emptyValue: const <OverviewMonthlyParcelPoint>[],
+    );
+  }
+
+  Future<
+    ({
+      List<OverviewWeekdaySalesTrendPoint> points,
+      bool loadFailed,
+    })
+  >
+  _resolveWeekdaySalesTrend(
+    Future<AppResult<AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow>>>
+    weekdaySalesFuture,
+  ) async {
+    return _resolveOptionalChartData<
+      ResumoParcelasDiaSemanaRow,
+      OverviewWeekdaySalesTrendPoint
+    >(
+      future: weekdaySalesFuture,
+      mapSuccess: (report) =>
+          overviewWeekdaySalesTrendPointsFromRows(report.chartRowsWeek),
+      failureLogMessage: 'Overview: weekday sales trend query failed',
+      emptyValue: const <OverviewWeekdaySalesTrendPoint>[],
+    );
+  }
+
+  Future<
+    ({
+      List<TPoint> points,
+      bool loadFailed,
+    })
+  >
+  _resolveOptionalChartData<TRow, TPoint>({
+    required Future<AppResult<AgentQueryExecutionReport<TRow>>> future,
+    required List<TPoint> Function(AgentQueryExecutionReport<TRow> report)
+    mapSuccess,
+    required String failureLogMessage,
+    required List<TPoint> emptyValue,
+  }) async {
+    final result = await future;
+    return result.fold(
+      (report) => (points: mapSuccess(report), loadFailed: false),
       (failure) {
         AppLogger.warning(
-          'Overview: monthly parcel trend query failed',
+          failureLogMessage,
           context: <String, Object?>{
             'operation': 'loadOverview',
             'failureType': failure.runtimeType.toString(),
           },
           error: failure,
         );
-        return (
-          points: const <OverviewMonthlyParcelPoint>[],
-          loadFailed: true,
-        );
+        return (points: emptyValue, loadFailed: true);
       },
     );
   }
@@ -671,6 +747,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<OverviewMonthlyParcelPoint> monthlyParcelTrend =
         const <OverviewMonthlyParcelPoint>[],
     bool monthlyParcelTrendLoadFailed = false,
+    List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend =
+        const <OverviewWeekdaySalesTrendPoint>[],
+    bool weekdaySalesTrendLoadFailed = false,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final userBuckets = <String, _UserAggregate>{};
@@ -770,6 +849,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
       userRankings: userRankings,
       monthlyParcelTrend: monthlyParcelTrend,
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
+      weekdaySalesTrend: weekdaySalesTrend,
+      weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
       approvedAgentCount: approvedAgentCount,
       agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
       agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,

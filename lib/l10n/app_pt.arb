@@ -109,6 +109,10 @@
   "overviewLoadingPaymentBarSemantics": "Carregando faturamento por forma de pagamento…",
   "overviewLoadingRankingsSemantics": "Carregando rankings…",
   "overviewLoadingMonthlyParcelsSemantics": "Carregando grafico dos ultimos 12 meses…",
+  "overviewLoadingWeekdaySalesSemantics": "Carregando grafico de vendas por dia da semana…",
+  "@overviewLoadingWeekdaySalesSemantics": {
+    "description": "Rotulo lido por leitor de tela enquanto o card de dia da semana esta carregando."
+  },
   "overviewMonthlyParcelsTitle": "Ultimos 12 meses",
   "overviewMonthlyParcelsSubtitle": "Quantidade de vendas e total em parcelas por mes (todas as filiais no escopo).",
   "overviewMonthlyParcelsSalesSeriesLabel": "Vendas",
@@ -116,6 +120,103 @@
   "overviewMonthlyParcelsEmpty": "Sem dados mensais para este periodo.",
   "overviewMonthlyParcelsLoadFailed": "Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.",
   "overviewMonthlyParcelsChartSemantics": "Grafico dos ultimos doze meses de vendas e valor em parcelas",
+  "overviewWeekdaySalesTitle": "Vendas por dia da semana",
+  "@overviewWeekdaySalesTitle": {
+    "description": "Titulo do card quando o grafico de dia da semana esta mostrando quantidade de vendas."
+  },
+  "overviewWeekdayRevenueTitle": "Faturamento por dia da semana",
+  "@overviewWeekdayRevenueTitle": {
+    "description": "Titulo do card quando o grafico de dia da semana esta mostrando valor em parcelas."
+  },
+  "overviewWeekdaySalesSubtitle": "Distribuicao por dia da semana no periodo selecionado (todas as filiais no escopo).",
+  "@overviewWeekdaySalesSubtitle": {
+    "description": "Subtitulo compartilhado do card de dia da semana, deixando explicito que todas as filiais no escopo foram agregadas."
+  },
+  "overviewWeekdaySalesEmpty": "Sem dados por dia da semana para este periodo.",
+  "@overviewWeekdaySalesEmpty": {
+    "description": "Placeholder exibido quando o grafico por dia da semana nao tem dados."
+  },
+  "overviewWeekdaySalesLoadFailed": "Nao foi possivel carregar o grafico por dia da semana. Tente novamente mais tarde.",
+  "@overviewWeekdaySalesLoadFailed": {
+    "description": "Placeholder exibido quando a consulta do grafico por dia da semana falha."
+  },
+  "overviewWeekdaySalesChartSemantics": "Grafico de vendas e valor em parcelas por dia da semana",
+  "@overviewWeekdaySalesChartSemantics": {
+    "description": "Rotulo semantico do grafico de dia da semana quando a metrica principal e quantidade de vendas."
+  },
+  "overviewWeekdayRevenueChartSemantics": "Grafico de faturamento e quantidade de vendas por dia da semana",
+  "@overviewWeekdayRevenueChartSemantics": {
+    "description": "Rotulo semantico do grafico de dia da semana quando a metrica principal e valor em parcelas."
+  },
+  "overviewWeekdayChartScopeHint": "Agregado em todas as filiais do escopo selecionado.",
+  "@overviewWeekdayChartScopeHint": {
+    "description": "Hint semantico adicional informando que o grafico agrega todas as filiais no escopo."
+  },
+  "overviewWeekdaySalesTooltip": "{weekday}: {salesCount} vendas - {salesAmount}",
+  "@overviewWeekdaySalesTooltip": {
+    "description": "Tooltip de uma barra do grafico por dia da semana com quantidade de vendas e valor em parcelas.",
+    "placeholders": {
+      "weekday": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesAmount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayMetricSalesCountLabel": "Vendas",
+  "@overviewWeekdayMetricSalesCountLabel": {
+    "description": "Rotulo do toggle para quantidade de vendas no card de dia da semana."
+  },
+  "overviewWeekdayMetricSalesAmountLabel": "Faturamento",
+  "@overviewWeekdayMetricSalesAmountLabel": {
+    "description": "Rotulo do toggle para valor em parcelas no card de dia da semana."
+  },
+  "overviewWeekdaySalesSummarySemantics": "Total de {totalSalesCount} vendas e {totalSalesAmount} no periodo selecionado. Dia com maior volume: {topWeekday}, com {topSalesCount} vendas.",
+  "@overviewWeekdaySalesSummarySemantics": {
+    "description": "Resumo curto para leitor de tela quando a metrica selecionada no grafico e quantidade de vendas.",
+    "placeholders": {
+      "totalSalesCount": {"type": "String"},
+      "totalSalesAmount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topSalesCount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayRevenueSummarySemantics": "Total de {totalSalesAmount} e {totalSalesCount} vendas no periodo selecionado. Dia com maior valor: {topWeekday}, com {topSalesAmount}.",
+  "@overviewWeekdayRevenueSummarySemantics": {
+    "description": "Resumo curto para leitor de tela quando a metrica selecionada no grafico e valor em parcelas.",
+    "placeholders": {
+      "totalSalesAmount": {"type": "String"},
+      "totalSalesCount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topSalesAmount": {"type": "String"}
+    }
+  },
+  "overviewWeekdaySunday": "Domingo",
+  "@overviewWeekdaySunday": {
+    "description": "Rotulo localizado para domingo no grafico da visao geral."
+  },
+  "overviewWeekdayMonday": "Segunda-feira",
+  "@overviewWeekdayMonday": {
+    "description": "Rotulo localizado para segunda-feira no grafico da visao geral."
+  },
+  "overviewWeekdayTuesday": "Terca-feira",
+  "@overviewWeekdayTuesday": {
+    "description": "Rotulo localizado para terca-feira no grafico da visao geral."
+  },
+  "overviewWeekdayWednesday": "Quarta-feira",
+  "@overviewWeekdayWednesday": {
+    "description": "Rotulo localizado para quarta-feira no grafico da visao geral."
+  },
+  "overviewWeekdayThursday": "Quinta-feira",
+  "@overviewWeekdayThursday": {
+    "description": "Rotulo localizado para quinta-feira no grafico da visao geral."
+  },
+  "overviewWeekdayFriday": "Sexta-feira",
+  "@overviewWeekdayFriday": {
+    "description": "Rotulo localizado para sexta-feira no grafico da visao geral."
+  },
+  "overviewWeekdaySaturday": "Sabado",
+  "@overviewWeekdaySaturday": {
+    "description": "Rotulo localizado para sabado no grafico da visao geral."
+  },
   "overviewKpiTotalRevenue": "Faturamento total",
   "overviewKpiSales": "Vendas",
   "overviewKpiAvgTicket": "Ticket medio",

@@ -633,6 +633,12 @@ abstract class AppLocalizations {
   /// **'Loading last 12 months chart…'**
   String get overviewLoadingMonthlyParcelsSemantics;
 
+  /// Screen reader label while the weekday overview card is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading sales by weekday chart…'**
+  String get overviewLoadingWeekdaySalesSemantics;
+
   /// No description provided for @overviewMonthlyParcelsTitle.
   ///
   /// In en, this message translates to:
@@ -674,6 +680,140 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last twelve months sales and parcel amount chart'**
   String get overviewMonthlyParcelsChartSemantics;
+
+  /// Card title when the weekday overview chart is plotting sales count.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales by weekday'**
+  String get overviewWeekdaySalesTitle;
+
+  /// Card title when the weekday overview chart is plotting parcel amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue by weekday'**
+  String get overviewWeekdayRevenueTitle;
+
+  /// Shared subtitle for the weekday overview card, clarifying that all branches in scope are aggregated.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday distribution in the selected period (all branches in scope).'**
+  String get overviewWeekdaySalesSubtitle;
+
+  /// Placeholder shown when the weekday overview chart has no data.
+  ///
+  /// In en, this message translates to:
+  /// **'No weekday data for this period.'**
+  String get overviewWeekdaySalesEmpty;
+
+  /// Placeholder shown when the weekday overview chart query fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the weekday chart. Try again later.'**
+  String get overviewWeekdaySalesLoadFailed;
+
+  /// Semantic label for the weekday overview chart when the primary metric is sales count.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday sales count and parcel amount chart'**
+  String get overviewWeekdaySalesChartSemantics;
+
+  /// Semantic label for the weekday overview chart when the primary metric is parcel amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday revenue and sales count chart'**
+  String get overviewWeekdayRevenueChartSemantics;
+
+  /// Additional semantic hint clarifying that the weekday chart aggregates all branches in scope.
+  ///
+  /// In en, this message translates to:
+  /// **'Aggregated across all branches in the selected scope.'**
+  String get overviewWeekdayChartScopeHint;
+
+  /// Tooltip for one weekday bar showing sales count and parcel amount.
+  ///
+  /// In en, this message translates to:
+  /// **'{weekday}: {salesCount} sales - {salesAmount}'**
+  String overviewWeekdaySalesTooltip(
+    String weekday,
+    String salesCount,
+    String salesAmount,
+  );
+
+  /// Segment label for plotting sales count in the weekday overview card.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get overviewWeekdayMetricSalesCountLabel;
+
+  /// Segment label for plotting parcel amount in the weekday overview card.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get overviewWeekdayMetricSalesAmountLabel;
+
+  /// Concise screen reader summary for the weekday overview chart when sales count is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {totalSalesCount} sales and {totalSalesAmount} in the selected period. Highest day: {topWeekday} with {topSalesCount} sales.'**
+  String overviewWeekdaySalesSummarySemantics(
+    String totalSalesCount,
+    String totalSalesAmount,
+    String topWeekday,
+    String topSalesCount,
+  );
+
+  /// Concise screen reader summary for the weekday overview chart when parcel amount is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {totalSalesAmount} and {totalSalesCount} sales in the selected period. Highest day: {topWeekday} with {topSalesAmount}.'**
+  String overviewWeekdayRevenueSummarySemantics(
+    String totalSalesAmount,
+    String totalSalesCount,
+    String topWeekday,
+    String topSalesAmount,
+  );
+
+  /// Localized label for weekday Sunday in the overview chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunday'**
+  String get overviewWeekdaySunday;
+
+  /// Localized label for weekday Monday in the overview chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Monday'**
+  String get overviewWeekdayMonday;
+
+  /// Localized label for weekday Tuesday in the overview chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Tuesday'**
+  String get overviewWeekdayTuesday;
+
+  /// Localized label for weekday Wednesday in the overview chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Wednesday'**
+  String get overviewWeekdayWednesday;
+
+  /// Localized label for weekday Thursday in the overview chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday'**
+  String get overviewWeekdayThursday;
+
+  /// Localized label for weekday Friday in the overview chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday'**
+  String get overviewWeekdayFriday;
+
+  /// Localized label for weekday Saturday in the overview chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday'**
+  String get overviewWeekdaySaturday;
 
   /// No description provided for @overviewKpiTotalRevenue.
   ///

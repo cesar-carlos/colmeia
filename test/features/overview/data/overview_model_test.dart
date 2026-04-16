@@ -6,6 +6,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_monthly_parce
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -38,6 +39,11 @@ void main() {
         check(decoded.monthlyParcelTrend.single.anoMes).equals('2026/03');
         check(decoded.monthlyParcelTrend.single.qtdVendas).equals(5);
         check(decoded.monthlyParcelTrendLoadFailed).isFalse();
+        check(decoded.weekdaySalesTrend).length.equals(1);
+        check(decoded.weekdaySalesTrend.single.weekdayNumber).equals(2);
+        check(decoded.weekdaySalesTrend.single.salesCount).equals(12);
+        check(decoded.weekdaySalesTrend.single.salesAmount).equals(180.5);
+        check(decoded.weekdaySalesTrendLoadFailed).isFalse();
       });
 
       test('preserves cache metadata through encode/decode', () {
@@ -81,6 +87,27 @@ void main() {
         check(decoded.kpis.totalSalesCount).equals(0);
         check(decoded.monthlyParcelTrend).isEmpty();
         check(decoded.monthlyParcelTrendLoadFailed).isFalse();
+        check(decoded.weekdaySalesTrend).isEmpty();
+        check(decoded.weekdaySalesTrendLoadFailed).isFalse();
+      });
+
+      test('defaults missing weekday cache fields safely', () {
+        final decoded = OverviewModel.fromJson(<String, dynamic>{
+          'periodStart': '2026-03-09T00:00:00.000',
+          'periodEnd': '2026-04-07T00:00:00.000',
+          'kpis': <String, Object?>{
+            'totalSalesCount': 100,
+            'totalAmount': 9000,
+            'averageTicket': 90,
+            'paymentMethodCount': 2,
+          },
+          'paymentMethods': const <Map<String, Object?>>[],
+          'agentRankings': const <Map<String, Object?>>[],
+          'userRankings': const <Map<String, Object?>>[],
+        });
+
+        check(decoded.weekdaySalesTrend).isEmpty();
+        check(decoded.weekdaySalesTrendLoadFailed).isFalse();
       });
     });
 
@@ -97,6 +124,9 @@ void main() {
         check(entity.userRankings.single.averageTicket).equals(90);
         check(entity.monthlyParcelTrend.single.anoMes).equals('2026/03');
         check(entity.monthlyParcelTrendLoadFailed).isFalse();
+        check(entity.weekdaySalesTrend.single.weekdayNumber).equals(2);
+        check(entity.weekdaySalesTrend.single.salesCount).equals(12);
+        check(entity.weekdaySalesTrendLoadFailed).isFalse();
       });
 
       test('fromEntity preserves overview data', () {
@@ -129,6 +159,14 @@ void main() {
             ),
           ],
           monthlyParcelTrendLoadFailed: true,
+          weekdaySalesTrend: const <OverviewWeekdaySalesTrendPoint>[
+            OverviewWeekdaySalesTrendPoint(
+              weekdayNumber: 5,
+              salesCount: 7,
+              salesAmount: 333,
+            ),
+          ],
+          weekdaySalesTrendLoadFailed: true,
         );
 
         final model = OverviewModel.fromEntity(entity);
@@ -138,6 +176,8 @@ void main() {
         check(model.agentRankings).isEmpty();
         check(model.monthlyParcelTrend.single.anoMes).equals('2026/04');
         check(model.monthlyParcelTrendLoadFailed).isTrue();
+        check(model.weekdaySalesTrend.single.weekdayNumber).equals(5);
+        check(model.weekdaySalesTrendLoadFailed).isTrue();
       });
     });
 
@@ -250,6 +290,13 @@ OverviewModel _fullModel() {
         anoMes: '2026/03',
         qtdVendas: 5,
         valorParcela: 150.25,
+      ),
+    ],
+    weekdaySalesTrend: const <OverviewWeekdaySalesTrendPoint>[
+      OverviewWeekdaySalesTrendPoint(
+        weekdayNumber: 2,
+        salesCount: 12,
+        salesAmount: 180.5,
       ),
     ],
   );

@@ -6,6 +6,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_monthly_parce
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 
 class OverviewModel {
   const OverviewModel({
@@ -17,6 +18,8 @@ class OverviewModel {
     required this.userRankings,
     this.monthlyParcelTrend = const <OverviewMonthlyParcelPoint>[],
     this.monthlyParcelTrendLoadFailed = false,
+    this.weekdaySalesTrend = const <OverviewWeekdaySalesTrendPoint>[],
+    this.weekdaySalesTrendLoadFailed = false,
     this.cachedAt,
     this.sourceAgentIds,
   });
@@ -33,6 +36,10 @@ class OverviewModel {
         json['monthlyParcelTrend'] as List<dynamic>? ?? const <dynamic>[];
     final monthlyParcelTrendLoadFailed =
         json['monthlyParcelTrendLoadFailed'] as bool? ?? false;
+    final weekdayJson =
+        json['weekdaySalesTrend'] as List<dynamic>? ?? const <dynamic>[];
+    final weekdaySalesTrendLoadFailed =
+        json['weekdaySalesTrendLoadFailed'] as bool? ?? false;
 
     final cachedAt = json['cachedAt'] is String
         ? DateTime.tryParse(json['cachedAt'] as String)
@@ -96,6 +103,17 @@ class OverviewModel {
           })
           .toList(growable: false),
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
+      weekdaySalesTrend: weekdayJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return OverviewWeekdaySalesTrendPoint(
+              weekdayNumber: row['weekdayNumber'] as int,
+              salesCount: row['salesCount'] as int,
+              salesAmount: (row['salesAmount'] as num).toDouble(),
+            );
+          })
+          .toList(growable: false),
+      weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -121,6 +139,8 @@ class OverviewModel {
       userRankings: overview.userRankings,
       monthlyParcelTrend: overview.monthlyParcelTrend,
       monthlyParcelTrendLoadFailed: overview.monthlyParcelTrendLoadFailed,
+      weekdaySalesTrend: overview.weekdaySalesTrend,
+      weekdaySalesTrendLoadFailed: overview.weekdaySalesTrendLoadFailed,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -136,6 +156,10 @@ class OverviewModel {
   final List<OverviewMonthlyParcelPoint> monthlyParcelTrend;
 
   final bool monthlyParcelTrendLoadFailed;
+
+  final List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend;
+
+  final bool weekdaySalesTrendLoadFailed;
 
   /// When the overview was persisted locally (for TTL / signature checks).
   final DateTime? cachedAt;
@@ -153,6 +177,8 @@ class OverviewModel {
       userRankings: userRankings,
       monthlyParcelTrend: monthlyParcelTrend,
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
+      weekdaySalesTrend: weekdaySalesTrend,
+      weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
       isStaleCache: isStaleCache,
     );
   }
@@ -209,6 +235,16 @@ class OverviewModel {
           )
           .toList(growable: false),
       'monthlyParcelTrendLoadFailed': monthlyParcelTrendLoadFailed,
+      'weekdaySalesTrend': weekdaySalesTrend
+          .map(
+            (p) => <String, Object?>{
+              'weekdayNumber': p.weekdayNumber,
+              'salesCount': p.salesCount,
+              'salesAmount': p.salesAmount,
+            },
+          )
+          .toList(growable: false),
+      'weekdaySalesTrendLoadFailed': weekdaySalesTrendLoadFailed,
       if (cachedAt != null) 'cachedAt': cachedAt!.toIso8601String(),
       if (sourceAgentIds != null) 'sourceAgentIds': sourceAgentIds,
     };

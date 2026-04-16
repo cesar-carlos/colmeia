@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
@@ -8,6 +9,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.d
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
@@ -17,6 +20,7 @@ import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/data/repositories/overview_repository_impl.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,11 +36,16 @@ class _MockResumoAcrossAgentsRepository extends Mock
 class _MockLoadResumoParcelasMensalAcrossAgents extends Mock
     implements LoadResumoParcelasMensalAcrossAgentsUseCase {}
 
+class _MockLoadResumoParcelasDiaSemanaAcrossAgents extends Mock
+    implements LoadResumoParcelasDiaSemanaAcrossAgentsUseCase {}
+
 void main() {
   late _MockOverviewLocalDataSource local;
   late _MockResumoAcrossAgentsRepository resumoAcrossAgentsRepository;
   late _MockLoadResumoParcelasMensalAcrossAgents
-      loadResumoParcelasMensalAcrossAgents;
+  loadResumoParcelasMensalAcrossAgents;
+  late _MockLoadResumoParcelasDiaSemanaAcrossAgents
+  loadResumoParcelasDiaSemanaAcrossAgents;
 
   final fixedNow = DateTime(2026, 4, 8);
 
@@ -52,6 +61,12 @@ void main() {
       ResumoParcelasMensalFilter(
         dataVendaInicio: DateTime(2025, 5),
         dataVendaFim: DateTime(2026, 4, 30),
+      ),
+    );
+    registerFallbackValue(
+      ResumoParcelasDiaSemanaFilter(
+        dataVendaInicio: DateTime(2026, 3, 10),
+        dataVendaFim: DateTime(2026, 4, 8),
       ),
     );
     registerFallbackValue(<String>{'agent-fallback'});
@@ -77,6 +92,8 @@ void main() {
     resumoAcrossAgentsRepository = _MockResumoAcrossAgentsRepository();
     loadResumoParcelasMensalAcrossAgents =
         _MockLoadResumoParcelasMensalAcrossAgents();
+    loadResumoParcelasDiaSemanaAcrossAgents =
+        _MockLoadResumoParcelasDiaSemanaAcrossAgents();
     when(
       () => loadResumoParcelasMensalAcrossAgents(
         userId: any(named: 'userId'),
@@ -87,10 +104,27 @@ void main() {
         raceMaxSources: any(named: 'raceMaxSources'),
       ),
     ).thenAnswer(
-      (_) async => Success<
-        AgentQueryExecutionReport<ResumoParcelasMensalRow>,
-        AppFailure
-      >(_emptyMensalReport()),
+      (_) async =>
+          Success<
+            AgentQueryExecutionReport<ResumoParcelasMensalRow>,
+            AppFailure
+          >(_emptyMensalReport()),
+    );
+    when(
+      () => loadResumoParcelasDiaSemanaAcrossAgents(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          Success<
+            AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow>,
+            AppFailure
+          >(_emptyWeekdayReport()),
     );
 
     when(
@@ -110,6 +144,8 @@ void main() {
       resumoAcrossAgentsRepository: resumoAcrossAgentsRepository,
       loadResumoParcelasMensalAcrossAgents:
           loadResumoParcelasMensalAcrossAgents,
+      loadResumoParcelasDiaSemanaAcrossAgents:
+          loadResumoParcelasDiaSemanaAcrossAgents,
       now: () => fixedNow,
     );
   }
@@ -296,6 +332,135 @@ void main() {
     );
 
     test(
+      'maps weekday chart rows and forwards selected agent and period',
+      () async {
+        when(
+          () => loadResumoParcelasDiaSemanaAcrossAgents(
+            userId: any(named: 'userId'),
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              Success<
+                AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow>,
+                AppFailure
+              >(
+                _weekdayReport(
+                  rows: const <ResumoParcelasDiaSemanaRow>[
+                    ResumoParcelasDiaSemanaRow(
+                      codEmpresa: 1,
+                      codFilial: 1,
+                      diaSemanaNumero: 2,
+                      diaSemana: 'Segunda-feira',
+                      qtdVendas: 3,
+                      valorParcela: 120,
+                    ),
+                    ResumoParcelasDiaSemanaRow(
+                      codEmpresa: 1,
+                      codFilial: 1,
+                      diaSemanaNumero: 4,
+                      diaSemana: 'Quarta-feira',
+                      qtdVendas: 5,
+                      valorParcela: 240,
+                    ),
+                  ],
+                ),
+              ),
+        );
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              strategy: AgentQueryExecutionStrategy.singleSource,
+              consideredApprovedAgentCount: 1,
+              plannedTargets: <AgentQueryTarget>[
+                _target('agent-42', name: 'Agente 42'),
+              ],
+              participants:
+                  <
+                    AgentQueryExecutionParticipant<
+                      ResumoParcelaFormaPagamentoRow
+                    >
+                  >[
+                    _successParticipant(
+                      agentId: 'agent-42',
+                      displayName: 'Agente 42',
+                      rows: <ResumoParcelaFormaPagamentoRow>[
+                        _row(
+                          userName: 'Caixa',
+                          code: 'PIX',
+                          description: 'Pix',
+                          salesCount: 2,
+                          amount: 50,
+                        ),
+                      ],
+                    ),
+                  ],
+            ),
+          ),
+        );
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(
+          userId: 'user-1',
+          filter: const OverviewFilter(
+            selectedAgentIds: <String>{'agent-42'},
+            yearMonth: OverviewYearMonth(year: 2026, month: 3),
+          ),
+        );
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.weekdaySalesTrend).length.equals(7);
+        final monday = overview.weekdaySalesTrend.firstWhere(
+          (point) => point.weekdayNumber == 2,
+        );
+        final wednesday = overview.weekdaySalesTrend.firstWhere(
+          (point) => point.weekdayNumber == 4,
+        );
+        check(monday.salesCount).equals(3);
+        check(monday.salesAmount).equals(120);
+        check(wednesday.salesCount).equals(5);
+        check(wednesday.salesAmount).equals(240);
+        check(
+          overview.weekdaySalesTrend
+              .firstWhere(
+                (point) => point.weekdayNumber == 1,
+              )
+              .salesCount,
+        ).equals(0);
+
+        final captured = verify(
+          () => loadResumoParcelasDiaSemanaAcrossAgents(
+            userId: 'user-1',
+            filter: captureAny(named: 'filter'),
+            selectedAgentIds: captureAny(named: 'selectedAgentIds'),
+            strategy: captureAny(named: 'strategy'),
+            bridgeTimeoutMs: 300000,
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).captured;
+
+        final filter = captured[0] as ResumoParcelasDiaSemanaFilter;
+        final strategy = captured[1] as AgentQueryExecutionStrategy;
+        final selectedAgentIds = captured[2] as Set<String>;
+        check(filter.dataVendaInicio).equals(DateTime(2026, 3));
+        check(filter.dataVendaFim.year).equals(2026);
+        check(filter.dataVendaFim.month).equals(3);
+        check(filter.dataVendaFim.day).equals(31);
+        check(selectedAgentIds).deepEquals(<String>{'agent-42'});
+        check(strategy).equals(AgentQueryExecutionStrategy.singleSource);
+      },
+    );
+
+    test(
       'falls back to cache on transient error during default load',
       () async {
         _stubLoad(
@@ -321,6 +486,48 @@ void main() {
         check(result.getOrThrow().kpis.totalSalesCount).equals(50);
       },
     );
+
+    test('falls back to legacy cache with weekday defaults', () async {
+      _stubLoad(
+        resumoAcrossAgentsRepository,
+        const Failure<
+          AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+          AppFailure
+        >(
+          NetworkFailure(
+            message: 'Connection error',
+            userMessage: 'Sem conexao com o servidor.',
+          ),
+        ),
+      );
+      when(
+        () => local.readOverview(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => OverviewModel.fromJson(<String, dynamic>{
+          'periodStart': '2026-03-10T00:00:00.000',
+          'periodEnd': '2026-04-08T00:00:00.000',
+          'cachedAt': '2026-04-08T10:00:00.000',
+          'sourceAgentIds': <String>['agent-42'],
+          'kpis': <String, Object?>{
+            'totalSalesCount': 50,
+            'totalAmount': 4500,
+            'averageTicket': 90,
+            'paymentMethodCount': 2,
+          },
+          'paymentMethods': const <Map<String, Object?>>[],
+          'agentRankings': const <Map<String, Object?>>[],
+          'userRankings': const <Map<String, Object?>>[],
+        }),
+      );
+
+      final repository = makeRepository();
+      final result = await repository.loadOverview(userId: 'user-1');
+
+      check(result.isSuccess()).isTrue();
+      final overview = result.getOrThrow();
+      check(overview.weekdaySalesTrend).isEmpty();
+      check(overview.weekdaySalesTrendLoadFailed).isFalse();
+    });
 
     test(
       'uses failure source agent ids to validate cache fallback signature',
@@ -603,17 +810,18 @@ void main() {
             raceMaxSources: any(named: 'raceMaxSources'),
           ),
         ).thenAnswer(
-          (_) async => const Failure<
-            AgentQueryExecutionReport<ResumoParcelasMensalRow>,
-            AppFailure
-          >(
-            RpcFailure(
-              message: 'agent sql timeout',
-              userMessage: 'Timeout.',
-              rpcCode: -1,
-              retryable: false,
-            ),
-          ),
+          (_) async =>
+              const Failure<
+                AgentQueryExecutionReport<ResumoParcelasMensalRow>,
+                AppFailure
+              >(
+                RpcFailure(
+                  message: 'agent sql timeout',
+                  userMessage: 'Timeout.',
+                  rpcCode: -1,
+                  retryable: false,
+                ),
+              ),
         );
         _stubLoad(
           resumoAcrossAgentsRepository,
@@ -644,6 +852,138 @@ void main() {
         final overview = result.getOrThrow();
         check(overview.monthlyParcelTrendLoadFailed).isTrue();
         check(overview.monthlyParcelTrend).isEmpty();
+      },
+    );
+
+    test(
+      'degrades weekday chart independently when weekday query fails',
+      () async {
+        when(
+          () => loadResumoParcelasDiaSemanaAcrossAgents(
+            userId: any(named: 'userId'),
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const Failure<
+                AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow>,
+                AppFailure
+              >(
+                RpcFailure(
+                  message: 'weekday sql timeout',
+                  userMessage: 'Timeout.',
+                  rpcCode: -1,
+                  retryable: false,
+                ),
+              ),
+        );
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              consideredApprovedAgentCount: 1,
+              plannedTargets: <AgentQueryTarget>[
+                _target('agent-42', name: 'Agente 42'),
+              ],
+              participants:
+                  <
+                    AgentQueryExecutionParticipant<
+                      ResumoParcelaFormaPagamentoRow
+                    >
+                  >[
+                    _successParticipant(
+                      agentId: 'agent-42',
+                      displayName: 'Agente 42',
+                      rows: <ResumoParcelaFormaPagamentoRow>[
+                        _row(
+                          userName: 'Caixa',
+                          code: 'PIX',
+                          description: 'Pix',
+                          salesCount: 1,
+                          amount: 100,
+                        ),
+                      ],
+                    ),
+                  ],
+            ),
+          ),
+        );
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.kpis.totalSalesCount).equals(1);
+        check(overview.weekdaySalesTrend).isEmpty();
+        check(overview.weekdaySalesTrendLoadFailed).isTrue();
+        check(overview.monthlyParcelTrendLoadFailed).isFalse();
+      },
+    );
+
+    test(
+      'falls back to cache and propagates weekday query failure flag',
+      () async {
+        when(
+          () => loadResumoParcelasDiaSemanaAcrossAgents(
+            userId: any(named: 'userId'),
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const Failure<
+                AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow>,
+                AppFailure
+              >(
+                RpcFailure(
+                  message: 'weekday sql timeout',
+                  userMessage: 'Timeout.',
+                  rpcCode: -1,
+                  retryable: false,
+                ),
+              ),
+        );
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              consideredApprovedAgentCount: 1,
+              missingClientTokenTargets: <AgentQueryTarget>[
+                _target(
+                  'agent-42',
+                  name: 'Agente cacheado',
+                  clientToken: null,
+                ),
+              ],
+            ),
+          ),
+        );
+        when(
+          () => local.readOverview(userId: any(named: 'userId')),
+        ).thenAnswer((_) async => _cachedModel());
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.weekdaySalesTrendLoadFailed).isTrue();
+        check(overview.weekdaySalesTrend).isEmpty();
+        check(overview.monthlyParcelTrendLoadFailed).isFalse();
       },
     );
 
@@ -713,6 +1053,19 @@ AgentQueryExecutionReport<ResumoParcelasMensalRow> _emptyMensalReport() {
   );
 }
 
+AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow> _emptyWeekdayReport() {
+  return const AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow>(
+    queryKey: AgentQueryKey.resumoParcelasDiaSemana,
+    strategy: AgentQueryExecutionStrategy.mergeAll,
+    consideredApprovedAgentCount: 0,
+    plannedTargets: <AgentQueryTarget>[],
+    missingClientTokenTargets: <AgentQueryTarget>[],
+    participants:
+        <AgentQueryExecutionParticipant<ResumoParcelasDiaSemanaRow>>[],
+    totalElapsedMs: 0,
+  );
+}
+
 AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow> _report({
   AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
   int consideredApprovedAgentCount = 0,
@@ -729,6 +1082,35 @@ AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow> _report({
     plannedTargets: plannedTargets,
     missingClientTokenTargets: missingClientTokenTargets,
     participants: participants,
+    totalElapsedMs: 10,
+  );
+}
+
+AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow> _weekdayReport({
+  AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
+  int consideredApprovedAgentCount = 1,
+  List<AgentQueryTarget> plannedTargets = const <AgentQueryTarget>[],
+  List<AgentQueryExecutionParticipant<ResumoParcelasDiaSemanaRow>>
+      participants =
+      const <AgentQueryExecutionParticipant<ResumoParcelasDiaSemanaRow>>[],
+  List<ResumoParcelasDiaSemanaRow> rows = const <ResumoParcelasDiaSemanaRow>[],
+}) {
+  return AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow>(
+    queryKey: AgentQueryKey.resumoParcelasDiaSemana,
+    strategy: strategy,
+    consideredApprovedAgentCount: consideredApprovedAgentCount,
+    plannedTargets: plannedTargets,
+    missingClientTokenTargets: const <AgentQueryTarget>[],
+    participants: participants.isNotEmpty
+        ? participants
+        : <AgentQueryExecutionParticipant<ResumoParcelasDiaSemanaRow>>[
+            AgentQueryExecutionParticipant<ResumoParcelasDiaSemanaRow>(
+              agentId: 'agent-42',
+              displayName: 'Agente 42',
+              rows: rows,
+              elapsedMs: 5,
+            ),
+          ],
     totalElapsedMs: 10,
   );
 }
@@ -828,5 +1210,12 @@ OverviewModel _cachedModel() {
     ],
     agentRankings: const [],
     userRankings: const [],
+    weekdaySalesTrend: const <OverviewWeekdaySalesTrendPoint>[
+      OverviewWeekdaySalesTrendPoint(
+        weekdayNumber: 1,
+        salesCount: 9,
+        salesAmount: 810,
+      ),
+    ],
   );
 }
