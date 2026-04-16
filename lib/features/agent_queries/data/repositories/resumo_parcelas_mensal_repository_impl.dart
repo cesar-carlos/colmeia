@@ -48,10 +48,13 @@ class ResumoParcelasMensalRepositoryImpl
 
   @override
   Future<AppResult<List<ResumoParcelasMensalRow>>> load({
+    required String userId,
     required String agentId,
     required ResumoParcelasMensalFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -82,6 +85,9 @@ class ResumoParcelasMensalRepositoryImpl
     };
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
+      requestingUserId: userId,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: dimensionFiltersActive
           ? ResumoParcelasMensalSql.query
           : ResumoParcelasMensalSql.queryWithoutDimensionNamedParams,

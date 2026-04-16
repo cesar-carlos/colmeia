@@ -8,6 +8,7 @@ class LoadResumoVendasDiariasPorVendedorBairroOptionsUseCase {
   final ResumoVendasDiariasPorVendedorFilterOptionsRepository _repository;
 
   Future<AppResult<List<ResumoVendasDiariasPorVendedorTextOption>>> call({
+    required String userId,
     required String agentId,
     required DateTime dataVendaInicio,
     required DateTime dataVendaFim,
@@ -15,8 +16,11 @@ class LoadResumoVendasDiariasPorVendedorBairroOptionsUseCase {
     int limit = 20,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) {
     return _repository.loadBairroOptions(
+      userId: userId,
       agentId: agentId,
       dataVendaInicio: dataVendaInicio,
       dataVendaFim: dataVendaFim,
@@ -24,6 +28,8 @@ class LoadResumoVendasDiariasPorVendedorBairroOptionsUseCase {
       limit: limit,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
   }
 }

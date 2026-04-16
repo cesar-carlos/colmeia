@@ -33,6 +33,7 @@ void main() {
 
   test('returns validation failure when page is invalid', () async {
     final result = await repository.loadPage(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: const MunicipioListFilter(page: 0),
     );
@@ -59,6 +60,7 @@ void main() {
     );
 
     final result = await repository.loadPage(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: const MunicipioListFilter(),
     );
@@ -82,6 +84,7 @@ void main() {
     );
 
     await repository.loadPage(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: const MunicipioListFilter(
         searchTerm: 'Cur',
@@ -126,6 +129,7 @@ void main() {
     );
 
     final result = await repository.loadPage(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: const MunicipioListFilter(),
     );

@@ -23,4 +23,11 @@ class AgentQueryPlan {
 
   bool get skippedOnlyDueToMissingClientTokens =>
       plannedTargets.isEmpty && missingClientTokenTargets.isNotEmpty;
+
+  /// Planned targets are empty, no missing-token rows, but at least one agent
+  /// was considered (e.g. filtered out solely by hub presence rules).
+  bool get skippedOnlyDueToHubPresenceRules =>
+      plannedTargets.isEmpty &&
+      missingClientTokenTargets.isEmpty &&
+      consideredApprovedAgentCount > 0;
 }

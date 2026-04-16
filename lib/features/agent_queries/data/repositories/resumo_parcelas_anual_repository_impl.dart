@@ -29,10 +29,13 @@ class ResumoParcelasAnualRepositoryImpl
 
   @override
   Future<AppResult<List<ResumoParcelasAnualRow>>> load({
+    required String userId,
     required String agentId,
     required ResumoParcelasAnualFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -50,6 +53,9 @@ class ResumoParcelasAnualRepositoryImpl
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
+      requestingUserId: userId,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: ResumoParcelasAnualSql.query,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,

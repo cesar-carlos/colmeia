@@ -9,16 +9,22 @@ class LoadResumoParcelasMensalUseCase {
   final ResumoParcelasMensalRepository _repository;
 
   Future<AppResult<List<ResumoParcelasMensalRow>>> call({
+    required String userId,
     required String agentId,
     required ResumoParcelasMensalFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) {
     return _repository.load(
+      userId: userId,
       agentId: agentId,
       filter: filter,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
   }
 }

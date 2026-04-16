@@ -8,6 +8,9 @@ class AgentSqlExecuteRequest {
     required this.sql,
     this.namedParams = const <String, Object?>{},
     this.clientToken,
+    this.requestingUserId,
+    this.hubPresenceOnlineAgentIdsSnapshot,
+    this.hubConnectedFromApprovedCatalogRow,
     this.bridgeTimeoutMs,
     this.pagination,
     this.executeOptions,
@@ -17,6 +20,22 @@ class AgentSqlExecuteRequest {
   final String sql;
   final Map<String, Object?> namedParams;
   final String? clientToken;
+
+  /// When non-null and non-empty, the gated `AgentQueriesRepository` may
+  /// enforce hub presence before `sql.execute`.
+  final String? requestingUserId;
+
+  /// When non-null, SQL eligibility uses this set instead of calling
+  /// `ClientAgentsRepository.loadOnlineAgentIds` again (same wave as target
+  /// resolution). `null` means load presence from the repository (optionally
+  /// via a short TTL cache in the default checker). An empty set still means a
+  /// real snapshot with no online agents.
+  final Set<String>? hubPresenceOnlineAgentIdsSnapshot;
+
+  /// Reserved for eligibility: explicit hub flag from the fast approved-agent
+  /// catalog row (`loadApprovedAgents` with `includeOnlineStatus: false`).
+  /// When null, eligibility falls back to snapshot / cache only.
+  final bool? hubConnectedFromApprovedCatalogRow;
 
   /// HTTP bridge wait timeout (`timeoutMs` in the request body).
   final int? bridgeTimeoutMs;
@@ -30,6 +49,7 @@ class AgentSqlExecuteRequest {
   String get trimmedAgentId => agentId.trim();
   String get trimmedSql => sql.trim();
   String? get trimmedClientToken => clientToken?.trim();
+  String? get trimmedRequestingUserId => requestingUserId?.trim();
 
   String? validationError() {
     if (trimmedAgentId.isEmpty) {
@@ -47,6 +67,11 @@ class AgentSqlExecuteRequest {
     final token = trimmedClientToken;
     if (clientToken != null && (token == null || token.isEmpty)) {
       return 'clientToken must be null or non-empty';
+    }
+
+    final rid = trimmedRequestingUserId;
+    if (requestingUserId != null && (rid == null || rid.isEmpty)) {
+      return 'requestingUserId must be null or non-empty when provided';
     }
 
     final pagePagination = pagination;

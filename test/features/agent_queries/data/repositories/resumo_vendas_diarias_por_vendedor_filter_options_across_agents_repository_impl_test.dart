@@ -154,6 +154,7 @@ void main() {
 
         when(
           () => loadVendedorOptions(
+            userId: any(named: 'userId'),
             agentId: any(named: 'agentId'),
             dataVendaInicio: any(named: 'dataVendaInicio'),
             dataVendaFim: any(named: 'dataVendaFim'),
@@ -264,6 +265,7 @@ void main() {
 
         when(
           () => loadVendedorOptions(
+            userId: any(named: 'userId'),
             agentId: any(named: 'agentId'),
             dataVendaInicio: any(named: 'dataVendaInicio'),
             dataVendaFim: any(named: 'dataVendaFim'),
@@ -296,6 +298,7 @@ void main() {
         check(expectedPerAgent).equals(40);
         verify(
           () => loadVendedorOptions(
+            userId: 'user-1',
             agentId: 'agent-a',
             dataVendaInicio: dataInicio,
             dataVendaFim: dataFim,
@@ -306,6 +309,7 @@ void main() {
         ).called(1);
         verify(
           () => loadVendedorOptions(
+            userId: 'user-1',
             agentId: 'agent-b',
             dataVendaInicio: dataInicio,
             dataVendaFim: dataFim,
@@ -365,6 +369,7 @@ void main() {
 
       when(
         () => loadVendedorOptions(
+          userId: any(named: 'userId'),
           agentId: any(named: 'agentId'),
           dataVendaInicio: any(named: 'dataVendaInicio'),
           dataVendaFim: any(named: 'dataVendaFim'),
@@ -457,6 +462,7 @@ void main() {
         ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
         when(
           () => loadVendedorOptions(
+            userId: any(named: 'userId'),
             agentId: any(named: 'agentId'),
             dataVendaInicio: any(named: 'dataVendaInicio'),
             dataVendaFim: any(named: 'dataVendaFim'),
@@ -528,6 +534,7 @@ void main() {
         ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
         when(
           () => loadVendedorOptions(
+            userId: any(named: 'userId'),
             agentId: any(named: 'agentId'),
             dataVendaInicio: any(named: 'dataVendaInicio'),
             dataVendaFim: any(named: 'dataVendaFim'),
@@ -610,6 +617,7 @@ void main() {
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
         () => loadBairroOptions(
+          userId: any(named: 'userId'),
           agentId: any(named: 'agentId'),
           dataVendaInicio: any(named: 'dataVendaInicio'),
           dataVendaFim: any(named: 'dataVendaFim'),
@@ -694,6 +702,7 @@ void main() {
         ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
         when(
           () => loadMunicipioOptions(
+            userId: any(named: 'userId'),
             agentId: any(named: 'agentId'),
             dataVendaInicio: any(named: 'dataVendaInicio'),
             dataVendaFim: any(named: 'dataVendaFim'),
@@ -722,6 +731,7 @@ void main() {
 
         verify(
           () => loadMunicipioOptions(
+            userId: 'user-1',
             agentId: 'agent-x',
             dataVendaInicio: dataInicio,
             dataVendaFim: dataFim,

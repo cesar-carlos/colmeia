@@ -12,7 +12,7 @@ void main() {
   late AgentQueryPlanBuilder builder;
 
   setUp(() {
-    builder = AgentQueryPlanBuilder();
+    builder = const AgentQueryPlanBuilder();
   });
 
   test('should require exactly one target for single source', () async {
@@ -93,10 +93,61 @@ void main() {
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<ValidationFailure>();
   });
+
+  test(
+    'excludes token-ready targets that are not online when a presence '
+    'snapshot exists',
+    () async {
+      final result = builder.build(
+        queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
+        strategy: AgentQueryExecutionStrategy.mergeAll,
+        resolution: _resolution(
+          targets: <AgentQueryTarget>[
+            _target('agent-online'),
+            _target(
+              'agent-offline',
+              connectionStatus: AgentConnectionStatus.offline,
+            ),
+          ],
+          hubPresenceOnlineAgentIdsSnapshot: <String>{},
+        ),
+      );
+
+      check(result.isSuccess()).isTrue();
+      final plan = result.getOrThrow();
+      check(plan.plannedTargets.map((t) => t.agentId)).deepEquals(
+        const <String>['agent-online'],
+      );
+    },
+  );
+
+  test(
+    'single source may yield empty planned targets when the only considered '
+    'agent is offline under a presence snapshot',
+    () async {
+      final result = builder.build(
+        queryKey: AgentQueryKey.resumoParcelasDiaSemana,
+        strategy: AgentQueryExecutionStrategy.singleSource,
+        resolution: _resolution(
+          targets: <AgentQueryTarget>[
+            _target(
+              'only-agent',
+              connectionStatus: AgentConnectionStatus.offline,
+            ),
+          ],
+          hubPresenceOnlineAgentIdsSnapshot: <String>{},
+        ),
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrThrow().plannedTargets).isEmpty();
+    },
+  );
 }
 
 AgentQueryTargetResolution _resolution({
   required List<AgentQueryTarget> targets,
+  Set<String>? hubPresenceOnlineAgentIdsSnapshot,
 }) {
   return AgentQueryTargetResolution(
     consideredApprovedTargets: targets,
@@ -104,14 +155,19 @@ AgentQueryTargetResolution _resolution({
         .where((target) => !target.hasClientToken)
         .toList(growable: false),
     consideredApprovedAgentCount: targets.length,
+    hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
   );
 }
 
-AgentQueryTarget _target(String agentId, {String? clientToken = 'token'}) {
+AgentQueryTarget _target(
+  String agentId, {
+  String? clientToken = 'token',
+  AgentConnectionStatus connectionStatus = AgentConnectionStatus.online,
+}) {
   return AgentQueryTarget(
     agentId: agentId,
     displayName: agentId,
-    connectionStatus: AgentConnectionStatus.online,
+    connectionStatus: connectionStatus,
     clientToken: clientToken,
   );
 }

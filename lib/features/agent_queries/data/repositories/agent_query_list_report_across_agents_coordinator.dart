@@ -26,10 +26,13 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     required AgentQueryPlanBuilder planBuilder,
     required AgentQueryExecutor<Row> executor,
     required Future<AppResult<List<Row>>> Function({
+      required String userId,
       required String agentId,
       required Filter filter,
       String? clientToken,
       int? bridgeTimeoutMs,
+      Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+      bool? hubConnectedFromApprovedCatalogRow,
     })
     loadRowsForTarget,
     Set<String>? selectedAgentIds,
@@ -85,6 +88,10 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
           'strategy': strategy.name,
           'consideredApprovedAgentCount':
               resolution.consideredApprovedAgentCount,
+          'sqlEligibleConsideredTargetCount':
+              resolution.sqlEligibleConsideredTargetCount,
+          'skippedDueToHubPresenceCount':
+              resolution.skippedDueToHubPresenceTargets.length,
           'missingClientTokenCount':
               resolution.missingClientTokenTargets.length,
           'failureType': failure.runtimeType.toString(),
@@ -99,10 +106,15 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       plan: plan,
       loadTarget: (target) {
         return loadRowsForTarget(
+          userId: userId,
           agentId: target.agentId,
           filter: filter,
           clientToken: target.clientToken,
           bridgeTimeoutMs: plan.bridgeTimeoutMs,
+          hubPresenceOnlineAgentIdsSnapshot:
+              resolution.hubPresenceOnlineAgentIdsSnapshot,
+          hubConnectedFromApprovedCatalogRow:
+              target.hubConnectedFromApprovedCatalogRow,
         );
       },
     );
@@ -120,6 +132,10 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
           'failedAgentCount': report.failedAgentIds.length,
           'missingClientTokenCount': report.missingClientTokenAgentIds.length,
           'hasPartialFailure': report.hasPartialFailure,
+          'skippedDueToHubPresenceCount':
+              resolution.skippedDueToHubPresenceTargets.length,
+          'sqlEligibleConsideredTargetCount':
+              resolution.sqlEligibleConsideredTargetCount,
         },
       );
       return Success<AgentQueryExecutionReport<Row>, AppFailure>(report);

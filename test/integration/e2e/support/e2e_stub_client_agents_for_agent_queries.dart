@@ -168,7 +168,9 @@ final class E2eStubClientAgentsRepository implements ClientAgentsRepository {
 
   @override
   Future<Set<String>?> loadOnlineAgentIds({required String userId}) async {
-    _notUsed('loadOnlineAgentIds');
+    // Null snapshot disables hub-presence gating so e2e SQL runs without Hive
+    // online-agent cache.
+    return null;
   }
 }
 

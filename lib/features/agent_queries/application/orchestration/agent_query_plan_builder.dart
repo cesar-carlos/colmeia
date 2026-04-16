@@ -4,11 +4,19 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_policy.dart';
 import 'package:result_dart/result_dart.dart';
 
 class AgentQueryPlanBuilder {
+  const AgentQueryPlanBuilder({
+    AgentSqlExecutionEligibilityPolicy sqlPresencePolicy =
+        const AgentSqlExecutionEligibilityPolicy(),
+  }) : _sqlPresencePolicy = sqlPresencePolicy;
+
   static const int defaultBridgeTimeoutMs = 120000;
   static const int defaultRaceMaxSources = 4;
+
+  final AgentSqlExecutionEligibilityPolicy _sqlPresencePolicy;
 
   AppResult<AgentQueryPlan> build({
     required AgentQueryKey queryKey,
@@ -31,9 +39,19 @@ class AgentQueryPlanBuilder {
     }
 
     final consideredTargets = resolution.consideredApprovedTargets;
-    final plannedTargets = consideredTargets
+    final presenceSnapshot = resolution.hubPresenceOnlineAgentIdsSnapshot;
+    final tokenReadyTargets = consideredTargets
         .where((target) => target.hasClientToken)
         .toList(growable: false);
+    final plannedTargets = presenceSnapshot == null
+        ? tokenReadyTargets
+        : tokenReadyTargets
+              .where(
+                (target) => _sqlPresencePolicy.sqlAllowedForStatus(
+                  target.connectionStatus,
+                ),
+              )
+              .toList(growable: false);
 
     switch (strategy) {
       case AgentQueryExecutionStrategy.singleSource:

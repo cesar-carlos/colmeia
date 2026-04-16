@@ -41,6 +41,7 @@ void main() {
     ];
     when(
       () => repository.load(
+        userId: 'user-1',
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
@@ -56,7 +57,7 @@ void main() {
       dataVendaFim: DateTime.utc(2026, 12, 31),
     );
 
-    final result = await useCase(
+    final result = await useCase(userId: 'user-1', 
       agentId: 'agent-1',
       filter: filter,
       clientToken: 'token',
@@ -67,6 +68,7 @@ void main() {
     check(result.getOrNull()).equals(expectedRows);
     verify(
       () => repository.load(
+        userId: 'user-1',
         agentId: 'agent-1',
         filter: filter,
         clientToken: 'token',

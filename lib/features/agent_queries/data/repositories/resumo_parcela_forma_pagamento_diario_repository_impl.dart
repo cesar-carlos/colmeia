@@ -27,10 +27,13 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
 
   @override
   Future<AppResult<List<ResumoVendaProdutoDiarioRow>>> load({
+    required String userId,
     required String agentId,
     required ResumoParcelaFormaPagamentoDiarioFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -48,6 +51,9 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
+      requestingUserId: userId,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: ResumoParcelaFormaPagamentoDiarioSql.query,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,

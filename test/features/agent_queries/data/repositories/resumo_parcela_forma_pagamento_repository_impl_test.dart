@@ -34,6 +34,7 @@ void main() {
 
   test('should return validation failure when date range is invalid', () async {
     final result = await repository.load(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: ResumoParcelaFormaPagamentoFilter(
         dataVendaInicio: DateTime.utc(2026, 4, 30),
@@ -75,6 +76,7 @@ void main() {
     );
 
     final result = await repository.load(
+      userId: 'user-1',
       agentId: ' agent-1 ',
       clientToken: ' token-123 ',
       filter: ResumoParcelaFormaPagamentoFilter(
@@ -146,6 +148,7 @@ void main() {
     );
 
     final result = await repository.load(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: ResumoParcelaFormaPagamentoFilter(
         dataVendaInicio: DateTime.utc(2026, 4),
@@ -184,6 +187,7 @@ void main() {
     );
 
     final result = await repository.load(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: ResumoParcelaFormaPagamentoFilter(
         dataVendaInicio: DateTime.utc(2025, 12),

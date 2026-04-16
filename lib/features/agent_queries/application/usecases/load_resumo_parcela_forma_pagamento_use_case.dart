@@ -9,16 +9,22 @@ class LoadResumoParcelaFormaPagamentoUseCase {
   final ResumoParcelaFormaPagamentoRepository _repository;
 
   Future<AppResult<List<ResumoParcelaFormaPagamentoRow>>> call({
+    required String userId,
     required String agentId,
     required ResumoParcelaFormaPagamentoFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) {
     return _repository.load(
+      userId: userId,
       agentId: agentId,
       filter: filter,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
   }
 }

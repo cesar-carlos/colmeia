@@ -27,10 +27,13 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
 
   @override
   Future<AppResult<List<ResumoVendasDiariasPorVendedorRow>>> load({
+    required String userId,
     required String agentId,
     required ResumoVendasDiariasPorVendedorFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -48,6 +51,9 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
+      requestingUserId: userId,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: ResumoVendasDiariasPorVendedorSql.query,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,

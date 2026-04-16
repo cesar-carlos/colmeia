@@ -104,6 +104,7 @@ void main() {
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
         () => loadResumo(
+          userId: any(named: 'userId'),
           agentId: any(named: 'agentId'),
           filter: any(named: 'filter'),
           clientToken: any(named: 'clientToken'),
@@ -147,6 +148,7 @@ void main() {
       ).deepEquals(const <String>['agent-b']);
       verify(
         () => loadResumo(
+          userId: 'user-1',
           agentId: 'agent-a',
           filter: filter,
           clientToken: 'tok-a',
@@ -197,6 +199,7 @@ void main() {
     check(result.exceptionOrNull()).isA<ValidationFailure>();
     verifyNever(
       () => loadResumo.call(
+        userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
@@ -248,6 +251,7 @@ void main() {
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
         () => loadResumo(
+          userId: any(named: 'userId'),
           agentId: any(named: 'agentId'),
           filter: any(named: 'filter'),
           clientToken: any(named: 'clientToken'),

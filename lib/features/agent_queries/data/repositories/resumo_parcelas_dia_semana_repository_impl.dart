@@ -27,10 +27,13 @@ class ResumoParcelasDiaSemanaRepositoryImpl
 
   @override
   Future<AppResult<List<ResumoParcelasDiaSemanaRow>>> load({
+    required String userId,
     required String agentId,
     required ResumoParcelasDiaSemanaFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -61,6 +64,9 @@ class ResumoParcelasDiaSemanaRepositoryImpl
     };
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
+      requestingUserId: userId,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: dimensionFiltersActive
           ? ResumoParcelasDiaSemanaSql.query
           : ResumoParcelasDiaSemanaSql.queryWithoutDimensionNamedParams,

@@ -105,6 +105,7 @@ void main() {
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
         () => loadResumo(
+          userId: any(named: 'userId'),
           agentId: any(named: 'agentId'),
           filter: any(named: 'filter'),
           clientToken: any(named: 'clientToken'),
@@ -141,6 +142,7 @@ void main() {
       check(report.mergedRows).has((rows) => rows.length, 'length').equals(1);
       verify(
         () => loadResumo(
+          userId: 'user-1',
           agentId: 'agent-a',
           filter: filter,
           clientToken: 'tok-a',
@@ -193,6 +195,7 @@ void main() {
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
         () => loadResumo(
+          userId: any(named: 'userId'),
           agentId: any(named: 'agentId'),
           filter: any(named: 'filter'),
           clientToken: any(named: 'clientToken'),

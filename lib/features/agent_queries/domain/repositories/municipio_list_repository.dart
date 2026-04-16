@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/municipio_list_pa
 // ignore: one_member_abstracts
 abstract interface class MunicipioListRepository {
   Future<AppResult<MunicipioListPageResult>> loadPage({
+    required String userId,
     required String agentId,
     required MunicipioListFilter filter,
     String? clientToken,

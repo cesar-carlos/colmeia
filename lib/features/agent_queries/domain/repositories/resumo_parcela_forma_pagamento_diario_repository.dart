@@ -6,9 +6,12 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 // ignore: one_member_abstracts
 abstract interface class ResumoParcelaFormaPagamentoDiarioRepository {
   Future<AppResult<List<ResumoVendaProdutoDiarioRow>>> load({
+    required String userId,
     required String agentId,
     required ResumoParcelaFormaPagamentoDiarioFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   });
 }

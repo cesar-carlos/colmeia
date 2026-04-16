@@ -22,9 +22,11 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_execution_eligibility_checker.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository_impl.dart';
@@ -42,6 +44,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_d
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_row.dart';
@@ -52,6 +55,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/municipio_list_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository.dart';
@@ -70,18 +74,33 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_repository.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
 void registerInjectorAgentQueries(GetIt getIt) {
   getIt
+    ..registerLazySingleton<AgentSqlExecutionEligibilityPolicy>(
+      () => const AgentSqlExecutionEligibilityPolicy(),
+    )
     ..registerLazySingleton<AgentQueriesRemoteDataSource>(
       () => AppEnvironment.useFakeBackend
           ? FakeAgentQueriesRemoteDataSource()
           : ApiAgentQueriesRemoteDataSource(getIt<Dio>()),
     )
+    ..registerLazySingleton<AgentSqlExecutionEligibilityPort>(
+      () => AgentSqlExecutionEligibilityChecker(
+        clientAgentsRepository: getIt<ClientAgentsRepository>(),
+        policy: getIt<AgentSqlExecutionEligibilityPolicy>(),
+      ),
+    )
     ..registerLazySingleton<AgentQueriesRepository>(
-      () => AgentQueriesRepositoryImpl(getIt<AgentQueriesRemoteDataSource>()),
+      () => GatedAgentQueriesRepository(
+        delegate: AgentQueriesRepositoryImpl(
+          getIt<AgentQueriesRemoteDataSource>(),
+        ),
+        eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
+      ),
     )
     ..registerLazySingleton<MunicipioListRepository>(
       () => MunicipioListRepositoryImpl(
@@ -167,10 +186,13 @@ void registerInjectorAgentQueries(GetIt getIt) {
       () => AgentQueryTargetResolver(
         clientAgentsRepository: getIt(),
         clientTokenReader: getIt<AgentClientTokenReader>(),
+        policy: getIt<AgentSqlExecutionEligibilityPolicy>(),
       ),
     )
     ..registerLazySingleton<AgentQueryPlanBuilder>(
-      AgentQueryPlanBuilder.new,
+      () => AgentQueryPlanBuilder(
+        sqlPresencePolicy: getIt<AgentSqlExecutionEligibilityPolicy>(),
+      ),
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>>(
       AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>.new,

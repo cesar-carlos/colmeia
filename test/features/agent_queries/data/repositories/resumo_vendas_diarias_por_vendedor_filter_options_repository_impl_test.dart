@@ -40,6 +40,7 @@ void main() {
 
   test('returns validation failure when date range is inverted', () async {
     final result = await repository.loadVendedorOptions(
+      userId: 'user-1',
       agentId: 'agent-1',
       dataVendaInicio: dataFim,
       dataVendaFim: dataInicio,
@@ -62,6 +63,7 @@ void main() {
       );
 
       await repository.loadVendedorOptions(
+        userId: 'user-1',
         agentId: 'agent-1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,
@@ -100,6 +102,7 @@ void main() {
     );
 
     await repository.loadBairroOptions(
+      userId: 'user-1',
       agentId: 'agent-1',
       dataVendaInicio: dataInicio,
       dataVendaFim: dataFim,
@@ -128,6 +131,7 @@ void main() {
       );
 
       await repository.loadBairroOptions(
+        userId: 'user-1',
         agentId: 'agent-1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,
@@ -160,6 +164,7 @@ void main() {
       );
 
       await repository.loadMunicipioOptions(
+        userId: 'user-1',
         agentId: 'agent-1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,
@@ -190,6 +195,7 @@ void main() {
     );
 
     await repository.loadVendedorOptions(
+      userId: 'user-1',
       agentId: 'agent-1',
       dataVendaInicio: dataInicio,
       dataVendaFim: dataFim,
@@ -216,6 +222,7 @@ void main() {
     );
 
     await repository.loadMunicipioOptions(
+      userId: 'user-1',
       agentId: 'agent-1',
       dataVendaInicio: dataInicio,
       dataVendaFim: dataFim,
@@ -245,6 +252,7 @@ void main() {
     );
 
     final result = await repository.loadVendedorOptions(
+      userId: 'user-1',
       agentId: 'agent-1',
       dataVendaInicio: dataInicio,
       dataVendaFim: dataFim,
@@ -272,6 +280,7 @@ void main() {
     );
 
     final result = await repository.loadVendedorOptions(
+      userId: 'user-1',
       agentId: 'agent-1',
       dataVendaInicio: dataInicio,
       dataVendaFim: dataFim,

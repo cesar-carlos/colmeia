@@ -5,6 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 abstract interface class ResumoVendasDiariasPorVendedorFilterOptionsRepository {
   Future<AppResult<List<ResumoVendasDiariasPorVendedorVendedorOption>>>
   loadVendedorOptions({
+    required String userId,
     required String agentId,
     required DateTime dataVendaInicio,
     required DateTime dataVendaFim,
@@ -12,10 +13,13 @@ abstract interface class ResumoVendasDiariasPorVendedorFilterOptionsRepository {
     int limit = 20,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   });
 
   Future<AppResult<List<ResumoVendasDiariasPorVendedorTextOption>>>
   loadBairroOptions({
+    required String userId,
     required String agentId,
     required DateTime dataVendaInicio,
     required DateTime dataVendaFim,
@@ -23,10 +27,13 @@ abstract interface class ResumoVendasDiariasPorVendedorFilterOptionsRepository {
     int limit = 20,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   });
 
   Future<AppResult<List<ResumoVendasDiariasPorVendedorTextOption>>>
   loadMunicipioOptions({
+    required String userId,
     required String agentId,
     required DateTime dataVendaInicio,
     required DateTime dataVendaFim,
@@ -34,5 +41,7 @@ abstract interface class ResumoVendasDiariasPorVendedorFilterOptionsRepository {
     int limit = 20,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   });
 }

@@ -58,6 +58,7 @@ void main() {
     test('forwards to repository.load', () async {
       when(
         () => repository.load(
+          userId: 'user-1',
           agentId: any(named: 'agentId'),
           filter: any(named: 'filter'),
           clientToken: any(named: 'clientToken'),
@@ -70,7 +71,7 @@ void main() {
             ),
       );
 
-      await useCase(
+      await useCase(userId: 'user-1', 
         agentId: 'a1',
         filter: filter,
         clientToken: 'ct',
@@ -79,6 +80,7 @@ void main() {
 
       verify(
         () => repository.load(
+          userId: 'user-1',
           agentId: 'a1',
           filter: filter,
           clientToken: 'ct',
@@ -102,6 +104,7 @@ void main() {
     test('forwards to loadVendedorOptions', () async {
       when(
         () => repository.loadVendedorOptions(
+          userId: 'user-1',
           agentId: any(named: 'agentId'),
           dataVendaInicio: any(named: 'dataVendaInicio'),
           dataVendaFim: any(named: 'dataVendaFim'),
@@ -118,7 +121,7 @@ void main() {
             >(<ResumoVendasDiariasPorVendedorVendedorOption>[]),
       );
 
-      await useCase(
+      await useCase(userId: 'user-1', 
         agentId: 'a1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,
@@ -130,6 +133,7 @@ void main() {
 
       verify(
         () => repository.loadVendedorOptions(
+          userId: 'user-1',
           agentId: 'a1',
           dataVendaInicio: dataInicio,
           dataVendaFim: dataFim,
@@ -156,6 +160,7 @@ void main() {
     test('forwards to loadBairroOptions', () async {
       when(
         () => repository.loadBairroOptions(
+          userId: 'user-1',
           agentId: any(named: 'agentId'),
           dataVendaInicio: any(named: 'dataVendaInicio'),
           dataVendaFim: any(named: 'dataVendaFim'),
@@ -172,7 +177,7 @@ void main() {
             >(<ResumoVendasDiariasPorVendedorTextOption>[]),
       );
 
-      await useCase(
+      await useCase(userId: 'user-1', 
         agentId: 'a1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,
@@ -180,6 +185,7 @@ void main() {
 
       verify(
         () => repository.loadBairroOptions(
+          userId: 'user-1',
           agentId: 'a1',
           dataVendaInicio: dataInicio,
           dataVendaFim: dataFim,
@@ -206,6 +212,7 @@ void main() {
     test('forwards to loadMunicipioOptions', () async {
       when(
         () => repository.loadMunicipioOptions(
+          userId: 'user-1',
           agentId: any(named: 'agentId'),
           dataVendaInicio: any(named: 'dataVendaInicio'),
           dataVendaFim: any(named: 'dataVendaFim'),
@@ -222,7 +229,7 @@ void main() {
             >(<ResumoVendasDiariasPorVendedorTextOption>[]),
       );
 
-      await useCase(
+      await useCase(userId: 'user-1', 
         agentId: 'a1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,
@@ -231,6 +238,7 @@ void main() {
 
       verify(
         () => repository.loadMunicipioOptions(
+          userId: 'user-1',
           agentId: 'a1',
           dataVendaInicio: dataInicio,
           dataVendaFim: dataFim,

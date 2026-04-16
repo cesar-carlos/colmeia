@@ -43,6 +43,7 @@ void main() {
           final periodStart = periodEnd.subtract(const Duration(days: 14));
 
           final result = await repository.load(
+            userId: 'user-1',
             agentId: AppEnvironment.e2eAgentId,
             clientToken: AppEnvironment.e2eClientToken,
             filter: ResumoParcelaFormaPagamentoFilter(

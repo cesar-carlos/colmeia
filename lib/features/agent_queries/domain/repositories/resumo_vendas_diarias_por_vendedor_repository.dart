@@ -6,9 +6,12 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 // ignore: one_member_abstracts
 abstract interface class ResumoVendasDiariasPorVendedorRepository {
   Future<AppResult<List<ResumoVendasDiariasPorVendedorRow>>> load({
+    required String userId,
     required String agentId,
     required ResumoVendasDiariasPorVendedorFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   });
 }

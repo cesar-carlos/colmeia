@@ -95,10 +95,13 @@ void main() {
             executor: executor,
             loadRowsForTarget:
                 ({
+                  required userId,
                   required agentId,
                   required filter,
                   clientToken,
                   bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow,
                 }) async => throw StateError('loadRowsForTarget'),
           );
 
@@ -168,10 +171,13 @@ void main() {
             executor: executor,
             loadRowsForTarget:
                 ({
+                  required userId,
                   required agentId,
                   required filter,
                   clientToken,
                   bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow,
                 }) async {
                   loadInvoked = true;
                   return const Success<List<String>, AppFailure>(<String>['x']);
@@ -238,11 +244,15 @@ void main() {
             executor: executor,
             loadRowsForTarget:
                 ({
+                  required userId,
                   required agentId,
                   required filter,
                   clientToken,
                   bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow,
                 }) async {
+                  check(userId).equals('user-1');
                   check(agentId).equals('agent-z');
                   check(filter).equals('filter-value');
                   check(clientToken).equals('tok-z');
@@ -318,11 +328,15 @@ void main() {
             selectedAgentIds: const <String>{'agent-b'},
             loadRowsForTarget:
                 ({
+                  required userId,
                   required agentId,
                   required filter,
                   clientToken,
                   bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow,
                 }) async {
+                  check(userId).equals('user-1');
                   check(agentId).equals('agent-b');
                   check(filter).equals('filter-value');
                   check(clientToken).equals('tok-b');

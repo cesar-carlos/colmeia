@@ -111,6 +111,30 @@ void main() {
     },
   );
 
+  test(
+    'single source short-circuits with empty success when planned targets '
+    'are empty after hub presence filtering',
+    () async {
+      final result = await executor.execute(
+        plan: const AgentQueryPlan(
+          queryKey: AgentQueryKey.resumoParcelasDiaSemana,
+          strategy: AgentQueryExecutionStrategy.singleSource,
+          consideredApprovedAgentCount: 1,
+          plannedTargets: <AgentQueryTarget>[],
+          missingClientTokenTargets: <AgentQueryTarget>[],
+          bridgeTimeoutMs: 1000,
+        ),
+        loadTarget: (_) async =>
+            throw StateError('loadTarget must not be invoked'),
+      );
+
+      check(result.isSuccess()).isTrue();
+      final report = result.getOrThrow();
+      check(report.hasRows).isFalse();
+      check(report.plannedTargets).isEmpty();
+    },
+  );
+
   test('should choose the first successful target in race', () async {
     final result = await executor.execute(
       plan: _plan(

@@ -251,6 +251,15 @@ class AgentQueryExecutor<Row> {
               .join(', '),
         },
       );
+    } else if (plan.skippedOnlyDueToHubPresenceRules) {
+      AppLogger.info(
+        'Agent query produced no SQL targets after hub presence filtering',
+        context: <String, Object?>{
+          'queryKey': plan.queryKey.name,
+          'strategy': plan.strategy.name,
+          'consideredApprovedAgentCount': plan.consideredApprovedAgentCount,
+        },
+      );
     }
     return AgentQueryExecutionReport<Row>(
       queryKey: plan.queryKey,

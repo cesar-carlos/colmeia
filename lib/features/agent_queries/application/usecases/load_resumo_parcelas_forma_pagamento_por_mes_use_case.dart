@@ -9,16 +9,22 @@ class LoadResumoParcelasFormaPagamentoPorMesUseCase {
   final ResumoParcelasFormaPagamentoPorMesRepository _repository;
 
   Future<AppResult<List<ResumoParcelasFormaPagamentoPorMesRow>>> call({
+    required String userId,
     required String agentId,
     required ResumoParcelasFormaPagamentoPorMesFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) {
     return _repository.load(
+      userId: userId,
       agentId: agentId,
       filter: filter,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
   }
 }

@@ -30,10 +30,13 @@ class ResumoParcelasFormaPagamentoPorMesRepositoryImpl
 
   @override
   Future<AppResult<List<ResumoParcelasFormaPagamentoPorMesRow>>> load({
+    required String userId,
     required String agentId,
     required ResumoParcelasFormaPagamentoPorMesFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -51,6 +54,9 @@ class ResumoParcelasFormaPagamentoPorMesRepositoryImpl
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
+      requestingUserId: userId,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: ResumoParcelasFormaPagamentoPorMesSql.query,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,

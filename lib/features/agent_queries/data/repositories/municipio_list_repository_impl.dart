@@ -26,6 +26,7 @@ class MunicipioListRepositoryImpl implements MunicipioListRepository {
 
   @override
   Future<AppResult<MunicipioListPageResult>> loadPage({
+    required String userId,
     required String agentId,
     required MunicipioListFilter filter,
     String? clientToken,
@@ -49,6 +50,7 @@ class MunicipioListRepositoryImpl implements MunicipioListRepository {
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
+      requestingUserId: userId,
       sql: MunicipioListSql.pagedQuery,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,

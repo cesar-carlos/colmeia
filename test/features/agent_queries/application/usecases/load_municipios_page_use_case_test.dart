@@ -24,6 +24,7 @@ void main() {
   test('forwards to MunicipioListRepository.loadPage', () async {
     when(
       () => repository.loadPage(
+        userId: 'user-1',
         agentId: 'agent-1',
         filter: const MunicipioListFilter(),
         clientToken: 'tok',
@@ -36,6 +37,7 @@ void main() {
     );
 
     final out = await useCase.call(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: const MunicipioListFilter(),
       clientToken: 'tok',
@@ -46,6 +48,7 @@ void main() {
     check(out.getOrThrow().totalCount).equals(0);
     verify(
       () => repository.loadPage(
+        userId: 'user-1',
         agentId: 'agent-1',
         filter: const MunicipioListFilter(),
         clientToken: 'tok',

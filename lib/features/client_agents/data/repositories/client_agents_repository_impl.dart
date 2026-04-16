@@ -25,6 +25,7 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_result.
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
+import 'package:colmeia/features/client_agents/domain/services/agent_connection_status_resolver.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:result_dart/result_dart.dart';
@@ -1362,20 +1363,11 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     ClientAgentProfileDto profile, {
     required Set<String>? onlineIds,
   }) {
-    final hub = profile.isHubConnected;
-    if (hub != null) {
-      return profile.toEntity(
-        connectionStatus: hub
-            ? AgentConnectionStatus.online
-            : AgentConnectionStatus.offline,
-      );
-    }
-    final connectionStatus = switch (onlineIds) {
-      null => AgentConnectionStatus.unknown,
-      final ids when ids.contains(profile.agentId) =>
-        AgentConnectionStatus.online,
-      _ => AgentConnectionStatus.offline,
-    };
+    final connectionStatus = resolveAgentConnectionStatus(
+      agentId: profile.agentId,
+      isHubConnected: profile.isHubConnected,
+      onlineAgentIds: onlineIds,
+    );
     return profile.toEntity(connectionStatus: connectionStatus);
   }
 

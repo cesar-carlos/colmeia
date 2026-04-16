@@ -9,12 +9,14 @@ class LoadMunicipiosPageUseCase {
   final MunicipioListRepository _repository;
 
   Future<AppResult<MunicipioListPageResult>> call({
+    required String userId,
     required String agentId,
     required MunicipioListFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
   }) {
     return _repository.loadPage(
+      userId: userId,
       agentId: agentId,
       filter: filter,
       clientToken: clientToken,

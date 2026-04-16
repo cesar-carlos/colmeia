@@ -30,6 +30,7 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
   @override
   Future<AppResult<List<ResumoVendasDiariasPorVendedorVendedorOption>>>
   loadVendedorOptions({
+    required String userId,
     required String agentId,
     required DateTime dataVendaInicio,
     required DateTime dataVendaFim,
@@ -37,8 +38,11 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
     int limit = ResumoVendasDiariasSuggestionSqlParams.defaultLimit,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) {
     return _execute(
+      userId: userId,
       operation: 'loadResumoVendasDiariasPorVendedorVendedorOptions',
       agentId: agentId,
       sql: ResumoVendasDiariasPorVendedorVendedorOptionsSql.query,
@@ -55,12 +59,15 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
             ).toEntity(),
           )
           .toList(growable: false),
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
   }
 
   @override
   Future<AppResult<List<ResumoVendasDiariasPorVendedorTextOption>>>
   loadBairroOptions({
+    required String userId,
     required String agentId,
     required DateTime dataVendaInicio,
     required DateTime dataVendaFim,
@@ -68,8 +75,11 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
     int limit = ResumoVendasDiariasSuggestionSqlParams.defaultLimit,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) {
     return _execute(
+      userId: userId,
       operation: 'loadResumoVendasDiariasPorVendedorBairroOptions',
       agentId: agentId,
       sql: ResumoVendasDiariasPorVendedorBairroOptionsSql.query,
@@ -79,10 +89,6 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       limit: limit,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
-      namedParamsOverride: _bairroSuggestionNamedParams(
-        searchTerm: searchTerm,
-        limit: limit,
-      ),
       mapRows: (rows) => rows
           .map(
             (row) =>
@@ -91,12 +97,19 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
                 ).toEntity(),
           )
           .toList(growable: false),
+      namedParamsOverride: _bairroSuggestionNamedParams(
+        searchTerm: searchTerm,
+        limit: limit,
+      ),
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
   }
 
   @override
   Future<AppResult<List<ResumoVendasDiariasPorVendedorTextOption>>>
   loadMunicipioOptions({
+    required String userId,
     required String agentId,
     required DateTime dataVendaInicio,
     required DateTime dataVendaFim,
@@ -104,8 +117,11 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
     int limit = ResumoVendasDiariasSuggestionSqlParams.defaultLimit,
     String? clientToken,
     int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) {
     return _execute(
+      userId: userId,
       operation: 'loadResumoVendasDiariasPorVendedorMunicipioOptions',
       agentId: agentId,
       sql: ResumoVendasDiariasPorVendedorMunicipioOptionsSql.query,
@@ -115,10 +131,6 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       limit: limit,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
-      namedParamsOverride: _municipioSuggestionNamedParams(
-        searchTerm: searchTerm,
-        limit: limit,
-      ),
       mapRows: (rows) => rows
           .map(
             (row) =>
@@ -127,6 +139,12 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
                 ).toEntity(),
           )
           .toList(growable: false),
+      namedParamsOverride: _municipioSuggestionNamedParams(
+        searchTerm: searchTerm,
+        limit: limit,
+      ),
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
   }
 
@@ -163,6 +181,7 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
   }
 
   Future<AppResult<List<T>>> _execute<T>({
+    required String userId,
     required String operation,
     required String agentId,
     required String sql,
@@ -174,6 +193,8 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
     required int? bridgeTimeoutMs,
     required List<T> Function(List<Map<String, dynamic>> rows) mapRows,
     Map<String, Object?>? namedParamsOverride,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     final rangeError = ResumoVendasDiariasSuggestionSqlParams.validateDateRange(
       dataVendaInicio: dataVendaInicio,
@@ -197,6 +218,9 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
     );
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
+      requestingUserId: userId,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: sql,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,

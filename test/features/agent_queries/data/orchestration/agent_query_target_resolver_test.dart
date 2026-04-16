@@ -41,6 +41,11 @@ void main() {
         agentIds: any(named: 'agentIds'),
       ),
     ).thenAnswer((_) async => <String, String>{});
+    when(
+      () => agentsRepository.loadOnlineAgentIds(
+        userId: any(named: 'userId'),
+      ),
+    ).thenAnswer((_) async => null);
   });
 
   test('should fail when no approved agents exist', () async {
@@ -221,15 +226,79 @@ void main() {
         includeOnlineStatus: false,
       ),
     ).called(1);
+    verify(
+      () => agentsRepository.loadOnlineAgentIds(userId: 'user-1'),
+    ).called(1);
   });
+
+  test(
+    'marks token-ready agents offline when presence snapshot exists and '
+    'agent is not in online set',
+    () async {
+      when(
+        () => agentsRepository.loadApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+          includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          refresh: any(named: 'refresh'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+          PaginatedResult<ClientAgent>(
+            items: <ClientAgent>[
+              _agent(
+                'agent-x',
+                connectionStatus: AgentConnectionStatus.unknown,
+              ),
+            ],
+            count: 1,
+            total: 1,
+            page: 1,
+            pageSize: 50,
+          ),
+        ),
+      );
+      when(
+        () => agentsRepository.loadOnlineAgentIds(
+          userId: any(named: 'userId'),
+        ),
+      ).thenAnswer((_) async => <String>{});
+      when(
+        () => tokenStore.readMany(
+          userId: any(named: 'userId'),
+          agentIds: any(named: 'agentIds'),
+        ),
+      ).thenAnswer((_) async => <String, String>{'agent-x': 'tok-x'});
+
+      final result = await resolver.resolve(userId: 'user-1');
+
+      check(result.isSuccess()).isTrue();
+      final resolution = result.getOrThrow();
+      check(resolution.hubPresenceOnlineAgentIdsSnapshot).isNotNull();
+      check(resolution.hubPresenceOnlineAgentIdsSnapshot!.length).equals(0);
+      check(
+        resolution.consideredApprovedTargets.single.connectionStatus,
+      ).equals(AgentConnectionStatus.offline);
+      check(resolution.skippedDueToHubPresenceTargets.length).equals(1);
+      check(
+        resolution.skippedDueToHubPresenceTargets.single.agentId,
+      ).equals('agent-x');
+    },
+  );
 }
 
-ClientAgent _agent(String id, {String name = 'Agente Teste'}) {
+ClientAgent _agent(
+  String id, {
+  String name = 'Agente Teste',
+  AgentConnectionStatus connectionStatus = AgentConnectionStatus.online,
+}) {
   return ClientAgent(
     agentId: id,
     name: name,
     catalogStatus: AgentCatalogStatus.active,
-    connectionStatus: AgentConnectionStatus.online,
+    connectionStatus: connectionStatus,
     createdAt: DateTime(2025),
     updatedAt: DateTime(2025),
   );

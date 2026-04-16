@@ -88,15 +88,21 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
       raceMaxSources: raceMaxSources,
       queryKey: AgentQueryKey.resumoVendasDiariasOptsVendedor,
       executor: _vendedorExecutor,
-      loadForTarget: (target, timeoutMs, sqlFetchLimit) => _loadVendedorOptions(
-        agentId: target.agentId,
-        dataVendaInicio: dataVendaInicio,
-        dataVendaFim: dataVendaFim,
-        searchTerm: searchTerm,
-        limit: sqlFetchLimit,
-        clientToken: target.clientToken,
-        bridgeTimeoutMs: timeoutMs,
-      ),
+      loadForTarget: (target, timeoutMs, sqlFetchLimit, resolution) =>
+          _loadVendedorOptions(
+            userId: userId,
+            agentId: target.agentId,
+            dataVendaInicio: dataVendaInicio,
+            dataVendaFim: dataVendaFim,
+            searchTerm: searchTerm,
+            limit: sqlFetchLimit,
+            clientToken: target.clientToken,
+            bridgeTimeoutMs: timeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                resolution.hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                target.hubConnectedFromApprovedCatalogRow,
+          ),
       postProcess: (merged) =>
           _postDedupeVendedorOptions(merged, effectiveLimit),
     );
@@ -130,15 +136,21 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
       raceMaxSources: raceMaxSources,
       queryKey: AgentQueryKey.resumoVendasDiariasOptsBairro,
       executor: _textExecutor,
-      loadForTarget: (target, timeoutMs, sqlFetchLimit) => _loadBairroOptions(
-        agentId: target.agentId,
-        dataVendaInicio: dataVendaInicio,
-        dataVendaFim: dataVendaFim,
-        searchTerm: searchTerm,
-        limit: sqlFetchLimit,
-        clientToken: target.clientToken,
-        bridgeTimeoutMs: timeoutMs,
-      ),
+      loadForTarget: (target, timeoutMs, sqlFetchLimit, resolution) =>
+          _loadBairroOptions(
+            userId: userId,
+            agentId: target.agentId,
+            dataVendaInicio: dataVendaInicio,
+            dataVendaFim: dataVendaFim,
+            searchTerm: searchTerm,
+            limit: sqlFetchLimit,
+            clientToken: target.clientToken,
+            bridgeTimeoutMs: timeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                resolution.hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                target.hubConnectedFromApprovedCatalogRow,
+          ),
       postProcess: (merged) => _postDedupeTextOptions(merged, effectiveLimit),
     );
   }
@@ -171,8 +183,9 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
       raceMaxSources: raceMaxSources,
       queryKey: AgentQueryKey.resumoVendasDiariasOptsMunicipio,
       executor: _textExecutor,
-      loadForTarget: (target, timeoutMs, sqlFetchLimit) =>
+      loadForTarget: (target, timeoutMs, sqlFetchLimit, resolution) =>
           _loadMunicipioOptions(
+            userId: userId,
             agentId: target.agentId,
             dataVendaInicio: dataVendaInicio,
             dataVendaFim: dataVendaFim,
@@ -180,6 +193,10 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
             limit: sqlFetchLimit,
             clientToken: target.clientToken,
             bridgeTimeoutMs: timeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                resolution.hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                target.hubConnectedFromApprovedCatalogRow,
           ),
       postProcess: (merged) => _postDedupeTextOptions(merged, effectiveLimit),
     );
@@ -201,6 +218,7 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
       AgentQueryTarget target,
       int bridgeTimeoutMs,
       int sqlFetchLimit,
+      AgentQueryTargetResolution resolution,
     )
     loadForTarget,
     required List<T> Function(List<T> merged) postProcess,
@@ -271,6 +289,10 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
           'strategy': strategy.name,
           'consideredApprovedAgentCount':
               resolution.consideredApprovedAgentCount,
+          'sqlEligibleConsideredTargetCount':
+              resolution.sqlEligibleConsideredTargetCount,
+          'skippedDueToHubPresenceCount':
+              resolution.skippedDueToHubPresenceTargets.length,
           'missingClientTokenCount':
               resolution.missingClientTokenTargets.length,
           'failureType': failure.runtimeType.toString(),
@@ -294,6 +316,7 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
           target,
           plan.bridgeTimeoutMs,
           perAgentFetchLimit,
+          resolution,
         );
       },
     );
