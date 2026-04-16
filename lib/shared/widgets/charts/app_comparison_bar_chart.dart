@@ -52,6 +52,8 @@ class AppComparisonBarChartStyle {
     this.showScrollFade = true,
     this.horizontalScrollSemanticsHint,
     this.tooltipLabelMaxChars,
+    this.stickyPrimaryYAxisWhileScrolling = true,
+    this.stickyPrimaryYAxisWidth = 72,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -226,6 +228,13 @@ class AppComparisonBarChartStyle {
   /// Truncates tooltip text to this length (ellipsis). When null, tooltips are
   /// unchanged. Helps avoid layout overflow for long category names.
   final int? tooltipLabelMaxChars;
+
+  /// When true and horizontal scroll is active, keeps the primary (left) Y-axis
+  /// labels in a fixed column while the plot scrolls.
+  final bool stickyPrimaryYAxisWhileScrolling;
+
+  /// Width reserved for the sticky primary Y-axis column (tick labels).
+  final double stickyPrimaryYAxisWidth;
 }
 
 /// Structured payload emitted when the user taps a bar.

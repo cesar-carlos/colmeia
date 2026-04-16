@@ -5,6 +5,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -89,14 +90,21 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
     }
 
     // --- build the inner Syncfusion chart --------------------------------
-    Widget buildChart(BuildContext chartContext, double slotWidth) {
+    Widget buildChart(
+      BuildContext chartContext,
+      double slotWidth, {
+      required bool yAxisLabelsVisible,
+      required bool xAxisLabelsVisible,
+      required bool yAxisGridVisible,
+      required bool enableInteraction,
+    }) {
       final resolvedSpacing = spacingForSlotWidth(slotWidth);
       final resolvedRotation = xLabelRotationForSlotWidth(slotWidth);
       return SfCartesianChart(
         margin: _comparisonBarChartMargin(chartContext, style),
         plotAreaBorderWidth: 0,
         plotAreaBackgroundColor: style.plotAreaBackgroundColor,
-        onDataLabelRender: style.showDataLabels
+        onDataLabelRender: style.showDataLabels && enableInteraction
             ? (args) {
                 final pointIndex = args.pointIndex;
                 if (pointIndex < 0) {
@@ -127,9 +135,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 );
               }
             : null,
-        onTooltipRender: tooltipLabels == null
-            ? null
-            : (args) {
+        onTooltipRender: enableInteraction && tooltipLabels != null
+            ? (args) {
                 final index = args.pointIndex?.toInt();
                 if (index != null &&
                     index >= 0 &&
@@ -139,34 +146,42 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                     args.text = tooltipLabel;
                   }
                 }
-              },
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+              }
+            : null,
+        tooltipBehavior: TooltipBehavior(
+          enable: enableInteraction && style.showTooltip,
+        ),
         primaryXAxis: CategoryAxis(
-          isVisible: style.showXAxis,
+          isVisible: style.showXAxis && xAxisLabelsVisible,
           majorGridLines: const MajorGridLines(width: 0),
           labelRotation: resolvedRotation.round(),
           labelStyle: style.axisLabelTextStyle,
           title: AxisTitle(
-            text: style.xAxisTitle ?? '',
+            text: xAxisLabelsVisible ? (style.xAxisTitle ?? '') : '',
             textStyle: style.axisLabelTextStyle,
           ),
         ),
         primaryYAxis: NumericAxis(
           isVisible: style.showYAxis,
+          rangePadding: _needsOuterDataLabelHeadroom(style)
+              ? ChartRangePadding.additionalEnd
+              : ChartRangePadding.auto,
           axisLine: const AxisLine(width: 0),
           minimum: style.minY?.toDouble(),
           maximum: style.maxY?.toDouble(),
           interval: style.interval?.toDouble(),
           majorGridLines: MajorGridLines(
-            width: style.showYGridLines ? 1 : 0,
+            width: yAxisGridVisible && style.showYGridLines ? 1 : 0,
           ),
           labelStyle: style.axisLabelTextStyle,
           title: AxisTitle(
-            text: style.yAxisTitle ?? '',
+            text: yAxisLabelsVisible ? (style.yAxisTitle ?? '') : '',
             textStyle: style.axisLabelTextStyle,
           ),
           numberFormat: style.yAxisFormat,
-          axisLabelFormatter: style.yAxisFormat == null
+          axisLabelFormatter: !yAxisLabelsVisible
+              ? (details) => ChartAxisLabel('', details.textStyle)
+              : style.yAxisFormat == null
               ? null
               : (details) => ChartAxisLabel(
                   style.yAxisFormat!.format(details.value),
@@ -183,8 +198,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 : (point, index) => index >= 0 && index < dataLabels!.length
                       ? dataLabels![index]
                       : null,
-            color: pointColors == null ? resolvedBarColor : null,
-            pointColorMapper: pointColors != null
+            color: enableInteraction
+                ? (pointColors == null ? resolvedBarColor : null)
+                : resolvedBarColor.withValues(alpha: 0),
+            pointColorMapper: enableInteraction && pointColors != null
                 ? (point, index) => index >= 0 && index < pointColors!.length
                       ? pointColors![index] ?? resolvedBarColor
                       : resolvedBarColor
@@ -197,12 +214,12 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             animationDuration:
                 style.animationDuration?.inMilliseconds.toDouble() ?? 1500,
             dataLabelSettings: DataLabelSettings(
-              isVisible: style.showDataLabels,
+              isVisible: style.showDataLabels && enableInteraction,
               textStyle: style.dataLabelTextStyle,
               labelAlignment: style.dataLabelAlignment,
               offset: style.dataLabelOffset ?? Offset.zero,
             ),
-            onPointTap: onPointTap == null
+            onPointTap: onPointTap == null || !enableInteraction
                 ? null
                 : (details) {
                     final index = details.pointIndex;
@@ -221,44 +238,115 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
       height: resolvedHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final availableWidth = constraints.hasBoundedWidth
+          final mediaWidth = MediaQuery.sizeOf(context).width;
+          var layoutWidth =
+              constraints.hasBoundedWidth &&
+                  constraints.maxWidth.isFinite &&
+                  constraints.maxWidth > 0
               ? constraints.maxWidth
-              : minBarWidth * points.length;
+              : mediaWidth;
+          if (!layoutWidth.isFinite || layoutWidth <= 0) {
+            layoutWidth = minBarWidth * points.length;
+          }
 
-          if (!style.enableAutoScroll) {
-            final slotWidth = points.isEmpty
-                ? minBarWidth
-                : availableWidth / points.length;
+          final n = points.length;
+
+          Widget sizedBarChart(double width, double slotW, double chartHeight) {
             return SizedBox(
-              width: availableWidth,
-              height: resolvedHeight,
-              child: buildChart(context, slotWidth),
+              width: width,
+              height: chartHeight,
+              child: buildChart(
+                context,
+                slotW,
+                yAxisLabelsVisible: true,
+                xAxisLabelsVisible: true,
+                yAxisGridVisible: true,
+                enableInteraction: true,
+              ),
             );
           }
 
-          final requiredWidth = math.max(
-            availableWidth,
-            minBarWidth * points.length,
-          );
-          final needsScroll = requiredWidth > availableWidth;
-          final slotWidth = points.isEmpty
-              ? minBarWidth
-              : requiredWidth / points.length;
-
-          final chartBox = SizedBox(
-            width: requiredWidth,
-            height: resolvedHeight,
-            child: buildChart(context, slotWidth),
-          );
-
-          if (!needsScroll) {
-            return chartBox;
+          if (!style.enableAutoScroll) {
+            final slotW = layoutWidth / n;
+            return sizedBarChart(layoutWidth, slotW, resolvedHeight);
           }
 
-          return _ComparisonBarChartHorizontalScroll(
-            chartContent: chartBox,
-            showFade: style.showScrollFade,
-            semanticsHint: style.horizontalScrollSemanticsHint,
+          final requiredFull = math.max(layoutWidth, minBarWidth * n);
+          final needsScroll = requiredFull > layoutWidth;
+
+          if (!needsScroll) {
+            final slotW = layoutWidth / n;
+            return sizedBarChart(layoutWidth, slotW, resolvedHeight);
+          }
+
+          const scrollSlot = kChartHorizontalScrollBottomTrackSlot;
+          final chartBodyHeight = resolvedHeight - scrollSlot;
+
+          final sticky = style.stickyPrimaryYAxisWhileScrolling;
+          final stickyW = sticky ? style.stickyPrimaryYAxisWidth : 0.0;
+          final plotViewport = (layoutWidth - stickyW)
+              .clamp(1, double.infinity)
+              .toDouble();
+          final requiredPlot = math.max(plotViewport, minBarWidth * n);
+          final slotW = requiredPlot / n;
+
+          if (!sticky) {
+            return ChartHorizontalScrollShell(
+              sizedBarChart(requiredPlot, slotW, chartBodyHeight),
+              bottomTrackSlot: scrollSlot,
+              showFade: style.showScrollFade,
+              semanticsHint: style.horizontalScrollSemanticsHint,
+            );
+          }
+
+          final stripChart = SizedBox(
+            width: stickyW,
+            height: resolvedHeight,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                height: chartBodyHeight,
+                child: buildChart(
+                  context,
+                  slotW,
+                  yAxisLabelsVisible: true,
+                  xAxisLabelsVisible: false,
+                  yAxisGridVisible: false,
+                  enableInteraction: false,
+                ),
+              ),
+            ),
+          );
+
+          final plotInner = SizedBox(
+            width: requiredPlot,
+            height: chartBodyHeight,
+            child: buildChart(
+              context,
+              slotW,
+              yAxisLabelsVisible: false,
+              xAxisLabelsVisible: true,
+              yAxisGridVisible: true,
+              enableInteraction: true,
+            ),
+          );
+
+          return SizedBox(
+            height: resolvedHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                stripChart,
+                Expanded(
+                  child: ChartHorizontalScrollShell(
+                    plotInner,
+                    bottomTrackSlot: scrollSlot,
+                    showFade: style.showScrollFade,
+                    semanticsHint: style.horizontalScrollSemanticsHint,
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -295,7 +383,8 @@ EdgeInsets _comparisonBarChartMargin(
   final estimatedLineHeight = (fontSize * heightFactor).clamp(14.0, 32.0);
   final extraGap = tokens?.gapSm ?? 8.0;
   final lift = style.dataLabelOffset?.dy ?? 0;
-  final minTop = estimatedLineHeight + lift + extraGap;
+  final headroomBoost = (tokens?.contentSpacing ?? 16.0) * 2;
+  final minTop = estimatedLineHeight + lift.abs() + extraGap + headroomBoost;
   final top = math.max(base.top, minTop);
   return EdgeInsets.fromLTRB(base.left, top, base.right, base.bottom);
 }
@@ -320,134 +409,3 @@ const double _kDefaultBarWidthRatio = 0.7;
 
 // Default spacing ratio between bars when barGap is not specified.
 const double _kDefaultSpacingRatio = 0.2;
-
-// Width of the edge fade overlays in logical pixels.
-const double _kScrollFadeWidth = 32;
-
-// Threshold below which scroll position is considered "at end" (float noise).
-const double _kScrollEdgeThreshold = 0.5;
-
-bool _comparisonChartScrollbarThumbVisible(BuildContext context) {
-  switch (Theme.of(context).platform) {
-    case TargetPlatform.windows:
-    case TargetPlatform.macOS:
-    case TargetPlatform.linux:
-      return true;
-    case TargetPlatform.android:
-    case TargetPlatform.fuchsia:
-    case TargetPlatform.iOS:
-      return false;
-  }
-}
-
-/// Horizontal scroll for wide bar charts: [Scrollbar] on desktop, optional
-/// edge fades, optional semantics hint for the scroll gesture.
-class _ComparisonBarChartHorizontalScroll extends StatefulWidget {
-  const _ComparisonBarChartHorizontalScroll({
-    required this.chartContent,
-    this.showFade = true,
-    this.semanticsHint,
-  });
-
-  final Widget chartContent;
-  final bool showFade;
-  final String? semanticsHint;
-
-  @override
-  State<_ComparisonBarChartHorizontalScroll> createState() =>
-      _ComparisonBarChartHorizontalScrollState();
-}
-
-class _ComparisonBarChartHorizontalScrollState
-    extends State<_ComparisonBarChartHorizontalScroll> {
-  late final ScrollController _controller;
-  bool _showLeftFade = false;
-  bool _showRightFade = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = ScrollController();
-    if (widget.showFade) {
-      _controller.addListener(_onScroll);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _onScroll();
-        }
-      });
-    }
-  }
-
-  void _onScroll() {
-    if (!_controller.hasClients) return;
-    final pos = _controller.position;
-    final showLeft = pos.pixels > _kScrollEdgeThreshold;
-    final showRight = pos.pixels < pos.maxScrollExtent - _kScrollEdgeThreshold;
-    if (showLeft == _showLeftFade && showRight == _showRightFade) return;
-    setState(() {
-      _showLeftFade = showLeft;
-      _showRightFade = showRight;
-    });
-  }
-
-  @override
-  void dispose() {
-    if (widget.showFade) {
-      _controller.removeListener(_onScroll);
-    }
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    Widget scrollable = Scrollbar(
-      controller: _controller,
-      thumbVisibility: _comparisonChartScrollbarThumbVisible(context),
-      child: SingleChildScrollView(
-        controller: _controller,
-        scrollDirection: Axis.horizontal,
-        child: widget.chartContent,
-      ),
-    );
-    final hint = widget.semanticsHint;
-    if (hint != null && hint.isNotEmpty) {
-      scrollable = Semantics(hint: hint, child: scrollable);
-    }
-
-    if (!widget.showFade) {
-      return scrollable;
-    }
-
-    final fadeColor = Theme.of(context).colorScheme.surface;
-    return Stack(
-      children: <Widget>[
-        scrollable,
-        if (_showLeftFade) _buildFade(fadeColor, isLeft: true),
-        if (_showRightFade) _buildFade(fadeColor, isLeft: false),
-      ],
-    );
-  }
-
-  Widget _buildFade(Color fadeColor, {required bool isLeft}) {
-    return Positioned(
-      left: isLeft ? 0 : null,
-      right: isLeft ? null : 0,
-      top: 0,
-      bottom: 0,
-      width: _kScrollFadeWidth,
-      child: IgnorePointer(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: <Color>[
-                fadeColor.withValues(alpha: isLeft ? 0.85 : 0),
-                fadeColor.withValues(alpha: isLeft ? 0 : 0.85),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

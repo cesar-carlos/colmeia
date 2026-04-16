@@ -17,6 +17,7 @@ class AppComboChartStyle {
     this.showTooltip = true,
     this.showYGridLines = true,
     this.showXAxis = true,
+    this.showRightYAxis = true,
     this.showLegend = true,
     this.showMarkers = true,
     this.axisLabelTextStyle,
@@ -25,6 +26,13 @@ class AppComboChartStyle {
     this.lineColor,
     this.showDataLabels = false,
     this.dataLabelTextStyle,
+    this.enableAutoScroll = true,
+    // Default matches AppThemeTokens.chartComboDefaultCategoryMinSlotWidth.
+    this.minCategorySlotWidth = 80,
+    this.showScrollFade = true,
+    this.horizontalScrollSemanticsHint,
+    this.stickyPrimaryYAxisWhileScrolling = true,
+    this.stickyPrimaryYAxisWidth = 72,
   });
 
   final double? height;
@@ -43,6 +51,11 @@ class AppComboChartStyle {
   final bool showTooltip;
   final bool showYGridLines;
   final bool showXAxis;
+
+  /// When false, hides the right Y-axis tick labels (line series scale). The
+  /// line still uses that axis for scaling; tooltips keep full values.
+  final bool showRightYAxis;
+
   final bool showLegend;
 
   /// Whether each line data point shows a marker dot.
@@ -60,6 +73,27 @@ class AppComboChartStyle {
 
   final bool showDataLabels;
   final TextStyle? dataLabelTextStyle;
+
+  /// When true, widens the plot (minimum [minCategorySlotWidth] per category)
+  /// and wraps it in horizontal scroll if wider than the layout.
+  final bool enableAutoScroll;
+
+  /// Minimum logical width per category (bar slot) when [enableAutoScroll] is
+  /// true. Higher values trigger horizontal scroll sooner on narrow layouts.
+  final double minCategorySlotWidth;
+
+  /// Trailing edge fade when horizontal scroll is active.
+  final bool showScrollFade;
+
+  /// Semantics hint when horizontal scroll is active (e.g. swipe to see more).
+  final String? horizontalScrollSemanticsHint;
+
+  /// When true and horizontal scroll is active, keeps the primary (left) Y-axis
+  /// labels in a fixed column while the plot scrolls.
+  final bool stickyPrimaryYAxisWhileScrolling;
+
+  /// Width reserved for the sticky primary Y-axis column (tick labels).
+  final double stickyPrimaryYAxisWidth;
 }
 
 enum AppComboChartSeriesType {

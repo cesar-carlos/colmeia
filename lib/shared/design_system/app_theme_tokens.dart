@@ -25,6 +25,8 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     required this.shellRailWidthDesktop,
     required this.chartCompactHeight,
     required this.chartStandardHeight,
+    required this.chartComboDefaultCategoryMinSlotWidth,
+    required this.chartOverviewMonthlyCategoryMinSlotWidth,
     required this.authGlassBlurSigma,
     required this.authGlassSurfaceOpacity,
     required this.authGlassCornerRadius,
@@ -79,6 +81,8 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       shellRailWidthDesktop: 296,
       chartCompactHeight: 180,
       chartStandardHeight: 260,
+      chartComboDefaultCategoryMinSlotWidth: 80,
+      chartOverviewMonthlyCategoryMinSlotWidth: 96,
       authGlassBlurSigma: 20,
       authGlassSurfaceOpacity: 0.88,
       authGlassCornerRadius: 24,
@@ -149,6 +153,14 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
   final double shellRailWidthDesktop;
   final double chartCompactHeight;
   final double chartStandardHeight;
+
+  /// Minimum horizontal pixels per category for combo chart auto-scroll when
+  /// the style does not override the slot width.
+  final double chartComboDefaultCategoryMinSlotWidth;
+
+  /// Minimum pixels per month on the overview home last-twelve-months chart;
+  /// higher values trigger horizontal scroll sooner on narrow layouts.
+  final double chartOverviewMonthlyCategoryMinSlotWidth;
 
   final double authGlassBlurSigma;
   final double authGlassSurfaceOpacity;
@@ -254,6 +266,8 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     double? shellRailWidthDesktop,
     double? chartCompactHeight,
     double? chartStandardHeight,
+    double? chartComboDefaultCategoryMinSlotWidth,
+    double? chartOverviewMonthlyCategoryMinSlotWidth,
     double? authGlassBlurSigma,
     double? authGlassSurfaceOpacity,
     double? authGlassCornerRadius,
@@ -311,6 +325,12 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           shellRailWidthDesktop ?? this.shellRailWidthDesktop,
       chartCompactHeight: chartCompactHeight ?? this.chartCompactHeight,
       chartStandardHeight: chartStandardHeight ?? this.chartStandardHeight,
+      chartComboDefaultCategoryMinSlotWidth:
+          chartComboDefaultCategoryMinSlotWidth ??
+          this.chartComboDefaultCategoryMinSlotWidth,
+      chartOverviewMonthlyCategoryMinSlotWidth:
+          chartOverviewMonthlyCategoryMinSlotWidth ??
+          this.chartOverviewMonthlyCategoryMinSlotWidth,
       authGlassBlurSigma: authGlassBlurSigma ?? this.authGlassBlurSigma,
       authGlassSurfaceOpacity:
           authGlassSurfaceOpacity ?? this.authGlassSurfaceOpacity,
@@ -447,6 +467,20 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
             t,
           ) ??
           chartStandardHeight,
+      chartComboDefaultCategoryMinSlotWidth:
+          lerpDouble(
+            chartComboDefaultCategoryMinSlotWidth,
+            other.chartComboDefaultCategoryMinSlotWidth,
+            t,
+          ) ??
+          chartComboDefaultCategoryMinSlotWidth,
+      chartOverviewMonthlyCategoryMinSlotWidth:
+          lerpDouble(
+            chartOverviewMonthlyCategoryMinSlotWidth,
+            other.chartOverviewMonthlyCategoryMinSlotWidth,
+            t,
+          ) ??
+          chartOverviewMonthlyCategoryMinSlotWidth,
       authGlassBlurSigma:
           lerpDouble(
             authGlassBlurSigma,

@@ -23,8 +23,9 @@ class OverviewMonthlyParcelsComboChart extends StatelessWidget {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final localeName = Localizations.localeOf(context).toString();
     final leftAxisFormat = NumberFormat.decimalPattern(localeName);
-    final rightAxisFormat =
-        AppBrFormatters.compactCurrencyFormatForLocale(localeName);
+    final rightAxisFormat = AppBrFormatters.compactCurrencyFormatForLocale(
+      localeName,
+    );
 
     final emptyMessage = loadFailed
         ? l10n.overviewMonthlyParcelsLoadFailed
@@ -46,6 +47,10 @@ class OverviewMonthlyParcelsComboChart extends StatelessWidget {
           leftAxisFormat: leftAxisFormat,
           rightAxisFormat: rightAxisFormat,
           chartPadding: EdgeInsets.only(top: tokens.gapSm),
+          showRightYAxis: false,
+          minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
+          horizontalScrollSemanticsHint:
+              l10n.overviewComparisonBarHorizontalScrollHint,
         ),
         emptyPlaceholder: points.isEmpty
             ? Padding(

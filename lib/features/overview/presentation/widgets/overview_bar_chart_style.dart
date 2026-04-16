@@ -24,9 +24,9 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     autoRotateXLabels: false,
     wrapXAxisLabelsInTwoLines: true,
     wrapXAxisCharsPerLine: isRanking ? 14 : 12,
-    dataLabelOffset: Offset(0, tokens.gapMd),
+    dataLabelOffset: Offset(0, isRanking ? tokens.gapSm : tokens.gapMd),
     tooltipLabelMaxChars: 56,
-    minBarWidth: isRanking ? 84 : null,
+    minBarWidth: isRanking ? 84 : 76,
     height: isRanking
         ? tokens.chartStandardHeight + tokens.contentSpacing * 3
         : null,
