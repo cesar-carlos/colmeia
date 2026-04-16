@@ -42,6 +42,11 @@ Essa feature ja cobre:
 - solicitacao manual de acesso por `agentId`
 - fila local de acoes pendentes para solicitar ou remover acesso
 - sincronizacao posterior dessas pendencias com a API
+  (varias pendencias de `requestAccess` no mesmo sync viram um ou mais
+  `POST /client/me/agents` em lotes de ate 50 ids; remocoes pendentes usam
+  `DELETE /client/me/agents/{id}` em paralelo entre si, com limite de
+  concorrencia; linhas presas em `syncing` por interrupcao anterior sao
+  revertidas para `queued` antes de cada sync)
 - leitura de status operacional via endpoint de agentes online
 
 No shell principal do app, a area de agentes ja esta exposta pela rota `/agents`.
@@ -74,6 +79,7 @@ As rotas relevantes ja foram centralizadas em `lib/core/network/api_routes.dart`
 - `GET /client/me/agents/{agentId}`
 - `POST /client/me/agents`
 - `DELETE /client/me/agents`
+- `DELETE /client/me/agents/{agentId}` (same effect as bulk delete with one id; used on pending sync)
 - `GET /client/me/agent-access-requests`
 
 ### Descoberta e catalogo

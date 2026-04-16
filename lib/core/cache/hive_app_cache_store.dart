@@ -23,6 +23,24 @@ class HiveAppCacheStore implements AppCacheStore {
   }
 
   @override
+  Future<void> removeString(String key) async {
+    try {
+      await _box.delete(key);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Hive cache delete failed',
+        context: <String, Object?>{
+          'operation': 'removeString',
+          'cacheKeyLength': key.length,
+          'cacheKeyHash': key.hashCode,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
   Future<void> putString({
     required String key,
     required String value,

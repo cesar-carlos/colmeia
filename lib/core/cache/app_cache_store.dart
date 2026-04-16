@@ -10,6 +10,9 @@ abstract class AppCacheStore {
     required String value,
   });
 
+  /// Removes a single entry when present (e.g. invalidate stale agent detail).
+  Future<void> removeString(String key);
+
   /// Clears all cached entries (e.g. after sign-out so another user never reads
   /// stale dashboard or report snapshots).
   Future<void> clearAll();

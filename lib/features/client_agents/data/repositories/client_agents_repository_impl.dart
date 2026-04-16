@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
@@ -17,12 +19,14 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_catalog_item.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agents_list_page_size.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_approved_agent_probe_outcome.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:result_dart/result_dart.dart';
 
 class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
@@ -629,6 +633,129 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
   }
 
   @override
+  Future<AppResult<ClientApprovedAgentProbeOutcome>> probeApprovedAgentLink({
+    required String userId,
+    required String agentId,
+  }) async {
+    try {
+      final remote = await _remoteDataSource.fetchApprovedAgentDetailOrNull(
+        agentId,
+      );
+      if (remote == null) {
+        await _localDataSource.clearApprovedAgentDetail(
+          userId: userId,
+          agentId: agentId,
+        );
+        return const Success<ClientApprovedAgentProbeOutcome, AppFailure>(
+          ClientApprovedAgentProbeOutcome.notLinked(),
+        );
+      }
+      await _localDataSource.saveApprovedAgentDetail(
+        userId: userId,
+        agentId: agentId,
+        payload: remote,
+      );
+      await _persistHubPresenceCacheFromProfiles(
+        userId: userId,
+        profiles: <ClientAgentProfileDto>[remote.agent],
+      );
+      final onlineIds = await _loadOnlineAgentIds(userId: userId);
+      return Success<ClientApprovedAgentProbeOutcome, AppFailure>(
+        ClientApprovedAgentProbeOutcome.linked(
+          _mapProfile(remote.agent, onlineIds: onlineIds),
+        ),
+      );
+    } on DioException catch (error, stackTrace) {
+      return Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to probe approved agent link',
+          fallbackUserMessage: 'Could not verify agent link status.',
+          context: <String, Object?>{
+            'operation': 'probeApprovedAgentLink',
+            'userId': userId,
+            'agentId': agentId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.probeApprovedAgentLink,
+          },
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      return Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to probe approved agent link',
+          fallbackUserMessage: 'Could not verify agent link status.',
+          context: <String, Object?>{
+            'operation': 'probeApprovedAgentLink',
+            'userId': userId,
+            'agentId': agentId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.probeApprovedAgentLink,
+          },
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<AppResult<Unit>> discardQueuedRequestAccessForAgents({
+    required String userId,
+    required Set<String> agentIds,
+  }) async {
+    if (agentIds.isEmpty) {
+      return const Success<Unit, AppFailure>(unit);
+    }
+    try {
+      final actions = await _localDataSource.readPendingActions(userId: userId);
+      final updated = actions
+          .where(
+            (action) => !_shouldDiscardRequestAccessAction(action, agentIds),
+          )
+          .toList(growable: false);
+      if (updated.length == actions.length) {
+        return const Success<Unit, AppFailure>(unit);
+      }
+      await _localDataSource.savePendingActions(
+        userId: userId,
+        actions: updated,
+      );
+      return const Success<Unit, AppFailure>(unit);
+    } on Object catch (error, stackTrace) {
+      return Failure<Unit, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to discard queued request-access actions',
+          fallbackUserMessage: 'Could not update local pending actions.',
+          context: <String, Object?>{
+            'operation': 'discardQueuedRequestAccessForAgents',
+            'userId': userId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.readPendingActions,
+          },
+        ),
+      );
+    }
+  }
+
+  bool _shouldDiscardRequestAccessAction(
+    PendingAgentAction action,
+    Set<String> agentIds,
+  ) {
+    if (action.type != PendingAgentActionType.requestAccess) {
+      return false;
+    }
+    if (!agentIds.contains(action.agentId)) {
+      return false;
+    }
+    return action.state == PendingAgentActionState.queued ||
+        action.state == PendingAgentActionState.failed;
+  }
+
+  @override
   Future<AppResult<PaginatedResult<ClientAgentAccessRequest>>>
   loadAccessRequests({
     required String userId,
@@ -838,12 +965,51 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     }
   }
 
+  Future<List<PendingAgentAction>> _recoverStaleSyncingPendingActions({
+    required String userId,
+    required List<PendingAgentAction> actions,
+  }) async {
+    final staleCount = actions
+        .where((a) => a.state == PendingAgentActionState.syncing)
+        .length;
+    if (staleCount == 0) {
+      return actions;
+    }
+    final recovered = actions
+        .map(
+          (a) => a.state == PendingAgentActionState.syncing
+              ? a.copyWith(
+                  state: PendingAgentActionState.queued,
+                  clearErrorMessage: true,
+                )
+              : a,
+        )
+        .toList(growable: false);
+    await _localDataSource.savePendingActions(
+      userId: userId,
+      actions: recovered,
+    );
+    AppLogger.info(
+      'Recovered orphaned syncing client-agent pending actions',
+      context: <String, Object?>{
+        'operation': 'recoverStaleSyncingPendingActions',
+        'userId': userId,
+        'recoveredCount': staleCount,
+      },
+    );
+    return recovered;
+  }
+
   @override
   Future<AppResult<SyncPendingAgentActionsResult>> syncPendingActions({
     required String userId,
   }) async {
     try {
-      final current = await _localDataSource.readPendingActions(userId: userId);
+      var current = await _localDataSource.readPendingActions(userId: userId);
+      current = await _recoverStaleSyncingPendingActions(
+        userId: userId,
+        actions: current,
+      );
       final syncCandidates = current
           .where(
             (action) =>
@@ -880,28 +1046,94 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       final successfulRemoveAccessAgentIds = <String>{};
       final failedRequestAccessAgentIds = <String>{};
       final failedRemoveAccessAgentIds = <String>{};
-      for (final action in syncCandidates) {
+      final requestAccessPollAgentIds = <String>{};
+      final requestAccessAlreadyApprovedAgentIds = <String>{};
+      final requestAccessDebouncedAgentIds = <String>{};
+      final requestAccessNewRequestsAgentIds = <String>{};
+
+      final requestActions = syncCandidates
+          .where((a) => a.type == PendingAgentActionType.requestAccess)
+          .toList(growable: false);
+      final removeActions = syncCandidates
+          .where((a) => a.type == PendingAgentActionType.removeAccess)
+          .toList(growable: false);
+
+      final chunkIds = <String>{};
+      for (var start = 0; start < requestActions.length;) {
+        final end = (start + kClientAgentsRequestAccessSyncBatchSize) >
+                requestActions.length
+            ? requestActions.length
+            : start + kClientAgentsRequestAccessSyncBatchSize;
+        final chunk = requestActions.sublist(start, end);
+        start = end;
+        chunkIds
+          ..clear()
+          ..addAll(chunk.map((a) => a.agentId));
         try {
-          switch (action.type) {
-            case PendingAgentActionType.requestAccess:
-              await _remoteDataSource.requestAccess(
-                agentIds: <String>{action.agentId},
-              );
-              successfulRequestAccessAgentIds.add(action.agentId);
-            case PendingAgentActionType.removeAccess:
-              await _remoteDataSource.removeAccess(
-                agentIds: <String>{action.agentId},
-              );
-              successfulRemoveAccessAgentIds.add(action.agentId);
+          final accessResponse = await _remoteDataSource.requestAccess(
+            agentIds: Set<String>.from(chunkIds),
+          );
+          final unacknowledged = <PendingAgentAction>[];
+          for (final action in chunk) {
+            final agentId = action.agentId;
+            if (!accessResponse.acknowledgesAgent(agentId)) {
+              unacknowledged.add(action);
+            }
           }
-          successfulIds.add(action.id);
-        } on Object catch (error, stackTrace) {
-          switch (action.type) {
-            case PendingAgentActionType.requestAccess:
+          if (unacknowledged.isNotEmpty) {
+            const notAcknowledged = ValidationFailure(
+              message: 'POST /client/me/agents omitted an agent id in the body',
+              userMessage: 'The server did not confirm one or more access requests.',
+            );
+            for (final action in unacknowledged) {
               failedRequestAccessAgentIds.add(action.agentId);
-            case PendingAgentActionType.removeAccess:
-              failedRemoveAccessAgentIds.add(action.agentId);
+            }
+            final failedIds = unacknowledged.map((a) => a.id).toSet();
+            working = working
+                .map((currentAction) {
+                  if (!failedIds.contains(currentAction.id)) {
+                    return currentAction;
+                  }
+                  return currentAction.copyWith(
+                    state: PendingAgentActionState.failed,
+                    errorMessage: notAcknowledged.displayMessage,
+                  );
+                })
+                .toList(growable: false);
+            await _localDataSource.savePendingActions(
+              userId: userId,
+              actions: working,
+            );
           }
+          for (final action in chunk) {
+            if (unacknowledged.any((a) => a.id == action.id)) {
+              continue;
+            }
+            final agentId = action.agentId;
+            successfulIds.add(action.id);
+            successfulRequestAccessAgentIds.add(agentId);
+            if (accessResponse.shouldPollApprovalFor(agentId)) {
+              requestAccessPollAgentIds.add(agentId);
+            }
+            if (accessResponse.alreadyApproved.contains(agentId)) {
+              requestAccessAlreadyApprovedAgentIds.add(agentId);
+            }
+            if (accessResponse.debounced.contains(agentId)) {
+              requestAccessDebouncedAgentIds.add(agentId);
+            }
+            if (accessResponse.newRequests.contains(agentId)) {
+              requestAccessNewRequestsAgentIds.add(agentId);
+            }
+          }
+          AppLogger.info(
+            'Synced client agent request-access batch',
+            context: <String, Object?>{
+              'operation': 'syncPendingActions',
+              'userId': userId,
+              'batchSize': chunk.length,
+            },
+          );
+        } on Object catch (error, stackTrace) {
           final failure = mapToAppFailure(
             error,
             stackTrace: stackTrace,
@@ -910,15 +1142,21 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
             context: <String, Object?>{
               'operation': 'syncPendingAction',
               'userId': userId,
-              'agentId': action.agentId,
-              'actionType': action.type.name,
+              'agentIds': kDebugMode
+                  ? chunkIds.join(',')
+                  : '${chunkIds.length} ids',
+              'actionType': PendingAgentActionType.requestAccess.name,
               ClientAgentsFailureUiKey.field:
                   ClientAgentsFailureUiKey.syncPendingAction,
             },
           );
+          for (final action in chunk) {
+            failedRequestAccessAgentIds.add(action.agentId);
+          }
+          final failedChunkIds = chunk.map((a) => a.id).toSet();
           working = working
               .map((currentAction) {
-                if (currentAction.id != action.id) {
+                if (!failedChunkIds.contains(currentAction.id)) {
                   return currentAction;
                 }
                 return currentAction.copyWith(
@@ -933,6 +1171,93 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           );
         }
       }
+
+      if (removeActions.isNotEmpty) {
+        final removeOutcomes = <(PendingAgentAction, AppFailure?)>[];
+        for (var i = 0; i < removeActions.length;) {
+          final end = min(
+            i + kClientAgentsRemoveAccessSyncConcurrency,
+            removeActions.length,
+          );
+          final chunk = removeActions.sublist(i, end);
+          i = end;
+          final batch = await Future.wait(
+            chunk.map((action) async {
+              try {
+                await _remoteDataSource.removeApprovedAgentById(action.agentId);
+                return (action, null as AppFailure?);
+              } on Object catch (error, stackTrace) {
+                final failure = mapToAppFailure(
+                  error,
+                  stackTrace: stackTrace,
+                  fallbackMessage: 'Unable to sync agent action',
+                  fallbackUserMessage:
+                      'Could not sync the change for this agent.',
+                  context: <String, Object?>{
+                    'operation': 'syncPendingAction',
+                    'userId': userId,
+                    'agentId': action.agentId,
+                    'actionType': action.type.name,
+                    ClientAgentsFailureUiKey.field:
+                        ClientAgentsFailureUiKey.syncPendingAction,
+                  },
+                );
+                return (action, failure);
+              }
+            }),
+          );
+          removeOutcomes.addAll(batch);
+        }
+        for (final record in removeOutcomes) {
+          final action = record.$1;
+          final failure = record.$2;
+          if (failure == null) {
+            successfulIds.add(action.id);
+            successfulRemoveAccessAgentIds.add(action.agentId);
+          } else {
+            failedRemoveAccessAgentIds.add(action.agentId);
+            working = working
+                .map((currentAction) {
+                  if (currentAction.id != action.id) {
+                    return currentAction;
+                  }
+                  return currentAction.copyWith(
+                    state: PendingAgentActionState.failed,
+                    errorMessage: failure.displayMessage,
+                  );
+                })
+                .toList(growable: false);
+          }
+        }
+        await _localDataSource.savePendingActions(
+          userId: userId,
+          actions: working,
+        );
+        AppLogger.info(
+          'Synced client agent remove-access operations',
+          context: <String, Object?>{
+            'operation': 'syncPendingActions',
+            'userId': userId,
+            'count': removeActions.length,
+            'ok': successfulRemoveAccessAgentIds.length,
+            'failed': failedRemoveAccessAgentIds.length,
+          },
+        );
+      }
+
+      AppLogger.info(
+        'Client agents pending sync summary',
+        context: <String, Object?>{
+          'operation': 'syncPendingActions',
+          'userId': userId,
+          'requestAccessOk': successfulRequestAccessAgentIds.length,
+          'requestAccessFailed': failedRequestAccessAgentIds.length,
+          'removeAccessOk': successfulRemoveAccessAgentIds.length,
+          'removeAccessFailed': failedRemoveAccessAgentIds.length,
+          'approvalPollIds': requestAccessPollAgentIds.length,
+          'newRequestsIds': requestAccessNewRequestsAgentIds.length,
+        },
+      );
 
       working = working
           .where(
@@ -953,6 +1278,11 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
           successfulRemoveAccessAgentIds: successfulRemoveAccessAgentIds,
           failedRequestAccessAgentIds: failedRequestAccessAgentIds,
           failedRemoveAccessAgentIds: failedRemoveAccessAgentIds,
+          requestAccessPollAgentIds: requestAccessPollAgentIds,
+          requestAccessAlreadyApprovedAgentIds:
+              requestAccessAlreadyApprovedAgentIds,
+          requestAccessDebouncedAgentIds: requestAccessDebouncedAgentIds,
+          requestAccessNewRequestsAgentIds: requestAccessNewRequestsAgentIds,
         ),
       );
     } on Object catch (error, stackTrace) {

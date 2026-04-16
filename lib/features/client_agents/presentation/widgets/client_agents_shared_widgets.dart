@@ -151,12 +151,14 @@ class ClientAgentsAgentTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     super.key,
+    this.leading,
     this.trailing,
     this.onTap,
   });
 
   final String title;
   final String subtitle;
+  final Widget? leading;
   final Widget? trailing;
   final VoidCallback? onTap;
 
@@ -174,22 +176,33 @@ class ClientAgentsAgentTile extends StatelessWidget {
         ),
         child: Padding(
           padding: EdgeInsets.all(tokens.gapMd),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              SizedBox(height: tokens.gapXs),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (trailing != null) ...<Widget>[
-                SizedBox(height: tokens.gapSm),
-                trailing!,
+              if (leading != null) ...<Widget>[
+                leading!,
+                SizedBox(width: tokens.gapSm),
               ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    SizedBox(height: tokens.gapXs),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    if (trailing != null) ...<Widget>[
+                      SizedBox(height: tokens.gapSm),
+                      trailing!,
+                    ],
+                  ],
+                ),
+              ),
             ],
           ),
         ),

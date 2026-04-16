@@ -4,6 +4,7 @@ import 'package:colmeia/features/client_agents/domain/entities/client_access_sta
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_catalog_item.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_approved_agent_probe_outcome.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -40,6 +41,19 @@ abstract interface class ClientAgentsRepository {
   Future<AppResult<ClientAgent>> loadApprovedAgentById({
     required String userId,
     required String agentId,
+  });
+
+  /// Network-only probe: linked vs not linked (`404`). Does not fall back to
+  /// stale cached detail on 404.
+  Future<AppResult<ClientApprovedAgentProbeOutcome>> probeApprovedAgentLink({
+    required String userId,
+    required String agentId,
+  });
+
+  /// Drops local `requestAccess` actions in `queued` or `failed` for [agentIds].
+  Future<AppResult<Unit>> discardQueuedRequestAccessForAgents({
+    required String userId,
+    required Set<String> agentIds,
   });
 
   Future<AppResult<PaginatedResult<ClientAgentAccessRequest>>>

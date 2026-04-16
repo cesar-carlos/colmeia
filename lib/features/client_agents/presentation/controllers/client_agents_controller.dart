@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:math' show min;
 
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/probe_client_approved_agent_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
@@ -19,6 +23,7 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agents_lis
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/presentation/localization/client_agents_failure_l10n.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
@@ -38,6 +43,9 @@ class ClientAgentsController extends ChangeNotifier {
     required LoadClientAgentDetailUseCase loadClientAgentDetailUseCase,
     required QueueClientAgentRequestAccessUseCase queueRequestAccessUseCase,
     required QueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase,
+    required ProbeClientApprovedAgentUseCase probeClientApprovedAgentUseCase,
+    required DiscardQueuedClientAgentRequestAccessUseCase
+        discardQueuedClientAgentRequestAccessUseCase,
     required ReadPendingClientAgentActionsUseCase readPendingActionsUseCase,
     required SyncPendingClientAgentActionsUseCase syncPendingActionsUseCase,
   }) : _authController = authController,
@@ -48,6 +56,9 @@ class ClientAgentsController extends ChangeNotifier {
        _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
        _queueRequestAccessUseCase = queueRequestAccessUseCase,
        _queueRemoveAccessUseCase = queueRemoveAccessUseCase,
+       _probeClientApprovedAgentUseCase = probeClientApprovedAgentUseCase,
+       _discardQueuedClientAgentRequestAccessUseCase =
+           discardQueuedClientAgentRequestAccessUseCase,
        _readPendingActionsUseCase = readPendingActionsUseCase,
        _syncPendingActionsUseCase = syncPendingActionsUseCase;
 
@@ -56,6 +67,7 @@ class ClientAgentsController extends ChangeNotifier {
   static const PaginatedQuery _approvalPollingQuery = PaginatedQuery(
     pageSize: kClientAgentsListPageSize,
   );
+  static const int _approvedAgentsProbeConcurrency = 4;
 
   final AuthController _authController;
   final LocalAgentClientTokenStore _clientTokenStore;
@@ -65,6 +77,9 @@ class ClientAgentsController extends ChangeNotifier {
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;
   final QueueClientAgentRequestAccessUseCase _queueRequestAccessUseCase;
   final QueueClientAgentRemoveAccessUseCase _queueRemoveAccessUseCase;
+  final ProbeClientApprovedAgentUseCase _probeClientApprovedAgentUseCase;
+  final DiscardQueuedClientAgentRequestAccessUseCase
+      _discardQueuedClientAgentRequestAccessUseCase;
   final ReadPendingClientAgentActionsUseCase _readPendingActionsUseCase;
   final SyncPendingClientAgentActionsUseCase _syncPendingActionsUseCase;
 
@@ -312,17 +327,110 @@ class ClientAgentsController extends ChangeNotifier {
       if (_isDisposed) {
         return false;
       }
+      // Preflight uses network truth (`GET /client/me/agents/{id}`). Transport
+      // errors fall back to the normal queue path; 401/403 abort with an auth
+      // message instead of enqueueing blindly.
       _isSyncing = true;
       _actionErrorMessage = null;
       _clearActionFeedback();
       _notifyListenersIfAlive();
 
-      final classification = _classifyRequestAgentIds(agentIds);
+      final ids = agentIds.toList(growable: false);
+      final relinkedById = <String, ClientAgent>{};
+      final idsForClassification = <String>{};
+      var probeFailureFallbackCount = 0;
+      var authAborted = false;
+
+      for (var i = 0; i < ids.length; i += _approvedAgentsProbeConcurrency) {
+        final upper = min(i + _approvedAgentsProbeConcurrency, ids.length);
+        final chunk = ids.sublist(i, upper);
+        final chunkOutcomes = await Future.wait(
+          chunk.map((agentId) async {
+            final probeResult = await _probeClientApprovedAgentUseCase(
+              userId: userId,
+              agentId: agentId,
+            );
+            return (agentId, probeResult);
+          }),
+        );
+
+        for (final record in chunkOutcomes) {
+          record.$2.fold(
+            (outcome) {
+              final agent = outcome.agent;
+              if (outcome.isLinked && agent != null) {
+                relinkedById[agent.agentId] = agent;
+              } else {
+                idsForClassification.add(record.$1);
+              }
+            },
+            (failure) {
+              final authMessage = _probeAuthBlockingUserMessage(failure);
+              if (authMessage != null) {
+                _actionErrorMessage = authMessage;
+                authAborted = true;
+                return;
+              }
+              probeFailureFallbackCount++;
+              idsForClassification.add(record.$1);
+            },
+          );
+          if (authAborted) {
+            break;
+          }
+        }
+        if (authAborted) {
+          break;
+        }
+      }
+
+      if (_actionErrorMessage != null) {
+        _isSyncing = false;
+        _notifyListenersIfAlive();
+        await _reloadPendingAfterEnqueue(userId: userId);
+        return false;
+      }
+
+      final relinkedAgents = relinkedById.values.toList(growable: false);
+      var pendingCleanupOk = true;
+      if (relinkedAgents.isNotEmpty) {
+        pendingCleanupOk = await _discardRelinkedPendingWithRetry(
+          userId: userId,
+          agentIds: relinkedById.keys.toSet(),
+        );
+        await _reloadApprovedAgentsCacheAfterRelink(
+          userId: userId,
+          fallbackAgents: relinkedAgents,
+        );
+      }
+
+      AppLogger.info(
+        'Client agents request access preflight completed',
+        context: <String, Object?>{
+          'relinkedCount': relinkedById.length,
+          'classificationCount': idsForClassification.length,
+          'probeFailureFallbackCount': probeFailureFallbackCount,
+          'pendingCleanupOk': pendingCleanupOk,
+        },
+      );
+
+      final classification = _classifyRequestAgentIds(idsForClassification);
       if (classification.allowed.isEmpty) {
         _isSyncing = false;
-        _actionErrorMessage = _buildBlockedRequestMessage(classification);
+        if (relinkedAgents.isEmpty) {
+          _actionErrorMessage = _buildBlockedRequestMessage(classification);
+        } else {
+          _setActionFeedback(
+            message: _withRelinkPendingCleanupNote(
+              _relinkFeedbackMessage(relinkedAgents.length),
+              pendingCleanupOk: pendingCleanupOk,
+            ),
+            kind: ClientAgentsActionFeedbackKind.success,
+          );
+        }
         _notifyListenersIfAlive();
-        return false;
+        await _reloadPendingAfterEnqueue(userId: userId);
+        return _actionErrorMessage == null;
       }
 
       final queueResult = await _queueRequestAccessUseCase(
@@ -334,14 +442,115 @@ class ClientAgentsController extends ChangeNotifier {
         operation: 'queueClientAgentRequestAccess',
       );
       if (_actionErrorMessage == null) {
-        _setActionFeedback(
-          message: _buildQueuedRequestMessage(classification),
-          kind: ClientAgentsActionFeedbackKind.info,
-        );
+        final queueMessage = _buildQueuedRequestMessage(classification);
+        if (relinkedAgents.isEmpty) {
+          _setActionFeedback(
+            message: queueMessage,
+            kind: ClientAgentsActionFeedbackKind.info,
+          );
+        } else {
+          _setActionFeedback(
+            message: _withRelinkPendingCleanupNote(
+              _s.clientAgentsRequestRelinkAndQueued(
+                _relinkFeedbackMessage(relinkedAgents.length),
+                queueMessage,
+              ),
+              pendingCleanupOk: pendingCleanupOk,
+            ),
+            kind: ClientAgentsActionFeedbackKind.info,
+          );
+        }
       }
       await _reloadPendingAfterEnqueue(userId: userId);
       return _actionErrorMessage == null;
     });
+  }
+
+  String? _probeAuthBlockingUserMessage(AppFailure failure) {
+    if (failure is SessionFailure) {
+      return _s.clientAgentsSessionUnavailableRequest;
+    }
+    if (failure is AuthorizationFailure) {
+      if (isBlockedAccountFailure(failure)) {
+        return clientAgentsFailureUserMessage(failure, _s);
+      }
+      return _s.clientAgentsSessionUnavailableRequest;
+    }
+    return null;
+  }
+
+  Future<bool> _discardRelinkedPendingWithRetry({
+    required String userId,
+    required Set<String> agentIds,
+  }) async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final discardResult =
+          await _discardQueuedClientAgentRequestAccessUseCase(
+        userId: userId,
+        agentIds: agentIds,
+      );
+      if (discardResult.isSuccess()) {
+        return true;
+      }
+      discardResult.fold((_) {}, (failure) {
+        AppLogger.warning(
+          'discardQueuedClientAgentRequestAccess failed',
+          context: <String, Object?>{
+            'operation': 'discardQueuedClientAgentRequestAccess',
+            'attempt': attempt + 1,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+      });
+    }
+    return false;
+  }
+
+  Future<void> _reloadApprovedAgentsCacheAfterRelink({
+    required String userId,
+    required List<ClientAgent> fallbackAgents,
+  }) async {
+    const query = PaginatedQuery(pageSize: kClientAgentsListPageSize);
+    final result = await _loadApprovedAgentsUseCase(
+      userId: userId,
+      query: query,
+      refresh: true,
+    );
+    result.fold(
+      (value) {
+        _approvedAgents = value;
+        _upsertApprovedAgentsInMemory(fallbackAgents);
+      },
+      (failure) {
+        AppLogger.warning(
+          'Approved agents refresh after relink failed; merged local list',
+          context: <String, Object?>{
+            'operation': 'reloadApprovedAgentsAfterRelink',
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+        _upsertApprovedAgentsInMemory(fallbackAgents);
+      },
+    );
+  }
+
+  String _withRelinkPendingCleanupNote(
+    String message, {
+    required bool pendingCleanupOk,
+  }) {
+    if (pendingCleanupOk) {
+      return message;
+    }
+    return '$message ${_s.clientAgentsRelinkPendingNotCleared}';
+  }
+
+  String _relinkFeedbackMessage(int relinkedCount) {
+    return relinkedCount == 1
+        ? _s.clientAgentsRequestRelinkUpdatedSingle
+        : _s.clientAgentsRequestRelinkUpdatedPlural(relinkedCount);
   }
 
   Future<void> removeAccess({
@@ -432,8 +641,32 @@ class ClientAgentsController extends ChangeNotifier {
       }
       _notifyListenersIfAlive();
       final syncResult = await _syncPendingActionsUseCase(userId: userId);
-      final syncedRequestAccessAgentIds = syncResult.fold(
-        (value) => value.successfulRequestAccessAgentIds,
+      syncResult.fold(
+        (value) {
+          AppLogger.info(
+            'Client agents pending sync outcome',
+            context: <String, Object?>{
+              'operation': 'syncPendingClientAgentActions',
+              'pollIds': value.requestAccessPollAgentIds.length,
+              'alreadyApproved':
+                  value.requestAccessAlreadyApprovedAgentIds.length,
+              'debounced': value.requestAccessDebouncedAgentIds.length,
+              'newRequests': value.requestAccessNewRequestsAgentIds.length,
+            },
+          );
+        },
+        (_) {},
+      );
+      final requestAccessPollAgentIds = syncResult.fold(
+        (value) => value.requestAccessPollAgentIds,
+        (_) => const <String>{},
+      );
+      final requestAccessAlreadyApprovedOnSync = syncResult.fold(
+        (value) => value.requestAccessAlreadyApprovedAgentIds,
+        (_) => const <String>{},
+      );
+      final requestAccessDebouncedOnSync = syncResult.fold(
+        (value) => value.requestAccessDebouncedAgentIds,
         (_) => const <String>{},
       );
       _actionErrorMessage = _consumeResult(
@@ -442,17 +675,23 @@ class ClientAgentsController extends ChangeNotifier {
       );
       await _refreshAfterMutation(userId: userId);
       if (_actionErrorMessage == null) {
-        _setActionFeedback(
-          message: _buildSyncSuccessMessage(
-            pendingCount: pendingCount,
-            autoTriggered: autoTriggered,
-            watchingApproval: syncedRequestAccessAgentIds.isNotEmpty,
-          ),
-          kind: ClientAgentsActionFeedbackKind.success,
-        );
+        final outcome = syncResult.fold((v) => v, (_) => null);
+        if (outcome != null) {
+          _setActionFeedback(
+            message: _buildSyncSuccessMessage(
+              result: outcome,
+              autoTriggered: autoTriggered,
+              attemptedPendingCount: pendingCount,
+              watchingApproval: requestAccessPollAgentIds.isNotEmpty,
+              alreadyApprovedIds: requestAccessAlreadyApprovedOnSync,
+              debouncedIds: requestAccessDebouncedOnSync,
+            ),
+            kind: ClientAgentsActionFeedbackKind.success,
+          );
+        }
         _startApprovalPolling(
           userId: userId,
-          agentIds: syncedRequestAccessAgentIds,
+          agentIds: requestAccessPollAgentIds,
         );
         _notifyListenersIfAlive();
       }
@@ -583,7 +822,7 @@ class ClientAgentsController extends ChangeNotifier {
   void _scheduleAutoSyncIfNeeded({
     bool force = false,
   }) {
-    if (_isSyncing || _pendingActionsErrorMessage != null) {
+    if (_isSyncing) {
       return;
     }
     if (!force && _hasAttemptedAutoSync) {
@@ -659,30 +898,26 @@ class ClientAgentsController extends ChangeNotifier {
     final deniedNow = <String>{};
     final timedOutNow = <String>{};
 
-    for (final agentId in _trackedApprovalAgentIds.toList(growable: false)) {
-      final startedAt = _approvalPollingStartedAtByAgentId[agentId];
-      if (startedAt != null &&
-          DateTime.now().difference(startedAt) >= _approvalPollingTimeout) {
-        timedOutNow.add(agentId);
-        continue;
-      }
-
-      final approvedAgent = await _loadApprovedAgentForPolling(
-        userId: userId,
-        agentId: agentId,
+    final idsToCheck = _trackedApprovalAgentIds.toList(growable: false);
+    for (var i = 0; i < idsToCheck.length; i += _approvedAgentsProbeConcurrency) {
+      final upper = min(i + _approvedAgentsProbeConcurrency, idsToCheck.length);
+      final chunk = idsToCheck.sublist(i, upper);
+      final chunkResults = await Future.wait(
+        chunk.map(
+          (agentId) => _evaluateTrackedAgentForPoll(
+            userId: userId,
+            agentId: agentId,
+          ),
+        ),
       );
-      if (approvedAgent != null) {
-        approvedNow[agentId] = approvedAgent;
-        continue;
-      }
-
-      final requestStatus = await _loadRequestStatusForPolling(
-        userId: userId,
-        agentId: agentId,
-      );
-      if (requestStatus == AgentAccessRequestStatus.rejected ||
-          requestStatus == AgentAccessRequestStatus.expired) {
-        deniedNow.add(agentId);
+      for (final r in chunkResults) {
+        if (r.timedOut) {
+          timedOutNow.add(r.agentId);
+        } else if (r.approved != null) {
+          approvedNow[r.agentId] = r.approved!;
+        } else if (r.denied) {
+          deniedNow.add(r.agentId);
+        }
       }
     }
 
@@ -722,6 +957,52 @@ class ClientAgentsController extends ChangeNotifier {
     }
     _isPollingApprovals = false;
     _notifyListenersIfAlive();
+  }
+
+  Future<
+      ({
+        String agentId,
+        bool timedOut,
+        ClientAgent? approved,
+        bool denied,
+      })> _evaluateTrackedAgentForPoll({
+    required String userId,
+    required String agentId,
+  }) async {
+    final startedAt = _approvalPollingStartedAtByAgentId[agentId];
+    if (startedAt != null &&
+        DateTime.now().difference(startedAt) >= _approvalPollingTimeout) {
+      return (
+        agentId: agentId,
+        timedOut: true,
+        approved: null,
+        denied: false,
+      );
+    }
+    final approvedAgent = await _loadApprovedAgentForPolling(
+      userId: userId,
+      agentId: agentId,
+    );
+    if (approvedAgent != null) {
+      return (
+        agentId: agentId,
+        timedOut: false,
+        approved: approvedAgent,
+        denied: false,
+      );
+    }
+    final requestStatus = await _loadRequestStatusForPolling(
+      userId: userId,
+      agentId: agentId,
+    );
+    final denied = requestStatus == AgentAccessRequestStatus.rejected ||
+        requestStatus == AgentAccessRequestStatus.expired;
+    return (
+      agentId: agentId,
+      timedOut: false,
+      approved: null,
+      denied: denied,
+    );
   }
 
   Future<ClientAgent?> _loadApprovedAgentForPolling({
@@ -985,20 +1266,46 @@ class ClientAgentsController extends ChangeNotifier {
   }
 
   String _buildSyncSuccessMessage({
-    required int pendingCount,
+    required SyncPendingAgentActionsResult result,
     required bool autoTriggered,
+    required int attemptedPendingCount,
     required bool watchingApproval,
+    Set<String> alreadyApprovedIds = const <String>{},
+    Set<String> debouncedIds = const <String>{},
   }) {
-    final prefix = pendingCount == 1
-        ? _s.clientAgentsSyncSuccessSingle
-        : _s.clientAgentsSyncSuccessPlural(pendingCount);
+    final synced = result.successfulActionCount;
+    final failed = result.failedActionCount;
+    final String prefix;
+    if (synced == 0 && attemptedPendingCount > 0) {
+      prefix = _s.clientAgentsSyncSuccessNoneCompleted;
+    } else if (synced == 1) {
+      prefix = _s.clientAgentsSyncSuccessSingle;
+    } else {
+      prefix = _s.clientAgentsSyncSuccessPlural(synced);
+    }
     final suffix = autoTriggered
         ? _s.clientAgentsSyncSuccessAutoSuffix
         : _s.clientAgentsSyncSuccessManualSuffix;
     final polling = watchingApproval
         ? _s.clientAgentsSyncSuccessPollingSuffix
         : '';
-    return '$prefix$suffix$polling';
+    var message = '$prefix$suffix$polling';
+    if (alreadyApprovedIds.isNotEmpty) {
+      message += alreadyApprovedIds.length == 1
+          ? _s.clientAgentsSyncSuccessAlreadyApprovedSingle
+          : _s.clientAgentsSyncSuccessAlreadyApprovedPlural(
+              alreadyApprovedIds.length,
+            );
+    }
+    if (debouncedIds.isNotEmpty) {
+      message += debouncedIds.length == 1
+          ? _s.clientAgentsSyncSuccessDebouncedSingle
+          : _s.clientAgentsSyncSuccessDebouncedPlural(debouncedIds.length);
+    }
+    if (failed > 0) {
+      message += _s.clientAgentsSyncSuccessSomeFailedSuffix(failed);
+    }
+    return message;
   }
 
   String _buildApprovalPollingProgressMessage({

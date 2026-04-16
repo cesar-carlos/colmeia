@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
 import 'package:colmeia/features/client_agents/data/models/agent_catalog_record_dto.dart';
@@ -8,6 +9,7 @@ import 'package:colmeia/features/client_agents/data/models/client_agent_access_r
 import 'package:colmeia/features/client_agents/data/models/client_agent_ids_request_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_request_access_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
@@ -33,19 +35,29 @@ abstract interface class ClientAgentsRemoteDataSource {
     String agentId,
   );
 
+  /// `GET /client/me/agents/{agentId}` — returns `null` when the client has no
+  /// linked approved agent (HTTP 404, or HTTP 403 without a blocked-account
+  /// payload). Rethrows 401 and 403 that indicate a blocked account.
+  Future<ClientApprovedAgentDetailResponseDto?> fetchApprovedAgentDetailOrNull(
+    String agentId,
+  );
+
   Future<ClientAccessRequestsResponseDto> fetchAccessRequests({
     required PaginatedQuery query,
     String? search,
     String? status,
   });
 
-  Future<Set<String>> requestAccess({
+  Future<ClientRequestAccessResponseDto> requestAccess({
     required Set<String> agentIds,
   });
 
   Future<Set<String>> removeAccess({
     required Set<String> agentIds,
   });
+
+  /// `DELETE /client/me/agents/{agentId}` — same as bulk remove with one id.
+  Future<void> removeApprovedAgentById(String agentId);
 
   Future<OnlineAgentsResponseDto> fetchOnlineAgents({String? logUserId});
 
@@ -125,6 +137,33 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   }
 
   @override
+  Future<ClientApprovedAgentDetailResponseDto?> fetchApprovedAgentDetailOrNull(
+    String agentId,
+  ) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ClientAgentApiRoutes.approvedAgentById(agentId),
+      );
+      return ClientApprovedAgentDetailResponseDto.fromJson(
+        response.data ?? const <String, dynamic>{},
+      );
+    } on DioException catch (error) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode == 404) {
+        return null;
+      }
+      if (statusCode == 403) {
+        final payload = error.response?.data;
+        if (isBlockedAccountApiPayload(payload)) {
+          rethrow;
+        }
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  @override
   Future<ClientAccessRequestsResponseDto> fetchAccessRequests({
     required PaginatedQuery query,
     String? search,
@@ -145,16 +184,23 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   }
 
   @override
-  Future<Set<String>> requestAccess({
+  Future<ClientRequestAccessResponseDto> requestAccess({
     required Set<String> agentIds,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ClientAgentApiRoutes.approvedAgents,
       data: ClientAgentIdsRequestDto(agentIds: agentIds).toJson(),
     );
-    return _resolveMutatedAgentIds(
-      body: response.data ?? const <String, dynamic>{},
-      fallbackAgentIds: agentIds,
+    return ClientRequestAccessResponseDto.parse(
+      response.data ?? const <String, dynamic>{},
+      agentIds,
+    );
+  }
+
+  @override
+  Future<void> removeApprovedAgentById(String agentId) async {
+    await _dio.delete<void>(
+      ClientAgentApiRoutes.approvedAgentById(agentId),
     );
   }
 
@@ -394,6 +440,26 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   }
 
   @override
+  Future<ClientApprovedAgentDetailResponseDto?> fetchApprovedAgentDetailOrNull(
+    String agentId,
+  ) async {
+    if (!_approvedAgentIds.contains(agentId)) {
+      return null;
+    }
+    final agent = _catalog.firstWhere(
+      (item) => item['agentId'] == agentId,
+      orElse: () => <String, dynamic>{
+        'agentId': agentId,
+        'name': 'Agente $agentId',
+        'status': 'active',
+      },
+    );
+    return ClientApprovedAgentDetailResponseDto(
+      agent: ClientAccessibleAgentDto.fromJson(agent),
+    );
+  }
+
+  @override
   Future<ClientAccessRequestsResponseDto> fetchAccessRequests({
     required PaginatedQuery query,
     String? search,
@@ -427,11 +493,14 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   }
 
   @override
-  Future<Set<String>> requestAccess({
+  Future<ClientRequestAccessResponseDto> requestAccess({
     required Set<String> agentIds,
   }) async {
+    final requested = <String>[];
+    final alreadyApproved = <String>[];
     for (final agentId in agentIds) {
       if (_approvedAgentIds.contains(agentId)) {
+        alreadyApproved.add(agentId);
         continue;
       }
       final agent = _catalog.firstWhere(
@@ -445,8 +514,18 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
         'status': 'pending',
         'requestedAt': DateTime.now().toIso8601String(),
       });
+      requested.add(agentId);
     }
-    return agentIds;
+    return ClientRequestAccessResponseDto(
+      requested: requested,
+      alreadyApproved: alreadyApproved,
+      newRequests: List<String>.from(requested),
+    );
+  }
+
+  @override
+  Future<void> removeApprovedAgentById(String agentId) async {
+    await removeAccess(agentIds: <String>{agentId});
   }
 
   @override

@@ -171,6 +171,25 @@
   "agentConnectionOffline": "offline",
   "agentConnectionUnknown": "Estado de ligação desconhecido",
   "clientAgentsRemoveAccess": "Remover acesso",
+  "clientAgentsApprovedBulkSelect": "Selecionar para remocao em lote",
+  "clientAgentsApprovedBulkCancel": "Cancelar selecao",
+  "clientAgentsApprovedBulkRemove": "Remover selecionados ({count})",
+  "@clientAgentsApprovedBulkRemove": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsBulkRemoveConfirmTitle": "Enfileirar remocao para varios agentes?",
+  "clientAgentsBulkRemoveConfirmMessage": "A remocao de acesso para {count} agentes sera preparada e enviada no proximo sync.",
+  "@clientAgentsBulkRemoveConfirmMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsBulkRemoveConfirmBack": "Voltar",
+  "clientAgentsBulkRemoveConfirmAction": "Enfileirar remocao",
+  "clientAgentsApprovedBulkSelectAll": "Selecionar todos",
+  "clientAgentsApprovedBulkClearSelection": "Limpar selecao",
   "clientAgentsRequestAccessIntro1": "Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.",
   "clientAgentsRequestAccessIntro2": "O agentId deve ser informado pelo responsavel do agente ou por um fluxo externo. Quando a solicitacao for aprovada, o agente sera liberado automaticamente para esta conta.",
   "clientAgentsRequestAccessIntroToken": "O client token fica apenas neste dispositivo (criptografado) e nao e enviado ao enviar a solicitacao de acesso.",
@@ -225,6 +244,29 @@
   "clientAgentsRequestQueuedWatchingSingle": "Solicitacao enviada. Vamos acompanhar a aprovacao automaticamente.",
   "clientAgentsRequestQueuedWatchingPlural": "{count} solicitacoes enviadas. Vamos acompanhar as aprovacoes automaticamente.",
   "clientAgentsRequestQueuedIgnoredSuffix": "{count} IDs foram ignorados porque ja estavam aprovados ou em analise.",
+  "clientAgentsRequestRelinkUpdatedSingle":
+      "Esse agente ja esta aprovado no servidor. A lista de agentes foi atualizada.",
+  "clientAgentsRequestRelinkUpdatedPlural":
+      "{count} agentes ja estavam aprovados no servidor. A lista de agentes foi atualizada.",
+  "@clientAgentsRequestRelinkUpdatedPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "clientAgentsRequestRelinkAndQueued": "{relinkSummary}. {queueSummary}",
+  "@clientAgentsRequestRelinkAndQueued": {
+    "placeholders": {
+      "relinkSummary": {
+        "type": "String"
+      },
+      "queueSummary": {
+        "type": "String"
+      }
+    }
+  },
+  "clientAgentsRelinkPendingNotCleared": "Nao foi possivel limpar solicitacoes pendentes locais; elas podem ser reenviadas na proxima sincronizacao.",
   "clientAgentsRemoveBlockedFallback": "Nao foi possivel registrar a remocao informada.",
   "clientAgentsRemoveBlockedIntro": "Nenhum novo agente pode ser removido com os IDs informados. {details}",
   "clientAgentsRemoveBlockedNotApproved": "Sem acesso aprovado: {ids}.",
@@ -232,11 +274,37 @@
   "clientAgentsRemoveQueuedSingle": "Remocao de acesso preparada e enviada para sincronizacao.",
   "clientAgentsRemoveQueuedPlural": "{count} remocoes de acesso preparadas e enviadas para sincronizacao.",
   "clientAgentsRemoveQueuedIgnoredSuffix": "{count} IDs foram ignorados.",
-  "clientAgentsSyncSuccessSingle": "1 solicitacao foi enviada para analise.",
-  "clientAgentsSyncSuccessPlural": "{count} solicitacoes foram enviadas para analise.",
+  "clientAgentsSyncSuccessSingle": "1 pendencia foi sincronizada.",
+  "clientAgentsSyncSuccessPlural": "{count} pendencias foram sincronizadas.",
+  "@clientAgentsSyncSuccessPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsSyncSuccessNoneCompleted": "A sincronizacao terminou, mas nenhuma pendencia foi aplicada.",
+  "clientAgentsSyncSuccessSomeFailedSuffix": " {count} acao(oes) falhou e permanece na fila para nova tentativa.",
+  "@clientAgentsSyncSuccessSomeFailedSuffix": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "clientAgentsSyncSuccessAutoSuffix": " O envio aconteceu automaticamente.",
   "clientAgentsSyncSuccessManualSuffix": " A tela ja foi atualizada com o status mais recente.",
   "clientAgentsSyncSuccessPollingSuffix": " Vamos acompanhar a aprovacao automaticamente.",
+  "clientAgentsSyncSuccessAlreadyApprovedSingle": " Um agente ja estava aprovado no servidor.",
+  "clientAgentsSyncSuccessAlreadyApprovedPlural": " {count} agentes ja estavam aprovados no servidor.",
+  "@clientAgentsSyncSuccessAlreadyApprovedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsSyncSuccessDebouncedSingle": " Uma solicitacao foi atualizada recentemente (sem novo email).",
+  "clientAgentsSyncSuccessDebouncedPlural": " {count} solicitacoes foram atualizadas recentemente (sem novo email).",
+  "@clientAgentsSyncSuccessDebouncedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "clientAgentsPollApprovedSingle": "Acesso aprovado. O agente ja esta disponivel em \"{tabLabel}\".",
   "clientAgentsPollApprovedPlural": "{count} acessos foram aprovados. Os agentes ja estao disponiveis em \"{tabLabel}\".",
   "clientAgentsPollDeniedSingle": "1 solicitacao foi encerrada sem aprovacao.",
@@ -340,6 +408,8 @@
       "Nao foi possivel ler o status da solicitacao de acesso.",
   "clientAgentsErrorLoadApproved": "Nao foi possivel carregar os agentes aprovados para esta conta.",
   "clientAgentsErrorLoadAgentDetail": "Nao foi possivel carregar os dados do agente.",
+  "clientAgentsErrorProbeApproved":
+      "Nao foi possivel verificar se o agente ja esta ligado a esta conta.",
   "clientAgentsErrorLoadAccessRequests": "Nao foi possivel carregar o historico de solicitacoes.",
   "clientAgentsErrorReadPending": "Nao foi possivel carregar as acoes pendentes de sincronizacao.",
   "clientAgentsErrorQueueRequest": "Nao foi possivel registrar a solicitacao para sincronizacao.",

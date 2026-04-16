@@ -7,10 +7,12 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/probe_client_approved_agent_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
@@ -23,6 +25,7 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:colmeia/features/client_agents/domain/entities/client_access_status_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_approved_agent_probe_outcome.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -54,6 +57,12 @@ class _MockQueueClientAgentRequestAccessUseCase extends Mock
 class _MockQueueClientAgentRemoveAccessUseCase extends Mock
     implements QueueClientAgentRemoveAccessUseCase {}
 
+class _MockProbeClientApprovedAgentUseCase extends Mock
+    implements ProbeClientApprovedAgentUseCase {}
+
+class _MockDiscardQueuedClientAgentRequestAccessUseCase extends Mock
+    implements DiscardQueuedClientAgentRequestAccessUseCase {}
+
 class _MockReadPendingClientAgentActionsUseCase extends Mock
     implements ReadPendingClientAgentActionsUseCase {}
 
@@ -72,6 +81,9 @@ void main() {
   late _MockLoadClientAgentDetailUseCase loadClientAgentDetailUseCase;
   late _MockQueueClientAgentRequestAccessUseCase queueRequestAccessUseCase;
   late _MockQueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase;
+  late _MockProbeClientApprovedAgentUseCase probeClientApprovedAgentUseCase;
+  late _MockDiscardQueuedClientAgentRequestAccessUseCase
+      discardQueuedClientAgentRequestAccessUseCase;
   late _MockReadPendingClientAgentActionsUseCase readPendingActionsUseCase;
   late _MockSyncPendingClientAgentActionsUseCase syncPendingActionsUseCase;
   late ClientAgentsController controller;
@@ -167,6 +179,9 @@ void main() {
     loadClientAgentDetailUseCase = _MockLoadClientAgentDetailUseCase();
     queueRequestAccessUseCase = _MockQueueClientAgentRequestAccessUseCase();
     queueRemoveAccessUseCase = _MockQueueClientAgentRemoveAccessUseCase();
+    probeClientApprovedAgentUseCase = _MockProbeClientApprovedAgentUseCase();
+    discardQueuedClientAgentRequestAccessUseCase =
+        _MockDiscardQueuedClientAgentRequestAccessUseCase();
     readPendingActionsUseCase = _MockReadPendingClientAgentActionsUseCase();
     syncPendingActionsUseCase = _MockSyncPendingClientAgentActionsUseCase();
 
@@ -245,6 +260,22 @@ void main() {
       ),
     ).thenAnswer((_) async => const Success<Unit, AppFailure>(unit));
     when(
+      () => probeClientApprovedAgentUseCase(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<ClientApprovedAgentProbeOutcome, AppFailure>(
+        ClientApprovedAgentProbeOutcome.notLinked(),
+      ),
+    );
+    when(
+      () => discardQueuedClientAgentRequestAccessUseCase(
+        userId: any(named: 'userId'),
+        agentIds: any(named: 'agentIds'),
+      ),
+    ).thenAnswer((_) async => const Success<Unit, AppFailure>(unit));
+    when(
       () => readPendingActionsUseCase(userId: any(named: 'userId')),
     ).thenAnswer(
       (_) async => const Success<List<PendingAgentAction>, AppFailure>(
@@ -286,6 +317,9 @@ void main() {
       loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
       queueRequestAccessUseCase: queueRequestAccessUseCase,
       queueRemoveAccessUseCase: queueRemoveAccessUseCase,
+      probeClientApprovedAgentUseCase: probeClientApprovedAgentUseCase,
+      discardQueuedClientAgentRequestAccessUseCase:
+          discardQueuedClientAgentRequestAccessUseCase,
       readPendingActionsUseCase: readPendingActionsUseCase,
       syncPendingActionsUseCase: syncPendingActionsUseCase,
     )..activeLocalizations = AppLocalizationsEn();
@@ -311,6 +345,9 @@ void main() {
           successfulRequestAccessAgentIds: <String>{
             '33333333-3333-3333-8333-333333333333',
           },
+          requestAccessPollAgentIds: <String>{
+            '33333333-3333-3333-8333-333333333333',
+          },
         ),
       ),
     );
@@ -320,7 +357,10 @@ void main() {
 
     verify(() => syncPendingActionsUseCase(userId: session.userId)).called(1);
     check(controller.actionFeedbackMessage).isNotNull();
-    expect(controller.actionFeedbackMessage, contains('sent for review'));
+    expect(
+      controller.actionFeedbackMessage,
+      contains('pending action finished syncing'),
+    );
     expect(
       controller.actionFeedbackMessage,
       contains('track approval'),
@@ -547,6 +587,265 @@ void main() {
   });
 
   test(
+    'should relink when probe finds agent already approved on server',
+    () async {
+      const agentId = '44444444-4444-4444-8444-444444444444';
+      final linkedAt = DateTime(2026, 4);
+      final linkedAgent = ClientAgent(
+        agentId: agentId,
+        name: 'Relink agent',
+        catalogStatus: AgentCatalogStatus.active,
+        connectionStatus: AgentConnectionStatus.offline,
+        createdAt: linkedAt,
+        updatedAt: linkedAt,
+      );
+      reset(probeClientApprovedAgentUseCase);
+      when(
+        () => probeClientApprovedAgentUseCase(
+          userId: session.userId,
+          agentId: agentId,
+        ),
+      ).thenAnswer(
+        (_) async => Success<ClientApprovedAgentProbeOutcome, AppFailure>(
+          ClientApprovedAgentProbeOutcome.linked(linkedAgent),
+        ),
+      );
+
+      await controller.refreshAll();
+      final accepted = await controller.requestAccess(
+        agentIds: const <String>{agentId},
+      );
+
+      check(accepted).isTrue();
+      verifyNever(
+        () => queueRequestAccessUseCase(
+          userId: any(named: 'userId'),
+          agentIds: any(named: 'agentIds'),
+        ),
+      );
+      verify(
+        () => discardQueuedClientAgentRequestAccessUseCase(
+          userId: session.userId,
+          agentIds: const <String>{agentId},
+        ),
+      ).called(1);
+      verify(
+        () => loadApprovedAgentsUseCase(
+          userId: session.userId,
+          query: any(named: 'query'),
+          refresh: true,
+        ),
+      ).called(1);
+      check(controller.actionFeedbackMessage).isNotNull();
+      expect(
+        controller.actionFeedbackMessage,
+        contains('already approved on the server'),
+      );
+      check(
+        controller.approvedAgents!.items.any((a) => a.agentId == agentId),
+      ).isTrue();
+    },
+  );
+
+  test(
+    'should abort request access when probe returns session failure',
+    () async {
+      const agentId = 'aaaaaaaa-aaaa-aaaa-8aaa-aaaaaaaaaaaa';
+      reset(probeClientApprovedAgentUseCase);
+      when(
+        () => probeClientApprovedAgentUseCase(
+          userId: session.userId,
+          agentId: agentId,
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
+          SessionFailure(message: 'Unauthorized'),
+        ),
+      );
+
+      await controller.refreshAll();
+      final accepted = await controller.requestAccess(
+        agentIds: const <String>{agentId},
+      );
+
+      check(accepted).isFalse();
+      verifyNever(
+        () => queueRequestAccessUseCase(
+          userId: any(named: 'userId'),
+          agentIds: any(named: 'agentIds'),
+        ),
+      );
+      check(controller.actionErrorMessage).isNotNull();
+      expect(
+        controller.actionErrorMessage,
+        contains('Session unavailable'),
+      );
+    },
+  );
+
+  test(
+    'should queue ids that fell back after probe failure alongside fresh ids',
+    () async {
+      const failedProbeId = 'aaaaaaaa-aaaa-aaaa-8aaa-aaaaaaaaaaaa';
+      const notLinkedId = 'bbbbbbbb-bbbb-bbbb-8bbb-bbbbbbbbbbbb';
+      reset(probeClientApprovedAgentUseCase);
+      when(
+        () => probeClientApprovedAgentUseCase(
+          userId: session.userId,
+          agentId: failedProbeId,
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
+          NetworkFailure(message: 'offline'),
+        ),
+      );
+      when(
+        () => probeClientApprovedAgentUseCase(
+          userId: session.userId,
+          agentId: notLinkedId,
+        ),
+      ).thenAnswer(
+        (_) async => const Success<ClientApprovedAgentProbeOutcome, AppFailure>(
+          ClientApprovedAgentProbeOutcome.notLinked(),
+        ),
+      );
+
+      await controller.refreshAll();
+      final accepted = await controller.requestAccess(
+        agentIds: const <String>{failedProbeId, notLinkedId},
+      );
+
+      check(accepted).isTrue();
+      verify(
+        () => queueRequestAccessUseCase(
+          userId: session.userId,
+          agentIds: const <String>{failedProbeId, notLinkedId},
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'should combine relink summary and queued message when mixing linked and new ids',
+    () async {
+      const linkedId = '44444444-4444-4444-8444-444444444444';
+      const freshId = '55555555-5555-5555-8555-555555555555';
+      final linkedAt = DateTime(2026, 4);
+      final linkedAgent = ClientAgent(
+        agentId: linkedId,
+        name: 'Relink agent',
+        catalogStatus: AgentCatalogStatus.active,
+        connectionStatus: AgentConnectionStatus.offline,
+        createdAt: linkedAt,
+        updatedAt: linkedAt,
+      );
+      reset(probeClientApprovedAgentUseCase);
+      when(
+        () => probeClientApprovedAgentUseCase(
+          userId: session.userId,
+          agentId: linkedId,
+        ),
+      ).thenAnswer(
+        (_) async => Success<ClientApprovedAgentProbeOutcome, AppFailure>(
+          ClientApprovedAgentProbeOutcome.linked(linkedAgent),
+        ),
+      );
+      when(
+        () => probeClientApprovedAgentUseCase(
+          userId: session.userId,
+          agentId: freshId,
+        ),
+      ).thenAnswer(
+        (_) async => const Success<ClientApprovedAgentProbeOutcome, AppFailure>(
+          ClientApprovedAgentProbeOutcome.notLinked(),
+        ),
+      );
+
+      await controller.refreshAll();
+      final accepted = await controller.requestAccess(
+        agentIds: const <String>{linkedId, freshId},
+      );
+
+      check(accepted).isTrue();
+      verify(
+        () => queueRequestAccessUseCase(
+          userId: session.userId,
+          agentIds: const <String>{freshId},
+        ),
+      ).called(1);
+      check(controller.actionFeedbackMessage).isNotNull();
+      expect(
+        controller.actionFeedbackMessage,
+        contains('already approved on the server'),
+      );
+      expect(controller.actionFeedbackMessage, contains('Request submitted'));
+      expect(controller.actionFeedbackMessage, contains('. Request'));
+    },
+  );
+
+  test(
+    'should still update approved list when discard fails after relink probe',
+    () async {
+      const agentId = '44444444-4444-4444-8444-444444444444';
+      final linkedAt = DateTime(2026, 4);
+      final linkedAgent = ClientAgent(
+        agentId: agentId,
+        name: 'Relink agent',
+        catalogStatus: AgentCatalogStatus.active,
+        connectionStatus: AgentConnectionStatus.offline,
+        createdAt: linkedAt,
+        updatedAt: linkedAt,
+      );
+      reset(probeClientApprovedAgentUseCase);
+      when(
+        () => probeClientApprovedAgentUseCase(
+          userId: session.userId,
+          agentId: agentId,
+        ),
+      ).thenAnswer(
+        (_) async => Success<ClientApprovedAgentProbeOutcome, AppFailure>(
+          ClientApprovedAgentProbeOutcome.linked(linkedAgent),
+        ),
+      );
+      reset(discardQueuedClientAgentRequestAccessUseCase);
+      when(
+        () => discardQueuedClientAgentRequestAccessUseCase(
+          userId: any(named: 'userId'),
+          agentIds: any(named: 'agentIds'),
+        ),
+      ).thenAnswer(
+        (_) async => const Failure<Unit, AppFailure>(
+          StorageFailure(message: 'disk'),
+        ),
+      );
+
+      await controller.refreshAll();
+      final accepted = await controller.requestAccess(
+        agentIds: const <String>{agentId},
+      );
+
+      check(accepted).isTrue();
+      check(controller.actionErrorMessage).isNull();
+      check(controller.actionFeedbackMessage).isNotNull();
+      expect(
+        controller.actionFeedbackMessage,
+        contains('Could not clear local pending'),
+      );
+      check(
+        controller.approvedAgents!.items.any((a) => a.agentId == agentId),
+      ).isTrue();
+      verify(
+        () => discardQueuedClientAgentRequestAccessUseCase(
+          userId: session.userId,
+          agentIds: const <String>{agentId},
+        ),
+      ).called(2);
+    },
+  );
+
+  test(
     'should upsert approved agent when directed polling finds approval',
     () async {
       const watchedAgentId = '33333333-3333-3333-8333-333333333333';
@@ -563,6 +862,7 @@ void main() {
         (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
           SyncPendingAgentActionsResult(
             successfulRequestAccessAgentIds: <String>{watchedAgentId},
+            requestAccessPollAgentIds: <String>{watchedAgentId},
           ),
         ),
       );

@@ -7,6 +7,7 @@ abstract final class ClientAgentsFailureUiKey {
   static const String loadCatalogAgentById = 'loadCatalogAgentById';
   static const String loadApprovedAgents = 'loadApprovedAgents';
   static const String loadAgentDetail = 'loadAgentDetail';
+  static const String probeApprovedAgentLink = 'probeApprovedAgentLink';
   static const String loadAccessRequests = 'loadAccessRequests';
   static const String loadClientAccessStatus = 'loadClientAccessStatus';
   static const String readPendingActions = 'readPendingActions';

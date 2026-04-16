@@ -64,6 +64,14 @@ bool isBlockedAccountFailure(AppFailure failure) =>
     failure is AuthorizationFailure &&
     failure.context[AuthorizationFailureContext.accountBlockedField] == true;
 
+/// True when an API response body indicates a blocked client account.
+///
+/// Used for HTTP 403 on client-scoped reads where a generic 403 often means
+/// "no relationship" / not linked and must not be confused with a block.
+bool isBlockedAccountApiPayload(Object? responseData) {
+  return _isBlockedAccountResponse(responseData);
+}
+
 /// Returns true when the response indicates the caller should not use cached
 /// snapshots (session expired or forbidden).
 bool isDioUnauthorizedOrForbidden(DioException error) {

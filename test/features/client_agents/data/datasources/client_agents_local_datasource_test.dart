@@ -23,6 +23,11 @@ class _InMemoryCacheStore implements AppCacheStore {
   }) async {
     _values[key] = value;
   }
+
+  @override
+  Future<void> removeString(String key) async {
+    _values.remove(key);
+  }
 }
 
 void main() {

@@ -24,6 +24,8 @@ String clientAgentsFailureUserMessage(
       l10n.clientAgentsErrorLoadApproved,
     ClientAgentsFailureUiKey.loadAgentDetail =>
       l10n.clientAgentsErrorLoadAgentDetail,
+    ClientAgentsFailureUiKey.probeApprovedAgentLink =>
+      l10n.clientAgentsErrorProbeApproved,
     ClientAgentsFailureUiKey.loadAccessRequests =>
       l10n.clientAgentsErrorLoadAccessRequests,
     ClientAgentsFailureUiKey.loadClientAccessStatus =>

@@ -128,6 +128,13 @@ class ClientAgentsLocalDataSource {
     return _writeMap(_detailKey(userId, agentId), payload.toJson());
   }
 
+  Future<void> clearApprovedAgentDetail({
+    required String userId,
+    required String agentId,
+  }) {
+    return _cacheStore.removeString(_detailKey(userId, agentId));
+  }
+
   Future<ClientAccessRequestsResponseDto?> readAccessRequests({
     required String userId,
     required PaginatedQuery query,

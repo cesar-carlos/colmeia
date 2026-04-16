@@ -441,6 +441,39 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsRemoveAccess => 'Remover acesso';
 
   @override
+  String get clientAgentsApprovedBulkSelect =>
+      'Selecionar para remocao em lote';
+
+  @override
+  String get clientAgentsApprovedBulkCancel => 'Cancelar selecao';
+
+  @override
+  String clientAgentsApprovedBulkRemove(int count) {
+    return 'Remover selecionados ($count)';
+  }
+
+  @override
+  String get clientAgentsBulkRemoveConfirmTitle =>
+      'Enfileirar remocao para varios agentes?';
+
+  @override
+  String clientAgentsBulkRemoveConfirmMessage(int count) {
+    return 'A remocao de acesso para $count agentes sera preparada e enviada no proximo sync.';
+  }
+
+  @override
+  String get clientAgentsBulkRemoveConfirmBack => 'Voltar';
+
+  @override
+  String get clientAgentsBulkRemoveConfirmAction => 'Enfileirar remocao';
+
+  @override
+  String get clientAgentsApprovedBulkSelectAll => 'Selecionar todos';
+
+  @override
+  String get clientAgentsApprovedBulkClearSelection => 'Limpar selecao';
+
+  @override
   String get clientAgentsRequestAccessIntro1 =>
       'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.';
 
@@ -644,6 +677,27 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get clientAgentsRequestRelinkUpdatedSingle =>
+      'Esse agente ja esta aprovado no servidor. A lista de agentes foi atualizada.';
+
+  @override
+  String clientAgentsRequestRelinkUpdatedPlural(int count) {
+    return '$count agentes ja estavam aprovados no servidor. A lista de agentes foi atualizada.';
+  }
+
+  @override
+  String clientAgentsRequestRelinkAndQueued(
+    String relinkSummary,
+    String queueSummary,
+  ) {
+    return '$relinkSummary. $queueSummary';
+  }
+
+  @override
+  String get clientAgentsRelinkPendingNotCleared =>
+      'Nao foi possivel limpar solicitacoes pendentes locais; elas podem ser reenviadas na proxima sincronizacao.';
+
+  @override
   String get clientAgentsRemoveBlockedFallback =>
       'Nao foi possivel registrar a remocao informada.';
 
@@ -677,12 +731,20 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get clientAgentsSyncSuccessSingle =>
-      '1 solicitacao foi enviada para analise.';
+  String get clientAgentsSyncSuccessSingle => '1 pendencia foi sincronizada.';
 
   @override
   String clientAgentsSyncSuccessPlural(int count) {
-    return '$count solicitacoes foram enviadas para analise.';
+    return '$count pendencias foram sincronizadas.';
+  }
+
+  @override
+  String get clientAgentsSyncSuccessNoneCompleted =>
+      'A sincronizacao terminou, mas nenhuma pendencia foi aplicada.';
+
+  @override
+  String clientAgentsSyncSuccessSomeFailedSuffix(int count) {
+    return ' $count acao(oes) falhou e permanece na fila para nova tentativa.';
   }
 
   @override
@@ -696,6 +758,24 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentsSyncSuccessPollingSuffix =>
       ' Vamos acompanhar a aprovacao automaticamente.';
+
+  @override
+  String get clientAgentsSyncSuccessAlreadyApprovedSingle =>
+      ' Um agente ja estava aprovado no servidor.';
+
+  @override
+  String clientAgentsSyncSuccessAlreadyApprovedPlural(int count) {
+    return ' $count agentes ja estavam aprovados no servidor.';
+  }
+
+  @override
+  String get clientAgentsSyncSuccessDebouncedSingle =>
+      ' Uma solicitacao foi atualizada recentemente (sem novo email).';
+
+  @override
+  String clientAgentsSyncSuccessDebouncedPlural(int count) {
+    return ' $count solicitacoes foram atualizadas recentemente (sem novo email).';
+  }
 
   @override
   String clientAgentsPollApprovedSingle(String tabLabel) {
@@ -1067,6 +1147,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentsErrorLoadAgentDetail =>
       'Nao foi possivel carregar os dados do agente.';
+
+  @override
+  String get clientAgentsErrorProbeApproved =>
+      'Nao foi possivel verificar se o agente ja esta ligado a esta conta.';
 
   @override
   String get clientAgentsErrorLoadAccessRequests =>
@@ -2023,6 +2107,39 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsRemoveAccess => 'Remover acesso';
 
   @override
+  String get clientAgentsApprovedBulkSelect =>
+      'Selecionar para remocao em lote';
+
+  @override
+  String get clientAgentsApprovedBulkCancel => 'Cancelar selecao';
+
+  @override
+  String clientAgentsApprovedBulkRemove(int count) {
+    return 'Remover selecionados ($count)';
+  }
+
+  @override
+  String get clientAgentsBulkRemoveConfirmTitle =>
+      'Enfileirar remocao para varios agentes?';
+
+  @override
+  String clientAgentsBulkRemoveConfirmMessage(int count) {
+    return 'A remocao de acesso para $count agentes sera preparada e enviada no proximo sync.';
+  }
+
+  @override
+  String get clientAgentsBulkRemoveConfirmBack => 'Voltar';
+
+  @override
+  String get clientAgentsBulkRemoveConfirmAction => 'Enfileirar remocao';
+
+  @override
+  String get clientAgentsApprovedBulkSelectAll => 'Selecionar todos';
+
+  @override
+  String get clientAgentsApprovedBulkClearSelection => 'Limpar selecao';
+
+  @override
   String get clientAgentsRequestAccessIntro1 =>
       'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.';
 
@@ -2226,6 +2343,27 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
+  String get clientAgentsRequestRelinkUpdatedSingle =>
+      'Esse agente ja esta aprovado no servidor. A lista de agentes foi atualizada.';
+
+  @override
+  String clientAgentsRequestRelinkUpdatedPlural(int count) {
+    return '$count agentes ja estavam aprovados no servidor. A lista de agentes foi atualizada.';
+  }
+
+  @override
+  String clientAgentsRequestRelinkAndQueued(
+    String relinkSummary,
+    String queueSummary,
+  ) {
+    return '$relinkSummary. $queueSummary';
+  }
+
+  @override
+  String get clientAgentsRelinkPendingNotCleared =>
+      'Nao foi possivel limpar solicitacoes pendentes locais; elas podem ser reenviadas na proxima sincronizacao.';
+
+  @override
   String get clientAgentsRemoveBlockedFallback =>
       'Nao foi possivel registrar a remocao informada.';
 
@@ -2259,12 +2397,20 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
-  String get clientAgentsSyncSuccessSingle =>
-      '1 solicitacao foi enviada para analise.';
+  String get clientAgentsSyncSuccessSingle => '1 pendencia foi sincronizada.';
 
   @override
   String clientAgentsSyncSuccessPlural(int count) {
-    return '$count solicitacoes foram enviadas para analise.';
+    return '$count pendencias foram sincronizadas.';
+  }
+
+  @override
+  String get clientAgentsSyncSuccessNoneCompleted =>
+      'A sincronizacao terminou, mas nenhuma pendencia foi aplicada.';
+
+  @override
+  String clientAgentsSyncSuccessSomeFailedSuffix(int count) {
+    return ' $count acao(oes) falhou e permanece na fila para nova tentativa.';
   }
 
   @override
@@ -2278,6 +2424,24 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsSyncSuccessPollingSuffix =>
       ' Vamos acompanhar a aprovacao automaticamente.';
+
+  @override
+  String get clientAgentsSyncSuccessAlreadyApprovedSingle =>
+      ' Um agente ja estava aprovado no servidor.';
+
+  @override
+  String clientAgentsSyncSuccessAlreadyApprovedPlural(int count) {
+    return ' $count agentes ja estavam aprovados no servidor.';
+  }
+
+  @override
+  String get clientAgentsSyncSuccessDebouncedSingle =>
+      ' Uma solicitacao foi atualizada recentemente (sem novo email).';
+
+  @override
+  String clientAgentsSyncSuccessDebouncedPlural(int count) {
+    return ' $count solicitacoes foram atualizadas recentemente (sem novo email).';
+  }
 
   @override
   String clientAgentsPollApprovedSingle(String tabLabel) {
@@ -2649,6 +2813,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsErrorLoadAgentDetail =>
       'Nao foi possivel carregar os dados do agente.';
+
+  @override
+  String get clientAgentsErrorProbeApproved =>
+      'Nao foi possivel verificar se o agente ja esta ligado a esta conta.';
 
   @override
   String get clientAgentsErrorLoadAccessRequests =>

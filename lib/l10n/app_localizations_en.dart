@@ -432,6 +432,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentsRemoveAccess => 'Remove access';
 
   @override
+  String get clientAgentsApprovedBulkSelect => 'Select for bulk removal';
+
+  @override
+  String get clientAgentsApprovedBulkCancel => 'Cancel selection';
+
+  @override
+  String clientAgentsApprovedBulkRemove(int count) {
+    return 'Remove selected ($count)';
+  }
+
+  @override
+  String get clientAgentsBulkRemoveConfirmTitle =>
+      'Queue removal for multiple agents?';
+
+  @override
+  String clientAgentsBulkRemoveConfirmMessage(int count) {
+    return 'Access removal for $count agents will be prepared and sent on the next sync.';
+  }
+
+  @override
+  String get clientAgentsBulkRemoveConfirmBack => 'Back';
+
+  @override
+  String get clientAgentsBulkRemoveConfirmAction => 'Queue removal';
+
+  @override
+  String get clientAgentsApprovedBulkSelectAll => 'Select all';
+
+  @override
+  String get clientAgentsApprovedBulkClearSelection => 'Clear selection';
+
+  @override
   String get clientAgentsRequestAccessIntro1 =>
       'Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.';
 
@@ -633,6 +665,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get clientAgentsRequestRelinkUpdatedSingle =>
+      'That agent is already approved on the server. Your agent list was updated.';
+
+  @override
+  String clientAgentsRequestRelinkUpdatedPlural(int count) {
+    return '$count agents were already approved on the server. Your agent list was updated.';
+  }
+
+  @override
+  String clientAgentsRequestRelinkAndQueued(
+    String relinkSummary,
+    String queueSummary,
+  ) {
+    return '$relinkSummary. $queueSummary';
+  }
+
+  @override
+  String get clientAgentsRelinkPendingNotCleared =>
+      'Could not clear local pending requests; they may retry on the next sync.';
+
+  @override
   String get clientAgentsRemoveBlockedFallback =>
       'Could not register the requested removal.';
 
@@ -666,11 +719,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get clientAgentsSyncSuccessSingle => '1 request was sent for review.';
+  String get clientAgentsSyncSuccessSingle =>
+      '1 pending action finished syncing.';
 
   @override
   String clientAgentsSyncSuccessPlural(int count) {
-    return '$count requests were sent for review.';
+    return '$count pending actions finished syncing.';
+  }
+
+  @override
+  String get clientAgentsSyncSuccessNoneCompleted =>
+      'Sync finished but no pending actions could be applied.';
+
+  @override
+  String clientAgentsSyncSuccessSomeFailedSuffix(int count) {
+    return ' $count action(s) failed and remain queued to retry.';
   }
 
   @override
@@ -683,6 +746,24 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clientAgentsSyncSuccessPollingSuffix =>
       ' We will track approval automatically.';
+
+  @override
+  String get clientAgentsSyncSuccessAlreadyApprovedSingle =>
+      ' One agent was already approved on the server.';
+
+  @override
+  String clientAgentsSyncSuccessAlreadyApprovedPlural(int count) {
+    return ' $count agents were already approved on the server.';
+  }
+
+  @override
+  String get clientAgentsSyncSuccessDebouncedSingle =>
+      ' One request was refreshed recently (no new email).';
+
+  @override
+  String clientAgentsSyncSuccessDebouncedPlural(int count) {
+    return ' $count requests were refreshed recently (no new email).';
+  }
 
   @override
   String clientAgentsPollApprovedSingle(String tabLabel) {
@@ -1050,6 +1131,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clientAgentsErrorLoadAgentDetail =>
       'Could not load agent details.';
+
+  @override
+  String get clientAgentsErrorProbeApproved =>
+      'Could not verify whether the agent is already linked for this account.';
 
   @override
   String get clientAgentsErrorLoadAccessRequests =>

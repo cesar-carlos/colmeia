@@ -7,7 +7,9 @@ import 'package:colmeia/features/client_agents/data/models/client_access_request
 import 'package:colmeia/features/client_agents/data/models/client_access_status_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_accessible_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_address_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_request_access_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/repositories/client_agents_repository_impl.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
@@ -71,6 +73,20 @@ void main() {
     registerFallbackValue(<PendingAgentAction>[]);
     registerFallbackValue(
       const AgentProfileUpdateRequest(name: 'fallback'),
+    );
+    registerFallbackValue(
+      ClientApprovedAgentDetailResponseDto(
+        agent: ClientAccessibleAgentDto.fromJson(<String, dynamic>{
+          'agentId': 'fallback-agent',
+          'name': 'Fallback',
+          'status': 'active',
+          'createdAt': '2020-01-01T00:00:00.000Z',
+          'updatedAt': '2020-01-01T00:00:00.000Z',
+        }),
+      ),
+    );
+    registerFallbackValue(
+      const ClientRequestAccessResponseDto(requested: <String>['fb']),
     );
   });
 
@@ -150,12 +166,16 @@ void main() {
     });
     when(
       () => remote.requestAccess(agentIds: const <String>{'agent-1'}),
-    ).thenAnswer((_) async => const <String>{'agent-1'});
+    ).thenAnswer(
+      (_) async => const ClientRequestAccessResponseDto(
+        requested: <String>['agent-1'],
+      ),
+    );
     when(
-      () => remote.removeAccess(agentIds: const <String>{'agent-2'}),
+      () => remote.removeApprovedAgentById('agent-2'),
     ).thenThrow(
       DioException(
-        requestOptions: RequestOptions(path: '/client/me/agents'),
+        requestOptions: RequestOptions(path: '/client/me/agents/agent-2'),
         type: DioExceptionType.connectionError,
       ),
     );
@@ -223,13 +243,338 @@ void main() {
     check(result.getOrNull()!.failedRemoveAccessAgentIds).deepEquals(
       const <String>{'agent-2'},
     );
+    check(result.getOrNull()!.requestAccessPollAgentIds).deepEquals(
+      const <String>{'agent-1'},
+    );
     check(storedActions).has((it) => it.length, 'length').equals(1);
     check(storedActions.first.agentId).equals('agent-2');
     check(storedActions.first.state).equals(PendingAgentActionState.failed);
+    verify(() => remote.removeApprovedAgentById('agent-2')).called(1);
     verifyNever(
       () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
     );
   });
+
+  test('recovers orphaned syncing pending actions before syncing', () async {
+    var storedActions = <PendingAgentAction>[
+      PendingAgentAction(
+        id: 'requestAccess_agent-x',
+        agentId: 'agent-x',
+        type: PendingAgentActionType.requestAccess,
+        state: PendingAgentActionState.syncing,
+        createdAt: now,
+        attemptCount: 1,
+        lastAttemptAt: now,
+        errorMessage: 'stale',
+      ),
+    ];
+    var saveCount = 0;
+
+    when(
+      () => local.readPendingActions(userId: any(named: 'userId')),
+    ).thenAnswer((_) async => storedActions);
+    when(
+      () => local.savePendingActions(
+        userId: any(named: 'userId'),
+        actions: any(named: 'actions'),
+      ),
+    ).thenAnswer((invocation) async {
+      final next = List<PendingAgentAction>.from(
+        invocation.namedArguments[#actions]! as List<PendingAgentAction>,
+      );
+      if (saveCount == 0) {
+        check(next.single.state).equals(PendingAgentActionState.queued);
+        check(next.single.errorMessage).isNull();
+      }
+      saveCount++;
+      storedActions = next;
+    });
+    when(
+      () => remote.requestAccess(agentIds: const <String>{'agent-x'}),
+    ).thenAnswer(
+      (_) async => const ClientRequestAccessResponseDto(
+        requested: <String>['agent-x'],
+      ),
+    );
+    when(
+      () => remote.fetchApprovedAgents(
+        query: any(named: 'query'),
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).thenAnswer(
+      (_) async => const ClientApprovedAgentsResponseDto(
+        agents: [],
+        agentIds: <String>{},
+        count: 0,
+        total: 0,
+        page: 1,
+        pageSize: 50,
+      ),
+    );
+    when(
+      () => local.saveApprovedAgents(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        payload: any(named: 'payload'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => remote.fetchAccessRequests(query: any(named: 'query')),
+    ).thenAnswer(
+      (_) async => const ClientAccessRequestsResponseDto(
+        requests: [],
+        count: 0,
+        total: 0,
+        page: 1,
+        pageSize: 50,
+      ),
+    );
+    when(
+      () => local.saveAccessRequests(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        payload: any(named: 'payload'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => local.readOnlineAgents(
+        userId: any(named: 'userId'),
+        maxAge: any(named: 'maxAge'),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
+      () => local.readOnlineAgents(
+        userId: any(named: 'userId'),
+      ),
+    ).thenAnswer((_) async => null);
+
+    final result = await repository.syncPendingActions(userId: 'user-1');
+
+    check(result.isSuccess()).isTrue();
+    verify(
+      () => remote.requestAccess(agentIds: const <String>{'agent-x'}),
+    ).called(1);
+  });
+
+  test('sync batches multiple requestAccess actions into one POST', () async {
+    var storedActions = <PendingAgentAction>[
+      PendingAgentAction(
+        id: 'requestAccess_agent-1',
+        agentId: 'agent-1',
+        type: PendingAgentActionType.requestAccess,
+        state: PendingAgentActionState.queued,
+        createdAt: now,
+        attemptCount: 0,
+      ),
+      PendingAgentAction(
+        id: 'requestAccess_agent-2',
+        agentId: 'agent-2',
+        type: PendingAgentActionType.requestAccess,
+        state: PendingAgentActionState.queued,
+        createdAt: now,
+        attemptCount: 0,
+      ),
+    ];
+
+    when(
+      () => local.readPendingActions(userId: any(named: 'userId')),
+    ).thenAnswer((_) async => storedActions);
+    when(
+      () => local.savePendingActions(
+        userId: any(named: 'userId'),
+        actions: any(named: 'actions'),
+      ),
+    ).thenAnswer((invocation) async {
+      storedActions = List<PendingAgentAction>.from(
+        invocation.namedArguments[#actions]! as List<PendingAgentAction>,
+      );
+    });
+    when(
+      () => remote.requestAccess(agentIds: any(named: 'agentIds')),
+    ).thenAnswer(
+      (invocation) async {
+        final ids =
+            invocation.namedArguments[#agentIds]! as Set<String>;
+        check(ids).deepEquals(const <String>{'agent-1', 'agent-2'});
+        return ClientRequestAccessResponseDto(
+          newRequests: ids.toList(growable: false),
+        );
+      },
+    );
+    when(
+      () => remote.fetchApprovedAgents(
+        query: any(named: 'query'),
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).thenAnswer(
+      (_) async => const ClientApprovedAgentsResponseDto(
+        agents: [],
+        agentIds: <String>{},
+        count: 0,
+        total: 0,
+        page: 1,
+        pageSize: 50,
+      ),
+    );
+    when(
+      () => local.saveApprovedAgents(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        payload: any(named: 'payload'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => remote.fetchAccessRequests(query: any(named: 'query')),
+    ).thenAnswer(
+      (_) async => const ClientAccessRequestsResponseDto(
+        requests: [],
+        count: 0,
+        total: 0,
+        page: 1,
+        pageSize: 50,
+      ),
+    );
+    when(
+      () => local.saveAccessRequests(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        payload: any(named: 'payload'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => local.readOnlineAgents(
+        userId: any(named: 'userId'),
+        maxAge: any(named: 'maxAge'),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
+      () => local.readOnlineAgents(
+        userId: any(named: 'userId'),
+      ),
+    ).thenAnswer((_) async => null);
+
+    final result = await repository.syncPendingActions(userId: 'user-1');
+
+    check(result.isSuccess()).isTrue();
+    verify(
+      () => remote.requestAccess(
+        agentIds: const <String>{'agent-1', 'agent-2'},
+      ),
+    ).called(1);
+    check(result.getOrNull()!.requestAccessPollAgentIds).deepEquals(
+      const <String>{'agent-1', 'agent-2'},
+    );
+    check(result.getOrNull()!.requestAccessNewRequestsAgentIds).deepEquals(
+      const <String>{'agent-1', 'agent-2'},
+    );
+    check(storedActions).isEmpty();
+  });
+
+  test(
+    'sync maps alreadyApproved POST response to empty poll ids',
+    () async {
+      var storedActions = <PendingAgentAction>[
+        PendingAgentAction(
+          id: 'requestAccess_already',
+          agentId: 'agent-appr',
+          type: PendingAgentActionType.requestAccess,
+          state: PendingAgentActionState.queued,
+          createdAt: now,
+          attemptCount: 0,
+        ),
+      ];
+
+      when(
+        () => local.readPendingActions(userId: any(named: 'userId')),
+      ).thenAnswer((_) async => storedActions);
+      when(
+        () => local.savePendingActions(
+          userId: any(named: 'userId'),
+          actions: any(named: 'actions'),
+        ),
+      ).thenAnswer((invocation) async {
+        storedActions = List<PendingAgentAction>.from(
+          invocation.namedArguments[#actions]! as List<PendingAgentAction>,
+        );
+      });
+      when(
+        () => remote.requestAccess(agentIds: const <String>{'agent-appr'}),
+      ).thenAnswer(
+        (_) async => const ClientRequestAccessResponseDto(
+          alreadyApproved: <String>['agent-appr'],
+        ),
+      );
+      when(
+        () => remote.fetchApprovedAgents(
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+          refresh: any(named: 'refresh'),
+        ),
+      ).thenAnswer(
+        (_) async => const ClientApprovedAgentsResponseDto(
+          agents: [],
+          agentIds: <String>{},
+          count: 0,
+          total: 0,
+          page: 1,
+          pageSize: 50,
+        ),
+      );
+      when(
+        () => local.saveApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => remote.fetchAccessRequests(query: any(named: 'query')),
+      ).thenAnswer(
+        (_) async => const ClientAccessRequestsResponseDto(
+          requests: [],
+          count: 0,
+          total: 0,
+          page: 1,
+          pageSize: 50,
+        ),
+      );
+      when(
+        () => local.saveAccessRequests(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => local.readOnlineAgents(
+          userId: any(named: 'userId'),
+          maxAge: any(named: 'maxAge'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => local.readOnlineAgents(
+          userId: any(named: 'userId'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.syncPendingActions(userId: 'user-1');
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrNull()!.requestAccessPollAgentIds).isEmpty();
+      check(
+        result.getOrNull()!.successfulRequestAccessAgentIds,
+      ).deepEquals(const <String>{'agent-appr'});
+      check(
+        result.getOrNull()!.requestAccessAlreadyApprovedAgentIds,
+      ).deepEquals(const <String>{'agent-appr'});
+      check(storedActions).has((it) => it.length, 'length').equals(0);
+    },
+  );
 
   test(
     'should map approved agents to unknown when no hub field '
@@ -606,6 +951,87 @@ void main() {
           payload: any(named: 'payload'),
         ),
       );
+    },
+  );
+
+  test(
+    'probeApprovedAgentLink clears cached detail when remote returns not found',
+    () async {
+      const agentId = 'aaaaaaaa-aaaa-aaaa-8aaa-aaaaaaaaaaaa';
+      when(() => remote.fetchApprovedAgentDetailOrNull(agentId)).thenAnswer(
+        (_) async => null,
+      );
+      when(
+        () => local.clearApprovedAgentDetail(
+          userId: 'user-1',
+          agentId: agentId,
+        ),
+      ).thenAnswer((_) async {});
+
+      final result = await repository.probeApprovedAgentLink(
+        userId: 'user-1',
+        agentId: agentId,
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrNull()!.isLinked).isFalse();
+      verify(
+        () => local.clearApprovedAgentDetail(
+          userId: 'user-1',
+          agentId: agentId,
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'probeApprovedAgentLink persists detail when remote returns a profile',
+    () async {
+      const agentId = 'bbbbbbbb-bbbb-bbbb-8bbb-bbbbbbbbbbbb';
+      final detail = ClientApprovedAgentDetailResponseDto(
+        agent: ClientAccessibleAgentDto.fromJson(<String, dynamic>{
+          'agentId': agentId,
+          'name': 'On Server',
+          'status': 'active',
+          'createdAt': '2020-01-01T00:00:00.000Z',
+          'updatedAt': '2020-01-01T00:00:00.000Z',
+        }),
+      );
+      when(() => remote.fetchApprovedAgentDetailOrNull(agentId)).thenAnswer(
+        (_) async => detail,
+      );
+      when(
+        () => local.saveApprovedAgentDetail(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => local.readOnlineAgents(
+          userId: 'user-1',
+          maxAge: any(named: 'maxAge'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => local.readOnlineAgents(userId: 'user-1'),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.probeApprovedAgentLink(
+        userId: 'user-1',
+        agentId: agentId,
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrNull()!.isLinked).isTrue();
+      check(result.getOrNull()!.agent!.agentId).equals(agentId);
+      verify(
+        () => local.saveApprovedAgentDetail(
+          userId: 'user-1',
+          agentId: agentId,
+          payload: detail,
+        ),
+      ).called(1);
     },
   );
 }

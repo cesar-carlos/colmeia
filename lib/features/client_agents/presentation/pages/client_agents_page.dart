@@ -274,11 +274,11 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                           child: ClientAgentsApprovedAgentsTab(
                             agents: filteredApprovedAgents,
                             errorMessage: controller.approvedAgentsErrorMessage,
-                            onRemoveAccess: (agent) => unawaited(
-                              controller.removeAccess(
-                                agentIds: <String>{agent},
-                              ),
-                            ),
+                            onQueueRemoveAccess: (agentIds) async {
+                              await controller.removeAccess(
+                                agentIds: agentIds,
+                              );
+                            },
                             onRetry: () => unawaited(controller.refreshAll()),
                             isMutating: controller.isSyncing,
                             hasActiveFilters:

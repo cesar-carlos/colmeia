@@ -181,6 +181,25 @@
   "agentConnectionOffline": "offline",
   "agentConnectionUnknown": "Connection status unknown",
   "clientAgentsRemoveAccess": "Remove access",
+  "clientAgentsApprovedBulkSelect": "Select for bulk removal",
+  "clientAgentsApprovedBulkCancel": "Cancel selection",
+  "clientAgentsApprovedBulkRemove": "Remove selected ({count})",
+  "@clientAgentsApprovedBulkRemove": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsBulkRemoveConfirmTitle": "Queue removal for multiple agents?",
+  "clientAgentsBulkRemoveConfirmMessage": "Access removal for {count} agents will be prepared and sent on the next sync.",
+  "@clientAgentsBulkRemoveConfirmMessage": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsBulkRemoveConfirmBack": "Back",
+  "clientAgentsBulkRemoveConfirmAction": "Queue removal",
+  "clientAgentsApprovedBulkSelectAll": "Select all",
+  "clientAgentsApprovedBulkClearSelection": "Clear selection",
   "clientAgentsRequestAccessIntro1": "Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.",
   "clientAgentsRequestAccessIntro2": "The agent ID must be provided by the agent owner or an external flow. When the request is approved, the agent will be released automatically for this account.",
   "clientAgentsRequestAccessIntroToken": "The client token is saved only on this device (encrypted) and is not sent when you submit the access request.",
@@ -285,6 +304,27 @@
       "count": {"type": "int"}
     }
   },
+  "clientAgentsRequestRelinkUpdatedSingle":
+      "That agent is already approved on the server. Your agent list was updated.",
+  "clientAgentsRequestRelinkUpdatedPlural":
+      "{count} agents were already approved on the server. Your agent list was updated.",
+  "@clientAgentsRequestRelinkUpdatedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsRequestRelinkAndQueued": "{relinkSummary}. {queueSummary}",
+  "@clientAgentsRequestRelinkAndQueued": {
+    "placeholders": {
+      "relinkSummary": {
+        "type": "String"
+      },
+      "queueSummary": {
+        "type": "String"
+      }
+    }
+  },
+  "clientAgentsRelinkPendingNotCleared": "Could not clear local pending requests; they may retry on the next sync.",
   "clientAgentsRemoveBlockedFallback": "Could not register the requested removal.",
   "clientAgentsRemoveBlockedIntro": "No new agents can be removed with the IDs provided. {details}",
   "@clientAgentsRemoveBlockedIntro": {
@@ -317,9 +357,16 @@
       "count": {"type": "int"}
     }
   },
-  "clientAgentsSyncSuccessSingle": "1 request was sent for review.",
-  "clientAgentsSyncSuccessPlural": "{count} requests were sent for review.",
+  "clientAgentsSyncSuccessSingle": "1 pending action finished syncing.",
+  "clientAgentsSyncSuccessPlural": "{count} pending actions finished syncing.",
   "@clientAgentsSyncSuccessPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsSyncSuccessNoneCompleted": "Sync finished but no pending actions could be applied.",
+  "clientAgentsSyncSuccessSomeFailedSuffix": " {count} action(s) failed and remain queued to retry.",
+  "@clientAgentsSyncSuccessSomeFailedSuffix": {
     "placeholders": {
       "count": {"type": "int"}
     }
@@ -327,6 +374,20 @@
   "clientAgentsSyncSuccessAutoSuffix": " It was sent automatically.",
   "clientAgentsSyncSuccessManualSuffix": " The screen was refreshed with the latest status.",
   "clientAgentsSyncSuccessPollingSuffix": " We will track approval automatically.",
+  "clientAgentsSyncSuccessAlreadyApprovedSingle": " One agent was already approved on the server.",
+  "clientAgentsSyncSuccessAlreadyApprovedPlural": " {count} agents were already approved on the server.",
+  "@clientAgentsSyncSuccessAlreadyApprovedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "clientAgentsSyncSuccessDebouncedSingle": " One request was refreshed recently (no new email).",
+  "clientAgentsSyncSuccessDebouncedPlural": " {count} requests were refreshed recently (no new email).",
+  "@clientAgentsSyncSuccessDebouncedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "clientAgentsPollApprovedSingle": "Access approved. The agent is already available under \"{tabLabel}\".",
   "@clientAgentsPollApprovedSingle": {
     "placeholders": {
@@ -510,6 +571,8 @@
       "Could not read the access request status.",
   "clientAgentsErrorLoadApproved": "Could not load approved agents for this account.",
   "clientAgentsErrorLoadAgentDetail": "Could not load agent details.",
+  "clientAgentsErrorProbeApproved":
+      "Could not verify whether the agent is already linked for this account.",
   "clientAgentsErrorLoadAccessRequests": "Could not load request history.",
   "clientAgentsErrorReadPending": "Could not load pending submissions to sync.",
   "clientAgentsErrorQueueRequest": "Could not queue the access request for sync.",

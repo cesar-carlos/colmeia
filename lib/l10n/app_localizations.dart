@@ -819,6 +819,60 @@ abstract class AppLocalizations {
   /// **'Remove access'**
   String get clientAgentsRemoveAccess;
 
+  /// No description provided for @clientAgentsApprovedBulkSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select for bulk removal'**
+  String get clientAgentsApprovedBulkSelect;
+
+  /// No description provided for @clientAgentsApprovedBulkCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selection'**
+  String get clientAgentsApprovedBulkCancel;
+
+  /// No description provided for @clientAgentsApprovedBulkRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove selected ({count})'**
+  String clientAgentsApprovedBulkRemove(int count);
+
+  /// No description provided for @clientAgentsBulkRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue removal for multiple agents?'**
+  String get clientAgentsBulkRemoveConfirmTitle;
+
+  /// No description provided for @clientAgentsBulkRemoveConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Access removal for {count} agents will be prepared and sent on the next sync.'**
+  String clientAgentsBulkRemoveConfirmMessage(int count);
+
+  /// No description provided for @clientAgentsBulkRemoveConfirmBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get clientAgentsBulkRemoveConfirmBack;
+
+  /// No description provided for @clientAgentsBulkRemoveConfirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue removal'**
+  String get clientAgentsBulkRemoveConfirmAction;
+
+  /// No description provided for @clientAgentsApprovedBulkSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get clientAgentsApprovedBulkSelectAll;
+
+  /// No description provided for @clientAgentsApprovedBulkClearSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get clientAgentsApprovedBulkClearSelection;
+
   /// No description provided for @clientAgentsRequestAccessIntro1.
   ///
   /// In en, this message translates to:
@@ -1143,6 +1197,33 @@ abstract class AppLocalizations {
   /// **'{count} IDs were ignored because they were already approved or under review.'**
   String clientAgentsRequestQueuedIgnoredSuffix(int count);
 
+  /// No description provided for @clientAgentsRequestRelinkUpdatedSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'That agent is already approved on the server. Your agent list was updated.'**
+  String get clientAgentsRequestRelinkUpdatedSingle;
+
+  /// No description provided for @clientAgentsRequestRelinkUpdatedPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} agents were already approved on the server. Your agent list was updated.'**
+  String clientAgentsRequestRelinkUpdatedPlural(int count);
+
+  /// No description provided for @clientAgentsRequestRelinkAndQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'{relinkSummary}. {queueSummary}'**
+  String clientAgentsRequestRelinkAndQueued(
+    String relinkSummary,
+    String queueSummary,
+  );
+
+  /// No description provided for @clientAgentsRelinkPendingNotCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not clear local pending requests; they may retry on the next sync.'**
+  String get clientAgentsRelinkPendingNotCleared;
+
   /// No description provided for @clientAgentsRemoveBlockedFallback.
   ///
   /// In en, this message translates to:
@@ -1188,14 +1269,26 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsSyncSuccessSingle.
   ///
   /// In en, this message translates to:
-  /// **'1 request was sent for review.'**
+  /// **'1 pending action finished syncing.'**
   String get clientAgentsSyncSuccessSingle;
 
   /// No description provided for @clientAgentsSyncSuccessPlural.
   ///
   /// In en, this message translates to:
-  /// **'{count} requests were sent for review.'**
+  /// **'{count} pending actions finished syncing.'**
   String clientAgentsSyncSuccessPlural(int count);
+
+  /// No description provided for @clientAgentsSyncSuccessNoneCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync finished but no pending actions could be applied.'**
+  String get clientAgentsSyncSuccessNoneCompleted;
+
+  /// No description provided for @clientAgentsSyncSuccessSomeFailedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **' {count} action(s) failed and remain queued to retry.'**
+  String clientAgentsSyncSuccessSomeFailedSuffix(int count);
 
   /// No description provided for @clientAgentsSyncSuccessAutoSuffix.
   ///
@@ -1214,6 +1307,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **' We will track approval automatically.'**
   String get clientAgentsSyncSuccessPollingSuffix;
+
+  /// No description provided for @clientAgentsSyncSuccessAlreadyApprovedSingle.
+  ///
+  /// In en, this message translates to:
+  /// **' One agent was already approved on the server.'**
+  String get clientAgentsSyncSuccessAlreadyApprovedSingle;
+
+  /// No description provided for @clientAgentsSyncSuccessAlreadyApprovedPlural.
+  ///
+  /// In en, this message translates to:
+  /// **' {count} agents were already approved on the server.'**
+  String clientAgentsSyncSuccessAlreadyApprovedPlural(int count);
+
+  /// No description provided for @clientAgentsSyncSuccessDebouncedSingle.
+  ///
+  /// In en, this message translates to:
+  /// **' One request was refreshed recently (no new email).'**
+  String get clientAgentsSyncSuccessDebouncedSingle;
+
+  /// No description provided for @clientAgentsSyncSuccessDebouncedPlural.
+  ///
+  /// In en, this message translates to:
+  /// **' {count} requests were refreshed recently (no new email).'**
+  String clientAgentsSyncSuccessDebouncedPlural(int count);
 
   /// No description provided for @clientAgentsPollApprovedSingle.
   ///
@@ -1820,6 +1937,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load agent details.'**
   String get clientAgentsErrorLoadAgentDetail;
+
+  /// No description provided for @clientAgentsErrorProbeApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not verify whether the agent is already linked for this account.'**
+  String get clientAgentsErrorProbeApproved;
 
   /// No description provided for @clientAgentsErrorLoadAccessRequests.
   ///

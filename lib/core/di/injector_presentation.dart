@@ -1,8 +1,10 @@
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/probe_client_approved_agent_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
@@ -47,6 +49,10 @@ void registerInjectorPresentation(GetIt getIt) {
         queueRequestAccessUseCase:
             getIt<QueueClientAgentRequestAccessUseCase>(),
         queueRemoveAccessUseCase: getIt<QueueClientAgentRemoveAccessUseCase>(),
+        probeClientApprovedAgentUseCase:
+            getIt<ProbeClientApprovedAgentUseCase>(),
+        discardQueuedClientAgentRequestAccessUseCase:
+            getIt<DiscardQueuedClientAgentRequestAccessUseCase>(),
         readPendingActionsUseCase:
             getIt<ReadPendingClientAgentActionsUseCase>(),
         syncPendingActionsUseCase:
