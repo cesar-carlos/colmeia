@@ -50,6 +50,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
   static const String _sourceAgentIdsContextField = 'sourceAgentIds';
   static const Duration _overviewCacheMaxAge = Duration(hours: 48);
 
+  /// Monthly resumo SQL is heavier than the rolling payment mix query; allow
+  /// a longer bridge wait so merge-all runs do not all fail on slow agents.
+  static const int _overviewMonthlyParcelSqlBridgeTimeoutMs = 300000;
+
   @override
   Future<AppResult<Overview>> loadOverview({
     required String userId,
@@ -71,6 +75,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       filter: mensalFilter,
       selectedAgentIds: filter.selectedAgentIds,
       strategy: executionStrategy,
+      bridgeTimeoutMs: _overviewMonthlyParcelSqlBridgeTimeoutMs,
     );
     try {
       final reportResult = await _resumoAcrossAgentsRepository.load(

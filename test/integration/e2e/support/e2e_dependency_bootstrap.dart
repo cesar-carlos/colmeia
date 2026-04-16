@@ -8,8 +8,12 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/network/app_dio_client.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'e2e_stub_client_agents_for_agent_queries.dart';
 
 /// Loads bundled env and registers `Dio` plus the agent-queries stack only.
 ///
@@ -47,7 +51,14 @@ Future<void> e2eSetupDependencies() async {
     _addBearerInterceptor(dio, session.accessToken);
   }
 
-  getIt.registerSingleton<Dio>(dio);
+  getIt
+    ..registerSingleton<Dio>(dio)
+    ..registerSingleton<ClientAgentsRepository>(
+      E2eStubClientAgentsRepository(),
+    )
+    ..registerSingleton<AgentClientTokenReader>(
+      E2eStubAgentClientTokenReader(),
+    );
   registerInjectorAgentQueries(getIt);
 }
 
@@ -162,13 +173,38 @@ bool isKnownE2eAgentSqlHttpForbiddenFailure(AppFailure failure) {
   return failure.context['operation'] == 'executeAgentSql';
 }
 
+/// Some bridge runtimes cap named bind parameters (e.g. 5). Queries that add
+/// optional dimension binds can exceed that until repositories split SQL like
+/// `resumoParcelasMensal`.
+bool isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  if (failure.rpcCode != -32602 || failure.reason != 'invalid_params') {
+    return false;
+  }
+  final tech = failure.technicalMessage?.trim().toLowerCase() ?? '';
+  if (tech.contains('named parameters') && tech.contains('supports up to')) {
+    return true;
+  }
+  final errorData = failure.context[AgentSqlRpcFailureUiKey.errorDataField];
+  if (errorData is Map) {
+    final detail = errorData['detail']?.toString().toLowerCase() ?? '';
+    if (detail.contains('named parameters') && detail.contains('supports up to')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /// Known policy rejection, missing table permission RPC, transient bridge
 /// HTTP 5xx, or HTTP 403 forbidden on agent SQL (environment / hub access).
 bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
   return isKnownInvalidPolicyFailure(failure) ||
       isKnownAgentSqlMissingPermissionFailure(failure) ||
       isTransientAgentSqlBridgeHttpFailure(failure) ||
-      isKnownE2eAgentSqlHttpForbiddenFailure(failure);
+      isKnownE2eAgentSqlHttpForbiddenFailure(failure) ||
+      isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(failure);
 }
 
 void primeE2eEnvironment() {

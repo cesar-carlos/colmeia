@@ -8,8 +8,9 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// `GROUP BY` company, branch, and weekday (up to seven buckets per branch).
   static const int resumoParcelasDiaSemana = aggregateMultiBranchCap;
 
-  /// One row per calendar month in the filtered range.
-  static const int resumoParcelasMensal = aggregateMultiBranchCap;
+  /// One row per calendar month per company/branch; deployments with many
+  /// branches exceed [aggregateMultiBranchCap] (12 months × filiais).
+  static const int resumoParcelasMensal = 8000;
 
   /// Company, branch, sale year, and payment method buckets in the range.
   static const int resumoParcelasAnual = aggregateMultiBranchCap;

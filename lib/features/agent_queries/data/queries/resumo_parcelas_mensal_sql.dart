@@ -12,6 +12,11 @@ abstract final class ResumoParcelasMensalSql {
   /// execute payload so `IS NULL` branches apply (same contract as
   /// `ResumoParcelasSqlDimensionFilters.namedParams`).
   ///
+  /// **Bridge named-parameter limit**: some runtimes cap named binds (e.g. 5).
+  /// When no dimension filter is set, use [queryWithoutDimensionNamedParams]
+  /// with only the five period/flag placeholders — same semantics as binding
+  /// those three filters as SQL nulls on the full query.
+  ///
   /// **Agent policy review**: driving rows are `ParcelaProdutoVendido` joined
   /// to `ProdutoVendido`, `FormaPagamento`, `TipoOperacaoSaida`, `Cliente`,
   /// `Municipio`, optional `GrupoCliente`, `Regiao`, `Vendedor`, plus
@@ -73,7 +78,7 @@ abstract final class ResumoParcelasMensalSql {
       FROM (
   ''';
 
-  static const String _queryTail = '''
+  static const String _queryTailWithDimensionNamedParams = '''
       ) Detalhe
     ) ResumoParcelasMensal
     WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
@@ -95,8 +100,36 @@ abstract final class ResumoParcelasMensalSql {
       Mes
   ''';
 
+  static const String _queryTailWithoutDimensionNamedParams = '''
+      ) Detalhe
+    ) ResumoParcelasMensal
+    WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+      AND Origem LIKE :origem
+      AND GeraFinanceiro = :geraFinanceiro
+      AND PreVenda = :preVenda
+    GROUP BY
+      CodEmpresa,
+      CodFilial,
+      Ano,
+      Mes
+    ORDER BY
+      CodEmpresa,
+      CodFilial,
+      Ano,
+      Mes
+  ''';
+
+  /// Eight named parameters (includes optional company / branch / seller).
   static const String query =
       _queryHead +
       ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
-      _queryTail;
+      _queryTailWithDimensionNamedParams;
+
+  /// Five named parameters: sale range and parcel flags only (no dimension
+  /// predicates). Use when all dimension filters are unset and the bridge caps
+  /// named binds below eight.
+  static const String queryWithoutDimensionNamedParams =
+      _queryHead +
+      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
+      _queryTailWithoutDimensionNamedParams;
 }

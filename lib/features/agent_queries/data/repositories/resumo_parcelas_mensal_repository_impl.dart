@@ -39,7 +39,9 @@ class ResumoParcelasMensalRepositoryImpl
     this._agentQueriesRepository,
   );
 
-  static const int _defaultBridgeTimeoutMs = 120000;
+  /// Heavy join over 12 months; default above generic agent queries to reduce
+  /// false timeouts while still bounded by the bridge.
+  static const int _defaultBridgeTimeoutMs = 240000;
   static const String _operation = 'loadResumoParcelasMensal';
 
   final AgentQueriesRepository _agentQueriesRepository;
@@ -65,25 +67,36 @@ class ResumoParcelasMensalRepositoryImpl
       );
     }
 
+    final dimensionFiltersActive =
+        filter.codEmpresa != null ||
+        filter.codFilial != null ||
+        filter.codVendedor != null;
+    final periodAndFlagsParams = <String, Object?>{
+      'dataVendaInicio': AgentQueriesSqlLocalDate.format(
+        filter.dataVendaInicio,
+      ),
+      'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
+      'origem': filter.trimmedOrigem,
+      'geraFinanceiro': filter.trimmedGeraFinanceiro,
+      'preVenda': filter.trimmedPreVenda,
+    };
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
-      sql: ResumoParcelasMensalSql.query,
+      sql: dimensionFiltersActive
+          ? ResumoParcelasMensalSql.query
+          : ResumoParcelasMensalSql.queryWithoutDimensionNamedParams,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
-      namedParams: <String, Object?>{
-        'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-          filter.dataVendaInicio,
-        ),
-        'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-        'origem': filter.trimmedOrigem,
-        'geraFinanceiro': filter.trimmedGeraFinanceiro,
-        'preVenda': filter.trimmedPreVenda,
-        ...ResumoParcelasSqlDimensionFilters.namedParams(
-          codEmpresa: filter.codEmpresa,
-          codFilial: filter.codFilial,
-          codVendedor: filter.codVendedor,
-        ),
-      },
+      namedParams: dimensionFiltersActive
+          ? <String, Object?>{
+              ...periodAndFlagsParams,
+              ...ResumoParcelasSqlDimensionFilters.namedParams(
+                codEmpresa: filter.codEmpresa,
+                codFilial: filter.codFilial,
+                codVendedor: filter.codVendedor,
+              ),
+            }
+          : periodAndFlagsParams,
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasMensal,
@@ -107,12 +120,13 @@ class ResumoParcelasMensalRepositoryImpl
     required ResumoParcelasMensalFilter filter,
   }) {
     try {
-      final rows = executionResult.rows
-          .map(
-            (row) => ResumoParcelasMensalRowModel.fromMap(row).toEntity(),
-          )
-          .toList()
-        ..sort(_compareResumoParcelasMensalRowsSqlOrder);
+      final rows =
+          executionResult.rows
+              .map(
+                (row) => ResumoParcelasMensalRowModel.fromMap(row).toEntity(),
+              )
+              .toList()
+            ..sort(_compareResumoParcelasMensalRowsSqlOrder);
       if (kDebugMode && rows.isNotEmpty) {
         final calendarOutOfRangeRowCount = rows
             .where(

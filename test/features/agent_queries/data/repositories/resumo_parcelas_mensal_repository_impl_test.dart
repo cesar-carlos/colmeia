@@ -94,11 +94,11 @@ void main() {
             as AgentSqlExecuteRequest;
     check(capturedRequest.trimmedAgentId).equals('agent-1');
     check(capturedRequest.trimmedClientToken).equals('token-123');
-    check(capturedRequest.bridgeTimeoutMs).equals(120000);
+    check(capturedRequest.bridgeTimeoutMs).equals(240000);
     check(capturedRequest.executeOptions!.executionMode?.name).equals(
       'preserve',
     );
-    check(capturedRequest.executeOptions!.maxRows).equals(1600);
+    check(capturedRequest.executeOptions!.maxRows).equals(8000);
     check(capturedRequest.namedParams['dataVendaInicio']).equals('2026-01-01');
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
     check(capturedRequest.namedParams['origem']).equals('FrenteLoja');
@@ -107,8 +107,41 @@ void main() {
     check(capturedRequest.namedParams['codEmpresa']).isNull();
     check(capturedRequest.namedParams['codFilial']).isNull();
     check(capturedRequest.namedParams['codVendedor']).isNull();
+    check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.sql).contains('ResumoParcelasMensal');
     check(capturedRequest.sql).contains(':dataVendaInicio');
+    check(capturedRequest.sql.contains(':codEmpresa')).isFalse();
+  });
+
+  test('uses eight named params when dimension filters are set', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.load(
+      agentId: 'agent-1',
+      filter: ResumoParcelasMensalFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+        codEmpresa: 9,
+        codFilial: 2,
+      ),
+    );
+
+    final capturedRequest =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+    check(capturedRequest.namedParams.length).equals(8);
+    check(capturedRequest.sql.contains(':codEmpresa')).isTrue();
+    check(capturedRequest.namedParams['codEmpresa']).equals(9);
+    check(capturedRequest.namedParams['codFilial']).equals(2);
+    check(capturedRequest.namedParams['codVendedor']).isNull();
   });
 
   test('maps row when bridge uses camelCase keys', () async {

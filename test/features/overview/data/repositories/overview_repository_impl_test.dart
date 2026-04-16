@@ -215,6 +215,17 @@ void main() {
         check(overview.userRankings.first.userName).equals('Caixa 01');
         check(overview.userRankings.first.totalAmount).equals(1500);
 
+        verify(
+          () => loadResumoParcelasMensalAcrossAgents(
+            userId: 'user-1',
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: 300000,
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).called(1);
+
         final captured =
             verify(
                   () => local.saveOverview(
