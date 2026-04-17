@@ -472,25 +472,25 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get overviewWeekdaySunday => 'Sunday';
+  String get overviewWeekdaySunday => 'Domingo';
 
   @override
-  String get overviewWeekdayMonday => 'Monday';
+  String get overviewWeekdayMonday => 'Segunda-feira';
 
   @override
-  String get overviewWeekdayTuesday => 'Tuesday';
+  String get overviewWeekdayTuesday => 'Terça-feira';
 
   @override
-  String get overviewWeekdayWednesday => 'Wednesday';
+  String get overviewWeekdayWednesday => 'Quarta-feira';
 
   @override
-  String get overviewWeekdayThursday => 'Thursday';
+  String get overviewWeekdayThursday => 'Quinta-feira';
 
   @override
-  String get overviewWeekdayFriday => 'Friday';
+  String get overviewWeekdayFriday => 'Sexta-feira';
 
   @override
-  String get overviewWeekdaySaturday => 'Saturday';
+  String get overviewWeekdaySaturday => 'Sábado';
 
   @override
   String get overviewKpiTotalRevenue => 'Faturamento total';
@@ -2365,6 +2365,27 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewMonthlyParcelsChartSemanticsValueView =>
       'Grafico dos ultimos doze meses de valor em parcelas e vendas';
+
+  @override
+  String get overviewWeekdaySunday => 'Domingo';
+
+  @override
+  String get overviewWeekdayMonday => 'Segunda-feira';
+
+  @override
+  String get overviewWeekdayTuesday => 'Terça-feira';
+
+  @override
+  String get overviewWeekdayWednesday => 'Quarta-feira';
+
+  @override
+  String get overviewWeekdayThursday => 'Quinta-feira';
+
+  @override
+  String get overviewWeekdayFriday => 'Sexta-feira';
+
+  @override
+  String get overviewWeekdaySaturday => 'Sábado';
 
   @override
   String get overviewKpiTotalRevenue => 'Faturamento total';

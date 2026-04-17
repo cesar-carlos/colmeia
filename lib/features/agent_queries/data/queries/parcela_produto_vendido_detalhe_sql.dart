@@ -3,8 +3,8 @@
 /// Used by `ResumoParcelaFormaPagamentoSql`,
 /// `ResumoParcelaFormaPagamentoDiarioSql`,
 /// `ResumoParcelasFormaPagamentoPorMesSql`, `ResumoParcelasDiaSemanaSql`,
-/// `ResumoParcelasMensalSql`, `ResumoVendasDiariasPorVendedorSql`, and
-/// `ResumoParcelasAnualSql`. When changing troco logic or joins, update this
+/// `ResumoParcelasDiaSemanaUsuarioSql`, `ResumoParcelasMensalSql`,
+/// `ResumoVendasDiariasPorVendedorSql`, and `ResumoParcelasAnualSql`. When changing troco logic or joins, update this
 /// single fragment and verify each caller's outer GROUP BY and filters.
 /// `ValorTrocoParcela` is computed here from
 /// parcel totals and `TipoForma` so callers only pass it through.

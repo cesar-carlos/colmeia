@@ -10,6 +10,8 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_anual_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_por_mes_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_por_mes_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
@@ -36,6 +38,8 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_anual_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_dia_semana_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_dia_semana_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_dia_semana_usuario_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_dia_semana_usuario_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_forma_pagamento_por_mes_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_forma_pagamento_por_mes_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_mensal_across_agents_repository_impl.dart';
@@ -49,6 +53,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
@@ -65,6 +70,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcel
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_anual_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_usuario_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_usuario_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_por_mes_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_por_mes_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_across_agents_repository.dart';
@@ -142,6 +149,16 @@ void registerInjectorAgentQueries(GetIt getIt) {
         getIt<ResumoParcelasDiaSemanaRepository>(),
       ),
     )
+    ..registerLazySingleton<ResumoParcelasDiaSemanaUsuarioRepository>(
+      () => ResumoParcelasDiaSemanaUsuarioRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelasDiaSemanaUsuarioUseCase>(
+      () => LoadResumoParcelasDiaSemanaUsuarioUseCase(
+        getIt<ResumoParcelasDiaSemanaUsuarioRepository>(),
+      ),
+    )
     ..registerLazySingleton<ResumoParcelasAnualRepository>(
       () => ResumoParcelasAnualRepositoryImpl(
         getIt<AgentQueriesRepository>(),
@@ -203,6 +220,11 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasDiaSemanaRow>>(
       AgentQueryExecutor<ResumoParcelasDiaSemanaRow>.new,
     )
+    ..registerLazySingleton<
+      AgentQueryExecutor<ResumoParcelasDiaSemanaUsuarioRow>
+    >(
+      AgentQueryExecutor<ResumoParcelasDiaSemanaUsuarioRow>.new,
+    )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasAnualRow>>(
       AgentQueryExecutor<ResumoParcelasAnualRow>.new,
     )
@@ -260,6 +282,24 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ..registerLazySingleton<LoadResumoParcelasDiaSemanaAcrossAgentsUseCase>(
       () => LoadResumoParcelasDiaSemanaAcrossAgentsUseCase(
         getIt<ResumoParcelasDiaSemanaAcrossAgentsRepository>(),
+      ),
+    )
+    ..registerLazySingleton<
+      ResumoParcelasDiaSemanaUsuarioAcrossAgentsRepository
+    >(
+      () => ResumoParcelasDiaSemanaUsuarioAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor:
+            getIt<AgentQueryExecutor<ResumoParcelasDiaSemanaUsuarioRow>>(),
+        loadResumo: getIt<LoadResumoParcelasDiaSemanaUsuarioUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<
+      LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase
+    >(
+      () => LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase(
+        getIt<ResumoParcelasDiaSemanaUsuarioAcrossAgentsRepository>(),
       ),
     )
     ..registerLazySingleton<ResumoParcelasAnualAcrossAgentsRepository>(

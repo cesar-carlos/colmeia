@@ -6,6 +6,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_a
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_complete_week.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row_merger.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row_merger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_row_merger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_complete_period.dart';
@@ -85,6 +87,19 @@ extension AgentQueryExecutionReportResumoVendasDiariasPorVendedorRowsX
   /// Import this library so the getter is in scope for the UI layer.
   List<ResumoVendasDiariasPorVendedorRow> get aggregatedMergedRows =>
       ResumoVendasDiariasPorVendedorRowMerger.merge(mergedRows);
+}
+
+extension AgentQueryExecutionReportResumoParcelasDiaSemanaUsuarioRowsX
+    on AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow> {
+  /// Per company, branch, user, and weekday bucket, aggregated from
+  /// participant rows.
+  ///
+  /// See [ResumoParcelasDiaSemanaUsuarioRowMerger] for semantics when multiple
+  /// agents contribute rows for the same key.
+  ///
+  /// Import this library so the getter is in scope for the UI layer.
+  List<ResumoParcelasDiaSemanaUsuarioRow> get aggregatedMergedRows =>
+      ResumoParcelasDiaSemanaUsuarioRowMerger.merge(mergedRows);
 }
 
 extension AgentQueryExecutionReportResumoParcelasDiaSemanaRowsX
