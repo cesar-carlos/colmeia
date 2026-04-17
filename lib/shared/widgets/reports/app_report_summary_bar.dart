@@ -102,65 +102,78 @@ class _SummaryTile extends StatelessWidget {
       MediaQuery.textScalerOf(context),
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(tokens.gapMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            SizedBox(
-              height: labelBlockHeight,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  if (item.icon != null) ...<Widget>[
-                    Icon(
-                      item.icon,
-                      size: 14,
+    // Merge all texts into a single semantics node so screen readers announce
+    // the KPI tile as one logical unit ("label, value, detail") instead of
+    // three separate elements.
+    return MergeSemantics(
+      child: Tooltip(
+        message: item.detailLabel != null
+            ? '${item.label} — ${item.detailLabel}'
+            : item.label,
+        waitDuration: const Duration(milliseconds: 600),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(tokens.gapMd),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                SizedBox(
+                  height: labelBlockHeight,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      if (item.icon != null) ...<Widget>[
+                        ExcludeSemantics(
+                          child: Icon(
+                            item.icon,
+                            size: 14,
+                            color: colors.onSurfaceVariant,
+                          ),
+                        ),
+                        SizedBox(width: tokens.gapXs),
+                      ],
+                      Expanded(
+                        child: Text(
+                          item.label,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: labelStyle,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: tokens.gapXs),
+                Text(
+                  item.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.sectionHeaderH2.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: item.valueColor,
+                  ),
+                ),
+                if (item.detailLabel != null) ...<Widget>[
+                  SizedBox(height: tokens.gapXs / 2),
+                  Text(
+                    item.detailLabel!,
+                    style: typography.caption.copyWith(
                       color: colors.onSurfaceVariant,
-                    ),
-                    SizedBox(width: tokens.gapXs),
-                  ],
-                  Expanded(
-                    child: Text(
-                      item.label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: labelStyle,
+                      fontSize: 10,
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
-            SizedBox(height: tokens.gapXs),
-            Text(
-              item.value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: typography.sectionHeaderH2.copyWith(
-                fontWeight: FontWeight.w700,
-                color: item.valueColor,
-              ),
-            ),
-            if (item.detailLabel != null) ...<Widget>[
-              SizedBox(height: tokens.gapXs / 2),
-              Text(
-                item.detailLabel!,
-                style: typography.caption.copyWith(
-                  color: colors.onSurfaceVariant,
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

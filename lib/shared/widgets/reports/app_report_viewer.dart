@@ -305,6 +305,37 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     _ => false,
   };
 
+  /// Builds a "Limpar filtros" CTA shown inside the empty-state placeholder
+  /// when the user has active filters but the resulting page has no rows.
+  /// Returns null when there are no active filters (i.e. the empty state is
+  /// genuine, not filter-driven).
+  Widget? _buildEmptyClearFiltersAction() {
+    if (widget.isLoading || _activeFilterCount == 0) {
+      return null;
+    }
+    final hasFiltersUi =
+        widget.style.showFiltersPanel &&
+        (widget.filters?.isNotEmpty ?? false);
+    if (!hasFiltersUi) {
+      return null;
+    }
+    return Builder(
+      builder: (context) {
+        return OutlinedButton.icon(
+          icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+          label: const Text('Limpar filtros'),
+          onPressed: () {
+            widget.events.onFilterCleared?.call();
+            _emitQueryChanged(
+              filters: const <String, Object?>{},
+              page: 1,
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _showAdvancedFiltersSheet() async {
     final filters = widget.filters;
     if (filters == null || filters.isEmpty || !mounted) {
@@ -315,6 +346,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       builder: (context) {
         final tokens = Theme.of(context).extension<AppThemeTokens>()!;
         final l10n = AppLocalizations.of(context);
@@ -544,6 +576,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                   ),
                   currentSorts: _sorts,
                   emptyMessage: widget.emptyMessage,
+                  emptyAction: _buildEmptyClearFiltersAction(),
                 ),
               ],
             ),

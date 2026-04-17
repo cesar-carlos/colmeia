@@ -286,39 +286,63 @@ class SessionSocketAuthTokenProvider implements SocketAuthTokenProvider { ... }
 
 ### 6.5 `core/socket/socket_command_dispatcher.dart`
 
-API alto-nível (Fase 1):
+API alto-nível (Fase 1) — **detalhamento completo em
+`docs/Features/socket_command_dispatcher_design.md`**:
 
 ```dart
 abstract interface class SocketCommandDispatcher {
   /// Envia evento `agents:command` e aguarda `agents:command_response`
-  /// correlacionado pelo `id` JSON-RPC.
+  /// correlacionado pelo `rpcId` (JSON-RPC `command.id`).
   Future<Map<String, dynamic>> sendAgentsCommand({
+    required String agentId,
     required Map<String, Object?> body,
     required String rpcId,
     Duration? timeout,
   });
+
+  /// Stream broadcast de outcomes (Success / FailedOffline / FailedAuth /
+  /// FailedTransient). Usado pela presença em tempo real (§19) e por
+  /// métricas (review §5.8).
+  Stream<AgentCommandOutcome> outcomes();
+
+  Future<void> dispose();
 }
 ```
 
-Implementação:
+Comportamento essencial:
 
-- Garante `connection.connect()` antes de emitir.
-- Registra completer no `SocketRequestCorrelator`.
+- Garante `connection.connect()` antes de emitir (single-flight).
+- Registra completer no `SocketRequestCorrelator` (timeout + sweep stale).
 - `socket.emit('agents:command', body)`.
-- Listener registrado uma vez por conexão para `agents:command_response`,
-  `agents:command_stream_chunk` (na Fase 2), `agents:command_stream_complete`,
-  e `app:error` — roteia por `id` ou `requestId`.
-- Em desconexão durante request pendente: `Failure(NetworkFailure)`.
+- Listeners únicos por conexão para `agents:command_response` e `app:error`.
+- Em desconexão: falha pendentes com `SocketDispatchDisconnected` e emite
+  `AgentCommandFailedTransient(reason: 'disconnected')`.
+- Cataloga códigos do hub em **offline** (`AGENT_OFFLINE`,
+  `protocol_not_ready`, `circuit_open`…) vs **auth** (`-32001`/`-32002`,
+  `AGENT_ACCESS_DENIED`…) vs **transient** (timeout, decode_failed,
+  `RATE_LIMITED`).
 
-### 6.6 `core/socket/socket_failures.dart`
+Melhorias planejadas (Fase 1.1+):
 
-Mapeia:
+- **P1** — `coalesce` requests idênticas concorrentes.
+- **P1** — `PerAgentConcurrencyGate` (`SOCKET_MAX_INFLIGHT_PER_AGENT`).
+- **P2** — `cancelToken` opcional + integração com `sql.cancel`.
+- **P2** — `AgentCommandBatchCoordinator` agregando até 32 RPCs.
 
-- desconexão / `connect_error` → `NetworkFailure(isTransient: true)`.
-- `unauthorized` / token inválido → `SessionFailure`.
-- `app:error` com `AGENT_ACCESS_DENIED` → `AuthorizationFailure`.
-- erros JSON-RPC vindos no body → reaproveita `AgentSqlBridgeResponse.parseSuccess`
-  (que já lança `AgentSqlRpcException`), igual ao REST.
+### 6.6 `core/socket/socket_dispatch_exception.dart` + mapeamento
+
+Exceptions sealed específicas do canal Socket (separadas dos erros JSON-RPC):
+
+- `SocketDispatchTimeout` → `NetworkFailure(isTransient: true)`.
+- `SocketDispatchDisconnected` → `NetworkFailure(isTransient: true)`.
+- `SocketDispatchUnauthorized` → `SessionFailure`.
+- `SocketDispatchDuplicateId` → `ValidationFailure` (bug do caller).
+- `SocketDispatchDecodeFailure` → `UnknownFailure`.
+- `app:error` com `AGENT_ACCESS_DENIED` → `AuthorizationFailure` (no
+  `AgentQueriesRepositoryImpl`).
+- Erros JSON-RPC `AgentSqlRpcException` continuam idênticos ao path REST
+  (parser `parseSuccess` compartilhado — ver ponto aberto §13 do
+  `socket_command_dispatcher_design.md`).
 
 ### 6.7 `features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart`
 
@@ -479,48 +503,144 @@ registerInjectorPresentation(getIt);
 
 ---
 
-## 11. Roadmap por fases
+## 11. Roadmap por fases (consolidado com melhorias de desempenho)
+
+> Cada item marcado **P0/P1/P2/P3** vem do
+> `socket_channel_performance_review.md` §5–§9 (priorização por
+> custo-benefício). Itens sem marca são do plano base.
 
 ### Fase 0 — Plano e dependência (este documento)
 
-- [x] Plano consolidado em `docs/Features/socket_consumer_channel_plan.md`.
+- [x] Plano executivo (`socket_consumer_channel_plan.md`).
+- [x] Designs companheiros (`consumer_socket_connection_design.md`,
+      `socket_command_dispatcher_design.md`,
+      `agent_presence_realtime_design.md`,
+      `socket_channel_performance_review.md`).
 - [ ] Atualizar `project_platform_dependencies.mdc` para listar
-  `socket_io_client` como dependência ativa.
+      `socket_io_client` como dependência ativa.
+- [ ] **Decidir ponto aberto §13 do `socket_command_dispatcher_design.md`**:
+      mover `parseSuccess` para `core/network/jsonrpc/` (recomendado).
 
-### Fase 1 — Canal `agents:command` (paridade com REST)
+### Fase 1.0 — Núcleo do canal `agents:command` (paridade com REST)
 
 Entrega: SQL executado via Socket usando o mesmo body do REST.
 
-- [ ] `pubspec.yaml`: adicionar `socket_io_client: ^3.1.4`.
+- [ ] `pubspec.yaml`: `socket_io_client: ^3.1.4`.
 - [ ] `core/config/env_keys.dart` + `app_environment.dart`:
-      `AGENT_BRIDGE_TRANSPORT` enum.
-- [ ] `core/socket/`: `socket_io_client_factory`, `app_socket_url_resolver`,
-      `socket_auth_token_provider`, `consumer_socket_connection` (sem
-      PayloadFrame ainda — só decode JSON simples para `connection:ready` raw).
-- [ ] `core/socket/socket_request_correlator` + `socket_command_dispatcher`.
+      `AGENT_BRIDGE_TRANSPORT` enum + envs novas (§8).
+- [ ] `core/socket/`: factory, url resolver, token provider,
+      `connection_ready_payload`, `consumer_socket_connection` com
+      backoff exponencial + **single-flight**.
+- [ ] `core/socket/socket_request_correlator` + `socket_command_dispatcher_impl`
+      com `Stream<AgentCommandOutcome>` (sealed) e mapeamento de erros.
 - [ ] `core/di/injector_socket.dart` + integração em `injector.dart`.
-- [ ] Extrair `agent_sql_execute_request_to_bridge_body.dart` (helper
-      compartilhado entre REST e Socket).
+- [ ] Extrair helper `agent_sql_execute_request_to_bridge_body.dart`
+      compartilhado entre REST e Socket (paridade byte-a-byte).
 - [ ] `socket_agent_queries_remote_datasource.dart`.
 - [ ] Switch em `injector_agent_queries.dart`.
-- [ ] Testes (§13) e logs estruturados em `AppLogger` com `transport: socket`.
+- [ ] Testes unit (§13) + 1 e2e opt-in.
+- [ ] **App lifecycle hook**: `pause()`/`resume()` no `WidgetsBindingObserver`.
+
+### Fase 1.1 — Hardening de desempenho (P0 + P1)
+
+Entrega: **mesma sprint** da 1.0 estabilizar; cada item é um sub-PR pequeno.
+
+- [ ] **P0** — `core/observability/socket_channel_metrics.dart` (review §5.8):
+      `handshake_ms`, `dispatch_ms` por `(agentId, method)`, `outcomes_total`
+      por `(kind, reasonCode)`, `inflight_peak_per_agent`, `reconnects_total`.
+      Logging estruturado + breadcrumbs Sentry.
+- [ ] **P0** — Backoff de reconexão **com jitter** (review §5.4): trocar
+      `_nextBackoff` por full jitter; `Random` injetado para teste
+      determinístico.
+- [ ] **P1** — `PerAgentConcurrencyGate` (review §5.5): semáforo no
+      dispatcher (`acquire`/`release`) com `SOCKET_MAX_INFLIGHT_PER_AGENT=8`.
+- [ ] **P1** — Request **coalescing** no dispatcher (review §5.1):
+      `_inflightByKey` com hash estável de `(agentId, method, params, options)`.
+- [ ] **P1** — Warm-up no `LoginUseCase` (review §5.7) gated por
+      `SOCKET_WARM_UP_AFTER_LOGIN`.
+
+### Fase 1.2 — Otimizações dependentes de telemetria (P2)
+
+Entregas só após 1 ciclo com dados das métricas P0.
+
+- [ ] **P2** — `AgentLatencyOracle` + timeout adaptativo (review §5.3) com
+      EWMA por `(agentId, method)`; gated por `SOCKET_TIMEOUT_ADAPTIVE_ENABLED`.
+- [ ] **P2** — `AgentCommandBatchCoordinator` (review §5.2): coalesce N RPCs
+      ao mesmo agente em janela de `SOCKET_BATCH_WINDOW_MS=8` e envia
+      `command: [...]` (max 32). Maior ganho de latência por linha de código.
+      **Doc próprio recomendado** antes do PR.
+- [ ] **P2** — `SocketCommandCancelToken` (review §5.6): cancelar pendentes
+      em `controller.dispose()`; usa `sql.cancel` para streams.
 
 ### Fase 2 — `relay:*` + PayloadFrame
 
 - [ ] `core/socket/payload_frame.dart` (encode/decode + gzip + validação:
       `enc==json`, `cmp ∈ {none,gzip}`, tamanho/inflação ≤ 10 MiB / 20×).
-- [ ] Suporte a `connection:ready` em PayloadFrame na `ConsumerSocketConnection`.
+- [ ] Suporte a `connection:ready` em PayloadFrame na `ConsumerSocketConnection`
+      (já tolerante via `CompatConnectionReadyDecoder`).
 - [ ] `RelayConversation` + `RelayCommandDispatcher` (start → request →
       stream pull → end). Conversa única reutilizável por agente, com isolamento.
 - [ ] `relay`-aware datasource para queries grandes (`sql.execute` que devolva
       stream). Selecionável por flag por query (`useRelay`).
-- [ ] Métricas: throughput, dedupe, timeouts; `AppLogger` com `requestId`.
+- [ ] **P3** — Compressão adaptativa (review §5.9): gzip síncrono < 64 KiB,
+      `compute(...)` (Isolate) acima de
+      `SOCKET_PAYLOAD_FRAME_ASYNC_GZIP_MIN_BYTES`.
+- [ ] **P3** — Listener de `client:agent.profile.updated` (entra com
+      PayloadFrame) → integra com presença em tempo real (§19).
+- [ ] **P3** — Dedup pós-reconexão universal (review §5.10) reaproveitando
+      `_lastObservedByAgentId` da presença.
 
-### Fase 3 — Hybrid + push opcional
+### Fase 3 — Hybrid + observabilidade avançada
 
 - [ ] `HybridAgentQueriesRemoteDataSource` (fallback Socket → REST).
-- [ ] (Opcional) escutar `client:agent.profile.updated` para invalidar cache
-      de catálogo de agentes em `client_agents`.
+      **Só ativar com métricas P0 mostrando necessidade.**
+- [ ] OTel no cliente: propagar `traceparent` em `command.meta` (opcional).
+
+---
+
+## 11.5. Estratégia de transporte por carga (matriz de decisão)
+
+Resumo da matriz completa em `socket_channel_performance_review.md` §4.
+Esta tabela rege como o `AgentQueryExecutor` (ou um coordenador novo
+introduzido em P2) deve escolher o canal por **wave** de queries:
+
+| Situação | Canal recomendado | Por quê |
+| -------- | ----------------- | ------- |
+| 1 query, resposta pequena/média | `agents:command` unitário (Fase 1) | Menor overhead, envelope único. |
+| 1 query, resultado em stream grande | `agents:command` com **paginação server-side** (`page`/`pageSize` ou `cursor`) | Evita materialização REST. |
+| 1 query, resposta enorme (> 10 MiB) | `relay:*` com `stream.pull` (Fase 2) | Streaming progressivo + backpressure. |
+| **N queries independentes ao mesmo agente** | **Batch JSON-RPC** (`command: [...]`, máx **32**) (P2) | 1 emit, 1 correlação; reduz N RTT para 1 RTT. |
+| N queries com mesmo SQL e `params` variando | `sql.executeBatch` (Fase 1) | Transação opcional no agente; resultados em `items[]`. |
+| 1 SQL com vários `SELECT` agregados | `multi_result: true` (Fase 1) | 1 round-trip ao banco, 1 RPC. |
+| Queries em agentes diferentes simultaneamente | Fan-out com **teto in-flight por agente** (P1) | Reaproveita `AgentQueryExecutor.mergeAll`; evita 429. |
+| Push de catálogo (`client:agent.profile.updated`) | Listener passivo `/consumers` (Fase 2 / Presença §19) | Sem polling. |
+
+**Regras duras:**
+
+- Relay (`relay:*`) **não aceita** batch JSON-RPC nem `id: null`
+  (notifications). Batch é exclusivo de `agents:command`.
+- Batch nativo limita a **32** RPCs por emissão (limite oficial do hub).
+- Paginação no `body.pagination` só vale para `sql.execute` **único**, não
+  para batch.
+
+---
+
+## 11.6. Anti-padrões (não fazer)
+
+Lista normativa do `socket_channel_performance_review.md` §6.
+
+| Anti-padrão | Por quê |
+| ----------- | ------- |
+| Múltiplos sockets paralelos por app | Socket.IO foi desenhado para um canal por cliente; piora rate-limit e auditoria. Singleton via `get_it`. |
+| `autoConnect: true` no factory | Vai conectar antes de termos token; `connect_error` inútil no startup. |
+| Habilitar `perMessageDeflate` no cliente | Dupla compressão com PayloadFrame; CPU desperdiçada. O hub já desliga por default. |
+| Retry infinito sem terminal | Loop em 401 persistente; o plano trata com `unauthorized` após 1 refresh. |
+| Logar `command.params.sql`, `client_token` ou `auth.token` | Privacidade + tamanho. Logar só `agentId`, `method`, `rpcId`. |
+| Usar REST para streams grandes | Hub materializa tudo em RAM e pode gerar 503. Socket é o canal certo para > ~50k linhas. |
+| Mudar `AGENT_BRIDGE_TRANSPORT` em runtime | Invalida correlator/cache; decisão é por build/env. |
+| Paralelizar batches JSON-RPC | Batch já empacota até 32; paralelizar fura o rate-limit compartilhado. |
+| Reconectar sem refresh em 401 | Loop garantido. Sempre passar pelo `AuthRefreshCoordinator`. |
+| Ler `connection.raw` de `presentation/` ou `application/` | Quebra DIP; `raw` é restrito a adapters em `core/socket/*` e `data/socket/*`. |
 
 ---
 
@@ -608,17 +728,52 @@ Seguindo `testing_dart_flutter.mdc` e o padrão atual do repo:
 
 ---
 
-## 17. Critérios de aceite (Fase 1)
+## 17. Critérios de aceite
+
+### 17.1 Funcionais (Fase 1.0)
 
 1. Ligar `AGENT_BRIDGE_TRANSPORT=socket` faz **toda** a feature `agent_queries`
    funcionar sem alteração de UI/use cases/repositórios de domínio.
 2. Em `rest` (default), comportamento atual é byte-a-byte idêntico.
 3. Logout/expiração derruba o socket e impede novas requests.
-4. 401 em request socket aciona refresh e re-tenta uma vez.
-5. Tempo médio de resposta ≤ REST em rede equivalente para a mesma query
-   (medido em integração).
-6. Cobertura: `≥ 90%` linhas em `core/socket/*` e no novo datasource.
-7. `flutter analyze` limpo; sem novos lints `very_good_analysis`.
+4. 401 em request socket aciona refresh e re-tenta **uma** vez; segundo 401
+   leva a `unauthorized` (terminal).
+5. Cobertura: `≥ 90%` linhas em `core/socket/*` e no novo datasource.
+6. `flutter analyze` limpo; sem novos lints `very_good_analysis`.
+7. Single-flight do `connect()` verificado em teste com 100 chamadas paralelas.
+8. Body do Socket é **byte-igual** ao do REST (snapshot test
+   `agent_sql_execute_request_to_bridge_body_test.dart`).
+
+### 17.2 Arquiteturais
+
+9. `core/socket/` não importa `features/auth/` direto (apenas via port
+   `SocketAuthTokenProvider`).
+10. `domain/` continua sem qualquer import de `socket_io_client`, `dio` ou
+    `dart:io`.
+11. `presentation/` e `application/` consomem só interfaces; nenhum acesso a
+    `connection.raw` fora de `core/socket/*` e `data/socket/*`.
+
+### 17.3 Performance (Fase 1.1, com baseline obrigatório)
+
+> Comparar antes/depois usando o template em
+> `socket_channel_performance_review.md` §7.3.
+
+12. **`p95(dispatch_ms)` no Socket ≤ p95 do REST** em rede equivalente para
+    a mesma query (medido em integração e2e).
+13. **`handshake_ms` p95 < 500 ms** em rede 4G estável.
+14. **`outcomes_total{kind='FailedTransient'}` ≤ 1%** do total em sessão de
+    15+ min com tráfego normal.
+15. **Zero** `inflight_peak_per_agent > SOCKET_MAX_INFLIGHT_PER_AGENT` (P1
+    funcionando).
+16. **Reconexões coordenadas** (hub restart) não geram thundering herd
+    perceptível em logs (P0 jitter funcionando).
+
+### 17.4 Performance (Fase 1.2, opcional mas recomendado)
+
+17. **Batch JSON-RPC** (P2) reduz `p95(dispatch_ms)` em waves do `overview`
+    em **≥ 30%** vs Fase 1.1.
+18. **Coalescing** (P1) elimina **≥ 80%** dos emits duplicados detectados
+    nas métricas (`coalesced_total / outcomes_total`).
 
 ---
 
@@ -905,11 +1060,45 @@ Isso elimina a necessidade da Camada 3 (polling) para presença.
 
 ## 20. Próximos passos (acionáveis)
 
-1. Aprovar este plano (escolher Opção A na §7 e confirmar default `rest`).
-2. Atualizar `project_platform_dependencies.mdc` aprovando `socket_io_client`.
-3. Abrir PR-1: pacote + `core/socket/*` + DI + flag (sem trocar default).
-4. Abrir PR-2: `socket_agent_queries_remote_datasource` + helper de body
-   compartilhado + testes unit + integração opt-in.
-5. Rodar QA com flag `AGENT_BRIDGE_TRANSPORT=socket` em build interna.
-6. Promover para default em ambiente staging; manter REST como fallback de
-   build até decisão final.
+### 20.1 Decisões de aprovação
+
+1. **Aprovar este plano** (escolher Opção A na §7, confirmar default `rest`).
+2. **Aprovar designs companheiros** (4 docs em `docs/Features/`).
+3. **Aprovar pacote** `socket_io_client: ^3.1.4`; atualizar
+   `.cursor/rules/project_platform_dependencies.mdc`.
+4. **Resolver ponto aberto** §13 do `socket_command_dispatcher_design.md`:
+   mover `parseSuccess` para `core/network/jsonrpc/` (recomendado).
+
+### 20.2 PRs sugeridos (em ordem)
+
+| PR | Conteúdo | Fase |
+| -- | -------- | ---- |
+| PR-A | Pacote + `core/socket/*` (factory, url resolver, token provider, connection com backoff/single-flight) + DI sem trocar default. | 1.0 |
+| PR-B | `SocketCommandDispatcher` + correlator + outcomes + helper de body compartilhado + datasource Socket + switch no `injector_agent_queries`. Testes unit + 1 e2e opt-in. | 1.0 |
+| PR-C | `WidgetsBindingObserver` para `pause`/`resume` + warm-up no `LoginUseCase`. | 1.0/1.1 |
+| **PR-D (P0)** | `SocketChannelMetrics` (telemetria mínima) — **destrava** validação das próximas. | 1.1 |
+| **PR-E (P0)** | Jitter no backoff de reconexão. | 1.1 |
+| **PR-F (P1)** | `PerAgentConcurrencyGate` + `SOCKET_MAX_INFLIGHT_PER_AGENT`. | 1.1 |
+| **PR-G (P1)** | Request coalescing no dispatcher. | 1.1 |
+| **PR-H (P2)** | `AgentLatencyOracle` + timeout adaptativo (gated). | 1.2 |
+| **PR-I (P2)** | `AgentCommandBatchCoordinator` (doc próprio antes). | 1.2 |
+| **PR-J (P2)** | `SocketCommandCancelToken` + integração nos controllers. | 1.2 |
+| PR-K | `payload_frame.dart` + suporte real no `connection:ready`. | 2 |
+| PR-L | Relay (`relay:*`) + datasource para queries grandes. | 2 |
+| PR-M | Listener `client:agent.profile.updated` + integração com presença. | 2 |
+| PR-N | Hybrid datasource (REST↔Socket fallback) — **só com métricas P0** confirmando ganho. | 3 |
+
+### 20.3 QA / rollout
+
+5. Rodar QA com `AGENT_BRIDGE_TRANSPORT=socket` em build interna após PR-B.
+6. **Coletar baseline** (15–30 min, template em
+   `socket_channel_performance_review.md` §7.3) **antes** de mergear PR-D em diante.
+7. Promover para default em staging após PR-G; manter `rest` como fallback de
+   build até PR-I estabilizar em produção.
+8. **Regra de ouro**: alterar **um bloco por vez** e medir. Ganhos somam de
+   forma não-linear em sistemas com rate-limit e compressão.
+
+### 20.4 Apresentar ao time `plug_server` (paralelo)
+
+9. Pedir avaliação de **`client:agent.presence.changed`** (presença §19.8) —
+   eliminaria a Camada 3 (polling) da presença em tempo real.

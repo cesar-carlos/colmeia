@@ -58,6 +58,7 @@ class AppReportGrid<T> extends StatefulWidget {
     this.selectedRows = const [],
     this.groupController,
     this.emptyMessage,
+    this.emptyAction,
     this.isLoading = false,
   });
 
@@ -77,6 +78,11 @@ class AppReportGrid<T> extends StatefulWidget {
   final AppReportGroupController? groupController;
   final String? emptyMessage;
 
+  /// Optional widget rendered below the empty-state message — typically a
+  /// secondary CTA such as "Limpar filtros" when active filters yield no
+  /// results.
+  final Widget? emptyAction;
+
   /// When [rows] is empty and this is true, shows a loading surface instead of
   /// the empty state (avoids "no results" while data is still fetching).
   final bool isLoading;
@@ -90,6 +96,32 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   bool _hasBuiltSource = false;
   final DataGridController _gridController = DataGridController();
   bool _suppressSelectionCallback = false;
+
+  // ---- Memoization caches --------------------------------------------------
+  // Recomputing `_visibleColumns`, `_buildGridColumns` and `_buildSummaryRows`
+  // on every `build()` was the largest avoidable cost in the report grid:
+  // each touched the column list and theme to rebuild widget subtrees that
+  // only change when columns, density, theme or screen width change. We cache
+  // the results and invalidate them with explicit signatures.
+  List<AppReportColumn<T>>? _cachedVisibleColumns;
+  double? _cachedVisibleColumnsScreenWidth;
+  Object? _cachedVisibleColumnsSignature;
+
+  List<GridColumn>? _cachedGridColumns;
+  Object? _cachedGridColumnsSignature;
+
+  List<GridTableSummaryRow>? _cachedSummaryRows;
+  Object? _cachedSummaryRowsSignature;
+
+  void _invalidateColumnCaches() {
+    _cachedVisibleColumns = null;
+    _cachedVisibleColumnsScreenWidth = null;
+    _cachedVisibleColumnsSignature = null;
+    _cachedGridColumns = null;
+    _cachedGridColumnsSignature = null;
+    _cachedSummaryRows = null;
+    _cachedSummaryRowsSignature = null;
+  }
 
   @override
   void didChangeDependencies() {
@@ -128,6 +160,9 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       widget.selectedRows,
     );
     if (columnsChanged || rowsChanged || styleChanged) {
+      if (columnsChanged || styleChanged) {
+        _invalidateColumnCaches();
+      }
       if (styleChanged) {
         _source = _buildSource();
       } else {
@@ -298,23 +333,56 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   /// Columns visible at the current breakpoint; non-growable for stable layout.
   ///
   /// `AppReportGridSource` copies this list internally so grid source updates
-  /// are not limited by fixed-length lists.
+  /// are not limited by fixed-length lists. The result is memoized per
+  /// (column list identity, screen width) so repeated `build()` passes do not
+  /// re-filter the columns.
   List<AppReportColumn<T>> get _visibleColumns {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    return widget.columns
+    final signature = identityHashCode(widget.columns);
+    final cached = _cachedVisibleColumns;
+    if (cached != null &&
+        _cachedVisibleColumnsScreenWidth == screenWidth &&
+        _cachedVisibleColumnsSignature == signature) {
+      return cached;
+    }
+
+    final visible = widget.columns
         .where((col) {
           final breakpoint = col.hideBelowBreakpoint;
           if (breakpoint != null && screenWidth < breakpoint) return false;
           return true;
         })
         .toList(growable: false);
+    _cachedVisibleColumns = visible;
+    _cachedVisibleColumnsScreenWidth = screenWidth;
+    _cachedVisibleColumnsSignature = signature;
+    // The downstream column/summary caches depend on the visible column list,
+    // so invalidate them when the visible set changes.
+    _cachedGridColumns = null;
+    _cachedGridColumnsSignature = null;
+    _cachedSummaryRows = null;
+    _cachedSummaryRowsSignature = null;
+    return visible;
   }
 
   List<GridColumn> _buildGridColumns(List<AppReportColumn<T>> visible) {
     final theme = Theme.of(context);
+    final density = widget.style.density;
+    final signature = Object.hash(
+      identityHashCode(visible),
+      identityHashCode(widget.style),
+      density,
+      theme.brightness,
+      identityHashCode(theme.colorScheme),
+      identityHashCode(theme.appTypography),
+    );
+    final cached = _cachedGridColumns;
+    if (cached != null && _cachedGridColumnsSignature == signature) {
+      return cached;
+    }
+
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
-    final density = widget.style.density;
     final headerHeight = widget.style.resolvedHeaderRowHeight(density);
     final headerBackgroundColor =
         widget.style.headerBackgroundColor ??
@@ -331,7 +399,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
           fontWeight: FontWeight.w700,
         );
 
-    return visible
+    final result = visible
         .map((col) {
           final labelWidget = col.headerBuilder != null
               ? col.headerBuilder!(context, col.label)
@@ -375,13 +443,21 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
           );
         })
         .toList(growable: false);
+    _cachedGridColumns = result;
+    _cachedGridColumnsSignature = signature;
+    return result;
   }
 
   List<GridTableSummaryRow> _buildSummaryRows(
     List<AppReportColumn<T>> visible,
   ) {
-    final summaryColumns = <GridSummaryColumn>[];
+    final signature = identityHashCode(visible);
+    final cached = _cachedSummaryRows;
+    if (cached != null && _cachedSummaryRowsSignature == signature) {
+      return cached;
+    }
 
+    final summaryColumns = <GridSummaryColumn>[];
     for (final col in visible) {
       if (col.aggregations.isEmpty) continue;
       final aggregation = col.aggregations.first;
@@ -395,15 +471,18 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       );
     }
 
-    if (summaryColumns.isEmpty) return <GridTableSummaryRow>[];
-
-    return <GridTableSummaryRow>[
-      GridTableSummaryRow(
-        showSummaryInRow: false,
-        columns: summaryColumns,
-        position: GridTableSummaryRowPosition.bottom,
-      ),
-    ];
+    final result = summaryColumns.isEmpty
+        ? const <GridTableSummaryRow>[]
+        : <GridTableSummaryRow>[
+            GridTableSummaryRow(
+              showSummaryInRow: false,
+              columns: summaryColumns,
+              position: GridTableSummaryRowPosition.bottom,
+            ),
+          ];
+    _cachedSummaryRows = result;
+    _cachedSummaryRowsSignature = signature;
+    return result;
   }
 
   void _handleCellTap(DataGridCellTapDetails details) {
@@ -503,6 +582,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
             widget.style.emptyMessage ??
             'Nenhum resultado encontrado.',
         style: widget.style,
+        action: widget.emptyAction,
       );
     }
 
@@ -730,10 +810,12 @@ class _EmptyGridPlaceholder extends StatelessWidget {
   const _EmptyGridPlaceholder({
     required this.message,
     required this.style,
+    this.action,
   });
 
   final String message;
   final AppReportViewerStyle style;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -774,6 +856,10 @@ class _EmptyGridPlaceholder extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
+                if (action != null) ...<Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  action!,
+                ],
               ],
             ),
           ),

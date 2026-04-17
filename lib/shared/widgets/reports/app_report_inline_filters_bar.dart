@@ -342,30 +342,22 @@ class _InlineFilterField extends StatelessWidget {
 
     return SizedBox(
       width: 220,
-      child: ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) {
-          return AppTextField(
-            controller: controller,
-            enabled: !isLoading,
-            hintText: descriptor.hint ?? l10n.reportInlineFiltersHint,
-            prefixIcon: Icons.search_rounded,
-            density: AppTextFieldDensity.compact,
-            suffix: controller.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 16),
-                    tooltip: l10n.reportFiltersClearTooltip,
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            controller.clear();
-                            onTextChanged('');
-                          },
-                  )
-                : null,
-            onChanged: onTextChanged,
-          );
-        },
+      child: AppTextField(
+        controller: controller,
+        enabled: !isLoading,
+        hintText: descriptor.hint ?? l10n.reportInlineFiltersHint,
+        prefixIcon: Icons.search_rounded,
+        density: AppTextFieldDensity.compact,
+        // Avoid rebuilding the whole AppTextField on every keystroke just to
+        // toggle the clear button. The clear icon listens to the controller
+        // in isolation and only repaints itself.
+        suffix: _InlineFilterClearButton(
+          controller: controller,
+          isLoading: isLoading,
+          tooltip: l10n.reportFiltersClearTooltip,
+          onCleared: () => onTextChanged(''),
+        ),
+        onChanged: onTextChanged,
       ),
     );
   }
@@ -561,6 +553,42 @@ class _ClearButton extends StatelessWidget {
           foregroundColor: theme.colorScheme.onSurfaceVariant,
         ),
       ),
+    );
+  }
+}
+
+class _InlineFilterClearButton extends StatelessWidget {
+  const _InlineFilterClearButton({
+    required this.controller,
+    required this.isLoading,
+    required this.tooltip,
+    required this.onCleared,
+  });
+
+  final TextEditingController controller;
+  final bool isLoading;
+  final String tooltip;
+  final VoidCallback onCleared;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        if (value.text.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return IconButton(
+          icon: const Icon(Icons.close_rounded, size: 16),
+          tooltip: tooltip,
+          onPressed: isLoading
+              ? null
+              : () {
+                  controller.clear();
+                  onCleared();
+                },
+        );
+      },
     );
   }
 }

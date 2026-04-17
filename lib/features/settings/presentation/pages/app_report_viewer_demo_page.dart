@@ -501,138 +501,112 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('AppReportViewer — Demo')),
-      body: Column(
+      body: ListView(
+        padding: EdgeInsets.all(tokens.contentSpacing),
         children: <Widget>[
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.contentSpacing,
-              tokens.contentSpacing,
-              tokens.contentSpacing,
-              0,
-            ),
-            child: const AppShellPageIntro(
-              eyebrow: 'Componentes compartilhados',
-              title: 'Report Viewer',
-              subtitle:
-                  'Inclui o preset Detalhamento numérico e a demo minimal de '
-                  'transações com filtros em sheet, persistência local e '
-                  'paginação estilo catálogo.',
-            ),
+          const AppShellPageIntro(
+            eyebrow: 'Componentes compartilhados',
+            title: 'Report Viewer',
+            subtitle:
+                'Inclui o preset Detalhamento numérico e a demo minimal de '
+                'transações com filtros em sheet, persistência local e '
+                'paginação estilo catálogo.',
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.contentSpacing,
-              tokens.sectionSpacing,
-              tokens.contentSpacing,
-              0,
-            ),
-            child: _ReportViewerShowcaseCard(
-              totalRows: _currentRows.length,
-              selectedRows: _selectedRows.length,
-              groupingDescription: _describeGroups(_query.groups),
-              activeFilters: _activeFilterCount,
-            ),
+          SizedBox(height: tokens.sectionSpacing),
+          _ReportViewerShowcaseCard(
+            totalRows: _currentRows.length,
+            selectedRows: _selectedRows.length,
+            groupingDescription: _describeGroups(_query.groups),
+            activeFilters: _activeFilterCount,
           ),
-          Expanded(
-            flex: 38,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.contentSpacing,
-                tokens.sectionSpacing,
-                tokens.contentSpacing,
-                0,
-              ),
-              child: const AppReportNumericalDetailingDemoSection(),
-            ),
-          ),
-          Expanded(
-            flex: 62,
-            child: Padding(
-              padding: EdgeInsets.only(top: tokens.sectionSpacing),
-              child: AppReportViewer<_SaleRow>(
-                title: 'Transactions Table',
-                subtitle: 'Minimal preset inspired by e-commerce reporting',
-                contextChips: <String>[
-                  'Store: All Stores',
-                  'Period: Oct 2023',
-                  '${_currentRows.length} transactions',
-                  if (_activeFilterCount == 0)
-                    'Filters: none'
-                  else
-                    'Filters: $_activeFilterCount active',
-                  _describeGroups(_query.groups),
-                ],
-                columns: _columns,
-                rows: _pageRows,
-                pageInfo: _pageInfo,
-                summaryItems: _summaries,
-                filters: _filters,
-                filterValues: _query.filters,
-                selectedRows: _selectedRows,
-                query: _query,
-                events: AppReportEvents<_SaleRow>(
-                  onQueryChanged: _onQueryChanged,
-                  onRefresh: _onRefresh,
-                  onExportRequested: _onExportRequested,
-                  onGroupChanged: (groups) {
-                    setState(() {
-                      _query = _query.withGroups(groups);
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(_groupChangeMessage(groups)),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  onGroupStateChanged: (groups) {
-                    setState(() {
-                      _query = _query.withGroups(groups);
-                    });
-                  },
-                  onGroupExpanded: (event) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(_groupToggleMessage(event)),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  onGroupCollapsed: (event) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(_groupToggleMessage(event)),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  onRowSelection: (rows) {
-                    setState(() => _selectedRows = rows);
-                  },
-                  onRowTap: (row, _) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Selecionado: ${row.product}'),
-                        duration: const Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                ),
-                style:
-                    AppReportViewerStyle.minimal(
-                      filterLayout: AppReportFilterLayout.sheet,
-                      showExportActions: true,
-                      entityLabel: 'pedidos',
-                    ).copyWith(
-                      allowMultiSelection: true,
-                      showRowDetailOnTap: true,
-                      itemsPerPageLabel: 'Rows:',
-                      showingLabelPrefix: 'Showing ',
-                      showingLabelMiddle: ' of ',
+          SizedBox(height: tokens.sectionSpacing),
+          const AppReportNumericalDetailingDemoSection(),
+          SizedBox(height: tokens.sectionSpacing),
+          SizedBox(
+            height: 720,
+            child: AppReportViewer<_SaleRow>(
+              title: 'Transactions Table',
+              subtitle: 'Minimal preset inspired by e-commerce reporting',
+              contextChips: <String>[
+                'Store: All Stores',
+                'Period: Oct 2023',
+                '${_currentRows.length} transactions',
+                if (_activeFilterCount == 0)
+                  'Filters: none'
+                else
+                  'Filters: $_activeFilterCount active',
+                _describeGroups(_query.groups),
+              ],
+              columns: _columns,
+              rows: _pageRows,
+              pageInfo: _pageInfo,
+              summaryItems: _summaries,
+              filters: _filters,
+              filterValues: _query.filters,
+              selectedRows: _selectedRows,
+              query: _query,
+              events: AppReportEvents<_SaleRow>(
+                onQueryChanged: _onQueryChanged,
+                onRefresh: _onRefresh,
+                onExportRequested: _onExportRequested,
+                onGroupChanged: (groups) {
+                  setState(() {
+                    _query = _query.withGroups(groups);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_groupChangeMessage(groups)),
+                      duration: const Duration(seconds: 1),
                     ),
-                isLoading: _isLoading,
-                emptyMessage: 'No transactions match the selected filters.',
+                  );
+                },
+                onGroupStateChanged: (groups) {
+                  setState(() {
+                    _query = _query.withGroups(groups);
+                  });
+                },
+                onGroupExpanded: (event) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_groupToggleMessage(event)),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                onGroupCollapsed: (event) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_groupToggleMessage(event)),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                onRowSelection: (rows) {
+                  setState(() => _selectedRows = rows);
+                },
+                onRowTap: (row, _) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Selecionado: ${row.product}'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
               ),
+              style:
+                  AppReportViewerStyle.minimal(
+                    filterLayout: AppReportFilterLayout.sheet,
+                    showExportActions: true,
+                    entityLabel: 'pedidos',
+                  ).copyWith(
+                    allowMultiSelection: true,
+                    showRowDetailOnTap: true,
+                    itemsPerPageLabel: 'Rows:',
+                    showingLabelPrefix: 'Showing ',
+                    showingLabelMiddle: ' of ',
+                  ),
+              isLoading: _isLoading,
+              emptyMessage: 'No transactions match the selected filters.',
             ),
           ),
         ],
@@ -763,12 +737,6 @@ class _ReportViewerShowcaseCard extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
 
     return AppSectionCardWithHeading(
-      padding: EdgeInsets.fromLTRB(
-        tokens.contentSpacing,
-        tokens.contentSpacing,
-        tokens.contentSpacing,
-        tokens.contentSpacing + tokens.gapSm,
-      ),
       titleWidget: _ReportViewerShowcaseHeading(theme: theme, tokens: tokens),
       subtitle:
           'Showcase focused on the minimal transaction-table presentation '

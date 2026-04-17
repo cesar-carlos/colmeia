@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
@@ -99,29 +101,34 @@ class AppReportGridSource<T> extends DataGridSource {
         .toList(growable: false);
   }
 
+  /// Returns [DataGridRow]s in the **current visual order** of [effectiveRows]
+  /// that correspond to the supplied source [rows]. Resolution uses a one-pass
+  /// scan over the visible rows backed by a hash-set lookup, so the total cost
+  /// is O(n) on the number of effective rows (vs. the previous O(n²) scan with
+  /// `List.indexOf`). Equality follows the same `==` semantics used by the
+  /// previous implementation, so consumers relying on either object identity
+  /// (default `==`) or custom value equality keep the same matching behaviour.
   List<DataGridRow> resolveDataGridRows(Iterable<T> rows) {
-    final remainingRows = List<T>.from(rows);
-    final matches = <DataGridRow>[];
+    if (effectiveRows.isEmpty) {
+      return const <DataGridRow>[];
+    }
 
-    for (
-      var visualIndex = 0;
-      visualIndex < effectiveRows.length;
-      visualIndex++
-    ) {
-      final dataGridRow = effectiveRows[visualIndex];
+    final remaining = HashSet<T>.from(rows);
+    if (remaining.isEmpty) {
+      return const <DataGridRow>[];
+    }
+
+    final matches = <DataGridRow>[];
+    for (final dataGridRow in effectiveRows) {
       final entry = _resolveRowEntry(dataGridRow);
       if (entry == null) {
         continue;
       }
-
-      final selectedIndex = remainingRows.indexOf(entry.row);
-      if (selectedIndex == -1) {
+      if (!remaining.remove(entry.row)) {
         continue;
       }
-
       matches.add(dataGridRow);
-      remainingRows.removeAt(selectedIndex);
-      if (remainingRows.isEmpty) {
+      if (remaining.isEmpty) {
         break;
       }
     }

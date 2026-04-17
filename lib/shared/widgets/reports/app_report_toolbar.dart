@@ -189,34 +189,24 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
               if (style.showSearchBar)
                 SizedBox(
                   width: searchWidth,
-                  child: ListenableBuilder(
-                    listenable: _searchController,
-                    builder: (context, _) {
-                      return AppTextField(
-                        controller: _searchController,
-                        enabled: !widget.isLoading,
-                        hintText: 'Buscar vendedor, loja ou produto',
-                        prefixIcon: Icons.search_rounded,
-                        density: AppTextFieldDensity.compact,
-                        suffix: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(
-                                  Icons.close_rounded,
-                                  size: 18,
-                                ),
-                                tooltip: 'Limpar busca',
-                                onPressed: widget.isLoading
-                                    ? null
-                                    : () {
-                                        _searchDebounceTimer?.cancel();
-                                        _searchController.clear();
-                                        widget.events.onSearchChanged?.call('');
-                                      },
-                              )
-                            : null,
-                        onChanged: _emitSearchChanged,
-                      );
-                    },
+                  child: AppTextField(
+                    controller: _searchController,
+                    enabled: !widget.isLoading,
+                    hintText: 'Buscar vendedor, loja ou produto',
+                    prefixIcon: Icons.search_rounded,
+                    density: AppTextFieldDensity.compact,
+                    // Avoid rebuilding the whole AppTextField every keystroke:
+                    // a tiny ValueListenableBuilder watches just the text value
+                    // and toggles the suffix clear icon in isolation.
+                    suffix: _SearchClearButton(
+                      controller: _searchController,
+                      isLoading: widget.isLoading,
+                      onCleared: () {
+                        _searchDebounceTimer?.cancel();
+                        widget.events.onSearchChanged?.call('');
+                      },
+                    ),
+                    onChanged: _emitSearchChanged,
                   ),
                 ),
               if (showSelectionStatus)
@@ -994,6 +984,47 @@ class _ExportButton extends StatelessWidget {
         );
       },
       child: Text(label),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Search clear button
+// ---------------------------------------------------------------------------
+
+/// Minimal listener that rebuilds only when the search text is empty/non-empty
+/// changes. Keeps the parent [AppTextField] off the rebuild path that would
+/// otherwise fire on every keystroke.
+class _SearchClearButton extends StatelessWidget {
+  const _SearchClearButton({
+    required this.controller,
+    required this.isLoading,
+    required this.onCleared,
+  });
+
+  final TextEditingController controller;
+  final bool isLoading;
+  final VoidCallback onCleared;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        if (value.text.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return IconButton(
+          icon: const Icon(Icons.close_rounded, size: 18),
+          tooltip: 'Limpar busca',
+          onPressed: isLoading
+              ? null
+              : () {
+                  controller.clear();
+                  onCleared();
+                },
+        );
+      },
     );
   }
 }
