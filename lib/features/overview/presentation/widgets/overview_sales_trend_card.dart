@@ -24,26 +24,49 @@ class OverviewSalesTrendCard extends StatefulWidget {
 class _OverviewSalesTrendCardState extends State<OverviewSalesTrendCard> {
   OverviewSalesTrendRange _range = OverviewSalesTrendRange.lastWeek;
 
-  List<OverviewChartPoint> get _chartPoints {
-    if (_range == OverviewSalesTrendRange.lastWeek) {
-      return widget.points;
+  OverviewSalesTrendRange? _resolvedRange;
+  List<OverviewChartPoint>? _pointsRef;
+  List<OverviewChartPoint>? _resolvedPoints;
+
+  void _recomputeResolvedPointsIfNeeded() {
+    if (_resolvedRange == _range &&
+        identical(_pointsRef, widget.points) &&
+        _resolvedPoints != null) {
+      return;
     }
-    return widget.points
-        .map(
-          (p) => OverviewChartPoint(
-            label: p.label,
-            value: p.value * 4.15,
-          ),
-        )
-        .toList(growable: false);
+    _resolvedRange = _range;
+    _pointsRef = widget.points;
+    _resolvedPoints = _range == OverviewSalesTrendRange.lastWeek
+        ? widget.points
+        : widget.points
+            .map(
+              (p) => OverviewChartPoint(
+                label: p.label,
+                value: p.value * 4.15,
+              ),
+            )
+            .toList(growable: false);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _recomputeResolvedPointsIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewSalesTrendCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recomputeResolvedPointsIfNeeded();
   }
 
   @override
   Widget build(BuildContext context) {
+    _recomputeResolvedPointsIfNeeded();
     return OverviewChartRenderer(
       title: 'Tendência de vendas diárias',
       subtitle: 'Panorama do faturamento no período selecionado.',
-      points: _chartPoints,
+      points: _resolvedPoints!,
       belowSubtitle: SizedBox(
         width: double.infinity,
         child: AppSegmentedControl<OverviewSalesTrendRange>(

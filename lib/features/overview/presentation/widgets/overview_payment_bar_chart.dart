@@ -6,7 +6,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:flutter/material.dart';
 
-class OverviewPaymentBarChart extends StatelessWidget {
+class OverviewPaymentBarChart extends StatefulWidget {
   const OverviewPaymentBarChart({
     required this.l10n,
     required this.methods,
@@ -17,10 +17,42 @@ class OverviewPaymentBarChart extends StatelessWidget {
   final List<OverviewPaymentMethodBreakdown> methods;
 
   @override
+  State<OverviewPaymentBarChart> createState() =>
+      _OverviewPaymentBarChartState();
+}
+
+class _OverviewPaymentBarChartState extends State<OverviewPaymentBarChart> {
+  List<OverviewPaymentMethodBreakdown>? _methodsRef;
+  late List<OverviewPaymentMethodBreakdown> _sortedMethods;
+
+  void _recomputeSortedIfNeeded() {
+    if (identical(_methodsRef, widget.methods)) {
+      return;
+    }
+    _methodsRef = widget.methods;
+    _sortedMethods = List<OverviewPaymentMethodBreakdown>.of(widget.methods)
+      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _sortedMethods = List<OverviewPaymentMethodBreakdown>.of(widget.methods)
+      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+    _methodsRef = widget.methods;
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewPaymentBarChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recomputeSortedIfNeeded();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final sorted = List<OverviewPaymentMethodBreakdown>.of(methods)
-      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+    final l10n = widget.l10n;
+    final sorted = _sortedMethods;
     return AppComparisonBarChart<OverviewPaymentMethodBreakdown>(
       title: l10n.overviewPaymentBarTitle,
       subtitle: l10n.overviewPaymentBarSubtitle,

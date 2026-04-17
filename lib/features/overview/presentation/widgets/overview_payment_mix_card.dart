@@ -5,7 +5,10 @@ import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:flutter/material.dart';
 
-class OverviewPaymentMixCard extends StatelessWidget {
+/// Payment mix donut for the overview home. Caches derived segments and total
+/// while the [methods] list instance is unchanged (avoids repeated fold/map on
+/// every parent rebuild during staged chart mounting).
+class OverviewPaymentMixCard extends StatefulWidget {
   const OverviewPaymentMixCard({
     required this.l10n,
     required this.methods,
@@ -16,25 +19,56 @@ class OverviewPaymentMixCard extends StatelessWidget {
   final List<OverviewPaymentMethodBreakdown> methods;
 
   @override
-  Widget build(BuildContext context) {
-    final total = methods.fold<double>(0, (sum, m) => sum + m.totalAmount);
+  State<OverviewPaymentMixCard> createState() => _OverviewPaymentMixCardState();
+}
 
+class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
+  List<OverviewPaymentMethodBreakdown>? _methodsRef;
+  double _total = 0;
+  List<AppCategoryDonutSegment> _segments = const <AppCategoryDonutSegment>[];
+
+  void _recomputeIfNeeded() {
+    if (identical(_methodsRef, widget.methods)) {
+      return;
+    }
+    _methodsRef = widget.methods;
+    _total = widget.methods.fold<double>(
+      0,
+      (sum, m) => sum + m.totalAmount,
+    );
+    _segments = widget.methods
+        .map(
+          (m) => AppCategoryDonutSegment(
+            label: m.label,
+            value: m.totalAmount,
+            valueLabel: AppBrFormatters.currency(m.totalAmount),
+            percentLabel: '${m.sharePercent.toStringAsFixed(1)}%',
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _recomputeIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewPaymentMixCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recomputeIfNeeded();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
     return AppCategoryDonutCard(
       title: l10n.overviewPaymentMixTitle,
       subtitle: l10n.overviewPaymentMixSubtitle,
-      segments: methods
-          .map(
-            (m) => AppCategoryDonutSegment(
-              label: m.label,
-              value: m.totalAmount,
-              valueLabel: AppBrFormatters.currency(m.totalAmount),
-              percentLabel: '${m.sharePercent.toStringAsFixed(1)}%',
-            ),
-          )
-          .toList(growable: false),
-      centerPrimaryLabel: total > 0
-          ? AppBrFormatters.compactCurrency(total)
-          : null,
+      segments: _segments,
+      centerPrimaryLabel:
+          _total > 0 ? AppBrFormatters.compactCurrency(_total) : null,
       centerSecondaryLabel: l10n.overviewPaymentMixDonutTotalLabel,
     );
   }

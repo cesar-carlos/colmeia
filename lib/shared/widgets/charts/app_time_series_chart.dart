@@ -13,6 +13,7 @@ class AppTimeSeriesChartStyle {
     this.showTooltip = true,
     this.showYGridLines = true,
     this.chartPadding,
+    this.animationDuration,
   });
 
   final double? height;
@@ -21,6 +22,9 @@ class AppTimeSeriesChartStyle {
   final bool showTooltip;
   final bool showYGridLines;
   final EdgeInsets? chartPadding;
+
+  /// When null, Syncfusion uses its default (~1500ms) area animation.
+  final Duration? animationDuration;
 }
 
 class AppTimeSeriesChart extends StatelessWidget {

@@ -117,6 +117,11 @@ void main() {
 
     await tester.pump();
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    // [OverviewHomeStagedBelowKpis] mounts charts over successive post-frames.
+    for (var i = 0; i < 24; i++) {
+      await tester.pump();
+    }
     await tester.pump(const Duration(seconds: 2));
 
     expect(find.byType(OverviewWeekdaySalesTrendChart), findsOneWidget);
@@ -134,6 +139,8 @@ void main() {
     );
     expect(weekdayChart.points, hasLength(7));
     expect(weekdayChart.points.first.weekdayNumber, 1);
+
+    await tester.pump(const Duration(seconds: 2));
   });
 
   testWidgets('keeps weekday card in the skeleton path while loading', (
@@ -181,9 +188,14 @@ void main() {
 
     completer.complete(Success<Overview, AppFailure>(_overview()));
     await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
+    await tester.pump(const Duration(milliseconds: 50));
+    for (var i = 0; i < 24; i++) {
+      await tester.pump();
+    }
 
     expect(find.text('Sales by weekday'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 2));
   });
 }
 

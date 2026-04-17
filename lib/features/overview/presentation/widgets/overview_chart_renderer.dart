@@ -4,7 +4,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_time_series_chart.dart';
 import 'package:flutter/material.dart';
 
-class OverviewChartRenderer extends StatelessWidget {
+class OverviewChartRenderer extends StatefulWidget {
   const OverviewChartRenderer({
     required this.title,
     required this.subtitle,
@@ -21,23 +21,52 @@ class OverviewChartRenderer extends StatelessWidget {
   final Widget? belowSubtitle;
 
   @override
-  Widget build(BuildContext context) {
-    final chartPoints = points
+  State<OverviewChartRenderer> createState() => _OverviewChartRendererState();
+}
+
+class _OverviewChartRendererState extends State<OverviewChartRenderer> {
+  List<OverviewChartPoint>? _pointsRef;
+  List<AppChartPoint>? _chartPoints;
+
+  void _rebuildChartPointsIfNeeded() {
+    if (identical(_pointsRef, widget.points) && _chartPoints != null) {
+      return;
+    }
+    _pointsRef = widget.points;
+    _chartPoints = widget.points
         .map(
           (point) => AppChartPoint(
             label: point.label,
             value: point.value,
           ),
         )
-        .toList();
+        .toList(growable: false);
+  }
 
+  @override
+  void initState() {
+    super.initState();
+    _rebuildChartPointsIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewChartRenderer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _rebuildChartPointsIfNeeded();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return AppTimeSeriesChart(
-      title: title,
-      subtitle: subtitle,
-      titleTrailing: titleTrailing,
-      belowSubtitle: belowSubtitle,
-      points: chartPoints,
+      title: widget.title,
+      subtitle: widget.subtitle,
+      titleTrailing: widget.titleTrailing,
+      belowSubtitle: widget.belowSubtitle,
+      points: _chartPoints!,
       preset: AppChartPreset.standard,
+      style: const AppTimeSeriesChartStyle(
+        animationDuration: Duration.zero,
+      ),
     );
   }
 }

@@ -464,6 +464,7 @@ class _DonutSection extends StatelessWidget {
             dataSource: segments,
             xValueMapper: (s, _) => s.label,
             yValueMapper: (s, _) => s.value.toDouble(),
+            animationDuration: 0,
             innerRadius: style.innerRadius,
             radius: style.outerRadius,
             explodeIndex: selectedIndex,

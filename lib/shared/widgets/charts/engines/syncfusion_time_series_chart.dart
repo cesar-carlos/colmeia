@@ -82,6 +82,8 @@ class SyncfusionTimeSeriesChart extends StatelessWidget {
             dataSource: points,
             xValueMapper: (point, _) => point.label,
             yValueMapper: (point, _) => point.value,
+            animationDuration:
+                style.animationDuration?.inMilliseconds.toDouble() ?? 1500,
             borderWidth: style.lineWidth ?? 3,
             gradient: chartTheme.gradient,
             onPointTap: onPointTap == null

@@ -22,6 +22,12 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
   final isRanking = kind == OverviewHomeBarChartKind.ranking;
   final isWeekday = kind == OverviewHomeBarChartKind.weekday;
   return AppComparisonBarChartStyle(
+    animationDuration: Duration.zero,
+    // Defaults enable auto-scroll + sticky Y; that builds two SfCartesianChart
+    // trees when the plot overflows (e.g. 7 weekdays × minBarWidth). Same
+    // pattern as the overview monthly combo ANR (NDJSON f480b8).
+    enableAutoScroll: false,
+    stickyPrimaryYAxisWhileScrolling: false,
     yAxisFormat: isWeekday
         ? (weekdayUsesCurrencyAxis
               ? AppBrFormatters.compactCurrencyFormatForLocale(localeName)

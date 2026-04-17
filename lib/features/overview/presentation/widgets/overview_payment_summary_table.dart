@@ -25,7 +25,7 @@ TextStyle _tabularFigures(TextStyle style) {
   );
 }
 
-class OverviewPaymentSummaryTable extends StatelessWidget {
+class OverviewPaymentSummaryTable extends StatefulWidget {
   const OverviewPaymentSummaryTable({
     required this.l10n,
     required this.methods,
@@ -38,14 +38,47 @@ class OverviewPaymentSummaryTable extends StatelessWidget {
   final bool showSkeleton;
 
   @override
+  State<OverviewPaymentSummaryTable> createState() =>
+      _OverviewPaymentSummaryTableState();
+}
+
+class _OverviewPaymentSummaryTableState
+    extends State<OverviewPaymentSummaryTable> {
+  List<OverviewPaymentMethodBreakdown>? _methodsRef;
+  String? _l10nLocale;
+  List<Widget>? _compactTableChildren;
+
+  List<Widget> _compactTableBodyChildren() {
+    if (identical(_methodsRef, widget.methods) &&
+        _l10nLocale == widget.l10n.localeName &&
+        _compactTableChildren != null) {
+      return _compactTableChildren!;
+    }
+    _methodsRef = widget.methods;
+    _l10nLocale = widget.l10n.localeName;
+    final l10n = widget.l10n;
+    return _compactTableChildren = <Widget>[
+      _PaymentTableHeader(l10n: l10n),
+      for (var i = 0; i < widget.methods.length; i++)
+        _PaymentTableRow(
+          l10n: l10n,
+          method: widget.methods[i],
+          showTopDivider: i > 0,
+        ),
+    ];
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
+    final l10n = widget.l10n;
+    final methods = widget.methods;
 
     final Widget body;
     if (methods.isEmpty) {
-      if (showSkeleton) {
+      if (widget.showSkeleton) {
         body = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -64,16 +97,7 @@ class OverviewPaymentSummaryTable extends StatelessWidget {
     } else if (methods.length <= _kPaymentSummaryMaxRowsBeforeInnerScroll) {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _PaymentTableHeader(l10n: l10n),
-          ...methods.asMap().entries.map(
-                (e) => _PaymentTableRow(
-                  l10n: l10n,
-                  method: e.value,
-                  showTopDivider: e.key > 0,
-                ),
-              ),
-        ],
+        children: _compactTableBodyChildren(),
       );
     } else {
       body = Column(

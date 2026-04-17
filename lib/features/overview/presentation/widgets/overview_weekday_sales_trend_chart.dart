@@ -35,6 +35,44 @@ class _OverviewWeekdaySalesTrendChartState
     extends State<OverviewWeekdaySalesTrendChart> {
   _OverviewWeekdayMetric _metric = _OverviewWeekdayMetric.salesCount;
 
+  List<OverviewWeekdaySalesTrendPoint>? _semanticsPointsRef;
+  _OverviewWeekdayMetric? _semanticsMetric;
+  bool? _semanticsLoadFailed;
+  String? _semanticsSummaryCache;
+
+  @override
+  void didUpdateWidget(covariant OverviewWeekdaySalesTrendChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.points, oldWidget.points) ||
+        widget.loadFailed != oldWidget.loadFailed ||
+        widget.l10n.localeName != oldWidget.l10n.localeName) {
+      _semanticsSummaryCache = null;
+      _semanticsPointsRef = null;
+      _semanticsMetric = null;
+      _semanticsLoadFailed = null;
+    }
+  }
+
+  String _semanticsSummaryForBuild({
+    required AppLocalizations l10n,
+    required NumberFormat salesCountFormat,
+  }) {
+    if (_semanticsSummaryCache != null &&
+        identical(widget.points, _semanticsPointsRef) &&
+        _metric == _semanticsMetric &&
+        widget.loadFailed == _semanticsLoadFailed) {
+      return _semanticsSummaryCache!;
+    }
+    _semanticsPointsRef = widget.points;
+    _semanticsMetric = _metric;
+    _semanticsLoadFailed = widget.loadFailed;
+    _semanticsSummaryCache = _buildSemanticsSummary(
+      l10n: l10n,
+      salesCountFormat: salesCountFormat,
+    );
+    return _semanticsSummaryCache!;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
@@ -46,7 +84,7 @@ class _OverviewWeekdaySalesTrendChartState
     final emptyMessage = widget.loadFailed
         ? l10n.overviewWeekdaySalesLoadFailed
         : l10n.overviewWeekdaySalesEmpty;
-    final summary = _buildSemanticsSummary(
+    final summary = _semanticsSummaryForBuild(
       l10n: l10n,
       salesCountFormat: salesCountFormat,
     );

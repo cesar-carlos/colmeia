@@ -7,7 +7,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:flutter/material.dart';
 
-class OverviewRankingsSection extends StatelessWidget {
+class OverviewRankingsSection extends StatefulWidget {
   const OverviewRankingsSection({
     required this.l10n,
     required this.agentRankings,
@@ -20,23 +20,56 @@ class OverviewRankingsSection extends StatelessWidget {
   final List<OverviewUserRanking> userRankings;
 
   @override
+  State<OverviewRankingsSection> createState() => _OverviewRankingsSectionState();
+}
+
+class _OverviewRankingsSectionState extends State<OverviewRankingsSection> {
+  List<OverviewAgentRanking>? _agentsRef;
+  List<OverviewUserRanking>? _usersRef;
+  late List<OverviewAgentRanking> _sortedAgents;
+  late List<OverviewUserRanking> _sortedUsers;
+
+  void _recomputeSortedIfNeeded() {
+    if (!identical(_agentsRef, widget.agentRankings)) {
+      _agentsRef = widget.agentRankings;
+      _sortedAgents = List<OverviewAgentRanking>.of(widget.agentRankings)
+        ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+    }
+    if (!identical(_usersRef, widget.userRankings)) {
+      _usersRef = widget.userRankings;
+      _sortedUsers = List<OverviewUserRanking>.of(widget.userRankings)
+        ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _agentsRef = null;
+    _usersRef = null;
+    _recomputeSortedIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewRankingsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recomputeSortedIfNeeded();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final sortedAgents = List<OverviewAgentRanking>.of(agentRankings)
-      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
-    final sortedUsers = List<OverviewUserRanking>.of(userRankings)
-      ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         OverviewAgentRankingCard(
-          l10n: l10n,
-          agentRankings: sortedAgents,
+          l10n: widget.l10n,
+          agentRankings: _sortedAgents,
         ),
         SizedBox(height: tokens.sectionSpacing),
         OverviewUserRankingCard(
-          l10n: l10n,
-          userRankings: sortedUsers,
+          l10n: widget.l10n,
+          userRankings: _sortedUsers,
         ),
       ],
     );

@@ -15,12 +15,8 @@ import 'package:colmeia/features/overview/presentation/controllers/overview_cont
 import 'package:colmeia/features/overview/presentation/widgets/overview_auto_loader.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_filter_bar.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_alerts_section.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_kpi_bar.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_payment_bar_chart.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_rankings_section.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -181,64 +177,11 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                                 ),
                               ),
                               SizedBox(height: tokens.sectionSpacing),
-                              AppSkeleton(
-                                enabled: showSkeleton,
-                                showDelay: Duration.zero,
-                                loadingSemanticsLabel:
-                                    l10n.overviewLoadingPaymentMixSemantics,
-                                child: OverviewPaymentMixCard(
-                                  l10n: l10n,
-                                  methods: displayOverview.paymentMethods,
-                                ),
-                              ),
-                              SizedBox(height: tokens.sectionSpacing),
-                              AppSkeleton(
-                                enabled: showSkeleton,
-                                showDelay: const Duration(milliseconds: 80),
-                                loadingSemanticsLabel:
-                                    l10n.overviewLoadingPaymentBarSemantics,
-                                child: OverviewPaymentBarChart(
-                                  l10n: l10n,
-                                  methods: displayOverview.paymentMethods,
-                                ),
-                              ),
-                              SizedBox(height: tokens.sectionSpacing),
-                              AppSkeleton(
-                                enabled: showSkeleton,
-                                showDelay: const Duration(milliseconds: 40),
-                                loadingSemanticsLabel:
-                                    l10n.overviewLoadingMonthlyParcelsSemantics,
-                                child: OverviewMonthlyParcelsComboChart(
-                                  l10n: l10n,
-                                  points: displayOverview.monthlyParcelTrend,
-                                  loadFailed: displayOverview
-                                      .monthlyParcelTrendLoadFailed,
-                                ),
-                              ),
-                              SizedBox(height: tokens.sectionSpacing),
-                              AppSkeleton(
-                                enabled: showSkeleton,
-                                showDelay: const Duration(milliseconds: 80),
-                                loadingSemanticsLabel:
-                                    l10n.overviewLoadingWeekdaySalesSemantics,
-                                child: OverviewWeekdaySalesTrendChart(
-                                  l10n: l10n,
-                                  points: displayOverview.weekdaySalesTrend,
-                                  loadFailed: displayOverview
-                                      .weekdaySalesTrendLoadFailed,
-                                ),
-                              ),
-                              SizedBox(height: tokens.sectionSpacing),
-                              AppSkeleton(
-                                enabled: showSkeleton,
-                                showDelay: const Duration(milliseconds: 120),
-                                loadingSemanticsLabel:
-                                    l10n.overviewLoadingRankingsSemantics,
-                                child: OverviewRankingsSection(
-                                  l10n: l10n,
-                                  agentRankings: displayOverview.agentRankings,
-                                  userRankings: displayOverview.userRankings,
-                                ),
+                              OverviewHomeStagedBelowKpis(
+                                tokens: tokens,
+                                l10n: l10n,
+                                showSkeleton: showSkeleton,
+                                displayOverview: displayOverview,
                               ),
                             ],
                           ),

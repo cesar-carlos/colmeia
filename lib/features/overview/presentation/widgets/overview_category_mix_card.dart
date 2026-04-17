@@ -9,7 +9,10 @@ import 'package:flutter/material.dart';
 /// Se todos os itens tiverem `amount`, o gráfico e o centro usam a soma real;
 /// caso contrário, montantes são estimados a partir de `percent` e
 /// [fallbackTotalRevenue] (ou 1,2M quando a API não envia total).
-class OverviewCategoryMixCard extends StatelessWidget {
+///
+/// Segmentos e rótulo central são cacheados enquanto [shares] e
+/// [fallbackTotalRevenue] não mudam (evita map/fold em rebuilds frequentes).
+class OverviewCategoryMixCard extends StatefulWidget {
   const OverviewCategoryMixCard({
     required this.shares,
     super.key,
@@ -22,9 +25,32 @@ class OverviewCategoryMixCard extends StatelessWidget {
   /// não vem em todas as linhas (ex.: `overview.categoryMixTotalRevenue`).
   final double? fallbackTotalRevenue;
 
+  @override
+  State<OverviewCategoryMixCard> createState() =>
+      _OverviewCategoryMixCardState();
+}
+
+class _OverviewCategoryMixCardState extends State<OverviewCategoryMixCard> {
   static const double _defaultFallbackTotalRevenue = 1_200_000;
 
-  static List<AppCategoryDonutSegment> _segments(
+  List<OverviewCategoryShare>? _sharesRef;
+  double? _fallbackOptRef;
+  late List<AppCategoryDonutSegment> _segments;
+  String? _centerPrimary;
+
+  void _recomputeIfNeeded() {
+    if (identical(_sharesRef, widget.shares) &&
+        _fallbackOptRef == widget.fallbackTotalRevenue) {
+      return;
+    }
+    _sharesRef = widget.shares;
+    _fallbackOptRef = widget.fallbackTotalRevenue;
+    final fallback = widget.fallbackTotalRevenue ?? _defaultFallbackTotalRevenue;
+    _segments = _buildSegments(widget.shares, fallback);
+    _centerPrimary = _buildCenterPrimary(widget.shares, fallback);
+  }
+
+  static List<AppCategoryDonutSegment> _buildSegments(
     List<OverviewCategoryShare> shares,
     double fallbackTotal,
   ) {
@@ -55,7 +81,7 @@ class OverviewCategoryMixCard extends StatelessWidget {
         .toList(growable: false);
   }
 
-  static String? _centerPrimary(
+  static String? _buildCenterPrimary(
     List<OverviewCategoryShare> shares,
     double fallbackTotal,
   ) {
@@ -74,14 +100,25 @@ class OverviewCategoryMixCard extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _recomputeIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewCategoryMixCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recomputeIfNeeded();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
-    final fallback = fallbackTotalRevenue ?? _defaultFallbackTotalRevenue;
 
     return AppCategoryDonutCard(
       title: 'Vendas por categoria',
-      segments: _segments(shares, fallback),
-      centerPrimaryLabel: _centerPrimary(shares, fallback),
+      segments: _segments,
+      centerPrimaryLabel: _centerPrimary,
       centerSecondaryLabel: 'TOTAL ANUAL',
       titleAccentColor: accent,
       titleTrailing: IconButton(

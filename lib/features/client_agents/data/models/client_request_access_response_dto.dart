@@ -17,7 +17,8 @@ final class ClientRequestAccessResponseDto {
     final newRequests = _stringIdList(json['newRequests']);
     final reopened = _stringIdList(json['reopened']);
     final debounced = _stringIdList(json['debounced']);
-    final hasSemantic = requested.isNotEmpty ||
+    final hasSemantic =
+        requested.isNotEmpty ||
         alreadyApproved.isNotEmpty ||
         newRequests.isNotEmpty ||
         reopened.isNotEmpty ||

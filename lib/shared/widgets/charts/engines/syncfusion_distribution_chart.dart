@@ -6,7 +6,7 @@ import 'package:colmeia/shared/widgets/charts/app_distribution_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-class SyncfusionDistributionChart extends StatelessWidget {
+class SyncfusionDistributionChart extends StatefulWidget {
   const SyncfusionDistributionChart({
     required this.points,
     required this.preset,
@@ -25,19 +25,48 @@ class SyncfusionDistributionChart extends StatelessWidget {
   final void Function(AppChartPoint point, int index)? onSegmentTap;
 
   @override
+  State<SyncfusionDistributionChart> createState() =>
+      _SyncfusionDistributionChartState();
+}
+
+class _SyncfusionDistributionChartState
+    extends State<SyncfusionDistributionChart> {
+  List<AppChartPoint>? _pointsRef;
+  List<AppChartPoint> _visiblePoints = const <AppChartPoint>[];
+
+  void _recomputeVisibleIfNeeded() {
+    if (identical(_pointsRef, widget.points)) {
+      return;
+    }
+    _pointsRef = widget.points;
+    _visiblePoints = widget.points
+        .where(_hasRenderableValue)
+        .toList(growable: false);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _recomputeVisibleIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant SyncfusionDistributionChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recomputeVisibleIfNeeded();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final chartTheme = AppChartTheme.fromContext(
       context,
-      preset: preset,
+      preset: widget.preset,
     );
     final theme = Theme.of(context);
     final colors = theme.appColors;
-    final resolvedHeight = style.height ?? chartTheme.height;
-    final visiblePoints = points
-        .where(_hasRenderableValue)
-        .toList(growable: false);
+    final resolvedHeight = widget.style.height ?? chartTheme.height;
 
-    if (isLoading) {
+    if (widget.isLoading) {
       return SizedBox(
         height: resolvedHeight,
         child: Center(
@@ -63,12 +92,12 @@ class SyncfusionDistributionChart extends StatelessWidget {
       );
     }
 
-    if (visiblePoints.isEmpty) {
+    if (_visiblePoints.isEmpty) {
       return SizedBox(
         height: resolvedHeight,
         child: Center(
           child:
-              emptyPlaceholder ??
+              widget.emptyPlaceholder ??
               Text(
                 'Sem distribuicao disponivel para este recorte.',
                 textAlign: TextAlign.center,
@@ -83,25 +112,26 @@ class SyncfusionDistributionChart extends StatelessWidget {
     return SizedBox(
       height: resolvedHeight,
       child: SfCircularChart(
-        margin: style.chartPadding ?? EdgeInsets.zero,
+        margin: widget.style.chartPadding ?? EdgeInsets.zero,
         palette: chartTheme.palette,
-        legend: Legend(isVisible: style.showLegend),
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+        legend: Legend(isVisible: widget.style.showLegend),
+        tooltipBehavior: TooltipBehavior(enable: widget.style.showTooltip),
         series: <CircularSeries<AppChartPoint, String>>[
           DoughnutSeries<AppChartPoint, String>(
-            dataSource: visiblePoints,
+            dataSource: _visiblePoints,
+            animationDuration: 0,
             xValueMapper: (point, _) => point.label,
             yValueMapper: (point, _) => point.value,
-            onPointTap: onSegmentTap == null
+            onPointTap: widget.onSegmentTap == null
                 ? null
                 : (args) {
                     final index = args.pointIndex;
                     if (index == null ||
                         index < 0 ||
-                        index >= visiblePoints.length) {
+                        index >= _visiblePoints.length) {
                       return;
                     }
-                    onSegmentTap!(visiblePoints[index], index);
+                    widget.onSegmentTap!(_visiblePoints[index], index);
                   },
           ),
         ],

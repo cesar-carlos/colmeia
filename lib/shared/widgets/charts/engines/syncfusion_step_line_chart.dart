@@ -8,7 +8,7 @@ import 'package:colmeia/shared/widgets/charts/app_step_line_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-class SyncfusionStepLineChart extends StatelessWidget {
+class SyncfusionStepLineChart extends StatefulWidget {
   const SyncfusionStepLineChart({
     required this.entries,
     required this.isMultiSeries,
@@ -35,14 +35,20 @@ class SyncfusionStepLineChart extends StatelessWidget {
   final Widget? emptyPlaceholder;
 
   @override
-  Widget build(BuildContext context) {
-    final chartTheme = AppChartTheme.fromContext(context, preset: preset);
-    final theme = Theme.of(context);
-    final colors = theme.appColors;
-    final typography = theme.appTypography;
-    final resolvedHeight = style.height ?? chartTheme.height;
-    final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
-    final visibleEntries = entries
+  State<SyncfusionStepLineChart> createState() =>
+      _SyncfusionStepLineChartState();
+}
+
+class _SyncfusionStepLineChartState extends State<SyncfusionStepLineChart> {
+  List<AppStepLineEntry>? _entriesRef;
+  List<AppStepLineEntry> _visibleEntries = const <AppStepLineEntry>[];
+
+  void _recomputeVisibleEntriesIfNeeded() {
+    if (identical(_entriesRef, widget.entries)) {
+      return;
+    }
+    _entriesRef = widget.entries;
+    _visibleEntries = widget.entries
         .map(
           (entry) => AppStepLineEntry(
             label: entry.label,
@@ -53,8 +59,33 @@ class SyncfusionStepLineChart extends StatelessWidget {
           ),
         )
         .toList(growable: false);
+  }
 
-    if (isLoading) {
+  @override
+  void initState() {
+    super.initState();
+    _recomputeVisibleEntriesIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant SyncfusionStepLineChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recomputeVisibleEntriesIfNeeded();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chartTheme = AppChartTheme.fromContext(
+      context,
+      preset: widget.preset,
+    );
+    final theme = Theme.of(context);
+    final colors = theme.appColors;
+    final typography = theme.appTypography;
+    final resolvedHeight = widget.style.height ?? chartTheme.height;
+    final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
+
+    if (widget.isLoading) {
       return SizedBox(
         height: resolvedHeight,
         child: Center(
@@ -80,13 +111,15 @@ class SyncfusionStepLineChart extends StatelessWidget {
       );
     }
 
-    final allEmpty = visibleEntries.every((entry) => entry.points.isEmpty);
+    _recomputeVisibleEntriesIfNeeded();
+
+    final allEmpty = _visibleEntries.every((entry) => entry.points.isEmpty);
     if (allEmpty) {
       return SizedBox(
         height: resolvedHeight,
         child: Center(
           child:
-              emptyPlaceholder ??
+              widget.emptyPlaceholder ??
               Text(
                 'Sem dados disponiveis para este periodo.',
                 textAlign: TextAlign.center,
@@ -99,8 +132,8 @@ class SyncfusionStepLineChart extends StatelessWidget {
     }
 
     final series = <CartesianSeries<AppChartPoint, String>>[];
-    for (var i = 0; i < visibleEntries.length; i++) {
-      final entry = visibleEntries[i];
+    for (var i = 0; i < _visibleEntries.length; i++) {
+      final entry = _visibleEntries[i];
       final seriesColor = entry.color ?? chartTheme.paletteColor(i);
       series.add(
         StepLineSeries<AppChartPoint, String>(
@@ -109,27 +142,33 @@ class SyncfusionStepLineChart extends StatelessWidget {
           yValueMapper: (point, _) => point.value,
           name: entry.label,
           color: seriesColor,
-          width: style.lineWidth ?? 2.5,
+          width: widget.style.lineWidth ?? 2.5,
           animationDuration:
-              style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+              widget.style.animationDuration?.inMilliseconds.toDouble() ??
+                  1200,
           markerSettings: MarkerSettings(
-            isVisible: style.showMarkers,
-            height: style.markerSize ?? 7,
-            width: style.markerSize ?? 7,
+            isVisible: widget.style.showMarkers,
+            height: widget.style.markerSize ?? 7,
+            width: widget.style.markerSize ?? 7,
             color: seriesColor,
             borderColor: colors.surface,
           ),
           dataLabelSettings: DataLabelSettings(
-            isVisible: style.showDataLabels,
+            isVisible: widget.style.showDataLabels,
           ),
-          onPointTap: onPointTap == null
+          onPointTap: widget.onPointTap == null
               ? null
               : (details) {
                   final pointIndex = details.pointIndex;
                   if (pointIndex != null &&
                       pointIndex >= 0 &&
                       pointIndex < entry.points.length) {
-                    onPointTap!(entry, entry.points[pointIndex], pointIndex, i);
+                    widget.onPointTap!(
+                      entry,
+                      entry.points[pointIndex],
+                      pointIndex,
+                      i,
+                    );
                   }
                 },
         ),
@@ -139,10 +178,10 @@ class SyncfusionStepLineChart extends StatelessWidget {
     return SizedBox(
       height: resolvedHeight,
       child: SfCartesianChart(
-        margin: style.chartPadding ?? EdgeInsets.zero,
+        margin: widget.style.chartPadding ?? EdgeInsets.zero,
         plotAreaBorderWidth: 0,
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
-        trackballBehavior: style.showTrackball
+        tooltipBehavior: TooltipBehavior(enable: widget.style.showTooltip),
+        trackballBehavior: widget.style.showTrackball
             ? TrackballBehavior(
                 enable: true,
                 activationMode: ActivationMode.singleTap,
@@ -152,7 +191,7 @@ class SyncfusionStepLineChart extends StatelessWidget {
               )
             : null,
         legend: Legend(
-          isVisible: isMultiSeries && style.showLegend,
+          isVisible: widget.isMultiSeries && widget.style.showLegend,
           position: LegendPosition.bottom,
           overflowMode: LegendItemOverflowMode.wrap,
         ),
@@ -168,14 +207,15 @@ class SyncfusionStepLineChart extends StatelessWidget {
           axisLine: const AxisLine(width: 0),
           majorGridLines: MajorGridLines(
             color: gridLineColor,
-            width: style.showYGridLines ? 1 : 0,
+            width: widget.style.showYGridLines ? 1 : 0,
           ),
           numberFormat:
-              style.yAxisFormat ?? AppChartFormatters.compactCurrencyFormat,
-          axisLabelFormatter: style.yAxisFormat == null
+              widget.style.yAxisFormat ??
+              AppChartFormatters.compactCurrencyFormat,
+          axisLabelFormatter: widget.style.yAxisFormat == null
               ? null
               : (details) => ChartAxisLabel(
-                  style.yAxisFormat!.format(details.value),
+                  widget.style.yAxisFormat!.format(details.value),
                   details.textStyle,
                 ),
         ),
