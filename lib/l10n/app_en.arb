@@ -97,6 +97,8 @@
   "dashboardAgentRankingSubtitle": "Total revenue by agent in the period.",
   "dashboardUserRankingTitle": "Ranking by operator",
   "dashboardUserRankingSubtitle": "Revenue by operator in the period.",
+  "overviewAgentRankingEmpty": "No agent revenue in this period.",
+  "overviewUserRankingEmpty": "No operator revenue in this period.",
   "overviewDefaultGreetingName": "Manager",
   "overviewGreetingEyebrow": "Hello, {name}",
   "@overviewGreetingEyebrow": {
@@ -125,6 +127,10 @@
   "overviewMonthlyParcelsEmpty": "No monthly data for this period.",
   "overviewMonthlyParcelsLoadFailed": "Could not load the monthly chart. Try again later.",
   "overviewMonthlyParcelsChartSemantics": "Last twelve months sales and parcel amount chart",
+  "overviewMonthlyParcelsSubtitleValueView": "Parcel totals and sales counts by month (all branches in scope).",
+  "overviewMonthlyParcelsSwitchSalesLabel": "Sales",
+  "overviewMonthlyParcelsSwitchValueLabel": "Parcel value",
+  "overviewMonthlyParcelsChartSemanticsValueView": "Last twelve months parcel amounts and sales counts chart",
   "overviewWeekdaySalesTitle": "Sales by weekday",
   "@overviewWeekdaySalesTitle": {
     "description": "Card title when the weekday overview chart is plotting sales count."
@@ -231,6 +237,10 @@
   "overviewPaymentMixDonutTotalLabel": "TOTAL",
   "overviewPaymentBarTitle": "Revenue by payment method",
   "overviewPaymentBarSubtitle": "Total amount accumulated in the period.",
+  "overviewPaymentBarEmpty": "No payment method revenue in this period.",
+  "@overviewPaymentBarEmpty": {
+    "description": "Shown when every payment method has zero revenue for the period."
+  },
   "overviewPaymentBarTooltip": "{label}: {amount}",
   "@overviewPaymentBarTooltip": {
     "placeholders": {
@@ -242,6 +252,33 @@
   "overviewComparisonBarHorizontalScrollHint": "Swipe horizontally to see all items.",
   "chartComparisonPlotFloorNotice": "Very small bars are drawn with a minimum height for readability. Values on labels are exact.",
   "chartComparisonExtremeValueSpreadNotice": "Some values differ by orders of magnitude; check units or aggregation if totals look wrong.",
+  "chartComparisonLoadingDefault": "Loading comparison chart…",
+  "chartComparisonEmptyDefault": "Nothing to compare right now.",
+  "chartComparisonPanGestureHint": "Swipe the chart sideways to see more categories.",
+  "chartComboLoadingDefault": "Loading bar and line chart…",
+  "chartComboEmptyDefault": "No combined data for this view.",
+  "chartComboPanGestureHint": "Swipe sideways along the chart to see more periods.",
+  "@chartComboPanGestureHint": {
+    "description": "Footer hint when category-axis pan is enabled on bar+line combo charts."
+  },
+  "chartComboPanChartA11y": "{count, plural, =1{Bar and line chart, one category.} other{Bar and line chart, {count} categories.}} Swipe horizontally to see all.",
+  "@chartComboPanChartA11y": {
+    "description": "Screen reader summary when the combo chart uses horizontal pan on the category axis.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chartComparisonPanChartA11y": "{count, plural, =1{Bar chart, one category.} other{Bar chart, {count} categories.}} Swipe the chart horizontally to see all.",
+  "@chartComparisonPanChartA11y": {
+    "description": "Screen reader summary when the comparison chart uses horizontal panning for categories.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "overviewSemanticsPaymentMethodRow": "Payment method {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {

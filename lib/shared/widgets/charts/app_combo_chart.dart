@@ -1,9 +1,22 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_combo_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
+/// Visual customization for [AppComboChart].
+///
+/// **Horizontal overflow:** prefer a single strategy per chart instance:
+/// - `enableAutoScroll` true — widens the plot to [minCategorySlotWidth] per
+///   category and wraps it in a horizontal scroll view (can be heavy on many
+///   points; overview keeps this off for ANR safety).
+/// - `categoryAutoScrollingDelta` with `enableAutoScroll` false — keeps layout
+///   width and uses Syncfusion category-axis viewport pan when categories
+///   would be narrower than [minCategorySlotWidth].
+///
+/// When `enableAutoScroll` is true, category viewport pan is not applied.
 class AppComboChartStyle {
   const AppComboChartStyle({
     this.height,
@@ -24,8 +37,11 @@ class AppComboChartStyle {
     this.legendTextStyle,
     this.barColor,
     this.lineColor,
+    this.barBorderRadius = const BorderRadius.all(Radius.circular(6)),
     this.showDataLabels = false,
     this.dataLabelTextStyle,
+    this.barDataLabelAlignment = ChartDataLabelAlignment.outer,
+    this.barDataLabelOffset,
     this.enableAutoScroll = true,
     // Default matches AppThemeTokens.chartComboDefaultCategoryMinSlotWidth.
     this.minCategorySlotWidth = 80,
@@ -33,6 +49,12 @@ class AppComboChartStyle {
     this.horizontalScrollSemanticsHint,
     this.stickyPrimaryYAxisWhileScrolling = true,
     this.stickyPrimaryYAxisWidth = 72,
+    this.loadingLabel,
+    this.emptyMessage,
+    this.categoryAutoScrollingDelta,
+    this.categoryAutoScrollingMode = AutoScrollingMode.start,
+    this.categoryViewportFootnote,
+    this.categoryViewportPanSemanticsLabel,
   });
 
   final double? height;
@@ -53,7 +75,8 @@ class AppComboChartStyle {
   final bool showXAxis;
 
   /// When false, hides the right Y-axis tick labels (line series scale). The
-  /// line still uses that axis for scaling; tooltips keep full values.
+  /// line still uses that axis for scaling; the chart tooltip lists both
+  /// series so the line value stays readable without secondary ticks.
   final bool showRightYAxis;
 
   final bool showLegend;
@@ -71,8 +94,17 @@ class AppComboChartStyle {
   /// color.
   final Color? lineColor;
 
+  /// Corner rounding for bar columns (default 6px radius, same as comparison bars).
+  final BorderRadius barBorderRadius;
+
   final bool showDataLabels;
   final TextStyle? dataLabelTextStyle;
+
+  /// Placement of bar column data labels when [showDataLabels] is true.
+  final ChartDataLabelAlignment barDataLabelAlignment;
+
+  /// Extra offset for bar data labels (Syncfusion: positive Y lifts outer labels).
+  final Offset? barDataLabelOffset;
 
   /// When true, widens the plot (minimum [minCategorySlotWidth] per category)
   /// and wraps it in horizontal scroll if wider than the layout.
@@ -80,12 +112,13 @@ class AppComboChartStyle {
 
   /// Minimum logical width per category (bar slot) when [enableAutoScroll] is
   /// true. Higher values trigger horizontal scroll sooner on narrow layouts.
+  /// Also used with [categoryAutoScrollingDelta] to detect a crowded X-axis.
   final double minCategorySlotWidth;
 
   /// Trailing edge fade when horizontal scroll is active.
   final bool showScrollFade;
 
-  /// Semantics hint when horizontal scroll is active (e.g. swipe to see more).
+  /// Semantics hint when horizontal scroll or category pan is active.
   final String? horizontalScrollSemanticsHint;
 
   /// When true and horizontal scroll is active, keeps the primary (left) Y-axis
@@ -94,6 +127,24 @@ class AppComboChartStyle {
 
   /// Width reserved for the sticky primary Y-axis column (tick labels).
   final double stickyPrimaryYAxisWidth;
+
+  /// Override loading string; when null, [AppComboChart] uses l10n default.
+  final String? loadingLabel;
+
+  /// Override empty engine message; when null, [AppComboChart] uses l10n default.
+  final String? emptyMessage;
+
+  /// Syncfusion [CategoryAxis.autoScrollingDelta] when [enableAutoScroll] is
+  /// false (same idea as the comparison bar chart).
+  final int? categoryAutoScrollingDelta;
+
+  final AutoScrollingMode categoryAutoScrollingMode;
+
+  /// Shown under the plot when category viewport pan is active.
+  final String? categoryViewportFootnote;
+
+  /// Screen reader label when category viewport pan is active.
+  final String? categoryViewportPanSemanticsLabel;
 }
 
 enum AppComboChartSeriesType {
@@ -120,6 +171,10 @@ class AppComboChartPointTapEvent<T> {
 ///
 /// The bar series is plotted against the left Y-axis; the line series is
 /// plotted against the right Y-axis. Both axes can be formatted independently.
+///
+/// When [AppComboChartStyle.showRightYAxis] is false, the line still scales on
+/// the right axis but tick labels are hidden; the combo engine uses a shared
+/// tooltip so both series values remain visible on tap/long-press.
 ///
 /// Usage:
 /// ```dart
@@ -153,6 +208,7 @@ class AppComboChart<T> extends StatelessWidget {
     this.onLineTap,
     this.onBarTapEvent,
     this.onLineTapEvent,
+    this.barDataLabelBuilder,
     this.style = const AppComboChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
@@ -171,6 +227,9 @@ class AppComboChart<T> extends StatelessWidget {
 
   /// Legend label for the line series.
   final String lineSeriesLabel;
+
+  /// Optional label above each bar when `style.showDataLabels` is true.
+  final String? Function(T item, num barValue)? barDataLabelBuilder;
 
   final String? title;
   final String? subtitle;
@@ -194,6 +253,12 @@ class AppComboChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    final resolvedLoadingLabel =
+        style.loadingLabel ?? l10n?.chartComboLoadingDefault;
+    final resolvedEmptyMessage =
+        style.emptyMessage ?? l10n?.chartComboEmptyDefault;
+
     void handleBarTap(T item, int index) {
       onBarTap?.call(item, index);
       onBarTapEvent?.call(
@@ -233,8 +298,11 @@ class AppComboChart<T> extends StatelessWidget {
       onLineTap: (onLineTap == null && onLineTapEvent == null)
           ? null
           : handleLineTap,
+      barDataLabelBuilder: barDataLabelBuilder,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
+      resolvedLoadingLabel: resolvedLoadingLabel,
+      resolvedEmptyMessage: resolvedEmptyMessage,
     );
 
     if (title == null) {

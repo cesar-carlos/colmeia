@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
@@ -11,8 +12,24 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 
 /// Visual customization for [AppComparisonBarChart].
 ///
-/// All properties are optional. Omitted values fall back to the preset-driven
-/// defaults resolved by the internal chart theme helper.
+/// **Horizontal overflow:** use at most one of these for a given chart:
+/// - `enableAutoScroll` — widens the plot and wraps it in a horizontal
+///   scroll view (heavy for many categories).
+/// - `categoryAutoScrollingDelta` with `enableAutoScroll` false — keeps the
+///   layout width and uses Syncfusion category-axis viewport pan when bars
+///   would be narrower than `minBarWidth`.
+///
+/// When `enableAutoScroll` is true, the engine never applies category-axis pan.
+///
+/// **Vertical space:** [height] is the outer box for the Syncfusion chart.
+/// With [showDataLabels] and outer label alignment, the engine applies extra
+/// top margin (see comparison bar chart margin helper) and numeric axis range
+/// padding so labels are not clipped — tightening [height] without adjusting
+/// labels can make bars shorter; prefer tuning [chartPadding] or label
+/// alignment per screen if needed.
+///
+/// All other properties are optional; omitted values fall back to the
+/// preset-driven defaults from the chart theme helper.
 class AppComparisonBarChartStyle {
   const AppComparisonBarChartStyle({
     this.barColor,
@@ -57,6 +74,10 @@ class AppComparisonBarChartStyle {
     this.stickyPrimaryYAxisWidth = 72,
     this.minPlottedValueShareOfMax = 0.03,
     this.strictLinearBarHeights = false,
+    this.categoryAutoScrollingDelta,
+    this.categoryAutoScrollingMode = AutoScrollingMode.start,
+    this.categoryViewportFootnote,
+    this.categoryViewportPanSemanticsLabel,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -249,6 +270,30 @@ class AppComparisonBarChartStyle {
   /// When true, column heights match [AppChartPoint.value] exactly (no minimum
   /// height lift via [AppChartPoint.plottedValue]).
   final bool strictLinearBarHeights;
+
+  /// Syncfusion [CategoryAxis.autoScrollingDelta] when [enableAutoScroll] is
+  /// `false`: show at most this many adjacent categories at once once the bar
+  /// slots would be narrower than [minBarWidth], and let the user pan the plot
+  /// horizontally ([ZoomPanBehavior], [ZoomMode.x]) to see the rest. The chart
+  /// width stays equal to the layout width (unlike [enableAutoScroll], which
+  /// grows the plot and wraps it in a horizontal [ScrollView]).
+  ///
+  /// Ignored when null, when there are fewer points than this value, or when
+  /// bars are already wide enough for the layout.
+  final int? categoryAutoScrollingDelta;
+
+  /// Which end of the category axis [categoryAutoScrollingDelta] anchors to
+  /// when panning is active. Defaults to [AutoScrollingMode.start] (highest-
+  /// priority categories first when data are pre-sorted).
+  final AutoScrollingMode categoryAutoScrollingMode;
+
+  /// Short line shown under the plot when category viewport pan is active
+  /// (helps discovery vs a scrollbar). Ignored when null.
+  final String? categoryViewportFootnote;
+
+  /// Screen reader label when category viewport pan is active.
+  /// Ignored when null (hint may still come from horizontal scroll semantics).
+  final String? categoryViewportPanSemanticsLabel;
 }
 
 /// Structured payload emitted when the user taps a bar.
@@ -379,7 +424,9 @@ class AppComparisonBarChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final values = items.map(valueBuilder).toList(growable: false);
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    final n = items.length;
+    final values = List<num>.generate(n, (i) => valueBuilder(items[i]));
     debugLogSuspiciousComparisonBarSpread(values);
 
     // X-axis label shaping: optional two-line wrap, else optional single-line
@@ -396,14 +443,39 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       return '${raw.substring(0, maxChars)}\u2026';
     }
 
-    final rawPoints = items.indexed
-        .map(
-          (entry) => AppChartPoint(
-            label: formatXLabel(labelBuilder(entry.$2)),
-            value: values[entry.$1],
-          ),
-        )
-        .toList(growable: false);
+    final rawPoints = <AppChartPoint>[];
+    List<Color?>? pointColorsOut;
+    List<String?>? dataLabelsOut;
+    List<String?>? tooltipLabelsOut;
+    if (colorBuilder != null) {
+      pointColorsOut = <Color?>[];
+    }
+    if (style.showDataLabels) {
+      dataLabelsOut = <String?>[];
+    }
+    if (tooltipLabelBuilder != null) {
+      tooltipLabelsOut = <String?>[];
+    }
+    for (var i = 0; i < n; i++) {
+      final item = items[i];
+      final v = values[i];
+      rawPoints.add(
+        AppChartPoint(
+          label: formatXLabel(labelBuilder(item)),
+          value: v,
+        ),
+      );
+      pointColorsOut?.add(colorBuilder!(item));
+      dataLabelsOut?.add(
+        dataLabelBuilder?.call(item, v) ?? v.toString(),
+      );
+      tooltipLabelsOut?.add(
+        _truncateComparisonTooltipLabel(
+          tooltipLabelBuilder!.call(item, v),
+          style.tooltipLabelMaxChars,
+        ),
+      );
+    }
     final points = applyComparisonBarPlotHeightFloor(
       rawPoints,
       style.minPlottedValueShareOfMax,
@@ -436,31 +508,15 @@ class AppComparisonBarChart<T> extends StatelessWidget {
         ),
       );
     }
-    final mergedTitleTrailing =
-        _mergeComparisonTitleTrailing(titleTrailing, floorNoticeTrailing);
+    final mergedTitleTrailing = _mergeComparisonTitleTrailing(
+      titleTrailing,
+      floorNoticeTrailing,
+    );
 
-    final pointColors = colorBuilder != null
-        ? items.map(colorBuilder!).toList(growable: false)
-        : null;
-    final dataLabels = style.showDataLabels
-        ? items.indexed
-              .map(
-                (entry) =>
-                    dataLabelBuilder?.call(entry.$2, values[entry.$1]) ??
-                    values[entry.$1].toString(),
-              )
-              .toList(growable: false)
-        : null;
-    final tooltipLabels = tooltipLabelBuilder != null
-        ? items.indexed
-              .map(
-                (entry) => _truncateComparisonTooltipLabel(
-                  tooltipLabelBuilder!.call(entry.$2, values[entry.$1]),
-                  style.tooltipLabelMaxChars,
-                ),
-              )
-              .toList(growable: false)
-        : null;
+    final resolvedLoadingLabel =
+        style.loadingLabel ?? l10n?.chartComparisonLoadingDefault;
+    final resolvedEmptyMessage =
+        style.emptyMessage ?? l10n?.chartComparisonEmptyDefault;
 
     void handlePointTap(int index) {
       if (index < 0 || index >= items.length || index >= points.length) {
@@ -482,14 +538,16 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       points: points,
       preset: preset,
       style: style,
-      pointColors: pointColors,
-      dataLabels: dataLabels,
-      tooltipLabels: tooltipLabels,
+      pointColors: pointColorsOut,
+      dataLabels: dataLabelsOut,
+      tooltipLabels: tooltipLabelsOut,
       onPointTap: (onPointTap == null && onPointTapEvent == null)
           ? null
           : handlePointTap,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
+      resolvedLoadingLabel: resolvedLoadingLabel,
+      resolvedEmptyMessage: resolvedEmptyMessage,
     );
 
     if (semanticsCoordinatorLabel != null &&

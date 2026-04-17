@@ -284,6 +284,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Revenue by operator in the period.';
 
   @override
+  String get overviewAgentRankingEmpty => 'No agent revenue in this period.';
+
+  @override
+  String get overviewUserRankingEmpty => 'No operator revenue in this period.';
+
+  @override
   String get overviewDefaultGreetingName => 'Manager';
 
   @override
@@ -353,6 +359,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overviewMonthlyParcelsChartSemantics =>
       'Last twelve months sales and parcel amount chart';
+
+  @override
+  String get overviewMonthlyParcelsSubtitleValueView =>
+      'Parcel totals and sales counts by month (all branches in scope).';
+
+  @override
+  String get overviewMonthlyParcelsSwitchSalesLabel => 'Sales';
+
+  @override
+  String get overviewMonthlyParcelsSwitchValueLabel => 'Parcel value';
+
+  @override
+  String get overviewMonthlyParcelsChartSemanticsValueView =>
+      'Last twelve months parcel amounts and sales counts chart';
 
   @override
   String get overviewWeekdaySalesTitle => 'Sales by weekday';
@@ -469,6 +489,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Total amount accumulated in the period.';
 
   @override
+  String get overviewPaymentBarEmpty =>
+      'No payment method revenue in this period.';
+
+  @override
   String overviewPaymentBarTooltip(String label, String amount) {
     return '$label: $amount';
   }
@@ -487,6 +511,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chartComparisonExtremeValueSpreadNotice =>
       'Some values differ by orders of magnitude; check units or aggregation if totals look wrong.';
+
+  @override
+  String get chartComparisonLoadingDefault => 'Loading comparison chart…';
+
+  @override
+  String get chartComparisonEmptyDefault => 'Nothing to compare right now.';
+
+  @override
+  String get chartComparisonPanGestureHint =>
+      'Swipe the chart sideways to see more categories.';
+
+  @override
+  String get chartComboLoadingDefault => 'Loading bar and line chart…';
+
+  @override
+  String get chartComboEmptyDefault => 'No combined data for this view.';
+
+  @override
+  String get chartComboPanGestureHint =>
+      'Swipe sideways along the chart to see more periods.';
+
+  @override
+  String chartComboPanChartA11y(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bar and line chart, $count categories.',
+      one: 'Bar and line chart, one category.',
+    );
+    return '$_temp0 Swipe horizontally to see all.';
+  }
+
+  @override
+  String chartComparisonPanChartA11y(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bar chart, $count categories.',
+      one: 'Bar chart, one category.',
+    );
+    return '$_temp0 Swipe the chart horizontally to see all.';
+  }
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {

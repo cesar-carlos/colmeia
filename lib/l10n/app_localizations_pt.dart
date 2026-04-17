@@ -289,6 +289,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Faturamento por operador no periodo.';
 
   @override
+  String get overviewAgentRankingEmpty =>
+      'Sem faturamento por agente neste período.';
+
+  @override
+  String get overviewUserRankingEmpty =>
+      'Sem faturamento por operador neste período.';
+
+  @override
   String get overviewDefaultGreetingName => 'Gestor';
 
   @override
@@ -335,7 +343,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLoadingWeekdaySalesSemantics =>
-      'Carregando grafico de vendas por dia da semana…';
+      'Loading sales by weekday chart…';
 
   @override
   String get overviewMonthlyParcelsTitle => 'Ultimos 12 meses';
@@ -363,34 +371,47 @@ class AppLocalizationsPt extends AppLocalizations {
       'Grafico dos ultimos doze meses de vendas e valor em parcelas';
 
   @override
-  String get overviewWeekdaySalesTitle => 'Vendas por dia da semana';
+  String get overviewMonthlyParcelsSubtitleValueView =>
+      'Total em parcelas e quantidade de vendas por mes (todas as filiais no escopo).';
 
   @override
-  String get overviewWeekdayRevenueTitle => 'Faturamento por dia da semana';
+  String get overviewMonthlyParcelsSwitchSalesLabel => 'Vendas';
+
+  @override
+  String get overviewMonthlyParcelsSwitchValueLabel => 'Valor';
+
+  @override
+  String get overviewMonthlyParcelsChartSemanticsValueView =>
+      'Grafico dos ultimos doze meses de valor em parcelas e vendas';
+
+  @override
+  String get overviewWeekdaySalesTitle => 'Sales by weekday';
+
+  @override
+  String get overviewWeekdayRevenueTitle => 'Revenue by weekday';
 
   @override
   String get overviewWeekdaySalesSubtitle =>
-      'Distribuicao por dia da semana no periodo selecionado (todas as filiais no escopo).';
+      'Weekday distribution in the selected period (all branches in scope).';
 
   @override
-  String get overviewWeekdaySalesEmpty =>
-      'Sem dados por dia da semana para este periodo.';
+  String get overviewWeekdaySalesEmpty => 'No weekday data for this period.';
 
   @override
   String get overviewWeekdaySalesLoadFailed =>
-      'Nao foi possivel carregar o grafico por dia da semana. Tente novamente mais tarde.';
+      'Could not load the weekday chart. Try again later.';
 
   @override
   String get overviewWeekdaySalesChartSemantics =>
-      'Grafico de vendas e valor em parcelas por dia da semana';
+      'Weekday sales count and parcel amount chart';
 
   @override
   String get overviewWeekdayRevenueChartSemantics =>
-      'Grafico de faturamento e quantidade de vendas por dia da semana';
+      'Weekday revenue and sales count chart';
 
   @override
   String get overviewWeekdayChartScopeHint =>
-      'Agregado em todas as filiais do escopo selecionado.';
+      'Aggregated across all branches in the selected scope.';
 
   @override
   String overviewWeekdaySalesTooltip(
@@ -398,14 +419,14 @@ class AppLocalizationsPt extends AppLocalizations {
     String salesCount,
     String salesAmount,
   ) {
-    return '$weekday: $salesCount vendas - $salesAmount';
+    return '$weekday: $salesCount sales - $salesAmount';
   }
 
   @override
-  String get overviewWeekdayMetricSalesCountLabel => 'Vendas';
+  String get overviewWeekdayMetricSalesCountLabel => 'Sales';
 
   @override
-  String get overviewWeekdayMetricSalesAmountLabel => 'Faturamento';
+  String get overviewWeekdayMetricSalesAmountLabel => 'Revenue';
 
   @override
   String overviewWeekdaySalesSummarySemantics(
@@ -414,7 +435,7 @@ class AppLocalizationsPt extends AppLocalizations {
     String topWeekday,
     String topSalesCount,
   ) {
-    return 'Total de $totalSalesCount vendas e $totalSalesAmount no periodo selecionado. Dia com maior volume: $topWeekday, com $topSalesCount vendas.';
+    return 'Total $totalSalesCount sales and $totalSalesAmount in the selected period. Highest day: $topWeekday with $topSalesCount sales.';
   }
 
   @override
@@ -424,29 +445,29 @@ class AppLocalizationsPt extends AppLocalizations {
     String topWeekday,
     String topSalesAmount,
   ) {
-    return 'Total de $totalSalesAmount e $totalSalesCount vendas no periodo selecionado. Dia com maior valor: $topWeekday, com $topSalesAmount.';
+    return 'Total $totalSalesAmount and $totalSalesCount sales in the selected period. Highest day: $topWeekday with $topSalesAmount.';
   }
 
   @override
-  String get overviewWeekdaySunday => 'Domingo';
+  String get overviewWeekdaySunday => 'Sunday';
 
   @override
-  String get overviewWeekdayMonday => 'Segunda-feira';
+  String get overviewWeekdayMonday => 'Monday';
 
   @override
-  String get overviewWeekdayTuesday => 'Terca-feira';
+  String get overviewWeekdayTuesday => 'Tuesday';
 
   @override
-  String get overviewWeekdayWednesday => 'Quarta-feira';
+  String get overviewWeekdayWednesday => 'Wednesday';
 
   @override
-  String get overviewWeekdayThursday => 'Quinta-feira';
+  String get overviewWeekdayThursday => 'Thursday';
 
   @override
-  String get overviewWeekdayFriday => 'Sexta-feira';
+  String get overviewWeekdayFriday => 'Friday';
 
   @override
-  String get overviewWeekdaySaturday => 'Sabado';
+  String get overviewWeekdaySaturday => 'Saturday';
 
   @override
   String get overviewKpiTotalRevenue => 'Faturamento total';
@@ -477,6 +498,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewPaymentBarSubtitle => 'Valor total acumulado no periodo.';
 
   @override
+  String get overviewPaymentBarEmpty =>
+      'Sem faturamento por forma de pagamento neste periodo.';
+
+  @override
   String overviewPaymentBarTooltip(String label, String amount) {
     return '$label: $amount';
   }
@@ -496,6 +521,50 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get chartComparisonExtremeValueSpreadNotice =>
       'Há valores em ordens de grandeza muito diferentes; verifique unidades ou agregação se os totais parecerem incorretos.';
+
+  @override
+  String get chartComparisonLoadingDefault => 'Carregando gráfico comparativo…';
+
+  @override
+  String get chartComparisonEmptyDefault => 'Nada para comparar no momento.';
+
+  @override
+  String get chartComparisonPanGestureHint =>
+      'Deslize o gráfico horizontalmente para ver mais categorias.';
+
+  @override
+  String get chartComboLoadingDefault =>
+      'Carregando gráfico de barras e linha…';
+
+  @override
+  String get chartComboEmptyDefault =>
+      'Sem dados combinados para este recorte.';
+
+  @override
+  String get chartComboPanGestureHint =>
+      'Deslize horizontalmente no grafico para ver mais periodos.';
+
+  @override
+  String chartComboPanChartA11y(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Grafico de barras e linha, $count categorias.',
+      one: 'Grafico de barras e linha, uma categoria.',
+    );
+    return '$_temp0 Deslize horizontalmente para ver todas.';
+  }
+
+  @override
+  String chartComparisonPanChartA11y(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Gráfico de barras, $count categorias.',
+      one: 'Gráfico de barras, uma categoria.',
+    );
+    return '$_temp0 Deslize o gráfico horizontalmente para ver todas.';
+  }
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -2126,6 +2195,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Faturamento por operador no periodo.';
 
   @override
+  String get overviewAgentRankingEmpty =>
+      'Sem faturamento por agente neste período.';
+
+  @override
+  String get overviewUserRankingEmpty =>
+      'Sem faturamento por operador neste período.';
+
+  @override
   String get overviewDefaultGreetingName => 'Gestor';
 
   @override
@@ -2196,6 +2273,20 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Grafico dos ultimos doze meses de vendas e valor em parcelas';
 
   @override
+  String get overviewMonthlyParcelsSubtitleValueView =>
+      'Total em parcelas e quantidade de vendas por mes (todas as filiais no escopo).';
+
+  @override
+  String get overviewMonthlyParcelsSwitchSalesLabel => 'Vendas';
+
+  @override
+  String get overviewMonthlyParcelsSwitchValueLabel => 'Valor';
+
+  @override
+  String get overviewMonthlyParcelsChartSemanticsValueView =>
+      'Grafico dos ultimos doze meses de valor em parcelas e vendas';
+
+  @override
   String get overviewKpiTotalRevenue => 'Faturamento total';
 
   @override
@@ -2224,6 +2315,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get overviewPaymentBarSubtitle => 'Valor total acumulado no periodo.';
 
   @override
+  String get overviewPaymentBarEmpty =>
+      'Sem faturamento por forma de pagamento neste periodo.';
+
+  @override
   String overviewPaymentBarTooltip(String label, String amount) {
     return '$label: $amount';
   }
@@ -2243,6 +2338,50 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get chartComparisonExtremeValueSpreadNotice =>
       'Há valores em ordens de grandeza muito diferentes; verifique unidades ou agregação se os totais parecerem incorretos.';
+
+  @override
+  String get chartComparisonLoadingDefault => 'Carregando gráfico comparativo…';
+
+  @override
+  String get chartComparisonEmptyDefault => 'Nada para comparar no momento.';
+
+  @override
+  String get chartComparisonPanGestureHint =>
+      'Deslize o gráfico horizontalmente para ver mais categorias.';
+
+  @override
+  String get chartComboLoadingDefault =>
+      'Carregando gráfico de barras e linha…';
+
+  @override
+  String get chartComboEmptyDefault =>
+      'Sem dados combinados para este recorte.';
+
+  @override
+  String get chartComboPanGestureHint =>
+      'Deslize horizontalmente no grafico para ver mais periodos.';
+
+  @override
+  String chartComboPanChartA11y(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Grafico de barras e linha, $count categorias.',
+      one: 'Grafico de barras e linha, uma categoria.',
+    );
+    return '$_temp0 Deslize horizontalmente para ver todas.';
+  }
+
+  @override
+  String chartComparisonPanChartA11y(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Gráfico de barras, $count categorias.',
+      one: 'Gráfico de barras, uma categoria.',
+    );
+    return '$_temp0 Deslize o gráfico horizontalmente para ver todas.';
+  }
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {

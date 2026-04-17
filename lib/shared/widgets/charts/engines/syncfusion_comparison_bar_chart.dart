@@ -1,11 +1,12 @@
 import 'dart:math' as math;
 
-import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
+import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -22,6 +23,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
     this.onPointTap,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.resolvedLoadingLabel,
+    this.resolvedEmptyMessage,
   });
 
   final List<AppChartPoint> points;
@@ -33,6 +36,12 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
   final ValueChanged<int>? onPointTap;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+
+  /// Falls back to [AppComparisonBarChartStyle.loadingLabel], then English.
+  final String? resolvedLoadingLabel;
+
+  /// Falls back to [AppComparisonBarChartStyle.emptyMessage], then English.
+  final String? resolvedEmptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +55,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: chartTheme.primaryColor,
-        label: style.loadingLabel ?? 'Carregando comparativo...',
+        label:
+            resolvedLoadingLabel ??
+            style.loadingLabel ??
+            'Loading comparison chart…',
       );
     }
 
@@ -54,7 +66,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
       return buildChartEmptyState(
         context: context,
         height: resolvedHeight,
-        message: style.emptyMessage ?? 'Sem dados comparativos para exibir.',
+        message:
+            resolvedEmptyMessage ??
+            style.emptyMessage ??
+            'Nothing to compare right now.',
         placeholder: emptyPlaceholder,
       );
     }
@@ -97,13 +112,32 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
       required bool xAxisLabelsVisible,
       required bool yAxisGridVisible,
       required bool enableInteraction,
+      required bool enableCategoryViewportPan,
     }) {
       final resolvedSpacing = spacingForSlotWidth(slotWidth);
       final resolvedRotation = xLabelRotationForSlotWidth(slotWidth);
+      final delta = style.categoryAutoScrollingDelta;
+      final useCategoryAxisPan =
+          enableCategoryViewportPan &&
+          enableInteraction &&
+          delta != null &&
+          delta > 0;
       return SfCartesianChart(
-        margin: _comparisonBarChartMargin(chartContext, style),
+        margin: resolveComparisonBarChartMargin(
+          chartContext,
+          showDataLabels: style.showDataLabels,
+          dataLabelAlignment: style.dataLabelAlignment,
+          dataLabelOffset: style.dataLabelOffset,
+          chartPadding: style.chartPadding,
+        ),
         plotAreaBorderWidth: 0,
         plotAreaBackgroundColor: style.plotAreaBackgroundColor,
+        zoomPanBehavior: useCategoryAxisPan
+            ? ZoomPanBehavior(
+                enablePanning: true,
+                zoomMode: ZoomMode.x,
+              )
+            : null,
         onDataLabelRender: style.showDataLabels && enableInteraction
             ? (args) {
                 final pointIndex = args.pointIndex;
@@ -160,11 +194,19 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             text: xAxisLabelsVisible ? (style.xAxisTitle ?? '') : '',
             textStyle: style.axisLabelTextStyle,
           ),
+          autoScrollingDelta: useCategoryAxisPan ? delta : null,
+          autoScrollingMode: style.categoryAutoScrollingMode,
         ),
         primaryYAxis: NumericAxis(
           isVisible: style.showYAxis,
-          rangePadding: _needsOuterDataLabelHeadroom(style)
-              ? ChartRangePadding.additionalEnd
+          rangePadding:
+              comparisonBarChartNeedsOuterDataLabelHeadroom(
+                showDataLabels: style.showDataLabels,
+                dataLabelAlignment: style.dataLabelAlignment,
+              )
+              // additionalEnd stacks with chart margin top; normal keeps labels
+              // readable without a second tall empty band inside the plot.
+              ? ChartRangePadding.normal
               : ChartRangePadding.auto,
           axisLine: const AxisLine(width: 0),
           // Column charts must anchor at zero when [style.minY] is unset.
@@ -254,8 +296,25 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           }
 
           final n = points.length;
+          final delta = style.categoryAutoScrollingDelta;
+          final crowded = n > 1 && (layoutWidth / n) < minBarWidth;
+          final useCategoryViewportPan =
+              !style.enableAutoScroll &&
+              delta != null &&
+              delta > 0 &&
+              n > delta &&
+              crowded;
+          final slotDenom = useCategoryViewportPan ? math.min(n, delta) : n;
+          final footRaw = style.categoryViewportFootnote?.trim();
+          final showPanFootnote =
+              useCategoryViewportPan && footRaw != null && footRaw.isNotEmpty;
 
-          Widget sizedBarChart(double width, double slotW, double chartHeight) {
+          Widget sizedBarChart(
+            double width,
+            double slotW,
+            double chartHeight, {
+            required bool categoryViewportPan,
+          }) {
             return SizedBox(
               width: width,
               height: chartHeight,
@@ -266,13 +325,53 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 xAxisLabelsVisible: true,
                 yAxisGridVisible: true,
                 enableInteraction: true,
+                enableCategoryViewportPan: categoryViewportPan,
               ),
             );
           }
 
           if (!style.enableAutoScroll) {
-            final slotW = layoutWidth / n;
-            return sizedBarChart(layoutWidth, slotW, resolvedHeight);
+            final slotW = layoutWidth / slotDenom;
+            final footText = footRaw ?? '';
+            // Pan footnote layout matches [SyncfusionComboChart] (shared
+            // [ChartPanFootnoteColumn]).
+            var chart = showPanFootnote
+                ? ChartPanFootnoteColumn(
+                    plot: SizedBox(
+                      width: layoutWidth,
+                      child: buildChart(
+                        context,
+                        slotW,
+                        yAxisLabelsVisible: true,
+                        xAxisLabelsVisible: true,
+                        yAxisGridVisible: true,
+                        enableInteraction: true,
+                        enableCategoryViewportPan: useCategoryViewportPan,
+                      ),
+                    ),
+                    footnoteText: footText,
+                  )
+                : sizedBarChart(
+                    layoutWidth,
+                    slotW,
+                    resolvedHeight,
+                    categoryViewportPan: useCategoryViewportPan,
+                  );
+            if (useCategoryViewportPan) {
+              final panLabel = style.categoryViewportPanSemanticsLabel?.trim();
+              final hint = style.horizontalScrollSemanticsHint?.trim();
+              if ((panLabel != null && panLabel.isNotEmpty) ||
+                  (hint != null && hint.isNotEmpty)) {
+                chart = Semantics(
+                  label: (panLabel != null && panLabel.isNotEmpty)
+                      ? panLabel
+                      : null,
+                  hint: (hint != null && hint.isNotEmpty) ? hint : null,
+                  child: chart,
+                );
+              }
+            }
+            return chart;
           }
 
           final requiredFull = math.max(layoutWidth, minBarWidth * n);
@@ -280,7 +379,12 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
 
           if (!needsScroll) {
             final slotW = layoutWidth / n;
-            return sizedBarChart(layoutWidth, slotW, resolvedHeight);
+            return sizedBarChart(
+              layoutWidth,
+              slotW,
+              resolvedHeight,
+              categoryViewportPan: false,
+            );
           }
 
           const scrollSlot = kChartHorizontalScrollBottomTrackSlot;
@@ -296,7 +400,12 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
 
           if (!sticky) {
             return ChartHorizontalScrollShell(
-              sizedBarChart(requiredPlot, slotW, chartBodyHeight),
+              sizedBarChart(
+                requiredPlot,
+                slotW,
+                chartBodyHeight,
+                categoryViewportPan: false,
+              ),
               bottomTrackSlot: scrollSlot,
               showFade: style.showScrollFade,
               semanticsHint: style.horizontalScrollSemanticsHint,
@@ -317,6 +426,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                   xAxisLabelsVisible: false,
                   yAxisGridVisible: false,
                   enableInteraction: false,
+                  enableCategoryViewportPan: false,
                 ),
               ),
             ),
@@ -332,6 +442,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
               xAxisLabelsVisible: true,
               yAxisGridVisible: true,
               enableInteraction: true,
+              enableCategoryViewportPan: false,
             ),
           );
 
@@ -363,46 +474,6 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.92)
         : Colors.black.withValues(alpha: 0.88);
   }
-}
-
-/// Outer/auto data labels sit above column tops; a positive label offset moves
-/// them further up. Reserve extra chart margin at the top so labels are not
-/// clipped by the plot bounds.
-EdgeInsets _comparisonBarChartMargin(
-  BuildContext context,
-  AppComparisonBarChartStyle style,
-) {
-  final base = style.chartPadding ?? EdgeInsets.zero;
-  if (!_needsOuterDataLabelHeadroom(style)) {
-    return base;
-  }
-  final theme = Theme.of(context);
-  final tokens = theme.extension<AppThemeTokens>();
-  final bodyStyle =
-      theme.textTheme.bodySmall ??
-      theme.textTheme.bodyMedium ??
-      theme.textTheme.bodyLarge;
-  final fontSize = bodyStyle?.fontSize ?? 12.0;
-  final heightFactor = bodyStyle?.height ?? 1.25;
-  final estimatedLineHeight = (fontSize * heightFactor).clamp(14.0, 32.0);
-  final extraGap = tokens?.gapSm ?? 8.0;
-  final lift = style.dataLabelOffset?.dy ?? 0;
-  final headroomBoost = (tokens?.contentSpacing ?? 16.0) * 2;
-  final minTop = estimatedLineHeight + lift.abs() + extraGap + headroomBoost;
-  final top = math.max(base.top, minTop);
-  return EdgeInsets.fromLTRB(base.left, top, base.right, base.bottom);
-}
-
-bool _needsOuterDataLabelHeadroom(AppComparisonBarChartStyle style) {
-  if (!style.showDataLabels) {
-    return false;
-  }
-  return switch (style.dataLabelAlignment) {
-    ChartDataLabelAlignment.middle ||
-    ChartDataLabelAlignment.top ||
-    ChartDataLabelAlignment.bottom => false,
-    ChartDataLabelAlignment.auto || ChartDataLabelAlignment.outer => true,
-  };
 }
 
 // Minimum pixel width reserved per bar slot (bar + gap).

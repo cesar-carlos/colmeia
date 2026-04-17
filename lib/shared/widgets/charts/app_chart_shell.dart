@@ -12,6 +12,7 @@ class AppChartShell extends StatelessWidget {
     this.subtitle,
     this.titleTrailing,
     this.belowSubtitle,
+    this.cardPadding,
   });
 
   /// Plain-text chart title. Shown as a styled [Text] unless [titleWidget]
@@ -34,13 +35,27 @@ class AppChartShell extends StatelessWidget {
   /// e.g. period [SegmentedButton] between subtitle and chart.
   final Widget? belowSubtitle;
 
+  /// Optional [AppSectionCard] padding. When null, uses horizontal/top
+  /// [AppThemeTokens.contentSpacing] and bottom [AppThemeTokens.gapMd].
+  final EdgeInsetsGeometry? cardPadding;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
 
+    final resolvedCardPadding =
+        cardPadding ??
+        EdgeInsets.fromLTRB(
+          tokens.contentSpacing,
+          tokens.contentSpacing,
+          tokens.contentSpacing,
+          tokens.gapMd,
+        );
+
     return AppSectionCard(
+      padding: resolvedCardPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

@@ -20,7 +20,8 @@ class OverviewRankingsSection extends StatefulWidget {
   final List<OverviewUserRanking> userRankings;
 
   @override
-  State<OverviewRankingsSection> createState() => _OverviewRankingsSectionState();
+  State<OverviewRankingsSection> createState() =>
+      _OverviewRankingsSectionState();
 }
 
 class _OverviewRankingsSectionState extends State<OverviewRankingsSection> {
@@ -32,13 +33,21 @@ class _OverviewRankingsSectionState extends State<OverviewRankingsSection> {
   void _recomputeSortedIfNeeded() {
     if (!identical(_agentsRef, widget.agentRankings)) {
       _agentsRef = widget.agentRankings;
-      _sortedAgents = List<OverviewAgentRanking>.of(widget.agentRankings)
+      final sorted = List<OverviewAgentRanking>.of(widget.agentRankings)
         ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+      _sortedAgents = [
+        for (final a in sorted)
+          if (a.totalAmount > 0) a,
+      ];
     }
     if (!identical(_usersRef, widget.userRankings)) {
       _usersRef = widget.userRankings;
-      _sortedUsers = List<OverviewUserRanking>.of(widget.userRankings)
+      final sorted = List<OverviewUserRanking>.of(widget.userRankings)
         ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+      _sortedUsers = [
+        for (final u in sorted)
+          if (u.totalAmount > 0) u,
+      ];
     }
   }
 
@@ -89,6 +98,7 @@ class OverviewAgentRankingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final showEmpty = agentRankings.isEmpty;
     return AppComparisonBarChart<OverviewAgentRanking>(
       title: l10n.dashboardAgentRankingTitle,
       subtitle: l10n.dashboardAgentRankingSubtitle,
@@ -105,7 +115,20 @@ class OverviewAgentRankingCard extends StatelessWidget {
         tokens: tokens,
         kind: OverviewHomeBarChartKind.ranking,
         l10n: l10n,
+        comparisonCategoryCount: showEmpty ? null : agentRankings.length,
       ),
+      emptyPlaceholder: showEmpty
+          ? Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
+              child: Center(
+                child: Text(
+                  l10n.overviewAgentRankingEmpty,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }
@@ -123,6 +146,7 @@ class OverviewUserRankingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final showEmpty = userRankings.isEmpty;
     return AppComparisonBarChart<OverviewUserRanking>(
       title: l10n.dashboardUserRankingTitle,
       subtitle: l10n.dashboardUserRankingSubtitle,
@@ -139,7 +163,20 @@ class OverviewUserRankingCard extends StatelessWidget {
         tokens: tokens,
         kind: OverviewHomeBarChartKind.ranking,
         l10n: l10n,
+        comparisonCategoryCount: showEmpty ? null : userRankings.length,
       ),
+      emptyPlaceholder: showEmpty
+          ? Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
+              child: Center(
+                child: Text(
+                  l10n.overviewUserRankingEmpty,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

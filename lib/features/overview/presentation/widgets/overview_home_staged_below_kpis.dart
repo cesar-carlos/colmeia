@@ -34,7 +34,8 @@ class OverviewHomeStagedBelowKpis extends StatefulWidget {
       _OverviewHomeStagedBelowKpisState();
 }
 
-class _OverviewHomeStagedBelowKpisState extends State<OverviewHomeStagedBelowKpis> {
+class _OverviewHomeStagedBelowKpisState
+    extends State<OverviewHomeStagedBelowKpis> {
   /// 0 = placeholders only. 1 = mix … 5 = agent ranking, 6 = + user ranking.
   int _belowKpisStage = 0;
 
@@ -127,16 +128,24 @@ class _OverviewHomeStagedBelowKpisState extends State<OverviewHomeStagedBelowKpi
   }
 
   ({List<OverviewAgentRanking> agents, List<OverviewUserRanking> users})
-      _sortedRankings(Overview overview) {
+  _sortedRankings(Overview overview) {
     if (identical(_sortedListsSource, overview) &&
         _sortedAgentsCache != null &&
         _sortedUsersCache != null) {
       return (agents: _sortedAgentsCache!, users: _sortedUsersCache!);
     }
-    final agents = List<OverviewAgentRanking>.of(overview.agentRankings)
+    final agentsSorted = List<OverviewAgentRanking>.of(overview.agentRankings)
       ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
-    final users = List<OverviewUserRanking>.of(overview.userRankings)
+    final agents = [
+      for (final a in agentsSorted)
+        if (a.totalAmount > 0) a,
+    ];
+    final usersSorted = List<OverviewUserRanking>.of(overview.userRankings)
       ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
+    final users = [
+      for (final u in usersSorted)
+        if (u.totalAmount > 0) u,
+    ];
     _sortedListsSource = overview;
     _sortedAgentsCache = agents;
     _sortedUsersCache = users;
@@ -154,6 +163,8 @@ class _OverviewHomeStagedBelowKpisState extends State<OverviewHomeStagedBelowKpi
     final showSkeleton = widget.showSkeleton;
     final displayOverview = widget.displayOverview;
     final chartBlockHeight = tokens.chartStandardHeight + tokens.contentSpacing;
+    final paymentBarChartHeight =
+        tokens.chartStandardHeight + tokens.contentSpacing * 2;
 
     if (showSkeleton) {
       return Column(
@@ -223,14 +234,15 @@ class _OverviewHomeStagedBelowKpisState extends State<OverviewHomeStagedBelowKpi
           SizedBox(height: tokens.sectionSpacing),
           const SizedBox(height: _mixPlaceholderHeight),
           SizedBox(height: tokens.sectionSpacing),
-          SizedBox(height: chartBlockHeight),
+          SizedBox(height: paymentBarChartHeight),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: chartBlockHeight),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: chartBlockHeight),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(
-            height: chartBlockHeight +
+            height:
+                chartBlockHeight +
                 tokens.sectionSpacing +
                 _userRankingPlaceholderHeight(tokens),
           ),
@@ -268,7 +280,7 @@ class _OverviewHomeStagedBelowKpisState extends State<OverviewHomeStagedBelowKpi
                     methods: overview.paymentMethods,
                   ),
                 )
-              : SizedBox(height: chartBlockHeight),
+              : SizedBox(height: paymentBarChartHeight),
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
@@ -307,7 +319,8 @@ class _OverviewHomeStagedBelowKpisState extends State<OverviewHomeStagedBelowKpi
           loadingSemanticsLabel: l10n.overviewLoadingRankingsSemantics,
           child: _belowKpisStage < 5
               ? SizedBox(
-                  height: chartBlockHeight +
+                  height:
+                      chartBlockHeight +
                       tokens.sectionSpacing +
                       _userRankingPlaceholderHeight(tokens),
                 )

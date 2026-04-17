@@ -591,6 +591,18 @@ abstract class AppLocalizations {
   /// **'Revenue by operator in the period.'**
   String get dashboardUserRankingSubtitle;
 
+  /// No description provided for @overviewAgentRankingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No agent revenue in this period.'**
+  String get overviewAgentRankingEmpty;
+
+  /// No description provided for @overviewUserRankingEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No operator revenue in this period.'**
+  String get overviewUserRankingEmpty;
+
   /// No description provided for @overviewDefaultGreetingName.
   ///
   /// In en, this message translates to:
@@ -710,6 +722,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last twelve months sales and parcel amount chart'**
   String get overviewMonthlyParcelsChartSemantics;
+
+  /// No description provided for @overviewMonthlyParcelsSubtitleValueView.
+  ///
+  /// In en, this message translates to:
+  /// **'Parcel totals and sales counts by month (all branches in scope).'**
+  String get overviewMonthlyParcelsSubtitleValueView;
+
+  /// No description provided for @overviewMonthlyParcelsSwitchSalesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get overviewMonthlyParcelsSwitchSalesLabel;
+
+  /// No description provided for @overviewMonthlyParcelsSwitchValueLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parcel value'**
+  String get overviewMonthlyParcelsSwitchValueLabel;
+
+  /// No description provided for @overviewMonthlyParcelsChartSemanticsValueView.
+  ///
+  /// In en, this message translates to:
+  /// **'Last twelve months parcel amounts and sales counts chart'**
+  String get overviewMonthlyParcelsChartSemanticsValueView;
 
   /// Card title when the weekday overview chart is plotting sales count.
   ///
@@ -899,6 +935,12 @@ abstract class AppLocalizations {
   /// **'Total amount accumulated in the period.'**
   String get overviewPaymentBarSubtitle;
 
+  /// Shown when every payment method has zero revenue for the period.
+  ///
+  /// In en, this message translates to:
+  /// **'No payment method revenue in this period.'**
+  String get overviewPaymentBarEmpty;
+
   /// No description provided for @overviewPaymentBarTooltip.
   ///
   /// In en, this message translates to:
@@ -928,6 +970,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Some values differ by orders of magnitude; check units or aggregation if totals look wrong.'**
   String get chartComparisonExtremeValueSpreadNotice;
+
+  /// No description provided for @chartComparisonLoadingDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading comparison chart…'**
+  String get chartComparisonLoadingDefault;
+
+  /// No description provided for @chartComparisonEmptyDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to compare right now.'**
+  String get chartComparisonEmptyDefault;
+
+  /// No description provided for @chartComparisonPanGestureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe the chart sideways to see more categories.'**
+  String get chartComparisonPanGestureHint;
+
+  /// No description provided for @chartComboLoadingDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading bar and line chart…'**
+  String get chartComboLoadingDefault;
+
+  /// No description provided for @chartComboEmptyDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'No combined data for this view.'**
+  String get chartComboEmptyDefault;
+
+  /// Footer hint when category-axis pan is enabled on bar+line combo charts.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe sideways along the chart to see more periods.'**
+  String get chartComboPanGestureHint;
+
+  /// Screen reader summary when the combo chart uses horizontal pan on the category axis.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Bar and line chart, one category.} other{Bar and line chart, {count} categories.}} Swipe horizontally to see all.'**
+  String chartComboPanChartA11y(int count);
+
+  /// Screen reader summary when the comparison chart uses horizontal panning for categories.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Bar chart, one category.} other{Bar chart, {count} categories.}} Swipe the chart horizontally to see all.'**
+  String chartComparisonPanChartA11y(int count);
 
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///

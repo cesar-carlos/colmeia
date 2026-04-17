@@ -35,6 +35,20 @@ class _OverviewWeekdaySalesTrendChartState
     extends State<OverviewWeekdaySalesTrendChart> {
   _OverviewWeekdayMetric _metric = _OverviewWeekdayMetric.salesCount;
 
+  /// Bars for the selected metric only; zero values are omitted from the plot.
+  List<OverviewWeekdaySalesTrendPoint> _chartPointsNonZero() {
+    if (_metric == _OverviewWeekdayMetric.salesCount) {
+      return [
+        for (final p in widget.points)
+          if (p.salesCount > 0) p,
+      ];
+    }
+    return [
+      for (final p in widget.points)
+        if (p.salesAmount > 0) p,
+    ];
+  }
+
   List<OverviewWeekdaySalesTrendPoint>? _semanticsPointsRef;
   _OverviewWeekdayMetric? _semanticsMetric;
   bool? _semanticsLoadFailed;
@@ -88,6 +102,9 @@ class _OverviewWeekdaySalesTrendChartState
       l10n: l10n,
       salesCountFormat: salesCountFormat,
     );
+    final chartPoints = _chartPointsNonZero();
+    final showEmptyPlaceholder =
+        widget.points.isEmpty || chartPoints.isEmpty;
 
     return Semantics(
       label: isSalesCount
@@ -114,7 +131,7 @@ class _OverviewWeekdaySalesTrendChartState
           value: _metric,
           onChanged: (value) => setState(() => _metric = value),
         ),
-        items: widget.points,
+        items: chartPoints,
         plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
         extremeSpreadAccessibilityNotice:
             l10n.chartComparisonExtremeValueSpreadNotice,
@@ -135,8 +152,10 @@ class _OverviewWeekdaySalesTrendChartState
           kind: OverviewHomeBarChartKind.weekday,
           l10n: l10n,
           weekdayUsesCurrencyAxis: !isSalesCount,
+          comparisonCategoryCount:
+              chartPoints.isEmpty ? null : chartPoints.length,
         ),
-        emptyPlaceholder: widget.points.isEmpty
+        emptyPlaceholder: showEmptyPlaceholder
             ? Padding(
                 padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
                 child: Center(

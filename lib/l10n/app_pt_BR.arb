@@ -97,6 +97,8 @@
   "dashboardAgentRankingSubtitle": "Faturamento total por agente no periodo.",
   "dashboardUserRankingTitle": "Ranking por operador",
   "dashboardUserRankingSubtitle": "Faturamento por operador no periodo.",
+  "overviewAgentRankingEmpty": "Sem faturamento por agente neste período.",
+  "overviewUserRankingEmpty": "Sem faturamento por operador neste período.",
   "overviewDefaultGreetingName": "Gestor",
   "overviewGreetingEyebrow": "Olá, {name}",
   "@overviewGreetingEyebrow": {
@@ -121,6 +123,10 @@
   "overviewMonthlyParcelsEmpty": "Sem dados mensais para este periodo.",
   "overviewMonthlyParcelsLoadFailed": "Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.",
   "overviewMonthlyParcelsChartSemantics": "Grafico dos ultimos doze meses de vendas e valor em parcelas",
+  "overviewMonthlyParcelsSubtitleValueView": "Total em parcelas e quantidade de vendas por mes (todas as filiais no escopo).",
+  "overviewMonthlyParcelsSwitchSalesLabel": "Vendas",
+  "overviewMonthlyParcelsSwitchValueLabel": "Valor",
+  "overviewMonthlyParcelsChartSemanticsValueView": "Grafico dos ultimos doze meses de valor em parcelas e vendas",
   "overviewKpiTotalRevenue": "Faturamento total",
   "overviewKpiSales": "Vendas",
   "overviewKpiAvgTicket": "Ticket medio",
@@ -130,6 +136,10 @@
   "overviewPaymentMixDonutTotalLabel": "TOTAL",
   "overviewPaymentBarTitle": "Faturamento por forma de pagamento",
   "overviewPaymentBarSubtitle": "Valor total acumulado no periodo.",
+  "overviewPaymentBarEmpty": "Sem faturamento por forma de pagamento neste periodo.",
+  "@overviewPaymentBarEmpty": {
+    "description": "Exibido quando todas as formas de pagamento estao com faturamento zero no periodo."
+  },
   "overviewPaymentBarTooltip": "{label}: {amount}",
   "@overviewPaymentBarTooltip": {
     "placeholders": {
@@ -141,6 +151,31 @@
   "overviewComparisonBarHorizontalScrollHint": "Deslize horizontalmente para ver todos os itens.",
   "chartComparisonPlotFloorNotice": "Barras muito baixas são exibidas com altura mínima para leitura. Os valores nos rótulos são exatos.",
   "chartComparisonExtremeValueSpreadNotice": "Há valores em ordens de grandeza muito diferentes; verifique unidades ou agregação se os totais parecerem incorretos.",
+  "chartComparisonLoadingDefault": "Carregando gráfico comparativo…",
+  "chartComparisonEmptyDefault": "Nada para comparar no momento.",
+  "chartComparisonPanGestureHint": "Deslize o gráfico horizontalmente para ver mais categorias.",
+  "chartComboLoadingDefault": "Carregando gráfico de barras e linha…",
+  "chartComboEmptyDefault": "Sem dados combinados para este recorte.",
+  "chartComboPanGestureHint": "Deslize horizontalmente no grafico para ver mais periodos.",
+  "@chartComboPanGestureHint": {
+    "description": "Rodape quando o eixo de categorias do grafico combo permite deslizar para ver mais periodos."
+  },
+  "chartComboPanChartA11y": "{count, plural, =1{Grafico de barras e linha, uma categoria.} other{Grafico de barras e linha, {count} categorias.}} Deslize horizontalmente para ver todas.",
+  "@chartComboPanChartA11y": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chartComparisonPanChartA11y": "{count, plural, =1{Gráfico de barras, uma categoria.} other{Gráfico de barras, {count} categorias.}} Deslize o gráfico horizontalmente para ver todas.",
+  "@chartComparisonPanChartA11y": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {

@@ -5,6 +5,8 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
+import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -28,8 +30,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
     super.key,
     this.onBarTap,
     this.onLineTap,
+    this.barDataLabelBuilder,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.resolvedLoadingLabel,
+    this.resolvedEmptyMessage,
   });
 
   final List<T> items;
@@ -42,8 +47,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
   final AppChartPreset preset;
   final void Function(T item, int index)? onBarTap;
   final void Function(T item, int index)? onLineTap;
+  final String? Function(T item, num barValue)? barDataLabelBuilder;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final String? resolvedLoadingLabel;
+  final String? resolvedEmptyMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +67,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: resolvedBarColor,
-        label: 'Carregando comparativo combinado...',
+        label: resolvedLoadingLabel ?? 'Loading bar and line chart…',
       );
     }
 
@@ -67,7 +75,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       return buildChartEmptyState(
         context: context,
         height: resolvedHeight,
-        message: 'Sem dados combinados para este recorte.',
+        message: resolvedEmptyMessage ?? 'No combined data for this view.',
         placeholder: emptyPlaceholder,
       );
     }
@@ -80,7 +88,8 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           : AxisLabelIntersectAction.rotate45;
     }
 
-    Widget buildCartesian({
+    Widget buildCartesian(
+      BuildContext chartContext, {
       required _ComboLayout layout,
       required double slotWidth,
       required bool showLegendInChart,
@@ -88,14 +97,39 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       required bool showPrimaryYAxisLabels,
       required bool showXAxisLabels,
       required bool primaryYAxisGrid,
+      required bool enableCategoryViewportPan,
     }) {
       final primaryGridW = primaryYAxisGrid && style.showYGridLines ? 1.0 : 0.0;
+      final barLabelsVisible =
+          style.showDataLabels && layout != _ComboLayout.yAxisStrip;
+      final chartMargin = resolveComparisonBarChartMargin(
+        chartContext,
+        showDataLabels: barLabelsVisible,
+        dataLabelAlignment: style.barDataLabelAlignment,
+        dataLabelOffset: style.barDataLabelOffset,
+        chartPadding: style.chartPadding,
+      );
+      final delta = style.categoryAutoScrollingDelta;
+      final useCategoryAxisPan =
+          enableCategoryViewportPan &&
+          enableTooltip &&
+          delta != null &&
+          delta > 0;
 
       return SfCartesianChart(
-        margin: style.chartPadding ?? EdgeInsets.zero,
+        margin: chartMargin,
         plotAreaBorderWidth: 0,
+        zoomPanBehavior: useCategoryAxisPan
+            ? ZoomPanBehavior(
+                enablePanning: true,
+                zoomMode: ZoomMode.x,
+              )
+            : null,
         tooltipBehavior: TooltipBehavior(
           enable: enableTooltip && style.showTooltip,
+          // One tooltip for bar + line so the line stays readable when the
+          // right Y-axis ticks are hidden ([AppComboChartStyle.showRightYAxis]).
+          shared: true,
         ),
         legend: Legend(
           isVisible: showLegendInChart && style.showLegend,
@@ -109,10 +143,19 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           labelStyle: style.axisLabelTextStyle,
           labelIntersectAction: xLabelIntersectFor(slotWidth),
           maximumLabels: items.length,
+          autoScrollingDelta: useCategoryAxisPan ? delta : null,
+          autoScrollingMode: style.categoryAutoScrollingMode,
         ),
         primaryYAxis: NumericAxis(
           name: 'leftAxis',
           isVisible: showPrimaryYAxisLabels,
+          rangePadding:
+              comparisonBarChartNeedsOuterDataLabelHeadroom(
+                showDataLabels: barLabelsVisible,
+                dataLabelAlignment: style.barDataLabelAlignment,
+              )
+              ? ChartRangePadding.normal
+              : ChartRangePadding.auto,
           axisLine: const AxisLine(width: 0),
           majorGridLines: MajorGridLines(
             color: gridLineColor,
@@ -157,12 +200,19 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 : resolvedBarColor,
             width: style.barWidth ?? 0.6,
             spacing: style.barSpacing ?? 0.2,
+            borderRadius: style.barBorderRadius,
             animationDuration:
                 style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+            dataLabelMapper: barLabelsVisible
+                ? (data, _) =>
+                      barDataLabelBuilder?.call(data, barValueBuilder(data)) ??
+                      barValueBuilder(data).toString()
+                : null,
             dataLabelSettings: DataLabelSettings(
-              isVisible:
-                  style.showDataLabels && layout != _ComboLayout.yAxisStrip,
+              isVisible: barLabelsVisible,
               textStyle: style.dataLabelTextStyle,
+              labelAlignment: style.barDataLabelAlignment,
+              offset: style.barDataLabelOffset ?? Offset.zero,
             ),
             onPointTap: onBarTap == null || layout == _ComboLayout.yAxisStrip
                 ? null
@@ -221,22 +271,86 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           }
 
           final n = items.length;
+          final delta = style.categoryAutoScrollingDelta;
+          final crowded = n > 1 && (layoutWidth / n) < minSlotWidth;
+          final useCategoryViewportPan =
+              !style.enableAutoScroll &&
+              delta != null &&
+              delta > 0 &&
+              n > delta &&
+              crowded;
+          final slotDenom = useCategoryViewportPan ? math.min(n, delta) : n;
+          final footRaw = style.categoryViewportFootnote?.trim();
+          final showPanFootnote =
+              useCategoryViewportPan && footRaw != null && footRaw.isNotEmpty;
 
-          if (!style.enableAutoScroll) {
-            final slotWidth = layoutWidth / n;
+          Widget sizedCombo(
+            double width,
+            double slotW,
+            double chartHeight, {
+            required bool categoryViewportPan,
+          }) {
             return SizedBox(
-              width: layoutWidth,
-              height: resolvedHeight,
+              width: width,
+              height: chartHeight,
               child: buildCartesian(
+                context,
                 layout: _ComboLayout.full,
-                slotWidth: slotWidth,
+                slotWidth: slotW,
                 showLegendInChart: true,
                 enableTooltip: true,
                 showPrimaryYAxisLabels: true,
                 showXAxisLabels: true,
                 primaryYAxisGrid: true,
+                enableCategoryViewportPan: categoryViewportPan,
               ),
             );
+          }
+
+          if (!style.enableAutoScroll) {
+            final slotW = layoutWidth / slotDenom;
+            final footText = footRaw ?? '';
+            // Pan footnote layout matches [SyncfusionComparisonBarChart]
+            // (shared [ChartPanFootnoteColumn]).
+            var chart = showPanFootnote
+                ? ChartPanFootnoteColumn(
+                    plot: SizedBox(
+                      width: layoutWidth,
+                      child: buildCartesian(
+                        context,
+                        layout: _ComboLayout.full,
+                        slotWidth: slotW,
+                        showLegendInChart: true,
+                        enableTooltip: true,
+                        showPrimaryYAxisLabels: true,
+                        showXAxisLabels: true,
+                        primaryYAxisGrid: true,
+                        enableCategoryViewportPan: useCategoryViewportPan,
+                      ),
+                    ),
+                    footnoteText: footText,
+                  )
+                : sizedCombo(
+                    layoutWidth,
+                    slotW,
+                    resolvedHeight,
+                    categoryViewportPan: useCategoryViewportPan,
+                  );
+            if (useCategoryViewportPan) {
+              final panLabel = style.categoryViewportPanSemanticsLabel?.trim();
+              final hint = style.horizontalScrollSemanticsHint?.trim();
+              if ((panLabel != null && panLabel.isNotEmpty) ||
+                  (hint != null && hint.isNotEmpty)) {
+                chart = Semantics(
+                  label: (panLabel != null && panLabel.isNotEmpty)
+                      ? panLabel
+                      : null,
+                  hint: (hint != null && hint.isNotEmpty) ? hint : null,
+                  child: chart,
+                );
+              }
+            }
+            return chart;
           }
 
           final requiredFull = math.max(layoutWidth, minSlotWidth * n);
@@ -245,6 +359,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           if (!needsScroll) {
             final slotWidth = layoutWidth / n;
             return buildCartesian(
+              context,
               layout: _ComboLayout.full,
               slotWidth: slotWidth,
               showLegendInChart: true,
@@ -252,6 +367,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               showPrimaryYAxisLabels: true,
               showXAxisLabels: true,
               primaryYAxisGrid: true,
+              enableCategoryViewportPan: false,
             );
           }
 
@@ -275,6 +391,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               width: requiredPlot,
               height: plotChartBodyHeight,
               child: buildCartesian(
+                context,
                 layout: _ComboLayout.full,
                 slotWidth: slotWidth,
                 showLegendInChart: true,
@@ -282,6 +399,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 showPrimaryYAxisLabels: true,
                 showXAxisLabels: true,
                 primaryYAxisGrid: true,
+                enableCategoryViewportPan: false,
               ),
             );
             return ChartHorizontalScrollShell(
@@ -296,6 +414,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             width: requiredPlot,
             height: plotChartBodyHeight,
             child: buildCartesian(
+              context,
               layout: _ComboLayout.plotScroll,
               slotWidth: slotWidth,
               showLegendInChart: false,
@@ -303,6 +422,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               showPrimaryYAxisLabels: false,
               showXAxisLabels: true,
               primaryYAxisGrid: true,
+              enableCategoryViewportPan: false,
             ),
           );
 
@@ -314,6 +434,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               child: SizedBox(
                 height: plotChartBodyHeight,
                 child: buildCartesian(
+                  context,
                   layout: _ComboLayout.yAxisStrip,
                   slotWidth: slotWidth,
                   showLegendInChart: false,
@@ -321,6 +442,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                   showPrimaryYAxisLabels: true,
                   showXAxisLabels: false,
                   primaryYAxisGrid: false,
+                  enableCategoryViewportPan: false,
                 ),
               ),
             ),

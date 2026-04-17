@@ -53,16 +53,69 @@ void main() {
     );
     expect(chart.items, hasLength(7));
     expect(chart.labelBuilder(points.first), 'Sunday');
+
+    final sundayZero = <OverviewWeekdaySalesTrendPoint>[
+      const OverviewWeekdaySalesTrendPoint(
+        weekdayNumber: 1,
+        salesCount: 0,
+        salesAmount: 0,
+      ),
+      ...points.skip(1),
+    ];
+    await tester.pumpWidget(
+      _TestApp(
+        child: Builder(
+          builder: (context) {
+            return OverviewWeekdaySalesTrendChart(
+              l10n: AppLocalizations.of(context),
+              points: sundayZero,
+              loadFailed: false,
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+
+    final chartNoSunday = tester
+        .widget<AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>>(
+          chartFinder,
+        );
+    expect(chartNoSunday.items, hasLength(6));
+    expect(
+      chartNoSunday.items.any((p) => p.weekdayNumber == 1),
+      isFalse,
+    );
+
+    await tester.pumpWidget(
+      _TestApp(
+        child: Builder(
+          builder: (context) {
+            return OverviewWeekdaySalesTrendChart(
+              l10n: AppLocalizations.of(context),
+              points: points,
+              loadFailed: false,
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+
+    final chartRestored = tester
+        .widget<AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>>(
+          chartFinder,
+        );
     expect(
       find.byWidgetPredicate((widget) => widget is AppSegmentedControl),
       findsOneWidget,
     );
     expect(
-      chart.tooltipLabelBuilder!(points[1], points[1].salesCount),
+      chartRestored.tooltipLabelBuilder!(points[1], points[1].salesCount),
       contains(r'R$'),
     );
-    expect(chart.style.minBarWidth, 72);
-    expect(chart.style.yAxisFormat!.format(1500), isNot(contains(r'R$')));
+    expect(chartRestored.style.minBarWidth, 72);
+    expect(chartRestored.style.yAxisFormat!.format(1500), isNot(contains(r'R$')));
 
     await tester.tap(find.text('Revenue'));
     await tester.pumpAndSettle();
@@ -73,6 +126,54 @@ void main() {
         );
     expect(revenueChart.title, 'Revenue by weekday');
     expect(revenueChart.style.yAxisFormat!.format(1500), contains(r'R$'));
+  });
+
+  testWidgets('revenue mode omits weekday when amount is zero', (tester) async {
+    final points = <OverviewWeekdaySalesTrendPoint>[
+      const OverviewWeekdaySalesTrendPoint(
+        weekdayNumber: 1,
+        salesCount: 10,
+        salesAmount: 0,
+      ),
+      for (var i = 2; i <= 7; i++)
+        OverviewWeekdaySalesTrendPoint(
+          weekdayNumber: i,
+          salesCount: i,
+          salesAmount: i * 100.0,
+        ),
+    ];
+
+    await tester.pumpWidget(
+      _TestApp(
+        child: Builder(
+          builder: (context) {
+            return OverviewWeekdaySalesTrendChart(
+              l10n: AppLocalizations.of(context),
+              points: points,
+              loadFailed: false,
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 2));
+
+    await tester.tap(find.text('Revenue'));
+    await tester.pumpAndSettle();
+
+    final chartFinder = find.byWidgetPredicate(
+      (widget) =>
+          widget is AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>,
+    );
+    final revenueChart = tester
+        .widget<AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>>(
+          chartFinder,
+        );
+    expect(revenueChart.items, hasLength(6));
+    expect(
+      revenueChart.items.any((p) => p.weekdayNumber == 1),
+      isFalse,
+    );
   });
 
   testWidgets('renders empty placeholder', (tester) async {
