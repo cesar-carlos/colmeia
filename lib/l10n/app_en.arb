@@ -244,6 +244,86 @@
   "@overviewWeekdaySaturday": {
     "description": "Localized label for weekday Saturday in the overview chart."
   },
+  "overviewWeekdayUserSalesTitle": "Sales by weekday and user",
+  "@overviewWeekdayUserSalesTitle": {
+    "description": "Card title when the per-user weekday overview chart plots sales count."
+  },
+  "overviewWeekdayUserRevenueTitle": "Revenue by weekday and user",
+  "@overviewWeekdayUserRevenueTitle": {
+    "description": "Card title when the per-user weekday overview chart plots parcel amount."
+  },
+  "overviewWeekdayUserSalesSubtitle": "Weekdays on the horizontal axis; each colour is a user (see legend). Same period and branch scope as the dashboard.",
+  "@overviewWeekdayUserSalesSubtitle": {
+    "description": "Subtitle for the per-user weekday overview card."
+  },
+  "overviewWeekdayUserSalesEmpty": "No per-user weekday data for this period.",
+  "@overviewWeekdayUserSalesEmpty": {
+    "description": "Placeholder when the per-user weekday chart has no data."
+  },
+  "overviewWeekdayUserSalesLoadFailed": "Could not load the per-user weekday chart. Try again later.",
+  "@overviewWeekdayUserSalesLoadFailed": {
+    "description": "Placeholder when the per-user weekday chart query fails."
+  },
+  "overviewWeekdayUserSalesChartSemantics": "Weekday and user sales count and parcel amount chart",
+  "@overviewWeekdayUserSalesChartSemantics": {
+    "description": "Semantics label when the primary metric is sales count."
+  },
+  "overviewWeekdayUserRevenueChartSemantics": "Weekday and user revenue and sales count chart",
+  "@overviewWeekdayUserRevenueChartSemantics": {
+    "description": "Semantics label when the primary metric is parcel amount."
+  },
+  "overviewWeekdayUserChartScopeHint": "Aggregated across all branches in the selected scope.",
+  "@overviewWeekdayUserChartScopeHint": {
+    "description": "Semantic hint for the per-user weekday chart scope."
+  },
+  "overviewWeekdayUserGroupedOthersLabel": "Others",
+  "@overviewWeekdayUserGroupedOthersLabel": {
+    "description": "Legend and tooltip label for users combined when the grouped weekday chart exceeds the series limit."
+  },
+  "overviewWeekdayUserGroupedTruncationFootnote": "Showing the {shown} users with the highest totals; additional users are summed under \"{othersLabel}\".",
+  "@overviewWeekdayUserGroupedTruncationFootnote": {
+    "description": "Footnote when the grouped weekday-by-user chart merges extra users into an Others series.",
+    "placeholders": {
+      "shown": {"type": "int"},
+      "othersLabel": {"type": "String"}
+    }
+  },
+  "overviewWeekdayUserSalesTooltip": "{weekday}, {userName}: {salesCount} sales - {salesAmount}",
+  "@overviewWeekdayUserSalesTooltip": {
+    "description": "Tooltip for one per-user weekday bar.",
+    "placeholders": {
+      "weekday": {"type": "String"},
+      "userName": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesAmount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayUserSalesSummarySemantics": "Total {totalSalesCount} sales and {totalSalesAmount} in the selected period. Highest bar: {topWeekday}, {topUserName} with {topSalesCount} sales.",
+  "@overviewWeekdayUserSalesSummarySemantics": {
+    "description": "Screen reader summary for per-user weekday chart when sales count is selected.",
+    "placeholders": {
+      "totalSalesCount": {"type": "String"},
+      "totalSalesAmount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topUserName": {"type": "String"},
+      "topSalesCount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayUserRevenueSummarySemantics": "Total {totalSalesAmount} and {totalSalesCount} sales in the selected period. Highest bar: {topWeekday}, {topUserName} with {topSalesAmount}.",
+  "@overviewWeekdayUserRevenueSummarySemantics": {
+    "description": "Screen reader summary for per-user weekday chart when parcel amount is selected.",
+    "placeholders": {
+      "totalSalesAmount": {"type": "String"},
+      "totalSalesCount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topUserName": {"type": "String"},
+      "topSalesAmount": {"type": "String"}
+    }
+  },
+  "overviewLoadingWeekdayUserSalesSemantics": "Loading sales by weekday and user chart…",
+  "@overviewLoadingWeekdayUserSalesSemantics": {
+    "description": "Screen reader label while the per-user weekday overview card is loading."
+  },
   "overviewKpiTotalRevenue": "Total revenue",
   "overviewKpiSales": "Sales",
   "overviewKpiAvgTicket": "Average ticket",

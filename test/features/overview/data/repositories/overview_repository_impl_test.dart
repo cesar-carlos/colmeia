@@ -1,6 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
@@ -11,6 +12,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
@@ -39,6 +41,9 @@ class _MockLoadResumoParcelasMensalAcrossAgents extends Mock
 class _MockLoadResumoParcelasDiaSemanaAcrossAgents extends Mock
     implements LoadResumoParcelasDiaSemanaAcrossAgentsUseCase {}
 
+class _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents extends Mock
+    implements LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase {}
+
 void main() {
   late _MockOverviewLocalDataSource local;
   late _MockResumoAcrossAgentsRepository resumoAcrossAgentsRepository;
@@ -46,6 +51,8 @@ void main() {
   loadResumoParcelasMensalAcrossAgents;
   late _MockLoadResumoParcelasDiaSemanaAcrossAgents
   loadResumoParcelasDiaSemanaAcrossAgents;
+  late _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents
+  loadResumoParcelasDiaSemanaUsuarioAcrossAgents;
 
   final fixedNow = DateTime(2026, 4, 8);
 
@@ -94,6 +101,8 @@ void main() {
         _MockLoadResumoParcelasMensalAcrossAgents();
     loadResumoParcelasDiaSemanaAcrossAgents =
         _MockLoadResumoParcelasDiaSemanaAcrossAgents();
+    loadResumoParcelasDiaSemanaUsuarioAcrossAgents =
+        _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents();
     when(
       () => loadResumoParcelasMensalAcrossAgents(
         userId: any(named: 'userId'),
@@ -126,6 +135,22 @@ void main() {
             AppFailure
           >(_emptyWeekdayReport()),
     );
+    when(
+      () => loadResumoParcelasDiaSemanaUsuarioAcrossAgents(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          Success<
+            AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>,
+            AppFailure
+          >(_emptyWeekdayUsuarioReport()),
+    );
 
     when(
       () => local.saveOverview(
@@ -146,6 +171,8 @@ void main() {
           loadResumoParcelasMensalAcrossAgents,
       loadResumoParcelasDiaSemanaAcrossAgents:
           loadResumoParcelasDiaSemanaAcrossAgents,
+      loadResumoParcelasDiaSemanaUsuarioAcrossAgents:
+          loadResumoParcelasDiaSemanaUsuarioAcrossAgents,
       now: () => fixedNow,
     );
   }
@@ -457,6 +484,17 @@ void main() {
         check(filter.dataVendaFim.day).equals(31);
         check(selectedAgentIds).deepEquals(<String>{'agent-42'});
         check(strategy).equals(AgentQueryExecutionStrategy.singleSource);
+
+        verify(
+          () => loadResumoParcelasDiaSemanaUsuarioAcrossAgents(
+            userId: 'user-1',
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: 360000,
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).called(1);
       },
     );
 
@@ -1075,6 +1113,16 @@ void main() {
             overview: any(named: 'overview'),
           ),
         );
+        verifyNever(
+          () => loadResumoParcelasDiaSemanaUsuarioAcrossAgents(
+            userId: any(named: 'userId'),
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        );
       },
     );
   });
@@ -1119,6 +1167,20 @@ AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow> _emptyWeekdayReport() {
     missingClientTokenTargets: <AgentQueryTarget>[],
     participants:
         <AgentQueryExecutionParticipant<ResumoParcelasDiaSemanaRow>>[],
+    totalElapsedMs: 0,
+  );
+}
+
+AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>
+_emptyWeekdayUsuarioReport() {
+  return const AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>(
+    queryKey: AgentQueryKey.resumoParcelasDiaSemanaUsuario,
+    strategy: AgentQueryExecutionStrategy.mergeAll,
+    consideredApprovedAgentCount: 0,
+    plannedTargets: <AgentQueryTarget>[],
+    missingClientTokenTargets: <AgentQueryTarget>[],
+    participants: <AgentQueryExecutionParticipant<
+      ResumoParcelasDiaSemanaUsuarioRow>>[],
     totalElapsedMs: 0,
   );
 }

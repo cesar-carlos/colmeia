@@ -7,12 +7,13 @@ import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('OverviewModel', () {
     group('fromJson / toJson round-trip', () {
-      test('preserves all fields through encode/decode cycle', () {
+      test('preserves core fields through encode/decode cycle', () {
         final original = _fullModel();
         final decoded = OverviewModel.decode(original.encode());
 
@@ -44,6 +45,37 @@ void main() {
         check(decoded.weekdaySalesTrend.single.salesCount).equals(12);
         check(decoded.weekdaySalesTrend.single.salesAmount).equals(180.5);
         check(decoded.weekdaySalesTrendLoadFailed).isFalse();
+        check(decoded.weekdayUserSalesTrend).isEmpty();
+        check(decoded.weekdayUserSalesTrendLoadFailed).isFalse();
+      });
+
+      test('fromJson still reads legacy persisted weekday-by-user keys', () {
+        final decoded = OverviewModel.fromJson(<String, dynamic>{
+          'periodStart': '2026-03-09T00:00:00.000',
+          'periodEnd': '2026-04-07T00:00:00.000',
+          'kpis': <String, Object?>{
+            'totalSalesCount': 100,
+            'totalAmount': 9000,
+            'averageTicket': 90,
+            'paymentMethodCount': 2,
+          },
+          'paymentMethods': const <Map<String, Object?>>[],
+          'agentRankings': const <Map<String, Object?>>[],
+          'userRankings': const <Map<String, Object?>>[],
+          'weekdayUserSalesTrend': <Map<String, Object?>>[
+            <String, Object?>{
+              'weekdayNumber': 3,
+              'userName': 'Bob',
+              'salesCount': 2,
+              'salesAmount': 22.0,
+            },
+          ],
+          'weekdayUserSalesTrendLoadFailed': false,
+        });
+
+        check(decoded.weekdayUserSalesTrend).length.equals(1);
+        check(decoded.weekdayUserSalesTrend.single.userName).equals('Bob');
+        check(decoded.weekdayUserSalesTrendLoadFailed).isFalse();
       });
 
       test('preserves cache metadata through encode/decode', () {
@@ -89,6 +121,8 @@ void main() {
         check(decoded.monthlyParcelTrendLoadFailed).isFalse();
         check(decoded.weekdaySalesTrend).isEmpty();
         check(decoded.weekdaySalesTrendLoadFailed).isFalse();
+        check(decoded.weekdayUserSalesTrend).isEmpty();
+        check(decoded.weekdayUserSalesTrendLoadFailed).isFalse();
       });
 
       test('defaults missing weekday cache fields safely', () {
@@ -108,6 +142,8 @@ void main() {
 
         check(decoded.weekdaySalesTrend).isEmpty();
         check(decoded.weekdaySalesTrendLoadFailed).isFalse();
+        check(decoded.weekdayUserSalesTrend).isEmpty();
+        check(decoded.weekdayUserSalesTrendLoadFailed).isFalse();
       });
     });
 
@@ -127,6 +163,8 @@ void main() {
         check(entity.weekdaySalesTrend.single.weekdayNumber).equals(2);
         check(entity.weekdaySalesTrend.single.salesCount).equals(12);
         check(entity.weekdaySalesTrendLoadFailed).isFalse();
+        check(entity.weekdayUserSalesTrend.single.userName).equals('Alice');
+        check(entity.weekdayUserSalesTrendLoadFailed).isFalse();
       });
 
       test('fromEntity preserves overview data', () {
@@ -297,6 +335,14 @@ OverviewModel _fullModel() {
         weekdayNumber: 2,
         salesCount: 12,
         salesAmount: 180.5,
+      ),
+    ],
+    weekdayUserSalesTrend: const <OverviewWeekdayUserSalesTrendPoint>[
+      OverviewWeekdayUserSalesTrendPoint(
+        weekdayNumber: 2,
+        userName: 'Alice',
+        salesCount: 3,
+        salesAmount: 40,
       ),
     ],
   );

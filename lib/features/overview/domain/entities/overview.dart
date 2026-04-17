@@ -4,6 +4,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
 
 class Overview {
   const Overview({
@@ -17,6 +18,8 @@ class Overview {
     this.monthlyParcelTrendLoadFailed = false,
     this.weekdaySalesTrend = const <OverviewWeekdaySalesTrendPoint>[],
     this.weekdaySalesTrendLoadFailed = false,
+    this.weekdayUserSalesTrend = const <OverviewWeekdayUserSalesTrendPoint>[],
+    this.weekdayUserSalesTrendLoadFailed = false,
     this.isStaleCache = false,
     this.approvedAgentCount = 0,
     this.agentIdsExcludedFromQueryFailure = const <String>[],
@@ -47,6 +50,14 @@ class Overview {
   /// True when the weekday resumo query failed; [weekdaySalesTrend] may be
   /// empty for this reason instead of genuinely having no rows.
   final bool weekdaySalesTrendLoadFailed;
+
+  /// Weekday distribution per user (merged across branches/agents) for the
+  /// selected period.
+  final List<OverviewWeekdayUserSalesTrendPoint> weekdayUserSalesTrend;
+
+  /// True when the weekday-by-user resumo query failed; [weekdayUserSalesTrend]
+  /// may be empty for this reason instead of genuinely having no rows.
+  final bool weekdayUserSalesTrendLoadFailed;
 
   /// True when recovered from local cache after a remote error.
   final bool isStaleCache;
@@ -112,6 +123,8 @@ class Overview {
     bool? monthlyParcelTrendLoadFailed,
     List<OverviewWeekdaySalesTrendPoint>? weekdaySalesTrend,
     bool? weekdaySalesTrendLoadFailed,
+    List<OverviewWeekdayUserSalesTrendPoint>? weekdayUserSalesTrend,
+    bool? weekdayUserSalesTrendLoadFailed,
     bool? mainResumoHadPlannedTargets,
   }) {
     return Overview(
@@ -127,6 +140,10 @@ class Overview {
       weekdaySalesTrend: weekdaySalesTrend ?? this.weekdaySalesTrend,
       weekdaySalesTrendLoadFailed:
           weekdaySalesTrendLoadFailed ?? this.weekdaySalesTrendLoadFailed,
+      weekdayUserSalesTrend:
+          weekdayUserSalesTrend ?? this.weekdayUserSalesTrend,
+      weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed ??
+          this.weekdayUserSalesTrendLoadFailed,
       isStaleCache: isStaleCache ?? this.isStaleCache,
       approvedAgentCount: approvedAgentCount ?? this.approvedAgentCount,
       agentIdsExcludedFromQueryFailure:

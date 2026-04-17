@@ -143,6 +143,43 @@
   "overviewMonthlyParcelsSwitchSalesLabel": "Vendas",
   "overviewMonthlyParcelsSwitchValueLabel": "Valor",
   "overviewMonthlyParcelsChartSemanticsValueView": "Grafico dos ultimos doze meses de valor em parcelas e vendas",
+  "overviewLoadingWeekdaySalesSemantics": "Carregando gráfico de vendas por dia da semana…",
+  "overviewWeekdaySalesTitle": "Vendas por dia da semana",
+  "overviewWeekdayRevenueTitle": "Receita por dia da semana",
+  "overviewWeekdaySalesSubtitle": "Distribuição por dia da semana no período selecionado (todas as filiais no âmbito).",
+  "overviewWeekdaySalesEmpty": "Sem dados por dia da semana neste período.",
+  "overviewWeekdaySalesLoadFailed": "Não foi possível carregar o gráfico por dia da semana. Tente novamente mais tarde.",
+  "overviewWeekdaySalesChartSemantics": "Gráfico de vendas e valor em parcelas por dia da semana",
+  "overviewWeekdayRevenueChartSemantics": "Gráfico de receita e vendas por dia da semana",
+  "overviewWeekdayChartScopeHint": "Agregado em todas as filiais no âmbito selecionado.",
+  "overviewWeekdaySalesTooltip": "{weekday}: {salesCount} vendas - {salesAmount}",
+  "@overviewWeekdaySalesTooltip": {
+    "placeholders": {
+      "weekday": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesAmount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayMetricSalesCountLabel": "Vendas",
+  "overviewWeekdayMetricSalesAmountLabel": "Receita",
+  "overviewWeekdaySalesSummarySemantics": "Total {totalSalesCount} vendas e {totalSalesAmount} no período selecionado. Dia com maior volume: {topWeekday}, com {topSalesCount} vendas.",
+  "@overviewWeekdaySalesSummarySemantics": {
+    "placeholders": {
+      "totalSalesCount": {"type": "String"},
+      "totalSalesAmount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topSalesCount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayRevenueSummarySemantics": "Total {totalSalesAmount} e {totalSalesCount} vendas no período selecionado. Dia com maior valor: {topWeekday}, com {topSalesAmount}.",
+  "@overviewWeekdayRevenueSummarySemantics": {
+    "placeholders": {
+      "totalSalesAmount": {"type": "String"},
+      "totalSalesCount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topSalesAmount": {"type": "String"}
+    }
+  },
   "overviewWeekdaySunday": "Domingo",
   "overviewWeekdayMonday": "Segunda-feira",
   "overviewWeekdayTuesday": "Terça-feira",
@@ -150,6 +187,52 @@
   "overviewWeekdayThursday": "Quinta-feira",
   "overviewWeekdayFriday": "Sexta-feira",
   "overviewWeekdaySaturday": "Sábado",
+  "overviewWeekdayUserSalesTitle": "Vendas por dia da semana e usuário",
+  "overviewWeekdayUserRevenueTitle": "Receita por dia da semana e usuário",
+  "overviewWeekdayUserSalesSubtitle": "Dias da semana no eixo horizontal; cada cor é um usuário (ver legenda). Período e âmbito de filiais como no painel.",
+  "overviewWeekdayUserSalesEmpty": "Sem dados por usuário e dia da semana neste período.",
+  "overviewWeekdayUserSalesLoadFailed": "Não foi possível carregar o gráfico por usuário e dia da semana. Tente novamente mais tarde.",
+  "overviewWeekdayUserSalesChartSemantics": "Gráfico de vendas e valor em parcelas por dia da semana e usuário",
+  "overviewWeekdayUserRevenueChartSemantics": "Gráfico de receita e vendas por dia da semana e usuário",
+  "overviewWeekdayUserChartScopeHint": "Agregado em todas as filiais no âmbito selecionado.",
+  "overviewWeekdayUserGroupedOthersLabel": "Outros",
+  "overviewWeekdayUserGroupedTruncationFootnote": "São mostrados os {shown} usuários com totais mais altos; os restantes são somados em \"{othersLabel}\".",
+  "@overviewWeekdayUserGroupedTruncationFootnote": {
+    "placeholders": {
+      "shown": {"type": "int"},
+      "othersLabel": {"type": "String"}
+    }
+  },
+  "overviewWeekdayUserSalesTooltip": "{weekday}, {userName}: {salesCount} vendas - {salesAmount}",
+  "@overviewWeekdayUserSalesTooltip": {
+    "placeholders": {
+      "weekday": {"type": "String"},
+      "userName": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesAmount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayUserSalesSummarySemantics": "Total {totalSalesCount} vendas e {totalSalesAmount} no período selecionado. Maior barra: {topWeekday}, {topUserName} com {topSalesCount} vendas.",
+  "@overviewWeekdayUserSalesSummarySemantics": {
+    "placeholders": {
+      "totalSalesCount": {"type": "String"},
+      "totalSalesAmount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topUserName": {"type": "String"},
+      "topSalesCount": {"type": "String"}
+    }
+  },
+  "overviewWeekdayUserRevenueSummarySemantics": "Total {totalSalesAmount} e {totalSalesCount} vendas no período selecionado. Maior barra: {topWeekday}, {topUserName} com {topSalesAmount}.",
+  "@overviewWeekdayUserRevenueSummarySemantics": {
+    "placeholders": {
+      "totalSalesAmount": {"type": "String"},
+      "totalSalesCount": {"type": "String"},
+      "topWeekday": {"type": "String"},
+      "topUserName": {"type": "String"},
+      "topSalesAmount": {"type": "String"}
+    }
+  },
+  "overviewLoadingWeekdayUserSalesSemantics": "Carregando gráfico de vendas por dia da semana e usuário…",
   "overviewKpiTotalRevenue": "Faturamento total",
   "overviewKpiSales": "Vendas",
   "overviewKpiAvgTicket": "Ticket medio",

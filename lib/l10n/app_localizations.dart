@@ -917,6 +917,110 @@ abstract class AppLocalizations {
   /// **'Saturday'**
   String get overviewWeekdaySaturday;
 
+  /// Card title when the per-user weekday overview chart plots sales count.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales by weekday and user'**
+  String get overviewWeekdayUserSalesTitle;
+
+  /// Card title when the per-user weekday overview chart plots parcel amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue by weekday and user'**
+  String get overviewWeekdayUserRevenueTitle;
+
+  /// Subtitle for the per-user weekday overview card.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekdays on the horizontal axis; each colour is a user (see legend). Same period and branch scope as the dashboard.'**
+  String get overviewWeekdayUserSalesSubtitle;
+
+  /// Placeholder when the per-user weekday chart has no data.
+  ///
+  /// In en, this message translates to:
+  /// **'No per-user weekday data for this period.'**
+  String get overviewWeekdayUserSalesEmpty;
+
+  /// Placeholder when the per-user weekday chart query fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the per-user weekday chart. Try again later.'**
+  String get overviewWeekdayUserSalesLoadFailed;
+
+  /// Semantics label when the primary metric is sales count.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday and user sales count and parcel amount chart'**
+  String get overviewWeekdayUserSalesChartSemantics;
+
+  /// Semantics label when the primary metric is parcel amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday and user revenue and sales count chart'**
+  String get overviewWeekdayUserRevenueChartSemantics;
+
+  /// Semantic hint for the per-user weekday chart scope.
+  ///
+  /// In en, this message translates to:
+  /// **'Aggregated across all branches in the selected scope.'**
+  String get overviewWeekdayUserChartScopeHint;
+
+  /// Legend and tooltip label for users combined when the grouped weekday chart exceeds the series limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Others'**
+  String get overviewWeekdayUserGroupedOthersLabel;
+
+  /// Footnote when the grouped weekday-by-user chart merges extra users into an Others series.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing the {shown} users with the highest totals; additional users are summed under \"{othersLabel}\".'**
+  String overviewWeekdayUserGroupedTruncationFootnote(
+    int shown,
+    String othersLabel,
+  );
+
+  /// Tooltip for one per-user weekday bar.
+  ///
+  /// In en, this message translates to:
+  /// **'{weekday}, {userName}: {salesCount} sales - {salesAmount}'**
+  String overviewWeekdayUserSalesTooltip(
+    String weekday,
+    String userName,
+    String salesCount,
+    String salesAmount,
+  );
+
+  /// Screen reader summary for per-user weekday chart when sales count is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {totalSalesCount} sales and {totalSalesAmount} in the selected period. Highest bar: {topWeekday}, {topUserName} with {topSalesCount} sales.'**
+  String overviewWeekdayUserSalesSummarySemantics(
+    String totalSalesCount,
+    String totalSalesAmount,
+    String topWeekday,
+    String topUserName,
+    String topSalesCount,
+  );
+
+  /// Screen reader summary for per-user weekday chart when parcel amount is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Total {totalSalesAmount} and {totalSalesCount} sales in the selected period. Highest bar: {topWeekday}, {topUserName} with {topSalesAmount}.'**
+  String overviewWeekdayUserRevenueSummarySemantics(
+    String totalSalesAmount,
+    String totalSalesCount,
+    String topWeekday,
+    String topUserName,
+    String topSalesAmount,
+  );
+
+  /// Screen reader label while the per-user weekday overview card is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading sales by weekday and user chart…'**
+  String get overviewLoadingWeekdayUserSalesSemantics;
+
   /// No description provided for @overviewKpiTotalRevenue.
   ///
   /// In en, this message translates to:

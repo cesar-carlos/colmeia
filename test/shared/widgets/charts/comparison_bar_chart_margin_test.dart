@@ -29,6 +29,40 @@ void main() {
     expect(margin.top, greaterThanOrEqualTo(32));
   });
 
+  testWidgets(
+    'resolveComparisonBarChartMargin adds outerDataLabelTopReserve after headroom',
+    (tester) async {
+      late EdgeInsets withoutReserve;
+      late EdgeInsets withReserve;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Builder(
+            builder: (context) {
+              withoutReserve = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: null,
+              );
+              withReserve = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: null,
+                outerDataLabelTopReserve: 12,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(withReserve.top, equals(withoutReserve.top + 12));
+    },
+  );
+
   testWidgets('resolveComparisonBarChartMargin returns base when no outer labels', (
     tester,
   ) async {

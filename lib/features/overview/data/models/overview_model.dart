@@ -7,6 +7,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
 
 class OverviewModel {
   const OverviewModel({
@@ -20,6 +21,8 @@ class OverviewModel {
     this.monthlyParcelTrendLoadFailed = false,
     this.weekdaySalesTrend = const <OverviewWeekdaySalesTrendPoint>[],
     this.weekdaySalesTrendLoadFailed = false,
+    this.weekdayUserSalesTrend = const <OverviewWeekdayUserSalesTrendPoint>[],
+    this.weekdayUserSalesTrendLoadFailed = false,
     this.cachedAt,
     this.sourceAgentIds,
   });
@@ -40,6 +43,10 @@ class OverviewModel {
         json['weekdaySalesTrend'] as List<dynamic>? ?? const <dynamic>[];
     final weekdaySalesTrendLoadFailed =
         json['weekdaySalesTrendLoadFailed'] as bool? ?? false;
+    final weekdayUserJson =
+        json['weekdayUserSalesTrend'] as List<dynamic>? ?? const <dynamic>[];
+    final weekdayUserSalesTrendLoadFailed =
+        json['weekdayUserSalesTrendLoadFailed'] as bool? ?? false;
 
     final cachedAt = json['cachedAt'] is String
         ? DateTime.tryParse(json['cachedAt'] as String)
@@ -114,6 +121,18 @@ class OverviewModel {
           })
           .toList(growable: false),
       weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
+      weekdayUserSalesTrend: weekdayUserJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return OverviewWeekdayUserSalesTrendPoint(
+              weekdayNumber: row['weekdayNumber'] as int,
+              userName: row['userName'] as String,
+              salesCount: row['salesCount'] as int,
+              salesAmount: (row['salesAmount'] as num).toDouble(),
+            );
+          })
+          .toList(growable: false),
+      weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -141,6 +160,8 @@ class OverviewModel {
       monthlyParcelTrendLoadFailed: overview.monthlyParcelTrendLoadFailed,
       weekdaySalesTrend: overview.weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: overview.weekdaySalesTrendLoadFailed,
+      weekdayUserSalesTrend: overview.weekdayUserSalesTrend,
+      weekdayUserSalesTrendLoadFailed: overview.weekdayUserSalesTrendLoadFailed,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -161,6 +182,10 @@ class OverviewModel {
 
   final bool weekdaySalesTrendLoadFailed;
 
+  final List<OverviewWeekdayUserSalesTrendPoint> weekdayUserSalesTrend;
+
+  final bool weekdayUserSalesTrendLoadFailed;
+
   /// When the overview was persisted locally (for TTL / signature checks).
   final DateTime? cachedAt;
 
@@ -179,10 +204,16 @@ class OverviewModel {
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
       weekdaySalesTrend: weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
+      weekdayUserSalesTrend: weekdayUserSalesTrend,
+      weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
       isStaleCache: isStaleCache,
     );
   }
 
+  /// JSON persisted for offline/stale recovery. Excludes weekday-by-user
+  /// fields to keep payload small (high-cardinality series); those fields
+  /// reload on next successful fetch. Legacy cache files may still contain
+  /// those keys; `fromJson` continues to parse them when present.
   Map<String, Object?> toJson() {
     return <String, Object?>{
       'periodStart': periodStart.toIso8601String(),

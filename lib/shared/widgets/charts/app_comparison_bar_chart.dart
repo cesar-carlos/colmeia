@@ -78,6 +78,7 @@ class AppComparisonBarChartStyle {
     this.categoryAutoScrollingMode = AutoScrollingMode.start,
     this.categoryViewportFootnote,
     this.categoryViewportPanSemanticsLabel,
+    this.outerDataLabelTopReserve = 0,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -128,6 +129,11 @@ class AppComparisonBarChartStyle {
   /// labels, the Syncfusion engine merges in extra top inset so labels are not
   /// clipped.
   final EdgeInsets? chartPadding;
+
+  /// Extra top inset (logical pixels) added after the outer–data-label
+  /// headroom calculation. Use when labels (e.g. compact currency) still clip
+  /// at the top of the plot at default [TextScaler] values.
+  final double outerDataLabelTopReserve;
 
   /// Animation duration for the series.
   final Duration? animationDuration;

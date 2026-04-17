@@ -2,7 +2,9 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report_resumo_parcelas.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -10,6 +12,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
@@ -17,6 +20,7 @@ import 'package:colmeia/features/overview/data/datasources/overview_local_dataso
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_monthly_parcel_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_trend_mapper.dart';
+import 'package:colmeia/features/overview/data/mappers/overview_weekday_user_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -27,6 +31,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_payment_metho
 import 'package:colmeia/features/overview/domain/entities/overview_payment_resumo_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
@@ -41,6 +46,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     loadResumoParcelasMensalAcrossAgents,
     required LoadResumoParcelasDiaSemanaAcrossAgentsUseCase
     loadResumoParcelasDiaSemanaAcrossAgents,
+    required LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase
+    loadResumoParcelasDiaSemanaUsuarioAcrossAgents,
     DateTime Function()? now,
   }) : _localDataSource = localDataSource,
        _resumoAcrossAgentsRepository = resumoAcrossAgentsRepository,
@@ -48,6 +55,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
            loadResumoParcelasMensalAcrossAgents,
        _loadResumoParcelasDiaSemanaAcrossAgents =
            loadResumoParcelasDiaSemanaAcrossAgents,
+       _loadResumoParcelasDiaSemanaUsuarioAcrossAgents =
+           loadResumoParcelasDiaSemanaUsuarioAcrossAgents,
        _now = now ?? DateTime.now;
 
   final OverviewLocalDataSource _localDataSource;
@@ -57,6 +66,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
   _loadResumoParcelasMensalAcrossAgents;
   final LoadResumoParcelasDiaSemanaAcrossAgentsUseCase
   _loadResumoParcelasDiaSemanaAcrossAgents;
+  final LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase
+  _loadResumoParcelasDiaSemanaUsuarioAcrossAgents;
   final DateTime Function() _now;
 
   static const String _sourceAgentIdsContextField = 'sourceAgentIds';
@@ -66,6 +77,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
   /// a longer bridge wait so merge-all runs do not all fail on slow agents.
   static const int _overviewMonthlyParcelSqlBridgeTimeoutMs = 300000;
   static const int _overviewWeekdaySalesSqlBridgeTimeoutMs = 300000;
+
+  /// Higher cardinality than the aggregate weekday query; allow merge-all a
+  /// little longer before the bridge times out.
+  static const int _overviewWeekdayUserSqlBridgeTimeoutMs = 360000;
 
   @override
   Future<AppResult<Overview>> loadOverview({
@@ -103,6 +118,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
       strategy: executionStrategy,
       bridgeTimeoutMs: _overviewWeekdaySalesSqlBridgeTimeoutMs,
     );
+    Future<AppResult<AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>>>?
+        weekdayUserBridgeFuture;
     try {
       final reportResult = await _resumoAcrossAgentsRepository.load(
         userId: userId,
@@ -111,6 +128,15 @@ class OverviewRepositoryImpl implements OverviewRepository {
         strategy: executionStrategy,
       );
       final report = reportResult.getOrNull();
+      if (report != null && report.consideredApprovedAgentCount > 0) {
+        weekdayUserBridgeFuture = _loadResumoParcelasDiaSemanaUsuarioAcrossAgents(
+          userId: userId,
+          filter: weekdayFilter,
+          selectedAgentIds: filter.selectedAgentIds,
+          strategy: executionStrategy,
+          bridgeTimeoutMs: _overviewWeekdayUserSqlBridgeTimeoutMs,
+        );
+      }
       if (report == null) {
         await monthlyParcelFuture;
         await weekdaySalesFuture;
@@ -131,11 +157,17 @@ class OverviewRepositoryImpl implements OverviewRepository {
       }
 
       if (report.consideredApprovedAgentCount == 0) {
-        final monthly = await _resolveMonthlyParcelTrend(
+        final monthlyF = _resolveMonthlyParcelTrend(
           monthlyParcelFuture,
           mensalFilter,
         );
-        final weekday = await _resolveWeekdaySalesTrend(weekdaySalesFuture);
+        final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
+        final userF = _resolveWeekdayUserSalesTrendOptional(
+          weekdayUserBridgeFuture,
+        );
+        final monthly = await monthlyF;
+        final weekday = await weekdayF;
+        final weekdayUser = await userF;
         return Success<Overview, AppFailure>(
           _buildOverview(
             const <OverviewPaymentResumoRow>[],
@@ -149,6 +181,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
             monthlyParcelTrendLoadFailed: monthly.loadFailed,
             weekdaySalesTrend: weekday.points,
             weekdaySalesTrendLoadFailed: weekday.loadFailed,
+            weekdayUserSalesTrend: weekdayUser.points,
+            weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
           ),
         );
       }
@@ -178,17 +212,25 @@ class OverviewRepositoryImpl implements OverviewRepository {
           agentNamesMissingClientToken: report.missingClientTokenAgentNames,
         );
         if (cachedOverview != null) {
-          final monthly = await _resolveMonthlyParcelTrend(
+          final monthlyF = _resolveMonthlyParcelTrend(
             monthlyParcelFuture,
             mensalFilter,
           );
-          final weekday = await _resolveWeekdaySalesTrend(weekdaySalesFuture);
+          final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
+          final userF = _resolveWeekdayUserSalesTrendOptional(
+            weekdayUserBridgeFuture,
+          );
+          final monthly = await monthlyF;
+          final weekday = await weekdayF;
+          final weekdayUser = await userF;
           return Success<Overview, AppFailure>(
             cachedOverview.copyWith(
               monthlyParcelTrend: monthly.points,
               monthlyParcelTrendLoadFailed: monthly.loadFailed,
               weekdaySalesTrend: weekday.points,
               weekdaySalesTrendLoadFailed: weekday.loadFailed,
+              weekdayUserSalesTrend: weekdayUser.points,
+              weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
             ),
           );
         }
@@ -206,11 +248,17 @@ class OverviewRepositoryImpl implements OverviewRepository {
         );
       }
 
-      final monthly = await _resolveMonthlyParcelTrend(
+      final monthlyF = _resolveMonthlyParcelTrend(
         monthlyParcelFuture,
         mensalFilter,
       );
-      final weekday = await _resolveWeekdaySalesTrend(weekdaySalesFuture);
+      final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
+      final userF = _resolveWeekdayUserSalesTrendOptional(
+        weekdayUserBridgeFuture,
+      );
+      final monthly = await monthlyF;
+      final weekday = await weekdayF;
+      final weekdayUser = await userF;
       final overview = _buildOverview(
         _mapOverviewRows(report.mergedRows),
         rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
@@ -227,6 +275,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         monthlyParcelTrendLoadFailed: monthly.loadFailed,
         weekdaySalesTrend: weekday.points,
         weekdaySalesTrendLoadFailed: weekday.loadFailed,
+        weekdayUserSalesTrend: weekdayUser.points,
+        weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
         mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
       );
 
@@ -271,6 +321,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
     } on Object catch (error, stackTrace) {
       await monthlyParcelFuture;
       await weekdaySalesFuture;
+      if (weekdayUserBridgeFuture != null) {
+        await weekdayUserBridgeFuture;
+      }
       final failure = mapToAppFailure(
         error,
         stackTrace: stackTrace,
@@ -355,6 +408,70 @@ class OverviewRepositoryImpl implements OverviewRepository {
           overviewWeekdaySalesTrendPointsFromRows(report.chartRowsWeek),
       failureLogMessage: 'Overview: weekday sales trend query failed',
       emptyValue: const <OverviewWeekdaySalesTrendPoint>[],
+    );
+  }
+
+  /// When [future] is null (no approved agents), skips the bridge call.
+  Future<
+    ({
+      List<OverviewWeekdayUserSalesTrendPoint> points,
+      bool loadFailed,
+    })
+  >
+  _resolveWeekdayUserSalesTrendOptional(
+    Future<
+      AppResult<
+        AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>
+      >
+    >?
+    future,
+  ) async {
+    if (future == null) {
+      return (
+        points: const <OverviewWeekdayUserSalesTrendPoint>[],
+        loadFailed: false,
+      );
+    }
+    return _resolveWeekdayUserSalesTrend(future);
+  }
+
+  Future<
+    ({
+      List<OverviewWeekdayUserSalesTrendPoint> points,
+      bool loadFailed,
+    })
+  >
+  _resolveWeekdayUserSalesTrend(
+    Future<
+      AppResult<
+        AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>
+      >
+    >
+    weekdayUserSalesFuture,
+  ) async {
+    return _resolveOptionalChartData<
+      ResumoParcelasDiaSemanaUsuarioRow,
+      OverviewWeekdayUserSalesTrendPoint
+    >(
+      future: weekdayUserSalesFuture,
+      mapSuccess: (report) {
+        final rows = report.aggregatedMergedRows;
+        if (rows.length >=
+            AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemanaUsuario) {
+          AppLogger.info(
+            'Overview: weekday-by-user rows at max_rows cap; chart may be incomplete',
+            context: <String, Object?>{
+              'operation': 'loadOverview',
+              'rowCount': rows.length,
+              'maxRows':
+                  AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemanaUsuario,
+            },
+          );
+        }
+        return overviewWeekdayUserSalesTrendPointsFromRows(rows);
+      },
+      failureLogMessage: 'Overview: weekday-by-user sales trend query failed',
+      emptyValue: const <OverviewWeekdayUserSalesTrendPoint>[],
     );
   }
 
@@ -776,6 +893,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend =
         const <OverviewWeekdaySalesTrendPoint>[],
     bool weekdaySalesTrendLoadFailed = false,
+    List<OverviewWeekdayUserSalesTrendPoint> weekdayUserSalesTrend =
+        const <OverviewWeekdayUserSalesTrendPoint>[],
+    bool weekdayUserSalesTrendLoadFailed = false,
     bool mainResumoHadPlannedTargets = false,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
@@ -878,6 +998,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
       weekdaySalesTrend: weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
+      weekdayUserSalesTrend: weekdayUserSalesTrend,
+      weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
       approvedAgentCount: approvedAgentCount,
       agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
       agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,

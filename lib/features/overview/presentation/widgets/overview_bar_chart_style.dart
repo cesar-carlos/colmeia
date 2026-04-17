@@ -42,9 +42,8 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     enableAutoScroll: false,
     // Pan inside fixed-width chart (CategoryAxis.autoScrollingDelta) instead of
     // an extra-wide plot + horizontal ScrollView — see Syncfusion docs / ANR.
-    categoryAutoScrollingDelta: (isPayment || isWeekday || isRanking)
-        ? categoryPanDelta
-        : null,
+    categoryAutoScrollingDelta:
+        (isPayment || isWeekday || isRanking) ? categoryPanDelta : null,
     categoryViewportFootnote:
         (showCategoryPanHintsPayment || isWeekday || isRanking)
         ? l10n.chartComparisonPanGestureHint
@@ -81,7 +80,9 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
       (isRanking || isPayment) ? tokens.gapSm : tokens.gapMd,
     ),
     tooltipLabelMaxChars: 56,
-    minPlottedValueShareOfMax: isRanking ? 0.03 : (isWeekday ? 0.06 : 0.045),
+    minPlottedValueShareOfMax: isRanking
+        ? 0.03
+        : (isWeekday ? 0.06 : 0.045),
     minBarWidth: isRanking ? 84 : (isWeekday ? 72 : 76),
     height: isRanking
         ? tokens.chartStandardHeight + tokens.contentSpacing * 3

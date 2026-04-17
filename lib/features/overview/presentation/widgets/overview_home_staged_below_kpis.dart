@@ -6,6 +6,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_payment_
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_rankings_section.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_user_sales_trend_chart.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
@@ -36,14 +37,15 @@ class OverviewHomeStagedBelowKpis extends StatefulWidget {
 
 class _OverviewHomeStagedBelowKpisState
     extends State<OverviewHomeStagedBelowKpis> {
-  /// 0 = placeholders only. 1 = mix … 5 = agent ranking, 6 = + user ranking.
+  /// 0 = placeholders only. 1 = mix … 5 = weekday-by-user chart, 6 = agent
+  /// ranking, 7 = + user ranking.
   int _belowKpisStage = 0;
 
   /// Bumped when a new staged pipeline starts, skeleton cancels it, or on
   /// [dispose], so post-frame callbacks do not call [setState] after teardown.
   int _mountGeneration = 0;
 
-  static const int _finalStage = 6;
+  static const int _finalStage = 7;
 
   static const double _mixPlaceholderHeight = 220;
 
@@ -215,6 +217,17 @@ class _OverviewHomeStagedBelowKpisState
           SizedBox(height: tokens.sectionSpacing),
           AppSkeleton(
             enabled: true,
+            showDelay: const Duration(milliseconds: 100),
+            loadingSemanticsLabel: l10n.overviewLoadingWeekdayUserSalesSemantics,
+            child: OverviewWeekdayUserSalesTrendChart(
+              l10n: l10n,
+              points: displayOverview.weekdayUserSalesTrend,
+              loadFailed: displayOverview.weekdayUserSalesTrendLoadFailed,
+            ),
+          ),
+          SizedBox(height: tokens.sectionSpacing),
+          AppSkeleton(
+            enabled: true,
             showDelay: const Duration(milliseconds: 120),
             loadingSemanticsLabel: l10n.overviewLoadingRankingsSemantics,
             child: OverviewRankingsSection(
@@ -235,6 +248,8 @@ class _OverviewHomeStagedBelowKpisState
           const SizedBox(height: _mixPlaceholderHeight),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: paymentBarChartHeight),
+          SizedBox(height: tokens.sectionSpacing),
+          SizedBox(height: chartBlockHeight),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: chartBlockHeight),
           SizedBox(height: tokens.sectionSpacing),
@@ -315,9 +330,24 @@ class _OverviewHomeStagedBelowKpisState
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
           enabled: false,
+          showDelay: const Duration(milliseconds: 100),
+          loadingSemanticsLabel: l10n.overviewLoadingWeekdayUserSalesSemantics,
+          child: _belowKpisStage >= 5
+              ? RepaintBoundary(
+                  child: OverviewWeekdayUserSalesTrendChart(
+                    l10n: l10n,
+                    points: overview.weekdayUserSalesTrend,
+                    loadFailed: overview.weekdayUserSalesTrendLoadFailed,
+                  ),
+                )
+              : SizedBox(height: chartBlockHeight),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSkeleton(
+          enabled: false,
           showDelay: const Duration(milliseconds: 120),
           loadingSemanticsLabel: l10n.overviewLoadingRankingsSemantics,
-          child: _belowKpisStage < 5
+          child: _belowKpisStage < 6
               ? SizedBox(
                   height:
                       chartBlockHeight +
@@ -337,7 +367,7 @@ class _OverviewHomeStagedBelowKpisState
                             agentRankings: rankings.agents,
                           ),
                           SizedBox(height: tokens.sectionSpacing),
-                          if (_belowKpisStage >= 6)
+                          if (_belowKpisStage >= 7)
                             RepaintBoundary(
                               key: const ValueKey<String>(
                                 'overview-user-ranking',

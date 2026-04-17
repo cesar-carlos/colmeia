@@ -366,7 +366,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLoadingWeekdaySalesSemantics =>
-      'Loading sales by weekday chart…';
+      'A carregar gráfico de vendas por dia da semana…';
 
   @override
   String get overviewMonthlyParcelsTitle => 'Ultimos 12 meses';
@@ -408,33 +408,34 @@ class AppLocalizationsPt extends AppLocalizations {
       'Grafico dos ultimos doze meses de valor em parcelas e vendas';
 
   @override
-  String get overviewWeekdaySalesTitle => 'Sales by weekday';
+  String get overviewWeekdaySalesTitle => 'Vendas por dia da semana';
 
   @override
-  String get overviewWeekdayRevenueTitle => 'Revenue by weekday';
+  String get overviewWeekdayRevenueTitle => 'Receita por dia da semana';
 
   @override
   String get overviewWeekdaySalesSubtitle =>
-      'Weekday distribution in the selected period (all branches in scope).';
+      'Distribuição por dia da semana no período selecionado (todas as filiais no âmbito).';
 
   @override
-  String get overviewWeekdaySalesEmpty => 'No weekday data for this period.';
+  String get overviewWeekdaySalesEmpty =>
+      'Sem dados por dia da semana neste período.';
 
   @override
   String get overviewWeekdaySalesLoadFailed =>
-      'Could not load the weekday chart. Try again later.';
+      'Não foi possível carregar o gráfico por dia da semana. Tente novamente mais tarde.';
 
   @override
   String get overviewWeekdaySalesChartSemantics =>
-      'Weekday sales count and parcel amount chart';
+      'Gráfico de vendas e valor em parcelas por dia da semana';
 
   @override
   String get overviewWeekdayRevenueChartSemantics =>
-      'Weekday revenue and sales count chart';
+      'Gráfico de receita e vendas por dia da semana';
 
   @override
   String get overviewWeekdayChartScopeHint =>
-      'Aggregated across all branches in the selected scope.';
+      'Agregado em todas as filiais no âmbito selecionado.';
 
   @override
   String overviewWeekdaySalesTooltip(
@@ -442,14 +443,14 @@ class AppLocalizationsPt extends AppLocalizations {
     String salesCount,
     String salesAmount,
   ) {
-    return '$weekday: $salesCount sales - $salesAmount';
+    return '$weekday: $salesCount vendas - $salesAmount';
   }
 
   @override
-  String get overviewWeekdayMetricSalesCountLabel => 'Sales';
+  String get overviewWeekdayMetricSalesCountLabel => 'Vendas';
 
   @override
-  String get overviewWeekdayMetricSalesAmountLabel => 'Revenue';
+  String get overviewWeekdayMetricSalesAmountLabel => 'Receita';
 
   @override
   String overviewWeekdaySalesSummarySemantics(
@@ -458,7 +459,7 @@ class AppLocalizationsPt extends AppLocalizations {
     String topWeekday,
     String topSalesCount,
   ) {
-    return 'Total $totalSalesCount sales and $totalSalesAmount in the selected period. Highest day: $topWeekday with $topSalesCount sales.';
+    return 'Total $totalSalesCount vendas e $totalSalesAmount no período selecionado. Dia com maior volume: $topWeekday, com $topSalesCount vendas.';
   }
 
   @override
@@ -468,7 +469,7 @@ class AppLocalizationsPt extends AppLocalizations {
     String topWeekday,
     String topSalesAmount,
   ) {
-    return 'Total $totalSalesAmount and $totalSalesCount sales in the selected period. Highest day: $topWeekday with $topSalesAmount.';
+    return 'Total $totalSalesAmount e $totalSalesCount vendas no período selecionado. Dia com maior valor: $topWeekday, com $topSalesAmount.';
   }
 
   @override
@@ -491,6 +492,85 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewWeekdaySaturday => 'Sábado';
+
+  @override
+  String get overviewWeekdayUserSalesTitle =>
+      'Vendas por dia da semana e utilizador';
+
+  @override
+  String get overviewWeekdayUserRevenueTitle =>
+      'Receita por dia da semana e utilizador';
+
+  @override
+  String get overviewWeekdayUserSalesSubtitle =>
+      'Dias da semana no eixo horizontal; cada cor é um utilizador (ver legenda). Período e âmbito de filiais como no painel.';
+
+  @override
+  String get overviewWeekdayUserSalesEmpty =>
+      'Sem dados por utilizador e dia da semana neste período.';
+
+  @override
+  String get overviewWeekdayUserSalesLoadFailed =>
+      'Não foi possível carregar o gráfico por utilizador e dia da semana. Tente novamente mais tarde.';
+
+  @override
+  String get overviewWeekdayUserSalesChartSemantics =>
+      'Gráfico de vendas e valor em parcelas por dia da semana e utilizador';
+
+  @override
+  String get overviewWeekdayUserRevenueChartSemantics =>
+      'Gráfico de receita e vendas por dia da semana e utilizador';
+
+  @override
+  String get overviewWeekdayUserChartScopeHint =>
+      'Agregado em todas as filiais no âmbito selecionado.';
+
+  @override
+  String get overviewWeekdayUserGroupedOthersLabel => 'Outros';
+
+  @override
+  String overviewWeekdayUserGroupedTruncationFootnote(
+    int shown,
+    String othersLabel,
+  ) {
+    return 'São mostrados os $shown utilizadores com totais mais altos; os restantes são somados em \"$othersLabel\".';
+  }
+
+  @override
+  String overviewWeekdayUserSalesTooltip(
+    String weekday,
+    String userName,
+    String salesCount,
+    String salesAmount,
+  ) {
+    return '$weekday, $userName: $salesCount vendas - $salesAmount';
+  }
+
+  @override
+  String overviewWeekdayUserSalesSummarySemantics(
+    String totalSalesCount,
+    String totalSalesAmount,
+    String topWeekday,
+    String topUserName,
+    String topSalesCount,
+  ) {
+    return 'Total $totalSalesCount vendas e $totalSalesAmount no período selecionado. Maior barra: $topWeekday, $topUserName com $topSalesCount vendas.';
+  }
+
+  @override
+  String overviewWeekdayUserRevenueSummarySemantics(
+    String totalSalesAmount,
+    String totalSalesCount,
+    String topWeekday,
+    String topUserName,
+    String topSalesAmount,
+  ) {
+    return 'Total $totalSalesAmount e $totalSalesCount vendas no período selecionado. Maior barra: $topWeekday, $topUserName com $topSalesAmount.';
+  }
+
+  @override
+  String get overviewLoadingWeekdayUserSalesSemantics =>
+      'A carregar gráfico de vendas por dia da semana e utilizador…';
 
   @override
   String get overviewKpiTotalRevenue => 'Faturamento total';
@@ -2328,6 +2408,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Carregando grafico dos ultimos 12 meses…';
 
   @override
+  String get overviewLoadingWeekdaySalesSemantics =>
+      'Carregando gráfico de vendas por dia da semana…';
+
+  @override
   String get overviewMonthlyParcelsTitle => 'Ultimos 12 meses';
 
   @override
@@ -2367,6 +2451,71 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Grafico dos ultimos doze meses de valor em parcelas e vendas';
 
   @override
+  String get overviewWeekdaySalesTitle => 'Vendas por dia da semana';
+
+  @override
+  String get overviewWeekdayRevenueTitle => 'Receita por dia da semana';
+
+  @override
+  String get overviewWeekdaySalesSubtitle =>
+      'Distribuição por dia da semana no período selecionado (todas as filiais no âmbito).';
+
+  @override
+  String get overviewWeekdaySalesEmpty =>
+      'Sem dados por dia da semana neste período.';
+
+  @override
+  String get overviewWeekdaySalesLoadFailed =>
+      'Não foi possível carregar o gráfico por dia da semana. Tente novamente mais tarde.';
+
+  @override
+  String get overviewWeekdaySalesChartSemantics =>
+      'Gráfico de vendas e valor em parcelas por dia da semana';
+
+  @override
+  String get overviewWeekdayRevenueChartSemantics =>
+      'Gráfico de receita e vendas por dia da semana';
+
+  @override
+  String get overviewWeekdayChartScopeHint =>
+      'Agregado em todas as filiais no âmbito selecionado.';
+
+  @override
+  String overviewWeekdaySalesTooltip(
+    String weekday,
+    String salesCount,
+    String salesAmount,
+  ) {
+    return '$weekday: $salesCount vendas - $salesAmount';
+  }
+
+  @override
+  String get overviewWeekdayMetricSalesCountLabel => 'Vendas';
+
+  @override
+  String get overviewWeekdayMetricSalesAmountLabel => 'Receita';
+
+  @override
+  String overviewWeekdaySalesSummarySemantics(
+    String totalSalesCount,
+    String totalSalesAmount,
+    String topWeekday,
+    String topSalesCount,
+  ) {
+    return 'Total $totalSalesCount vendas e $totalSalesAmount no período selecionado. Dia com maior volume: $topWeekday, com $topSalesCount vendas.';
+  }
+
+  @override
+  String overviewWeekdayRevenueSummarySemantics(
+    String totalSalesAmount,
+    String totalSalesCount,
+    String topWeekday,
+    String topSalesAmount,
+  ) {
+    return 'Total $totalSalesAmount e $totalSalesCount vendas no período selecionado. Dia com maior valor: $topWeekday, com $topSalesAmount.';
+  }
+
+  @override
   String get overviewWeekdaySunday => 'Domingo';
 
   @override
@@ -2386,6 +2535,85 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewWeekdaySaturday => 'Sábado';
+
+  @override
+  String get overviewWeekdayUserSalesTitle =>
+      'Vendas por dia da semana e usuário';
+
+  @override
+  String get overviewWeekdayUserRevenueTitle =>
+      'Receita por dia da semana e usuário';
+
+  @override
+  String get overviewWeekdayUserSalesSubtitle =>
+      'Dias da semana no eixo horizontal; cada cor é um usuário (ver legenda). Período e âmbito de filiais como no painel.';
+
+  @override
+  String get overviewWeekdayUserSalesEmpty =>
+      'Sem dados por usuário e dia da semana neste período.';
+
+  @override
+  String get overviewWeekdayUserSalesLoadFailed =>
+      'Não foi possível carregar o gráfico por usuário e dia da semana. Tente novamente mais tarde.';
+
+  @override
+  String get overviewWeekdayUserSalesChartSemantics =>
+      'Gráfico de vendas e valor em parcelas por dia da semana e usuário';
+
+  @override
+  String get overviewWeekdayUserRevenueChartSemantics =>
+      'Gráfico de receita e vendas por dia da semana e usuário';
+
+  @override
+  String get overviewWeekdayUserChartScopeHint =>
+      'Agregado em todas as filiais no âmbito selecionado.';
+
+  @override
+  String get overviewWeekdayUserGroupedOthersLabel => 'Outros';
+
+  @override
+  String overviewWeekdayUserGroupedTruncationFootnote(
+    int shown,
+    String othersLabel,
+  ) {
+    return 'São mostrados os $shown usuários com totais mais altos; os restantes são somados em \"$othersLabel\".';
+  }
+
+  @override
+  String overviewWeekdayUserSalesTooltip(
+    String weekday,
+    String userName,
+    String salesCount,
+    String salesAmount,
+  ) {
+    return '$weekday, $userName: $salesCount vendas - $salesAmount';
+  }
+
+  @override
+  String overviewWeekdayUserSalesSummarySemantics(
+    String totalSalesCount,
+    String totalSalesAmount,
+    String topWeekday,
+    String topUserName,
+    String topSalesCount,
+  ) {
+    return 'Total $totalSalesCount vendas e $totalSalesAmount no período selecionado. Maior barra: $topWeekday, $topUserName com $topSalesCount vendas.';
+  }
+
+  @override
+  String overviewWeekdayUserRevenueSummarySemantics(
+    String totalSalesAmount,
+    String totalSalesCount,
+    String topWeekday,
+    String topUserName,
+    String topSalesAmount,
+  ) {
+    return 'Total $totalSalesAmount e $totalSalesCount vendas no período selecionado. Maior barra: $topWeekday, $topUserName com $topSalesAmount.';
+  }
+
+  @override
+  String get overviewLoadingWeekdayUserSalesSemantics =>
+      'Carregando gráfico de vendas por dia da semana e usuário…';
 
   @override
   String get overviewKpiTotalRevenue => 'Faturamento total';

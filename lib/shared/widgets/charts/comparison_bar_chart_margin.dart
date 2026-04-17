@@ -10,7 +10,10 @@ const double kComparisonBarOuterLabelLineHeightMin = 18;
 
 /// Maximum scaled line height used when reserving top margin for outer data
 /// labels on comparison column charts (one compact label line, not a block).
-const double kComparisonBarOuterLabelLineHeightMax = 30;
+///
+/// Kept above typical single-line body text so compact currency labels (e.g.
+/// `R$ 16,7 mil`) and modest [TextScaler] values are not clipped at the chart top.
+const double kComparisonBarOuterLabelLineHeightMax = 42;
 
 /// Whether data labels sit outside the column and need extra top margin.
 bool comparisonBarChartNeedsOuterDataLabelHeadroom({
@@ -36,6 +39,7 @@ EdgeInsets resolveComparisonBarChartMargin(
   required ChartDataLabelAlignment dataLabelAlignment,
   required Offset? dataLabelOffset,
   required EdgeInsets? chartPadding,
+  double outerDataLabelTopReserve = 0,
 }) {
   final base = chartPadding ?? EdgeInsets.zero;
   if (!comparisonBarChartNeedsOuterDataLabelHeadroom(
@@ -68,6 +72,6 @@ EdgeInsets resolveComparisonBarChartMargin(
     tokens?.gapMd ?? 12.0,
   );
   final minTop = estimatedLineHeight + lift.abs() + clearance;
-  final top = math.max(base.top, minTop);
+  final top = math.max(base.top, minTop) + outerDataLabelTopReserve;
   return EdgeInsets.fromLTRB(base.left, top, base.right, base.bottom);
 }

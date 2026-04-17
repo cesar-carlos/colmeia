@@ -482,6 +482,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewWeekdaySaturday => 'Saturday';
 
   @override
+  String get overviewWeekdayUserSalesTitle => 'Sales by weekday and user';
+
+  @override
+  String get overviewWeekdayUserRevenueTitle => 'Revenue by weekday and user';
+
+  @override
+  String get overviewWeekdayUserSalesSubtitle =>
+      'Weekdays on the horizontal axis; each colour is a user (see legend). Same period and branch scope as the dashboard.';
+
+  @override
+  String get overviewWeekdayUserSalesEmpty =>
+      'No per-user weekday data for this period.';
+
+  @override
+  String get overviewWeekdayUserSalesLoadFailed =>
+      'Could not load the per-user weekday chart. Try again later.';
+
+  @override
+  String get overviewWeekdayUserSalesChartSemantics =>
+      'Weekday and user sales count and parcel amount chart';
+
+  @override
+  String get overviewWeekdayUserRevenueChartSemantics =>
+      'Weekday and user revenue and sales count chart';
+
+  @override
+  String get overviewWeekdayUserChartScopeHint =>
+      'Aggregated across all branches in the selected scope.';
+
+  @override
+  String get overviewWeekdayUserGroupedOthersLabel => 'Others';
+
+  @override
+  String overviewWeekdayUserGroupedTruncationFootnote(
+    int shown,
+    String othersLabel,
+  ) {
+    return 'Showing the $shown users with the highest totals; additional users are summed under \"$othersLabel\".';
+  }
+
+  @override
+  String overviewWeekdayUserSalesTooltip(
+    String weekday,
+    String userName,
+    String salesCount,
+    String salesAmount,
+  ) {
+    return '$weekday, $userName: $salesCount sales - $salesAmount';
+  }
+
+  @override
+  String overviewWeekdayUserSalesSummarySemantics(
+    String totalSalesCount,
+    String totalSalesAmount,
+    String topWeekday,
+    String topUserName,
+    String topSalesCount,
+  ) {
+    return 'Total $totalSalesCount sales and $totalSalesAmount in the selected period. Highest bar: $topWeekday, $topUserName with $topSalesCount sales.';
+  }
+
+  @override
+  String overviewWeekdayUserRevenueSummarySemantics(
+    String totalSalesAmount,
+    String totalSalesCount,
+    String topWeekday,
+    String topUserName,
+    String topSalesAmount,
+  ) {
+    return 'Total $totalSalesAmount and $totalSalesCount sales in the selected period. Highest bar: $topWeekday, $topUserName with $topSalesAmount.';
+  }
+
+  @override
+  String get overviewLoadingWeekdayUserSalesSemantics =>
+      'Loading sales by weekday and user chart…';
+
+  @override
   String get overviewKpiTotalRevenue => 'Total revenue';
 
   @override
