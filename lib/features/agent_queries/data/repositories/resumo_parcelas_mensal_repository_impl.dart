@@ -11,7 +11,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_executi
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_labels.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -70,10 +69,6 @@ class ResumoParcelasMensalRepositoryImpl
       );
     }
 
-    final dimensionFiltersActive =
-        filter.codEmpresa != null ||
-        filter.codFilial != null ||
-        filter.codVendedor != null;
     final periodAndFlagsParams = <String, Object?>{
       'dataVendaInicio': AgentQueriesSqlLocalDate.format(
         filter.dataVendaInicio,
@@ -88,21 +83,14 @@ class ResumoParcelasMensalRepositoryImpl
       requestingUserId: userId,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: dimensionFiltersActive
-          ? ResumoParcelasMensalSql.query
-          : ResumoParcelasMensalSql.queryWithoutDimensionNamedParams,
+      sql: ResumoParcelasMensalSql.query(
+        codEmpresa: filter.codEmpresa,
+        codFilial: filter.codFilial,
+        codVendedor: filter.codVendedor,
+      ),
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
-      namedParams: dimensionFiltersActive
-          ? <String, Object?>{
-              ...periodAndFlagsParams,
-              ...ResumoParcelasSqlDimensionFilters.namedParams(
-                codEmpresa: filter.codEmpresa,
-                codFilial: filter.codFilial,
-                codVendedor: filter.codVendedor,
-              ),
-            }
-          : periodAndFlagsParams,
+      namedParams: periodAndFlagsParams,
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasMensal,

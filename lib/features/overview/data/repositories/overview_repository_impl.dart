@@ -20,6 +20,7 @@ import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_tr
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
@@ -71,7 +72,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
   }) async {
+    final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
     final period = _buildPeriod(filter);
     final last12Range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
       filter,
@@ -141,6 +144,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
             periodStart: period.start,
             periodEnd: period.end,
             approvedAgentCount: 0,
+            rowLabels: resolvedRowLabels,
             monthlyParcelTrend: monthly.points,
             monthlyParcelTrendLoadFailed: monthly.loadFailed,
             weekdaySalesTrend: weekday.points,
@@ -214,6 +218,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         periodStart: period.start,
         periodEnd: period.end,
         approvedAgentCount: report.consideredApprovedAgentCount,
+        rowLabels: resolvedRowLabels,
         agentIdsExcludedFromQueryFailure: report.failedAgentIds,
         agentNamesExcludedFromQueryFailure: report.failedAgentNames,
         agentIdsMissingClientToken: report.missingClientTokenAgentIds,
@@ -222,6 +227,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         monthlyParcelTrendLoadFailed: monthly.loadFailed,
         weekdaySalesTrend: weekday.points,
         weekdaySalesTrendLoadFailed: weekday.loadFailed,
+        mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
       );
 
       final stamp = _now();
@@ -740,6 +746,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required DateTime periodStart,
     required DateTime periodEnd,
     required int approvedAgentCount,
+    required OverviewLoadLabels rowLabels,
     List<String> agentIdsExcludedFromQueryFailure = const <String>[],
     List<String> agentNamesExcludedFromQueryFailure = const <String>[],
     List<String> agentIdsMissingClientToken = const <String>[],
@@ -750,6 +757,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend =
         const <OverviewWeekdaySalesTrendPoint>[],
     bool weekdaySalesTrendLoadFailed = false,
+    bool mainResumoHadPlannedTargets = false,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final userBuckets = <String, _UserAggregate>{};
@@ -769,17 +777,17 @@ class OverviewRepositoryImpl implements OverviewRepository {
             paymentKey,
             () => _PaymentMethodAggregate(
               code: row.codFormaPagamento.trim(),
-              label: _resolvePaymentMethodLabel(row),
+              label: _resolvePaymentMethodLabel(row, rowLabels),
             ),
           )
           .add(row.qtdVendas, row.valorParcela);
 
-      final userKey = _normalizeUserKey(row.nomeUsuario);
+      final userKey = _normalizeUserKey(row.nomeUsuario, rowLabels);
       userBuckets
           .putIfAbsent(
             userKey,
             () => _UserAggregate(
-              userName: _resolveUserName(row.nomeUsuario),
+              userName: _resolveUserName(row.nomeUsuario, rowLabels),
             ),
           )
           .add(row.qtdVendas, row.valorParcela);
@@ -856,25 +864,29 @@ class OverviewRepositoryImpl implements OverviewRepository {
       agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,
       agentIdsMissingClientToken: agentIdsMissingClientToken,
       agentNamesMissingClientToken: agentNamesMissingClientToken,
+      mainResumoHadPlannedTargets: mainResumoHadPlannedTargets,
     );
   }
 
-  String _resolvePaymentMethodLabel(OverviewPaymentResumoRow row) {
+  String _resolvePaymentMethodLabel(
+    OverviewPaymentResumoRow row,
+    OverviewLoadLabels labels,
+  ) {
     final description = row.descricaoFormaPagamento.trim();
     if (description.isNotEmpty) {
       return description;
     }
     final code = row.codFormaPagamento.trim();
-    return code.isEmpty ? 'Forma nao informada' : code;
+    return code.isEmpty ? labels.unknownPaymentMethodLabel : code;
   }
 
-  String _resolveUserName(String rawUserName) {
+  String _resolveUserName(String rawUserName, OverviewLoadLabels labels) {
     final normalized = rawUserName.trim();
-    return normalized.isEmpty ? 'Usuario nao informado' : normalized;
+    return normalized.isEmpty ? labels.unknownUserNameLabel : normalized;
   }
 
-  String _normalizeUserKey(String rawUserName) {
-    final normalized = _resolveUserName(rawUserName);
+  String _normalizeUserKey(String rawUserName, OverviewLoadLabels labels) {
+    final normalized = _resolveUserName(rawUserName, labels);
     return normalized.toLowerCase();
   }
 

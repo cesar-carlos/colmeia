@@ -1,4 +1,5 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -776,13 +777,14 @@ class _EmptyBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SizedBox(
       height: tokens.chartCompactHeight * 0.9,
       child: Center(
         child:
             placeholder ??
             Text(
-              'Sem dados de categorias para este recorte.',
+              l10n.chartCategoryDonutEmptyForFilter,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.appColors.onSurfaceVariant,

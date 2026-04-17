@@ -7,6 +7,7 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
@@ -216,6 +217,7 @@ class _PendingOverviewRepository implements OverviewRepository {
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
   }) {
     return _resultFuture;
   }
@@ -233,6 +235,7 @@ class _QueuedOverviewRepository implements OverviewRepository {
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
   }) {
     requestedPolicies.add(policy);
     return _results[_index++];

@@ -107,4 +107,26 @@ abstract final class ResumoVendasDiariasPorVendedorBairroNomeExpression {
         '$normalizedColumnName = '
         '${nomeBairroSql("COALESCE(:$paramName, '')")})';
   }
+
+  /// Outer-report filter: tautology when unset; otherwise compare
+  /// [BairroNomeNorm] to the same normalization used for named parameters, but
+  /// with an inlined `N'…'` literal (Agent SQL bridge named-parameter cap).
+  static String outerWhereNormalizedBairro(String? sqlBairro) {
+    if (sqlBairro == null) {
+      return '        AND (1 = 1)';
+    }
+    final escaped = sqlBairro.replaceAll("'", "''");
+    final rhs = nomeBairroSql("COALESCE(N'$escaped', '')");
+    return '        AND (BairroNomeNorm = $rhs)';
+  }
+
+  /// Same as [outerWhereNormalizedBairro] for [NomeMunicipioNomeNorm].
+  static String outerWhereNormalizedMunicipio(String? sqlMunicipio) {
+    if (sqlMunicipio == null) {
+      return '        AND (1 = 1)';
+    }
+    final escaped = sqlMunicipio.replaceAll("'", "''");
+    final rhs = nomeMunicipioSql("COALESCE(N'$escaped', '')");
+    return '        AND (NomeMunicipioNomeNorm = $rhs)';
+  }
 }

@@ -71,8 +71,13 @@ class AgentQueryExecutionReport<Row> {
         .toList(growable: false);
   }
 
-  bool get requiresClientTokenSetup =>
-      mergedRows.isEmpty && missingClientTokenTargets.isNotEmpty;
+  /// True only when **no** agent could run the query (`plannedTargets` empty)
+  /// while some selected agents still need a local `client_token`.
+  ///
+  /// If at least one agent ran successfully (even returning zero SQL rows),
+  /// this is **false** so callers do not conflate "no sales in period" with
+  /// "cannot execute until tokens are provisioned".
+  bool get requiresClientTokenSetup => skippedOnlyDueToMissingClientTokens;
 
   bool get skippedOnlyDueToMissingClientTokens =>
       plannedTargets.isEmpty && missingClientTokenTargets.isNotEmpty;

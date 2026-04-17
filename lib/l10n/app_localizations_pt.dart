@@ -134,6 +134,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Estes agentes aprovados foram ignorados porque nao ha token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
 
   @override
+  String get overviewResumoUnknownPaymentMethod =>
+      'Forma de pagamento não informada';
+
+  @override
+  String get overviewResumoUnknownUserName => 'Utilizador não informado';
+
+  @override
   String get dashboardSetupRequiredTitle =>
       'Salve um token de cliente para carregar os dados';
 
@@ -254,6 +261,18 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get overviewAgentFilterNoSearchResults =>
       'Nenhum agente corresponde à busca.';
+
+  @override
+  String get overviewAgentFilterMissingClientTokenBanner =>
+      'Agentes sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
+
+  @override
+  String get overviewAgentFilterMissingClientTokenRowSubtitle =>
+      'Sem token neste dispositivo — consultas SQL são ignoradas.';
+
+  @override
+  String get chartCategoryDonutEmptyForFilter =>
+      'Sem dados de categorias para este recorte.';
 
   @override
   String get dashboardAgentRankingTitle => 'Ranking por agente';
@@ -1952,6 +1971,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Estes agentes aprovados foram ignorados porque nao ha token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
 
   @override
+  String get overviewResumoUnknownPaymentMethod =>
+      'Forma de pagamento não informada';
+
+  @override
+  String get overviewResumoUnknownUserName => 'Utilizador não informado';
+
+  @override
   String get dashboardSetupRequiredTitle =>
       'Salve um token de cliente para carregar os dados';
 
@@ -2072,6 +2098,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewAgentFilterNoSearchResults =>
       'Nenhum agente corresponde à busca.';
+
+  @override
+  String get overviewAgentFilterMissingClientTokenBanner =>
+      'Agentes sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
+
+  @override
+  String get overviewAgentFilterMissingClientTokenRowSubtitle =>
+      'Sem token neste dispositivo — consultas SQL são ignoradas.';
+
+  @override
+  String get chartCategoryDonutEmptyForFilter =>
+      'Sem dados de categorias para este recorte.';
 
   @override
   String get dashboardAgentRankingTitle => 'Ranking por agente';

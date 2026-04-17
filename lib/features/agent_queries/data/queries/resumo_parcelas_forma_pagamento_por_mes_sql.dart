@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vendido_detalhe_sql.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 
 abstract final class ResumoParcelasFormaPagamentoPorMesSql {
   /// Parcel summary by company, branch, user, sale year/month, and payment
@@ -9,8 +10,8 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
   /// columns exist for future filters and are not all projected in the outer
   /// `SELECT`.
   ///
-  /// Includes optional dimension filters (`:codEmpresa`, `:codFilial`,
-  /// `:codVendedor`) bound as null until the app passes concrete values.
+  /// Optional dimensions are inlined (see [ResumoParcelasSqlDimensionFilters])
+  /// for the Agent SQL bridge named-parameter limit.
   ///
   /// **Agent policy review**: driving rows are `ParcelaProdutoVendido` joined
   /// to `ProdutoVendido`, `FormaPagamento`, `TipoOperacaoSaida`, `Cliente`,
@@ -76,9 +77,7 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
       AND Origem LIKE :origem
       AND GeraFinanceiro = :geraFinanceiro
       AND PreVenda = :preVenda
-      AND (:codEmpresa IS NULL OR CodEmpresa = :codEmpresa)
-      AND (:codFilial IS NULL OR CodFilial = :codFilial)
-      AND (:codVendedor IS NULL OR CodVendedor = :codVendedor)
+__RESUMO_PARCELAS_DIMENSION_WHERE__
     GROUP BY
       CodEmpresa,
       CodFilial,
@@ -94,8 +93,19 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
       DescricaoFormaPagamento
 ''';
 
-  static const String query =
-      _queryHead +
-      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
-      _queryTail;
+  static String query({
+    int? codEmpresa,
+    int? codFilial,
+    int? codVendedor,
+  }) {
+    final tail = ResumoParcelasSqlDimensionFilters.embedLiteralDimensionWhere(
+      _queryTail,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+      codVendedor: codVendedor,
+    );
+    return _queryHead +
+        ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
+        tail;
+  }
 }

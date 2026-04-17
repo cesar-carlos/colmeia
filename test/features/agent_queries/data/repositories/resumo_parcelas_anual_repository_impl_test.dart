@@ -109,10 +109,9 @@ void main() {
     check(capturedRequest.namedParams['origem']).equals('FrenteLoja');
     check(capturedRequest.namedParams['geraFinanceiro']).equals('S');
     check(capturedRequest.namedParams['preVenda']).equals('N');
-    check(capturedRequest.namedParams['codEmpresa']).isNull();
-    check(capturedRequest.namedParams['codFilial']).isNull();
-    check(capturedRequest.namedParams['codVendedor']).isNull();
+    check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.sql).contains('ResumoParcelasAnual');
+    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
   });
 
   test('maps row when bridge uses camelCase keys', () async {

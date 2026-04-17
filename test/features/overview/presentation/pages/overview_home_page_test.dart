@@ -13,6 +13,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_monthly_parce
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
@@ -48,6 +49,7 @@ void main() {
     Provider.debugCheckInvalidValueType = null;
     registerFallbackValue(OverviewLoadPolicy.defaultLoad);
     registerFallbackValue(const OverviewFilter());
+    registerFallbackValue(OverviewLoadLabels.englishFallback);
   });
 
   setUp(() {
@@ -85,6 +87,7 @@ void main() {
         userId: any(named: 'userId'),
         policy: any(named: 'policy'),
         filter: any(named: 'filter'),
+        rowLabels: any(named: 'rowLabels'),
       ),
     ).thenAnswer((_) async => Success<Overview, AppFailure>(_overview()));
   });
@@ -142,6 +145,7 @@ void main() {
         userId: any(named: 'userId'),
         policy: any(named: 'policy'),
         filter: any(named: 'filter'),
+        rowLabels: any(named: 'rowLabels'),
       ),
     ).thenAnswer((_) => completer.future);
 

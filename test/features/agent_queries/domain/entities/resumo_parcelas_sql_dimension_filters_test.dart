@@ -54,5 +54,39 @@ void main() {
         'codVendedor': 7,
       });
     });
+
+    test('literalWhereLines is empty when dimensions unset', () {
+      check(ResumoParcelasSqlDimensionFilters.literalWhereLines()).equals('');
+    });
+
+    test('literalWhereLines emits AND lines for set dimensions', () {
+      check(
+        ResumoParcelasSqlDimensionFilters.literalWhereLines(
+          codEmpresa: 9,
+          codFilial: 3,
+          codVendedor: 7,
+        ),
+      ).equals(
+        '      AND CodEmpresa = 9\n'
+        '      AND CodFilial = 3\n'
+        '      AND CodVendedor = 7',
+      );
+    });
+
+    test('embedLiteralDimensionWhere replaces placeholder', () {
+      final template = 'WHERE 1=1\n'
+          '${ResumoParcelasSqlDimensionFilters.resumoParcelasWhereDimensionPlaceholder}\n'
+          'GROUP BY x';
+      check(
+        ResumoParcelasSqlDimensionFilters.embedLiteralDimensionWhere(
+          template,
+          codEmpresa: 1,
+        ),
+      ).equals(
+        'WHERE 1=1\n'
+        '      AND CodEmpresa = 1\n'
+        'GROUP BY x',
+      );
+    });
   });
 }

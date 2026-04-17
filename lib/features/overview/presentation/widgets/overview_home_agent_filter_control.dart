@@ -324,13 +324,7 @@ class _InlineChipsRow extends StatelessWidget {
           children: <Widget>[
             for (final agent in ordered)
               InputChip(
-                avatar: agent.connectionStatus == AgentConnectionStatus.offline
-                    ? Icon(
-                        Icons.cloud_off_outlined,
-                        size: 16,
-                        color: scheme.error,
-                      )
-                    : null,
+                avatar: _agentFilterChipAvatar(agent, scheme),
                 label: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 220),
                   child: Text(
@@ -351,10 +345,14 @@ class _InlineChipsRow extends StatelessWidget {
                 backgroundColor:
                     agent.connectionStatus == AgentConnectionStatus.offline
                     ? scheme.errorContainer.withValues(alpha: 0.42)
+                    : agent.missingLocalClientToken
+                    ? scheme.tertiaryContainer.withValues(alpha: 0.55)
                     : scheme.surfaceContainerHigh,
                 side: BorderSide(
                   color: agent.connectionStatus == AgentConnectionStatus.offline
                       ? scheme.error.withValues(alpha: 0.35)
+                      : agent.missingLocalClientToken
+                      ? scheme.tertiary.withValues(alpha: 0.35)
                       : scheme.outlineVariant.withValues(alpha: 0.4),
                 ),
                 deleteIcon: canRemove
@@ -454,12 +452,19 @@ class _OverviewAgentSelectionSheetState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final tokens = theme.extension<AppThemeTokens>()!;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final filtered = _filtered;
     final matchingNotAllSelected = _query.isNotEmpty &&
         filtered.isNotEmpty &&
         filtered.any((a) => !_selected.contains(a.agentId));
+    final byIdForBanner = <String, OverviewAgentOption>{
+      for (final a in widget.availableAgents) a.agentId: a,
+    };
+    final showMissingTokenBanner = _selected.any(
+      (id) => byIdForBanner[id]?.missingLocalClientToken ?? false,
+    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -543,6 +548,50 @@ class _OverviewAgentSelectionSheetState
                         ),
                       ),
                     ),
+                  if (showMissingTokenBanner)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        tokens.contentSpacing,
+                        0,
+                        tokens.contentSpacing,
+                        tokens.gapSm,
+                      ),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(
+                            tokens.formFieldRadius,
+                          ),
+                          border: Border.all(
+                            color: scheme.outlineVariant.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(tokens.gapSm),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Icon(
+                                Icons.info_outline_rounded,
+                                size: 20,
+                                color: scheme.primary,
+                              ),
+                              SizedBox(width: tokens.gapSm),
+                              Expanded(
+                                child: Text(
+                                  widget
+                                      .l10n
+                                      .overviewAgentFilterMissingClientTokenBanner,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   Expanded(
                     child: filtered.isEmpty
                         ? Center(
@@ -565,7 +614,6 @@ class _OverviewAgentSelectionSheetState
                             itemCount: filtered.length,
                             itemBuilder: (context, index) {
                               final agent = filtered[index];
-                              final scheme = theme.colorScheme;
                               final nameColor = _overviewAgentNameColor(
                                 agent.connectionStatus,
                                 scheme,
@@ -583,6 +631,14 @@ class _OverviewAgentSelectionSheetState
                                     ),
                                     SizedBox(width: tokens.gapXs),
                                   ],
+                                  if (agent.missingLocalClientToken) ...<Widget>[
+                                    Icon(
+                                      Icons.vpn_key_off_outlined,
+                                      size: 18,
+                                      color: scheme.tertiary,
+                                    ),
+                                    SizedBox(width: tokens.gapXs),
+                                  ],
                                   Expanded(
                                     child: Text(
                                       agent.name,
@@ -594,14 +650,31 @@ class _OverviewAgentSelectionSheetState
                                   ),
                                 ],
                               );
+                              final tooltipLines = <String>[
+                                if (isOffline)
+                                  widget.l10n.agentConnectionOffline,
+                                if (agent.missingLocalClientToken)
+                                  widget.l10n
+                                      .overviewAgentFilterMissingClientTokenRowSubtitle,
+                              ];
+                              final titleWidget = tooltipLines.isEmpty
+                                  ? title
+                                  : Tooltip(
+                                      message: tooltipLines.join('\n'),
+                                      child: title,
+                                    );
                               return CheckboxListTile(
-                                title: isOffline
-                                    ? Tooltip(
-                                        message: widget
-                                            .l10n.agentConnectionOffline,
-                                        child: title,
+                                title: titleWidget,
+                                subtitle: agent.missingLocalClientToken
+                                    ? Text(
+                                        widget.l10n
+                                            .overviewAgentFilterMissingClientTokenRowSubtitle,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: scheme.onSurfaceVariant,
+                                            ),
                                       )
-                                    : title,
+                                    : null,
                                 dense: true,
                                 value: _selected.contains(agent.agentId),
                                 onChanged: (v) => _toggle(agent.agentId, v),
@@ -648,4 +721,35 @@ Color _overviewAgentNameColor(
     AgentConnectionStatus.online || AgentConnectionStatus.unknown =>
       scheme.onSurface,
   };
+}
+
+Widget? _agentFilterChipAvatar(OverviewAgentOption agent, ColorScheme scheme) {
+  final offline = agent.connectionStatus == AgentConnectionStatus.offline;
+  final noToken = agent.missingLocalClientToken;
+  if (offline && noToken) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Icon(Icons.cloud_off_outlined, size: 14, color: scheme.error),
+        const SizedBox(width: 3),
+        Icon(Icons.vpn_key_off_outlined, size: 14, color: scheme.tertiary),
+      ],
+    );
+  }
+  if (offline) {
+    return Icon(
+      Icons.cloud_off_outlined,
+      size: 16,
+      color: scheme.error,
+    );
+  }
+  if (noToken) {
+    return Icon(
+      Icons.vpn_key_off_outlined,
+      size: 16,
+      color: scheme.tertiary,
+    );
+  }
+  return null;
 }

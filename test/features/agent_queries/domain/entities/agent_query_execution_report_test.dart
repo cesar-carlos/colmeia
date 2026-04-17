@@ -30,4 +30,42 @@ void main() {
       check(report.requiresClientTokenSetup).isTrue();
     },
   );
+
+  test(
+    'requiresClientTokenSetup is false when agents ran but SQL returned no rows',
+    () {
+      const report = AgentQueryExecutionReport<int>(
+        queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
+        strategy: AgentQueryExecutionStrategy.mergeAll,
+        consideredApprovedAgentCount: 2,
+        plannedTargets: <AgentQueryTarget>[
+          AgentQueryTarget(
+            agentId: 'a',
+            displayName: 'A',
+            connectionStatus: AgentConnectionStatus.online,
+            clientToken: 'tok',
+          ),
+        ],
+        missingClientTokenTargets: <AgentQueryTarget>[
+          AgentQueryTarget(
+            agentId: 'b',
+            displayName: 'B',
+            connectionStatus: AgentConnectionStatus.unknown,
+          ),
+        ],
+        participants: <AgentQueryExecutionParticipant<int>>[
+          AgentQueryExecutionParticipant<int>(
+            agentId: 'a',
+            displayName: 'A',
+            rows: <int>[],
+            elapsedMs: 1,
+          ),
+        ],
+        totalElapsedMs: 1,
+      );
+      check(report.mergedRows).isEmpty();
+      check(report.skippedOnlyDueToMissingClientTokens).isFalse();
+      check(report.requiresClientTokenSetup).isFalse();
+    },
+  );
 }

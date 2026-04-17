@@ -11,8 +11,16 @@ abstract final class ResumoVendasDiariasPorVendedorSql {
   /// older ProdutoVendido-only version.
   ///
   /// `BairroNomeNorm` / `NomeMunicipioNomeNorm` are computed once per row so
-  /// filters compare a column to a single normalized parameter expression.
-  static String get query {
+  /// filters compare a column to a normalized expression.
+  ///
+  /// [codVendedor], [bairro], and [municipio] are inlined into the SQL text so
+  /// the bridge payload stays within its named-parameter limit (five: dates +
+  /// origem flags).
+  static String query({
+    int? codVendedor,
+    String? bairro,
+    String? municipio,
+  }) {
     final bNorm =
         ResumoVendasDiariasPorVendedorBairroNomeExpression.nomeBairroSql(
           "COALESCE(det_inner.Bairro, '')",
@@ -21,15 +29,17 @@ abstract final class ResumoVendasDiariasPorVendedorSql {
         ResumoVendasDiariasPorVendedorBairroNomeExpression.nomeMunicipioSql(
           "COALESCE(det_inner.NomeMunicipio, '')",
         );
-    final bPred =
-        ResumoVendasDiariasPorVendedorBairroNomeExpression.equalsNormalizedParamToPrecomputedColumn(
-          normalizedColumnName: 'BairroNomeNorm',
-        );
-    final mPred =
-        ResumoVendasDiariasPorVendedorBairroNomeExpression.equalsNormalizedParamToPrecomputedColumn(
-          normalizedColumnName: 'NomeMunicipioNomeNorm',
-          paramName: 'municipio',
-        );
+    final codVendedorLine = codVendedor == null
+        ? '        AND (1 = 1)'
+        : '        AND CodVendedor = $codVendedor';
+    final bairroLine =
+        ResumoVendasDiariasPorVendedorBairroNomeExpression.outerWhereNormalizedBairro(
+      bairro,
+    );
+    final municipioLine =
+        ResumoVendasDiariasPorVendedorBairroNomeExpression.outerWhereNormalizedMunicipio(
+      municipio,
+    );
     return '''
       SELECT
         CodEmpresa,
@@ -91,9 +101,9 @@ abstract final class ResumoVendasDiariasPorVendedorSql {
         AND Origem LIKE :origem
         AND GeraFinanceiro = :geraFinanceiro
         AND PreVenda = :preVenda
-        AND (:codVendedor IS NULL OR CodVendedor = :codVendedor)
-        AND $bPred
-        AND $mPred
+$codVendedorLine
+$bairroLine
+$municipioLine
       GROUP BY
         CodEmpresa,
         CodFilial,

@@ -704,12 +704,69 @@ void main() {
         check(result.isSuccess()).isTrue();
         final overview = result.getOrThrow();
         check(overview.requiresClientTokenSetup).isTrue();
+        check(overview.mainResumoHadPlannedTargets).isFalse();
         check(overview.hasRows).isFalse();
         check(overview.agentNamesMissingClientToken.length).equals(2);
         check(overview.agentNamesMissingClientToken.first).equals(
           'Loja Centro',
         );
         check(overview.agentNamesMissingClientToken.last).equals('Loja Norte');
+      },
+    );
+
+    test(
+      'does not fall back to missing-token cache when runnable agents '
+      'return empty SQL but others lack token',
+      () async {
+        when(
+          () => local.readOverview(userId: any(named: 'userId')),
+        ).thenAnswer((_) async => _cachedModel());
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              consideredApprovedAgentCount: 2,
+              plannedTargets: <AgentQueryTarget>[
+                _target('agent-online', name: 'Online Loja'),
+              ],
+              missingClientTokenTargets: <AgentQueryTarget>[
+                _target('agent-miss', name: 'Sem token', clientToken: null),
+              ],
+              participants: <AgentQueryExecutionParticipant<
+                ResumoParcelaFormaPagamentoRow
+              >>[
+                _successParticipant(
+                  agentId: 'agent-online',
+                  displayName: 'Online Loja',
+                  rows: const <ResumoParcelaFormaPagamentoRow>[],
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.isStaleCache).isFalse();
+        check(overview.requiresClientTokenSetup).isFalse();
+        check(overview.mainResumoHadPlannedTargets).isTrue();
+        check(overview.kpis.totalSalesCount).equals(0);
+        check(overview.agentNamesMissingClientToken.single).equals('Sem token');
+        verifyNever(
+          () => local.readOverview(userId: any(named: 'userId')),
+        );
+        verify(
+          () => local.saveOverview(
+            userId: any(named: 'userId'),
+            overview: any(named: 'overview'),
+          ),
+        ).called(1);
       },
     );
 

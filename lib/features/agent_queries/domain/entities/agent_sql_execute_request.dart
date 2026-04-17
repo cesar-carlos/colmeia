@@ -2,6 +2,16 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 
 /// Semantic input for a single `sql.execute` call through the bridge.
+///
+/// The hub/runtime enforces a small cap on **distinct** named parameters per
+/// execute (see [bridgeMaxNamedParameterCount]); [validationError] rejects
+/// larger maps so failures are local instead of bridge `invalid_params`.
+///
+/// Overview/resumo queries that need more bound values than this cap allow
+/// should keep [namedParams] within the cap and apply extra filters as typed
+/// SQL literals (validated integers or escaped strings), not as extra named
+/// parameters — see `ResumoParcelasSqlDimensionFilters` and
+/// `ResumoVendasDiariasPorVendedorSql` for the established pattern.
 class AgentSqlExecuteRequest {
   const AgentSqlExecuteRequest({
     required this.agentId,
@@ -98,6 +108,14 @@ class AgentSqlExecuteRequest {
       return 'pagination cannot be combined with executionMode.preserve';
     }
 
+    if (namedParams.length > bridgeMaxNamedParameterCount) {
+      return 'namedParams must contain at most $bridgeMaxNamedParameterCount '
+          'entries (Agent SQL bridge limit)';
+    }
+
     return null;
   }
+
+  /// Current Agent SQL bridge limit for `namedParams` size.
+  static const int bridgeMaxNamedParameterCount = 5;
 }

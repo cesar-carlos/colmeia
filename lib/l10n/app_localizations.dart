@@ -333,6 +333,18 @@ abstract class AppLocalizations {
   /// **'These approved agents were skipped because no local client token was saved. Add the token on the agent screen to include their data.'**
   String get dashboardMissingClientTokenMessage;
 
+  /// No description provided for @overviewResumoUnknownPaymentMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method not specified'**
+  String get overviewResumoUnknownPaymentMethod;
+
+  /// No description provided for @overviewResumoUnknownUserName.
+  ///
+  /// In en, this message translates to:
+  /// **'User not specified'**
+  String get overviewResumoUnknownUserName;
+
   /// No description provided for @dashboardSetupRequiredTitle.
   ///
   /// In en, this message translates to:
@@ -536,6 +548,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No agents match your search.'**
   String get overviewAgentFilterNoSearchResults;
+
+  /// No description provided for @overviewAgentFilterMissingClientTokenBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.'**
+  String get overviewAgentFilterMissingClientTokenBanner;
+
+  /// No description provided for @overviewAgentFilterMissingClientTokenRowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No client token on this device — SQL queries are skipped.'**
+  String get overviewAgentFilterMissingClientTokenRowSubtitle;
+
+  /// No description provided for @chartCategoryDonutEmptyForFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No category data for this view.'**
+  String get chartCategoryDonutEmptyForFilter;
 
   /// No description provided for @dashboardAgentRankingTitle.
   ///

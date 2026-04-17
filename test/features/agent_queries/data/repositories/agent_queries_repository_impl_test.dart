@@ -55,6 +55,28 @@ void main() {
   );
 
   test(
+    'should return validation failure when namedParams exceed bridge limit',
+    () async {
+      final request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+        namedParams: <String, Object?>{
+          for (var i = 0;
+              i < AgentSqlExecuteRequest.bridgeMaxNamedParameterCount + 1;
+              i++)
+            'p$i': i,
+        },
+      );
+
+      final result = await repository.executeSql(request);
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<ValidationFailure>();
+      verifyNever(() => remoteDataSource.postSqlExecute(any()));
+    },
+  );
+
+  test(
     'should preserve rpc error details when bridge returns item error',
     () async {
       when(

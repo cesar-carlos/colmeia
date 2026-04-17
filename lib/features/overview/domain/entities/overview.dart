@@ -23,6 +23,7 @@ class Overview {
     this.agentNamesExcludedFromQueryFailure = const <String>[],
     this.agentIdsMissingClientToken = const <String>[],
     this.agentNamesMissingClientToken = const <String>[],
+    this.mainResumoHadPlannedTargets = false,
   });
 
   final DateTime periodStart;
@@ -66,6 +67,12 @@ class Overview {
   /// `client_token` was stored.
   final List<String> agentNamesMissingClientToken;
 
+  /// True when the main forma-pagamento resumo had at least one planned agent
+  /// target (so SQL could run), even if merged rows were empty. Drives
+  /// [requiresClientTokenSetup] together with [hasMissingClientToken] and
+  /// [hasRows] so empty periods are not confused with “no token on device”.
+  final bool mainResumoHadPlannedTargets;
+
   bool get hasRows => paymentMethods.isNotEmpty;
 
   bool get hasPartialAgentQueryFailure =>
@@ -73,7 +80,8 @@ class Overview {
 
   bool get hasMissingClientToken => agentIdsMissingClientToken.isNotEmpty;
 
-  bool get requiresClientTokenSetup => hasMissingClientToken && !hasRows;
+  bool get requiresClientTokenSetup =>
+      hasMissingClientToken && !hasRows && !mainResumoHadPlannedTargets;
 
   /// Multiple approved agents are consolidated; overlapping data may inflate
   /// totals if agents are not partitioned server-side.
@@ -104,6 +112,7 @@ class Overview {
     bool? monthlyParcelTrendLoadFailed,
     List<OverviewWeekdaySalesTrendPoint>? weekdaySalesTrend,
     bool? weekdaySalesTrendLoadFailed,
+    bool? mainResumoHadPlannedTargets,
   }) {
     return Overview(
       periodStart: periodStart ?? this.periodStart,
@@ -130,6 +139,8 @@ class Overview {
           agentIdsMissingClientToken ?? this.agentIdsMissingClientToken,
       agentNamesMissingClientToken:
           agentNamesMissingClientToken ?? this.agentNamesMissingClientToken,
+      mainResumoHadPlannedTargets:
+          mainResumoHadPlannedTargets ?? this.mainResumoHadPlannedTargets,
     );
   }
 }

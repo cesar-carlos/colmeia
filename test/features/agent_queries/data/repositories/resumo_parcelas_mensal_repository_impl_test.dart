@@ -111,11 +111,12 @@ void main() {
     check(capturedRequest.namedParams['codVendedor']).isNull();
     check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.sql).contains('ResumoParcelasMensal');
+    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
     check(capturedRequest.sql).contains(':dataVendaInicio');
     check(capturedRequest.sql.contains(':codEmpresa')).isFalse();
   });
 
-  test('uses eight named params when dimension filters are set', () async {
+  test('inlines dimension filters in SQL when dimension filters are set', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -140,11 +141,10 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
-    check(capturedRequest.namedParams.length).equals(8);
-    check(capturedRequest.sql.contains(':codEmpresa')).isTrue();
-    check(capturedRequest.namedParams['codEmpresa']).equals(9);
-    check(capturedRequest.namedParams['codFilial']).equals(2);
-    check(capturedRequest.namedParams['codVendedor']).isNull();
+    check(capturedRequest.namedParams.length).equals(5);
+    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
+    check(capturedRequest.sql).contains('AND CodEmpresa = 9');
+    check(capturedRequest.sql).contains('AND CodFilial = 2');
   });
 
   test('maps row when bridge uses camelCase keys', () async {

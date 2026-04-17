@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 
 export 'package:colmeia/features/overview/domain/entities/overview_filter.dart'
     show OverviewAgentOption, OverviewFilter, OverviewYearMonth;
@@ -16,5 +17,6 @@ abstract interface class OverviewRepository {
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
   });
 }

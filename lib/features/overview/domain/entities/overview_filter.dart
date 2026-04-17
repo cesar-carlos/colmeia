@@ -8,21 +8,28 @@ class OverviewAgentOption {
     required this.agentId,
     required this.name,
     this.connectionStatus = AgentConnectionStatus.unknown,
+    this.missingLocalClientToken = false,
   });
 
   final String agentId;
   final String name;
   final AgentConnectionStatus connectionStatus;
 
+  /// True when the hub lists the agent but this device has no stored
+  /// `client_token`, so Agent SQL queries are skipped for that agent.
+  final bool missingLocalClientToken;
+
   @override
   bool operator ==(Object other) =>
       other is OverviewAgentOption &&
       other.agentId == agentId &&
       other.name == name &&
-      other.connectionStatus == connectionStatus;
+      other.connectionStatus == connectionStatus &&
+      other.missingLocalClientToken == missingLocalClientToken;
 
   @override
-  int get hashCode => Object.hash(agentId, name, connectionStatus);
+  int get hashCode =>
+      Object.hash(agentId, name, connectionStatus, missingLocalClientToken);
 }
 
 /// Year/month period selected by the user.

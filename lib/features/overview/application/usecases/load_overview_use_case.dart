@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 
 class LoadOverviewUseCase {
@@ -11,11 +12,13 @@ class LoadOverviewUseCase {
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
   }) {
     return _overviewRepository.loadOverview(
       userId: userId,
       policy: policy,
       filter: filter,
+      rowLabels: rowLabels,
     );
   }
 }

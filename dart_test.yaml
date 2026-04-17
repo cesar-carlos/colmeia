@@ -1,0 +1,6 @@
+# Declares tags referenced by tests (avoids "tag was not specified" warnings).
+tags:
+  e2e:
+    description: >
+      Repository smoke tests against the real Agent SQL bridge; requires
+      E2E_* credentials (see test/integration/e2e/support/).

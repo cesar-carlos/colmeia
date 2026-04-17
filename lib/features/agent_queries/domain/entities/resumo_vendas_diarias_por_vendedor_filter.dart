@@ -1,3 +1,6 @@
+/// Optional [codVendedor], [bairro], and [municipio] are inlined into report SQL
+/// as literals (ints / escaped `N'…'`) so the Agent SQL bridge stays within its
+/// named-parameter limit; period and flags remain bound as named params.
 class ResumoVendasDiariasPorVendedorFilter {
   const ResumoVendasDiariasPorVendedorFilter({
     required this.dataVendaInicio,

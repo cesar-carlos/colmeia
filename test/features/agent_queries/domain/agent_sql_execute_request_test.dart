@@ -100,5 +100,24 @@ void main() {
         r.validationError(),
       ).equals('pagination cannot be combined with executionMode.preserve');
     });
+
+    test('rejects namedParams larger than bridge cap', () {
+      final tooMany = <String, Object?>{
+        for (var i = 0;
+            i < AgentSqlExecuteRequest.bridgeMaxNamedParameterCount + 1;
+            i++)
+          'p$i': i,
+      };
+      final r = AgentSqlExecuteRequest(
+        agentId: 'a',
+        sql: 'SELECT 1',
+        namedParams: tooMany,
+      );
+      check(r.validationError()).equals(
+        'namedParams must contain at most '
+        '${AgentSqlExecuteRequest.bridgeMaxNamedParameterCount} '
+        'entries (Agent SQL bridge limit)',
+      );
+    });
   });
 }

@@ -54,7 +54,11 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
       requestingUserId: userId,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: ResumoVendasDiariasPorVendedorSql.query,
+      sql: ResumoVendasDiariasPorVendedorSql.query(
+        codVendedor: filter.sqlCodVendedor,
+        bairro: filter.sqlBairro,
+        municipio: filter.sqlMunicipio,
+      ),
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
       namedParams: <String, Object?>{
@@ -65,9 +69,6 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
         'origem': filter.trimmedOrigem,
         'geraFinanceiro': filter.trimmedGeraFinanceiro,
         'preVenda': filter.trimmedPreVenda,
-        'codVendedor': filter.sqlCodVendedor,
-        'bairro': filter.sqlBairro,
-        'municipio': filter.sqlMunicipio,
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,

@@ -37,12 +37,15 @@ abstract final class OverviewAvailableAgentsAssembler {
       return const <OverviewAgentOption>[];
     }
 
+    final missingTokenIds = overview.agentIdsMissingClientToken.toSet();
+
     return merged.entries
         .map(
           (e) => OverviewAgentOption(
             agentId: e.key,
             name: e.value,
             connectionStatus: _connectionStatusFor(onlineAgentIds, e.key),
+            missingLocalClientToken: missingTokenIds.contains(e.key),
           ),
         )
         .toList(growable: false)

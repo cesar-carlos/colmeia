@@ -41,6 +41,8 @@
   "dashboardMissingClientTokenMessage": "Estes agentes aprovados foram ignorados porque nao ha token de cliente local. Cadastre o token na tela do agente para incluir os dados.",
   "dashboardSetupRequiredTitle": "Salve um token de cliente para carregar os dados",
   "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.",
+  "overviewResumoUnknownPaymentMethod": "Forma de pagamento não informada",
+  "overviewResumoUnknownUserName": "Utilizador não informado",
   "dashboardViewAffectedAgentsList": "Ver lista ({count})",
   "@dashboardViewAffectedAgentsList": {
     "placeholders": {
@@ -88,6 +90,9 @@
   "overviewAgentFilterApply": "Aplicar",
   "overviewAgentFilterCancel": "Cancelar",
   "overviewAgentFilterNoSearchResults": "Nenhum agente corresponde à busca.",
+  "overviewAgentFilterMissingClientTokenBanner": "Agentes sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.",
+  "overviewAgentFilterMissingClientTokenRowSubtitle": "Sem token neste dispositivo — consultas SQL são ignoradas.",
+  "chartCategoryDonutEmptyForFilter": "Sem dados de categorias para este recorte.",
   "dashboardAgentRankingTitle": "Ranking por agente",
   "dashboardAgentRankingSubtitle": "Faturamento total por agente no periodo.",
   "dashboardUserRankingTitle": "Ranking por operador",

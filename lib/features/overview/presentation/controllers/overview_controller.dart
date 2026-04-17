@@ -8,6 +8,7 @@ import 'package:colmeia/features/overview/application/usecases/load_overview_use
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_failure_l10n.dart';
+import 'package:colmeia/features/overview/presentation/localization/overview_load_labels_l10n.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -219,6 +220,7 @@ class OverviewController extends ChangeNotifier {
       userId: userId,
       policy: policy,
       filter: _activeFilter,
+      rowLabels: _s.overviewLoadLabels,
     );
     if (_disposed || generation != _loadGeneration) {
       return;

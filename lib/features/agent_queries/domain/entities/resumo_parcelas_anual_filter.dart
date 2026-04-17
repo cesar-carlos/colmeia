@@ -4,7 +4,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_s
 /// Filters for the annual parcel summary SQL (company, branch, calendar year).
 ///
 /// Period and flags match `ResumoParcelasPeriodoFilter`. Optional dimension
-/// filters are forwarded as named parameters (null means no restriction).
+/// filters are inlined into SQL as integer literals when set (bridge cap).
 /// When [codFilial] is set, [codEmpresa] must also be set so the branch filter
 /// is well scoped.
 class ResumoParcelasAnualFilter {

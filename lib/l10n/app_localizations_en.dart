@@ -131,6 +131,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'These approved agents were skipped because no local client token was saved. Add the token on the agent screen to include their data.';
 
   @override
+  String get overviewResumoUnknownPaymentMethod =>
+      'Payment method not specified';
+
+  @override
+  String get overviewResumoUnknownUserName => 'User not specified';
+
+  @override
   String get dashboardSetupRequiredTitle => 'Save a client token to load data';
 
   @override
@@ -249,6 +256,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overviewAgentFilterNoSearchResults =>
       'No agents match your search.';
+
+  @override
+  String get overviewAgentFilterMissingClientTokenBanner =>
+      'Agents without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.';
+
+  @override
+  String get overviewAgentFilterMissingClientTokenRowSubtitle =>
+      'No client token on this device — SQL queries are skipped.';
+
+  @override
+  String get chartCategoryDonutEmptyForFilter =>
+      'No category data for this view.';
 
   @override
   String get dashboardAgentRankingTitle => 'Ranking by agent';

@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vendido_detalhe_sql.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 
 abstract final class ResumoParcelasMensalSql {
   /// Monthly parcel summary by company, branch, and calendar month, with
@@ -7,15 +8,12 @@ abstract final class ResumoParcelasMensalSql {
   /// Inner `Detalhe` comes from `ParcelaProdutoVendidoDetalheSql`; extra
   /// columns exist for future filters.
   ///
-  /// Includes optional dimension filters (`:codEmpresa`, `:codFilial`,
-  /// `:codVendedor`). Unused dimensions must be sent as SQL nulls in the
-  /// execute payload so `IS NULL` branches apply (same contract as
-  /// `ResumoParcelasSqlDimensionFilters.namedParams`).
+  /// Optional dimensions are inlined (see [ResumoParcelasSqlDimensionFilters])
+  /// for the Agent SQL bridge named-parameter limit.
   ///
-  /// **Bridge named-parameter limit**: some runtimes cap named binds (e.g. 5).
-  /// When no dimension filter is set, use [queryWithoutDimensionNamedParams]
-  /// with only the five period/flag placeholders — same semantics as binding
-  /// those three filters as SQL nulls on the full query.
+  /// **Bridge named-parameter limit**: at most five named binds are sent;
+  /// optional dimensions are inlined as integer literals (see
+  /// [ResumoParcelasSqlDimensionFilters]).
   ///
   /// **Agent policy review**: driving rows are `ParcelaProdutoVendido` joined
   /// to `ProdutoVendido`, `FormaPagamento`, `TipoOperacaoSaida`, `Cliente`,
@@ -78,16 +76,14 @@ abstract final class ResumoParcelasMensalSql {
       FROM (
   ''';
 
-  static const String _queryTailWithDimensionNamedParams = '''
+  static const String _queryTail = '''
       ) Detalhe
     ) ResumoParcelasMensal
     WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
       AND Origem LIKE :origem
       AND GeraFinanceiro = :geraFinanceiro
       AND PreVenda = :preVenda
-      AND (:codEmpresa IS NULL OR CodEmpresa = :codEmpresa)
-      AND (:codFilial IS NULL OR CodFilial = :codFilial)
-      AND (:codVendedor IS NULL OR CodVendedor = :codVendedor)
+__RESUMO_PARCELAS_DIMENSION_WHERE__
     GROUP BY
       CodEmpresa,
       CodFilial,
@@ -100,36 +96,19 @@ abstract final class ResumoParcelasMensalSql {
       Mes
   ''';
 
-  static const String _queryTailWithoutDimensionNamedParams = '''
-      ) Detalhe
-    ) ResumoParcelasMensal
-    WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
-      AND Origem LIKE :origem
-      AND GeraFinanceiro = :geraFinanceiro
-      AND PreVenda = :preVenda
-    GROUP BY
-      CodEmpresa,
-      CodFilial,
-      Ano,
-      Mes
-    ORDER BY
-      CodEmpresa,
-      CodFilial,
-      Ano,
-      Mes
-  ''';
-
-  /// Eight named parameters (includes optional company / branch / seller).
-  static const String query =
-      _queryHead +
-      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
-      _queryTailWithDimensionNamedParams;
-
-  /// Five named parameters: sale range and parcel flags only (no dimension
-  /// predicates). Use when all dimension filters are unset and the bridge caps
-  /// named binds below eight.
-  static const String queryWithoutDimensionNamedParams =
-      _queryHead +
-      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
-      _queryTailWithoutDimensionNamedParams;
+  static String query({
+    int? codEmpresa,
+    int? codFilial,
+    int? codVendedor,
+  }) {
+    final tail = ResumoParcelasSqlDimensionFilters.embedLiteralDimensionWhere(
+      _queryTail,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+      codVendedor: codVendedor,
+    );
+    return _queryHead +
+        ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
+        tail;
+  }
 }

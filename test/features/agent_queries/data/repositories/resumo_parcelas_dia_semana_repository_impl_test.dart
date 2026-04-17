@@ -103,10 +103,11 @@ void main() {
     check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.namedParams.containsKey('codEmpresa')).isFalse();
     check(capturedRequest.sql).contains('ResumoParcelasDiaSemana');
+    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
     check(capturedRequest.sql).contains('DATEDIFF');
   });
 
-  test('builds eight named params when a dimension filter is set', () async {
+  test('inlines dimension filters in SQL when a dimension filter is set', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -131,11 +132,11 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
-    check(capturedRequest.namedParams.length).equals(8);
-    check(capturedRequest.namedParams['codEmpresa']).equals(10);
-    check(capturedRequest.namedParams['codFilial']).equals(2);
-    check(capturedRequest.namedParams['codVendedor']).isNull();
-    check(capturedRequest.sql).contains(':codEmpresa');
+    check(capturedRequest.namedParams.length).equals(5);
+    check(capturedRequest.namedParams.containsKey('codEmpresa')).isFalse();
+    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
+    check(capturedRequest.sql).contains('AND CodEmpresa = 10');
+    check(capturedRequest.sql).contains('AND CodFilial = 2');
   });
 
   test('returns UnknownFailure when row mapping fails', () async {

@@ -47,7 +47,7 @@ void main() {
     verifyNever(() => agentQueriesRepository.executeSql(any()));
   });
 
-  test('builds request with optional null named params', () async {
+  test('builds request with five named params; optional filters in SQL', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -73,15 +73,16 @@ void main() {
     check(captured.namedParams['origem']).equals('FrenteLoja');
     check(captured.namedParams['geraFinanceiro']).equals('S');
     check(captured.namedParams['preVenda']).equals('N');
-    check(captured.namedParams['codVendedor']).isNull();
-    check(captured.namedParams['bairro']).isNull();
-    check(captured.namedParams['municipio']).isNull();
+    check(captured.namedParams.length).equals(5);
+    expect(captured.sql, isNot(contains(':codVendedor')));
+    expect(captured.sql, isNot(contains(':bairro')));
+    expect(captured.sql, isNot(contains(':municipio')));
     check(captured.bridgeTimeoutMs).equals(120000);
     check(captured.executeOptions!.executionMode?.name).equals('preserve');
     check(captured.sql).contains('ResumoVendasDiario');
   });
 
-  test('sends codVendedor bairro municipio when provided', () async {
+  test('inlines codVendedor bairro municipio in SQL when provided', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -107,9 +108,10 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
-    check(captured.namedParams['codVendedor']).equals(7);
-    check(captured.namedParams['bairro']).equals('Centro');
-    check(captured.namedParams['municipio']).equals('Sao Paulo');
+    check(captured.namedParams.length).equals(5);
+    check(captured.sql).contains('AND CodVendedor = 7');
+    check(captured.sql).contains("N'Centro'");
+    check(captured.sql).contains("N'Sao Paulo'");
   });
 
   test('formats date named params as yyyy-MM-dd', () async {

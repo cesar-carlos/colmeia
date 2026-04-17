@@ -166,5 +166,28 @@ void main() {
       );
       expect(out.map((e) => e.agentId).toList(), <String>['a', 'b']);
     });
+
+    test('flags agents listed as missing a local client token', () {
+      final overview = _minimalOverview(
+        rankings: const [
+          OverviewAgentRanking(
+            agentId: 'ok',
+            displayName: 'Has token',
+            totalAmount: 1,
+            totalSalesCount: 1,
+          ),
+        ],
+        missingTokenIds: const ['bad'],
+        missingTokenNames: const ['No token'],
+      );
+      final out = OverviewAvailableAgentsAssembler.assemble(
+        overview: overview,
+        previousOptions: const [],
+        onlineAgentIds: const {'ok', 'bad'},
+      );
+      final byId = {for (final o in out) o.agentId: o};
+      expect(byId['ok']!.missingLocalClientToken, isFalse);
+      expect(byId['bad']!.missingLocalClientToken, isTrue);
+    });
   });
 }

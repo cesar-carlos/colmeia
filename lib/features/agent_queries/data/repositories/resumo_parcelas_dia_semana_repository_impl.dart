@@ -10,7 +10,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -49,10 +48,6 @@ class ResumoParcelasDiaSemanaRepositoryImpl
       );
     }
 
-    final dimensionFiltersActive =
-        filter.codEmpresa != null ||
-        filter.codFilial != null ||
-        filter.codVendedor != null;
     final periodAndFlagsParams = <String, Object?>{
       'dataVendaInicio': AgentQueriesSqlLocalDate.format(
         filter.dataVendaInicio,
@@ -67,21 +62,14 @@ class ResumoParcelasDiaSemanaRepositoryImpl
       requestingUserId: userId,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: dimensionFiltersActive
-          ? ResumoParcelasDiaSemanaSql.query
-          : ResumoParcelasDiaSemanaSql.queryWithoutDimensionNamedParams,
+      sql: ResumoParcelasDiaSemanaSql.query(
+        codEmpresa: filter.codEmpresa,
+        codFilial: filter.codFilial,
+        codVendedor: filter.codVendedor,
+      ),
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
-      namedParams: dimensionFiltersActive
-          ? <String, Object?>{
-              ...periodAndFlagsParams,
-              ...ResumoParcelasSqlDimensionFilters.namedParams(
-                codEmpresa: filter.codEmpresa,
-                codFilial: filter.codFilial,
-                codVendedor: filter.codVendedor,
-              ),
-            }
-          : periodAndFlagsParams,
+      namedParams: periodAndFlagsParams,
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemana,

@@ -109,13 +109,12 @@ void main() {
     check(capturedRequest.namedParams['origem']).equals('FrenteLoja');
     check(capturedRequest.namedParams['geraFinanceiro']).equals('S');
     check(capturedRequest.namedParams['preVenda']).equals('N');
-    check(capturedRequest.namedParams['codEmpresa']).isNull();
-    check(capturedRequest.namedParams['codFilial']).isNull();
-    check(capturedRequest.namedParams['codVendedor']).isNull();
+    check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.sql).contains('ResumoParcelasFormaPagamentoPorMes');
+    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
   });
 
-  test('forwards optional dimension filters when set', () async {
+  test('inlines optional dimension filters in SQL when set', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -141,9 +140,10 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
-    check(capturedRequest.namedParams['codEmpresa']).equals(9);
-    check(capturedRequest.namedParams['codFilial']).equals(3);
-    check(capturedRequest.namedParams['codVendedor']).equals(7);
+    check(capturedRequest.namedParams.length).equals(5);
+    check(capturedRequest.sql).contains('AND CodEmpresa = 9');
+    check(capturedRequest.sql).contains('AND CodFilial = 3');
+    check(capturedRequest.sql).contains('AND CodVendedor = 7');
   });
 
   test('returns UnknownFailure when row mapping fails', () async {
