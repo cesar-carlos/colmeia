@@ -1,4 +1,5 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
@@ -83,12 +84,10 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
         ? '${AppBrFormatters.shortDate(range.start)} a '
               '${AppBrFormatters.shortDate(range.end)}'
         : '-';
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Formulario valido (demo fake). Ref: $refLabel. '
-          'Periodo: $rangeLabel.',
-        ),
+        content: Text(l10n.formsDemoFormValidSnackbar(refLabel, rangeLabel)),
       ),
     );
   }
@@ -111,12 +110,10 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
         ? '${AppBrFormatters.shortDate(r.start)} a '
               '${AppBrFormatters.shortDate(r.end)}'
         : '-';
+    final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'FormBuilder valido (demo fake). Data: $dLabel. '
-          'Periodo: $rLabel.',
-        ),
+        content: Text(l10n.formsDemoFormBuilderValidSnackbar(dLabel, rLabel)),
       ),
     );
   }
@@ -125,6 +122,7 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final l10n = AppLocalizations.of(context);
 
     return ListView(
       padding: EdgeInsets.all(tokens.contentSpacing),
@@ -220,10 +218,8 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
               ),
               SizedBox(height: tokens.sectionSpacing),
               AppSectionCardWithHeading(
-                title: 'Date pickers no Form',
-                subtitle:
-                    'Validacao ao enviar; limpe o campo e valide para ver '
-                    'erro. Intervalo com datas explicitas na demo.',
+                title: l10n.formsDemoDatePickersFormTitle,
+                subtitle: l10n.formsDemoDatePickersFormSubtitle,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
@@ -437,10 +433,8 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSectionCardWithHeading(
-          title: 'FormBuilder + dropdowns e datas',
-          subtitle:
-              'Mesmos wrappers usados em relatorios parametrizados, agora com '
-              'dropdown compartilhado.',
+          title: l10n.formsDemoFormBuilderSectionTitle,
+          subtitle: l10n.formsDemoFormBuilderSectionSubtitle,
           child: FormBuilder(
             key: _formBuilderKey,
             child: Column(
@@ -525,7 +519,7 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
                 AppSecondaryButton(
                   variant: AppSecondaryButtonVariant.tonal,
                   onPressed: _fieldsEnabled ? _submitFormBuilder : null,
-                  label: 'Validar FormBuilder',
+                  label: l10n.formsDemoValidateFormBuilderButton,
                 ),
               ],
             ),
@@ -534,7 +528,7 @@ class _AppFormsDemoPageState extends State<AppFormsDemoPage> {
         SizedBox(height: tokens.sectionSpacing),
         AppPrimaryButton(
           onPressed: _fieldsEnabled ? _submit : null,
-          label: 'Validar envio (Form)',
+          label: l10n.formsDemoValidateFormSubmitButton,
         ),
       ],
     );

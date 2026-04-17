@@ -70,6 +70,22 @@
   "dashboardHomeFiltersYearMonthLabel": "YEAR / MONTH",
   "dashboardHomeFiltersCurrentMonth": "Current month",
   "dashboardHomeFiltersPeriodLast30Days": "Last 30 days",
+  "dashboardHomeFiltersReferenceRangeLabel": "Date range",
+  "dashboardHomeFiltersReferenceRangeHelper": "Optional. Pick inclusive start and end — the range can span several months (up to {maxDays} days). Totals and rankings follow that span. The monthly trend still shows the 12 months ending in the last day’s month.",
+  "@dashboardHomeFiltersReferenceRangeHelper": {
+    "placeholders": {
+      "maxDays": {"type": "int"}
+    }
+  },
+  "dashboardHomeFiltersReferenceRangePickerTitle": "Select period",
+  "dashboardHomeFiltersYearMonthCustomDisplay": "Custom",
+  "dashboardHomeFiltersReferenceRangeMaxDurationSnackbar": "The selected range cannot exceed {maxDays} calendar days.",
+  "@dashboardHomeFiltersReferenceRangeMaxDurationSnackbar": {
+    "placeholders": {
+      "maxDays": {"type": "int"}
+    }
+  },
+  "overviewPeriodTagCustomRangePrefix": "Period",
   "overviewAgentFilterAllAgentsSummary": "All agents ({count})",
   "@overviewAgentFilterAllAgentsSummary": {
     "placeholders": {
@@ -235,6 +251,30 @@
   "overviewPaymentMixTitle": "Mix by payment method",
   "overviewPaymentMixSubtitle": "Percentage share of revenue in the period.",
   "overviewPaymentMixDonutTotalLabel": "TOTAL",
+  "overviewCategoryMixTitle": "Sales by category",
+  "overviewCategoryMixDonutAnnualTotalLabel": "ANNUAL TOTAL",
+  "overviewCategoryMixMoreOptionsTooltip": "More options",
+  "overviewCategoryMixMenuComingSoon": "Menu coming soon.",
+  "appCategoryDonutCardLoadingSemantics": "Loading category chart…",
+  "appCategoryDonutCardEmptySemantics": "{title}, no data",
+  "@appCategoryDonutCardEmptySemantics": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "appCategoryDonutCardCategoriesSemantics": "{title}, {count} categories",
+  "@appCategoryDonutCardCategoriesSemantics": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "appCategoryDonutChartSemantics": "Doughnut chart. {summary}",
+  "@appCategoryDonutChartSemantics": {
+    "placeholders": {
+      "summary": {"type": "String"}
+    }
+  },
   "overviewPaymentBarTitle": "Revenue by payment method",
   "overviewPaymentBarSubtitle": "Total amount accumulated in the period.",
   "overviewPaymentBarEmpty": "No payment method revenue in this period.",
@@ -780,7 +820,7 @@
   "formsDemoNotesLabel": "Notes",
   "formsDemoNotesHint": "Optional",
   "formsDemoDatePickersFormTitle": "Date pickers in Form",
-  "formsDemoDatePickersFormSubtitle": "Validation on submit; clear the field and validate to see the error. Range with explicit dates in the demo.",
+  "formsDemoDatePickersFormSubtitle": "Native Form + FormField. Tap Apply in the sheet to confirm; closing without applying keeps the current value. Remove clears explicitly.",
   "formsDemoReferenceDateLabel": "Reference date",
   "formsDemoReferenceDateHelper": "Opens in a bottom sheet with a styled calendar.",
   "formsDemoSelectReferenceDateTitle": "Select reference date",
@@ -817,7 +857,7 @@
   "formsDemoTagAutomation": "Automation",
   "formsDemoTagSecurity": "Security",
   "formsDemoFormBuilderSectionTitle": "FormBuilder with dropdowns and dates",
-  "formsDemoFormBuilderSectionSubtitle": "Same wrappers used in parameterized reports, now with the shared dropdown.",
+  "formsDemoFormBuilderSectionSubtitle": "Same wrappers as reports: dropdown, multi-select, and the same date pickers as the Form section above (FormBuilderField + AppFormBuilderDate*).",
   "formsDemoFormBuilderNodeLabel": "Select node (FormBuilder)",
   "formsDemoFormBuilderNodeHelper": "Single selection with the shared wrapper.",
   "formsDemoFormBuilderTagsLabel": "Tags (FormBuilder)",
@@ -858,6 +898,7 @@
   "datePickerSheetCloseTooltip": "Close",
   "datePickerSheetApply": "Apply",
   "datePickerSemanticsFallbackLabel": "Date",
+  "dateRangePickerSemanticsFallbackLabel": "Period",
   "areaTrendDemoIntroEyebrow": "Area charts",
   "areaTrendDemoIntroTitle": "AppAreaTrendChart",
   "areaTrendDemoIntroSubtitle": "Temporal trend with filled area: gradient, markers, zoom, style variants, and structured per-series/point tap event.",

@@ -218,9 +218,10 @@ class _OverviewHomeIntro extends StatelessWidget {
       selector: (_, c) => c.userScope.name,
       builder: (context, fullName, _) {
         final greetingName = _greetingFirstName(fullName, l10n);
-        return Selector<OverviewController, String?>(
-          selector: (_, c) => _periodTagLabel(c),
-          builder: (context, periodLabel, _) {
+        return Selector<OverviewController, _PeriodTagSlice?>(
+          selector: (_, c) => _PeriodTagSlice.fromController(c),
+          builder: (context, slice, _) {
+            final periodLabel = slice?.label(l10n);
             return AppShellPageIntro(
               eyebrow: l10n.overviewGreetingEyebrow(greetingName),
               subtitle: l10n.overviewHomeSubtitle,
@@ -238,15 +239,62 @@ class _OverviewHomeIntro extends StatelessWidget {
   }
 }
 
-String? _periodTagLabel(OverviewController c) {
-  final overview = c.overview;
-  final showSkeleton = c.isLoadingInitial && overview == null;
-  if (overview == null || showSkeleton) {
-    return null;
+@immutable
+class _PeriodTagSlice {
+  const _PeriodTagSlice({
+    required this.startYmd,
+    required this.endYmd,
+    required this.hasCustomRange,
+  });
+
+  final int startYmd;
+  final int endYmd;
+  final bool hasCustomRange;
+
+  static int _packYmd(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
+
+  static _PeriodTagSlice? fromController(OverviewController c) {
+    final overview = c.overview;
+    final showSkeleton = c.isLoadingInitial && overview == null;
+    if (overview == null || showSkeleton) {
+      return null;
+    }
+    return _PeriodTagSlice(
+      startYmd: _packYmd(overview.periodStart),
+      endYmd: _packYmd(overview.periodEnd),
+      hasCustomRange: c.activeFilter.referenceRange != null,
+    );
   }
-  return '${AppBrFormatters.shortDate(overview.periodStart)}'
-      ' – '
-      '${AppBrFormatters.shortDate(overview.periodEnd)}';
+
+  String label(AppLocalizations l10n) {
+    final start = DateTime(
+      startYmd ~/ 10000,
+      (startYmd % 10000) ~/ 100,
+      startYmd % 100,
+    );
+    final end = DateTime(
+      endYmd ~/ 10000,
+      (endYmd % 10000) ~/ 100,
+      endYmd % 100,
+    );
+    final dates =
+        '${AppBrFormatters.shortDate(start)} – ${AppBrFormatters.shortDate(end)}';
+    if (hasCustomRange) {
+      return '${l10n.overviewPeriodTagCustomRangePrefix}: $dates';
+    }
+    return dates;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is _PeriodTagSlice &&
+          startYmd == other.startYmd &&
+          endYmd == other.endYmd &&
+          hasCustomRange == other.hasCustomRange);
+
+  @override
+  int get hashCode => Object.hash(startYmd, endYmd, hasCustomRange);
 }
 
 @immutable

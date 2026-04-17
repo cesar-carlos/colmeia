@@ -11,8 +11,14 @@ abstract final class OverviewLast12MonthsVendaRange {
     OverviewFilter filter, {
     required DateTime Function() clock,
   }) {
-    final anchorEnd =
-        filter.yearMonth?.end ?? OverviewYearMonth.fromDate(clock()).end;
+    final DateTime anchorEnd;
+    final rr = filter.referenceRange;
+    if (rr != null) {
+      anchorEnd = OverviewYearMonth.fromDate(rr.endInclusive).end;
+    } else {
+      anchorEnd =
+          filter.yearMonth?.end ?? OverviewYearMonth.fromDate(clock()).end;
+    }
     return fromPeriodEnd(anchorEnd);
   }
 

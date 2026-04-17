@@ -116,7 +116,7 @@ class OverviewController extends ChangeNotifier {
     required String userId,
     required OverviewFilter filter,
   }) async {
-    _activeFilter = filter;
+    _activeFilter = filter.normalizedForHomeDashboardReferenceRange();
     _requestedOverviewSignature = null;
     await _loadOverview(
       userId: userId,
@@ -190,6 +190,11 @@ class OverviewController extends ChangeNotifier {
     required OverviewLoadPolicy policy,
     required bool keepContentVisible,
   }) async {
+    final normalized = _activeFilter.normalizedForHomeDashboardReferenceRange();
+    if (normalized != _activeFilter) {
+      _activeFilter = normalized;
+      _notifyListenersIfAlive();
+    }
     final signature = _signatureFor(userId: userId);
     _requestedOverviewSignature = signature;
     final generation = ++_loadGeneration;
@@ -279,7 +284,12 @@ class OverviewController extends ChangeNotifier {
     final agentPart = ids == null
         ? '*'
         : (List<String>.from(ids)..sort()).join(',');
-    return '$userId|$agentPart|${_activeFilter.yearMonth ?? 'default'}';
+    final rr = _activeFilter.referenceRange;
+    final refPart = rr == null
+        ? ''
+        : '|r:${rr.startInclusive.year}-${rr.startInclusive.month}-${rr.startInclusive.day}'
+            ':${rr.endInclusive.year}-${rr.endInclusive.month}-${rr.endInclusive.day}';
+    return '$userId|$agentPart|${_activeFilter.yearMonth ?? 'default'}$refPart';
   }
 
   /// Rebuilds [_availableAgents] from the overview (per-agent rankings and

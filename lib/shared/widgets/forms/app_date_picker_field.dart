@@ -1,10 +1,49 @@
+import 'dart:async' show unawaited;
+
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
+
+AppLocalizations? _tryL10n(BuildContext context) =>
+    Localizations.of<AppLocalizations>(context, AppLocalizations);
+
+Widget _calendarPrefixIcon(BuildContext context, {required bool enabled}) {
+  final theme = Theme.of(context);
+  final colors = theme.appColors;
+  return Padding(
+    padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
+    child: Align(
+      widthFactor: 1,
+      heightFactor: 1,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          Icons.calendar_month_outlined,
+          size: 18,
+          color: enabled
+              ? colors.onSurfaceVariant
+              : colors.onSurface.withValues(alpha: 0.38),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Popped when the user taps "Remover data/período" so it is not confused with
+/// closing the sheet without applying (`null`).
+final Object _appDatePickerClearSentinel = Object();
 
 class AppDatePickerField extends StatelessWidget {
   const AppDatePickerField({
@@ -36,23 +75,41 @@ class AppDatePickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = _tryL10n(context);
     return _AppPickerFieldBody(
       label: label,
       helperText: helperText,
-      placeholderText: placeholderText ?? 'Selecione uma data',
+      placeholderText:
+          placeholderText ??
+          l10n?.datePickerPlaceholderSelectDate ??
+          'Selecione uma data',
       displayValue: _formatSingleDate(value),
       errorText: errorText,
       enabled: enabled,
       density: density,
-      onTap: () async {
-        final selectedDate = await showAppDatePickerSheet(
+      semanticsFallbackLabel:
+          l10n?.datePickerSemanticsFallbackLabel ?? 'Data',
+      onOpen: () async {
+        final result = await showAppDatePickerSheet(
           context: context,
           title: pickerTitle,
           initialValue: value,
           firstDate: firstDate,
           lastDate: lastDate,
         );
-        onChanged(selectedDate);
+        if (!context.mounted) {
+          return;
+        }
+        if (result == null) {
+          return;
+        }
+        if (identical(result, _appDatePickerClearSentinel)) {
+          onChanged(null);
+          return;
+        }
+        if (result is DateTime) {
+          onChanged(result);
+        }
       },
       onClear: value == null ? null : () => onChanged(null),
     );
@@ -73,6 +130,11 @@ class AppDateRangePickerField extends StatelessWidget {
     this.enabled = true,
     this.errorText,
     this.density = AppTextFieldDensity.comfortable,
+    /// When non-null and [value] is non-null, shown instead of formatted dates.
+    this.displayValueWhenFilledOverride,
+    /// Extra phrase for accessibility when [displayValueWhenFilledOverride] hides
+    /// the concrete dates (e.g. "Custom" with dates in this string).
+    this.semanticsDetailWhenFilledOverride,
   });
 
   final ValueChanged<DateTimeRange?> onChanged;
@@ -86,48 +148,78 @@ class AppDateRangePickerField extends StatelessWidget {
   final bool enabled;
   final String? errorText;
   final AppTextFieldDensity density;
+  final String? displayValueWhenFilledOverride;
+  final String? semanticsDetailWhenFilledOverride;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = _tryL10n(context);
+    final formatted = _formatDateRange(value);
+    final useOverride =
+        value != null && displayValueWhenFilledOverride != null;
+    final semanticsDetail = useOverride
+        ? (semanticsDetailWhenFilledOverride ?? formatted)
+        : null;
     return _AppPickerFieldBody(
       label: label,
       helperText: helperText,
-      placeholderText: placeholderText ?? 'Selecione o intervalo desejado',
-      displayValue: _formatDateRange(value),
+      placeholderText:
+          placeholderText ??
+          l10n?.dateRangePickerPlaceholderSelectPeriod ??
+          'Selecione o intervalo desejado',
+      displayValue: useOverride ? displayValueWhenFilledOverride : formatted,
+      semanticsDetail: semanticsDetail,
       errorText: errorText,
       enabled: enabled,
       density: density,
-      onTap: () async {
-        final selectedRange = await showAppDateRangePickerSheet(
+      semanticsFallbackLabel:
+          l10n?.dateRangePickerSemanticsFallbackLabel ?? 'Periodo',
+      onOpen: () async {
+        final result = await showAppDateRangePickerSheet(
           context: context,
           title: pickerTitle,
           initialValue: value,
           firstDate: firstDate,
           lastDate: lastDate,
         );
-        onChanged(selectedRange);
+        if (!context.mounted) {
+          return;
+        }
+        if (result == null) {
+          return;
+        }
+        if (identical(result, _appDatePickerClearSentinel)) {
+          onChanged(null);
+          return;
+        }
+        if (result is DateTimeRange) {
+          onChanged(result);
+        }
       },
       onClear: value == null ? null : () => onChanged(null),
     );
   }
 }
 
-Future<DateTime?> showAppDatePickerSheet({
+/// Returns the picked [DateTime], `null` if the sheet was dismissed without
+/// applying, or a sentinel when the user chose "Remover data".
+Future<Object?> showAppDatePickerSheet({
   required BuildContext context,
   String? title,
   DateTime? initialValue,
   DateTime? firstDate,
   DateTime? lastDate,
 }) {
-  return showModalBottomSheet<DateTime?>(
+  return showModalBottomSheet<Object?>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
     clipBehavior: Clip.antiAlias,
-    builder: (context) {
+    builder: (sheetContext) {
+      final l10n = _tryL10n(sheetContext);
       return _AppDatePickerSheet(
-        title: title ?? 'Selecionar data',
+        title: title ?? l10n?.datePickerSheetDefaultTitle ?? 'Selecionar data',
         initialValue: initialValue,
         firstDate: firstDate,
         lastDate: lastDate,
@@ -136,22 +228,26 @@ Future<DateTime?> showAppDatePickerSheet({
   );
 }
 
-Future<DateTimeRange?> showAppDateRangePickerSheet({
+/// Returns the picked [DateTimeRange], `null` if dismissed without applying,
+/// or a sentinel when the user chose "Remover período".
+Future<Object?> showAppDateRangePickerSheet({
   required BuildContext context,
   String? title,
   DateTimeRange? initialValue,
   DateTime? firstDate,
   DateTime? lastDate,
 }) {
-  return showModalBottomSheet<DateTimeRange?>(
+  return showModalBottomSheet<Object?>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
     clipBehavior: Clip.antiAlias,
-    builder: (context) {
+    builder: (sheetContext) {
+      final l10n = _tryL10n(sheetContext);
       return _AppDateRangePickerSheet(
-        title: title ?? 'Selecionar período',
+        title:
+            title ?? l10n?.dateRangePickerSheetDefaultTitle ?? 'Selecionar período',
         initialValue: initialValue,
         firstDate: firstDate,
         lastDate: lastDate,
@@ -160,15 +256,17 @@ Future<DateTimeRange?> showAppDateRangePickerSheet({
   );
 }
 
-class _AppPickerFieldBody extends StatelessWidget {
+class _AppPickerFieldBody extends StatefulWidget {
   const _AppPickerFieldBody({
     required this.placeholderText,
     required this.enabled,
     required this.density,
-    required this.onTap,
+    required this.onOpen,
+    required this.semanticsFallbackLabel,
     this.label,
     this.helperText,
     this.displayValue,
+    this.semanticsDetail,
     this.errorText,
     this.onClear,
   });
@@ -177,60 +275,129 @@ class _AppPickerFieldBody extends StatelessWidget {
   final String? helperText;
   final String placeholderText;
   final String? displayValue;
+  final String? semanticsDetail;
   final String? errorText;
   final bool enabled;
   final AppTextFieldDensity density;
-  final VoidCallback onTap;
+  final String semanticsFallbackLabel;
+  final Future<void> Function() onOpen;
   final VoidCallback? onClear;
+
+  @override
+  State<_AppPickerFieldBody> createState() => _AppPickerFieldBodyState();
+}
+
+class _AppPickerFieldBodyState extends State<_AppPickerFieldBody> {
+  bool _openInProgress = false;
+
+  Future<void> _activate() async {
+    if (!widget.enabled || _openInProgress) {
+      return;
+    }
+    setState(() => _openInProgress = true);
+    try {
+      await widget.onOpen();
+    } finally {
+      if (mounted) {
+        setState(() => _openInProgress = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>();
-    final isEmpty = displayValue == null || displayValue!.isEmpty;
+    final l10n = _tryL10n(context);
+    final isEmpty =
+        widget.displayValue == null || widget.displayValue!.isEmpty;
     final horizontal = tokens?.formFieldPaddingHorizontal ?? 16;
-    final vertical = density == AppTextFieldDensity.compact
+    final vertical = widget.density == AppTextFieldDensity.compact
         ? (tokens?.formFieldPaddingVerticalCompact ?? 12)
         : (tokens?.formFieldPaddingVerticalComfortable ?? 16);
+    const iconSlot = BoxConstraints(minWidth: 52);
 
-    return Semantics(
-      button: enabled,
-      label: _pickerSemanticsLabel(
-        label: label,
-        placeholderText: placeholderText,
-        displayValue: displayValue,
-        isEmpty: isEmpty,
-      ),
-      child: InkWell(
-        onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(tokens?.formFieldRadius ?? 4),
-        child: InputDecorator(
+    return Focus(
+      skipTraversal: !widget.enabled,
+      canRequestFocus: widget.enabled,
+      onKeyEvent: (node, event) {
+        if (!widget.enabled) {
+          return KeyEventResult.ignored;
+        }
+        if (event is! KeyDownEvent) {
+          return KeyEventResult.ignored;
+        }
+        if (event.logicalKey == LogicalKeyboardKey.enter ||
+            event.logicalKey == LogicalKeyboardKey.numpadEnter ||
+            event.logicalKey == LogicalKeyboardKey.space) {
+          unawaited(_activate());
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Semantics(
+        button: widget.enabled,
+        label: _pickerSemanticsLabel(
+          label: widget.label,
+          placeholderText: widget.placeholderText,
+          displayValue: widget.displayValue,
+          semanticsDetail: widget.semanticsDetail,
           isEmpty: isEmpty,
-          decoration: InputDecoration(
-            labelText: label,
-            helperText: errorText == null ? helperText : null,
-            errorText: errorText,
-            enabled: enabled,
-            prefixIcon: const Icon(Icons.calendar_month_outlined),
-            suffixIcon: onClear == null
-                ? const Icon(Icons.arrow_drop_down_rounded)
-                : IconButton(
-                    tooltip: 'Limpar seleção',
-                    onPressed: enabled ? onClear : null,
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: horizontal,
-              vertical: vertical,
+          fallbackRoleLabel: widget.semanticsFallbackLabel,
+        ),
+        child: InkWell(
+          onTap: widget.enabled ? _activate : null,
+          borderRadius: BorderRadius.circular(tokens?.formFieldRadius ?? 4),
+          child: InputDecorator(
+            isEmpty: isEmpty,
+            decoration: InputDecoration(
+              labelText: widget.label,
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              floatingLabelStyle: widget.label == null
+                  ? null
+                  : theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+              labelStyle: widget.label == null
+                  ? null
+                  : theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+              hintText: isEmpty ? widget.placeholderText : null,
+              hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              helperText: widget.errorText == null ? widget.helperText : null,
+              errorText: widget.errorText,
+              enabled: widget.enabled,
+              prefixIcon: _calendarPrefixIcon(context, enabled: widget.enabled),
+              prefixIconConstraints: iconSlot,
+              suffixIcon: widget.onClear == null
+                  ? Icon(
+                      Icons.arrow_drop_down_rounded,
+                      color: widget.enabled
+                          ? theme.colorScheme.onSurfaceVariant
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.38),
+                    )
+                  : IconButton(
+                      tooltip:
+                          l10n?.datePickerClearSelectionTooltip ??
+                          'Limpar seleção',
+                      onPressed: widget.enabled ? widget.onClear : null,
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+              suffixIconConstraints: iconSlot,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: horizontal,
+                vertical: vertical,
+              ),
             ),
-          ),
-          child: Text(
-            isEmpty ? placeholderText : displayValue!,
-            style: isEmpty
-                ? theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  )
-                : theme.textTheme.bodyLarge,
+            child: Text(
+              isEmpty ? '' : widget.displayValue!,
+              style: theme.textTheme.bodyLarge,
+            ),
           ),
         ),
       ),
@@ -261,48 +428,80 @@ class _AppDatePickerSheetState extends State<_AppDatePickerSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.initialValue;
+    _selectedDate = widget.initialValue == null
+        ? null
+        : _normalizeDate(widget.initialValue!);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AppDatePickerSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue) {
+      _selectedDate = widget.initialValue == null
+          ? null
+          : _normalizeDate(widget.initialValue!);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = _tryL10n(context);
+    final canRemove =
+        widget.initialValue != null || _selectedDate != null;
     return _AppPickerSheetScaffold(
       title: widget.title,
-      removeSelectionLabel: 'Remover data',
+      removeSelectionLabel:
+          l10n?.datePickerSheetRemoveDate ?? 'Remover data',
+      applyButtonLabel: l10n?.datePickerSheetApply ?? 'Aplicar',
+      closeButtonTooltip: l10n?.datePickerSheetCloseTooltip ?? 'Fechar',
+      canRemoveSelection: canRemove,
       canApply: _selectedDate != null,
       onRemoveSelection: () {
-        Navigator.of(context).pop();
+        if (!context.mounted) {
+          return;
+        }
+        Navigator.of(context).pop<Object?>(_appDatePickerClearSentinel);
       },
       onApply: () {
-        Navigator.of(context).pop<DateTime?>(_selectedDate);
+        final picked = _selectedDate;
+        if (picked == null) {
+          return;
+        }
+        if (!context.mounted) {
+          return;
+        }
+        Navigator.of(context).pop<DateTime>(picked);
       },
-      child: SfDateRangePicker(
-        initialSelectedDate: _selectedDate,
-        initialDisplayDate: _selectedDate ?? DateTime.now(),
-        minDate: widget.firstDate,
-        maxDate: widget.lastDate,
-        onSelectionChanged: (args) {
-          if (args.value is! DateTime) {
-            return;
-          }
-          setState(() {
-            _selectedDate = _normalizeDate(args.value as DateTime);
-          });
-        },
-        monthViewSettings: const DateRangePickerMonthViewSettings(
-          firstDayOfWeek: 1,
+      child: RepaintBoundary(
+        child: SfDateRangePicker(
+          initialSelectedDate: _selectedDate,
+          initialDisplayDate: _selectedDate ?? DateTime.now(),
+          minDate: widget.firstDate,
+          maxDate: widget.lastDate,
+          onSelectionChanged: (args) {
+            if (args.value is! DateTime) {
+              return;
+            }
+            setState(() {
+              _selectedDate = _normalizeDate(args.value as DateTime);
+            });
+          },
+          monthViewSettings: const DateRangePickerMonthViewSettings(
+            firstDayOfWeek: 1,
+          ),
+          showNavigationArrow: true,
+          headerStyle: _buildHeaderStyle(context),
+          selectionShape: DateRangePickerSelectionShape.rectangle,
+          selectionColor: theme.colorScheme.primary,
+          selectionTextStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          rangeTextStyle: theme.textTheme.bodyMedium,
+          todayHighlightColor: theme.colorScheme.primary,
+          monthCellStyle: _buildMonthCellStyle(context),
         ),
-        showNavigationArrow: true,
-        headerStyle: _buildHeaderStyle(context),
-        selectionShape: DateRangePickerSelectionShape.rectangle,
-        selectionColor: Theme.of(context).colorScheme.primary,
-        selectionTextStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimary,
-          fontWeight: FontWeight.w600,
-        ),
-        rangeTextStyle: Theme.of(context).textTheme.bodyMedium,
-        todayHighlightColor: Theme.of(context).colorScheme.primary,
-        monthCellStyle: _buildMonthCellStyle(context),
       ),
     );
   }
@@ -336,57 +535,89 @@ class _AppDateRangePickerSheetState extends State<_AppDateRangePickerSheet> {
   }
 
   @override
+  void didUpdateWidget(covariant _AppDateRangePickerSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialValue != oldWidget.initialValue) {
+      _selectedRange = widget.initialValue;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>();
+    final l10n = _tryL10n(context);
+    final canRemove =
+        widget.initialValue != null || _selectedRange != null;
 
     return _AppPickerSheetScaffold(
+      initialChildSize: 0.74,
+      minChildSize: 0.52,
       title: widget.title,
-      removeSelectionLabel: 'Remover período',
+      removeSelectionLabel:
+          l10n?.dateRangePickerSheetRemovePeriod ?? 'Remover período',
+      applyButtonLabel: l10n?.datePickerSheetApply ?? 'Aplicar',
+      closeButtonTooltip: l10n?.datePickerSheetCloseTooltip ?? 'Fechar',
+      canRemoveSelection: canRemove,
       canApply: _selectedRange != null,
       onRemoveSelection: () {
-        Navigator.of(context).pop();
+        if (!context.mounted) {
+          return;
+        }
+        Navigator.of(context).pop<Object?>(_appDatePickerClearSentinel);
       },
       onApply: () {
-        Navigator.of(context).pop<DateTimeRange?>(_selectedRange);
+        final picked = _selectedRange;
+        if (picked == null) {
+          return;
+        }
+        if (!context.mounted) {
+          return;
+        }
+        Navigator.of(context).pop<DateTimeRange>(picked);
       },
-      child: SfDateRangePicker(
-        selectionMode: DateRangePickerSelectionMode.range,
-        initialSelectedRange: _selectedRange == null
-            ? null
-            : PickerDateRange(
-                _selectedRange!.start,
-                _selectedRange!.end,
-              ),
-        initialDisplayDate: _selectedRange?.start ?? DateTime.now(),
-        minDate: widget.firstDate,
-        maxDate: widget.lastDate,
-        onSelectionChanged: (args) {
-          if (args.value is! PickerDateRange) {
-            return;
-          }
-          setState(() {
-            _selectedRange = _toDateTimeRange(args.value as PickerDateRange);
-          });
-        },
-        monthViewSettings: const DateRangePickerMonthViewSettings(
-          firstDayOfWeek: 1,
+      child: RepaintBoundary(
+        child: SfDateRangePicker(
+          selectionMode: DateRangePickerSelectionMode.range,
+          enableMultiView: true,
+          viewSpacing: tokens?.gapSm ?? 8,
+          initialSelectedRange: _selectedRange == null
+              ? null
+              : PickerDateRange(
+                  _selectedRange!.start,
+                  _selectedRange!.end,
+                ),
+          initialDisplayDate: _selectedRange?.start ?? DateTime.now(),
+          minDate: widget.firstDate,
+          maxDate: widget.lastDate,
+          onSelectionChanged: (args) {
+            if (args.value is! PickerDateRange) {
+              return;
+            }
+            setState(() {
+              _selectedRange = _toDateTimeRange(args.value as PickerDateRange);
+            });
+          },
+          monthViewSettings: const DateRangePickerMonthViewSettings(
+            firstDayOfWeek: 1,
+          ),
+          showNavigationArrow: true,
+          headerStyle: _buildHeaderStyle(context),
+          selectionShape: DateRangePickerSelectionShape.rectangle,
+          selectionColor: theme.colorScheme.primary,
+          startRangeSelectionColor: theme.colorScheme.primary,
+          endRangeSelectionColor: theme.colorScheme.primary,
+          rangeSelectionColor: theme.colorScheme.primaryContainer,
+          selectionTextStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          rangeTextStyle: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
+          todayHighlightColor: theme.colorScheme.primary,
+          monthCellStyle: _buildMonthCellStyle(context),
         ),
-        showNavigationArrow: true,
-        headerStyle: _buildHeaderStyle(context),
-        selectionShape: DateRangePickerSelectionShape.rectangle,
-        selectionColor: theme.colorScheme.primary,
-        startRangeSelectionColor: theme.colorScheme.primary,
-        endRangeSelectionColor: theme.colorScheme.primary,
-        rangeSelectionColor: theme.colorScheme.primaryContainer,
-        selectionTextStyle: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onPrimary,
-          fontWeight: FontWeight.w600,
-        ),
-        rangeTextStyle: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onPrimaryContainer,
-        ),
-        todayHighlightColor: theme.colorScheme.primary,
-        monthCellStyle: _buildMonthCellStyle(context),
       ),
     );
   }
@@ -396,14 +627,24 @@ class _AppPickerSheetScaffold extends StatelessWidget {
   const _AppPickerSheetScaffold({
     required this.title,
     required this.removeSelectionLabel,
+    required this.applyButtonLabel,
+    required this.closeButtonTooltip,
+    required this.canRemoveSelection,
     required this.canApply,
     required this.onRemoveSelection,
     required this.onApply,
     required this.child,
+    this.initialChildSize = 0.62,
+    this.minChildSize = 0.48,
   });
 
+  final double initialChildSize;
+  final double minChildSize;
   final String title;
   final String removeSelectionLabel;
+  final String applyButtonLabel;
+  final String closeButtonTooltip;
+  final bool canRemoveSelection;
   final bool canApply;
   final VoidCallback onRemoveSelection;
   final VoidCallback onApply;
@@ -416,23 +657,19 @@ class _AppPickerSheetScaffold extends StatelessWidget {
 
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.78,
-      minChildSize: 0.64,
-      maxChildSize: 0.94,
+      initialChildSize: initialChildSize,
+      minChildSize: minChildSize,
+      maxChildSize: 0.92,
       builder: (context, scrollController) {
         return Column(
           children: <Widget>[
-            Container(
-              width: 40,
-              height: 4,
-              margin: EdgeInsets.symmetric(vertical: tokens.gapSm),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: tokens.contentSpacing),
+              padding: EdgeInsets.fromLTRB(
+                tokens.contentSpacing,
+                tokens.gapSm,
+                tokens.contentSpacing,
+                tokens.gapSm,
+              ),
               child: Row(
                 children: <Widget>[
                   Expanded(
@@ -444,21 +681,23 @@ class _AppPickerSheetScaffold extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Fechar',
-                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: closeButtonTooltip,
+                    onPressed: () {
+                      if (!context.mounted) {
+                        return;
+                      }
+                      Navigator.of(context).pop();
+                    },
                     icon: const Icon(Icons.close_rounded),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: tokens.gapSm),
             Expanded(
-              child: ListView(
+              child: SingleChildScrollView(
                 controller: scrollController,
                 padding: EdgeInsets.all(tokens.contentSpacing),
-                children: <Widget>[
-                  child,
-                ],
+                child: child,
               ),
             ),
             Padding(
@@ -469,14 +708,15 @@ class _AppPickerSheetScaffold extends StatelessWidget {
                     child: AppSecondaryButton(
                       fillWidth: true,
                       label: removeSelectionLabel,
-                      onPressed: onRemoveSelection,
+                      onPressed:
+                          canRemoveSelection ? onRemoveSelection : null,
                     ),
                   ),
                   SizedBox(width: tokens.gapMd),
                   Expanded(
                     child: AppPrimaryButton(
                       fillWidth: true,
-                      label: 'Aplicar',
+                      label: applyButtonLabel,
                       onPressed: canApply ? onApply : null,
                     ),
                   ),
@@ -551,11 +791,17 @@ String _pickerSemanticsLabel({
   required String? label,
   required String placeholderText,
   required String? displayValue,
+  required String? semanticsDetail,
   required bool isEmpty,
+  required String fallbackRoleLabel,
 }) {
-  final baseLabel = label ?? 'Data';
+  final baseLabel = label ?? fallbackRoleLabel;
   if (isEmpty) {
     return '$baseLabel. $placeholderText';
+  }
+  final detail = semanticsDetail?.trim();
+  if (detail != null && detail.isNotEmpty) {
+    return '$baseLabel, ${displayValue ?? ''}, $detail';
   }
   return '$baseLabel, ${displayValue ?? ''}';
 }

@@ -5,6 +5,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
@@ -65,7 +66,10 @@ class OverviewFilterBar extends StatelessWidget {
     );
 
     final selectedYm = filter.yearMonth ?? currentYm;
-    final monthDropdownOptions = <AppDropdownOption<OverviewYearMonth>>[
+    final now = DateTime.now();
+    final rangePickerLastDate = DateTime(now.year, now.month, now.day);
+    final rangePickerFirstDate = DateTime(now.year - 10);
+    var monthDropdownOptions = <AppDropdownOption<OverviewYearMonth>>[
       AppDropdownOption<OverviewYearMonth>(
         value: currentYm,
         label: l10n.dashboardHomeFiltersCurrentMonth,
@@ -76,6 +80,15 @@ class OverviewFilterBar extends StatelessWidget {
           label: _monthLabel(context, ym),
         ),
     ];
+    if (!monthDropdownOptions.any((o) => o.value == selectedYm)) {
+      monthDropdownOptions = <AppDropdownOption<OverviewYearMonth>>[
+        AppDropdownOption<OverviewYearMonth>(
+          value: selectedYm,
+          label: _monthLabel(context, selectedYm),
+        ),
+        ...monthDropdownOptions,
+      ];
+    }
 
     return AppSectionCard(
       color: cs.surfaceContainerLow,
@@ -170,17 +183,96 @@ class OverviewFilterBar extends StatelessWidget {
                   },
                 ),
               SizedBox(height: tokens.gapMd),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    l10n.dashboardHomeFiltersReferenceRangeLabel.toUpperCase(),
+                    style: typography.utilityOverline.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: tokens.gapSm),
+                  AppDateRangePickerField(
+                    helperText: l10n.dashboardHomeFiltersReferenceRangeHelper(
+                      kOverviewCustomReferenceRangeMaxInclusiveDays,
+                    ),
+                    pickerTitle:
+                        l10n.dashboardHomeFiltersReferenceRangePickerTitle,
+                    value: filter.referenceRange == null
+                        ? null
+                        : DateTimeRange(
+                            start: filter.referenceRange!.startInclusive,
+                            end: filter.referenceRange!.endInclusive,
+                          ),
+                    firstDate: rangePickerFirstDate,
+                    lastDate: rangePickerLastDate,
+                    enabled: !isDisabled,
+                    density: AppTextFieldDensity.compact,
+                    onChanged: (picked) {
+                      if (picked == null) {
+                        onFilterChanged!(
+                          filter.copyWith(referenceRange: null),
+                        );
+                        return;
+                      }
+                      final range = OverviewDateRange.fromOrderedEndpoints(
+                        picked.start,
+                        picked.end,
+                      );
+                      if (!range.withinHomeDashboardMaxInclusiveDays) {
+                        if (!context.mounted) {
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            behavior: SnackBarBehavior.floating,
+                            content: Text(
+                              l10n.dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(
+                                kOverviewCustomReferenceRangeMaxInclusiveDays,
+                              ),
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      onFilterChanged!(
+                        filter.copyWith(
+                          referenceRange: range,
+                          yearMonth: OverviewYearMonth.fromDate(
+                            range.endInclusive,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: tokens.gapMd),
               AppDropdownField<OverviewYearMonth>(
                 label: l10n.dashboardHomeFiltersYearMonthLabel,
                 value: selectedYm,
                 options: monthDropdownOptions,
+                selectedDisplayLabel: filter.referenceRange != null
+                    ? l10n.dashboardHomeFiltersYearMonthCustomDisplay
+                    : null,
+                semanticsLabel: filter.referenceRange != null
+                    ? '${l10n.dashboardHomeFiltersYearMonthLabel}. '
+                        '${l10n.dashboardHomeFiltersYearMonthCustomDisplay}. '
+                        '${_monthLabel(context, selectedYm)}.'
+                    : null,
                 enabled: !isDisabled,
                 density: AppTextFieldDensity.compact,
                 onChanged: (v) {
                   if (v == null) {
                     return;
                   }
-                  onFilterChanged!(filter.copyWith(yearMonth: v));
+                  onFilterChanged!(
+                    filter.copyWith(
+                      yearMonth: v,
+                      referenceRange: null,
+                    ),
+                  );
                 },
               ),
             ],

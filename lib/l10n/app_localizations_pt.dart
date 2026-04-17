@@ -227,6 +227,29 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
 
   @override
+  String get dashboardHomeFiltersReferenceRangeLabel => 'PERÍODO';
+
+  @override
+  String dashboardHomeFiltersReferenceRangeHelper(int maxDays) {
+    return 'Opcional. Escolha início e fim — o intervalo pode atravessar vários meses (no máximo $maxDays dias corridos). Totais e rankings seguem esse período. O gráfico mensal continua com 12 meses até o mês do último dia.';
+  }
+
+  @override
+  String get dashboardHomeFiltersReferenceRangePickerTitle =>
+      'Selecionar período';
+
+  @override
+  String get dashboardHomeFiltersYearMonthCustomDisplay => 'Personalizado';
+
+  @override
+  String dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(int maxDays) {
+    return 'O intervalo selecionado não pode passar de $maxDays dias corridos.';
+  }
+
+  @override
+  String get overviewPeriodTagCustomRangePrefix => 'Período';
+
+  @override
   String overviewAgentFilterAllAgentsSummary(int count) {
     return 'Todos os agentes ($count)';
   }
@@ -490,6 +513,37 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewPaymentMixDonutTotalLabel => 'TOTAL';
+
+  @override
+  String get overviewCategoryMixTitle => 'Vendas por categoria';
+
+  @override
+  String get overviewCategoryMixDonutAnnualTotalLabel => 'TOTAL ANUAL';
+
+  @override
+  String get overviewCategoryMixMoreOptionsTooltip => 'Mais opcoes';
+
+  @override
+  String get overviewCategoryMixMenuComingSoon => 'Menu em breve.';
+
+  @override
+  String get appCategoryDonutCardLoadingSemantics =>
+      'Carregando grafico de categorias…';
+
+  @override
+  String appCategoryDonutCardEmptySemantics(String title) {
+    return '$title, sem dados';
+  }
+
+  @override
+  String appCategoryDonutCardCategoriesSemantics(String title, int count) {
+    return '$title, $count categorias';
+  }
+
+  @override
+  String appCategoryDonutChartSemantics(String summary) {
+    return 'Grafico de rosca. $summary';
+  }
 
   @override
   String get overviewPaymentBarTitle => 'Faturamento por forma de pagamento';
@@ -1559,7 +1613,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get formsDemoDatePickersFormSubtitle =>
-      'Validacao ao enviar; limpe o campo e valide para ver erro. Intervalo com datas explicitas na demo.';
+      'Form nativo + FormField. Toque em Aplicar no sheet para confirmar; fechar sem aplicar mantem o valor. Remover limpa de forma explicita.';
 
   @override
   String get formsDemoReferenceDateLabel => 'Data de referencia';
@@ -1681,7 +1735,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get formsDemoFormBuilderSectionSubtitle =>
-      'Mesmos wrappers usados em relatorios parametrizados, agora com dropdown compartilhado.';
+      'Mesmos wrappers dos relatorios: dropdown, multi-select e os mesmos date pickers da secao Form acima (FormBuilderField + AppFormBuilderDate*).';
 
   @override
   String get formsDemoFormBuilderNodeLabel => 'Select node (FormBuilder)';
@@ -1779,6 +1833,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get datePickerSemanticsFallbackLabel => 'Data';
+
+  @override
+  String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
 
   @override
   String get areaTrendDemoIntroEyebrow => 'Graficos de area';
@@ -2133,6 +2190,29 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
 
   @override
+  String get dashboardHomeFiltersReferenceRangeLabel => 'PERÍODO';
+
+  @override
+  String dashboardHomeFiltersReferenceRangeHelper(int maxDays) {
+    return 'Opcional. Escolha início e fim — o intervalo pode atravessar vários meses (no máximo $maxDays dias corridos). Totais e rankings seguem esse período. O gráfico mensal continua com 12 meses até o mês do último dia.';
+  }
+
+  @override
+  String get dashboardHomeFiltersReferenceRangePickerTitle =>
+      'Selecionar período';
+
+  @override
+  String get dashboardHomeFiltersYearMonthCustomDisplay => 'Personalizado';
+
+  @override
+  String dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(int maxDays) {
+    return 'O intervalo selecionado não pode passar de $maxDays dias corridos.';
+  }
+
+  @override
+  String get overviewPeriodTagCustomRangePrefix => 'Período';
+
+  @override
   String overviewAgentFilterAllAgentsSummary(int count) {
     return 'Todos os agentes ($count)';
   }
@@ -2307,6 +2387,37 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewPaymentMixDonutTotalLabel => 'TOTAL';
+
+  @override
+  String get overviewCategoryMixTitle => 'Vendas por categoria';
+
+  @override
+  String get overviewCategoryMixDonutAnnualTotalLabel => 'TOTAL ANUAL';
+
+  @override
+  String get overviewCategoryMixMoreOptionsTooltip => 'Mais opcoes';
+
+  @override
+  String get overviewCategoryMixMenuComingSoon => 'Menu em breve.';
+
+  @override
+  String get appCategoryDonutCardLoadingSemantics =>
+      'Carregando grafico de categorias…';
+
+  @override
+  String appCategoryDonutCardEmptySemantics(String title) {
+    return '$title, sem dados';
+  }
+
+  @override
+  String appCategoryDonutCardCategoriesSemantics(String title, int count) {
+    return '$title, $count categorias';
+  }
+
+  @override
+  String appCategoryDonutChartSemantics(String summary) {
+    return 'Grafico de rosca. $summary';
+  }
 
   @override
   String get overviewPaymentBarTitle => 'Faturamento por forma de pagamento';
@@ -3376,7 +3487,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get formsDemoDatePickersFormSubtitle =>
-      'Validacao ao enviar; limpe o campo e valide para ver erro. Intervalo com datas explicitas na demo.';
+      'Form nativo + FormField. Toque em Aplicar no sheet para confirmar; fechar sem aplicar mantem o valor. Remover limpa de forma explicita.';
 
   @override
   String get formsDemoReferenceDateLabel => 'Data de referencia';
@@ -3498,7 +3609,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get formsDemoFormBuilderSectionSubtitle =>
-      'Mesmos wrappers usados em relatorios parametrizados, agora com dropdown compartilhado.';
+      'Mesmos wrappers dos relatorios: dropdown, multi-select e os mesmos date pickers da secao Form acima (FormBuilderField + AppFormBuilderDate*).';
 
   @override
   String get formsDemoFormBuilderNodeLabel => 'Select node (FormBuilder)';
@@ -3596,6 +3707,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get datePickerSemanticsFallbackLabel => 'Data';
+
+  @override
+  String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
 
   @override
   String get areaTrendDemoIntroEyebrow => 'Graficos de area';

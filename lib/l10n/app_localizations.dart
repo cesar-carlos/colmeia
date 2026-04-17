@@ -489,6 +489,42 @@ abstract class AppLocalizations {
   /// **'Last 30 days'**
   String get dashboardHomeFiltersPeriodLast30Days;
 
+  /// No description provided for @dashboardHomeFiltersReferenceRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get dashboardHomeFiltersReferenceRangeLabel;
+
+  /// No description provided for @dashboardHomeFiltersReferenceRangeHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Pick inclusive start and end — the range can span several months (up to {maxDays} days). Totals and rankings follow that span. The monthly trend still shows the 12 months ending in the last day’s month.'**
+  String dashboardHomeFiltersReferenceRangeHelper(int maxDays);
+
+  /// No description provided for @dashboardHomeFiltersReferenceRangePickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select period'**
+  String get dashboardHomeFiltersReferenceRangePickerTitle;
+
+  /// No description provided for @dashboardHomeFiltersYearMonthCustomDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get dashboardHomeFiltersYearMonthCustomDisplay;
+
+  /// No description provided for @dashboardHomeFiltersReferenceRangeMaxDurationSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected range cannot exceed {maxDays} calendar days.'**
+  String dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(int maxDays);
+
+  /// No description provided for @overviewPeriodTagCustomRangePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get overviewPeriodTagCustomRangePrefix;
+
   /// No description provided for @overviewAgentFilterAllAgentsSummary.
   ///
   /// In en, this message translates to:
@@ -922,6 +958,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'TOTAL'**
   String get overviewPaymentMixDonutTotalLabel;
+
+  /// No description provided for @overviewCategoryMixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales by category'**
+  String get overviewCategoryMixTitle;
+
+  /// No description provided for @overviewCategoryMixDonutAnnualTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ANNUAL TOTAL'**
+  String get overviewCategoryMixDonutAnnualTotalLabel;
+
+  /// No description provided for @overviewCategoryMixMoreOptionsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get overviewCategoryMixMoreOptionsTooltip;
+
+  /// No description provided for @overviewCategoryMixMenuComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu coming soon.'**
+  String get overviewCategoryMixMenuComingSoon;
+
+  /// No description provided for @appCategoryDonutCardLoadingSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading category chart…'**
+  String get appCategoryDonutCardLoadingSemantics;
+
+  /// No description provided for @appCategoryDonutCardEmptySemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}, no data'**
+  String appCategoryDonutCardEmptySemantics(String title);
+
+  /// No description provided for @appCategoryDonutCardCategoriesSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{title}, {count} categories'**
+  String appCategoryDonutCardCategoriesSemantics(String title, int count);
+
+  /// No description provided for @appCategoryDonutChartSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Doughnut chart. {summary}'**
+  String appCategoryDonutChartSemantics(String summary);
 
   /// No description provided for @overviewPaymentBarTitle.
   ///
@@ -2591,7 +2675,7 @@ abstract class AppLocalizations {
   /// No description provided for @formsDemoDatePickersFormSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Validation on submit; clear the field and validate to see the error. Range with explicit dates in the demo.'**
+  /// **'Native Form + FormField. Tap Apply in the sheet to confirm; closing without applying keeps the current value. Remove clears explicitly.'**
   String get formsDemoDatePickersFormSubtitle;
 
   /// No description provided for @formsDemoReferenceDateLabel.
@@ -2813,7 +2897,7 @@ abstract class AppLocalizations {
   /// No description provided for @formsDemoFormBuilderSectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Same wrappers used in parameterized reports, now with the shared dropdown.'**
+  /// **'Same wrappers as reports: dropdown, multi-select, and the same date pickers as the Form section above (FormBuilderField + AppFormBuilderDate*).'**
   String get formsDemoFormBuilderSectionSubtitle;
 
   /// No description provided for @formsDemoFormBuilderNodeLabel.
@@ -2983,6 +3067,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Date'**
   String get datePickerSemanticsFallbackLabel;
+
+  /// No description provided for @dateRangePickerSemanticsFallbackLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get dateRangePickerSemanticsFallbackLabel;
 
   /// No description provided for @areaTrendDemoIntroEyebrow.
   ///

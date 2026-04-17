@@ -223,6 +223,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardHomeFiltersPeriodLast30Days => 'Last 30 days';
 
   @override
+  String get dashboardHomeFiltersReferenceRangeLabel => 'Date range';
+
+  @override
+  String dashboardHomeFiltersReferenceRangeHelper(int maxDays) {
+    return 'Optional. Pick inclusive start and end — the range can span several months (up to $maxDays days). Totals and rankings follow that span. The monthly trend still shows the 12 months ending in the last day’s month.';
+  }
+
+  @override
+  String get dashboardHomeFiltersReferenceRangePickerTitle => 'Select period';
+
+  @override
+  String get dashboardHomeFiltersYearMonthCustomDisplay => 'Custom';
+
+  @override
+  String dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(int maxDays) {
+    return 'The selected range cannot exceed $maxDays calendar days.';
+  }
+
+  @override
+  String get overviewPeriodTagCustomRangePrefix => 'Period';
+
+  @override
   String overviewAgentFilterAllAgentsSummary(int count) {
     return 'All agents ($count)';
   }
@@ -480,6 +502,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewPaymentMixDonutTotalLabel => 'TOTAL';
+
+  @override
+  String get overviewCategoryMixTitle => 'Sales by category';
+
+  @override
+  String get overviewCategoryMixDonutAnnualTotalLabel => 'ANNUAL TOTAL';
+
+  @override
+  String get overviewCategoryMixMoreOptionsTooltip => 'More options';
+
+  @override
+  String get overviewCategoryMixMenuComingSoon => 'Menu coming soon.';
+
+  @override
+  String get appCategoryDonutCardLoadingSemantics => 'Loading category chart…';
+
+  @override
+  String appCategoryDonutCardEmptySemantics(String title) {
+    return '$title, no data';
+  }
+
+  @override
+  String appCategoryDonutCardCategoriesSemantics(String title, int count) {
+    return '$title, $count categories';
+  }
+
+  @override
+  String appCategoryDonutChartSemantics(String summary) {
+    return 'Doughnut chart. $summary';
+  }
 
   @override
   String get overviewPaymentBarTitle => 'Revenue by payment method';
@@ -1534,7 +1586,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get formsDemoDatePickersFormSubtitle =>
-      'Validation on submit; clear the field and validate to see the error. Range with explicit dates in the demo.';
+      'Native Form + FormField. Tap Apply in the sheet to confirm; closing without applying keeps the current value. Remove clears explicitly.';
 
   @override
   String get formsDemoReferenceDateLabel => 'Reference date';
@@ -1655,7 +1707,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get formsDemoFormBuilderSectionSubtitle =>
-      'Same wrappers used in parameterized reports, now with the shared dropdown.';
+      'Same wrappers as reports: dropdown, multi-select, and the same date pickers as the Form section above (FormBuilderField + AppFormBuilderDate*).';
 
   @override
   String get formsDemoFormBuilderNodeLabel => 'Select node (FormBuilder)';
@@ -1752,6 +1804,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get datePickerSemanticsFallbackLabel => 'Date';
+
+  @override
+  String get dateRangePickerSemanticsFallbackLabel => 'Period';
 
   @override
   String get areaTrendDemoIntroEyebrow => 'Area charts';

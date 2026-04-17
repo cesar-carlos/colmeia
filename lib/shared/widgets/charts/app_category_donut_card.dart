@@ -36,7 +36,20 @@ class AppCategoryDonutCardStyle {
     this.titleAccentWidth = 4,
     this.titleAccentHeight = 22,
     this.compactBreakpointWidth,
+    /// Syncfusion doughnut sweep duration (ms). `0` disables. When null, uses
+    /// [defaultDoughnutAnimationDurationMs] unless the platform requests reduced
+    /// motion ([MediaQueryData.disableAnimations]).
+    ///
+    /// **Per-screen policy (overview home):** payment mix keeps the default
+    /// sweep; category mix passes `0` so the chart does not animate on refresh.
+    this.doughnutAnimationDurationMs,
+    /// When non-null, the legend is placed in a scrollable column with this max
+    /// height (useful for many categories beside the chart).
+    this.legendMaxHeight,
   });
+
+  /// Default donut sweep when [doughnutAnimationDurationMs] is null.
+  static const int defaultDoughnutAnimationDurationMs = 900;
 
   /// Fixed width/height of the square chart area when not constrained.
   final double? chartSize;
@@ -61,12 +74,20 @@ class AppCategoryDonutCardStyle {
   /// Below this width (card constraints), chart stacks above legend.
   /// Defaults to the app mobile breakpoint (see `AppBreakpoints.mobile`).
   final double? compactBreakpointWidth;
+
+  final int? doughnutAnimationDurationMs;
+
+  final double? legendMaxHeight;
 }
 
 /// Donut chart + category legend in a dashboard card (design-system aligned).
 ///
 /// Provide segment weights via `AppCategoryDonutSegment.value`; legend text
 /// uses `resolveValueLabel` and percent from value / total.
+///
+/// Sweep animation is configured with
+/// [AppCategoryDonutCardStyle.doughnutAnimationDurationMs]
+/// (see style docs for overview defaults).
 class AppCategoryDonutCard extends StatefulWidget {
   const AppCategoryDonutCard({
     required this.title,
@@ -85,7 +106,7 @@ class AppCategoryDonutCard extends StatefulWidget {
     this.isLoading = false,
     this.emptyPlaceholder,
     this.semanticsLabel,
-    this.loadingSemanticsLabel = 'Carregando categorias...',
+    this.loadingSemanticsLabel,
     this.reselectFiresSegmentTap = false,
   });
 
@@ -125,7 +146,9 @@ class AppCategoryDonutCard extends StatefulWidget {
   final String? semanticsLabel;
 
   /// Announced via the card [Semantics] while [isLoading] is true.
-  final String loadingSemanticsLabel;
+  ///
+  /// When null, [AppLocalizations.appCategoryDonutCardLoadingSemantics] is used.
+  final String? loadingSemanticsLabel;
 
   /// When false (default), [onSegmentTap] is not called if the tapped segment
   /// is already selected.
@@ -195,18 +218,26 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
     }
   }
 
-  String _resolvedCardSemanticsLabel() {
+  String _resolvedCardSemanticsLabel(BuildContext context) {
     final custom = widget.semanticsLabel?.trim();
     if (custom != null && custom.isNotEmpty) {
       return custom;
     }
+    final l10n = AppLocalizations.of(context);
     if (widget.isLoading) {
-      return widget.loadingSemanticsLabel;
+      final explicit = widget.loadingSemanticsLabel?.trim();
+      if (explicit != null && explicit.isNotEmpty) {
+        return explicit;
+      }
+      return l10n.appCategoryDonutCardLoadingSemantics;
     }
     if (widget.segments.isEmpty) {
-      return '${widget.title}, sem dados';
+      return l10n.appCategoryDonutCardEmptySemantics(widget.title);
     }
-    return '${widget.title}, ${widget.segments.length} categorias';
+    return l10n.appCategoryDonutCardCategoriesSemantics(
+      widget.title,
+      widget.segments.length,
+    );
   }
 
   @override
@@ -315,7 +346,7 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
 
     return Semantics(
       container: true,
-      label: _resolvedCardSemanticsLabel(),
+      label: _resolvedCardSemanticsLabel(context),
       child: card,
     );
   }
@@ -451,32 +482,49 @@ class _DonutSection extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final palette = chartTheme.palette;
-    final chart = ExcludeSemantics(
-      child: SfCircularChart(
-        backgroundColor:
-            style.chartBackgroundColor ??
-            colors.surfaceContainerLow.withValues(alpha: 0.65),
-        tooltipBehavior: TooltipBehavior(
-          format: 'point.x : point.y',
-        ),
-        series: <CircularSeries<AppCategoryDonutSegment, String>>[
-          DoughnutSeries<AppCategoryDonutSegment, String>(
-            dataSource: segments,
-            xValueMapper: (s, _) => s.label,
-            yValueMapper: (s, _) => s.value.toDouble(),
-            animationDuration: 0,
-            innerRadius: style.innerRadius,
-            radius: style.outerRadius,
-            explodeIndex: selectedIndex,
-            pointColorMapper: (s, i) => s.color ?? palette[i % palette.length],
-            onPointTap: (details) {
-              final i = details.pointIndex;
-              if (i != null && i >= 0 && i < segments.length) {
-                onSliceSelected(i);
-              }
-            },
-          ),
+    final configuredMs = style.doughnutAnimationDurationMs ??
+        AppCategoryDonutCardStyle.defaultDoughnutAnimationDurationMs;
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final animationDuration = (reduceMotion || configuredMs <= 0)
+        ? 0.0
+        : configuredMs.toDouble();
+    final chartSeriesSignature = Object.hash(
+      segments.length,
+      Object.hashAll(
+        <int>[
+          for (final s in segments) Object.hash(s.label, s.value),
         ],
+      ),
+    );
+    final chart = RepaintBoundary(
+      key: ValueKey<int>(chartSeriesSignature),
+      child: ExcludeSemantics(
+        child: SfCircularChart(
+          backgroundColor:
+              style.chartBackgroundColor ??
+              colors.surfaceContainerLow.withValues(alpha: 0.65),
+          tooltipBehavior: TooltipBehavior(
+            format: 'point.x : point.y',
+          ),
+          series: <CircularSeries<AppCategoryDonutSegment, String>>[
+            DoughnutSeries<AppCategoryDonutSegment, String>(
+              dataSource: segments,
+              xValueMapper: (s, _) => s.label,
+              yValueMapper: (s, _) => s.value.toDouble(),
+              animationDuration: animationDuration,
+              innerRadius: style.innerRadius,
+              radius: style.outerRadius,
+              explodeIndex: selectedIndex,
+              pointColorMapper: (s, i) => s.color ?? palette[i % palette.length],
+              onPointTap: (details) {
+                final i = details.pointIndex;
+                if (i != null && i >= 0 && i < segments.length) {
+                  onSliceSelected(i);
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
 
@@ -502,9 +550,10 @@ class _DonutSection extends StatelessWidget {
         ? titleLargeSize * _kCategoryDonutTypographyTightenFactor
         : _tightenTypographyFontSize(typography.displayH1).fontSize;
 
+    final l10n = AppLocalizations.of(context);
     return Semantics(
       container: true,
-      label: 'Gráfico de rosca. $centerSummary',
+      label: l10n.appCategoryDonutChartSemantics(centerSummary),
       child: Stack(
         alignment: Alignment.center,
         children: <Widget>[
@@ -571,32 +620,54 @@ class _LegendSection extends StatelessWidget {
     final palette = chartTheme.palette;
     final total = segments.donutWeightTotal;
     final spacing = style.rowSpacing ?? tokens.gapXs;
+    final pad =
+        style.legendItemPadding ??
+        EdgeInsets.symmetric(
+          horizontal: tokens.gapSm,
+          vertical: tokens.gapXs,
+        );
+    final radius =
+        style.selectedRowBorderRadius ??
+        BorderRadius.circular(tokens.cardRadius * 0.45);
+
+    Widget rowAt(int i) {
+      return _LegendRow(
+        segment: segments[i],
+        index: i,
+        isSelected: i == selectedIndex,
+        swatchColor: segments[i].color ?? palette[i % palette.length],
+        valueLabel: segments[i].resolveValueLabel(),
+        percentLabel: segments[i].resolvePercentLabel(total),
+        onTap: () => onSelect(i),
+        typography: typography,
+        colors: colors,
+        padding: pad,
+        borderRadius: radius,
+      );
+    }
+
+    final maxLegendHeight = style.legendMaxHeight;
+    if (maxLegendHeight != null) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxLegendHeight),
+        child: ListView.separated(
+          shrinkWrap: true,
+          primary: false,
+          padding: EdgeInsets.zero,
+          physics: const ClampingScrollPhysics(),
+          itemCount: segments.length,
+          separatorBuilder: (_, _) => SizedBox(height: spacing),
+          itemBuilder: (context, i) => rowAt(i),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         for (var i = 0; i < segments.length; i++) ...<Widget>[
           if (i > 0) SizedBox(height: spacing),
-          _LegendRow(
-            segment: segments[i],
-            index: i,
-            isSelected: i == selectedIndex,
-            swatchColor: segments[i].color ?? palette[i % palette.length],
-            valueLabel: segments[i].resolveValueLabel(),
-            percentLabel: segments[i].resolvePercentLabel(total),
-            onTap: () => onSelect(i),
-            typography: typography,
-            colors: colors,
-            padding:
-                style.legendItemPadding ??
-                EdgeInsets.symmetric(
-                  horizontal: tokens.gapSm,
-                  vertical: tokens.gapXs,
-                ),
-            borderRadius:
-                style.selectedRowBorderRadius ??
-                BorderRadius.circular(tokens.cardRadius * 0.45),
-          ),
+          rowAt(i),
         ],
       ],
     );

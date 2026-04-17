@@ -32,6 +32,8 @@ class AppDropdownField<T> extends StatefulWidget {
     this.emptyLabel = 'Nenhuma opção disponível.',
     this.semanticsLabel,
     this.menuMaxHeight = 220,
+    /// When non-null, replaces the matched option label in the collapsed field.
+    this.selectedDisplayLabel,
   });
 
   final List<AppDropdownOption<T>> options;
@@ -46,6 +48,7 @@ class AppDropdownField<T> extends StatefulWidget {
   final String emptyLabel;
   final String? semanticsLabel;
   final double menuMaxHeight;
+  final String? selectedDisplayLabel;
 
   @override
   State<AppDropdownField<T>> createState() => _AppDropdownFieldState<T>();
@@ -111,6 +114,15 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
           orElse: () => null,
         );
 
+    final displayLabel = widget.selectedDisplayLabel ??
+        selectedOption?.label ??
+        widget.value?.toString() ??
+        widget.hintText ??
+        'Selecione uma opção';
+    final hasCollapsedSelection = selectedOption != null ||
+        widget.selectedDisplayLabel != null ||
+        (widget.value != null && selectedOption == null);
+
     final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
     final fieldPadding = _contentPadding(tokens, widget.density);
     final borderSide = _resolveBorderSide(
@@ -171,14 +183,12 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                               children: <Widget>[
                                 Expanded(
                                   child: Text(
-                                    selectedOption?.label ??
-                                        widget.hintText ??
-                                        'Selecione uma opção',
+                                    displayLabel,
                                     style: typography.body.copyWith(
-                                      color: selectedOption != null
+                                      color: hasCollapsedSelection
                                           ? colors.onSurface
                                           : colors.onSurfaceVariant,
-                                      fontWeight: selectedOption != null
+                                      fontWeight: hasCollapsedSelection
                                           ? FontWeight.w600
                                           : FontWeight.w500,
                                     ),

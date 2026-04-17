@@ -1,5 +1,6 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_category_share.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:flutter/material.dart';
@@ -14,11 +15,13 @@ import 'package:flutter/material.dart';
 /// [fallbackTotalRevenue] não mudam (evita map/fold em rebuilds frequentes).
 class OverviewCategoryMixCard extends StatefulWidget {
   const OverviewCategoryMixCard({
+    required this.l10n,
     required this.shares,
     super.key,
     this.fallbackTotalRevenue,
   });
 
+  final AppLocalizations l10n;
   final List<OverviewCategoryShare> shares;
 
   /// Total usado para estimar valores quando [OverviewCategoryShare.amount]
@@ -114,19 +117,24 @@ class _OverviewCategoryMixCardState extends State<OverviewCategoryMixCard> {
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).colorScheme.primary;
+    final l10n = widget.l10n;
 
     return AppCategoryDonutCard(
-      title: 'Vendas por categoria',
+      title: l10n.overviewCategoryMixTitle,
+      style: const AppCategoryDonutCardStyle(
+        doughnutAnimationDurationMs: 0,
+        legendMaxHeight: 280,
+      ),
       segments: _segments,
       centerPrimaryLabel: _centerPrimary,
-      centerSecondaryLabel: 'TOTAL ANUAL',
+      centerSecondaryLabel: l10n.overviewCategoryMixDonutAnnualTotalLabel,
       titleAccentColor: accent,
       titleTrailing: IconButton(
         icon: const Icon(Icons.more_vert),
-        tooltip: 'Mais opcoes',
+        tooltip: l10n.overviewCategoryMixMoreOptionsTooltip,
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Menu em breve.')),
+            SnackBar(content: Text(l10n.overviewCategoryMixMenuComingSoon)),
           );
         },
       ),

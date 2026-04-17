@@ -66,6 +66,9 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
     return AppCategoryDonutCard(
       title: l10n.overviewPaymentMixTitle,
       subtitle: l10n.overviewPaymentMixSubtitle,
+      style: const AppCategoryDonutCardStyle(
+        legendMaxHeight: 280,
+      ),
       segments: _segments,
       centerPrimaryLabel:
           _total > 0 ? AppBrFormatters.compactCurrency(_total) : null,

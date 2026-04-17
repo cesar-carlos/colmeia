@@ -11,10 +11,9 @@ double _twoLineLabelBlockHeight(TextStyle labelStyle, TextScaler scaler) {
   return scaler.scale(fontSize) * heightFactor * 2;
 }
 
-/// Horizontal strip of KPI tiles built from [AppReportSummaryItem] list.
-///
-/// Scrolls horizontally when items overflow, so it stays readable on compact
-/// screens.
+/// KPI tiles from [AppReportSummaryItem] in a **two-column** grid that always
+/// stretches to the card’s inner width (same edge alignment as other section
+/// cards on narrow and wide layouts).
 class AppReportSummaryBar extends StatelessWidget {
   const AppReportSummaryBar({
     required this.items,
@@ -22,12 +21,44 @@ class AppReportSummaryBar extends StatelessWidget {
     this.color,
   });
 
-  static const double _scrollTileWidthFraction = 0.42;
-  static const double _minScrollTileWidth = 136;
-  static const double _maxScrollTileWidth = 176;
-
   final List<AppReportSummaryItem> items;
   final Color? color;
+
+  static List<Widget> _summaryGridRows({
+    required List<AppReportSummaryItem> items,
+    required double gap,
+  }) {
+    final rows = <Widget>[];
+    for (var i = 0; i < items.length; i += 2) {
+      if (i > 0) {
+        rows.add(SizedBox(height: gap));
+      }
+      final left = items[i];
+      if (i + 1 < items.length) {
+        final right = items[i + 1];
+        rows.add(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: _SummaryTile(item: left)),
+              SizedBox(width: gap),
+              Expanded(child: _SummaryTile(item: right)),
+            ],
+          ),
+        );
+      } else {
+        rows.add(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: _SummaryTile(item: left)),
+            ],
+          ),
+        );
+      }
+    }
+    return rows;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,58 +67,17 @@ class AppReportSummaryBar extends StatelessWidget {
 
     if (items.isEmpty) return const SizedBox.shrink();
 
+    final gap = tokens.gapMd;
+
     return AppSectionCard(
       color: color ?? theme.colorScheme.surfaceContainerLow,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.contentSpacing,
         vertical: tokens.gapMd,
       ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 640) {
-            final scrollTileWidth =
-                (constraints.maxWidth * _scrollTileWidthFraction).clamp(
-                  _minScrollTileWidth,
-                  _maxScrollTileWidth,
-                );
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: items.indexed
-                    .expand<Widget>((entry) {
-                      final i = entry.$1;
-                      final item = entry.$2;
-                      return <Widget>[
-                        if (i > 0) SizedBox(width: tokens.gapMd),
-                        SizedBox(
-                          width: scrollTileWidth,
-                          child: _SummaryTile(item: item),
-                        ),
-                      ];
-                    })
-                    .toList(growable: false),
-              ),
-            );
-          }
-
-          final tileWidth = ((constraints.maxWidth - tokens.gapMd) / 2).clamp(
-            180.0,
-            320.0,
-          );
-
-          return Wrap(
-            spacing: tokens.gapMd,
-            runSpacing: tokens.gapMd,
-            children: items
-                .map(
-                  (item) => SizedBox(
-                    width: tileWidth,
-                    child: _SummaryTile(item: item),
-                  ),
-                )
-                .toList(growable: false),
-          );
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: _summaryGridRows(items: items, gap: gap),
       ),
     );
   }

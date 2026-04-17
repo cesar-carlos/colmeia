@@ -723,6 +723,25 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }
 
   _OverviewPeriod _buildPeriod(OverviewFilter filter) {
+    final rr = filter.referenceRange;
+    if (rr != null) {
+      final start = DateTime(
+        rr.startInclusive.year,
+        rr.startInclusive.month,
+        rr.startInclusive.day,
+      );
+      final end = DateTime(
+        rr.endInclusive.year,
+        rr.endInclusive.month,
+        rr.endInclusive.day,
+        23,
+        59,
+        59,
+        999,
+      );
+      return _OverviewPeriod(start: start, end: end);
+    }
+
     final yearMonth = filter.yearMonth;
     final DateTime start;
     final DateTime end;

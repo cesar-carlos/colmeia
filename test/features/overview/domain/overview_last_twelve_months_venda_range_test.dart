@@ -66,5 +66,24 @@ void main() {
         check(range.dataVendaFim.month).equals(3);
       },
     );
+
+    test(
+      'fromOverviewFilter anchors last month on referenceRange end month',
+      () {
+        final range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
+          OverviewFilter(
+            yearMonth: const OverviewYearMonth(year: 2026, month: 4),
+            referenceRange: OverviewDateRange.fromOrderedEndpoints(
+              DateTime(2026, 3),
+              DateTime(2026, 3, 10),
+            ),
+          ),
+          clock: () => DateTime(2026, 4),
+        );
+        check(range.dataVendaFim.month).equals(3);
+        check(range.dataVendaFim.day).equals(31);
+        check(range.dataVendaInicio).equals(DateTime(2025, 4));
+      },
+    );
   });
 }
