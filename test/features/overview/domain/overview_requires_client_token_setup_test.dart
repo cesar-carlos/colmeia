@@ -12,7 +12,7 @@ Overview _overview({
   bool mainResumoHadPlannedTargets = false,
 }) {
   return Overview(
-    periodStart: DateTime(2026, 4, 1),
+    periodStart: DateTime(2026, 4),
     periodEnd: DateTime(2026, 4, 30),
     kpis: OverviewPaymentKpis(
       totalSalesCount: hasPaymentMethods ? 1 : 0,

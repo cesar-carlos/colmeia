@@ -109,7 +109,7 @@ abstract final class ResumoVendasDiariasPorVendedorBairroNomeExpression {
   }
 
   /// Outer-report filter: tautology when unset; otherwise compare
-  /// [BairroNomeNorm] to the same normalization used for named parameters, but
+  /// `BairroNomeNorm` to the same normalization used for named parameters, but
   /// with an inlined `N'…'` literal (Agent SQL bridge named-parameter cap).
   static String outerWhereNormalizedBairro(String? sqlBairro) {
     if (sqlBairro == null) {
@@ -120,7 +120,7 @@ abstract final class ResumoVendasDiariasPorVendedorBairroNomeExpression {
     return '        AND (BairroNomeNorm = $rhs)';
   }
 
-  /// Same as [outerWhereNormalizedBairro] for [NomeMunicipioNomeNorm].
+  /// Same as [outerWhereNormalizedBairro] for `NomeMunicipioNomeNorm`.
   static String outerWhereNormalizedMunicipio(String? sqlMunicipio) {
     if (sqlMunicipio == null) {
       return '        AND (1 = 1)';

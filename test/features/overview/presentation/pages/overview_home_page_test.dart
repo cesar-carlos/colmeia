@@ -9,11 +9,11 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
