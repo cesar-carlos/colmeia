@@ -98,10 +98,12 @@ PersistedFilterMapSchema _buildReportViewerDemoPersistFiltersSchema() {
 }
 
 class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
-  static const int _totalRows = 87;
+  static const int _baseRows = 87;
+  static const int _stressRows = 1000;
   static const int _pageSize = 10;
   static const String _sessionNamespace = 'settings.app_report_viewer_demo';
   static const String _filtersSessionKey = 'filters.v1';
+  static const String _impossibleSearchSentinel = '__no_match_demo__';
   static final PersistedFilterMapSchema _restoreFiltersSchema =
       _buildReportViewerDemoRestoreFiltersSchema();
   static final PersistedFilterMapSchema _persistFiltersSchema =
@@ -112,6 +114,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
   late final PersistedPageSessionStore _sessionStore;
   List<_SaleRow> _selectedRows = <_SaleRow>[];
   bool _isLoading = false;
+  bool _stressMode = false;
 
   @override
   void initState() {
@@ -121,12 +124,40 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       prefs: prefs,
       namespace: _sessionNamespace,
     );
-    _allRows = _generateFakeRows();
+    _allRows = _generateFakeRows(_baseRows);
     _query = AppReportQuery(
       pageSize: _pageSize,
       filters: _restoreSavedFilters(),
     );
   }
+
+  // -------------------------------------------------------------------------
+  // Demo controls — exercise the new viewer features
+  // -------------------------------------------------------------------------
+
+  /// Toggles between the default 87-row dataset and a 1k-row dataset to make
+  /// the new memoization and O(n) selection lookups visible (smooth scroll,
+  /// snappy density/column toggles even on the larger sample).
+  void _toggleStressMode() {
+    setState(() {
+      _stressMode = !_stressMode;
+      _allRows = _generateFakeRows(_stressMode ? _stressRows : _baseRows);
+      _selectedRows = <_SaleRow>[];
+      _query = _query.copyWith(page: 1);
+    });
+  }
+
+  /// Forces an empty result set so the new "Limpar filtros" CTA inside the
+  /// grid empty state becomes visible. Uses a sentinel search term so it can
+  /// be undone by the same CTA the demo is showcasing.
+  void _applyImpossibleFilter() {
+    final updated = Map<String, Object?>.from(_query.filters)
+      ..['search'] = _impossibleSearchSentinel;
+    _onQueryChanged(_query.copyWith(filters: updated, page: 1));
+  }
+
+  bool get _isShowingImpossibleFilter =>
+      _query.filters['search'] == _impossibleSearchSentinel;
 
   List<_SaleRow> get _currentRows {
     var rows = _allRows;
@@ -288,7 +319,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
     await Future<void>.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
     setState(() {
-      _allRows = _generateFakeRows();
+      _allRows = _generateFakeRows(_stressMode ? _stressRows : _baseRows);
       _selectedRows = <_SaleRow>[];
       _isLoading = false;
     });
@@ -345,73 +376,77 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
   );
   static final DateFormat _dateFmt = DateFormat('yyyy-MM-dd', 'pt_BR');
 
-  List<AppReportColumn<_SaleRow>> get _columns => <AppReportColumn<_SaleRow>>[
-    AppReportColumn<_SaleRow>(
-      key: 'date',
-      label: 'Date',
-      valueGetter: _getDate,
-      formatter: (value) => _dateFmt.format(value! as DateTime),
-      width: 110,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideNarrow,
-    ),
-    const AppReportColumn<_SaleRow>(
-      key: 'id',
-      label: 'ID',
-      valueGetter: _getId,
-      cellStyle: AppReportCellStyle.link,
-      formatter: _formatTransactionId,
-      width: 96,
-    ),
-    const AppReportColumn<_SaleRow>(
-      key: 'product',
-      label: 'Item',
-      valueGetter: _getProduct,
-      leadingBuilder: _buildProductLeading,
-      minWidth: 260,
-      aggregations: <AppReportAggregation>[AppReportAggregation.count],
-    ),
-    const AppReportColumn<_SaleRow>(
-      key: 'quantity',
-      label: 'Quantity',
-      valueGetter: _getOrders,
-      numeric: true,
-      aggregations: <AppReportAggregation>[
-        AppReportAggregation.sum,
-      ],
-      width: 90,
-    ),
-    AppReportColumn<_SaleRow>(
-      key: 'unitPrice',
-      label: 'Unit Price',
-      valueGetter: _getUnitPrice,
-      formatter: _currencyFmt.format,
-      numeric: true,
-      width: 120,
-    ),
-    AppReportColumn<_SaleRow>(
-      key: 'total',
-      label: 'Total',
-      valueGetter: _getRevenue,
-      formatter: _currencyFmt.format,
-      numeric: true,
-      aggregations: <AppReportAggregation>[AppReportAggregation.sum],
-      width: 130,
-    ),
-    const AppReportColumn<_SaleRow>(
-      key: 'category',
-      label: 'Category',
-      valueGetter: _getCategory,
-      groupable: true,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideWide,
-    ),
-    const AppReportColumn<_SaleRow>(
-      key: 'store',
-      label: 'Store',
-      valueGetter: _getStore,
-      groupable: true,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideExtraNarrow,
-    ),
-  ];
+  /// Stable column list shared across rebuilds. Keeping the same [List]
+  /// identity is what allows the new `AppReportGrid` memoization caches
+  /// (`_buildGridColumns` / `_buildSummaryRows`) to hit on repeated builds.
+  static final List<AppReportColumn<_SaleRow>> _columns =
+      <AppReportColumn<_SaleRow>>[
+        AppReportColumn<_SaleRow>(
+          key: 'date',
+          label: 'Date',
+          valueGetter: _getDate,
+          formatter: (value) => _dateFmt.format(value! as DateTime),
+          width: 110,
+          hideBelowBreakpoint: AppBreakpoints.reportColumnHideNarrow,
+        ),
+        const AppReportColumn<_SaleRow>(
+          key: 'id',
+          label: 'ID',
+          valueGetter: _getId,
+          cellStyle: AppReportCellStyle.link,
+          formatter: _formatTransactionId,
+          width: 96,
+        ),
+        const AppReportColumn<_SaleRow>(
+          key: 'product',
+          label: 'Item',
+          valueGetter: _getProduct,
+          leadingBuilder: _buildProductLeading,
+          minWidth: 260,
+          aggregations: <AppReportAggregation>[AppReportAggregation.count],
+        ),
+        const AppReportColumn<_SaleRow>(
+          key: 'quantity',
+          label: 'Quantity',
+          valueGetter: _getOrders,
+          numeric: true,
+          aggregations: <AppReportAggregation>[
+            AppReportAggregation.sum,
+          ],
+          width: 90,
+        ),
+        AppReportColumn<_SaleRow>(
+          key: 'unitPrice',
+          label: 'Unit Price',
+          valueGetter: _getUnitPrice,
+          formatter: _currencyFmt.format,
+          numeric: true,
+          width: 120,
+        ),
+        AppReportColumn<_SaleRow>(
+          key: 'total',
+          label: 'Total',
+          valueGetter: _getRevenue,
+          formatter: _currencyFmt.format,
+          numeric: true,
+          aggregations: <AppReportAggregation>[AppReportAggregation.sum],
+          width: 130,
+        ),
+        const AppReportColumn<_SaleRow>(
+          key: 'category',
+          label: 'Category',
+          valueGetter: _getCategory,
+          groupable: true,
+          hideBelowBreakpoint: AppBreakpoints.reportColumnHideWide,
+        ),
+        const AppReportColumn<_SaleRow>(
+          key: 'store',
+          label: 'Store',
+          valueGetter: _getStore,
+          groupable: true,
+          hideBelowBreakpoint: AppBreakpoints.reportColumnHideExtraNarrow,
+        ),
+      ];
 
   static Object? _getId(_SaleRow r) => r.id;
   static Object? _getProduct(_SaleRow r) => r.product;
@@ -498,6 +533,15 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+    // Responsive transactions-table height: ~75% of the viewport, bounded so
+    // mobile keeps a usable grid (>=520) and desktop doesn't stretch it past
+    // ~960. Replaces the previous fixed 720 that wasted space on tall screens
+    // and felt cramped on shorter ones.
+    final transactionsTableHeight = (viewportHeight * 0.75).clamp(
+      520.0,
+      960.0,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('AppReportViewer — Demo')),
@@ -515,22 +559,28 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
           SizedBox(height: tokens.sectionSpacing),
           _ReportViewerShowcaseCard(
             totalRows: _currentRows.length,
+            datasetSize: _allRows.length,
             selectedRows: _selectedRows.length,
             groupingDescription: _describeGroups(_query.groups),
             activeFilters: _activeFilterCount,
+            stressMode: _stressMode,
+            isShowingImpossibleFilter: _isShowingImpossibleFilter,
+            onToggleStressMode: _toggleStressMode,
+            onApplyImpossibleFilter: _applyImpossibleFilter,
           ),
           SizedBox(height: tokens.sectionSpacing),
           const AppReportNumericalDetailingDemoSection(),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(
-            height: 720,
+            height: transactionsTableHeight,
             child: AppReportViewer<_SaleRow>(
               title: 'Transactions Table',
               subtitle: 'Minimal preset inspired by e-commerce reporting',
               contextChips: <String>[
                 'Store: All Stores',
                 'Period: Oct 2023',
-                '${_currentRows.length} transactions',
+                '${_currentRows.length} of ${_allRows.length} transactions',
+                if (_stressMode) 'Stress mode: 1k rows',
                 if (_activeFilterCount == 0)
                   'Filters: none'
                 else
@@ -644,7 +694,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
     'Studio Display 27"',
   ];
 
-  static List<_SaleRow> _generateFakeRows() {
+  static List<_SaleRow> _generateFakeRows(int count) {
     final rows = <_SaleRow>[];
     final baseDate = DateTime(2023, 10, 22);
     final unitPrices = <double>[
@@ -658,7 +708,7 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
       1599,
     ];
 
-    for (var i = 0; i < _totalRows; i++) {
+    for (var i = 0; i < count; i++) {
       final productIndex = i % _products.length;
       final quantity = (i % 12) + 1;
       final unitPrice = unitPrices[productIndex];
@@ -721,15 +771,25 @@ class _AppReportViewerDemoPageState extends State<AppReportViewerDemoPage> {
 class _ReportViewerShowcaseCard extends StatelessWidget {
   const _ReportViewerShowcaseCard({
     required this.totalRows,
+    required this.datasetSize,
     required this.selectedRows,
     required this.groupingDescription,
     required this.activeFilters,
+    required this.stressMode,
+    required this.isShowingImpossibleFilter,
+    required this.onToggleStressMode,
+    required this.onApplyImpossibleFilter,
   });
 
   final int totalRows;
+  final int datasetSize;
   final int selectedRows;
   final String groupingDescription;
   final int activeFilters;
+  final bool stressMode;
+  final bool isShowingImpossibleFilter;
+  final VoidCallback onToggleStressMode;
+  final VoidCallback onApplyImpossibleFilter;
 
   @override
   Widget build(BuildContext context) {
@@ -751,20 +811,140 @@ class _ReportViewerShowcaseCard extends StatelessWidget {
           color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
-      child: Wrap(
-        spacing: tokens.gapSm,
-        runSpacing: tokens.gapSm,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          AppTagChip(label: '$totalRows rows'),
-          if (selectedRows > 0) AppTagChip(label: '$selectedRows selected'),
-          AppTagChip(
-            label: activeFilters == 0
-                ? 'No saved filters'
-                : '$activeFilters saved filters',
+          Wrap(
+            spacing: tokens.gapSm,
+            runSpacing: tokens.gapSm,
+            children: <Widget>[
+              AppTagChip(label: '$totalRows of $datasetSize rows'),
+              if (selectedRows > 0) AppTagChip(label: '$selectedRows selected'),
+              AppTagChip(
+                label: activeFilters == 0
+                    ? 'No saved filters'
+                    : '$activeFilters saved filters',
+              ),
+              AppTagChip(label: groupingDescription),
+              const AppTagChip(label: 'Filter sheet + minimal grid'),
+              if (stressMode) const AppTagChip(label: 'Stress mode: 1k rows'),
+            ],
           ),
-          AppTagChip(label: groupingDescription),
-          const AppTagChip(label: 'Filter sheet + minimal grid'),
+          SizedBox(height: tokens.gapMd),
+          _ShowcaseTryNewFeatures(
+            stressMode: stressMode,
+            isShowingImpossibleFilter: isShowingImpossibleFilter,
+            onToggleStressMode: onToggleStressMode,
+            onApplyImpossibleFilter: onApplyImpossibleFilter,
+          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Inline call-to-action strip that lets the user trigger the most visible
+/// recent improvements (empty-state CTA, performance memoization) directly
+/// from the showcase card. Keeps the demo self-explanatory without forcing
+/// the visitor to manually craft filter combinations.
+class _ShowcaseTryNewFeatures extends StatelessWidget {
+  const _ShowcaseTryNewFeatures({
+    required this.stressMode,
+    required this.isShowingImpossibleFilter,
+    required this.onToggleStressMode,
+    required this.onApplyImpossibleFilter,
+  });
+
+  final bool stressMode;
+  final bool isShowingImpossibleFilter;
+  final VoidCallback onToggleStressMode;
+  final VoidCallback onApplyImpossibleFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(tokens.cardRadius),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.contentSpacing),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                SizedBox(width: tokens.gapSm),
+                Expanded(
+                  child: Text(
+                    'Experimente as melhorias recentes',
+                    style: typography.utilityOverline.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: 0.4,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: tokens.gapXs),
+            Text(
+              'Acione os botões abaixo para ver o estado vazio com CTA '
+              '“Limpar filtros” e os ganhos de performance com 1k linhas.',
+              style: typography.caption.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            SizedBox(height: tokens.gapMd),
+            Wrap(
+              spacing: tokens.gapSm,
+              runSpacing: tokens.gapSm,
+              children: <Widget>[
+                FilledButton.tonalIcon(
+                  onPressed: isShowingImpossibleFilter
+                      ? null
+                      : onApplyImpossibleFilter,
+                  icon: const Icon(Icons.search_off_rounded, size: 18),
+                  label: Text(
+                    isShowingImpossibleFilter
+                        ? 'Estado vazio aplicado'
+                        : 'Demonstrar estado vazio',
+                  ),
+                ),
+                FilterChip(
+                  selected: stressMode,
+                  onSelected: (_) => onToggleStressMode(),
+                  avatar: Icon(
+                    stressMode
+                        ? Icons.bolt_rounded
+                        : Icons.bolt_outlined,
+                    size: 16,
+                    color: stressMode
+                        ? theme.colorScheme.onSecondaryContainer
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  label: Text(
+                    stressMode
+                        ? 'Modo estresse: 1k linhas (ativo)'
+                        : 'Ativar modo estresse (1k linhas)',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -856,9 +1036,12 @@ class _ReportViewerShowcaseLegend extends StatelessWidget {
       runSpacing: tokens.gapSm,
       children: const <Widget>[
         _ReportViewerLegendChip(label: 'Compact toolbar'),
-        _ReportViewerLegendChip(label: 'Primary filter sheet'),
+        _ReportViewerLegendChip(label: 'Filter sheet + drag handle'),
         _ReportViewerLegendChip(label: 'Saved last filters'),
         _ReportViewerLegendChip(label: 'Catalog-style pagination'),
+        _ReportViewerLegendChip(label: 'Empty-state · Limpar filtros'),
+        _ReportViewerLegendChip(label: 'KPI a11y · tooltip + merge semantics'),
+        _ReportViewerLegendChip(label: 'Memoized columns · O(n) selection'),
       ],
     );
   }
