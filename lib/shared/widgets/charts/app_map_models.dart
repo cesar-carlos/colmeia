@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show Color;
 
 /// Drill granularity for territorial maps (query, chart, and drill events).
 enum AppMapDrillLevel {
@@ -204,4 +205,96 @@ class AppMapViewportChangedEvent {
 
   /// Whether the change came from user interaction or programmatic updates.
   final AppMapViewportChangeSource source;
+}
+
+/// Available marker icon shapes for [AppMapPoint].
+enum AppMapMarkerIcon { circle, diamond, triangle, rectangle }
+
+/// Visual style applied to map markers when no per-point override is provided.
+@immutable
+class AppMapMarkerStyle {
+  const AppMapMarkerStyle({
+    this.iconType = AppMapMarkerIcon.circle,
+    this.size = 14,
+    this.color,
+    this.strokeColor,
+    this.strokeWidth = 1.5,
+  });
+
+  final AppMapMarkerIcon iconType;
+  final double size;
+
+  /// When `null`, the chart uses the active theme's primary color.
+  final Color? color;
+
+  /// When `null`, the chart uses the active theme's surface color so the
+  /// marker stays readable over both colored regions and empty areas.
+  final Color? strokeColor;
+
+  final double strokeWidth;
+
+  AppMapMarkerStyle copyWith({
+    AppMapMarkerIcon? iconType,
+    double? size,
+    Color? color,
+    Color? strokeColor,
+    double? strokeWidth,
+  }) {
+    return AppMapMarkerStyle(
+      iconType: iconType ?? this.iconType,
+      size: size ?? this.size,
+      color: color ?? this.color,
+      strokeColor: strokeColor ?? this.strokeColor,
+      strokeWidth: strokeWidth ?? this.strokeWidth,
+    );
+  }
+}
+
+/// A geographic point overlay rendered on top of region shapes.
+///
+/// `payload` is intentionally `Object?` to keep the chart and snapshot
+/// generics clean (`AppRegionMapChart<T>` stays mono-generic). Consumers
+/// cast inside their `onPointTap` handler when they need the typed value.
+@immutable
+class AppMapPoint {
+  const AppMapPoint({
+    required this.latitude,
+    required this.longitude,
+    this.payload,
+    this.label,
+    this.tooltip,
+    this.style,
+  }) : assert(
+         latitude >= -90 && latitude <= 90,
+         'latitude must be in [-90, 90]',
+       ),
+       assert(
+         longitude >= -180 && longitude <= 180,
+         'longitude must be in [-180, 180]',
+       );
+
+  final double latitude;
+  final double longitude;
+
+  /// Original domain object (e.g. a Store, Agent, Event). Cast on tap.
+  final Object? payload;
+
+  /// Optional short text shown beside or under the marker (engine-dependent).
+  final String? label;
+
+  /// Tooltip text when the user hovers/taps. When `null`, falls back to
+  /// [label]; when both are `null`, no tooltip is shown.
+  final String? tooltip;
+
+  /// Per-point visual override; `null` uses the chart's default style.
+  final AppMapMarkerStyle? style;
+}
+
+/// Structured payload emitted when the user taps a map point marker.
+@immutable
+class AppMapPointTapEvent {
+  const AppMapPointTapEvent({required this.point, required this.index});
+
+  final AppMapPoint point;
+  final int index;
 }

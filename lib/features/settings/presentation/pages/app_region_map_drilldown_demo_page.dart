@@ -4,10 +4,12 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_data_source.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_explorer.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
+import 'package:colmeia/shared/widgets/forms/app_slider_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -45,7 +47,7 @@ class _AppRegionMapDrillDownDemoPageState
         SizedBox(height: tokens.sectionSpacing),
         AppRegionMapExplorer<_TerritoryMapRow, _TerritoryFilters>(
           title: 'Performance territorial',
-          subtitle: 'Toque no mapa ou use a navegação por região para filtrar',
+          subtitle: 'Toque no mapa ou use a navegação por região para filtrar.',
           dataSource: _dataSource,
           initialFilters: const _TerritoryFilters(),
           regionKeyBuilder: (item) => item.id,
@@ -58,6 +60,22 @@ class _AppRegionMapDrillDownDemoPageState
             enableAutoDrillOnTap: true,
             legendNumberFormat: NumberFormat.compact(locale: 'pt_BR'),
           ),
+          markerStyle: const AppMapMarkerStyle(size: 12),
+          onPointTap: (event) {
+            final store = event.point.payload! as _TerritoryStore;
+            ScaffoldMessenger.of(context)
+              ..clearSnackBars()
+              ..showSnackBar(
+                SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                  content: Text(
+                    '${store.name} - ${store.cityLabel}: '
+                    '${AppBrFormatters.compactCurrency(store.revenue)}',
+                  ),
+                ),
+              );
+          },
         ),
       ],
     );
@@ -71,85 +89,79 @@ class _AppRegionMapDrillDownDemoPageState
   ) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final minRevenueLabel = AppBrFormatters.compactCurrency(filters.minRevenue);
 
     return AbsorbPointer(
       absorbing: state.isLoading,
       child: Opacity(
         opacity: state.isLoading ? 0.6 : 1,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.35,
-            ),
-            borderRadius: BorderRadius.circular(tokens.cardRadius),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.gapMd),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Filtros da fonte', style: theme.textTheme.titleSmall),
-                SizedBox(height: tokens.gapSm),
-                AppSegmentedControl<_SalesPeriod>(
-                  options: const <AppSegmentedControlOption<_SalesPeriod>>[
-                    AppSegmentedControlOption<_SalesPeriod>(
-                      value: _SalesPeriod.month,
-                      label: 'Mes',
-                    ),
-                    AppSegmentedControlOption<_SalesPeriod>(
-                      value: _SalesPeriod.quarter,
-                      label: 'Trimestre',
-                    ),
-                    AppSegmentedControlOption<_SalesPeriod>(
-                      value: _SalesPeriod.year,
-                      label: 'Ano',
-                    ),
-                  ],
-                  value: filters.period,
-                  onChanged: (selection) {
-                    onFiltersChanged(filters.copyWith(period: selection));
-                  },
-                ),
-                SizedBox(height: tokens.gapSm),
-                AppSegmentedControl<_SalesChannel>(
-                  options: const <AppSegmentedControlOption<_SalesChannel>>[
-                    AppSegmentedControlOption<_SalesChannel>(
-                      value: _SalesChannel.all,
-                      label: 'Todos canais',
-                    ),
-                    AppSegmentedControlOption<_SalesChannel>(
-                      value: _SalesChannel.store,
-                      label: 'Loja fisica',
-                    ),
-                    AppSegmentedControlOption<_SalesChannel>(
-                      value: _SalesChannel.digital,
-                      label: 'Digital',
-                    ),
-                  ],
-                  value: filters.channel,
-                  onChanged: (selection) {
-                    onFiltersChanged(
-                      filters.copyWith(channel: selection),
-                    );
-                  },
-                ),
-                SizedBox(height: tokens.gapSm),
-                Text(
-                  'Receita minima por recorte: $minRevenueLabel',
-                  style: theme.textTheme.bodySmall,
-                ),
-                Slider(
-                  value: filters.minRevenue,
-                  max: 2400000,
-                  divisions: 12,
-                  label: minRevenueLabel,
-                  onChanged: (value) {
-                    onFiltersChanged(filters.copyWith(minRevenue: value));
-                  },
-                ),
-              ],
-            ),
+        child: AppSectionCardWithHeading(
+          title: 'Filtros da fonte',
+          subtitle: 'Período, canal e corte mínimo de receita.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              AppSegmentedControl<_SalesPeriod>(
+                options: const <AppSegmentedControlOption<_SalesPeriod>>[
+                  AppSegmentedControlOption<_SalesPeriod>(
+                    value: _SalesPeriod.month,
+                    label: 'Mês',
+                  ),
+                  AppSegmentedControlOption<_SalesPeriod>(
+                    value: _SalesPeriod.quarter,
+                    label: 'Trimestre',
+                  ),
+                  AppSegmentedControlOption<_SalesPeriod>(
+                    value: _SalesPeriod.year,
+                    label: 'Ano',
+                  ),
+                ],
+                value: filters.period,
+                onChanged: (selection) {
+                  onFiltersChanged(filters.copyWith(period: selection));
+                },
+              ),
+              SizedBox(height: tokens.gapSm),
+              AppSegmentedControl<_SalesChannel>(
+                options: const <AppSegmentedControlOption<_SalesChannel>>[
+                  AppSegmentedControlOption<_SalesChannel>(
+                    value: _SalesChannel.all,
+                    label: 'Todos canais',
+                  ),
+                  AppSegmentedControlOption<_SalesChannel>(
+                    value: _SalesChannel.store,
+                    label: 'Loja física',
+                  ),
+                  AppSegmentedControlOption<_SalesChannel>(
+                    value: _SalesChannel.digital,
+                    label: 'Digital',
+                  ),
+                ],
+                value: filters.channel,
+                onChanged: (selection) {
+                  onFiltersChanged(filters.copyWith(channel: selection));
+                },
+              ),
+              SizedBox(height: tokens.gapMd),
+              AppSliderField(
+                label: 'Receita mínima por recorte',
+                valueLabelBuilder: AppBrFormatters.compactCurrency,
+                helperText: filters.minRevenue == 0
+                    ? 'Use 0 para ver todos os recortes.'
+                    : null,
+                value: filters.minRevenue,
+                min: 0,
+                max: 2400000,
+                divisions: 12,
+                enabled: !state.isLoading,
+                // Sem `onChanged`: o slider mantem o thumb animado pelo
+                // estado interno e so emite o valor canonico no fim do
+                // arrasto, evitando rebuilds em cascata do explorer e do
+                // mapa a cada tick.
+                onChangeEnd: (value) {
+                  onFiltersChanged(filters.copyWith(minRevenue: value));
+                },
+              ),
+            ],
           ),
         ),
       ),
@@ -169,6 +181,7 @@ enum _SalesChannel {
   digital,
 }
 
+@immutable
 class _TerritoryFilters {
   const _TerritoryFilters({
     this.period = _SalesPeriod.month,
@@ -191,8 +204,20 @@ class _TerritoryFilters {
       minRevenue: minRevenue ?? this.minRevenue,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _TerritoryFilters &&
+          other.period == period &&
+          other.channel == channel &&
+          other.minRevenue == minRevenue;
+
+  @override
+  int get hashCode => Object.hash(period, channel, minRevenue);
 }
 
+@immutable
 class _TerritoryMapRow {
   const _TerritoryMapRow({
     required this.id,
@@ -231,6 +256,22 @@ class _TerritoryMapRow {
       margin: margin ?? this.margin,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _TerritoryMapRow &&
+          other.id == id &&
+          other.name == name &&
+          other.regionId == regionId &&
+          other.regionLabel == regionLabel &&
+          other.revenue == revenue &&
+          other.orders == orders &&
+          other.margin == margin;
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, regionId, regionLabel, revenue, orders, margin);
 }
 
 class _BrazilTerritoryDataSource
@@ -395,10 +436,11 @@ class _BrazilTerritoryDataSource
           mapDefinition: _regionMap,
           metrics: _regionMetrics,
           selectedMetricKey: selectedMetricKey,
-          scopeLabel: 'Brasil (agregado por regiao)',
+          scopeLabel: 'Brasil (agregado por região)',
           availableScopes: _regionScopes,
           preferredViewport: _brazilViewport,
           loadedAt: DateTime.now(),
+          points: _pointsForFilters(query.filters, focusedRegionId: null),
         ),
       );
     }
@@ -433,8 +475,59 @@ class _BrazilTerritoryDataSource
             ? _brazilViewport
             : _regionViewports[focusedRegionId] ?? _brazilViewport,
         loadedAt: DateTime.now(),
+        points: _pointsForFilters(
+          query.filters,
+          focusedRegionId: focusedRegionId,
+        ),
       ),
     );
+  }
+
+  /// Builds map markers for the current filters. When [focusedRegionId] is
+  /// null, returns stores from all regions; otherwise restricts to that
+  /// region. The marker style varies with revenue tier so that high-revenue
+  /// stores stand out.
+  List<AppMapPoint> _pointsForFilters(
+    _TerritoryFilters filters, {
+    required String? focusedRegionId,
+  }) {
+    final periodMultiplier = switch (filters.period) {
+      _SalesPeriod.month => 1.0,
+      _SalesPeriod.quarter => 2.9,
+      _SalesPeriod.year => 11.8,
+    };
+    final channelMultiplier = switch (filters.channel) {
+      _SalesChannel.all => 1.0,
+      _SalesChannel.store => 0.74,
+      _SalesChannel.digital => 0.26,
+    };
+    final result = <AppMapPoint>[];
+    for (final store in _baseStores) {
+      if (focusedRegionId != null && store.regionId != focusedRegionId) {
+        continue;
+      }
+      final revenue = store.baseRevenue * periodMultiplier * channelMultiplier;
+      // Tier-based marker size: heavier stores draw a larger pin.
+      final size = revenue > 90000
+          ? 16.0
+          : revenue > 45000
+          ? 13.0
+          : 10.0;
+      final tooltipText =
+          '${store.name} - ${store.cityLabel}: '
+          '${AppBrFormatters.compactCurrency(revenue)}';
+      result.add(
+        AppMapPoint(
+          latitude: store.latitude,
+          longitude: store.longitude,
+          label: store.name,
+          tooltip: tooltipText,
+          payload: store.copyWith(revenue: revenue),
+          style: AppMapMarkerStyle(size: size),
+        ),
+      );
+    }
+    return result;
   }
 
   List<_TerritoryMapRow> _applyFilters(_TerritoryFilters filters) {
@@ -524,7 +617,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'AP',
-    name: 'Amapa',
+    name: 'Amapá',
     regionId: 'NO',
     regionLabel: 'Norte',
     revenue: 98000,
@@ -542,7 +635,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'CE',
-    name: 'Ceara',
+    name: 'Ceará',
     regionId: 'NE',
     regionLabel: 'Nordeste',
     revenue: 352000,
@@ -560,7 +653,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'ES',
-    name: 'Espirito Santo',
+    name: 'Espírito Santo',
     regionId: 'SE',
     regionLabel: 'Sudeste',
     revenue: 286000,
@@ -569,7 +662,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'GO',
-    name: 'Goias',
+    name: 'Goiás',
     regionId: 'CO',
     regionLabel: 'Centro-Oeste',
     revenue: 410000,
@@ -578,7 +671,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'MA',
-    name: 'Maranhao',
+    name: 'Maranhão',
     regionId: 'NE',
     regionLabel: 'Nordeste',
     revenue: 215000,
@@ -614,7 +707,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'PA',
-    name: 'Para',
+    name: 'Pará',
     regionId: 'NO',
     regionLabel: 'Norte',
     revenue: 364000,
@@ -623,7 +716,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'PB',
-    name: 'Paraiba',
+    name: 'Paraíba',
     regionId: 'NE',
     regionLabel: 'Nordeste',
     revenue: 192000,
@@ -641,7 +734,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'PI',
-    name: 'Piaui',
+    name: 'Piauí',
     regionId: 'NE',
     regionLabel: 'Nordeste',
     revenue: 154000,
@@ -650,7 +743,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'PR',
-    name: 'Parana',
+    name: 'Paraná',
     regionId: 'SU',
     regionLabel: 'Sul',
     revenue: 598000,
@@ -677,7 +770,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'RO',
-    name: 'Rondonia',
+    name: 'Rondônia',
     regionId: 'NO',
     regionLabel: 'Norte',
     revenue: 137000,
@@ -722,7 +815,7 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
   ),
   _TerritoryMapRow(
     id: 'SP',
-    name: 'Sao Paulo',
+    name: 'São Paulo',
     regionId: 'SE',
     regionLabel: 'Sudeste',
     revenue: 1510000,
@@ -737,5 +830,295 @@ const List<_TerritoryMapRow> _baseStateRows = <_TerritoryMapRow>[
     revenue: 112000,
     orders: 1500,
     margin: 14.2,
+  ),
+];
+
+/// Loja fictícia usada como payload dos marcadores de pontos da demo.
+@immutable
+class _TerritoryStore {
+  const _TerritoryStore({
+    required this.name,
+    required this.cityLabel,
+    required this.regionId,
+    required this.latitude,
+    required this.longitude,
+    required this.baseRevenue,
+    this.revenue = 0,
+  });
+
+  final String name;
+  final String cityLabel;
+  final String regionId;
+  final double latitude;
+  final double longitude;
+
+  /// Receita base em reais, antes dos multiplicadores de período/canal.
+  final double baseRevenue;
+
+  /// Receita resolvida após multiplicadores. Preenchida pelo data source ao
+  /// produzir os pontos da snapshot atual.
+  final double revenue;
+
+  _TerritoryStore copyWith({double? revenue}) {
+    return _TerritoryStore(
+      name: name,
+      cityLabel: cityLabel,
+      regionId: regionId,
+      latitude: latitude,
+      longitude: longitude,
+      baseRevenue: baseRevenue,
+      revenue: revenue ?? this.revenue,
+    );
+  }
+}
+
+/// 30 capitais e cidades brasileiras com coordenadas reais. Receita base
+/// foi distribuída de forma a variar tiers (alta/média/baixa) para que os
+/// marcadores tenham tamanhos visualmente distintos na demo.
+const List<_TerritoryStore> _baseStores = <_TerritoryStore>[
+  // Sudeste
+  _TerritoryStore(
+    name: 'Loja Centro SP',
+    cityLabel: 'São Paulo, SP',
+    regionId: 'SE',
+    latitude: -23.5505,
+    longitude: -46.6333,
+    baseRevenue: 162000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Guarulhos',
+    cityLabel: 'Guarulhos, SP',
+    regionId: 'SE',
+    latitude: -23.4628,
+    longitude: -46.5333,
+    baseRevenue: 88000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Campinas',
+    cityLabel: 'Campinas, SP',
+    regionId: 'SE',
+    latitude: -22.9099,
+    longitude: -47.0626,
+    baseRevenue: 71000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Copacabana',
+    cityLabel: 'Rio de Janeiro, RJ',
+    regionId: 'SE',
+    latitude: -22.9068,
+    longitude: -43.1729,
+    baseRevenue: 124000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Savassi',
+    cityLabel: 'Belo Horizonte, MG',
+    regionId: 'SE',
+    latitude: -19.9167,
+    longitude: -43.9345,
+    baseRevenue: 96000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Uberlândia',
+    cityLabel: 'Uberlândia, MG',
+    regionId: 'SE',
+    latitude: -18.9186,
+    longitude: -48.2772,
+    baseRevenue: 42000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Vitória',
+    cityLabel: 'Vitória, ES',
+    regionId: 'SE',
+    latitude: -20.3155,
+    longitude: -40.3128,
+    baseRevenue: 38000,
+  ),
+  // Sul
+  _TerritoryStore(
+    name: 'Loja Curitiba',
+    cityLabel: 'Curitiba, PR',
+    regionId: 'SU',
+    latitude: -25.4290,
+    longitude: -49.2671,
+    baseRevenue: 84000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Porto Alegre',
+    cityLabel: 'Porto Alegre, RS',
+    regionId: 'SU',
+    latitude: -30.0346,
+    longitude: -51.2177,
+    baseRevenue: 92000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Florianópolis',
+    cityLabel: 'Florianópolis, SC',
+    regionId: 'SU',
+    latitude: -27.5954,
+    longitude: -48.5480,
+    baseRevenue: 64000,
+  ),
+  // Nordeste
+  _TerritoryStore(
+    name: 'Loja Pelourinho',
+    cityLabel: 'Salvador, BA',
+    regionId: 'NE',
+    latitude: -12.9714,
+    longitude: -38.5011,
+    baseRevenue: 78000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Beira-Mar',
+    cityLabel: 'Fortaleza, CE',
+    regionId: 'NE',
+    latitude: -3.7172,
+    longitude: -38.5433,
+    baseRevenue: 73000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Boa Viagem',
+    cityLabel: 'Recife, PE',
+    regionId: 'NE',
+    latitude: -8.0476,
+    longitude: -34.8770,
+    baseRevenue: 67000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Maceió',
+    cityLabel: 'Maceió, AL',
+    regionId: 'NE',
+    latitude: -9.6658,
+    longitude: -35.7353,
+    baseRevenue: 34000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Natal',
+    cityLabel: 'Natal, RN',
+    regionId: 'NE',
+    latitude: -5.7945,
+    longitude: -35.2110,
+    baseRevenue: 36000,
+  ),
+  _TerritoryStore(
+    name: 'Loja João Pessoa',
+    cityLabel: 'João Pessoa, PB',
+    regionId: 'NE',
+    latitude: -7.1195,
+    longitude: -34.8450,
+    baseRevenue: 31000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Aracaju',
+    cityLabel: 'Aracaju, SE',
+    regionId: 'NE',
+    latitude: -10.9091,
+    longitude: -37.0735,
+    baseRevenue: 28000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Teresina',
+    cityLabel: 'Teresina, PI',
+    regionId: 'NE',
+    latitude: -5.0892,
+    longitude: -42.8019,
+    baseRevenue: 26000,
+  ),
+  _TerritoryStore(
+    name: 'Loja São Luís',
+    cityLabel: 'São Luís, MA',
+    regionId: 'NE',
+    latitude: -2.5391,
+    longitude: -44.2829,
+    baseRevenue: 33000,
+  ),
+  // Norte
+  _TerritoryStore(
+    name: 'Loja Ponta Negra',
+    cityLabel: 'Manaus, AM',
+    regionId: 'NO',
+    latitude: -3.1190,
+    longitude: -60.0217,
+    baseRevenue: 56000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Belém',
+    cityLabel: 'Belém, PA',
+    regionId: 'NO',
+    latitude: -1.4558,
+    longitude: -48.5039,
+    baseRevenue: 49000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Macapá',
+    cityLabel: 'Macapá, AP',
+    regionId: 'NO',
+    latitude: 0.0349,
+    longitude: -51.0694,
+    baseRevenue: 22000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Boa Vista',
+    cityLabel: 'Boa Vista, RR',
+    regionId: 'NO',
+    latitude: 2.8235,
+    longitude: -60.6758,
+    baseRevenue: 19000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Rio Branco',
+    cityLabel: 'Rio Branco, AC',
+    regionId: 'NO',
+    latitude: -9.9747,
+    longitude: -67.8100,
+    baseRevenue: 21000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Palmas',
+    cityLabel: 'Palmas, TO',
+    regionId: 'NO',
+    latitude: -10.1849,
+    longitude: -48.3336,
+    baseRevenue: 24000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Porto Velho',
+    cityLabel: 'Porto Velho, RO',
+    regionId: 'NO',
+    latitude: -8.7619,
+    longitude: -63.9039,
+    baseRevenue: 23000,
+  ),
+  // Centro-Oeste
+  _TerritoryStore(
+    name: 'Loja Brasília',
+    cityLabel: 'Brasília, DF',
+    regionId: 'CO',
+    latitude: -15.7975,
+    longitude: -47.8919,
+    baseRevenue: 102000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Goiânia',
+    cityLabel: 'Goiânia, GO',
+    regionId: 'CO',
+    latitude: -16.6869,
+    longitude: -49.2648,
+    baseRevenue: 58000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Campo Grande',
+    cityLabel: 'Campo Grande, MS',
+    regionId: 'CO',
+    latitude: -20.4697,
+    longitude: -54.6201,
+    baseRevenue: 41000,
+  ),
+  _TerritoryStore(
+    name: 'Loja Cuiabá',
+    cityLabel: 'Cuiabá, MT',
+    regionId: 'CO',
+    latitude: -15.6010,
+    longitude: -56.0974,
+    baseRevenue: 44000,
   ),
 ];
