@@ -649,10 +649,10 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: "12956d0ad8390bbcc63ca2e1469c0619946ccb52809807067a7020d57e647aa6"
+      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.18"
+    version: "0.12.19"
   material_color_utilities:
     dependency: transitive
     description:
@@ -1150,18 +1150,18 @@ packages:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_xlsio
-      sha256: ed1089492da2bc6c9832584f0ad1c0a45c70bee8d14bc97392c3e227cd03102a
+      sha256: ee1f606b0f88f918b02c5b9f2e2fa1e5d4d0a34c2704b3b268a4177b7fb8f72f
       url: "https://pub.dev"
     source: hosted
-    version: "33.1.45"
+    version: "33.1.49"
   syncfusion_officecore:
     dependency: transitive
     description:
       name: syncfusion_officecore
-      sha256: "450bdd26357c5dc34dec924b306378fee01032b9ea885c6831d2169a2b33f14b"
+      sha256: ddeecaf89af598e9c1e9050d1a47a12ffb3ff6847dd86cd5adc0149b426b66cf
       url: "https://pub.dev"
     source: hosted
-    version: "33.1.45"
+    version: "33.1.49"
   term_glyph:
     dependency: transitive
     description:
@@ -1174,10 +1174,10 @@ packages:
     dependency: "direct dev"
     description:
       name: test_api
-      sha256: "93167629bfc610f71560ab9312acdda4959de4df6fac7492c89ff0d3886f6636"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.9"
+    version: "0.7.10"
   typed_data:
     dependency: transitive
     description:

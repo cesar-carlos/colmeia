@@ -52,7 +52,7 @@ dependencies:
   syncfusion_flutter_gauges: ^33.1.45
   syncfusion_flutter_maps: ^33.1.49
   syncfusion_flutter_treemap: ^33.1.45
-  syncfusion_flutter_xlsio: ^33.1.45
+  syncfusion_flutter_xlsio: ^33.1.49
   uuid: ^4.5.3
   zard: ^0.0.26
 
