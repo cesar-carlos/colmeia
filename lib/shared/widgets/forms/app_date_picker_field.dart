@@ -4,6 +4,7 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
@@ -13,33 +14,6 @@ import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
 AppLocalizations? _tryL10n(BuildContext context) =>
     Localizations.of<AppLocalizations>(context, AppLocalizations);
-
-Widget _calendarPrefixIcon(BuildContext context, {required bool enabled}) {
-  final theme = Theme.of(context);
-  final colors = theme.appColors;
-  return Padding(
-    padding: const EdgeInsetsDirectional.only(start: 4, end: 8),
-    child: Align(
-      widthFactor: 1,
-      heightFactor: 1,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          Icons.calendar_month_outlined,
-          size: 18,
-          color: enabled
-              ? colors.onSurfaceVariant
-              : colors.onSurface.withValues(alpha: 0.38),
-        ),
-      ),
-    ),
-  );
-}
 
 /// Popped when the user taps "Remover data/período" so it is not confused with
 /// closing the sheet without applying (`null`).
@@ -289,12 +263,26 @@ class _AppPickerFieldBody extends StatefulWidget {
 
 class _AppPickerFieldBodyState extends State<_AppPickerFieldBody> {
   bool _openInProgress = false;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode(debugLabel: 'AppPickerFieldBody');
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   Future<void> _activate() async {
     if (!widget.enabled || _openInProgress) {
       return;
     }
     setState(() => _openInProgress = true);
+    _focusNode.requestFocus();
     try {
       await widget.onOpen();
     } finally {
@@ -307,102 +295,268 @@ class _AppPickerFieldBodyState extends State<_AppPickerFieldBody> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>();
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
+    final colors = theme.appColors;
+    final scheme = theme.colorScheme;
     final l10n = _tryL10n(context);
+    final hasError = widget.errorText?.trim().isNotEmpty ?? false;
     final isEmpty =
         widget.displayValue == null || widget.displayValue!.isEmpty;
-    final horizontal = tokens?.formFieldPaddingHorizontal ?? 16;
-    final vertical = widget.density == AppTextFieldDensity.compact
-        ? (tokens?.formFieldPaddingVerticalCompact ?? 12)
-        : (tokens?.formFieldPaddingVerticalComfortable ?? 16);
-    const iconSlot = BoxConstraints(minWidth: 52);
+    final compact = widget.density == AppTextFieldDensity.compact;
 
-    return Focus(
-      skipTraversal: !widget.enabled,
-      canRequestFocus: widget.enabled,
-      onKeyEvent: (node, event) {
-        if (!widget.enabled) {
-          return KeyEventResult.ignored;
-        }
-        if (event is! KeyDownEvent) {
-          return KeyEventResult.ignored;
-        }
-        if (event.logicalKey == LogicalKeyboardKey.enter ||
-            event.logicalKey == LogicalKeyboardKey.numpadEnter ||
-            event.logicalKey == LogicalKeyboardKey.space) {
-          unawaited(_activate());
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: Semantics(
-        button: widget.enabled,
-        label: _pickerSemanticsLabel(
-          label: widget.label,
-          placeholderText: widget.placeholderText,
-          displayValue: widget.displayValue,
-          semanticsDetail: widget.semanticsDetail,
-          isEmpty: isEmpty,
-          fallbackRoleLabel: widget.semanticsFallbackLabel,
-        ),
-        child: InkWell(
-          onTap: widget.enabled ? _activate : null,
-          borderRadius: BorderRadius.circular(tokens?.formFieldRadius ?? 4),
-          child: InputDecorator(
-            isEmpty: isEmpty,
-            decoration: InputDecoration(
-              labelText: widget.label,
-              floatingLabelBehavior: FloatingLabelBehavior.always,
-              floatingLabelStyle: widget.label == null
-                  ? null
-                  : theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-              labelStyle: widget.label == null
-                  ? null
-                  : theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-              hintText: isEmpty ? widget.placeholderText : null,
-              hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              helperText: widget.errorText == null ? widget.helperText : null,
-              errorText: widget.errorText,
-              enabled: widget.enabled,
-              prefixIcon: _calendarPrefixIcon(context, enabled: widget.enabled),
-              prefixIconConstraints: iconSlot,
-              suffixIcon: widget.onClear == null
-                  ? Icon(
-                      Icons.arrow_drop_down_rounded,
-                      color: widget.enabled
-                          ? theme.colorScheme.onSurfaceVariant
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.38),
-                    )
-                  : IconButton(
-                      tooltip:
-                          l10n?.datePickerClearSelectionTooltip ??
-                          'Limpar seleção',
-                      onPressed: widget.enabled ? widget.onClear : null,
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-              suffixIconConstraints: iconSlot,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: horizontal,
-                vertical: vertical,
+    final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
+    final borderSide = _resolveDatePickerBorderSide(
+      colors: colors,
+      scheme: scheme,
+      enabled: widget.enabled,
+      open: _openInProgress,
+      hasError: hasError,
+    );
+    final padding = EdgeInsets.symmetric(
+      horizontal: tokens.formFieldPaddingHorizontal,
+      vertical: compact
+          ? tokens.formFieldPaddingVerticalCompact
+          : tokens.formFieldPaddingVerticalComfortable,
+    );
+    final labelGap = compact ? tokens.gapXs : tokens.formLabelToControlGap;
+
+    return Semantics(
+      button: widget.enabled,
+      label: _pickerSemanticsLabel(
+        label: widget.label,
+        placeholderText: widget.placeholderText,
+        displayValue: widget.displayValue,
+        semanticsDetail: widget.semanticsDetail,
+        isEmpty: isEmpty,
+        fallbackRoleLabel: widget.semanticsFallbackLabel,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (widget.label case final String label) ...<Widget>[
+            Text(
+              label.toUpperCase(),
+              style: typography.utilityOverline.copyWith(
+                color: hasError ? scheme.error : colors.onSurfaceVariant,
               ),
             ),
-            child: Text(
-              isEmpty ? '' : widget.displayValue!,
-              style: theme.textTheme.bodyLarge,
+            SizedBox(height: labelGap),
+          ],
+          Focus(
+            focusNode: _focusNode,
+            skipTraversal: !widget.enabled,
+            canRequestFocus: widget.enabled,
+            onKeyEvent: (node, event) {
+              if (!widget.enabled) {
+                return KeyEventResult.ignored;
+              }
+              if (event is! KeyDownEvent) {
+                return KeyEventResult.ignored;
+              }
+              if (event.logicalKey == LogicalKeyboardKey.enter ||
+                  event.logicalKey == LogicalKeyboardKey.numpadEnter ||
+                  event.logicalKey == LogicalKeyboardKey.space) {
+                unawaited(_activate());
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.enabled ? _activate : null,
+                borderRadius: borderRadius,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  curve: Curves.easeOut,
+                  decoration: BoxDecoration(
+                    color: widget.enabled
+                        ? scheme.surfaceContainerLowest
+                        : scheme.surfaceContainerLow.withValues(alpha: 0.56),
+                    borderRadius: borderRadius,
+                    border: Border.fromBorderSide(borderSide),
+                  ),
+                  padding: padding,
+                  child: Row(
+                    children: <Widget>[
+                      _LeadingCalendarChip(enabled: widget.enabled),
+                      SizedBox(width: tokens.gapMd),
+                      Expanded(
+                        child: Text(
+                          isEmpty
+                              ? widget.placeholderText
+                              : widget.displayValue!,
+                          style: typography.body.copyWith(
+                            color: widget.enabled
+                                ? (isEmpty
+                                      ? colors.onSurfaceVariant
+                                      : colors.onSurface)
+                                : colors.onSurface.withValues(alpha: 0.38),
+                            fontWeight: isEmpty
+                                ? FontWeight.w500
+                                : FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      SizedBox(width: tokens.gapSm),
+                      _TrailingPickerControl(
+                        enabled: widget.enabled,
+                        open: _openInProgress,
+                        onClear: widget.onClear,
+                        clearTooltip:
+                            l10n?.datePickerClearSelectionTooltip ??
+                            'Limpar seleção',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
+          _DatePickerFieldMessage(
+            helperText: widget.helperText,
+            errorText: widget.errorText,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeadingCalendarChip extends StatelessWidget {
+  const _LeadingCalendarChip({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.appColors;
+
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        Icons.calendar_month_outlined,
+        size: 18,
+        color: enabled
+            ? colors.onSurfaceVariant
+            : colors.onSurface.withValues(alpha: 0.38),
+      ),
+    );
+  }
+}
+
+class _TrailingPickerControl extends StatelessWidget {
+  const _TrailingPickerControl({
+    required this.enabled,
+    required this.open,
+    required this.onClear,
+    required this.clearTooltip,
+  });
+
+  final bool enabled;
+  final bool open;
+  final VoidCallback? onClear;
+  final String clearTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.appColors;
+
+    if (onClear != null) {
+      return InkWell(
+        onTap: enabled ? onClear : null,
+        borderRadius: BorderRadius.circular(999),
+        child: Tooltip(
+          message: clearTooltip,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(
+              Icons.close_rounded,
+              size: 20,
+              color: enabled
+                  ? colors.onSurfaceVariant
+                  : colors.onSurface.withValues(alpha: 0.38),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AnimatedRotation(
+      duration: const Duration(milliseconds: 140),
+      turns: open ? 0.5 : 0,
+      child: Icon(
+        Icons.expand_more_rounded,
+        size: 24,
+        color: enabled
+            ? colors.outline
+            : colors.onSurface.withValues(alpha: 0.38),
+      ),
+    );
+  }
+}
+
+class _DatePickerFieldMessage extends StatelessWidget {
+  const _DatePickerFieldMessage({
+    required this.helperText,
+    required this.errorText,
+  });
+
+  final String? helperText;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final message = errorText ?? helperText;
+    if (message == null || message.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(
+        top: tokens.gapXs,
+        left: tokens.gapXs,
+      ),
+      child: Text(
+        message,
+        style: theme.appTypography.caption.copyWith(
+          color: errorText != null
+              ? theme.colorScheme.error
+              : theme.colorScheme.onSurfaceVariant,
         ),
       ),
     );
   }
+}
+
+BorderSide _resolveDatePickerBorderSide({
+  required AppColors colors,
+  required ColorScheme scheme,
+  required bool enabled,
+  required bool open,
+  required bool hasError,
+}) {
+  if (!enabled) {
+    return BorderSide(color: colors.onSurface.withValues(alpha: 0.12));
+  }
+  if (hasError) {
+    return BorderSide(color: scheme.error, width: 1.5);
+  }
+  if (open) {
+    return BorderSide(color: scheme.primary, width: 1.5);
+  }
+  return BorderSide(color: colors.outlineVariant.withValues(alpha: 0.82));
 }
 
 class _AppDatePickerSheet extends StatefulWidget {
