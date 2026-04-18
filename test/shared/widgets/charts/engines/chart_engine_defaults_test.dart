@@ -94,7 +94,7 @@ void main() {
   group('buildSanitizingTooltipRenderer', () {
     test('clears the Syncfusion default header even with no body resolver', () {
       final renderer = buildSanitizingTooltipRenderer();
-      final args = TooltipArgs(0, <dynamic>[1], null, null)
+      final args = TooltipArgs(0, <dynamic>[1])
         ..header = 'Series 0'
         ..text = 'PIX SICOOB 1: 12000';
       renderer(args);
@@ -107,7 +107,7 @@ void main() {
       final renderer = buildSanitizingTooltipRenderer(
         bodyResolver: (args) => r'CARTÃO: R$ 12.345',
       );
-      final args = TooltipArgs(0, <dynamic>[1], null, null)
+      final args = TooltipArgs(0, <dynamic>[1])
         ..header = 'Series 0'
         ..text = 'old body';
       renderer(args);
@@ -119,7 +119,7 @@ void main() {
       final renderer = buildSanitizingTooltipRenderer(
         bodyResolver: (args) => null,
       );
-      final args = TooltipArgs(0, <dynamic>[1], null, null)
+      final args = TooltipArgs(0, <dynamic>[1])
         ..header = 'Series 0'
         ..text = 'preserved body';
       renderer(args);

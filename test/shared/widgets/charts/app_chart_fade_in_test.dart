@@ -7,11 +7,11 @@ void main() {
     'fades and slides the child in over the configured duration',
     (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Center(
             child: AppChartFadeIn(
-              duration: const Duration(milliseconds: 200),
-              child: const SizedBox(
+              duration: Duration(milliseconds: 200),
+              child: SizedBox(
                 key: ValueKey<String>('child'),
                 width: 80,
                 height: 80,
@@ -47,12 +47,12 @@ void main() {
     'skips animation entirely when reduce-motion is enabled',
     (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: MediaQuery(
-            data: const MediaQueryData(disableAnimations: true),
+            data: MediaQueryData(disableAnimations: true),
             child: Center(
               child: AppChartFadeIn(
-                child: const SizedBox(
+                child: SizedBox(
                   key: ValueKey<String>('child'),
                   width: 80,
                   height: 80,
@@ -74,12 +74,12 @@ void main() {
     'slideOffsetPx == 0 disables the translate but keeps the fade',
     (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Center(
             child: AppChartFadeIn(
               slideOffsetPx: 0,
-              duration: const Duration(milliseconds: 100),
-              child: const SizedBox(width: 40, height: 40),
+              duration: Duration(milliseconds: 100),
+              child: SizedBox(width: 40, height: 40),
             ),
           ),
         ),

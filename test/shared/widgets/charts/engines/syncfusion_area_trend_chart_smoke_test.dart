@@ -14,9 +14,9 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _TestApp(
+      const _TestApp(
         child: AppAreaTrendChart(
-          points: const <AppChartPoint>[
+          points: <AppChartPoint>[
             AppChartPoint(label: 'Sem 1', value: 10),
             AppChartPoint(label: 'Sem 2', value: 18),
             AppChartPoint(label: 'Sem 3', value: 14),
@@ -35,9 +35,9 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _TestApp(
+      const _TestApp(
         child: AppAreaTrendChart(
-          entries: const <AppAreaTrendEntry>[
+          entries: <AppAreaTrendEntry>[
             AppAreaTrendEntry(
               label: 'Plano A',
               points: <AppChartPoint>[
@@ -67,8 +67,8 @@ void main() {
     'reduce-motion path renders without scheduling tween timers',
     (tester) async {
       await tester.pumpWidget(
-        _TestApp(
-          child: const MediaQuery(
+        const _TestApp(
+          child: MediaQuery(
             data: MediaQueryData(disableAnimations: true),
             child: AppAreaTrendChart(
               points: <AppChartPoint>[
