@@ -27,12 +27,19 @@ class OverviewMonthlyParcelsComboChart extends StatefulWidget {
     required this.l10n,
     required this.points,
     required this.loadFailed,
+    this.loadFailureMessage,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<OverviewMonthlyParcelPoint> points;
   final bool loadFailed;
+
+  /// Specific message extracted from the underlying `AppFailure` (e.g.
+  /// "Voce nao tem acesso a este agente."). When set AND [loadFailed] is
+  /// true, the chart shows this instead of the generic l10n "load failed"
+  /// label so the user gets actionable context (BUG #4).
+  final String? loadFailureMessage;
 
   @override
   State<OverviewMonthlyParcelsComboChart> createState() =>
@@ -211,7 +218,7 @@ class _OverviewMonthlyParcelsComboChartState
     );
 
     final emptyMessage = widget.loadFailed
-        ? l10n.overviewMonthlyParcelsLoadFailed
+        ? (widget.loadFailureMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
         : l10n.overviewMonthlyParcelsEmpty;
 
     final activeStyle =

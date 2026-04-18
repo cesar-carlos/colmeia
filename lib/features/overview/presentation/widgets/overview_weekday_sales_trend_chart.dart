@@ -14,12 +14,18 @@ class OverviewWeekdaySalesTrendChart extends StatefulWidget {
     required this.l10n,
     required this.points,
     required this.loadFailed,
+    this.loadFailureMessage,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<OverviewWeekdaySalesTrendPoint> points;
   final bool loadFailed;
+
+  /// Specific message extracted from the underlying `AppFailure`. When set
+  /// AND [loadFailed] is true, the chart shows this instead of the generic
+  /// l10n "load failed" label (BUG #4 — actionable error context).
+  final String? loadFailureMessage;
 
   @override
   State<OverviewWeekdaySalesTrendChart> createState() =>
@@ -96,7 +102,7 @@ class _OverviewWeekdaySalesTrendChartState
     final compactSalesCountFormat = NumberFormat.compact(locale: localeName);
     final isSalesCount = _metric == _OverviewWeekdayMetric.salesCount;
     final emptyMessage = widget.loadFailed
-        ? l10n.overviewWeekdaySalesLoadFailed
+        ? (widget.loadFailureMessage ?? l10n.overviewWeekdaySalesLoadFailed)
         : l10n.overviewWeekdaySalesEmpty;
     final summary = _semanticsSummaryForBuild(
       l10n: l10n,
@@ -176,7 +182,7 @@ class _OverviewWeekdaySalesTrendChartState
     final points = widget.points;
     if (points.isEmpty) {
       return widget.loadFailed
-          ? l10n.overviewWeekdaySalesLoadFailed
+          ? (widget.loadFailureMessage ?? l10n.overviewWeekdaySalesLoadFailed)
           : l10n.overviewWeekdaySalesEmpty;
     }
 

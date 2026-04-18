@@ -19,14 +19,31 @@ typedef AgentQueryTargetLoader<Row> =
 /// consolidated multi-branch KPIs.
 class AgentQueryExecutor<Row> {
   /// Default concurrency tuned to reduce bridge/agent overload on wide merges.
-  AgentQueryExecutor({this.mergeAllConcurrency = 16})
-    : assert(
-        mergeAllConcurrency > 0,
-        'mergeAllConcurrency must be greater than zero',
-      );
+  ///
+  /// [raceTotalTimeout] is a defensive safety net for the race strategy: if
+  /// at least one participant never resolves AND not all of them have failed
+  /// yet, the underlying `Completer` would deadlock and the caller would
+  /// wait forever. The timeout caps that wait and surfaces a typed
+  /// [NetworkFailure] so the UI can show "took too long" instead of
+  /// freezing the screen. The dispatchers (Socket, REST) already enforce
+  /// per-request timeouts that are typically much smaller than this cap; in
+  /// production this guard should never fire — it exists exclusively to
+  /// keep the executor from trusting upstream timeouts blindly.
+  AgentQueryExecutor({
+    this.mergeAllConcurrency = 16,
+    this.raceTotalTimeout = const Duration(minutes: 2),
+  }) : assert(
+         mergeAllConcurrency > 0,
+         'mergeAllConcurrency must be greater than zero',
+       );
 
   /// Max concurrent `loadTarget` calls per wave in merge-all mode.
   final int mergeAllConcurrency;
+
+  /// Hard cap on how long the race strategy is willing to wait before it
+  /// gives up and surfaces a [NetworkFailure]. See the constructor docs for
+  /// the rationale.
+  final Duration raceTotalTimeout;
 
   Future<AppResult<AgentQueryExecutionReport<Row>>> execute({
     required AgentQueryPlan plan,
@@ -186,8 +203,57 @@ class AgentQueryExecutor<Row> {
       }());
     }
 
-    final decision = await completer.future;
+    final decision = await completer.future.timeout(
+      raceTotalTimeout,
+      onTimeout: () {
+        AppLogger.warning(
+          'Agent query race timed out before any target settled',
+          context: <String, Object?>{
+            'queryKey': plan.queryKey.name,
+            'strategy': plan.strategy.name,
+            'plannedTargetCount': plan.plannedTargets.length,
+            'settledTargetCount': participantsByIndex.length,
+            'failedCount': failedCount,
+            'raceTotalTimeoutMs': raceTotalTimeout.inMilliseconds,
+            'unresolvedAgentIds': <String>[
+              for (var i = 0; i < plan.plannedTargets.length; i++)
+                if (!participantsByIndex.containsKey(i))
+                  plan.plannedTargets[i].agentId,
+            ],
+          },
+        );
+        return _RaceTimedOut<Row>();
+      },
+    );
     totalStopwatch.stop();
+
+    if (decision is _RaceTimedOut<Row>) {
+      // Pending participants are intentionally NOT awaited here: their
+      // futures may complete later but we no longer need their result.
+      // We synthesize a NetworkFailure so the caller sees a typed,
+      // actionable error instead of a hung Future.
+      return Failure<AgentQueryExecutionReport<Row>, AppFailure>(
+        NetworkFailure(
+          message:
+              'Agent query race did not settle within '
+              '${raceTotalTimeout.inSeconds}s '
+              '(query=${plan.queryKey.name})',
+          userMessage:
+              'A consulta multiagente demorou mais que o tempo permitido. '
+              'Tente novamente.',
+          context: <String, Object?>{
+            'operation': 'agentQueryExecuteRace',
+            'queryKey': plan.queryKey.name,
+            'strategy': plan.strategy.name,
+            'reason': 'race_total_timeout',
+            'raceTotalTimeoutMs': raceTotalTimeout.inMilliseconds,
+            'plannedTargetCount': plan.plannedTargets.length,
+            'settledTargetCount': participantsByIndex.length,
+            'failedCount': failedCount,
+          },
+        ),
+      );
+    }
 
     if (decision is _RaceWinner<Row>) {
       final participants = <AgentQueryExecutionParticipant<Row>>[];
@@ -340,3 +406,5 @@ class _RaceWinner<Row> extends _RaceDecision<Row> {
 }
 
 class _RaceAllFailed<Row> extends _RaceDecision<Row> {}
+
+class _RaceTimedOut<Row> extends _RaceDecision<Row> {}

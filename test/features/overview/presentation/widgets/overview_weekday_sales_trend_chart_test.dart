@@ -218,6 +218,65 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'renders specific loadFailureMessage when set '
+    '(BUG #4: chart shows actionable AppFailure.userMessage)',
+    (tester) async {
+      await tester.pumpWidget(
+        _TestApp(
+          child: Builder(
+            builder: (context) {
+              return OverviewWeekdaySalesTrendChart(
+                l10n: AppLocalizations.of(context),
+                points: const <OverviewWeekdaySalesTrendPoint>[],
+                loadFailed: true,
+                loadFailureMessage: 'Voce nao tem acesso a este agente.',
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(
+        find.text('Voce nao tem acesso a este agente.'),
+        findsOneWidget,
+      );
+      // Generic l10n fallback must NOT be on screen when the specific
+      // message is provided.
+      expect(
+        find.text('Could not load the weekday chart. Try again later.'),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'falls back to generic l10n message when loadFailureMessage is null',
+    (tester) async {
+      await tester.pumpWidget(
+        _TestApp(
+          child: Builder(
+            builder: (context) {
+              // Default loadFailureMessage is null — that case must fall
+              // back to the generic l10n label so the chart never shows a
+              // blank placeholder when loadFailed is true.
+              return OverviewWeekdaySalesTrendChart(
+                l10n: AppLocalizations.of(context),
+                points: const <OverviewWeekdaySalesTrendPoint>[],
+                loadFailed: true,
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(
+        find.text('Could not load the weekday chart. Try again later.'),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 class _TestApp extends StatelessWidget {

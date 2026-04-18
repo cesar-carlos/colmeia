@@ -16,10 +16,13 @@ class Overview {
     required this.userRankings,
     this.monthlyParcelTrend = const <OverviewMonthlyParcelPoint>[],
     this.monthlyParcelTrendLoadFailed = false,
+    this.monthlyParcelTrendLoadFailureMessage,
     this.weekdaySalesTrend = const <OverviewWeekdaySalesTrendPoint>[],
     this.weekdaySalesTrendLoadFailed = false,
+    this.weekdaySalesTrendLoadFailureMessage,
     this.weekdayUserSalesTrend = const <OverviewWeekdayUserSalesTrendPoint>[],
     this.weekdayUserSalesTrendLoadFailed = false,
+    this.weekdayUserSalesTrendLoadFailureMessage,
     this.isStaleCache = false,
     this.approvedAgentCount = 0,
     this.agentIdsExcludedFromQueryFailure = const <String>[],
@@ -44,12 +47,23 @@ class Overview {
   /// empty for this reason instead of genuinely having no rows.
   final bool monthlyParcelTrendLoadFailed;
 
+  /// Specific user-facing message extracted from the underlying `AppFailure`
+  /// (e.g. "Voce nao tem acesso a este agente.", "SQL invalido na query …").
+  /// Charts use this when [monthlyParcelTrendLoadFailed] is true to give the
+  /// user actionable context instead of a generic "could not load chart".
+  /// Null when the failure was not user-facing or the load succeeded.
+  final String? monthlyParcelTrendLoadFailureMessage;
+
   /// Weekday distribution (Sunday..Saturday) for the selected period.
   final List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend;
 
   /// True when the weekday resumo query failed; [weekdaySalesTrend] may be
   /// empty for this reason instead of genuinely having no rows.
   final bool weekdaySalesTrendLoadFailed;
+
+  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
+  /// weekday-sales chart.
+  final String? weekdaySalesTrendLoadFailureMessage;
 
   /// Weekday distribution per user (merged across branches/agents) for the
   /// selected period.
@@ -58,6 +72,10 @@ class Overview {
   /// True when the weekday-by-user resumo query failed; [weekdayUserSalesTrend]
   /// may be empty for this reason instead of genuinely having no rows.
   final bool weekdayUserSalesTrendLoadFailed;
+
+  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
+  /// weekday-by-user chart.
+  final String? weekdayUserSalesTrendLoadFailureMessage;
 
   /// True when recovered from local cache after a remote error.
   final bool isStaleCache;
@@ -121,10 +139,13 @@ class Overview {
     List<String>? agentNamesMissingClientToken,
     List<OverviewMonthlyParcelPoint>? monthlyParcelTrend,
     bool? monthlyParcelTrendLoadFailed,
+    String? monthlyParcelTrendLoadFailureMessage,
     List<OverviewWeekdaySalesTrendPoint>? weekdaySalesTrend,
     bool? weekdaySalesTrendLoadFailed,
+    String? weekdaySalesTrendLoadFailureMessage,
     List<OverviewWeekdayUserSalesTrendPoint>? weekdayUserSalesTrend,
     bool? weekdayUserSalesTrendLoadFailed,
+    String? weekdayUserSalesTrendLoadFailureMessage,
     bool? mainResumoHadPlannedTargets,
   }) {
     return Overview(
@@ -137,13 +158,22 @@ class Overview {
       monthlyParcelTrend: monthlyParcelTrend ?? this.monthlyParcelTrend,
       monthlyParcelTrendLoadFailed:
           monthlyParcelTrendLoadFailed ?? this.monthlyParcelTrendLoadFailed,
+      monthlyParcelTrendLoadFailureMessage:
+          monthlyParcelTrendLoadFailureMessage ??
+              this.monthlyParcelTrendLoadFailureMessage,
       weekdaySalesTrend: weekdaySalesTrend ?? this.weekdaySalesTrend,
       weekdaySalesTrendLoadFailed:
           weekdaySalesTrendLoadFailed ?? this.weekdaySalesTrendLoadFailed,
+      weekdaySalesTrendLoadFailureMessage:
+          weekdaySalesTrendLoadFailureMessage ??
+              this.weekdaySalesTrendLoadFailureMessage,
       weekdayUserSalesTrend:
           weekdayUserSalesTrend ?? this.weekdayUserSalesTrend,
       weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed ??
           this.weekdayUserSalesTrendLoadFailed,
+      weekdayUserSalesTrendLoadFailureMessage:
+          weekdayUserSalesTrendLoadFailureMessage ??
+              this.weekdayUserSalesTrendLoadFailureMessage,
       isStaleCache: isStaleCache ?? this.isStaleCache,
       approvedAgentCount: approvedAgentCount ?? this.approvedAgentCount,
       agentIdsExcludedFromQueryFailure:

@@ -179,10 +179,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
             rowLabels: resolvedRowLabels,
             monthlyParcelTrend: monthly.points,
             monthlyParcelTrendLoadFailed: monthly.loadFailed,
+            monthlyParcelTrendLoadFailureMessage: monthly.loadFailureMessage,
             weekdaySalesTrend: weekday.points,
             weekdaySalesTrendLoadFailed: weekday.loadFailed,
+            weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
             weekdayUserSalesTrend: weekdayUser.points,
             weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
+            weekdayUserSalesTrendLoadFailureMessage:
+                weekdayUser.loadFailureMessage,
           ),
         );
       }
@@ -227,10 +231,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
             cachedOverview.copyWith(
               monthlyParcelTrend: monthly.points,
               monthlyParcelTrendLoadFailed: monthly.loadFailed,
+              monthlyParcelTrendLoadFailureMessage: monthly.loadFailureMessage,
               weekdaySalesTrend: weekday.points,
               weekdaySalesTrendLoadFailed: weekday.loadFailed,
+              weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
               weekdayUserSalesTrend: weekdayUser.points,
               weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
+              weekdayUserSalesTrendLoadFailureMessage:
+                  weekdayUser.loadFailureMessage,
             ),
           );
         }
@@ -273,10 +281,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
         agentNamesMissingClientToken: report.missingClientTokenAgentNames,
         monthlyParcelTrend: monthly.points,
         monthlyParcelTrendLoadFailed: monthly.loadFailed,
+        monthlyParcelTrendLoadFailureMessage: monthly.loadFailureMessage,
         weekdaySalesTrend: weekday.points,
         weekdaySalesTrendLoadFailed: weekday.loadFailed,
+        weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
         weekdayUserSalesTrend: weekdayUser.points,
         weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
+        weekdayUserSalesTrendLoadFailureMessage:
+            weekdayUser.loadFailureMessage,
         mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
       );
 
@@ -368,6 +380,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     ({
       List<OverviewMonthlyParcelPoint> points,
       bool loadFailed,
+      String? loadFailureMessage,
     })
   >
   _resolveMonthlyParcelTrend(
@@ -393,6 +406,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     ({
       List<OverviewWeekdaySalesTrendPoint> points,
       bool loadFailed,
+      String? loadFailureMessage,
     })
   >
   _resolveWeekdaySalesTrend(
@@ -416,6 +430,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     ({
       List<OverviewWeekdayUserSalesTrendPoint> points,
       bool loadFailed,
+      String? loadFailureMessage,
     })
   >
   _resolveWeekdayUserSalesTrendOptional(
@@ -430,6 +445,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       return (
         points: const <OverviewWeekdayUserSalesTrendPoint>[],
         loadFailed: false,
+        loadFailureMessage: null,
       );
     }
     return _resolveWeekdayUserSalesTrend(future);
@@ -439,6 +455,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     ({
       List<OverviewWeekdayUserSalesTrendPoint> points,
       bool loadFailed,
+      String? loadFailureMessage,
     })
   >
   _resolveWeekdayUserSalesTrend(
@@ -479,6 +496,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     ({
       List<TPoint> points,
       bool loadFailed,
+      String? loadFailureMessage,
     })
   >
   _resolveOptionalChartData<TRow, TPoint>({
@@ -490,7 +508,11 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }) async {
     final result = await future;
     return result.fold(
-      (report) => (points: mapSuccess(report), loadFailed: false),
+      (report) => (
+        points: mapSuccess(report),
+        loadFailed: false,
+        loadFailureMessage: null,
+      ),
       (failure) {
         AppLogger.warning(
           failureLogMessage,
@@ -500,7 +522,18 @@ class OverviewRepositoryImpl implements OverviewRepository {
           },
           error: failure,
         );
-        return (points: emptyValue, loadFailed: true);
+        // BUG #4 fix: forward the user-facing message from the underlying
+        // AppFailure (e.g. "Voce nao tem acesso a este agente.", or the
+        // RPC-resolved PT message) so the chart can show it instead of a
+        // generic "Não foi possível carregar este gráfico". `userMessage`
+        // can be null when the failure layer chose not to surface one
+        // (e.g. cancelled/disposed); in that case the chart falls back to
+        // the existing l10n label.
+        return (
+          points: emptyValue,
+          loadFailed: true,
+          loadFailureMessage: failure.userMessage,
+        );
       },
     );
   }
@@ -890,12 +923,15 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<OverviewMonthlyParcelPoint> monthlyParcelTrend =
         const <OverviewMonthlyParcelPoint>[],
     bool monthlyParcelTrendLoadFailed = false,
+    String? monthlyParcelTrendLoadFailureMessage,
     List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend =
         const <OverviewWeekdaySalesTrendPoint>[],
     bool weekdaySalesTrendLoadFailed = false,
+    String? weekdaySalesTrendLoadFailureMessage,
     List<OverviewWeekdayUserSalesTrendPoint> weekdayUserSalesTrend =
         const <OverviewWeekdayUserSalesTrendPoint>[],
     bool weekdayUserSalesTrendLoadFailed = false,
+    String? weekdayUserSalesTrendLoadFailureMessage,
     bool mainResumoHadPlannedTargets = false,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
@@ -996,10 +1032,16 @@ class OverviewRepositoryImpl implements OverviewRepository {
       userRankings: userRankings,
       monthlyParcelTrend: monthlyParcelTrend,
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
+      monthlyParcelTrendLoadFailureMessage:
+          monthlyParcelTrendLoadFailureMessage,
       weekdaySalesTrend: weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
+      weekdaySalesTrendLoadFailureMessage:
+          weekdaySalesTrendLoadFailureMessage,
       weekdayUserSalesTrend: weekdayUserSalesTrend,
       weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
+      weekdayUserSalesTrendLoadFailureMessage:
+          weekdayUserSalesTrendLoadFailureMessage,
       approvedAgentCount: approvedAgentCount,
       agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
       agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,
