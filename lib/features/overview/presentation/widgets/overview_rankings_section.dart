@@ -115,7 +115,6 @@ class OverviewAgentRankingCard extends StatelessWidget {
         tokens: tokens,
         kind: OverviewHomeBarChartKind.ranking,
         l10n: l10n,
-        comparisonCategoryCount: showEmpty ? null : agentRankings.length,
       ),
       emptyPlaceholder: showEmpty
           ? Padding(
@@ -163,7 +162,6 @@ class OverviewUserRankingCard extends StatelessWidget {
         tokens: tokens,
         kind: OverviewHomeBarChartKind.ranking,
         l10n: l10n,
-        comparisonCategoryCount: showEmpty ? null : userRankings.length,
       ),
       emptyPlaceholder: showEmpty
           ? Padding(

@@ -24,15 +24,18 @@ class OverviewPaymentMixCard extends StatefulWidget {
 
 class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
   List<OverviewPaymentMethodBreakdown>? _methodsRef;
-  double _total = 0;
+  String? _localeNameRef;
   List<AppCategoryDonutSegment> _segments = const <AppCategoryDonutSegment>[];
+  String? _centerPrimary;
 
   void _recomputeIfNeeded() {
-    if (identical(_methodsRef, widget.methods)) {
+    if (identical(_methodsRef, widget.methods) &&
+        _localeNameRef == widget.l10n.localeName) {
       return;
     }
     _methodsRef = widget.methods;
-    _total = widget.methods.fold<double>(
+    _localeNameRef = widget.l10n.localeName;
+    final total = widget.methods.fold<double>(
       0,
       (sum, m) => sum + m.totalAmount,
     );
@@ -46,6 +49,7 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
           ),
         )
         .toList(growable: false);
+    _centerPrimary = total > 0 ? AppBrFormatters.compactCurrency(total) : null;
   }
 
   @override
@@ -70,8 +74,7 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
         legendMaxHeight: 280,
       ),
       segments: _segments,
-      centerPrimaryLabel:
-          _total > 0 ? AppBrFormatters.compactCurrency(_total) : null,
+      centerPrimaryLabel: _centerPrimary,
       centerSecondaryLabel: l10n.overviewPaymentMixDonutTotalLabel,
     );
   }

@@ -114,7 +114,11 @@ void main() {
       chartRestored.tooltipLabelBuilder!(points[1], points[1].salesCount),
       contains(r'R$'),
     );
-    expect(chartRestored.style.minBarWidth, 72);
+    expect(chartRestored.style.minBarWidth, 92);
+    expect(
+      chartRestored.style.animationDuration,
+      const Duration(milliseconds: 350),
+    );
     expect(chartRestored.style.yAxisFormat!.format(1500), isNot(contains(r'R$')));
 
     await tester.tap(find.text('Revenue'));

@@ -38,16 +38,19 @@ class _OverviewCategoryMixCardState extends State<OverviewCategoryMixCard> {
 
   List<OverviewCategoryShare>? _sharesRef;
   double? _fallbackOptRef;
+  String? _localeNameRef;
   late List<AppCategoryDonutSegment> _segments;
   String? _centerPrimary;
 
   void _recomputeIfNeeded() {
     if (identical(_sharesRef, widget.shares) &&
-        _fallbackOptRef == widget.fallbackTotalRevenue) {
+        _fallbackOptRef == widget.fallbackTotalRevenue &&
+        _localeNameRef == widget.l10n.localeName) {
       return;
     }
     _sharesRef = widget.shares;
     _fallbackOptRef = widget.fallbackTotalRevenue;
+    _localeNameRef = widget.l10n.localeName;
     final fallback = widget.fallbackTotalRevenue ?? _defaultFallbackTotalRevenue;
     _segments = _buildSegments(widget.shares, fallback);
     _centerPrimary = _buildCenterPrimary(widget.shares, fallback);

@@ -7,7 +7,7 @@ void main() {
     const s = AppCategoryDonutCardStyle();
     check(s.doughnutAnimationDurationMs).isNull();
     check(s.legendMaxHeight).isNull();
-    check(AppCategoryDonutCardStyle.defaultDoughnutAnimationDurationMs).equals(900);
+    check(AppCategoryDonutCardStyle.defaultDoughnutAnimationDurationMs).equals(500);
   });
 
   test('AppCategoryDonutCardStyle can disable animation and cap legend', () {

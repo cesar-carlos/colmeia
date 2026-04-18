@@ -6,7 +6,12 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:flutter/material.dart';
 
-class OverviewPaymentBarChart extends StatelessWidget {
+/// "Revenue by payment method" home card.
+///
+/// Caches the sorted, non-zero list while [methods] keeps the same identity so
+/// the staged dashboard pipeline doesn't re-sort + re-filter on every parent
+/// rebuild (e.g. while sibling chart stages are still mounting).
+class OverviewPaymentBarChart extends StatefulWidget {
   const OverviewPaymentBarChart({
     required this.l10n,
     required this.methods,
@@ -17,19 +22,48 @@ class OverviewPaymentBarChart extends StatelessWidget {
   final List<OverviewPaymentMethodBreakdown> methods;
 
   @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final sorted = List<OverviewPaymentMethodBreakdown>.of(methods)
+  State<OverviewPaymentBarChart> createState() =>
+      _OverviewPaymentBarChartState();
+}
+
+class _OverviewPaymentBarChartState extends State<OverviewPaymentBarChart> {
+  List<OverviewPaymentMethodBreakdown>? _methodsRef;
+  late List<OverviewPaymentMethodBreakdown> _nonZeroSorted;
+
+  void _recomputeIfNeeded() {
+    if (identical(_methodsRef, widget.methods)) {
+      return;
+    }
+    _methodsRef = widget.methods;
+    final sorted = List<OverviewPaymentMethodBreakdown>.of(widget.methods)
       ..sort((a, b) => b.totalAmount.compareTo(a.totalAmount));
-    final nonZero = <OverviewPaymentMethodBreakdown>[
+    _nonZeroSorted = <OverviewPaymentMethodBreakdown>[
       for (final m in sorted)
         if (m.totalAmount > 0) m,
     ];
-    final showEmpty = methods.isEmpty || nonZero.isEmpty;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _recomputeIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewPaymentBarChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recomputeIfNeeded();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final l10n = widget.l10n;
+    final showEmpty = widget.methods.isEmpty || _nonZeroSorted.isEmpty;
     return AppComparisonBarChart<OverviewPaymentMethodBreakdown>(
       title: l10n.overviewPaymentBarTitle,
       subtitle: l10n.overviewPaymentBarSubtitle,
-      items: nonZero,
+      items: _nonZeroSorted,
       plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
       extremeSpreadAccessibilityNotice:
           l10n.chartComparisonExtremeValueSpreadNotice,
@@ -39,12 +73,13 @@ class OverviewPaymentBarChart extends StatelessWidget {
         m.label,
         AppBrFormatters.currency(v),
       ),
-      dataLabelBuilder: (m, v) => AppBrFormatters.compactCurrency(v),
+      // Smart formatter: bars below R$ 1.000 show the full currency
+      // ("R$ 26,80") so they aren't visually mistaken for thousands.
+      dataLabelBuilder: (m, v) => AppBrFormatters.smartCompactCurrency(v),
       style: overviewHomeComparisonBarChartStyle(
         tokens: tokens,
         kind: OverviewHomeBarChartKind.payment,
         l10n: l10n,
-        comparisonCategoryCount: nonZero.isEmpty ? null : nonZero.length,
       ),
       emptyPlaceholder: showEmpty
           ? Padding(

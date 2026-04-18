@@ -170,8 +170,14 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 );
               }
             : null,
-        onTooltipRender: enableInteraction && tooltipLabels != null
+        onTooltipRender: enableInteraction
             ? (args) {
+                // Always clear Syncfusion's default header ("Series 0") — the
+                // bar payload already includes the category name in the body.
+                args.header = '';
+                if (tooltipLabels == null) {
+                  return;
+                }
                 final index = args.pointIndex?.toInt();
                 if (index != null &&
                     index >= 0 &&
@@ -185,6 +191,15 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             : null,
         tooltipBehavior: TooltipBehavior(
           enable: enableInteraction && style.showTooltip,
+          color: colorScheme.inverseSurface,
+          textStyle: TextStyle(
+            color: colorScheme.onInverseSurface,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+          borderWidth: 0,
+          decimalPlaces: 0,
+          duration: 2400,
         ),
         primaryXAxis: CategoryAxis(
           isVisible: style.showXAxis && xAxisLabelsVisible,
@@ -235,6 +250,9 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                   details.textStyle,
                 ),
         ),
+        selectionType: style.enableTapHighlight && enableInteraction
+            ? SelectionType.point
+            : SelectionType.series,
         series: <CartesianSeries<AppChartPoint, String>>[
           ColumnSeries<AppChartPoint, String>(
             dataSource: points,
@@ -260,6 +278,13 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             borderWidth: style.borderWidth ?? 0,
             animationDuration:
                 style.animationDuration?.inMilliseconds.toDouble() ?? 1500,
+            selectionBehavior: style.enableTapHighlight && enableInteraction
+                ? SelectionBehavior(
+                    enable: true,
+                    unselectedOpacity:
+                        style.tapHighlightDimmedOpacity.clamp(0, 1).toDouble(),
+                  )
+                : null,
             dataLabelSettings: DataLabelSettings(
               isVisible: style.showDataLabels && enableInteraction,
               textStyle: style.dataLabelTextStyle,
@@ -388,7 +413,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             );
           }
 
-          const scrollSlot = kChartHorizontalScrollBottomTrackSlot;
+          // Slot is scaled by [TextScaler] inside the shell — deduct the
+          // resolved height here so accessible text scales don't overflow.
+          final scrollSlot =
+              chartHorizontalScrollBottomTrackSlotHeight(context);
           final chartBodyHeight = resolvedHeight - scrollSlot;
 
           final sticky = style.stickyPrimaryYAxisWhileScrolling;
@@ -407,7 +435,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 chartBodyHeight,
                 categoryViewportPan: false,
               ),
-              bottomTrackSlot: scrollSlot,
+              bottomTrackSlot: kChartHorizontalScrollBottomTrackSlot,
               showFade: style.showScrollFade,
               semanticsHint: style.horizontalScrollSemanticsHint,
             );
@@ -456,7 +484,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 Expanded(
                   child: ChartHorizontalScrollShell(
                     plotInner,
-                    bottomTrackSlot: scrollSlot,
+                    bottomTrackSlot: kChartHorizontalScrollBottomTrackSlot,
                     showFade: style.showScrollFade,
                     semanticsHint: style.horizontalScrollSemanticsHint,
                   ),

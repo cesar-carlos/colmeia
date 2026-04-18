@@ -79,6 +79,8 @@ class AppComparisonBarChartStyle {
     this.categoryViewportFootnote,
     this.categoryViewportPanSemanticsLabel,
     this.outerDataLabelTopReserve = 0,
+    this.enableTapHighlight = false,
+    this.tapHighlightDimmedOpacity = 0.35,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -300,6 +302,18 @@ class AppComparisonBarChartStyle {
   /// Screen reader label when category viewport pan is active.
   /// Ignored when null (hint may still come from horizontal scroll semantics).
   final String? categoryViewportPanSemanticsLabel;
+
+  /// When true, tapping a bar visually highlights it (Syncfusion
+  /// [SelectionBehavior]): the tapped column keeps full opacity while siblings
+  /// fade to [tapHighlightDimmedOpacity]. Single-select; tapping again clears.
+  ///
+  /// Independent from `AppComparisonBarChart.onPointTap` / `onPointTapEvent` —
+  /// those callbacks still fire on the same gesture.
+  final bool enableTapHighlight;
+
+  /// Opacity applied to non-selected bars while [enableTapHighlight] is active.
+  /// Defaults to `0.35`; set lower to dim more, `1.0` to disable the dim.
+  final double tapHighlightDimmedOpacity;
 }
 
 /// Structured payload emitted when the user taps a bar.

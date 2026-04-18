@@ -57,6 +57,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final colors = Theme.of(context).appColors;
+    final colorScheme = Theme.of(context).colorScheme;
     final resolvedHeight = style.height ?? chartTheme.height;
     final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
     final resolvedBarColor = style.barColor ?? chartTheme.primaryColor;
@@ -125,11 +126,27 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 zoomMode: ZoomMode.x,
               )
             : null,
+        onTooltipRender: enableTooltip
+            ? (args) {
+                // Drop Syncfusion's default series header ("Series 0").
+                // The shared tooltip already lists both series with their
+                // explicit [name] (bar/line series labels).
+                args.header = '';
+              }
+            : null,
         tooltipBehavior: TooltipBehavior(
           enable: enableTooltip && style.showTooltip,
           // One tooltip for bar + line so the line stays readable when the
           // right Y-axis ticks are hidden ([AppComboChartStyle.showRightYAxis]).
           shared: true,
+          color: colorScheme.inverseSurface,
+          textStyle: TextStyle(
+            color: colorScheme.onInverseSurface,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+          borderWidth: 0,
+          duration: 2400,
         ),
         legend: Legend(
           isVisible: showLegendInChart && style.showLegend,
@@ -383,8 +400,14 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               ? _kComboExternalLegendHeight
               : 0.0;
           final coreH = resolvedHeight - legendReserve;
-          const scrollSlot = kChartHorizontalScrollBottomTrackSlot;
-          final plotChartBodyHeight = coreH - scrollSlot;
+          // [ChartHorizontalScrollShell] scales its bottom strip by the
+          // platform [TextScaler] for accessibility, so engines must deduct
+          // the *resolved* slot — not the raw constant — to avoid the inner
+          // column overflowing at large text scales (text scaler 2.25 turns
+          // a 22 px slot into ~49 px).
+          final resolvedScrollSlot =
+              chartHorizontalScrollBottomTrackSlotHeight(context);
+          final plotChartBodyHeight = coreH - resolvedScrollSlot;
 
           if (!sticky) {
             final plotInner = SizedBox(
@@ -404,7 +427,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             );
             return ChartHorizontalScrollShell(
               plotInner,
-              bottomTrackSlot: scrollSlot,
+              bottomTrackSlot: kChartHorizontalScrollBottomTrackSlot,
               showFade: style.showScrollFade,
               semanticsHint: style.horizontalScrollSemanticsHint,
             );
@@ -457,7 +480,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 Expanded(
                   child: ChartHorizontalScrollShell(
                     plotChart,
-                    bottomTrackSlot: scrollSlot,
+                    bottomTrackSlot: kChartHorizontalScrollBottomTrackSlot,
                     showFade: style.showScrollFade,
                     semanticsHint: style.horizontalScrollSemanticsHint,
                   ),

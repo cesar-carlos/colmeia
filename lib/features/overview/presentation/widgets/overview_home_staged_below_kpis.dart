@@ -10,6 +10,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:flutter/material.dart';
 
 /// Stages the payment mix donut and each Syncfusion-heavy chart on separate
@@ -46,8 +47,6 @@ class _OverviewHomeStagedBelowKpisState
   int _mountGeneration = 0;
 
   static const int _finalStage = 7;
-
-  static const double _mixPlaceholderHeight = 220;
 
   Overview? _sortedListsSource;
   List<OverviewAgentRanking>? _sortedAgentsCache;
@@ -167,6 +166,7 @@ class _OverviewHomeStagedBelowKpisState
     final chartBlockHeight = tokens.chartStandardHeight + tokens.contentSpacing;
     final paymentBarChartHeight =
         tokens.chartStandardHeight + tokens.contentSpacing * 2;
+    final mixPlaceholderHeight = AppCategoryDonutCard.loadingBlockHeight(tokens);
 
     if (showSkeleton) {
       return Column(
@@ -245,7 +245,7 @@ class _OverviewHomeStagedBelowKpisState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           SizedBox(height: tokens.sectionSpacing),
-          const SizedBox(height: _mixPlaceholderHeight),
+          SizedBox(height: mixPlaceholderHeight),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: paymentBarChartHeight),
           SizedBox(height: tokens.sectionSpacing),
@@ -275,13 +275,15 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: Duration.zero,
           loadingSemanticsLabel: l10n.overviewLoadingPaymentMixSemantics,
           child: _belowKpisStage >= 1
-              ? RepaintBoundary(
-                  child: OverviewPaymentMixCard(
-                    l10n: l10n,
-                    methods: overview.paymentMethods,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewPaymentMixCard(
+                      l10n: l10n,
+                      methods: overview.paymentMethods,
+                    ),
                   ),
                 )
-              : const SizedBox(height: _mixPlaceholderHeight),
+              : SizedBox(height: mixPlaceholderHeight),
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
@@ -289,10 +291,12 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: const Duration(milliseconds: 80),
           loadingSemanticsLabel: l10n.overviewLoadingPaymentBarSemantics,
           child: _belowKpisStage >= 2
-              ? RepaintBoundary(
-                  child: OverviewPaymentBarChart(
-                    l10n: l10n,
-                    methods: overview.paymentMethods,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewPaymentBarChart(
+                      l10n: l10n,
+                      methods: overview.paymentMethods,
+                    ),
                   ),
                 )
               : SizedBox(height: paymentBarChartHeight),
@@ -303,11 +307,13 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: const Duration(milliseconds: 40),
           loadingSemanticsLabel: l10n.overviewLoadingMonthlyParcelsSemantics,
           child: _belowKpisStage >= 3
-              ? RepaintBoundary(
-                  child: OverviewMonthlyParcelsComboChart(
-                    l10n: l10n,
-                    points: overview.monthlyParcelTrend,
-                    loadFailed: overview.monthlyParcelTrendLoadFailed,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewMonthlyParcelsComboChart(
+                      l10n: l10n,
+                      points: overview.monthlyParcelTrend,
+                      loadFailed: overview.monthlyParcelTrendLoadFailed,
+                    ),
                   ),
                 )
               : SizedBox(height: chartBlockHeight),
@@ -318,11 +324,13 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: const Duration(milliseconds: 80),
           loadingSemanticsLabel: l10n.overviewLoadingWeekdaySalesSemantics,
           child: _belowKpisStage >= 4
-              ? RepaintBoundary(
-                  child: OverviewWeekdaySalesTrendChart(
-                    l10n: l10n,
-                    points: overview.weekdaySalesTrend,
-                    loadFailed: overview.weekdaySalesTrendLoadFailed,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewWeekdaySalesTrendChart(
+                      l10n: l10n,
+                      points: overview.weekdaySalesTrend,
+                      loadFailed: overview.weekdaySalesTrendLoadFailed,
+                    ),
                   ),
                 )
               : SizedBox(height: chartBlockHeight),
@@ -333,11 +341,13 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: const Duration(milliseconds: 100),
           loadingSemanticsLabel: l10n.overviewLoadingWeekdayUserSalesSemantics,
           child: _belowKpisStage >= 5
-              ? RepaintBoundary(
-                  child: OverviewWeekdayUserSalesTrendChart(
-                    l10n: l10n,
-                    points: overview.weekdayUserSalesTrend,
-                    loadFailed: overview.weekdayUserSalesTrendLoadFailed,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewWeekdayUserSalesTrendChart(
+                      l10n: l10n,
+                      points: overview.weekdayUserSalesTrend,
+                      loadFailed: overview.weekdayUserSalesTrendLoadFailed,
+                    ),
                   ),
                 )
               : SizedBox(height: chartBlockHeight),
@@ -354,40 +364,81 @@ class _OverviewHomeStagedBelowKpisState
                       tokens.sectionSpacing +
                       _userRankingPlaceholderHeight(tokens),
                 )
-              : RepaintBoundary(
-                  key: const ValueKey<String>('overview-agent-ranking'),
-                  child: Builder(
-                    builder: (context) {
-                      final rankings = _sortedRankings(overview);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          OverviewAgentRankingCard(
-                            l10n: l10n,
-                            agentRankings: rankings.agents,
-                          ),
-                          SizedBox(height: tokens.sectionSpacing),
-                          if (_belowKpisStage >= 7)
-                            RepaintBoundary(
-                              key: const ValueKey<String>(
-                                'overview-user-ranking',
-                              ),
-                              child: OverviewUserRankingCard(
-                                l10n: l10n,
-                                userRankings: rankings.users,
-                              ),
-                            )
-                          else
-                            SizedBox(
-                              height: _userRankingPlaceholderHeight(tokens),
+              : _StagedFadeIn(
+                  child: RepaintBoundary(
+                    key: const ValueKey<String>('overview-agent-ranking'),
+                    child: Builder(
+                      builder: (context) {
+                        final rankings = _sortedRankings(overview);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            OverviewAgentRankingCard(
+                              l10n: l10n,
+                              agentRankings: rankings.agents,
                             ),
-                        ],
-                      );
-                    },
+                            SizedBox(height: tokens.sectionSpacing),
+                            if (_belowKpisStage >= 7)
+                              _StagedFadeIn(
+                                child: RepaintBoundary(
+                                  key: const ValueKey<String>(
+                                    'overview-user-ranking',
+                                  ),
+                                  child: OverviewUserRankingCard(
+                                    l10n: l10n,
+                                    userRankings: rankings.users,
+                                  ),
+                                ),
+                              )
+                            else
+                              SizedBox(
+                                height: _userRankingPlaceholderHeight(tokens),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
         ),
       ],
+    );
+  }
+}
+
+/// Plays a one-shot fade + subtle slide-up the first time the wrapped chart is
+/// mounted by the staged pipeline. Subsequent rebuilds (sibling stages
+/// advancing, selection changes, etc.) keep it at the final state — Flutter
+/// preserves the [TweenAnimationBuilder] state because the element identity
+/// does not change between staged-mounter rebuilds.
+class _StagedFadeIn extends StatelessWidget {
+  const _StagedFadeIn({required this.child});
+
+  final Widget child;
+
+  static const Duration _duration = Duration(milliseconds: 220);
+  static const double _slideOffsetPx = 6;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) {
+      return child;
+    }
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: _duration,
+      curve: Curves.easeOutCubic,
+      builder: (context, t, c) {
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * _slideOffsetPx),
+            child: c,
+          ),
+        );
+      },
+      child: child,
     );
   }
 }

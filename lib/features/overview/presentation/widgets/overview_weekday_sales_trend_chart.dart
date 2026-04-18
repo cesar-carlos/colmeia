@@ -152,8 +152,6 @@ class _OverviewWeekdaySalesTrendChartState
           kind: OverviewHomeBarChartKind.weekday,
           l10n: l10n,
           weekdayUsesCurrencyAxis: !isSalesCount,
-          comparisonCategoryCount:
-              chartPoints.isEmpty ? null : chartPoints.length,
         ),
         emptyPlaceholder: showEmptyPlaceholder
             ? Padding(
