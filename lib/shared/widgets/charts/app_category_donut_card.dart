@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -522,20 +523,22 @@ class _DonutSection extends StatelessWidget {
           backgroundColor:
               style.chartBackgroundColor ??
               colors.surfaceContainerLow.withValues(alpha: 0.65),
-          tooltipBehavior: TooltipBehavior(enable: true),
-          onTooltipRender: (args) {
-            final raw = args.pointIndex;
-            final i = raw is int ? raw : raw?.toInt();
-            if (i == null || i < 0 || i >= segments.length) {
-              return;
-            }
-            final segment = segments[i];
-            args
-              ..header = ''
-              ..text =
-                  '${segment.label}: ${segment.resolveValueLabel()} '
+          tooltipBehavior: buildChartTooltipBehavior(
+            context,
+            enable: true,
+          ),
+          onTooltipRender: buildSanitizingTooltipRenderer(
+            bodyResolver: (args) {
+              final raw = args.pointIndex;
+              final i = raw is int ? raw : raw?.toInt();
+              if (i == null || i < 0 || i >= segments.length) {
+                return null;
+              }
+              final segment = segments[i];
+              return '${segment.label}: ${segment.resolveValueLabel()} '
                   '(${segment.resolvePercentLabel(segmentsTotal)})';
-          },
+            },
+          ),
           series: <CircularSeries<AppCategoryDonutSegment, String>>[
             DoughnutSeries<AppCategoryDonutSegment, String>(
               dataSource: segments,

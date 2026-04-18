@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -171,35 +172,23 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
               }
             : null,
         onTooltipRender: enableInteraction
-            ? (args) {
-                // Always clear Syncfusion's default header ("Series 0") — the
-                // bar payload already includes the category name in the body.
-                args.header = '';
-                if (tooltipLabels == null) {
-                  return;
-                }
-                final index = args.pointIndex?.toInt();
-                if (index != null &&
-                    index >= 0 &&
-                    index < tooltipLabels!.length) {
-                  final tooltipLabel = tooltipLabels![index];
-                  if (tooltipLabel?.trim().isNotEmpty ?? false) {
-                    args.text = tooltipLabel;
-                  }
-                }
-              }
+            ? buildSanitizingTooltipRenderer(
+                bodyResolver: tooltipLabels == null
+                    ? null
+                    : (args) {
+                        final index = args.pointIndex?.toInt();
+                        if (index == null ||
+                            index < 0 ||
+                            index >= tooltipLabels!.length) {
+                          return null;
+                        }
+                        return tooltipLabels![index];
+                      },
+              )
             : null,
-        tooltipBehavior: TooltipBehavior(
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
           enable: enableInteraction && style.showTooltip,
-          color: colorScheme.inverseSurface,
-          textStyle: TextStyle(
-            color: colorScheme.onInverseSurface,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-          borderWidth: 0,
-          decimalPlaces: 0,
-          duration: 2400,
         ),
         primaryXAxis: CategoryAxis(
           isVisible: style.showXAxis && xAxisLabelsVisible,
@@ -276,8 +265,11 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             borderRadius: style.barBorderRadius,
             borderColor: style.borderColor ?? Colors.transparent,
             borderWidth: style.borderWidth ?? 0,
-            animationDuration:
-                style.animationDuration?.inMilliseconds.toDouble() ?? 1500,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: style.animationDuration,
+              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+            ),
             selectionBehavior: style.enableTapHighlight && enableInteraction
                 ? SelectionBehavior(
                     enable: true,

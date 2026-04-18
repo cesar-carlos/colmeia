@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_stacked_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -62,6 +63,23 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
       );
     }
 
+    final animationMs = resolveChartAnimationDurationMs(
+      context: context,
+      styleDuration: style.animationDuration,
+      defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+    );
+
+    SelectionBehavior? buildSelectionBehavior() {
+      if (!style.enableTapHighlight) {
+        return null;
+      }
+      return SelectionBehavior(
+        enable: true,
+        unselectedOpacity:
+            style.tapHighlightDimmedOpacity.clamp(0, 1).toDouble(),
+      );
+    }
+
     final resolvedSeries = <CartesianSeries<G, String>>[];
     for (var i = 0; i < series.length; i++) {
       final s = series[i];
@@ -96,8 +114,8 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
               color: color,
               width: style.barWidth ?? 0.7,
               spacing: style.spacing ?? 0.2,
-              animationDuration:
-                  style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+              animationDuration: animationMs,
+              selectionBehavior: buildSelectionBehavior(),
               dataLabelSettings: DataLabelSettings(
                 isVisible: style.showDataLabels,
                 textStyle: style.dataLabelTextStyle,
@@ -115,8 +133,8 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
               color: color,
               width: style.barWidth ?? 0.7,
               spacing: style.spacing ?? 0.2,
-              animationDuration:
-                  style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+              animationDuration: animationMs,
+              selectionBehavior: buildSelectionBehavior(),
               dataLabelSettings: DataLabelSettings(
                 isVisible: style.showDataLabels,
                 textStyle: style.dataLabelTextStyle,
@@ -136,8 +154,8 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
               color: color,
               width: style.barWidth ?? 0.7,
               spacing: style.spacing ?? 0.2,
-              animationDuration:
-                  style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+              animationDuration: animationMs,
+              selectionBehavior: buildSelectionBehavior(),
               dataLabelSettings: DataLabelSettings(
                 isVisible: style.showDataLabels,
                 textStyle: style.dataLabelTextStyle,
@@ -155,8 +173,8 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
               color: color,
               width: style.barWidth ?? 0.7,
               spacing: style.spacing ?? 0.2,
-              animationDuration:
-                  style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+              animationDuration: animationMs,
+              selectionBehavior: buildSelectionBehavior(),
               dataLabelSettings: DataLabelSettings(
                 isVisible: style.showDataLabels,
                 textStyle: style.dataLabelTextStyle,
@@ -187,7 +205,15 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
             child: SfCartesianChart(
               margin: style.chartPadding ?? EdgeInsets.zero,
               plotAreaBorderWidth: 0,
-              tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+              selectionType: style.enableTapHighlight
+                  ? SelectionType.point
+                  : SelectionType.series,
+              onTooltipRender: buildSanitizingTooltipRenderer(),
+              tooltipBehavior: buildChartTooltipBehavior(
+                context,
+                enable: style.showTooltip,
+                shared: true,
+              ),
               legend: Legend(
                 isVisible: style.showLegend,
                 position: LegendPosition.bottom,

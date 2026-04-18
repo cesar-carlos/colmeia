@@ -11,6 +11,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:flutter/material.dart';
 
 /// Stages the payment mix donut and each Syncfusion-heavy chart on separate
@@ -201,6 +202,8 @@ class _OverviewHomeStagedBelowKpisState
               l10n: l10n,
               points: displayOverview.monthlyParcelTrend,
               loadFailed: displayOverview.monthlyParcelTrendLoadFailed,
+              loadFailureMessage:
+                  displayOverview.monthlyParcelTrendLoadFailureMessage,
             ),
           ),
           SizedBox(height: tokens.sectionSpacing),
@@ -212,6 +215,8 @@ class _OverviewHomeStagedBelowKpisState
               l10n: l10n,
               points: displayOverview.weekdaySalesTrend,
               loadFailed: displayOverview.weekdaySalesTrendLoadFailed,
+              loadFailureMessage:
+                  displayOverview.weekdaySalesTrendLoadFailureMessage,
             ),
           ),
           SizedBox(height: tokens.sectionSpacing),
@@ -223,6 +228,8 @@ class _OverviewHomeStagedBelowKpisState
               l10n: l10n,
               points: displayOverview.weekdayUserSalesTrend,
               loadFailed: displayOverview.weekdayUserSalesTrendLoadFailed,
+              loadFailureMessage:
+                  displayOverview.weekdayUserSalesTrendLoadFailureMessage,
             ),
           ),
           SizedBox(height: tokens.sectionSpacing),
@@ -313,6 +320,8 @@ class _OverviewHomeStagedBelowKpisState
                       l10n: l10n,
                       points: overview.monthlyParcelTrend,
                       loadFailed: overview.monthlyParcelTrendLoadFailed,
+                      loadFailureMessage:
+                          overview.monthlyParcelTrendLoadFailureMessage,
                     ),
                   ),
                 )
@@ -330,6 +339,8 @@ class _OverviewHomeStagedBelowKpisState
                       l10n: l10n,
                       points: overview.weekdaySalesTrend,
                       loadFailed: overview.weekdaySalesTrendLoadFailed,
+                      loadFailureMessage:
+                          overview.weekdaySalesTrendLoadFailureMessage,
                     ),
                   ),
                 )
@@ -347,6 +358,8 @@ class _OverviewHomeStagedBelowKpisState
                       l10n: l10n,
                       points: overview.weekdayUserSalesTrend,
                       loadFailed: overview.weekdayUserSalesTrendLoadFailed,
+                      loadFailureMessage:
+                          overview.weekdayUserSalesTrendLoadFailureMessage,
                     ),
                   ),
                 )
@@ -406,39 +419,8 @@ class _OverviewHomeStagedBelowKpisState
   }
 }
 
-/// Plays a one-shot fade + subtle slide-up the first time the wrapped chart is
-/// mounted by the staged pipeline. Subsequent rebuilds (sibling stages
-/// advancing, selection changes, etc.) keep it at the final state — Flutter
-/// preserves the [TweenAnimationBuilder] state because the element identity
-/// does not change between staged-mounter rebuilds.
-class _StagedFadeIn extends StatelessWidget {
-  const _StagedFadeIn({required this.child});
-
-  final Widget child;
-
-  static const Duration _duration = Duration(milliseconds: 220);
-  static const double _slideOffsetPx = 6;
-
-  @override
-  Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) {
-      return child;
-    }
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: _duration,
-      curve: Curves.easeOutCubic,
-      builder: (context, t, c) {
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, (1 - t) * _slideOffsetPx),
-            child: c,
-          ),
-        );
-      },
-      child: child,
-    );
-  }
-}
+/// Local alias kept for source-compatibility with the staged-mounter call
+/// sites; the actual widget lives in
+/// [lib/shared/widgets/charts/app_chart_fade_in.dart] so any other dashboard
+/// can opt into the same entrance treatment without copy/pasting it.
+typedef _StagedFadeIn = AppChartFadeIn;

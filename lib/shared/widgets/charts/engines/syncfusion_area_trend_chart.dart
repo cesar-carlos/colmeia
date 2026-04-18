@@ -4,6 +4,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_formatters.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -89,8 +90,11 @@ class SyncfusionAreaTrendChart extends StatelessWidget {
           borderColor: seriesColor,
           color: solidFill,
           gradient: gradient,
-          animationDuration:
-              style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+          animationDuration: resolveChartAnimationDurationMs(
+            context: context,
+            styleDuration: style.animationDuration,
+            defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+          ),
           markerSettings: MarkerSettings(
             isVisible: style.showMarkers,
             height: style.markerSize ?? 6,
@@ -123,7 +127,12 @@ class SyncfusionAreaTrendChart extends StatelessWidget {
       child: SfCartesianChart(
         margin: style.chartPadding ?? EdgeInsets.zero,
         plotAreaBorderWidth: 0,
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+        onTooltipRender: buildSanitizingTooltipRenderer(),
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
+          enable: style.showTooltip,
+          shared: isMultiSeries,
+        ),
         trackballBehavior: style.showTrackball
             ? TrackballBehavior(
                 enable: true,

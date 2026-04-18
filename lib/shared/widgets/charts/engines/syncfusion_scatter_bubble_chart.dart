@@ -2,6 +2,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_scatter_bubble_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -61,25 +62,34 @@ class SyncfusionScatterBubbleChart<T> extends StatelessWidget {
       );
     }
 
+    final animationMs = resolveChartAnimationDurationMs(
+      context: context,
+      styleDuration: null,
+      defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+    );
+
     return SizedBox(
       height: resolvedHeight,
       child: SfCartesianChart(
         margin: style.chartPadding ?? EdgeInsets.zero,
         plotAreaBorderWidth: 0,
-        onTooltipRender: tooltipLabelBuilder == null
-            ? null
-            : (args) {
-                final pointIndex = args.pointIndex?.toInt();
-                if (pointIndex != null &&
-                    pointIndex >= 0 &&
-                    pointIndex < items.length) {
-                  final label = tooltipLabelBuilder!.call(items[pointIndex]);
-                  if (label?.trim().isNotEmpty ?? false) {
-                    args.text = label;
+        onTooltipRender: buildSanitizingTooltipRenderer(
+          bodyResolver: tooltipLabelBuilder == null
+              ? null
+              : (args) {
+                  final pointIndex = args.pointIndex?.toInt();
+                  if (pointIndex == null ||
+                      pointIndex < 0 ||
+                      pointIndex >= items.length) {
+                    return null;
                   }
-                }
-              },
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+                  return tooltipLabelBuilder!.call(items[pointIndex]);
+                },
+        ),
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
+          enable: style.showTooltip,
+        ),
         legend: Legend(isVisible: style.showLegend),
         primaryXAxis: NumericAxis(
           minimum: style.minX?.toDouble(),
@@ -123,6 +133,7 @@ class SyncfusionScatterBubbleChart<T> extends StatelessWidget {
           if (bubbleSizeBuilder == null)
             ScatterSeries<T, num>(
               dataSource: items,
+              animationDuration: animationMs,
               xValueMapper: (item, _) => xValueBuilder(item),
               yValueMapper: (item, _) => yValueBuilder(item),
               dataLabelMapper: labelBuilder == null
@@ -153,6 +164,7 @@ class SyncfusionScatterBubbleChart<T> extends StatelessWidget {
           else
             BubbleSeries<T, num>(
               dataSource: items,
+              animationDuration: animationMs,
               xValueMapper: (item, _) => xValueBuilder(item),
               yValueMapper: (item, _) => yValueBuilder(item),
               sizeValueMapper: (item, _) => bubbleSizeBuilder!(item),

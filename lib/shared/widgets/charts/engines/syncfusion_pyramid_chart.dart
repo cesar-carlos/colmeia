@@ -1,6 +1,7 @@
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_pyramid_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -80,26 +81,34 @@ class SyncfusionPyramidChart<T> extends StatelessWidget {
           position: LegendPosition.bottom,
           overflowMode: LegendItemOverflowMode.wrap,
         ),
-        onTooltipRender: tooltipLabelBuilder == null
-            ? null
-            : (args) {
-                final pointIndex = args.pointIndex?.toInt();
-                if (pointIndex != null &&
-                    pointIndex >= 0 &&
-                    pointIndex < items.length) {
+        onTooltipRender: buildSanitizingTooltipRenderer(
+          bodyResolver: tooltipLabelBuilder == null
+              ? null
+              : (args) {
+                  final pointIndex = args.pointIndex?.toInt();
+                  if (pointIndex == null ||
+                      pointIndex < 0 ||
+                      pointIndex >= items.length) {
+                    return null;
+                  }
                   final item = items[pointIndex];
-                  final label = tooltipLabelBuilder!(
+                  return tooltipLabelBuilder!(
                     item,
                     valueBuilder(item),
                   );
-                  if (label?.trim().isNotEmpty ?? false) {
-                    args.text = label;
-                  }
-                }
-              },
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+                },
+        ),
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
+          enable: style.showTooltip,
+        ),
         series: PyramidSeries<T, String>(
           dataSource: items,
+          animationDuration: resolveChartAnimationDurationMs(
+            context: context,
+            styleDuration: null,
+            defaultMs: AppChartEngineAnimationDefaults.circularSeriesMs,
+          ),
           xValueMapper: (item, _) => labelBuilder(item),
           yValueMapper: (item, _) => valueBuilder(item),
           pointColorMapper: (item, index) {

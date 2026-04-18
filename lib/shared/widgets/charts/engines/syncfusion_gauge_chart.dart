@@ -57,6 +57,15 @@ class SyncfusionGaugeChart extends StatelessWidget {
         hasRenderableRange && (targetValue?.isFinite ?? false)
         ? targetValue!.clamp(resolvedMin, resolvedMax)
         : null;
+    // Respect OS reduce-motion: SfRadialGauge animations are eye-catching but
+    // can be disorienting for users with vestibular sensitivity.
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final pointerAnimationMs = reduceMotion
+        ? 0.0
+        : style.animationDuration.toDouble();
+    final pointerAnimationEnabled =
+        !reduceMotion && style.animationDuration > 0;
 
     if (isLoading) {
       return SizedBox(
@@ -151,14 +160,14 @@ class SyncfusionGaugeChart extends StatelessWidget {
                     sizeUnit: GaugeSizeUnit.factor,
                     color: chartTheme.primaryColor,
                     cornerStyle: CornerStyle.bothCurve,
-                    enableAnimation: true,
-                    animationDuration: style.animationDuration.toDouble(),
+                    enableAnimation: pointerAnimationEnabled,
+                    animationDuration: pointerAnimationMs,
                   ),
                 if (style.showNeedle)
                   NeedlePointer(
                     value: resolvedValue,
-                    enableAnimation: true,
-                    animationDuration: style.animationDuration.toDouble(),
+                    enableAnimation: pointerAnimationEnabled,
+                    animationDuration: pointerAnimationMs,
                     needleColor: chartTheme.primaryColor,
                     knobStyle: KnobStyle(color: chartTheme.primaryColor),
                     tailStyle: TailStyle(

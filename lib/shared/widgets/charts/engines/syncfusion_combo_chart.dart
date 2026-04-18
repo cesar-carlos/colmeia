@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -57,7 +58,6 @@ class SyncfusionComboChart<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final colors = Theme.of(context).appColors;
-    final colorScheme = Theme.of(context).colorScheme;
     final resolvedHeight = style.height ?? chartTheme.height;
     final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
     final resolvedBarColor = style.barColor ?? chartTheme.primaryColor;
@@ -126,27 +126,14 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 zoomMode: ZoomMode.x,
               )
             : null,
-        onTooltipRender: enableTooltip
-            ? (args) {
-                // Drop Syncfusion's default series header ("Series 0").
-                // The shared tooltip already lists both series with their
-                // explicit [name] (bar/line series labels).
-                args.header = '';
-              }
-            : null,
-        tooltipBehavior: TooltipBehavior(
+        onTooltipRender:
+            enableTooltip ? buildSanitizingTooltipRenderer() : null,
+        // One tooltip for bar + line so the line stays readable when the
+        // right Y-axis ticks are hidden ([AppComboChartStyle.showRightYAxis]).
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
           enable: enableTooltip && style.showTooltip,
-          // One tooltip for bar + line so the line stays readable when the
-          // right Y-axis ticks are hidden ([AppComboChartStyle.showRightYAxis]).
           shared: true,
-          color: colorScheme.inverseSurface,
-          textStyle: TextStyle(
-            color: colorScheme.onInverseSurface,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-          borderWidth: 0,
-          duration: 2400,
         ),
         legend: Legend(
           isVisible: showLegendInChart && style.showLegend,
@@ -218,8 +205,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             width: style.barWidth ?? 0.6,
             spacing: style.barSpacing ?? 0.2,
             borderRadius: style.barBorderRadius,
-            animationDuration:
-                style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: style.animationDuration,
+              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+            ),
             dataLabelMapper: barLabelsVisible
                 ? (data, _) =>
                       barDataLabelBuilder?.call(data, barValueBuilder(data)) ??
@@ -250,8 +240,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 ? resolvedLineColor.withValues(alpha: 0)
                 : resolvedLineColor,
             width: style.lineWidth ?? 2.5,
-            animationDuration:
-                style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: style.animationDuration,
+              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+            ),
             markerSettings: MarkerSettings(
               isVisible: style.showMarkers && layout != _ComboLayout.yAxisStrip,
               height: 6,

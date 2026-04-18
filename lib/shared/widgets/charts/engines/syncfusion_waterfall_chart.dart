@@ -2,6 +2,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_waterfall_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -65,21 +66,26 @@ class SyncfusionWaterfallChart<T> extends StatelessWidget {
       child: SfCartesianChart(
         margin: style.chartPadding ?? EdgeInsets.zero,
         plotAreaBorderWidth: 0,
-        onTooltipRender: tooltipLabels == null
-            ? null
-            : (args) {
-                final pointIndex = args.pointIndex;
-                final index = pointIndex?.toInt();
-                if (index != null &&
-                    index >= 0 &&
-                    index < tooltipLabels!.length) {
-                  final tooltipLabel = tooltipLabels![index];
-                  if (tooltipLabel?.trim().isNotEmpty ?? false) {
-                    args.text = tooltipLabel;
+        selectionType: style.enableTapHighlight
+            ? SelectionType.point
+            : SelectionType.series,
+        onTooltipRender: buildSanitizingTooltipRenderer(
+          bodyResolver: tooltipLabels == null
+              ? null
+              : (args) {
+                  final index = args.pointIndex?.toInt();
+                  if (index == null ||
+                      index < 0 ||
+                      index >= tooltipLabels!.length) {
+                    return null;
                   }
-                }
-              },
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+                  return tooltipLabels![index];
+                },
+        ),
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
+          enable: style.showTooltip,
+        ),
         primaryXAxis: CategoryAxis(
           isVisible: style.showXAxis,
           majorGridLines: const MajorGridLines(width: 0),
@@ -125,8 +131,18 @@ class SyncfusionWaterfallChart<T> extends StatelessWidget {
                   colors.outlineVariant.withValues(alpha: 0.8),
               width: 1.5,
             ),
-            animationDuration:
-                style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: style.animationDuration,
+              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+            ),
+            selectionBehavior: style.enableTapHighlight
+                ? SelectionBehavior(
+                    enable: true,
+                    unselectedOpacity:
+                        style.tapHighlightDimmedOpacity.clamp(0, 1).toDouble(),
+                  )
+                : null,
             dataLabelMapper: dataLabels == null
                 ? null
                 : (item, index) => dataLabels![index],

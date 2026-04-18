@@ -4,6 +4,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_time_series_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -59,7 +60,11 @@ class SyncfusionTimeSeriesChart extends StatelessWidget {
       child: SfCartesianChart(
         margin: style.chartPadding ?? EdgeInsets.zero,
         plotAreaBorderWidth: 0,
-        tooltipBehavior: TooltipBehavior(enable: style.showTooltip),
+        onTooltipRender: buildSanitizingTooltipRenderer(),
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
+          enable: style.showTooltip,
+        ),
         primaryXAxis: const CategoryAxis(
           majorGridLines: MajorGridLines(width: 0),
         ),
@@ -82,8 +87,11 @@ class SyncfusionTimeSeriesChart extends StatelessWidget {
             dataSource: points,
             xValueMapper: (point, _) => point.label,
             yValueMapper: (point, _) => point.value,
-            animationDuration:
-                style.animationDuration?.inMilliseconds.toDouble() ?? 1500,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: style.animationDuration,
+              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+            ),
             borderWidth: style.lineWidth ?? 3,
             gradient: chartTheme.gradient,
             onPointTap: onPointTap == null

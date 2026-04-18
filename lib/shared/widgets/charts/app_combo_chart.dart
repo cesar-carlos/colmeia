@@ -1,4 +1,5 @@
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_combo_chart.dart';
@@ -214,6 +215,25 @@ class AppComboChart<T> extends StatelessWidget {
     this.isLoading = false,
     this.emptyPlaceholder,
   });
+
+  /// Same idea as `AppComparisonBarChart.loadingBlockHeight` / the donut
+  /// card helper: returns the height the engine reserves so callers can
+  /// allocate the same space for an external placeholder while staged
+  /// mounting.
+  static double loadingBlockHeight(
+    AppThemeTokens tokens, {
+    AppChartPreset preset = AppChartPreset.standard,
+    double? styleHeight,
+  }) {
+    if (styleHeight != null) {
+      return styleHeight;
+    }
+    return switch (preset) {
+      AppChartPreset.compact => tokens.chartCompactHeight,
+      AppChartPreset.standard => tokens.chartStandardHeight,
+      AppChartPreset.explorable => tokens.chartStandardHeight,
+    };
+  }
 
   final List<T> items;
   final String Function(T item) xLabelBuilder;

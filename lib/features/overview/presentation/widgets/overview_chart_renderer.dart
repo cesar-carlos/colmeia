@@ -1,3 +1,7 @@
+// NOT_RENDERED: only consumed by `OverviewSalesTrendCard`, which is itself
+// not mounted in any page or route today. Kept for the upcoming overview
+// revamp. See `lib/features/overview/presentation/widgets/README.md`.
+
 import 'package:colmeia/features/overview/domain/entities/overview_chart_point.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';

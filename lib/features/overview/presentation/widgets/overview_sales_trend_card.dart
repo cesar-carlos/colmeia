@@ -1,3 +1,8 @@
+// NOT_RENDERED: this card is currently not wired to any page or route. It is
+// kept for the upcoming overview revamp; modifications here will not surface
+// in the running app until a host page mounts it. See
+// `lib/features/overview/presentation/widgets/README.md` for the inventory.
+
 import 'package:colmeia/features/overview/domain/entities/overview_chart_point.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_renderer.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
@@ -375,6 +376,28 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     this.plotFloorAccessibilityNotice,
     this.extremeSpreadAccessibilityNotice,
   });
+
+  /// Height the engine will reserve for the chart body when `style.height` is
+  /// not set. Useful for callers that render their own staged-mounting
+  /// placeholder and need to keep the same vertical footprint between the
+  /// placeholder and the eventual real card (avoids layout shift).
+  ///
+  /// When [styleHeight] is non-null it is returned verbatim — mirrors the
+  /// engine resolution (`style.height ?? chartTheme.height`).
+  static double loadingBlockHeight(
+    AppThemeTokens tokens, {
+    AppChartPreset preset = AppChartPreset.standard,
+    double? styleHeight,
+  }) {
+    if (styleHeight != null) {
+      return styleHeight;
+    }
+    return switch (preset) {
+      AppChartPreset.compact => tokens.chartCompactHeight,
+      AppChartPreset.standard => tokens.chartStandardHeight,
+      AppChartPreset.explorable => tokens.chartStandardHeight,
+    };
+  }
 
   /// Data items to plot.
   final List<T> items;

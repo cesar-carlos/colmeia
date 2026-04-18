@@ -1,3 +1,8 @@
+// NOT_RENDERED: not mounted by any current page/route. The home dashboard
+// uses `OverviewPaymentMixCard` (payment-method mix), not this category mix.
+// Kept for the upcoming overview revamp; modifications here will not surface
+// in the running app. See `lib/features/overview/presentation/widgets/README.md`.
+
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_category_share.dart';
 import 'package:colmeia/l10n/app_localizations.dart';

@@ -15,6 +15,8 @@ class AppRadialBarChartStyle {
     this.trackColor,
     this.trackOpacity = 0.14,
     this.dataLabelTextStyle,
+    this.enableTapHighlight = false,
+    this.tapHighlightDimmedOpacity = 0.35,
   });
 
   final double? height;
@@ -26,6 +28,15 @@ class AppRadialBarChartStyle {
   final Color? trackColor;
   final double trackOpacity;
   final TextStyle? dataLabelTextStyle;
+
+  /// When true, tapping a ring highlights it (Syncfusion `SelectionBehavior`):
+  /// the tapped segment keeps full opacity while the others fade to
+  /// [tapHighlightDimmedOpacity]. Independent from `onSegmentTap` callbacks.
+  final bool enableTapHighlight;
+
+  /// Opacity applied to non-selected rings while [enableTapHighlight] is
+  /// active. Defaults to `0.35`; set to `1.0` to disable the dim.
+  final double tapHighlightDimmedOpacity;
 }
 
 class AppRadialBarChart<T> extends StatelessWidget {
