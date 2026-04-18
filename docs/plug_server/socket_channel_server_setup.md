@@ -185,6 +185,8 @@ ativos. Se o deploy atual tem override divergente, ajustar conforme a tabela.
 | `SOCKET_RELAY_MAX_PENDING_REQUESTS_PER_CONSUMER` | `128` | Idem. |
 | `SOCKET_RELAY_MAX_BUFFERED_CHUNKS_PER_REQUEST` | `256` | Streaming PR-L+ p2 do cliente: `SOCKET_RELAY_STREAM_INITIAL_WINDOW=32` + `SOCKET_RELAY_STREAM_REFILL_THRESHOLD=16`. Buffer do servidor cobre folga. Manter. |
 | `SOCKET_RELAY_IDEMPOTENCY_TTL_MS` | `300000` | Janela de dedup do servidor. Cliente ainda **não** explora idempotência via `meta` (P3 / Fase 3 do plano). Manter. |
+| `SOCKET_RELAY_IDEMPOTENCY_MAX_ENTRIES_PER_CONVERSATION` | `1024` | Cap FIFO por conversa para o mapa de dedup. Proteção interna; em condições normais o cliente não deve notar. |
+| `SOCKET_RELAY_IDEMPOTENCY_MAX_TOTAL_ENTRIES` | `100000` | Cap FIFO global do mapa de dedup. `0` desativa. Manter o default salvo pressão de memória observada. |
 | `SOCKET_RELAY_RATE_LIMIT_MAX_REQUESTS` | `64` por janela de `10s` | Cliente respeita o gate de inflight (8/agente) + coalescing. Default folgado. |
 | `SOCKET_RELAY_RATE_LIMIT_MAX_CONVERSATION_STARTS` | `8` por janela de `10s` | Cliente abre 1 conversation por agente, sob demanda. Default folgado. |
 | `SOCKET_RELAY_OUTBOUND_OVERLOAD_BACKLOG` | `200` | Shedding por backlog. `0` desativa. Manter para proteção. |
@@ -203,6 +205,8 @@ ativos. Se o deploy atual tem override divergente, ajustar conforme a tabela.
 | `SOCKET_REST_AGENT_MAX_INFLIGHT` | `32` | Limite REST↔agent. Independente do Socket. |
 | `SOCKET_REST_STREAM_PULL_WINDOW_SIZE` | `256` | Janela do REST quando o agente faz streaming. Independente do Socket. |
 | `SOCKET_REST_SQL_STREAM_MATERIALIZE_MAX_ROWS` | `1000000` | Teto de linhas materializadas em REST. Cliente respeita `max_rows` por request. |
+| `SOCKET_REST_SQL_STREAM_MATERIALIZE_MAX_CHUNKS` | `100000` | Novo default defensivo para limitar `rpc:chunk` na materialização REST. |
+| `SOCKET_REST_SQL_STREAM_MATERIALIZE_MAX_BYTES` | `268435456` (256 MiB) | Teto agregado de bytes materializados em REST; importante para queries com linhas muito largas / JSONB grande. |
 
 ---
 
