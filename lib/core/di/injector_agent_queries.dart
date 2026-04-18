@@ -1,4 +1,7 @@
+import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/core/socket/agent_command_sender.dart';
+import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
@@ -24,8 +27,14 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execution_eligibility_checker.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/hybrid_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
@@ -90,10 +99,37 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ..registerLazySingleton<AgentSqlExecutionEligibilityPolicy>(
       () => const AgentSqlExecutionEligibilityPolicy(),
     )
+    ..registerLazySingleton<AgentSqlExecuteRequestToBridgeBody>(
+      () => const AgentSqlExecuteRequestToBridgeBody(),
+    )
     ..registerLazySingleton<AgentQueriesRemoteDataSource>(
-      () => AppEnvironment.useFakeBackend
-          ? FakeAgentQueriesRemoteDataSource()
-          : ApiAgentQueriesRemoteDataSource(getIt<Dio>()),
+      () {
+        if (AppEnvironment.useFakeBackend) {
+          return FakeAgentQueriesRemoteDataSource();
+        }
+        final base = switch (AppEnvironment.agentBridgeTransport) {
+          AgentBridgeTransport.socket => SocketAgentQueriesRemoteDataSource(
+            sender: getIt<AgentCommandSender>(),
+            bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+          ),
+          AgentBridgeTransport.rest => ApiAgentQueriesRemoteDataSource(
+            dio: getIt<Dio>(),
+            bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+          ),
+        };
+        // PR-L+ part 1: wrap with the per-call selector when the relay
+        // datasource is available (SOCKET_RELAY_ENABLED=true). Requests
+        // with `useRelay: true` flow through the relay channel; everything
+        // else stays on the legacy channel byte-for-byte identical.
+        final relay = _resolveRelayDatasource(getIt);
+        if (relay == null) {
+          return base;
+        }
+        return HybridAgentQueriesRemoteDataSource(
+          baseDelegate: base,
+          relayDelegate: relay,
+        );
+      },
     )
     ..registerLazySingleton<AgentSqlExecutionEligibilityPort>(
       () => AgentSqlExecutionEligibilityChecker(
@@ -460,4 +496,35 @@ void registerInjectorAgentQueries(GetIt getIt) {
             >(),
           ),
     );
+
+  // PR-L+ p3: streaming companion datasource. Lives next to the
+  // unary registrations because both share the same body mapper and
+  // are gated by the same env (`SOCKET_RELAY_ENABLED`). Registered
+  // unconditionally as a lazy singleton; the factory checks
+  // `RelayCommandDispatcher` at construction time, so builds without
+  // the relay layer simply never resolve it.
+  if (getIt.isRegistered<RelayCommandDispatcher>()) {
+    getIt.registerLazySingleton<AgentQueriesStreamingRemoteDataSource>(
+      () => RelayStreamingAgentQueriesRemoteDataSource(
+        dispatcher: getIt<RelayCommandDispatcher>(),
+        bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+        compression: AppEnvironment.socketRelayPayloadFrameCompression,
+      ),
+    );
+  }
+}
+
+/// Returns a [RelayAgentQueriesRemoteDataSource] when the relay layer is
+/// available — i.e. `SOCKET_RELAY_ENABLED=true` registered the dispatcher
+/// in `injector_socket`. Returns `null` otherwise so the agent-queries
+/// stack stays on the unitary `agents:command` / REST path.
+RelayAgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
+  if (!getIt.isRegistered<RelayCommandDispatcher>()) {
+    return null;
+  }
+  return RelayAgentQueriesRemoteDataSource(
+    dispatcher: getIt<RelayCommandDispatcher>(),
+    bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+    compression: AppEnvironment.socketRelayPayloadFrameCompression,
+  );
 }

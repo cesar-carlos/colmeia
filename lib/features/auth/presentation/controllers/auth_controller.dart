@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/authentication_gate.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
@@ -13,7 +14,7 @@ import 'package:colmeia/features/auth/domain/entities/client_registration_submis
 import 'package:colmeia/features/auth/presentation/state/auth_presentation_state.dart';
 import 'package:flutter/foundation.dart';
 
-class AuthController extends ChangeNotifier {
+class AuthController extends ChangeNotifier implements AuthenticationGate {
   AuthController({
     required LoginUseCase loginUseCase,
     required LogoutUseCase logoutUseCase,
@@ -43,6 +44,7 @@ class AuthController extends ChangeNotifier {
 
   AuthPresentationState get presentation => _presentation;
 
+  @override
   bool get isAuthenticated => _presentation.isAuthenticated;
   AuthSession? get session => _presentation.session;
   bool get isLoading => _presentation.isLoading;

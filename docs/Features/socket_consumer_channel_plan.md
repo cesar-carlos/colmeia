@@ -1,6 +1,28 @@
 # Plano — Canal Socket (`/consumers`) para `agent_queries`
 
-> Status: rascunho (planejamento). Sem código produzido ainda.
+> Status: **em execução, código em estado de handoff**. Tudo da Fase 1
+> (PR-A → PR-J: conexão, dispatcher, lifecycle, métricas, jitter,
+> concurrency gate, coalescing, adaptive timeout, batch coordinator,
+> cancel token) + Fase 2 (PR-K PayloadFrame, PR-L relay primitives,
+> PR-L+ p1 selector, p2 streaming, p3 streaming datasource, p3.5
+> collector + adapter, PR-M p1/p2/p3 presença em 3 camadas) +
+> Fase 2.5 (3 smokes e2e contra hub real) +
+> auditoria de boot (B1 flash de login no cold start, B2 race do warm-up,
+> S1 `connection` nullable em REST-only, S2 sign-out gated por transport)
+> entregues.
+>
+> **Pendências remanescentes** (todas operacionais ou esperando
+> insumo externo):
+>
+> 1. **Servidor**: aplicar `SOCKET_CONSUMER_ROLES=user,admin,client`
+>    no `plug_server` (descoberta do primeiro smoke — ver §0.2.1).
+> 2. **Decisão de produto**: identificar a primeira query do
+>    `overview` para PR-L+ p4 (swap de DI trivial usando o adapter
+>    do PR-L+ p3.5).
+> 3. **PR-N** (Hybrid REST↔Socket fallback) — Fase 3, só com baseline
+>    P0 confirmando ganho.
+> 4. **P3** (gzip async via `compute(...)`, dedup pós-reconexão,
+>    OTel propagation) — Fase 3.
 > Autor: planejamento orientado por análise da base atual + docs do `plug_server`.
 > Documentos-fonte do hub:
 >
@@ -23,6 +45,278 @@
 > - `docs/Features/socket_channel_performance_review.md` — review de
 >   desempenho com 10 melhorias priorizadas, matriz de transporte e
 >   estratégia de medição antes/depois.
+
+---
+
+## 0. Estado de implementação (snapshot atual)
+
+> Atualizado após PR-J (cancel token) + auditoria completa de
+> consistência doc↔código. Use como índice rápido — cada item aponta
+> para a seção/PR onde o trabalho aconteceu.
+
+### 0.1 Já em produção (Fase 1.0 + 1.1 + 1.2 + PR-K + PR-L + PR-L+ + PR-M)
+
+| Pacote | Caminho | Origem |
+| ------ | ------- | ------ |
+| Conexão única ao `/consumers` (single-flight + backoff jitter + auth refresh) | `lib/core/socket/consumer_socket_connection.dart`, `socket_reconnect_backoff.dart`, `connection_ready_payload.dart`, `socket_io_client_factory.dart`, `app_socket_url_resolver.dart`, `socket_auth_token_provider.dart` | PR-A, PR-E (jitter) |
+| Dispatcher `agents:command` + correlator + outcomes sealed | `lib/core/socket/socket_command_dispatcher.dart` (port), `socket_command_dispatcher_impl.dart`, `socket_request_correlator.dart`, `agent_command_outcome.dart`, `socket_dispatch_exception.dart` | PR-B |
+| Body mapper compartilhado REST↔Socket | `lib/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart` + datasource `socket_agent_queries_remote_datasource.dart` | PR-B |
+| App lifecycle hook (`pause`/`resume`) + warm-up no login | `lib/app/bootstrap.dart` + `LoginUseCase` integration | PR-C |
+| Telemetria (handshake_ms, dispatch_ms, outcomes, inflight_peak, reconnects) | `lib/core/observability/socket/socket_channel_metrics.dart`, `socket_metrics_listener.dart`, `socket_metrics_snapshot.dart` | PR-D |
+| Per-agent concurrency gate | `lib/core/socket/per_agent_concurrency_gate.dart` (gated por `SOCKET_MAX_INFLIGHT_PER_AGENT`) | PR-F |
+| Request coalescing (key estável) | `lib/core/socket/socket_coalesce_key.dart` + integração no dispatcher impl (`SOCKET_COALESCING_ENABLED`) | PR-G |
+| Adaptive timeout (EWMA por `(agentId, method)`) | `lib/core/socket/agent_latency_oracle.dart` (gated por `SOCKET_TIMEOUT_ADAPTIVE_ENABLED`) | PR-H |
+| Batch coordinator (`command: [...]`, max 32) | `lib/core/socket/agent_command_batch_coordinator.dart` + `agent_command_sender.dart` (port) + `direct_agent_command_sender.dart` (gated por `SOCKET_BATCH_ENABLED`) | PR-I |
+| Cancel token (cancela pendentes em `dispose()` de controllers) — `dispatcher.cancel(rpcId, reason)` + sealed `SocketDispatchCancelled` + helper `SocketCommandCancelToken` (register/unregister/cancelAll/dispose) | `lib/core/socket/socket_command_cancel_token.dart` + delta em `socket_command_dispatcher.dart` (port) / `socket_command_dispatcher_impl.dart` / `socket_dispatch_exception.dart` | PR-J |
+| **PayloadFrame** envelope + codec (auto-gzip + limites 10 MiB / 20×) | `lib/core/socket/payload_frame.dart`, `payload_frame_codec.dart` | PR-K |
+| **`connection:ready` em PayloadFrame** + compat decoder (gated por `SOCKET_CONNECTION_READY_COMPAT_MODE`) | `lib/core/socket/connection_ready_payload.dart` (`PayloadFrameConnectionReadyDecoder`, `CompatConnectionReadyDecoder`), `lib/core/config/connection_ready_compat_mode.dart` | PR-K |
+| **Relay primitives** (conversation, dispatcher unitário, exceptions sealed, outcomes) | `lib/core/socket/relay/` (`relay_event_names.dart`, `relay_dispatch_exception.dart`, `relay_conversation_state.dart`, `relay_conversation.dart`, `relay_conversation_manager.dart`, `relay_command_dispatcher.dart`, `relay_command_dispatcher_impl.dart`, `relay_rpc_outcome.dart`) | PR-L |
+| **Relay datasource** (standalone) reusando o body REST | `lib/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart` | PR-L |
+| **Per-query selector** `useRelay` em `AgentSqlExecuteRequest` (default `false`, **não** vai para o body) | `lib/features/agent_queries/domain/entities/agent_sql_execute_request.dart` | PR-L+ p1 |
+| **Hybrid datasource** (`useRelay==true` ➜ relay; senão base REST/`agents:command`; loga `relay_bypass` quando relay não está disponível) | `lib/features/agent_queries/data/datasources/hybrid_agent_queries_remote_datasource.dart` + auto-wrap no `injector_agent_queries.dart` quando `RelayCommandDispatcher` está registrado | PR-L+ p1 |
+| **Streaming via `sendStreaming(...)`** com auto-pull rolante (`relay:rpc.stream.pull` granted on accept + refill on threshold) e tolerância a `relay:rpc.response` (single-chunk + close) | `lib/core/socket/relay/relay_command_dispatcher.dart` (port) + `relay_command_dispatcher_impl.dart` (refatorado em sealed `_PendingRelay` ↔ `_PendingUnary` / `_PendingStream`); envs `SOCKET_RELAY_STREAM_INITIAL_WINDOW` e `SOCKET_RELAY_STREAM_REFILL_THRESHOLD` | PR-L+ p2 |
+| **Streaming na camada de dados** — port `AgentQueriesStreamingRemoteDataSource` (separado do unary por ISP) + impl `RelayStreamingAgentQueriesRemoteDataSource` reusando `AgentSqlExecuteRequestToBridgeBody` (body byte-igual ao REST). Auto-wire no `injector_agent_queries.dart` apenas quando `RelayCommandDispatcher` está registrado. Pronto pra integrar no `AgentQueryExecutor` numa sub-PR seguinte assim que identificarmos a primeira query do `overview` que materializa muitos rows. | `lib/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart` + `relay_streaming_agent_queries_remote_datasource.dart` + delta no `injector_agent_queries.dart` | PR-L+ p3 |
+| **Collector + adapter** — `RelayCommandDispatcherImpl` agora forwarda o payload de `relay:rpc.complete` como item final do stream (sem isso o collector perderia `total_rows`/`execution_id`/`started_at`/`finished_at`). `BridgeShapedSqlExecuteCollector` agrega chunks em um `Map` no shape do `AgentSqlBridgeResponse.parseSuccess`. `CollectingRelayStreamingAgentQueriesRemoteDataSource` implementa o port unitário via streaming + collector — qualquer repository pode opt-in com 1 swap de DI, **sem** mexer no executor nem na UI. | `lib/features/agent_queries/data/streaming_sql_execute_collector.dart` + `lib/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource.dart` + delta em `lib/core/socket/relay/relay_command_dispatcher_impl.dart` | PR-L+ p3.5 |
+| **Presença em tempo real (Camadas 1+2)** — sealed `AgentPresenceEvent` (`CatalogUpdated`, `Hint`) + port `AgentPresenceStream` + `ObserveAgentPresenceUseCase` + adapters Socket (`ClientAgentProfileUpdatedListener` para `client:agent.profile.updated`, `AgentCommandPresenceHinter` para outcomes de `agents:command`) + composer `SocketAgentPresenceStream` (re-attach automático em reconnect) | `lib/features/client_agents/{domain/events,domain/ports,application/usecases,data/socket}/` + auto-wire no `injector_client_agents.dart` (gated por `SOCKET_PRESENCE_LISTENER_ENABLED`) | PR-M p1 |
+| **Wire-up no `ClientAgentsController`** — subscription opcional via `ObserveAgentPresenceUseCase?` (default `null` mantém UX legada); dedup por `observedAt`; `AgentPresenceCatalogUpdated` ➜ `LoadClientAgentDetailUseCase` + `_upsertApprovedAgentsInMemory`; `AgentPresenceHint` ➜ `copyWith(connectionStatus)` in-memory + Timer debounced (`hintConfirmDelay`, default 5 s) que confirma via REST; `dispose()` cancela sub + timers e é idempotente | `lib/features/client_agents/presentation/controllers/client_agents_controller.dart` + auto-wire no `injector_presentation.dart` (passa `null` quando o use case não está registrado) | PR-M p2 |
+| **Camada 3 REST (`AgentPresencePoller`) + visibility gating** — `Timer.periodic` chama `loadOnlineAgentIds`, converte cada id em `AgentPresenceHint(online:true, source:'polling_rest')`. `ClientAgentsController.onScreenVisible/Hidden` (chamados pela page via `RouteAware`) + observação de `ConsumerSocketConnection.states()` reconciliam o gate: poller liga **só** quando tela visível **AND** socket NÃO conectado. Loop interno do poller re-tick caso `userId` mude mid-flight. | `lib/features/client_agents/application/services/agent_presence_poller.dart` + extensões em `client_agents_controller.dart` + `RouteAware.{didPush,didPopNext,didPushNext,didPop}` em `client_agents_page.dart` + auto-wire no `injector_client_agents.dart` (`AgentPresencePoller`) e `injector_presentation.dart` (passa `AgentPresencePoller?` + `ConsumerSocketConnection?`) | PR-M p3 |
+| **Smoke e2e** (opt-in via tag `e2e`) — `setupE2eSocketBundle({withRelay})` faz login REST + monta `ConsumerSocketConnection` + `SocketCommandDispatcher` (+ relay) sem depender de Hive/secure storage; 3 testes validam handshake + `agents:command` SELECT 1, `RelayCommandDispatcher.sendUnary`, e a Camada 2 de presença (hint após `agents:command_success`) contra o `plug_server` real | `test/integration/e2e/support/e2e_socket_bootstrap.dart` + `socket_consumer_smoke_e2e_test.dart` + `socket_relay_smoke_e2e_test.dart` + `socket_presence_smoke_e2e_test.dart` | smoke e2e |
+
+### 0.2 Cobertura de testes (`flutter test`)
+
+> 973 testes ✅ no momento desta atualização. Diff vs baseline (Phase 1
+> completa em ~838): **+135 testes** (PR-K = +37, PR-L = +25, PR-L+ p1 = +6,
+> PR-L+ p2 = +6, PR-L+ p3 = +6, PR-L+ p3.5 = +6, PR-M p1 = +20, PR-M p2 = +7,
+> PR-M p3 = +13, PR-J = +9).
+>
+> Além disso: **3 smokes e2e** opt-in (não contam no total porque ficam
+> atrás da tag `e2e`, excluída da pipeline padrão). Veja §0.2.1 para
+> rodar contra o `plug_server` real.
+
+Suites principais novas/atualizadas:
+
+- `test/core/socket/payload_frame_test.dart`,
+  `payload_frame_codec_test.dart` (PR-K)
+- `test/core/socket/connection_ready_payload_test.dart` (PR-K — agora cobre
+  `JsonOnly` + `PayloadFrame` + `Compat`)
+- `test/core/socket/relay/relay_event_names_test.dart`,
+  `relay_conversation_test.dart`,
+  `relay_command_dispatcher_impl_test.dart` (PR-L)
+- `test/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource_test.dart`
+  (PR-L)
+- `test/features/agent_queries/data/datasources/hybrid_agent_queries_remote_datasource_test.dart`
+  (PR-L+ p1) — cobre rotas `useRelay=false` ➜ base, `useRelay=true` ➜
+  dispatcher, fallback gracioso quando o relay não está registrado.
+- `test/features/agent_queries/data/agent_sql_execute_request_to_bridge_body_test.dart`
+  ganhou um cenário garantindo que `useRelay` **não** vaza para o body.
+- `test/core/socket/relay/relay_command_dispatcher_streaming_test.dart`
+  (PR-L+ p2) — emit único de `relay:rpc.request`; pull inicial só
+  depois de `accepted`; chunks chegam no `Stream<Map>`; refill rolante
+  quando o crédito cai a/abaixo de `refillThreshold`; `terminal_status:
+  aborted` vira `RelayStreamTerminated`; `relay:rpc.response` (sem
+  chunks) vira single-chunk-then-close; rejeição/timeout/dispose
+  fecham com erro tipado.
+- `test/features/client_agents/domain/events/agent_presence_event_test.dart`
+  (PR-M p1) — campos preservados, `connectionStatusFromHint`, switch
+  exaustivo no sealed.
+- `test/features/client_agents/application/usecases/observe_agent_presence_use_case_test.dart`
+  (PR-M p1) — port repassa o stream untouched.
+- `test/features/client_agents/data/socket/agent_command_presence_hinter_test.dart`
+  (PR-M p1) — Success ➜ hint online; FailedOffline ➜ hint offline;
+  FailedAuth e FailedTransient ➜ NO hint; attach/dispose idempotentes.
+- `test/features/client_agents/data/socket/client_agent_profile_updated_listener_test.dart`
+  (PR-M p1) — PayloadFrame envelope decodifica para
+  `AgentPresenceCatalogUpdated`; raw JSON map (legacy hub) também
+  aceito; payloads sem `agent_id` ou com schema PayloadFrame inválido
+  são logados e descartados sem matar o stream.
+- `test/features/client_agents/data/socket/socket_agent_presence_stream_test.dart`
+  (PR-M p1) — Camadas 1+2 num único stream; re-attach do listener no
+  reconnect (disconnect ➜ reconnect ➜ novo handler ativo); dispose
+  fecha tudo e descarta eventos tardios.
+- `test/features/client_agents/presentation/controllers/client_agents_controller_presence_test.dart`
+  (PR-M p2) — hint flips `connectionStatus` in-memory sem ir à rede;
+  debounce confirm chama `LoadClientAgentDetailUseCase` após 30 ms
+  (em produção 5 s); `AgentPresenceCatalogUpdated` faz upsert do
+  agente refrescado; eventos com `observedAt` mais antigo/igual são
+  dropados (dedup); hint para agente desconhecido é no-op silencioso;
+  controller construído sem `ObserveAgentPresenceUseCase` ignora
+  presença totalmente; `dispose()` cancela sub + timers (debounce
+  past-window não dispara o REST).
+- `test/features/client_agents/application/services/agent_presence_poller_test.dart`
+  (PR-M p3) — `start` dispara tick imediato + emite hints `online`
+  por id; idempotente para mesmo `userId`; trocar de `userId`
+  re-tika imediatamente (loop interno); `null` da repo não emite
+  hint; erro da repo é logado e o poller sobrevive; `stop`
+  cancela e é idempotente.
+- (mesmo arquivo de PR-M p2) novo grupo **`PR-M part 3 — visibility-gated REST poller`**
+  no controller — liga poller quando `onScreenVisible` + socket
+  desconectado; para quando o socket volta ao `Connected`; nunca
+  liga com tela escondida; `dispose()` cancela sub do socket e
+  para o poller (eventos pós-dispose não disparam start novo).
+- `test/features/agent_queries/data/streaming_sql_execute_collector_test.dart`
+  (PR-L+ p3.5) — collector funde row chunks + complete payload no
+  envelope canônico (`response.item.{success,result.{rows,row_count,
+  execution_id,...}}`); fallback de `row_count` quando `total_rows`
+  ausente; stream vazio gera envelope vazio bem-sucedido; erros do
+  stream propagam.
+- `test/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource_test.dart`
+  (PR-L+ p3.5) — adapter coleta chunks via streaming e devolve no
+  shape do port unitário; erros viram `Future` errors.
+- `test/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource_test.dart`
+  (PR-L+ p3) — chunks do dispatcher passam intactos pra
+  `streamSqlExecute`; timeout vira `bridgeTimeoutMs + 5s` (default
+  20 s quando ausente); hint de compressão é encaminhado;
+  `command.method` é `sql.execute` no body emitido;
+  `RelayDispatchException` propaga como erro no stream.
+- `test/core/socket/socket_command_dispatcher_cancel_test.dart` (PR-J)
+  — `dispatcher.cancel(rpcId, reason)` propaga `SocketDispatchCancelled`
+  ao correlator com a `reason` no message + emite outcome
+  `AgentCommandFailedTransient(reasonCode: 'cancelled')`. Cancelar
+  rpcId desconhecido é no-op silencioso (não chama `failWith`).
+- `test/core/socket/socket_command_cancel_token_test.dart` (PR-J)
+  — `register/unregister/cancelAll/dispose` idempotentes; `cancelAll`
+  itera todos os ids tracked com a `reason` configurada (ou
+  `caller_cancelled` default); `dispose` usa `token_disposed` e
+  bloqueia `register` subsequente.
+
+### 0.2.1 Como rodar os smokes e2e contra o hub real
+
+Os 3 smokes vivem em `test/integration/e2e/socket_*_smoke_e2e_test.dart`
+e estão atrás da tag `e2e` (excluída da pipeline padrão). Cada um faz
+**skip silencioso** quando os 5 envs `API_BASE_URL`, `E2E_CLIENT_EMAIL`,
+`E2E_CLIENT_PASSWORD`, `E2E_AGENT_ID`, `E2E_CLIENT_TOKEN` estão
+ausentes — segura pra deixar no repo.
+
+```bash
+# Com os envs em assets/env/local.env:
+flutter test test/integration/e2e/socket_consumer_smoke_e2e_test.dart \
+  test/integration/e2e/socket_relay_smoke_e2e_test.dart \
+  test/integration/e2e/socket_presence_smoke_e2e_test.dart \
+  --tags=e2e
+
+# Ou via dart-define (preferido em CI sem secrets em assets):
+flutter test test/integration/e2e/socket_consumer_smoke_e2e_test.dart \
+  --tags=e2e \
+  --dart-define=API_BASE_URL=https://plug-server.example.com/api/v1 \
+  --dart-define=E2E_CLIENT_EMAIL=... \
+  --dart-define=E2E_CLIENT_PASSWORD=... \
+  --dart-define=E2E_AGENT_ID=... \
+  --dart-define=E2E_CLIENT_TOKEN=...
+```
+
+Cobertura por arquivo:
+
+| Arquivo | Valida |
+| ------- | ------ |
+| `socket_consumer_smoke_e2e_test.dart` | login REST → `ConsumerSocketConnection.connect()` (handshake `connection:ready`) → `SocketCommandDispatcher.sendAgentsCommand(SELECT 1)` → bridge envelope `response.item` sem `error`. |
+| `socket_relay_smoke_e2e_test.dart` | mesma cadeia + `RelayConversationManager.obtain()` (`relay:conversation.start/started`) + `RelayCommandDispatcher.sendUnary` (`relay:rpc.request` PayloadFrame → `accepted` → `response`). |
+| `socket_presence_smoke_e2e_test.dart` | monta `SocketAgentPresenceStream` + listener + hinter, dispara um `agents:command` real e espera `AgentPresenceHint(online: true, source: 'agents:command_success')` chegar no stream. |
+
+> O smoke da presença valida só a **Camada 2** (hints derivados de
+> outcomes). A Camada 1 (`client:agent.profile.updated`) depende do
+> hub broadcast, que não pode ser coagido pelo cliente — checagem
+> manual ou mock-server fica fora do smoke.
+
+#### Resultado do primeiro run contra `plug_server` produção
+
+**Achado real (a corrigir do lado do hub, não do app):** rodando o
+`socket_consumer_smoke_e2e_test.dart` contra
+`https://plug-server.se7esistemassinop.com.br/api/v1` o login REST
+funcionou, o handshake Socket.IO foi aceito, mas o middleware de
+namespace rejeitou a conexão com:
+
+```text
+{message: Role 'client' is not allowed to connect to /consumers}
+```
+
+Origem confirmada no hub
+(`plug_server/src/presentation/socket/auth/socket_namespace_auth.middleware.ts`
+linha 122) — o gate é controlado por `SOCKET_CONSUMER_ROLES`. O
+*default no código* já inclui `client` (`user,admin,client`,
+linha 88), e o `.env.example` do hub também — mas a instância de
+produção atual está com `SOCKET_CONSUMER_ROLES=user,admin` (sem
+`client`). Bate com a nota em `plug_server/docs/api_rest_bridge.md`
+linha 77.
+
+**Ação operacional do lado do servidor:**
+
+```bash
+# No deploy do plug_server, atualizar o env e reiniciar:
+SOCKET_CONSUMER_ROLES=user,admin,client
+```
+
+Isso libera o app Colmeia (que loga com role `client`) a abrir o
+namespace `/consumers`. **Sem mudança no Flutter.** O smoke passou na
+fase REST + handshake e parou exatamente onde deveria parar quando o
+gate fechou — confirma que toda a pilha do app (PR-A → PR-M)
+funciona até a borda do hub.
+
+Depois que o env for ajustado, rodar de novo os 3 smokes (§0.2.1)
+para validar o resto da cadeia (`agents:command`, relay, presença).
+
+### 0.3 Em aberto (próximos PRs)
+
+- **Operacional: ajustar `SOCKET_CONSUMER_ROLES` no hub para incluir
+  `client`** + rodar os 3 smokes de novo (§0.2.1). O primeiro run já
+  validou login REST + handshake; agora precisamos validar
+  `agents:command` + relay + presença. Sem mudança de código.
+- **PR-L+ parte 4** — registrar
+  `CollectingRelayStreamingAgentQueriesRemoteDataSource` no
+  `injector_agent_queries.dart` (gated por
+  `useRelayStreaming` em `AgentSqlExecuteRequest` ou novo env)
+  para uma query específica do `overview`. Com PR-L+ p3.5 entregue,
+  isto vira um **swap de DI trivial** — qualquer repository passa a
+  rodar via streaming wire sem mudar de comportamento. Falta apenas
+  decisão de produto sobre qual query estrear.
+- **PR-N** — Hybrid REST↔Socket fallback (Fase 3).
+- **P3 / Fase 3** — gzip async via `compute(...)` para `> 64 KiB`,
+  dedup pós-reconexão universal, OTel propagation.
+
+### 0.4 Auditoria de boot (entregue) — bugs UX/lifecycle corrigidos
+
+Auditoria do startup (`main.dart` → `bootstrap.dart` →
+`SocketLifecycleObserver` → `AuthController.initialize` →
+`AppRouter`) descobriu 2 bugs e 2 subótimos. Todos **corrigidos** com
+testes nesta entrega:
+
+| # | Tipo | Sintoma original | Fix |
+| - | ---- | ---------------- | --- |
+| **B1** | UX bug | Cold start com sessão restaurada **flashava a tela de login** antes de redirecionar para o dashboard, porque `resolveAuthRedirect` decidia com `isAuthenticated == false` enquanto `isRestoringSession == true`. | `resolveAuthRedirect` ganhou parâmetro `isRestoringSession` (default `false`); enquanto `isRestoringSession && !isAuthenticated`, o guard retorna `null` (segura a navegação). O `refreshListenable` re-avalia assim que o restore termina. `redirectWithAuthGuard` passa `authController.isRestoringSession` automaticamente. |
+| **B2** | Race | Em hot-reload (e em alguns cold-starts rápidos), o restore podia resolver **antes** de `SocketLifecycleObserver.initState` rodar; `_wasAuthenticated` virava `true` na entrada e a transição `false → true` nunca disparava ⇒ socket ficava cold até a primeira query, ignorando `SOCKET_WARM_UP_AFTER_LOGIN=true`. | `_SocketLifecycleObserverState.initState` agora chama `_safeResume(reason: 'mount_already_authenticated')` quando o gate já está autenticado, o transporte é socket, e `warmUpAfterLogin` é `true`. |
+| **S1** | Subótimo | `bootstrap.dart` chamava `getIt<ConsumerSocketConnection>()` **mesmo em builds REST-only**, materializando todo o stack socket sem necessidade. | `SocketLifecycleObserver.connection` virou `nullable`; `bootstrap.dart` só resolve `ConsumerSocketConnection` quando `transport == socket`. Em REST-only o observer fica como no-op para todas as ações de socket. |
+| **S2** | Subótimo | `_onAuthChanged` chamava `_safePause(reason: 'signed_out')` no logout **independente do transport**, gerando log/método inútil em builds REST. | Pause em sign-out gated por `_isSocketTransport` (transport socket **e** connection não-nula). Comportamento equivalente em socket; silencioso em REST. |
+
+Arquivos tocados nesta entrega:
+
+| Camada | Arquivo |
+| ------ | ------- |
+| Auth (guard de rotas) | `lib/features/auth/presentation/routes/auth_redirect.dart` |
+| App (lifecycle observer) | `lib/app/socket_lifecycle_observer.dart` |
+| App (composição) | `lib/app/bootstrap.dart` |
+| Tests (guard) | `test/features/auth/presentation/routes/auth_redirect_test.dart` (+5 cenários: hold em rota protegida / guest-only / unmatched durante restore; resume normal pós-restore; redirect para login pós-restore sem sessão) |
+| Tests (observer) | `test/app/socket_lifecycle_observer_test.dart` (+5 cenários: warm-up no mount-já-autenticado; warm-up desligado no mount; mount em REST não dispara warm-up; conexão `null` é no-op universal; sign-out em REST não chama `pause`) |
+
+**Notas de impacto operacional:**
+
+- B1 é o fix de maior impacto visível (UX): zero flicker de login no
+  cold start com sessão válida. Sem mudança de contrato — o parâmetro
+  novo tem default `false`, então qualquer chamada antiga continua
+  válida.
+- B2 garante que o warm-up entrega o que `SOCKET_WARM_UP_AFTER_LOGIN`
+  promete em **todos** os caminhos (cold start, hot reload, e a
+  transição clássica `null → authenticated`). Sem isso, em prática o
+  warm-up só funcionava de forma confiável em hot-restart com login
+  manual.
+- S1 deixa o REST-only build verdadeiramente REST-only no boot — não
+  cria `Socket.IO` client, não toca `AppEnvironment.socketEndpoint`,
+  não materializa `SocketCommandDispatcher`. Reduz superfície de
+  falha em builds que não querem socket.
+- S2 é cosmético mas elimina ruído de logging em REST-only.
+
+Cobertura: **31 testes ✅** nas 2 suites tocadas (16 em `auth_redirect_test`,
+15 em `socket_lifecycle_observer_test`). Sweep `flutter analyze` limpo
+para `lib/app`, `lib/features/auth/presentation/routes`, e ambas as
+suites de teste.
 
 ---
 
@@ -418,6 +712,15 @@ getIt.registerLazySingleton<AgentQueriesRemoteDataSource>(() {
 | `SOCKET_WARM_UP_AFTER_LOGIN` | nova (opcional) | `true` se `transport=socket` | dispara `connect()` em background ao final do login (review §5.7). |
 | `SOCKET_TIMEOUT_ADAPTIVE_ENABLED` | nova (opcional, P2) | `false` | liga o `AgentLatencyOracle` para timeout por p95 (review §5.3). |
 | `SOCKET_PAYLOAD_FRAME_ASYNC_GZIP_MIN_BYTES` | nova (opcional, Fase 2) | `65536` | usa `compute(...)` para gzip acima desse tamanho UTF-8 (review §5.9). |
+| `SOCKET_CONNECTION_READY_COMPAT_MODE` | nova (PR-K) | `compat` | `compat` (PayloadFrame com fallback raw JSON) \| `payload_frame_only` (estrito) \| `raw_json_only` (legado). |
+| `SOCKET_RELAY_ENABLED` | nova (PR-L) | `false` | Master switch do relay. Quando `true`, registra `RelayConversationManager` + `RelayCommandDispatcher` no DI; `false` mantém apenas o canal `agents:command`. |
+| `SOCKET_RELAY_REQUEST_TIMEOUT_MS` | nova (PR-L) | `30000` | Timeout por `relay:rpc.request` (precisa ser maior que o `bridgeTimeoutMs` do bridge para o hub responder via `relay:rpc.complete`). |
+| `SOCKET_RELAY_CONVERSATION_START_TIMEOUT_MS` | nova (PR-L) | `10000` | Espera por `relay:conversation.started` antes de falhar com `start_timeout`. |
+| `SOCKET_RELAY_CONVERSATION_END_TIMEOUT_MS` | nova (PR-L) | `5000` | Espera por `relay:conversation.ended`; estourar é apenas warning (estado local muda assim mesmo). |
+| `SOCKET_RELAY_PAYLOAD_FRAME_COMPRESSION` | nova (PR-L) | `default` | `default` (auto: gzip se reduzir bytes) \| `none` \| `always`. Encaminhado em todo `relay:rpc.request` para o hub re-encodar o frame `hub→agente`. |
+| `SOCKET_RELAY_STREAM_INITIAL_WINDOW` | nova (PR-L+ p2) | `32` | Janela inicial de chunks concedida no primeiro `relay:rpc.stream.pull` após `accepted`. Mais alto = menos round-trips de pull, mais RAM em vôo. |
+| `SOCKET_RELAY_STREAM_REFILL_THRESHOLD` | nova (PR-L+ p2) | `16` | Threshold (créditos restantes) para o dispatcher emitir um novo pull e voltar a janela ao initial. |
+| `SOCKET_PRESENCE_LISTENER_ENABLED` | nova (PR-M p1) | `false` | Master switch da pilha de presença em tempo real. Quando `true`, o `injector_client_agents` registra `SocketAgentPresenceStream` (Camadas 1+2 + Camada 3 do PR-M p3) e o `ObserveAgentPresenceUseCase`. |
 
 Adicionar em:
 
@@ -493,8 +796,8 @@ registerInjectorPresentation(getIt);
 
 | Evento | Ação esperada |
 | ------ | ------------- |
-| App inicia, sessão restaurada | **Não** conectar socket automaticamente. Conexão sob demanda no primeiro `executeSql` (lazy), reduz custo em telas que só usam REST/auth. |
-| Login concluído | **Warm-up oportunista** quando `AGENT_BRIDGE_TRANSPORT=socket` e `SOCKET_WARM_UP_AFTER_LOGIN=true`: `unawaited(connection.connect())` ao final do `LoginUseCase` (ver review §5.7). |
+| App inicia, sessão restaurada | Em REST-only: nada. Em socket: warm-up oportunista no `SocketLifecycleObserver.initState` quando o gate já está autenticado **e** `SOCKET_WARM_UP_AFTER_LOGIN=true` (fix B2/§0.4 — antes a transição `null → authenticated` podia ser perdida no cold start). Sem warm-up, a conexão fica lazy até o primeiro `executeSql`. |
+| Login concluído | **Warm-up oportunista** quando `AGENT_BRIDGE_TRANSPORT=socket` e `SOCKET_WARM_UP_AFTER_LOGIN=true`: o `SocketLifecycleObserver` observa a transição `false → true` no `AuthenticationGate` e chama `connection.resume()` (single-flight + idempotente). |
 | 401 em request socket | `AuthRefreshCoordinator.refreshAccessToken()` → reconectar com novo token; se falhar, `AuthSessionEvents.notifyInvalidated()`. |
 | `AuthSessionEvents.invalidated` (logout, refresh fail) | `ConsumerSocketConnection.disconnect()`. |
 | App em background (`AppLifecycleState.paused`/`detached`) | `connection.pause()` desconecta — decisão deliberada por **mobile economy** (bateria/dados). Detalhado em `consumer_socket_connection_design.md` §9. |
@@ -516,79 +819,164 @@ registerInjectorPresentation(getIt);
       `socket_command_dispatcher_design.md`,
       `agent_presence_realtime_design.md`,
       `socket_channel_performance_review.md`).
-- [ ] Atualizar `project_platform_dependencies.mdc` para listar
-      `socket_io_client` como dependência ativa.
-- [ ] **Decidir ponto aberto §13 do `socket_command_dispatcher_design.md`**:
-      mover `parseSuccess` para `core/network/jsonrpc/` (recomendado).
+- [x] Atualizar `project_platform_dependencies.mdc` para listar
+      `socket_io_client` como dependência ativa
+      (entrada em `.cursor/rules/project_platform_dependencies.mdc:53`).
+- [x] **Resolvido ponto aberto §13 do `socket_command_dispatcher_design.md`**:
+      `AgentSqlBridgeResponse.parseSuccess` permanece em
+      `features/agent_queries/data/models/`. O dispatcher
+      (`socket_command_dispatcher_impl.dart`) classifica outcomes
+      inspecionando `response.item.error` no map cru, sem importar a
+      feature — isso preserva a fronteira `core/socket/ → features/`
+      sem precisar promover o parser para `core/network/jsonrpc/`.
 
 ### Fase 1.0 — Núcleo do canal `agents:command` (paridade com REST)
 
 Entrega: SQL executado via Socket usando o mesmo body do REST.
 
-- [ ] `pubspec.yaml`: `socket_io_client: ^3.1.4`.
-- [ ] `core/config/env_keys.dart` + `app_environment.dart`:
+- [x] `pubspec.yaml`: `socket_io_client: ^3.1.4`.
+- [x] `core/config/env_keys.dart` + `app_environment.dart`:
       `AGENT_BRIDGE_TRANSPORT` enum + envs novas (§8).
-- [ ] `core/socket/`: factory, url resolver, token provider,
+- [x] `core/socket/`: factory, url resolver, token provider,
       `connection_ready_payload`, `consumer_socket_connection` com
       backoff exponencial + **single-flight**.
-- [ ] `core/socket/socket_request_correlator` + `socket_command_dispatcher_impl`
+- [x] `core/socket/socket_request_correlator` + `socket_command_dispatcher_impl`
       com `Stream<AgentCommandOutcome>` (sealed) e mapeamento de erros.
-- [ ] `core/di/injector_socket.dart` + integração em `injector.dart`.
-- [ ] Extrair helper `agent_sql_execute_request_to_bridge_body.dart`
+- [x] `core/di/injector_socket.dart` + integração em `injector.dart`.
+- [x] Extrair helper `agent_sql_execute_request_to_bridge_body.dart`
       compartilhado entre REST e Socket (paridade byte-a-byte).
-- [ ] `socket_agent_queries_remote_datasource.dart`.
-- [ ] Switch em `injector_agent_queries.dart`.
-- [ ] Testes unit (§13) + 1 e2e opt-in.
-- [ ] **App lifecycle hook**: `pause()`/`resume()` no `WidgetsBindingObserver`.
+- [x] `socket_agent_queries_remote_datasource.dart`.
+- [x] Switch em `injector_agent_queries.dart`.
+- [x] Testes unit (§13) + 1 e2e opt-in (3 smokes em §0.2.1).
+- [x] **App lifecycle hook**: `pause()`/`resume()` via
+      `lib/app/socket_lifecycle_observer.dart` (`WidgetsBindingObserver`).
 
 ### Fase 1.1 — Hardening de desempenho (P0 + P1)
 
 Entrega: **mesma sprint** da 1.0 estabilizar; cada item é um sub-PR pequeno.
 
-- [ ] **P0** — `core/observability/socket_channel_metrics.dart` (review §5.8):
+- [x] **P0** — `core/observability/socket_channel_metrics.dart` (review §5.8):
       `handshake_ms`, `dispatch_ms` por `(agentId, method)`, `outcomes_total`
       por `(kind, reasonCode)`, `inflight_peak_per_agent`, `reconnects_total`.
       Logging estruturado + breadcrumbs Sentry.
-- [ ] **P0** — Backoff de reconexão **com jitter** (review §5.4): trocar
+- [x] **P0** — Backoff de reconexão **com jitter** (review §5.4): trocar
       `_nextBackoff` por full jitter; `Random` injetado para teste
       determinístico.
-- [ ] **P1** — `PerAgentConcurrencyGate` (review §5.5): semáforo no
+- [x] **P1** — `PerAgentConcurrencyGate` (review §5.5): semáforo no
       dispatcher (`acquire`/`release`) com `SOCKET_MAX_INFLIGHT_PER_AGENT=8`.
-- [ ] **P1** — Request **coalescing** no dispatcher (review §5.1):
+- [x] **P1** — Request **coalescing** no dispatcher (review §5.1):
       `_inflightByKey` com hash estável de `(agentId, method, params, options)`.
-- [ ] **P1** — Warm-up no `LoginUseCase` (review §5.7) gated por
+- [x] **P1** — Warm-up no `LoginUseCase` (review §5.7) gated por
       `SOCKET_WARM_UP_AFTER_LOGIN`.
 
 ### Fase 1.2 — Otimizações dependentes de telemetria (P2)
 
 Entregas só após 1 ciclo com dados das métricas P0.
 
-- [ ] **P2** — `AgentLatencyOracle` + timeout adaptativo (review §5.3) com
+- [x] **P2** — `AgentLatencyOracle` + timeout adaptativo (review §5.3) com
       EWMA por `(agentId, method)`; gated por `SOCKET_TIMEOUT_ADAPTIVE_ENABLED`.
-- [ ] **P2** — `AgentCommandBatchCoordinator` (review §5.2): coalesce N RPCs
+- [x] **P2** — `AgentCommandBatchCoordinator` (review §5.2): coalesce N RPCs
       ao mesmo agente em janela de `SOCKET_BATCH_WINDOW_MS=8` e envia
-      `command: [...]` (max 32). Maior ganho de latência por linha de código.
-      **Doc próprio recomendado** antes do PR.
-- [ ] **P2** — `SocketCommandCancelToken` (review §5.6): cancelar pendentes
-      em `controller.dispose()`; usa `sql.cancel` para streams.
+      `command: [...]` (max 32). Doc detalhado em
+      `docs/Features/agent_command_batch_coordinator_design.md`.
+- [x] **P2** — `SocketCommandCancelToken` (review §5.6) — `dispatcher.cancel(rpcId)`
+      + helper `SocketCommandCancelToken` (`register/cancelAll/dispose`).
+      Integração explícita com `sql.cancel` para streams fica para um
+      sub-PR futuro quando algum controller usar streaming.
 
 ### Fase 2 — `relay:*` + PayloadFrame
 
-- [ ] `core/socket/payload_frame.dart` (encode/decode + gzip + validação:
-      `enc==json`, `cmp ∈ {none,gzip}`, tamanho/inflação ≤ 10 MiB / 20×).
-- [ ] Suporte a `connection:ready` em PayloadFrame na `ConsumerSocketConnection`
-      (já tolerante via `CompatConnectionReadyDecoder`).
-- [ ] `RelayConversation` + `RelayCommandDispatcher` (start → request →
-      stream pull → end). Conversa única reutilizável por agente, com isolamento.
-- [ ] `relay`-aware datasource para queries grandes (`sql.execute` que devolva
-      stream). Selecionável por flag por query (`useRelay`).
+- [x] **PR-K** — `core/socket/payload_frame.dart` + `payload_frame_codec.dart`
+      (encode auto-gzip + decode com validação estrutural:
+      `enc==json`, `cmp ∈ {none,gzip}`, tamanho ≤ 10 MiB, inflação ≤ 20×,
+      `compressedSize`/`originalSize` consistentes).
+- [x] **PR-K** — Suporte a `connection:ready` em PayloadFrame na
+      `ConsumerSocketConnection` via `PayloadFrameConnectionReadyDecoder`
+      e `CompatConnectionReadyDecoder` (gated por
+      `SOCKET_CONNECTION_READY_COMPAT_MODE`: `compat` default,
+      `payload_frame_only`, `raw_json_only`).
+- [x] **PR-L** — `RelayConversation` + `RelayConversationManager`
+      (uma conversa por `agentId`, single-flight em `start()`,
+      `forceEnd` em socket drop) em `lib/core/socket/relay/`.
+- [x] **PR-L** — `RelayCommandDispatcher` (interface + impl) com
+      `sendUnary({agentId, body, clientRequestId, timeout, compression})`
+      ➜ encoda `PayloadFrame`, emite `relay:rpc.request`, correlaciona
+      via `clientRequestId` ↔ `requestId` (do `relay:rpc.accepted`),
+      finaliza em `relay:rpc.response` ou `relay:rpc.complete`
+      (`terminal_status`). Erros mapeados para a sealed
+      `RelayDispatchException`
+      (`RelayConversationStartFailure`, `RelayConversationLost`,
+      `RelayRequestRejected`, `RelayStreamTerminated`,
+      `RelayRequestTimeout`, `RelayDecodeFailure`,
+      `RelayDuplicateRequestId`, `RelayDispatcherDisposed`).
+- [x] **PR-L** — `RelayAgentQueriesRemoteDataSource` (Standalone) —
+      reusa `AgentSqlExecuteRequestToBridgeBody`, byte-igual ao
+      REST/`agents:command`. Não está cabeada por padrão — em PR
+      seguinte adicionamos seleção por query (`useRelay`).
+- [x] **PR-L** — Envs: `SOCKET_RELAY_ENABLED`,
+      `SOCKET_RELAY_REQUEST_TIMEOUT_MS`,
+      `SOCKET_RELAY_CONVERSATION_START_TIMEOUT_MS`,
+      `SOCKET_RELAY_CONVERSATION_END_TIMEOUT_MS`,
+      `SOCKET_RELAY_PAYLOAD_FRAME_COMPRESSION` (`default` |
+      `none` | `always`, mapeado para `RelayPayloadFrameCompression`).
+- [x] **PR-L** — DI: `injector_socket` registra
+      `RelayConversationManager` e `RelayCommandDispatcher` apenas
+      quando `SOCKET_RELAY_ENABLED=true` (lazy, com `dispose`).
+- [x] **PR-L+ parte 1** — Selector per-query (`useRelay` em
+      `AgentSqlExecuteRequest`, default `false`, validado por teste
+      garantindo que **não** vaza para o body) +
+      `HybridAgentQueriesRemoteDataSource` que despacha
+      `useRelay==true` para a relay datasource e o restante para a base
+      (REST ou `agents:command`). Wrap automático no
+      `injector_agent_queries.dart` quando `RelayCommandDispatcher`
+      está registrado (`SOCKET_RELAY_ENABLED=true`); fallback logado
+      como `relay_bypass` quando o relay não foi inicializado.
+- [x] **PR-L+ parte 2** — Streaming via `relay:rpc.chunk` +
+      `relay:rpc.stream.pull` no `RelayCommandDispatcher.sendStreaming`
+      com auto-pull rolante. Refator interno em sealed
+      `_PendingRelay` ↔ `_PendingUnary` / `_PendingStream` para o
+      mesmo dispatcher cobrir ambos os modos. Envs novas
+      `SOCKET_RELAY_STREAM_INITIAL_WINDOW` (default 32) e
+      `SOCKET_RELAY_STREAM_REFILL_THRESHOLD` (default 16).
+- [x] **PR-L+ parte 3** — Camada de dados streaming: port
+      `AgentQueriesStreamingRemoteDataSource` (separado do unary por
+      ISP) + impl `RelayStreamingAgentQueriesRemoteDataSource`. DI
+      condicional em `RelayCommandDispatcher`.
+- [x] **PR-L+ parte 3.5** — Dispatcher forwarda `relay:rpc.complete`
+      payload como item final do stream + `BridgeShapedSqlExecuteCollector`
+      agrega chunks no shape do `AgentSqlBridgeResponse.parseSuccess`
+      + `CollectingRelayStreamingAgentQueriesRemoteDataSource`
+      implementa o port unitário via streaming. Repository não muda;
+      é só swap de DI.
+- [x] **PR-M parte 1** — Listener de `client:agent.profile.updated`
+      (entra com PayloadFrame) — `ClientAgentProfileUpdatedListener`
+      + `AgentCommandPresenceHinter` + `SocketAgentPresenceStream` +
+      `ObserveAgentPresenceUseCase` em
+      `lib/features/client_agents/{domain,application,data/socket}/`.
+      Integração com presença em tempo real (§19).
+- [x] **PR-M parte 2** — Wire-up no `ClientAgentsController`:
+      subscription opcional + dedup por `observedAt` + refresh
+      debounced 5 s + `dispose()` idempotente.
+- [x] **PR-M parte 3** — Camada 3 REST (`AgentPresencePoller`) +
+      visibility gating no controller + `RouteAware` na page.
 - [ ] **P3** — Compressão adaptativa (review §5.9): gzip síncrono < 64 KiB,
       `compute(...)` (Isolate) acima de
       `SOCKET_PAYLOAD_FRAME_ASYNC_GZIP_MIN_BYTES`.
-- [ ] **P3** — Listener de `client:agent.profile.updated` (entra com
-      PayloadFrame) → integra com presença em tempo real (§19).
 - [ ] **P3** — Dedup pós-reconexão universal (review §5.10) reaproveitando
       `_lastObservedByAgentId` da presença.
+
+### Fase 2.5 — Validação operacional (smoke e2e)
+
+- [x] Smoke e2e opt-in: `setupE2eSocketBundle({withRelay})` +
+      `socket_consumer_smoke_e2e_test.dart` +
+      `socket_relay_smoke_e2e_test.dart` +
+      `socket_presence_smoke_e2e_test.dart`. Documentação em §0.2.1.
+- [x] **Achado real do primeiro run**: hub produção precisa de
+      `SOCKET_CONSUMER_ROLES=user,admin,client`. Documentado em
+      §0.2.1 ("Resultado do primeiro run").
+- [ ] **Operacional (servidor)**: aplicar
+      `SOCKET_CONSUMER_ROLES=user,admin,client` no `plug_server` +
+      rerodar os 3 smokes para validar o resto da cadeia.
 
 ### Fase 3 — Hybrid + observabilidade avançada
 
@@ -1015,16 +1403,20 @@ Conforme `client_agent_business_rules.md` (§3.4) e `scaling_and_roadmap.md`:
 
 ### 19.7 Faseamento desta capacidade
 
-Encaixa no roadmap §11:
+> Status: as 3 camadas estão entregues. Mantido como histórico do
+> faseamento original.
 
-- **Fase 1** (`agents:command`): Camada 2 (hints implícitos) entra
-  "de graça" porque o `SocketCommandDispatcher` já existe — só
-  conectamos os erros/sucesso ao `AgentPresenceStream`.
-- **Fase 2** (`relay:*` + `PayloadFrame`): habilita Camada 1
-  (`client:agent.profile.updated` chega como `PayloadFrame`).
-- **Fase 3** (push opcional): se o hub adicionar
-  `client:agent.presence.changed`, é só um novo listener — UI/cache
-  permanecem.
+- **Fase 1** (`agents:command`): Camada 2 (hints implícitos) — **PR-M p1
+  entregue** (`AgentCommandPresenceHinter`).
+- **Fase 2** (`relay:*` + `PayloadFrame`): Camada 1
+  (`client:agent.profile.updated` em `PayloadFrame`) — **PR-M p1
+  entregue** (`ClientAgentProfileUpdatedListener` decodifica
+  `PayloadFrame` ou raw JSON via compat).
+- **Fase 3 / Camada 3** (REST polling com visibility gating) — **PR-M p3
+  entregue** (`AgentPresencePoller` + `RouteAware`).
+- **Futuro** (push dedicado): se o hub adicionar
+  `client:agent.presence.changed`, é só um novo listener no
+  `SocketAgentPresenceStream` — UI/cache permanecem (§19.8).
 
 ### 19.8 Solicitação ao time do `plug_server`
 
@@ -1073,19 +1465,27 @@ Isso elimina a necessidade da Camada 3 (polling) para presença.
 
 | PR | Conteúdo | Fase |
 | -- | -------- | ---- |
-| PR-A | Pacote + `core/socket/*` (factory, url resolver, token provider, connection com backoff/single-flight) + DI sem trocar default. | 1.0 |
-| PR-B | `SocketCommandDispatcher` + correlator + outcomes + helper de body compartilhado + datasource Socket + switch no `injector_agent_queries`. Testes unit + 1 e2e opt-in. | 1.0 |
-| PR-C | `WidgetsBindingObserver` para `pause`/`resume` + warm-up no `LoginUseCase`. | 1.0/1.1 |
-| **PR-D (P0)** | `SocketChannelMetrics` (telemetria mínima) — **destrava** validação das próximas. | 1.1 |
-| **PR-E (P0)** | Jitter no backoff de reconexão. | 1.1 |
-| **PR-F (P1)** | `PerAgentConcurrencyGate` + `SOCKET_MAX_INFLIGHT_PER_AGENT`. | 1.1 |
-| **PR-G (P1)** | Request coalescing no dispatcher. | 1.1 |
-| **PR-H (P2)** | `AgentLatencyOracle` + timeout adaptativo (gated). | 1.2 |
-| **PR-I (P2)** | `AgentCommandBatchCoordinator` (doc próprio antes). | 1.2 |
-| **PR-J (P2)** | `SocketCommandCancelToken` + integração nos controllers. | 1.2 |
-| PR-K | `payload_frame.dart` + suporte real no `connection:ready`. | 2 |
-| PR-L | Relay (`relay:*`) + datasource para queries grandes. | 2 |
-| PR-M | Listener `client:agent.profile.updated` + integração com presença. | 2 |
+| **PR-A (entregue)** | Pacote + `core/socket/*` (factory, url resolver, token provider, connection com backoff/single-flight) + DI sem trocar default. | 1.0 |
+| **PR-B (entregue)** | `SocketCommandDispatcher` + correlator + outcomes + helper de body compartilhado + datasource Socket + switch no `injector_agent_queries`. | 1.0 |
+| **PR-C (entregue)** | `WidgetsBindingObserver` para `pause`/`resume` (`socket_lifecycle_observer.dart`) + warm-up no `LoginUseCase`. | 1.0/1.1 |
+| **PR-D (P0, entregue)** | `SocketChannelMetrics` (telemetria mínima) — **destrava** validação das próximas. | 1.1 |
+| **PR-E (P0, entregue)** | Jitter no backoff de reconexão (`socket_reconnect_backoff.dart`). | 1.1 |
+| **PR-F (P1, entregue)** | `PerAgentConcurrencyGate` + `SOCKET_MAX_INFLIGHT_PER_AGENT`. | 1.1 |
+| **PR-G (P1, entregue)** | Request coalescing no dispatcher (`socket_coalesce_key.dart`). | 1.1 |
+| **PR-H (P2, entregue)** | `AgentLatencyOracle` + timeout adaptativo (gated). | 1.2 |
+| **PR-I (P2, entregue)** | `AgentCommandBatchCoordinator` (`agent_command_batch_coordinator_design.md`). | 1.2 |
+| **PR-J (P2, entregue)** | `SocketCommandCancelToken` + `dispatcher.cancel(rpcId, reason)` + `SocketDispatchCancelled`. Integração com `sql.cancel` para streams fica para um sub-PR futuro quando algum controller usar streaming. | 1.2 |
+| **PR-K (entregue)** | `payload_frame.dart` + `payload_frame_codec.dart` (auto-gzip + limites 10 MiB / 20×) + `PayloadFrameConnectionReadyDecoder` + `CompatConnectionReadyDecoder` (gated por `SOCKET_CONNECTION_READY_COMPAT_MODE`). | 2 |
+| **PR-L (entregue)** | Relay primitives em `core/socket/relay/`: `RelayConversation`, `RelayConversationManager`, `RelayCommandDispatcher` (`sendUnary`), `RelayDispatchException` (sealed), `RelayPayloadFrameCompression`. `RelayAgentQueriesRemoteDataSource` standalone (não cabeado por padrão). Gated por `SOCKET_RELAY_ENABLED`. | 2 |
+| **PR-L+ p1 (entregue)** | `useRelay` em `AgentSqlExecuteRequest` + `HybridAgentQueriesRemoteDataSource` com auto-wrap no `injector_agent_queries` (gated por `RelayCommandDispatcher` registrado). Snapshot test garante body byte-igual. | 2 |
+| **PR-L+ p2 (entregue)** | `RelayCommandDispatcher.sendStreaming(...)` retornando `Stream<Map<String, dynamic>>`. Auto-pull rolante (`SOCKET_RELAY_STREAM_INITIAL_WINDOW` / `_REFILL_THRESHOLD`). Refator em sealed `_PendingRelay`. Tolera `relay:rpc.response` (single-chunk + close) e mapeia `terminal_status != completed` para `RelayStreamTerminated` no stream. | 2 |
+| **PR-L+ p3 (entregue)** | Port `AgentQueriesStreamingRemoteDataSource` (separado do unary por ISP) + impl `RelayStreamingAgentQueriesRemoteDataSource` reusando `AgentSqlExecuteRequestToBridgeBody`. Auto-wire no `injector_agent_queries.dart` apenas quando o relay está disponível. Pronto pra consumir. | 2 |
+| **PR-L+ p3.5 (entregue)** | Dispatcher forwarda `relay:rpc.complete` payload como item final do stream + `BridgeShapedSqlExecuteCollector` agrega chunks no shape do `AgentSqlBridgeResponse` + `CollectingRelayStreamingAgentQueriesRemoteDataSource` implementa o port unitário via streaming. Repository não muda; é só swap de DI. | 2 |
+| PR-L+ p4 (próximo) | Registrar o `CollectingRelayStreamingAgentQueriesRemoteDataSource` para uma query específica do `overview`. Swap de DI trivial agora — falta decisão de produto. | 2 |
+| **PR-M p1 (entregue)** | Pilha de presença em tempo real: sealed `AgentPresenceEvent`, port `AgentPresenceStream`, use case `ObserveAgentPresenceUseCase`, adapters Socket (`ClientAgentProfileUpdatedListener` + `AgentCommandPresenceHinter`), composer `SocketAgentPresenceStream` com re-attach automático. Auto-wire no `injector_client_agents` gated por `SOCKET_PRESENCE_LISTENER_ENABLED`. | 2 |
+| **PR-M p2 (entregue)** | `ClientAgentsController` consome `ObserveAgentPresenceUseCase?` (opcional para preservar a UX legada). Dedup por `observedAt`. `AgentPresenceCatalogUpdated` ➜ `LoadClientAgentDetailUseCase` + upsert. `AgentPresenceHint` ➜ `copyWith(connectionStatus)` in-memory + Timer debounced que confirma via REST. `dispose()` cancela tudo e é idempotente. | 2 |
+| **PR-M p3 (entregue)** | `AgentPresencePoller` (Camada 3 REST) + visibility gating no controller (`onScreenVisible/Hidden`) + observação de `ConsumerSocketConnection.states()` + `RouteAware` na page. Poller reagrupa hints `online` em loop interno, sobrevive a erros de rede e é idempotente. | 2 |
+| **Smoke e2e (entregue)** | `setupE2eSocketBundle({withRelay})` + 3 testes opt-in (`socket_consumer_smoke_e2e_test.dart`, `socket_relay_smoke_e2e_test.dart`, `socket_presence_smoke_e2e_test.dart`) que validam handshake + `agents:command` + relay `sendUnary` + presença Camada 2 contra o `plug_server` real. Skip silencioso quando `E2E_*` envs ausentes. Ver §0.2.1. | 2.5 |
 | PR-N | Hybrid datasource (REST↔Socket fallback) — **só com métricas P0** confirmando ganho. | 3 |
 
 ### 20.3 QA / rollout

@@ -4,12 +4,16 @@ import 'dart:math' show min;
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/observe_agent_presence_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/probe_client_approved_agent_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
@@ -17,6 +21,7 @@ import 'package:colmeia/features/client_agents/application/usecases/read_pending
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agents_list_page_size.dart';
@@ -24,6 +29,7 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_query.d
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
+import 'package:colmeia/features/client_agents/domain/events/agent_presence_event.dart';
 import 'package:colmeia/features/client_agents/presentation/localization/client_agents_failure_l10n.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
@@ -48,6 +54,10 @@ class ClientAgentsController extends ChangeNotifier {
         discardQueuedClientAgentRequestAccessUseCase,
     required ReadPendingClientAgentActionsUseCase readPendingActionsUseCase,
     required SyncPendingClientAgentActionsUseCase syncPendingActionsUseCase,
+    ObserveAgentPresenceUseCase? observeAgentPresenceUseCase,
+    AgentPresencePoller? agentPresencePoller,
+    ConsumerSocketConnection? consumerSocketConnection,
+    Duration hintConfirmDelay = const Duration(seconds: 5),
   }) : _authController = authController,
        _clientTokenStore = clientTokenStore,
        _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
@@ -60,7 +70,11 @@ class ClientAgentsController extends ChangeNotifier {
        _discardQueuedClientAgentRequestAccessUseCase =
            discardQueuedClientAgentRequestAccessUseCase,
        _readPendingActionsUseCase = readPendingActionsUseCase,
-       _syncPendingActionsUseCase = syncPendingActionsUseCase;
+       _syncPendingActionsUseCase = syncPendingActionsUseCase,
+       _observeAgentPresenceUseCase = observeAgentPresenceUseCase,
+       _agentPresencePoller = agentPresencePoller,
+       _consumerSocketConnection = consumerSocketConnection,
+       _hintConfirmDelay = hintConfirmDelay;
 
   static const Duration _approvalPollingInterval = Duration(seconds: 10);
   static const Duration _approvalPollingTimeout = Duration(minutes: 3);
@@ -82,6 +96,28 @@ class ClientAgentsController extends ChangeNotifier {
       _discardQueuedClientAgentRequestAccessUseCase;
   final ReadPendingClientAgentActionsUseCase _readPendingActionsUseCase;
   final SyncPendingClientAgentActionsUseCase _syncPendingActionsUseCase;
+
+  /// PR-M part 2: optional dependency. When the build does not enable
+  /// `SOCKET_PRESENCE_LISTENER_ENABLED`, the use case is `null` and the
+  /// controller behaves exactly as before — preserving every existing
+  /// test and the legacy `Refresh`-only UX.
+  final ObserveAgentPresenceUseCase? _observeAgentPresenceUseCase;
+
+  /// PR-M part 3: optional REST fallback poller. Liga só quando o
+  /// socket está fora de `connected` E a tela está visível
+  /// (`onScreenVisible`). Mantém o badge `online`/`offline`
+  /// vivo mesmo durante uma queda do socket.
+  final AgentPresencePoller? _agentPresencePoller;
+
+  /// PR-M part 3: optional handle to observe socket state transitions
+  /// for the visibility-aware poller gating. `null` when the build
+  /// does not enable the socket layer.
+  final ConsumerSocketConnection? _consumerSocketConnection;
+
+  /// Delay between an `AgentPresenceHint` landing in memory and the
+  /// confirming REST refresh. Tests pass a small value to keep the
+  /// suite fast.
+  final Duration _hintConfirmDelay;
 
   AppLocalizations? _l10n;
 
@@ -115,6 +151,29 @@ class ClientAgentsController extends ChangeNotifier {
   int _refreshAllToken = 0;
   Future<void> _pendingMutationTail = Future.value();
 
+  /// Realtime presence (PR-M part 2). Subscription is set up lazily on the
+  /// first `initialize()` call when `_observeAgentPresenceUseCase != null`.
+  StreamSubscription<AgentPresenceEvent>? _presenceSub;
+
+  /// Tracks the most recent `observedAt` per agent so out-of-order events
+  /// (catalog → hint → catalog with stale clock) do not flap the badge.
+  final Map<String, DateTime> _lastPresenceObservedByAgentId =
+      <String, DateTime>{};
+
+  /// Per-agent debounce for confirming a hint via REST. Cancelled on
+  /// subsequent hints for the same agent and on `dispose()`.
+  final Map<String, Timer> _hintConfirmTimers = <String, Timer>{};
+
+  /// PR-M part 3: subscription to `ConsumerSocketConnection.states()`.
+  /// Drives the poller on/off in tandem with the visibility state.
+  StreamSubscription<ConsumerSocketConnectionState>? _socketStateSub;
+
+  /// PR-M part 3: latest socket state observed. The page tells us
+  /// when it becomes visible/hidden via [onScreenVisible] /
+  /// [onScreenHidden]; we combine the two signals to gate the poller.
+  bool _isScreenVisible = false;
+  bool _isSocketConnected = false;
+
   Future<T> _runPendingMutationSerialized<T>(Future<T> Function() action) {
     final completer = Completer<T>();
     _pendingMutationTail = _pendingMutationTail.then((_) async {
@@ -147,6 +206,12 @@ class ClientAgentsController extends ChangeNotifier {
       return;
     }
     await _refreshAll(keepContentVisible: false);
+    // Subscribe to realtime presence after the initial load so the first
+    // hints/catalog events have a populated `_approvedAgents` to upsert
+    // into. Subscription is idempotent — re-running `initialize()` is a
+    // no-op (early return above), and the presence use case may not be
+    // registered when the build does not opt in.
+    _maybeSubscribeToPresence();
   }
 
   Future<void> refreshAll() async {
@@ -1346,9 +1411,243 @@ class ClientAgentsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ----- Realtime presence (PR-M part 2) -----
+
+  void _maybeSubscribeToPresence() {
+    final useCase = _observeAgentPresenceUseCase;
+    if (useCase == null) {
+      return;
+    }
+    if (_presenceSub != null) {
+      return;
+    }
+    _presenceSub = useCase().listen(
+      _onPresence,
+      onError: (Object error, StackTrace stackTrace) {
+        AppLogger.warning(
+          'Agent presence stream error',
+          context: const <String, Object?>{
+            'component': 'ClientAgentsController',
+            'operation': 'presence_stream',
+          },
+          error: error,
+          stackTrace: stackTrace,
+        );
+      },
+    );
+    _maybeSubscribeToSocketState();
+  }
+
+  void _maybeSubscribeToSocketState() {
+    final connection = _consumerSocketConnection;
+    if (connection == null) {
+      return;
+    }
+    if (_socketStateSub != null) {
+      return;
+    }
+    // Seed with the current state so the first visibility transition
+    // does not race against the first state event.
+    _isSocketConnected = connection.isConnected;
+    _socketStateSub = connection.states().listen((state) {
+      if (_isDisposed) {
+        return;
+      }
+      _isSocketConnected = state is ConsumerSocketConnected;
+      _reconcilePollerGate();
+    });
+  }
+
+  /// Reconciles the REST poller (Camada 3) with the current socket
+  /// state and screen visibility. The contract is: poll **only** when
+  /// the screen is visible AND the socket is NOT connected. As soon
+  /// as the socket comes back, push events take over and the poller
+  /// stops to avoid double-counting.
+  void _reconcilePollerGate() {
+    final poller = _agentPresencePoller;
+    if (poller == null) {
+      return;
+    }
+    final userId = _authController.session?.userId;
+    if (userId == null || userId.isEmpty) {
+      poller.stop();
+      return;
+    }
+    final shouldPoll = _isScreenVisible && !_isSocketConnected;
+    if (shouldPoll) {
+      poller.start(userId: userId);
+    } else {
+      poller.stop();
+    }
+  }
+
+  /// Page-level hook (RouteAware): the `client_agents` screen became
+  /// the visible route. Only effective when PR-M part 3 dependencies
+  /// (`AgentPresencePoller` + `ConsumerSocketConnection`) were wired —
+  /// no-op otherwise so the legacy build behaves identically.
+  void onScreenVisible() {
+    _isScreenVisible = true;
+    _reconcilePollerGate();
+  }
+
+  /// Page-level hook (RouteAware): the `client_agents` screen left the
+  /// foreground (push to detail, tab switch, deep route). Stops the
+  /// REST polling so we do not waste battery on hidden views.
+  void onScreenHidden() {
+    _isScreenVisible = false;
+    _reconcilePollerGate();
+  }
+
+  void _onPresence(AgentPresenceEvent event) {
+    if (_isDisposed) {
+      return;
+    }
+    // Drop events older than the latest observation we already applied
+    // for the same agent. Both sources (catalog push + command hints)
+    // can race, so anchoring on `observedAt` keeps the badge stable.
+    final last = _lastPresenceObservedByAgentId[event.agentId];
+    if (last != null && !event.observedAt.isAfter(last)) {
+      AppLogger.debug(
+        'Discarded stale presence event',
+        context: <String, Object?>{
+          'component': 'ClientAgentsController',
+          'operation': 'presence_dedup',
+          'agentId': event.agentId,
+        },
+      );
+      return;
+    }
+    _lastPresenceObservedByAgentId[event.agentId] = event.observedAt;
+
+    final userId = _authController.session?.userId;
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+
+    switch (event) {
+      case AgentPresenceCatalogUpdated():
+        unawaited(_refreshAgentDetailFromPresence(
+          userId: userId,
+          agentId: event.agentId,
+        ));
+      case AgentPresenceHint():
+        _applyHintInMemory(
+          agentId: event.agentId,
+          online: event.online,
+        );
+        _scheduleHintConfirm(userId: userId, agentId: event.agentId);
+    }
+  }
+
+  Future<void> _refreshAgentDetailFromPresence({
+    required String userId,
+    required String agentId,
+  }) async {
+    final result = await _loadClientAgentDetailUseCase(
+      userId: userId,
+      agentId: agentId,
+    );
+    if (_isDisposed) {
+      return;
+    }
+    result.fold(
+      (agent) {
+        _upsertApprovedAgentsInMemory(<ClientAgent>[agent]);
+        _notifyListenersIfAlive();
+      },
+      (failure) {
+        AppLogger.warning(
+          'Refresh after presence event failed',
+          context: <String, Object?>{
+            'component': 'ClientAgentsController',
+            'operation': 'refreshAfterPresence',
+            'agentId': agentId,
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+      },
+    );
+  }
+
+  void _applyHintInMemory({
+    required String agentId,
+    required bool online,
+  }) {
+    final current = _approvedAgents;
+    if (current == null) {
+      // No approved list yet — the next refresh will reconcile presence
+      // with the server. Hints are a UI optimisation, not the truth.
+      return;
+    }
+    var changed = false;
+    final updatedItems = current.items.map((agent) {
+      if (agent.agentId != agentId) {
+        return agent;
+      }
+      final desired = online
+          ? AgentConnectionStatus.online
+          : AgentConnectionStatus.offline;
+      if (agent.connectionStatus == desired) {
+        return agent;
+      }
+      changed = true;
+      return agent.copyWith(connectionStatus: desired);
+    }).toList(growable: false);
+    if (!changed) {
+      return;
+    }
+    _approvedAgents = PaginatedResult<ClientAgent>(
+      items: updatedItems,
+      count: current.count,
+      total: current.total,
+      page: current.page,
+      pageSize: current.pageSize,
+    );
+    _notifyListenersIfAlive();
+  }
+
+  void _scheduleHintConfirm({
+    required String userId,
+    required String agentId,
+  }) {
+    _hintConfirmTimers[agentId]?.cancel();
+    _hintConfirmTimers[agentId] = Timer(_hintConfirmDelay, () {
+      _hintConfirmTimers.remove(agentId);
+      if (_isDisposed) {
+        return;
+      }
+      unawaited(_refreshAgentDetailFromPresence(
+        userId: userId,
+        agentId: agentId,
+      ));
+    });
+  }
+
+  void _cancelAllHintConfirmTimers() {
+    for (final timer in _hintConfirmTimers.values) {
+      timer.cancel();
+    }
+    _hintConfirmTimers.clear();
+  }
+
   @override
   void dispose() {
+    if (_isDisposed) {
+      // Idempotent: tests and the page layer occasionally double-tap
+      // dispose during teardown. ChangeNotifier.dispose throws on a
+      // second call, so we short-circuit here.
+      return;
+    }
     _stopApprovalPolling(clearTracked: true);
+    _cancelAllHintConfirmTimers();
+    unawaited(_presenceSub?.cancel());
+    _presenceSub = null;
+    unawaited(_socketStateSub?.cancel());
+    _socketStateSub = null;
+    _agentPresencePoller?.stop();
+    _lastPresenceObservedByAgentId.clear();
     _isDisposed = true;
     super.dispose();
   }

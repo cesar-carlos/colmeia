@@ -182,5 +182,88 @@ void main() {
         ).equals(AppRoute.settings.path);
       },
     );
+
+    test(
+      'should hold navigation while restoring session on a protected route '
+      '(no flash of login on cold start)',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: false,
+            isRestoringSession: true,
+            canAccessMatchedRoute: false,
+            canAccessDashboardHome: false,
+            matchedRoute: AppRoute.dashboard,
+            isUserContextLoading: false,
+          ),
+        ).isNull();
+      },
+    );
+
+    test(
+      'should hold navigation while restoring session on a guest-only route '
+      '(no flash of dashboard before restore settles)',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: false,
+            isRestoringSession: true,
+            canAccessMatchedRoute: true,
+            canAccessDashboardHome: false,
+            matchedRoute: AppRoute.login,
+            isUserContextLoading: false,
+          ),
+        ).isNull();
+      },
+    );
+
+    test(
+      'should hold navigation while restoring session on unmatched location',
+      () {
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: false,
+            isRestoringSession: true,
+            canAccessMatchedRoute: false,
+            canAccessDashboardHome: false,
+            matchedRoute: AppRoute.unmatched,
+            isUserContextLoading: false,
+          ),
+        ).isNull();
+      },
+    );
+
+    test(
+      'should resume normal protected-route guard once session is restored',
+      () {
+        // Default isRestoringSession: false models the post-restore state.
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: true,
+            canAccessMatchedRoute: true,
+            canAccessDashboardHome: true,
+            matchedRoute: AppRoute.dashboard,
+            isUserContextLoading: false,
+          ),
+        ).isNull();
+      },
+    );
+
+    test(
+      'should send to login once restore finishes without an active session',
+      () {
+        // Default isRestoringSession: false models the post-restore state
+        // where no session was rehydrated; normal guest gating must apply.
+        check(
+          resolveAuthRedirect(
+            isAuthenticated: false,
+            canAccessMatchedRoute: false,
+            canAccessDashboardHome: false,
+            matchedRoute: AppRoute.dashboard,
+            isUserContextLoading: false,
+          ),
+        ).equals(AppRoute.login.path);
+      },
+    );
   });
 }

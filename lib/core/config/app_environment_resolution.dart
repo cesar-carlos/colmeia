@@ -41,4 +41,18 @@ abstract final class AppEnvironmentResolution {
     }
     return fallback;
   }
+
+  static int resolveInt({
+    required String fromDefine,
+    required String? fromDotenv,
+    required int fallback,
+  }) {
+    if (fromDefine.isNotEmpty) {
+      return int.tryParse(fromDefine.trim()) ?? fallback;
+    }
+    if (fromDotenv != null && fromDotenv.trim().isNotEmpty) {
+      return int.tryParse(fromDotenv.trim()) ?? fallback;
+    }
+    return fallback;
+  }
 }

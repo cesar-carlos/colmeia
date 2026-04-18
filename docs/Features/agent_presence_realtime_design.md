@@ -3,9 +3,21 @@
 > Companheiro técnico de `docs/Features/socket_consumer_channel_plan.md` §19.
 > Este documento detalha **contratos**, **lifecycle**, **DI**, **casos de
 > borda** e **plano de testes** para a capacidade de presença em tempo real.
-> Nenhum código de produção foi escrito ainda; os blocos `dart` abaixo são
-> **esqueletos normativos** — a implementação deve seguir literalmente as
-> assinaturas, comentários e contratos descritos.
+>
+> **Status:** **PR-M partes 1, 2 e 3 entregues.** Domain
+> (`AgentPresenceEvent`, `AgentPresenceStream`), application
+> (`ObserveAgentPresenceUseCase`, `AgentPresencePoller`), data
+> (`ClientAgentProfileUpdatedListener`, `AgentCommandPresenceHinter`,
+> `SocketAgentPresenceStream`), DI gated por
+> `SOCKET_PRESENCE_LISTENER_ENABLED`, wire-up no
+> `ClientAgentsController` (§6) com dedup + debounce + visibility
+> gating, e `RouteAware` na page conectado existem em produção.
+> Habilitar o env agora liga **as 3 camadas** (push de catálogo +
+> hints de comandos + poller REST de fallback).
+>
+> Os blocos `dart` neste doc continuam servindo de referência; alguns
+> diferem do código real porque a implementação simplificou alguns
+> pontos (ver "Notas de divergência" no final de cada seção).
 
 ---
 
@@ -886,6 +898,132 @@ de erro real).
 
 > Nenhum PR introduz dependência runtime nova: `socket_io_client` já é
 > trazido no PR-1 do plano principal; tudo aqui usa `dart:async`.
+
+---
+
+## 11.3 Notas de divergência (PR-M parte 3 entregue)
+
+A implementação da Camada 3 (poller REST + visibility gating) seguiu
+o esqueleto do design com estas escolhas concretas:
+
+- **Loop de re-tick interno.** O esqueleto (§3.2) usa um único
+  `Timer.periodic` com `_tickInFlight` para evitar reentrância. Bom
+  pra produção, ruim pra teste: trocar o `userId` durante uma chamada
+  REST em vôo perdia o tick novo até o próximo intervalo. A
+  implementação real adiciona um `while (!_isDisposed)` dentro do
+  `_tick` que repete a chamada quando `_activeUserId` mudou
+  durante o `await`. O teste
+  `agent_presence_poller_test.dart#start with a different userId`
+  pin esse comportamento.
+- **Onde mora a regra de gating.** O esqueleto sugere que o
+  `_socketStateSub` viva no controller. A implementação faz isso
+  *e* introduz `_reconcilePollerGate()` como o único ponto que
+  decide ligar/desligar o poller — chamado por **ambas** as
+  transições (visibilidade e estado do socket). Isso garante a
+  invariante "poller liga só quando tela visível AND socket
+  desconectado" em qualquer ordem de eventos.
+- **Estado seed do socket.** No `_maybeSubscribeToSocketState()`
+  lemos `connection.isConnected` ANTES de assinar `states()` para
+  que a primeira chamada de `onScreenVisible` não dependa do hub
+  emitir um state event imediato.
+- **Hooks `RouteAware`.** A page chama `onScreenVisible` em
+  `didPush` e `didPopNext`; chama `onScreenHidden` em `didPushNext`
+  e `didPop`. `didPopNext` ainda dispara `refreshAll()` (legado),
+  mantendo o comportamento original de pull-to-refresh quando o
+  usuário volta de uma página filha.
+- **Optional injection no controller.** Tanto `AgentPresencePoller`
+  quanto `ConsumerSocketConnection` são parâmetros opcionais. O
+  `injector_presentation.dart` passa via
+  `getIt.isRegistered<...>() ? getIt<...>() : null`, então builds
+  sem `SOCKET_PRESENCE_LISTENER_ENABLED` continuam idênticos.
+- **`dispose()` do poller** apenas para o timer; **não** fecha o
+  sink — esse sink é compartilhado com `SocketAgentPresenceStream`
+  e pertence a ele.
+
+---
+
+## 11.2 Notas de divergência (PR-M parte 2 entregue)
+
+A implementação do wire-up no controller seguiu a forma do design com
+estas escolhas concretas:
+
+- **Use case opcional.** O controller recebe
+  `ObserveAgentPresenceUseCase?` (default `null`). Quando o env
+  `SOCKET_PRESENCE_LISTENER_ENABLED=false` o `injector_presentation`
+  passa `null` e o controller pula todo o caminho de presença —
+  preservando os testes existentes e a UX legada do `Refresh` manual.
+- **Subscription pós-`_refreshAll`.** A inscrição em
+  `_observeAgentPresenceUseCase()` acontece **depois** do primeiro
+  `_refreshAll(...)` em `initialize()`. Isso garante que a primeira
+  enxurrada de eventos catalog/hint encontra `_approvedAgents`
+  populado para fazer upsert; se chegasse antes, hints de agentes
+  já conhecidos seriam descartados como "agentId desconhecido".
+- **Dedup por `observedAt`.** A regra é "estritamente mais novo
+  vence": eventos com `observedAt <=` o último observado para o
+  mesmo agente são logados como `presence_dedup` (debug) e
+  ignorados. Resolve o caso real de uma reconexão entregar de novo
+  um evento que já vimos antes do drop.
+- **Hint = `copyWith` in-memory + Timer debounced.** O delay padrão é
+  5 s em produção; o construtor aceita `hintConfirmDelay` para os
+  testes encurtarem (30 ms na suite). Cada novo hint cancela o timer
+  anterior do mesmo agente — sequências de hints vira UMA chamada
+  REST por janela.
+- **Hint para agente desconhecido = no-op.** `_applyHintInMemory`
+  retorna sem efeito quando `_approvedAgents == null` ou quando o
+  `agentId` não está na lista. Evita inserir agentes-fantasma que
+  o usuário ainda não aprovou.
+- **`dispose()` idempotente.** A página chama `_controller.dispose()`
+  e a árvore do `Provider` também — a versão antiga estourava
+  `ChangeNotifier.debugAssertNotDisposed` no segundo dispose.
+  Adicionamos guarda no início (`if (_isDisposed) return;`).
+- **Camada 3 (poller REST) NÃO entrou.** O design previa
+  `AgentPresencePoller` + `RouteAware.didPush/didPop`. Decidimos
+  adiar para PR-M parte 3 porque (a) hoje o `Refresh` manual já
+  cobre o cenário sem socket, (b) o wire-up é feature-de-borda que
+  só compensa após métricas mostrarem necessidade.
+
+---
+
+## 11.1 Notas de divergência (PR-M parte 1 entregue)
+
+A implementação real seguiu a forma deste design com pequenas
+simplificações para reduzir o blast radius do primeiro PR:
+
+- **Decoder do listener.** O esqueleto cita `PayloadFrameDecoder`. O
+  código real recebe um `PayloadFrameCodec` (a mesma abstração que o
+  PR-K já registrava). Aceita também a forma legada (raw JSON map),
+  documentada no `socket_client_sdk.md` como compatível durante a
+  janela de migração.
+- **Composição do `SocketAgentPresenceStream`.** Para evitar a
+  referência circular descrita em §5 ("o stream precisa do listener,
+  o listener precisa do sink"), o stream tem dois construtores:
+  `deferred()` (para a DI) + `bound()` (para testes). O método
+  `bind(catalogListener:, commandHinter:)` plugar os adapters depois.
+  O sink fica acessível via getter, então o listener e o hinter são
+  construídos com `stream.sink`.
+- **`off()` no listener.** A versão simplificada usa
+  `connection.raw.off(eventName)` (single-arg, limpa todos handlers
+  desse evento), porque o listener é o único consumidor de
+  `client:agent.profile.updated` no app — evita complicações com
+  `EventHandler<dynamic>` no mocktail dos testes.
+- **Re-attach automático.** O `SocketAgentPresenceStream` observa
+  `ConsumerSocketConnection.states()` e reanexa o listener em cada
+  transição para `ConsumerSocketConnected`; em `Disconnected/Error/
+  Unauthorized` faz `dispose()` no listener para que o próximo
+  `connect` instale um handler fresco no novo `io.Socket`. O hinter
+  permanece anexado porque consome o stream em memória do dispatcher,
+  não o socket cru.
+- **`AgentCommandFailedTransient`.** O esqueleto não tratava esse
+  caso (não existia ainda). A implementação real **não** emite hint
+  para Transient (timeout, decode_failed, rate-limit) porque esses
+  códigos não distinguem entre "agente caído" e "blip de rede".
+- **`AgentPresencePoller` (Camada 3).** Não entregue em PR-M parte 1.
+  O wire-up no `ClientAgentsController` que usaria este poller também
+  ficou para PR-M parte 2.
+
+Tudo o restante (sealed `AgentPresenceEvent`, port `AgentPresenceStream`,
+use case `ObserveAgentPresenceUseCase`, hinter mapping, DI gated por
+env) está fiel ao design.
 
 ---
 

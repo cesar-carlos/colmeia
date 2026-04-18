@@ -16,7 +16,7 @@ void main() {
 
   setUp(() {
     dio = _MockDio();
-    dataSource = ApiAgentQueriesRemoteDataSource(dio);
+    dataSource = ApiAgentQueriesRemoteDataSource(dio: dio);
   });
 
   test(

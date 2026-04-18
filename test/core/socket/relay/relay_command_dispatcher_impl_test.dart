@@ -1,0 +1,607 @@
+// Test-only: many sequential `wiring.fire(...)` calls drive the dispatcher
+// state machine in distinct phases (accept → response → complete). Rewriting
+// each pair as cascades hides the intent and obscures the protocol shape
+// these tests are pinning.
+// ignore_for_file: cascade_invocations
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io' show gzip;
+import 'dart:typed_data';
+
+import 'package:checks/checks.dart';
+import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/payload_frame.dart';
+import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
+import 'package:colmeia/core/socket/relay/relay_event_names.dart';
+import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
+
+class _MockConnection extends Mock implements ConsumerSocketConnection {}
+
+class _MockSocket extends Mock implements io.Socket {}
+
+class _SocketWiring {
+  final Map<String, List<Function>> handlers = <String, List<Function>>{};
+  final List<({String event, Object? data})> emits =
+      <({String event, Object? data})>[];
+
+  void register(_MockSocket socket) {
+    when(() => socket.on(any(), any())).thenAnswer((invocation) {
+      final name = invocation.positionalArguments[0] as String;
+      final handler = invocation.positionalArguments[1] as Function;
+      handlers.putIfAbsent(name, () => <Function>[]).add(handler);
+      return () {};
+    });
+    // off(name) and off(name, handler) are void; mocktail tolerates them
+    // unstubbed. We do not need to track removals here because the test
+    // sets fresh wiring per `setUp`.
+    when(() => socket.emit(any(), any<dynamic>())).thenAnswer((invocation) {
+      emits.add((
+        event: invocation.positionalArguments[0] as String,
+        data: invocation.positionalArguments[1],
+      ));
+    });
+  }
+
+  void fire(String event, Object? payload) {
+    final list = handlers[event];
+    if (list == null) {
+      return;
+    }
+    for (final handler in List<Function>.of(list)) {
+      Function.apply(handler, <Object?>[payload]);
+    }
+  }
+}
+
+/// Builds a PayloadFrame envelope (`Map<String, Object?>`) carrying [data]
+/// JSON-encoded and optionally gzipped, just like the hub would emit on the
+/// wire. Used to feed `relay:rpc.response` / `relay:rpc.complete` events
+/// into the dispatcher.
+Map<String, Object?> _buildResponseFrame(
+  Object? data, {
+  required String requestId,
+  bool useGzip = false,
+}) {
+  final encoded = Uint8List.fromList(utf8.encode(jsonEncode(data)));
+  final wire = useGzip ? Uint8List.fromList(gzip.encode(encoded)) : encoded;
+  return PayloadFrame(
+    payload: wire,
+    originalSize: encoded.length,
+    compressedSize: wire.length,
+    cmp: useGzip ? PayloadFrame.compressionGzip : PayloadFrame.compressionNone,
+    requestId: requestId,
+  ).toMap();
+}
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(<String, Object?>{});
+    registerFallbackValue(() {});
+    registerFallbackValue(const ConsumerSocketDisconnected());
+  });
+
+  late _MockConnection connection;
+  late _MockSocket socket;
+  late _SocketWiring wiring;
+  late StreamController<ConsumerSocketConnectionState> stateController;
+  late RelayConversationManager manager;
+
+  setUp(() {
+    connection = _MockConnection();
+    socket = _MockSocket();
+    wiring = _SocketWiring()..register(socket);
+    stateController = StreamController<ConsumerSocketConnectionState>.broadcast();
+
+    when(() => connection.raw).thenReturn(socket);
+    when(() => connection.states()).thenAnswer((_) => stateController.stream);
+    when(connection.connect).thenAnswer(
+      (_) async => ConsumerSocketConnected(
+        socketId: 'sock-1',
+        handshakeAt: DateTime.utc(2026, 4, 17),
+      ),
+    );
+
+    manager = RelayConversationManager(
+      connection: connection,
+      startTimeout: const Duration(milliseconds: 200),
+      endTimeout: const Duration(milliseconds: 100),
+    );
+  });
+
+  tearDown(() async {
+    await manager.dispose();
+    await stateController.close();
+  });
+
+  Future<RelayCommandDispatcherImpl> dispatcherFor({
+    Duration defaultTimeout = const Duration(milliseconds: 500),
+  }) async {
+    final dispatcher = RelayCommandDispatcherImpl(
+      connection: connection,
+      conversationManager: manager,
+      defaultTimeout: defaultTimeout,
+    );
+    return dispatcher;
+  }
+
+  // Helper to drive the manager to an active conversation before any RPC.
+  Future<String> openConversation({String agentId = 'agent-1'}) async {
+    final future = manager.obtain(agentId);
+    // Allow the conversation.start emit + listener registration to settle.
+    await Future<void>.delayed(Duration.zero);
+    wiring.fire(
+      RelayEventNames.conversationStarted,
+      <String, Object?>{
+        'success': true,
+        'conversationId': 'conv-$agentId',
+        'agentId': agentId,
+      },
+    );
+    final conversation = await future;
+    return conversation.conversationId!;
+  }
+
+  group('RelayCommandDispatcherImpl.sendUnary', () {
+    test('emits relay:rpc.request and resolves on rpc.response', () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final outcomes = <RelayRpcOutcome>[];
+      final outcomesSub = dispatcher.outcomes().listen(outcomes.add);
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'agentId': 'agent-1',
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-1',
+            'params': <String, Object?>{'sql': 'SELECT 1'},
+          },
+        },
+        clientRequestId: 'rpc-1',
+      );
+      // Two pumps: one for the await `manager.obtain` chain, one for the
+      // emit that happens after the chained microtasks resolve.
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      check(
+        wiring.emits.where((e) => e.event == RelayEventNames.rpcRequest).length,
+      ).equals(1);
+      final rpcEmit = wiring.emits
+          .firstWhere((e) => e.event == RelayEventNames.rpcRequest);
+      final rpcEnvelope = rpcEmit.data! as Map<String, Object?>;
+      check(rpcEnvelope['conversationId']).equals('conv-agent-1');
+      check(rpcEnvelope['payloadFrameCompression']).equals('default');
+      check(rpcEnvelope['frame']).isA<Map<String, Object?>>();
+
+      // accepted assigns server requestId.
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'rpc-1',
+        'requestId': 'srv-req-1',
+        'success': true,
+      });
+
+      // response carries the bridge envelope.
+      final response = <String, Object?>{
+        'response': <String, Object?>{
+          'type': 'single',
+          'item': <String, Object?>{
+            'id': 'rpc-1',
+            'success': true,
+            'result': <String, Object?>{'rows': <Object?>[]},
+          },
+        },
+      };
+      wiring.fire(
+        RelayEventNames.rpcResponse,
+        _buildResponseFrame(response, requestId: 'srv-req-1'),
+      );
+
+      final result = await future;
+      check(result['response']).isA<Map<dynamic, dynamic>>();
+
+      // Broadcast stream delivery happens on a follow-up microtask. Pump
+      // once before unsubscribing so the success outcome lands.
+      await Future<void>.delayed(Duration.zero);
+      await outcomesSub.cancel();
+      check(outcomes.length).equals(1);
+      check(outcomes.single).isA<RelayRpcSuccess>();
+    });
+
+    test('completes on relay:rpc.complete when the hub bundles a response',
+        () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-2',
+          },
+        },
+        clientRequestId: 'rpc-2',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'rpc-2',
+        'requestId': 'srv-req-2',
+        'success': true,
+      });
+
+      wiring.fire(
+        RelayEventNames.rpcComplete,
+        _buildResponseFrame(
+          <String, Object?>{
+            'response': <String, Object?>{
+              'type': 'single',
+              'item': <String, Object?>{'id': 'rpc-2', 'success': true},
+            },
+          },
+          requestId: 'srv-req-2',
+        ),
+      );
+
+      final result = await future;
+      check(result.containsKey('response')).isTrue();
+    });
+
+    test('rejected accept surfaces RelayRequestRejected with server code',
+        () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-3',
+          },
+        },
+        clientRequestId: 'rpc-3',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'rpc-3',
+        'success': false,
+        'error': <String, Object?>{
+          'code': 'RATE_LIMITED',
+          'message': 'too many requests',
+        },
+      });
+
+      await check(future).throws<RelayRequestRejected>(
+        (subject) => subject.has((e) => e.code, 'code').equals('RATE_LIMITED'),
+      );
+    });
+
+    test('terminal_status != completed on rpc.complete fails as RelayStreamTerminated',
+        () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-4',
+          },
+        },
+        clientRequestId: 'rpc-4',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'rpc-4',
+        'requestId': 'srv-req-4',
+        'success': true,
+      });
+
+      wiring.fire(
+        RelayEventNames.rpcComplete,
+        _buildResponseFrame(
+          <String, Object?>{'terminal_status': 'aborted'},
+          requestId: 'srv-req-4',
+        ),
+      );
+
+      await check(future).throws<RelayStreamTerminated>(
+        (subject) =>
+            subject.has((e) => e.code, 'code').equals('stream_aborted'),
+      );
+    });
+
+    test('reuses the active conversation across calls (single start emit)',
+        () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      Future<Map<String, dynamic>> dispatch(String id) {
+        return dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': id,
+            },
+          },
+          clientRequestId: id,
+        );
+      }
+
+      final f1 = dispatch('rpc-A');
+      final f2 = dispatch('rpc-B');
+      await Future<void>.delayed(Duration.zero);
+
+      check(
+        wiring.emits
+            .where((e) => e.event == RelayEventNames.conversationStart)
+            .length,
+      ).equals(1);
+      check(
+        wiring.emits
+            .where((e) => e.event == RelayEventNames.rpcRequest)
+            .length,
+      ).equals(2);
+
+      void completeCall(String id) {
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': id,
+          'requestId': 'srv-$id',
+          'success': true,
+        });
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'item': <String, Object?>{'id': id, 'success': true},
+              },
+            },
+            requestId: 'srv-$id',
+          ),
+        );
+      }
+
+      completeCall('rpc-A');
+      completeCall('rpc-B');
+
+      await f1;
+      await f2;
+    });
+
+    test('duplicate clientRequestId throws RelayDuplicateRequestId', () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final f1 = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'dup',
+          },
+        },
+        clientRequestId: 'dup',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      await check(
+        dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'dup',
+            },
+          },
+          clientRequestId: 'dup',
+        ),
+      ).throws<RelayDuplicateRequestId>();
+
+      // Resolve the original to keep the test free of dangling pendings.
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'dup',
+        'requestId': 'srv-dup',
+        'success': true,
+      });
+      wiring.fire(
+        RelayEventNames.rpcResponse,
+        _buildResponseFrame(
+          <String, Object?>{
+            'response': <String, Object?>{
+              'type': 'single',
+              'item': <String, Object?>{'id': 'dup', 'success': true},
+            },
+          },
+          requestId: 'srv-dup',
+        ),
+      );
+      await f1;
+    });
+
+    test('timeout throws RelayRequestTimeout', () async {
+      final dispatcher = await dispatcherFor(
+        defaultTimeout: const Duration(milliseconds: 30),
+      );
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-timeout',
+          },
+        },
+        clientRequestId: 'rpc-timeout',
+      );
+
+      await check(future).throws<RelayRequestTimeout>();
+    });
+
+    test('dispose fails pending requests with RelayDispatcherDisposed',
+        () async {
+      final dispatcher = await dispatcherFor();
+      await openConversation();
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-dispose',
+          },
+        },
+        clientRequestId: 'rpc-dispose',
+      );
+      // Pre-attach a no-op error listener so dispose() can complete the
+      // pending request with an error without it being reported as an
+      // "unhandled async error" between the two awaits below.
+      // ignore: unawaited_futures
+      future.catchError((Object _) => <String, dynamic>{});
+      await Future<void>.delayed(Duration.zero);
+
+      await dispatcher.dispose();
+
+      await check(future).throws<RelayDispatcherDisposed>();
+    });
+
+    test('passes RelayPayloadFrameCompression hint as wireValue', () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-compress',
+          },
+        },
+        clientRequestId: 'rpc-compress',
+        compression: RelayPayloadFrameCompression.always,
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final emit = wiring.emits
+          .firstWhere((e) => e.event == RelayEventNames.rpcRequest);
+      final envelope = emit.data! as Map<String, Object?>;
+      check(envelope['payloadFrameCompression']).equals('always');
+
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'rpc-compress',
+        'requestId': 'srv-compress',
+        'success': true,
+      });
+      wiring.fire(
+        RelayEventNames.rpcResponse,
+        _buildResponseFrame(
+          <String, Object?>{
+            'response': <String, Object?>{
+              'type': 'single',
+              'item': <String, Object?>{'id': 'rpc-compress', 'success': true},
+            },
+          },
+          requestId: 'srv-compress',
+        ),
+      );
+      await future;
+    });
+
+    test('decode failure on response frame surfaces RelayDecodeFailure',
+        () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-decode',
+          },
+        },
+        clientRequestId: 'rpc-decode',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'rpc-decode',
+        'requestId': 'srv-decode',
+        'success': true,
+      });
+
+      // Send a frame with an invalid schemaVersion.
+      final encoded = utf8.encode('{"foo":1}');
+      wiring.fire(RelayEventNames.rpcResponse, <String, Object?>{
+        'schemaVersion': '9.9',
+        'enc': 'json',
+        'cmp': 'none',
+        'contentType': 'application/json',
+        'originalSize': encoded.length,
+        'compressedSize': encoded.length,
+        'payload': base64Encode(encoded),
+        'requestId': 'srv-decode',
+      });
+
+      await check(future).throws<RelayDecodeFailure>(
+        (subject) => subject
+            .has((e) => e.code, 'code')
+            .equals('unsupported_schema_version'),
+      );
+    });
+  });
+}

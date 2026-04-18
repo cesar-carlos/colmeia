@@ -24,6 +24,7 @@ class AgentSqlExecuteRequest {
     this.bridgeTimeoutMs,
     this.pagination,
     this.executeOptions,
+    this.useRelay = false,
   });
 
   final String agentId;
@@ -55,6 +56,23 @@ class AgentSqlExecuteRequest {
 
   /// Agent-side execution flags under `params.options`.
   final AgentSqlExecuteOptions? executeOptions;
+
+  /// Routing hint for the data layer (PR-L+): when `true`, the
+  /// `HybridAgentQueriesRemoteDataSource` dispatches this request through the
+  /// **relay channel** (`relay:rpc.request` over a `RelayConversation`)
+  /// instead of the unitary `agents:command` event. Used for queries that
+  /// either return very large result sets or that benefit from the `relay`
+  /// rate-limit pool (separate from the shared `agents:command`/REST quota).
+  ///
+  /// This flag never reaches the bridge body — it is consumed by the
+  /// datasource selector and stripped before serialization. Defaults to
+  /// `false` so existing call sites remain on the legacy channel.
+  ///
+  /// Effective only when `SOCKET_RELAY_ENABLED=true` and
+  /// `AGENT_BRIDGE_TRANSPORT=socket`. With other configurations the hybrid
+  /// datasource falls back to its base channel and logs the bypass for
+  /// observability.
+  final bool useRelay;
 
   String get trimmedAgentId => agentId.trim();
   String get trimmedSql => sql.trim();

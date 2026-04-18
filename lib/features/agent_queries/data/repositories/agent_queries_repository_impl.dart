@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response.dart';
@@ -135,6 +136,103 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           context: <String, Object?>{
             'operation': 'executeAgentSql',
             'agentId': request.trimmedAgentId,
+          },
+        ),
+      );
+    } on SocketDispatchUnauthorized catch (error, stackTrace) {
+      AppLogger.warning(
+        'Agent SQL Socket dispatch unauthorized',
+        context: <String, Object?>{
+          'operation': 'executeAgentSql',
+          'agentId': request.trimmedAgentId,
+          'transport': 'socket',
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Failure<AgentSqlExecutionResult, AppFailure>(
+        SessionFailure(
+          message: error.message,
+          userMessage:
+              'Sua sessao expirou. Faca login novamente para continuar.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            'operation': 'executeAgentSql',
+            'agentId': request.trimmedAgentId,
+            'transport': 'socket',
+            'socketCode': error.code,
+          },
+        ),
+      );
+    } on SocketDispatchAppError catch (error, stackTrace) {
+      AppLogger.warning(
+        'Agent SQL Socket app:error',
+        context: <String, Object?>{
+          'operation': 'executeAgentSql',
+          'agentId': request.trimmedAgentId,
+          'transport': 'socket',
+          'socketCode': error.code,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      const denied = 'AGENT_ACCESS_DENIED';
+      if (error.code == denied) {
+        return Failure<AgentSqlExecutionResult, AppFailure>(
+          AuthorizationFailure(
+            message: error.message,
+            userMessage: 'Voce nao tem acesso a este agente.',
+            cause: error,
+            stackTrace: stackTrace,
+            context: <String, Object?>{
+              'operation': 'executeAgentSql',
+              'agentId': request.trimmedAgentId,
+              'transport': 'socket',
+              'socketCode': error.code,
+            },
+          ),
+        );
+      }
+      return Failure<AgentSqlExecutionResult, AppFailure>(
+        NetworkFailure(
+          message: error.message,
+          userMessage:
+              'O servidor nao conseguiu processar a consulta agora. Tente novamente.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            'operation': 'executeAgentSql',
+            'agentId': request.trimmedAgentId,
+            'transport': 'socket',
+            'socketCode': error.code,
+          },
+        ),
+      );
+    } on SocketDispatchException catch (error, stackTrace) {
+      AppLogger.warning(
+        'Agent SQL Socket dispatch failed',
+        context: <String, Object?>{
+          'operation': 'executeAgentSql',
+          'agentId': request.trimmedAgentId,
+          'transport': 'socket',
+          'socketCode': error.code,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Failure<AgentSqlExecutionResult, AppFailure>(
+        NetworkFailure(
+          message: error.message,
+          userMessage:
+              'Falha de comunicacao com o servidor. Tente novamente.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            'operation': 'executeAgentSql',
+            'agentId': request.trimmedAgentId,
+            'transport': 'socket',
+            'socketCode': error.code,
           },
         ),
       );

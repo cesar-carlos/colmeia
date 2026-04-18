@@ -19,6 +19,7 @@ String? redirectWithAuthGuard({
 
   final redirect = resolveAuthRedirect(
     isAuthenticated: authController.isAuthenticated,
+    isRestoringSession: authController.isRestoringSession,
     canAccessMatchedRoute: canAccessMatchedRoute,
     canAccessDashboardHome: canAccessDashboardHome,
     matchedRoute: matchedRoute,
@@ -33,6 +34,7 @@ String? redirectWithAuthGuard({
         'matchedRoute': matchedRoute.name,
         'redirect': redirect,
         'isAuthenticated': authController.isAuthenticated,
+        'isRestoringSession': authController.isRestoringSession,
         'canAccessMatchedRoute': canAccessMatchedRoute,
         'canAccessDashboardHome': canAccessDashboardHome,
         'isUserContextLoading': userContextController.isLoadingInitial,
@@ -49,7 +51,17 @@ String? resolveAuthRedirect({
   required bool canAccessDashboardHome,
   required AppRoute matchedRoute,
   required bool isUserContextLoading,
+  bool isRestoringSession = false,
 }) {
+  // While the auth controller is rehydrating a previously stored session we
+  // hold the navigation: returning null keeps the requested route mounted so
+  // the user does not see a flash of the login screen before the session is
+  // restored. The router's refreshListenable re-evaluates this guard once
+  // `isRestoringSession` settles to false (with or without a session).
+  if (isRestoringSession && !isAuthenticated) {
+    return null;
+  }
+
   final isGuestOnlyRoute = switch (matchedRoute) {
     AppRoute.login ||
     AppRoute.register ||

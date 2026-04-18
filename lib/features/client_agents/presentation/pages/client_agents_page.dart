@@ -81,8 +81,30 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   }
 
   @override
+  void didPush() {
+    // PR-M part 3: visibility on first push so the REST poller (when
+    // wired) can decide if it should start polling on a degraded
+    // socket.
+    _controller.onScreenVisible();
+  }
+
+  @override
   void didPopNext() {
+    _controller.onScreenVisible();
     unawaited(_controller.refreshAll());
+  }
+
+  @override
+  void didPushNext() {
+    // PR-M part 3: pushed onto a child route (e.g. agent detail).
+    // Stop the REST poller — the badge stays in the in-memory
+    // snapshot and is reconciled when we come back via didPopNext.
+    _controller.onScreenHidden();
+  }
+
+  @override
+  void didPop() {
+    _controller.onScreenHidden();
   }
 
   @override
