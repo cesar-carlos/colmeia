@@ -2,6 +2,11 @@
     // https://go.microsoft.com/fwlink/?linkid=830387
     // Android: `emulatorId` = id de `flutter emulators` — inicia o AVD se estiver desligado (Dart-Code >= 3.114).
     // `deviceId` = id de `flutter devices` (útil para físico / iOS / Chrome).
+    //
+    // Canal Socket: por padrão o app usa REST (`AGENT_BRIDGE_TRANSPORT=rest`).
+    // Os perfis `colmeia (socket …)` ligam o canal `/consumers` via dart-define.
+    // Pré-requisito operacional: `SOCKET_CONSUMER_ROLES=user,admin,client` no
+    // `plug_server` (ver §0.3 de docs/Features/socket_consumer_channel_plan.md).
     "version": "0.2.0",
     "configurations": [
         {
@@ -11,6 +16,31 @@
             "emulatorId": "Pixel_Tablet",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
+            ]
+        },
+        {
+            "name": "colmeia (socket, Android tablet)",
+            "request": "launch",
+            "type": "dart",
+            "emulatorId": "Pixel_Tablet",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false",
+                "--dart-define=AGENT_BRIDGE_TRANSPORT=socket",
+                "--dart-define=SOCKET_WARM_UP_AFTER_LOGIN=true",
+                "--dart-define=SOCKET_PRESENCE_LISTENER_ENABLED=true"
+            ]
+        },
+        {
+            "name": "colmeia (socket + relay, Android tablet)",
+            "request": "launch",
+            "type": "dart",
+            "emulatorId": "Pixel_Tablet",
+            "toolArgs": [
+                "--dart-define=USE_FAKE_BACKEND=false",
+                "--dart-define=AGENT_BRIDGE_TRANSPORT=socket",
+                "--dart-define=SOCKET_WARM_UP_AFTER_LOGIN=true",
+                "--dart-define=SOCKET_PRESENCE_LISTENER_ENABLED=true",
+                "--dart-define=SOCKET_RELAY_ENABLED=true"
             ]
         },
         {

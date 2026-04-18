@@ -8,7 +8,11 @@
 > collector + adapter, PR-M p1/p2/p3 presença em 3 camadas) +
 > Fase 2.5 (3 smokes e2e contra hub real) +
 > auditoria de boot (B1 flash de login no cold start, B2 race do warm-up,
-> S1 `connection` nullable em REST-only, S2 sign-out gated por transport)
+> S1 `connection` nullable em REST-only, S2 sign-out gated por transport) +
+> auditoria de error handling (#1 mapeamento de `RelayDispatchException`,
+> #2 widening de auth-like codes em socket+relay, #2b cancelled benign,
+> #3 race total timeout defensivo, #4 propagação de `RpcFailure.userMessage`
+> pros gráficos opcionais do overview)
 > entregues.
 >
 > **Pendências remanescentes** (todas operacionais ou esperando
@@ -302,6 +306,75 @@ Arquivos tocados nesta entrega:
   cold start com sessão válida. Sem mudança de contrato — o parâmetro
   novo tem default `false`, então qualquer chamada antiga continua
   válida.
+
+### 0.5 Auditoria de error handling (entregue) — 4 bugs corrigidos
+
+Auditoria da cadeia `socket → datasource → repo → executor → controller →
+UI` em `agent_queries` e `overview` validou se: (a) erros não são
+suprimidos silenciosamente, (b) telas não travam, (c) erros de
+autorização chegam à UI, (d) erros de SQL chegam à UI. Encontrou e
+**corrigiu** 4 bugs com testes:
+
+| # | Tipo | Sintoma original | Fix |
+| - | ---- | ---------------- | --- |
+| **#1** | Suppression | Com `SOCKET_RELAY_ENABLED=true`, qualquer `RelayDispatchException` (`RelayRequestRejected`, `RelayRequestTimeout`, `RelayDecodeFailure`, `RelayStreamTerminated`, `RelayConversationLost`, etc.) caía em `on Object catch` no repositório → virava `UnknownFailure` genérico (mensagem vaga, código perdido nos logs). | `agent_queries_repository_impl.dart` ganhou catches dedicados para **cada** variante sealed do relay (timeout, conversation lost/start failure, request rejected com classificação de auth-like, stream terminated, decode failure, duplicate request id, dispatcher disposed). Cada variante mapeia para o `AppFailure` correto com `userMessage` PT-BR específica. |
+| **#2** | Suppression / classificação errada | Só `AGENT_ACCESS_DENIED` virava `AuthorizationFailure`; outros códigos auth-like do `app:error` (e da rejeição de relay) viravam `NetworkFailure` ("Falha de comunicação...") — mensagem **errada** para erro de **permissão**. | Novo `agent_queries_failure_codes.dart` com 2 allowlists case-insensitive: `kSocketAuthorizationDeniedCodes` (`AGENT_ACCESS_DENIED`, `ACCESS_DENIED`, `PERMISSION_DENIED`, `FORBIDDEN`, `INSUFFICIENT_SCOPE`, `INSUFFICIENT_PRIVILEGES`, `NOT_AUTHORIZED`) e `kSocketAuthenticationFailedCodes` (`UNAUTHORIZED`, `UNAUTHENTICATED`, `INVALID_TOKEN`, `TOKEN_EXPIRED`, `TOKEN_INVALID`). O helper `_appErrorToFailure` no repo agora classifica server codes em `SessionFailure` (auth-failed) / `AuthorizationFailure` (auth-denied) / `NetworkFailure` (resto). Aplicado tanto em `SocketDispatchAppError` quanto em `RelayRequestRejected`. |
+| **#2b** | UX errada para cancelamento | `SocketDispatchCancelled` (controller dispose / navegação) caía em `SocketDispatchException` → `NetworkFailure` "Falha de comunicação...", surfacando erro pra usuário que já saiu da tela. | Catch dedicado para `SocketDispatchCancelled` + `RelayDispatcherDisposed` retorna `UnknownFailure` com `userMessage: 'A consulta foi cancelada.'` e marca `context['cancelled'] = true`. Helper `isCancelledAgentQueryFailure(context)` permite controllers detectarem e **silenciarem** o banner de erro quando a tela já foi descartada. |
+| **#3** | Tela travada (loading infinito) | A estratégia `race` do `AgentQueryExecutor` esperava o `Completer` resolver. Se ao menos uma chamada nunca completasse E nem todas falhassem, o `await` ficava infinito → loading que não termina. | Construtor ganhou `raceTotalTimeout` (default `Duration(minutes: 2)`). `_executeRace` aplica `completer.future.timeout(raceTotalTimeout, onTimeout: ...)` que sintetiza um decision `_RaceTimedOut`. Na timeout, retorna `Failure(NetworkFailure)` com `userMessage: 'A consulta multiagente demorou mais que o tempo permitido. Tente novamente.'` + log estruturado com `unresolvedAgentIds`. Em produção esse safety net **não deve** disparar (dispatchers Socket/REST já têm timeout per-request bem menor) — existe defensivamente para nunca confiar cegamente em timeouts upstream. |
+| **#4** | Mensagem perdida | Gráficos opcionais do `overview` (`monthly`, `weekday`, `weekday-by-user`) absorviam falhas de SQL em `loadFailed: true` + lista vazia, **descartando** a mensagem específica do `RpcFailure`/`AuthorizationFailure` (`userMessage: "Você não tem acesso a este agente."`). UI mostrava só "Não foi possível carregar este gráfico". | `_resolveOptionalChartData` no repositório agora retorna `(points, loadFailed, loadFailureMessage)` com `failure.userMessage`. Adicionados 3 campos `String? <chart>LoadFailureMessage` em `Overview` (entity), `OverviewModel` (data — runtime apenas, **não** persistido em JSON), e `OverviewMonthlyParcelsComboChart` / `OverviewWeekdaySalesTrendChart` / `OverviewWeekdayUserSalesTrendChart` (widgets). Charts mostram `loadFailureMessage ?? l10n.overviewXxxLoadFailed` quando `loadFailed` — mensagem específica quando disponível, fallback genérico quando não. |
+
+Arquivos tocados nesta entrega:
+
+| Camada | Arquivo |
+| ------ | ------- |
+| Códigos de erro (novo) | `lib/features/agent_queries/data/repositories/agent_queries_failure_codes.dart` (allowlists `kSocketAuthorizationDeniedCodes` / `kSocketAuthenticationFailedCodes` + `AgentQueriesFailureContext` + `isCancelledAgentQueryFailure`) |
+| Repositório (BUGS #1, #2, #2b) | `lib/features/agent_queries/data/repositories/agent_queries_repository_impl.dart` (catches específicos para 8 variantes de relay + helper `_appErrorToFailure` compartilhado entre socket app:error e relay rejected) |
+| Executor (BUG #3) | `lib/features/agent_queries/application/orchestration/agent_query_executor.dart` (parâmetro `raceTotalTimeout` + `_RaceTimedOut` + `Failure(NetworkFailure)` na timeout) |
+| Overview entity / model (BUG #4) | `lib/features/overview/domain/entities/overview.dart`, `lib/features/overview/data/models/overview_model.dart` (3 novos `String? <chart>LoadFailureMessage` runtime, `copyWith` atualizado) |
+| Overview repository (BUG #4) | `lib/features/overview/data/repositories/overview_repository_impl.dart` (`_resolveOptionalChartData` propaga `loadFailureMessage`, `_buildOverview` aceita 3 novos opcionais, todas as 3 chamadas atualizadas) |
+| Overview widgets (BUG #4) | `lib/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart`, `overview_weekday_sales_trend_chart.dart`, `overview_weekday_user_sales_trend_chart.dart` (param `loadFailureMessage` + lookup com fallback no l10n) |
+| Overview composição (BUG #4) | `lib/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart` (passa o novo campo do `Overview` pra cada chart, em ambos os branches do staged render) |
+| Tests (BUGS #1, #2, #2b) | `test/features/agent_queries/data/repositories/agent_queries_repository_impl_socket_failures_test.dart` (+15 cenários: relay timeout/conversation/rejected com auth allowlist, decode, duplicate, dispatcher disposed; widening de socket app:error com `FORBIDDEN`/`UNAUTHORIZED`/`TOKEN_EXPIRED`/lowercase; cancelled benign com `cancelled: true` flag) |
+| Tests (BUG #3) | `test/features/agent_queries/data/orchestration/agent_query_executor_test.dart` (+3 cenários: timeout dispara quando nada settla, NÃO dispara quando alguém sucede, dispara quando alguns settlam mas restam pendentes) |
+| Tests (BUG #4) | `test/features/overview/presentation/widgets/overview_weekday_sales_trend_chart_test.dart` (+2 cenários: chart mostra `loadFailureMessage` específica quando setado, fallback pro l10n genérico quando null) |
+
+**Notas de impacto operacional:**
+
+- BUG #1 desbloqueia ligar `SOCKET_RELAY_ENABLED=true` em produção sem
+  perder qualidade de mensagens. Sem o fix, qualquer falha de relay
+  chegava na UI como "Erro inesperado. Tente novamente." — agora chega
+  como "A consulta demorou mais do que o esperado.", "Você não tem
+  acesso a este agente.", "A conexão com o servidor caiu durante a
+  consulta.", etc.
+- BUG #2 corrige UX em produção mesmo no canal socket atual: erros de
+  permissão (`FORBIDDEN`, `PERMISSION_DENIED`, etc.) que antes apareciam
+  como "Falha de comunicação" agora aparecem como "Você não tem acesso
+  a este agente." (`AuthorizationFailure`) ou "Sua sessão expirou"
+  (`SessionFailure` para `UNAUTHORIZED`/`TOKEN_EXPIRED`).
+- BUG #2b elimina banners "Falha de comunicação" que apareciam quando o
+  usuário simplesmente saía da tela — controllers podem agora detectar
+  via `isCancelledAgentQueryFailure(failure.context)` e ignorar.
+- BUG #3 é safety net defensivo. Em produção o dispatcher Socket
+  (`SOCKET_REQUEST_TIMEOUT_MS=15s` default) e o Dio (`receiveTimeout=15s`)
+  já cobrem o cenário. O fix existe pra que nunca confiemos cegamente
+  no upstream — o `raceTotalTimeout` de 2 min é deliberadamente folgado.
+- BUG #4 melhora UX em telas que antes engoliam erros silenciosamente.
+  Operador vendo "Você não tem acesso a este agente." pode pedir
+  acesso; vendo "SQL inválido na coluna X" pode reportar pro time. O
+  campo é runtime apenas — não persiste em cache JSON (mensagens auth
+  ficam stale após app restart).
+
+**Cobertura nesta entrega:**
+
+- Repositório agent_queries (failures socket+relay): **20 testes ✅**
+  (era 5 antes do fix; +15 novos cenários cobrindo relay e auth-like).
+- Executor (race timeout): **11 testes ✅** (+3 novos para o timeout).
+- Overview weekday chart (load failure UI): **6 testes ✅**
+  (+2 novos para `loadFailureMessage`).
+- `flutter analyze` limpo nos arquivos novos/tocados.
+- 1022 unit/widget tests do projeto passam verde no `flutter test`
+  (13 falhas no run total são **e2e tests** que requerem credenciais
+  reais do `plug_server` — pre-existing, não regressão).
 - B2 garante que o warm-up entrega o que `SOCKET_WARM_UP_AFTER_LOGIN`
   promete em **todos** os caminhos (cold start, hot reload, e a
   transição clássica `null → authenticated`). Sem isso, em prática o
