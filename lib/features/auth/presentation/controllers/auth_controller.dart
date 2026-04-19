@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/authentication_gate.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/logging/log_redaction.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
@@ -150,7 +151,7 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
       'Starting sign in flow',
       context: <String, Object?>{
         'operation': 'signIn',
-        'email': email,
+        'email': LogRedaction.redactEmail(email),
       },
     );
     _presentation = _presentation.copyWith(
@@ -200,7 +201,7 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
           'Sign in failed in controller',
           context: <String, Object?>{
             'operation': 'signIn',
-            'email': email,
+            'email': LogRedaction.redactEmail(email),
           },
         );
       },
@@ -222,8 +223,8 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
       'Starting register flow',
       context: <String, Object?>{
         'operation': 'register',
-        'ownerEmail': ownerEmail,
-        'email': email,
+        'ownerEmail': LogRedaction.redactEmail(ownerEmail),
+        'email': LogRedaction.redactEmail(email),
       },
     );
 
@@ -271,8 +272,8 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
           'Register flow failed in controller',
           context: <String, Object?>{
             'operation': 'register',
-            'ownerEmail': ownerEmail,
-            'email': email,
+            'ownerEmail': LogRedaction.redactEmail(ownerEmail),
+            'email': LogRedaction.redactEmail(email),
           },
         );
       },
@@ -357,7 +358,7 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
         'Invalid e-mail provided for sign in',
         context: <String, Object?>{
           'operation': 'signIn',
-          'email': email,
+          'email': LogRedaction.redactEmail(email),
         },
         error: error,
         stackTrace: stackTrace,

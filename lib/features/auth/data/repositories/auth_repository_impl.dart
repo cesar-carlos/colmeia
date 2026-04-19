@@ -2,6 +2,7 @@ import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/logging/log_redaction.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
@@ -56,18 +57,27 @@ class AuthRepositoryImpl implements AuthRepository {
         mobile: mobile,
       );
 
+      // Both keys go through `LogRedaction.redactEmail` because the
+      // failure context is later forwarded to Sentry / log aggregators
+      // verbatim (see `mapToAppFailure` and `appFailureWithMergedContext`).
+      // Redacting once at the source keeps PII out of every downstream
+      // hop instead of relying on individual sinks to scrub it.
+      final redactedOwnerEmail = LogRedaction.redactEmail(ownerEmail);
+      final redactedEmail = LogRedaction.redactEmail(email);
       AppLogger.info(
         'Client registration request submitted',
         context: <String, Object?>{
           'operation': 'register',
-          'ownerEmail': ownerEmail,
-          'email': email,
+          'ownerEmail': redactedOwnerEmail,
+          'email': redactedEmail,
           'status': submission.status.wireValue,
         },
       );
       return Success<ClientRegistrationSubmission, AppFailure>(submission);
     } on DioException catch (error, stackTrace) {
       final statusCode = error.response?.statusCode;
+      final redactedOwnerEmail = LogRedaction.redactEmail(ownerEmail);
+      final redactedEmail = LogRedaction.redactEmail(email);
       final failure = statusCode == 409
           ? ValidationFailure(
               message: 'Client registration already exists',
@@ -77,7 +87,7 @@ class AuthRepositoryImpl implements AuthRepository {
               stackTrace: stackTrace,
               context: <String, Object?>{
                 'operation': 'register',
-                'email': email,
+                'email': redactedEmail,
                 'statusCode': statusCode,
               },
             )
@@ -91,8 +101,8 @@ class AuthRepositoryImpl implements AuthRepository {
               stackTrace: stackTrace,
               context: <String, Object?>{
                 'operation': 'register',
-                'ownerEmail': ownerEmail,
-                'email': email,
+                'ownerEmail': redactedOwnerEmail,
+                'email': redactedEmail,
                 'statusCode': statusCode,
               },
             )
@@ -104,8 +114,8 @@ class AuthRepositoryImpl implements AuthRepository {
                   'Nao foi possivel enviar sua solicitacao de cadastro.',
               context: <String, Object?>{
                 'operation': 'register',
-                'ownerEmail': ownerEmail,
-                'email': email,
+                'ownerEmail': redactedOwnerEmail,
+                'email': redactedEmail,
                 'statusCode': statusCode,
               },
             );
@@ -113,8 +123,8 @@ class AuthRepositoryImpl implements AuthRepository {
         'Client registration request failed',
         context: <String, Object?>{
           'operation': 'register',
-          'ownerEmail': ownerEmail,
-          'email': email,
+          'ownerEmail': redactedOwnerEmail,
+          'email': redactedEmail,
           'statusCode': statusCode,
         },
         error: error,
@@ -126,8 +136,8 @@ class AuthRepositoryImpl implements AuthRepository {
         'Unexpected client registration failure',
         context: <String, Object?>{
           'operation': 'register',
-          'ownerEmail': ownerEmail,
-          'email': email,
+          'ownerEmail': LogRedaction.redactEmail(ownerEmail),
+          'email': LogRedaction.redactEmail(email),
         },
         error: error,
         stackTrace: stackTrace,
@@ -141,8 +151,8 @@ class AuthRepositoryImpl implements AuthRepository {
               'Nao foi possivel enviar sua solicitacao de cadastro.',
           context: <String, Object?>{
             'operation': 'register',
-            'ownerEmail': ownerEmail,
-            'email': email,
+            'ownerEmail': LogRedaction.redactEmail(ownerEmail),
+            'email': LogRedaction.redactEmail(email),
           },
         ),
       );
@@ -154,6 +164,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    final redactedEmail = LogRedaction.redactEmail(email);
     try {
       final authSessionModel = await _remoteDataSource.login(
         email: email,
@@ -164,7 +175,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'User authenticated successfully',
         context: <String, Object?>{
           'operation': 'login',
-          'email': email,
+          'email': redactedEmail,
           'userId': authSessionModel.userId,
         },
       );
@@ -189,7 +200,7 @@ class AuthRepositoryImpl implements AuthRepository {
         },
         context: <String, Object?>{
           'operation': 'login',
-          'email': email,
+          'email': redactedEmail,
           'statusCode': statusCode,
         },
       );
@@ -197,7 +208,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'Client authentication failed',
         context: <String, Object?>{
           'operation': 'login',
-          'email': email,
+          'email': redactedEmail,
           'statusCode': statusCode,
         },
         error: error,
@@ -209,7 +220,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'Unexpected client authentication failure',
         context: <String, Object?>{
           'operation': 'login',
-          'email': email,
+          'email': redactedEmail,
         },
         error: error,
         stackTrace: stackTrace,
@@ -223,7 +234,7 @@ class AuthRepositoryImpl implements AuthRepository {
               'Nao foi possivel entrar com as credenciais informadas.',
           context: <String, Object?>{
             'operation': 'login',
-            'email': email,
+            'email': redactedEmail,
           },
         ),
       );
@@ -450,6 +461,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AppResult<String>> requestPasswordRecovery({
     required String email,
   }) async {
+    final redactedEmail = LogRedaction.redactEmail(email);
     try {
       final message = await _remoteDataSource.requestPasswordRecovery(
         email: email,
@@ -467,7 +479,7 @@ class AuthRepositoryImpl implements AuthRepository {
             : 'Nao foi possivel iniciar a recuperacao de acesso.',
         context: <String, Object?>{
           'operation': 'requestPasswordRecovery',
-          'email': email,
+          'email': redactedEmail,
           'statusCode': statusCode,
         },
       );
@@ -482,7 +494,7 @@ class AuthRepositoryImpl implements AuthRepository {
               'Nao foi possivel iniciar a recuperacao de acesso.',
           context: <String, Object?>{
             'operation': 'requestPasswordRecovery',
-            'email': email,
+            'email': redactedEmail,
           },
         ),
       );
