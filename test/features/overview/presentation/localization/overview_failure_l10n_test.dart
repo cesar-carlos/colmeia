@@ -36,20 +36,6 @@ void main() {
     );
   });
 
-  test('maps overview missing client token context to English string', () {
-    const failure = ValidationFailure(
-      message: 'technical',
-      context: <String, Object?>{
-        OverviewFailureUiKey.field:
-            OverviewFailureUiKey.missingLocalClientToken,
-      },
-    );
-
-    check(overviewFailureUserMessage(failure, l10n)).equals(
-      l10n.overviewSaveClientTokenForAgentUserMessage,
-    );
-  });
-
   test('maps SQL catalog keys to English strings', () {
     const failure = RpcFailure(
       message: 'm',

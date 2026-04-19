@@ -716,10 +716,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewLoadFailedUserMessage => 'Unable to load the overview.';
 
   @override
-  String get overviewSaveClientTokenForAgentUserMessage =>
-      'Save this agent\'s client token to query their data.';
-
-  @override
   String get clientAgentsDataSourcesEyebrow => 'Data sources';
 
   @override

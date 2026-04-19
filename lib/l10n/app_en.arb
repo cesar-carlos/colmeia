@@ -431,7 +431,6 @@
   },
   "overviewNoApprovedAgentsUserMessage": "No approved agent is available to load the overview.",
   "overviewLoadFailedUserMessage": "Unable to load the overview.",
-  "overviewSaveClientTokenForAgentUserMessage": "Save this agent's client token to query their data.",
   "clientAgentsDataSourcesEyebrow": "Data sources",
   "clientAgentsPageTitle": "Agent management",
   "clientAgentsPageSubtitle": "Track your approved agents, request new access, and follow the status of your requests.",

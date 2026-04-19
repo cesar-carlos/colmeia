@@ -1249,12 +1249,6 @@ abstract class AppLocalizations {
   /// **'Unable to load the overview.'**
   String get overviewLoadFailedUserMessage;
 
-  /// No description provided for @overviewSaveClientTokenForAgentUserMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Save this agent\'s client token to query their data.'**
-  String get overviewSaveClientTokenForAgentUserMessage;
-
   /// No description provided for @clientAgentsDataSourcesEyebrow.
   ///
   /// In en, this message translates to:

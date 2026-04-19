@@ -734,10 +734,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nao foi possivel carregar a visao geral.';
 
   @override
-  String get overviewSaveClientTokenForAgentUserMessage =>
-      'Cadastre o token do cliente para este agente para consultar dados.';
-
-  @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';
 
   @override
@@ -2888,10 +2884,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewLoadFailedUserMessage =>
       'Nao foi possivel carregar a visao geral.';
-
-  @override
-  String get overviewSaveClientTokenForAgentUserMessage =>
-      'Cadastre o token do cliente para este agente para consultar dados.';
 
   @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';

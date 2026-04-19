@@ -338,7 +338,6 @@
   },
   "overviewNoApprovedAgentsUserMessage": "Nenhum agente aprovado esta disponivel para carregar a visao geral.",
   "overviewLoadFailedUserMessage": "Nao foi possivel carregar a visao geral.",
-  "overviewSaveClientTokenForAgentUserMessage": "Cadastre o token do cliente para este agente para consultar dados.",
   "clientAgentsDataSourcesEyebrow": "Fontes de dados",
   "clientAgentsPageTitle": "Gestao de agentes",
   "clientAgentsPageSubtitle": "Acompanhe seus agentes aprovados, solicite novos acessos e consulte o andamento das solicitacoes.",
