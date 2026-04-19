@@ -203,10 +203,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardPaymentSummaryHeaderAvgTicket => 'AVG.\nTICKET';
 
   @override
-  String get dashboardPaymentSummaryLoadingSemantics =>
-      'Loading payment method summary…';
-
-  @override
   String get dashboardHomeFiltersAgentsLabel => 'Agents';
 
   @override
@@ -218,9 +214,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardHomeFiltersCurrentMonth => 'Current month';
-
-  @override
-  String get dashboardHomeFiltersPeriodLast30Days => 'Last 30 days';
 
   @override
   String get dashboardHomeFiltersReferenceRangeLabel => 'Date range';
@@ -656,32 +649,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chartComboEmptyDefault => 'No combined data for this view.';
-
-  @override
-  String get chartComboPanGestureHint =>
-      'Swipe sideways along the chart to see more periods.';
-
-  @override
-  String chartComboPanChartA11y(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Bar and line chart, $count categories.',
-      one: 'Bar and line chart, one category.',
-    );
-    return '$_temp0 Swipe horizontally to see all.';
-  }
-
-  @override
-  String chartComparisonPanChartA11y(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Bar chart, $count categories.',
-      one: 'Bar chart, one category.',
-    );
-    return '$_temp0 Swipe the chart horizontally to see all.';
-  }
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -1216,9 +1183,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentValueNotAvailable => 'N/A';
 
   @override
-  String get clientAgentAddressNotProvided => 'Address not provided';
-
-  @override
   String get clientAgentDetailSectionContact => 'Contact';
 
   @override
@@ -1261,10 +1225,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clientAgentDetailServerTokenStatusUnknown =>
       'Token status not loaded yet — refresh the screen with internet access to confirm.';
-
-  @override
-  String get clientAgentDetailServerTokenLoadError =>
-      'Could not load the current token from the server. Showing the last value cached on this device, if any.';
 
   @override
   String get clientAgentDetailRefreshFromAgent => 'Refresh from agent';

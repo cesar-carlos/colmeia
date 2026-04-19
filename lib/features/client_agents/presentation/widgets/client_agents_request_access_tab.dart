@@ -21,6 +21,7 @@ class ClientAgentsRequestAccessTab extends StatefulWidget {
     required this.persistClientTokenDraftLine,
     super.key,
     this.initialAgentIdSlots = const <String>[''],
+    this.retryAfterSeconds,
   });
 
   final List<String> initialAgentIdSlots;
@@ -28,7 +29,18 @@ class ClientAgentsRequestAccessTab extends StatefulWidget {
   final Future<bool> Function(List<ClientAgentAccessRequestRowInput> rows)
   onSubmitRows;
   final VoidCallback onClearMessages;
+
+  /// `true` when the controller is currently sending the request OR
+  /// the cool-down armed by a server `Retry-After` is still open.
+  /// Either case must keep the submit button disabled.
   final bool isMutating;
+
+  /// Remaining seconds in the request-access cool-down window, or
+  /// `null` when no `Retry-After` is currently in effect. When set,
+  /// the submit CTA renders a "Try again in Ns" countdown instead of
+  /// the regular label so the user understands why the action is
+  /// blocked. Mirrors the UX already wired on the sync button.
+  final int? retryAfterSeconds;
   final ValueChanged<List<String>> onDraftSlotsChanged;
   final Future<String?> Function(String agentId) loadClientToken;
   final Future<void> Function({
@@ -445,9 +457,18 @@ class _ClientAgentsRequestAccessTabState
         ],
         SizedBox(height: tokens.gapMd),
         AppPrimaryButton(
-          label: l10n.clientAgentsRequestAccessCta,
+          // Mirrors the sync button's countdown UX: when the
+          // controller has armed `_requestAccessRetryAfterGate` from
+          // a server `Retry-After`, swap the CTA label to
+          // "Try again in Ns" so the user sees WHY the button is
+          // disabled instead of getting silent deadness.
+          label: widget.retryAfterSeconds != null
+              ? l10n.clientAgentsRequestAccessRetryAfterCountdown(
+                  widget.retryAfterSeconds!,
+                )
+              : l10n.clientAgentsRequestAccessCta,
           icon: const Icon(Icons.send_rounded),
-          isLoading: widget.isMutating,
+          isLoading: widget.isMutating && widget.retryAfterSeconds == null,
           onPressed: widget.isMutating ? null : _submit,
         ),
       ],

@@ -64,12 +64,10 @@
   "dashboardPaymentSummaryTooltipParticipationAbbr": "Share of total revenue (percent)",
   "dashboardPaymentSummaryHeaderSales": "SALES",
   "dashboardPaymentSummaryHeaderAvgTicket": "AVG.\nTICKET",
-  "dashboardPaymentSummaryLoadingSemantics": "Loading payment method summary…",
   "dashboardHomeFiltersAgentsLabel": "Agents",
   "dashboardHomeFiltersAgentsEmptyHint": "Load the overview to list agents.",
   "dashboardHomeFiltersYearMonthLabel": "YEAR / MONTH",
   "dashboardHomeFiltersCurrentMonth": "Current month",
-  "dashboardHomeFiltersPeriodLast30Days": "Last 30 days",
   "dashboardHomeFiltersReferenceRangeLabel": "Date range",
   "dashboardHomeFiltersReferenceRangeHelper": "Optional. Pick inclusive start and end — the range can span several months (up to {maxDays} days). Totals and rankings follow that span. The monthly trend still shows the 12 months ending in the last day’s month.",
   "@dashboardHomeFiltersReferenceRangeHelper": {
@@ -319,22 +317,6 @@
   "chartComparisonPanGestureHint": "Swipe the chart sideways to see more categories.",
   "chartComboLoadingDefault": "Loading bar and line chart…",
   "chartComboEmptyDefault": "No combined data for this view.",
-  "chartComboPanGestureHint": "Swipe sideways along the chart to see more periods.",
-  "@chartComboPanGestureHint": {"description": "Footer hint when category-axis pan is enabled on bar+line combo charts."},
-  "chartComboPanChartA11y": "{count, plural, =1{Bar and line chart, one category.} other{Bar and line chart, {count} categories.}} Swipe horizontally to see all.",
-  "@chartComboPanChartA11y": {
-    "description": "Screen reader summary when the combo chart uses horizontal pan on the category axis.",
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-  "chartComparisonPanChartA11y": "{count, plural, =1{Bar chart, one category.} other{Bar chart, {count} categories.}} Swipe the chart horizontally to see all.",
-  "@chartComparisonPanChartA11y": {
-    "description": "Screen reader summary when the comparison chart uses horizontal panning for categories.",
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
   "overviewSemanticsPaymentMethodRow": "Payment method {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -670,7 +652,6 @@
   "clientAgentFieldPhone": "Phone",
   "clientAgentFieldCity": "City",
   "clientAgentValueNotAvailable": "N/A",
-  "clientAgentAddressNotProvided": "Address not provided",
   "clientAgentDetailSectionContact": "Contact",
   "clientAgentDetailSectionAddress": "Address",
   "clientAgentDetailSectionNotes": "Notes",
@@ -684,7 +665,6 @@
   "clientAgentDetailServerTokenStatusConfigured": "A token is configured for this agent on the server.",
   "clientAgentDetailServerTokenStatusMissing": "No token configured on the server yet.",
   "clientAgentDetailServerTokenStatusUnknown": "Token status not loaded yet — refresh the screen with internet access to confirm.",
-  "clientAgentDetailServerTokenLoadError": "Could not load the current token from the server. Showing the last value cached on this device, if any.",
   "clientAgentDetailRefreshFromAgent": "Refresh from agent",
   "clientAgentDetailRefreshFromAgentSuccess": "Profile refreshed straight from the agent.",
   "clientAgentDetailRefreshFromAgentUnsupported": "This agent does not implement agent.getProfile via RPC.",

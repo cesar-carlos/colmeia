@@ -207,10 +207,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dashboardPaymentSummaryHeaderAvgTicket => 'TICKET\nMEDIO';
 
   @override
-  String get dashboardPaymentSummaryLoadingSemantics =>
-      'Carregando resumo por forma de pagamento…';
-
-  @override
   String get dashboardHomeFiltersAgentsLabel => 'AGENTES';
 
   @override
@@ -222,9 +218,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardHomeFiltersCurrentMonth => 'Mês atual';
-
-  @override
-  String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
 
   @override
   String get dashboardHomeFiltersReferenceRangeLabel => 'PERÍODO';
@@ -673,32 +666,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get chartComboEmptyDefault =>
       'Sem dados combinados para este recorte.';
-
-  @override
-  String get chartComboPanGestureHint =>
-      'Deslize horizontalmente no grafico para ver mais periodos.';
-
-  @override
-  String chartComboPanChartA11y(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Grafico de barras e linha, $count categorias.',
-      one: 'Grafico de barras e linha, uma categoria.',
-    );
-    return '$_temp0 Deslize horizontalmente para ver todas.';
-  }
-
-  @override
-  String chartComparisonPanChartA11y(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Gráfico de barras, $count categorias.',
-      one: 'Gráfico de barras, uma categoria.',
-    );
-    return '$_temp0 Deslize o gráfico horizontalmente para ver todas.';
-  }
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -1240,9 +1207,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentValueNotAvailable => 'N/A';
 
   @override
-  String get clientAgentAddressNotProvided => 'Endereco nao informado';
-
-  @override
   String get clientAgentDetailSectionContact => 'Contato';
 
   @override
@@ -1285,10 +1249,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentDetailServerTokenStatusUnknown =>
       'Status do token nao carregado — atualize a tela com acesso a internet para confirmar.';
-
-  @override
-  String get clientAgentDetailServerTokenLoadError =>
-      'Nao foi possivel ler o token atual no servidor. Exibindo o ultimo valor em cache neste dispositivo, se houver.';
 
   @override
   String get clientAgentDetailRefreshFromAgent => 'Recarregar do agente';
@@ -1997,10 +1957,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get dashboardPaymentSummaryHeaderAvgTicket => 'TICKET\nMEDIO';
 
   @override
-  String get dashboardPaymentSummaryLoadingSemantics =>
-      'Carregando resumo por forma de pagamento…';
-
-  @override
   String get dashboardHomeFiltersAgentsLabel => 'AGENTES';
 
   @override
@@ -2012,9 +1968,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardHomeFiltersCurrentMonth => 'Mês atual';
-
-  @override
-  String get dashboardHomeFiltersPeriodLast30Days => 'Últimos 30 dias';
 
   @override
   String get dashboardHomeFiltersReferenceRangeLabel => 'PERÍODO';
@@ -2463,32 +2416,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get chartComboEmptyDefault =>
       'Sem dados combinados para este recorte.';
-
-  @override
-  String get chartComboPanGestureHint =>
-      'Deslize horizontalmente no grafico para ver mais periodos.';
-
-  @override
-  String chartComboPanChartA11y(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Grafico de barras e linha, $count categorias.',
-      one: 'Grafico de barras e linha, uma categoria.',
-    );
-    return '$_temp0 Deslize horizontalmente para ver todas.';
-  }
-
-  @override
-  String chartComparisonPanChartA11y(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Gráfico de barras, $count categorias.',
-      one: 'Gráfico de barras, uma categoria.',
-    );
-    return '$_temp0 Deslize o gráfico horizontalmente para ver todas.';
-  }
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -3030,9 +2957,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentValueNotAvailable => 'N/A';
 
   @override
-  String get clientAgentAddressNotProvided => 'Endereco nao informado';
-
-  @override
   String get clientAgentDetailSectionContact => 'Contato';
 
   @override
@@ -3075,10 +2999,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentDetailServerTokenStatusUnknown =>
       'Status do token nao carregado — atualize a tela com acesso a internet para confirmar.';
-
-  @override
-  String get clientAgentDetailServerTokenLoadError =>
-      'Nao foi possivel ler o token atual no servidor. Exibindo o ultimo valor em cache neste dispositivo, se houver.';
 
   @override
   String get clientAgentDetailRefreshFromAgent => 'Recarregar do agente';

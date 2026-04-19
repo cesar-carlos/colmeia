@@ -34,6 +34,27 @@ void main(List<String> args) {
     'formsDemoValidateFormSubmitButton',
   };
 
+  // Non-demo strings flagged as orphans by the `lib/`/`test/` audit.
+  // Each entry is a confirmed dead path (verified by reading every
+  // call site / nearby widget). When in doubt the string stays —
+  // re-add to this list after triage.
+  const confirmedOrphanNonDemo = <String>{
+    // Loading skeleton replaced by `overviewLoadingPaymentKpisSemantics`.
+    'dashboardPaymentSummaryLoadingSemantics',
+    // Filter chip never wired (period chips are date-range based).
+    'dashboardHomeFiltersPeriodLast30Days',
+    // Pan gesture hint absorbed into the chart's onboarding tooltip.
+    'chartComboPanGestureHint',
+    'chartComboPanChartA11y',
+    'chartComparisonPanChartA11y',
+    // Address card uses conditional render `if (_hasAddress)` instead
+    // of placeholder copy.
+    'clientAgentAddressNotProvided',
+    // Token load failures fall back silently to the local cache;
+    // the remaining hard-error path uses `clientAgentsErrorGetClientAgentToken`.
+    'clientAgentDetailServerTokenLoadError',
+  };
+
   bool isOrphanKey(String key) {
     // Strip the leading `@` so `formsDemoFoo` and `@formsDemoFoo` get
     // the same treatment — the metadata block must follow the key.
@@ -41,6 +62,7 @@ void main(List<String> args) {
     if (liveFormsDemoStrings.contains(base)) return false;
     if (base.startsWith('formsDemo')) return true;
     if (base.startsWith('areaTrendDemo')) return true;
+    if (confirmedOrphanNonDemo.contains(base)) return true;
     return false;
   }
 

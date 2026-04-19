@@ -64,12 +64,10 @@
   "dashboardPaymentSummaryTooltipParticipationAbbr": "Participacao percentual no faturamento total",
   "dashboardPaymentSummaryHeaderSales": "VENDAS",
   "dashboardPaymentSummaryHeaderAvgTicket": "TICKET\nMEDIO",
-  "dashboardPaymentSummaryLoadingSemantics": "Carregando resumo por forma de pagamento…",
   "dashboardHomeFiltersAgentsLabel": "AGENTES",
   "dashboardHomeFiltersAgentsEmptyHint": "Carregue a visao geral para listar os agentes.",
   "dashboardHomeFiltersYearMonthLabel": "ANO / MÊS",
   "dashboardHomeFiltersCurrentMonth": "Mês atual",
-  "dashboardHomeFiltersPeriodLast30Days": "Últimos 30 dias",
   "dashboardHomeFiltersReferenceRangeLabel": "PERÍODO",
   "dashboardHomeFiltersReferenceRangeHelper": "Opcional. Escolha início e fim — o intervalo pode atravessar vários meses (no máximo {maxDays} dias corridos). Totais e rankings seguem esse período. O gráfico mensal continua com 12 meses até o mês do último dia.",
   "@dashboardHomeFiltersReferenceRangeHelper": {
@@ -284,20 +282,6 @@
   "chartComparisonPanGestureHint": "Deslize o gráfico horizontalmente para ver mais categorias.",
   "chartComboLoadingDefault": "Carregando gráfico de barras e linha…",
   "chartComboEmptyDefault": "Sem dados combinados para este recorte.",
-  "chartComboPanGestureHint": "Deslize horizontalmente no grafico para ver mais periodos.",
-  "@chartComboPanGestureHint": {"description": "Rodape quando o eixo de categorias do grafico combo permite deslizar para ver mais periodos."},
-  "chartComboPanChartA11y": "{count, plural, =1{Grafico de barras e linha, uma categoria.} other{Grafico de barras e linha, {count} categorias.}} Deslize horizontalmente para ver todas.",
-  "@chartComboPanChartA11y": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
-  "chartComparisonPanChartA11y": "{count, plural, =1{Gráfico de barras, uma categoria.} other{Gráfico de barras, {count} categorias.}} Deslize o gráfico horizontalmente para ver todas.",
-  "@chartComparisonPanChartA11y": {
-    "placeholders": {
-      "count": {"type": "int"}
-    }
-  },
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -506,7 +490,6 @@
   "clientAgentFieldPhone": "Telefone",
   "clientAgentFieldCity": "Cidade",
   "clientAgentValueNotAvailable": "N/A",
-  "clientAgentAddressNotProvided": "Endereco nao informado",
   "clientAgentDetailSectionContact": "Contato",
   "clientAgentDetailSectionAddress": "Endereco",
   "clientAgentDetailSectionNotes": "Anotacoes",
@@ -520,7 +503,6 @@
   "clientAgentDetailServerTokenStatusConfigured": "Token configurado para este agente no servidor.",
   "clientAgentDetailServerTokenStatusMissing": "Nenhum token configurado no servidor ainda.",
   "clientAgentDetailServerTokenStatusUnknown": "Status do token nao carregado — atualize a tela com acesso a internet para confirmar.",
-  "clientAgentDetailServerTokenLoadError": "Nao foi possivel ler o token atual no servidor. Exibindo o ultimo valor em cache neste dispositivo, se houver.",
   "clientAgentDetailRefreshFromAgent": "Recarregar do agente",
   "clientAgentDetailRefreshFromAgentSuccess": "Perfil recarregado direto do agente.",
   "clientAgentDetailRefreshFromAgentUnsupported": "Este agente nao implementa agent.getProfile via RPC.",

@@ -453,12 +453,6 @@ abstract class AppLocalizations {
   /// **'AVG.\nTICKET'**
   String get dashboardPaymentSummaryHeaderAvgTicket;
 
-  /// No description provided for @dashboardPaymentSummaryLoadingSemantics.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading payment method summary…'**
-  String get dashboardPaymentSummaryLoadingSemantics;
-
   /// No description provided for @dashboardHomeFiltersAgentsLabel.
   ///
   /// In en, this message translates to:
@@ -482,12 +476,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current month'**
   String get dashboardHomeFiltersCurrentMonth;
-
-  /// No description provided for @dashboardHomeFiltersPeriodLast30Days.
-  ///
-  /// In en, this message translates to:
-  /// **'Last 30 days'**
-  String get dashboardHomeFiltersPeriodLast30Days;
 
   /// No description provided for @dashboardHomeFiltersReferenceRangeLabel.
   ///
@@ -1188,24 +1176,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No combined data for this view.'**
   String get chartComboEmptyDefault;
-
-  /// Footer hint when category-axis pan is enabled on bar+line combo charts.
-  ///
-  /// In en, this message translates to:
-  /// **'Swipe sideways along the chart to see more periods.'**
-  String get chartComboPanGestureHint;
-
-  /// Screen reader summary when the combo chart uses horizontal pan on the category axis.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Bar and line chart, one category.} other{Bar and line chart, {count} categories.}} Swipe horizontally to see all.'**
-  String chartComboPanChartA11y(int count);
-
-  /// Screen reader summary when the comparison chart uses horizontal panning for categories.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Bar chart, one category.} other{Bar chart, {count} categories.}} Swipe the chart horizontally to see all.'**
-  String chartComparisonPanChartA11y(int count);
 
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///
@@ -2026,12 +1996,6 @@ abstract class AppLocalizations {
   /// **'N/A'**
   String get clientAgentValueNotAvailable;
 
-  /// No description provided for @clientAgentAddressNotProvided.
-  ///
-  /// In en, this message translates to:
-  /// **'Address not provided'**
-  String get clientAgentAddressNotProvided;
-
   /// No description provided for @clientAgentDetailSectionContact.
   ///
   /// In en, this message translates to:
@@ -2109,12 +2073,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Token status not loaded yet — refresh the screen with internet access to confirm.'**
   String get clientAgentDetailServerTokenStatusUnknown;
-
-  /// No description provided for @clientAgentDetailServerTokenLoadError.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not load the current token from the server. Showing the last value cached on this device, if any.'**
-  String get clientAgentDetailServerTokenLoadError;
 
   /// No description provided for @clientAgentDetailRefreshFromAgent.
   ///

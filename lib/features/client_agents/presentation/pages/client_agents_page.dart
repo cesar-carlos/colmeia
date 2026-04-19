@@ -362,6 +362,16 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                             },
                             isMutating: controller.isSyncing ||
                                 controller.isRequestAccessOnCooldown,
+                            // Surface the server-armed cool-down so the
+                            // CTA can render the countdown — same UX as
+                            // the sync button above.
+                            retryAfterSeconds:
+                                controller.isRequestAccessOnCooldown
+                                    ? (controller
+                                              .requestAccessRetryAfter
+                                              ?.inSeconds ??
+                                          0)
+                                    : null,
                           ),
                         ),
                         AppTabViewItem(
