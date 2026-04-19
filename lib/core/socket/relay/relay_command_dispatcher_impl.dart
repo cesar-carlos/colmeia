@@ -10,6 +10,7 @@ import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
+import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 
 /// Default `RelayCommandDispatcher`. Wraps a `ConsumerSocketConnection`
 /// (for `emit`) and a `RelayConversationManager` (for the conversation
@@ -247,6 +248,39 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       conversation = await _conversationManager.obtain(agentId);
     } on RelayDispatchException {
       rethrow;
+    }
+    // `_conversationManager.obtain` calls `_connection.connect()` which
+    // surfaces the two terminal handshake failures as `StateError`
+    // (same shape as `SocketCommandDispatcherImpl`). We MUST translate
+    // them to the shared `SocketDispatch*` exceptions BEFORE the
+    // generic Object catch below — otherwise the
+    // `SocketWithRestFallbackAgentQueriesRemoteDataSource` cannot
+    // distinguish "hub forbidden / auth dead" (latch + REST) from a
+    // transient relay start failure (no fallback, surface as-is).
+    // ignore: avoid_catching_errors
+    on StateError catch (e) {
+      final message = e.message;
+      if (message.startsWith('Consumer socket namespace forbidden:')) {
+        throw SocketDispatchNamespaceForbidden(
+          message: message,
+          role: _extractMarker(message, 'role='),
+          namespace: _extractMarker(message, 'namespace='),
+          cause: e,
+        );
+      }
+      if (message.startsWith('Consumer socket unauthorized:') ||
+          message.startsWith('Consumer socket reconnect exhausted:')) {
+        throw SocketDispatchUnauthorized(
+          message: 'Cannot start relay conversation: $e',
+          cause: e,
+        );
+      }
+      // Other StateErrors (used-after-dispose, etc.) surface as
+      // start failures because they are not a hub-policy issue.
+      throw RelayConversationStartFailure(
+        message: 'failed to obtain relay conversation: $e',
+        cause: e,
+      );
     } on Object catch (e, s) {
       throw RelayConversationStartFailure(
         message: 'failed to obtain relay conversation: $e',
@@ -816,6 +850,24 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       );
     }
     return null;
+  }
+
+  /// Same parser as the legacy `SocketCommandDispatcherImpl` —
+  /// pulls a `key=value` token out of the `StateError.message` the
+  /// connection layer emits for namespace rejection. Kept private
+  /// (duplicated) instead of moved to a shared helper because the
+  /// two dispatchers will diverge over time on which markers they
+  /// care about, and the cost is one method.
+  String? _extractMarker(String source, String key) {
+    final start = source.indexOf(key);
+    if (start < 0) {
+      return null;
+    }
+    final valueStart = start + key.length;
+    final remainder = source.substring(valueStart);
+    final endIndex = remainder.indexOf(' ');
+    final value = endIndex < 0 ? remainder : remainder.substring(0, endIndex);
+    return value.isEmpty ? null : value;
   }
 }
 
