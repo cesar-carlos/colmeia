@@ -25,6 +25,12 @@ abstract final class ClientAgentApiRoutes {
   static const String accessStatusByToken = '/client-access/status';
 
   static String approvedAgentById(String agentId) => '$approvedAgents/$agentId';
+
+  /// Per-(client, agent) bearer token used by the SQL bridge as
+  /// `params.client_token`. Returned only by the dedicated GET; list/detail
+  /// endpoints expose `hasClientToken: boolean` instead.
+  static String clientTokenForAgent(String agentId) =>
+      '${approvedAgentById(agentId)}/client-token';
 }
 
 abstract final class ClientAuthApiRoutes {

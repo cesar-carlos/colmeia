@@ -3,6 +3,30 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_sta
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 
+/// Server-side token presence flag exposed by `GET /client/me/agents` and
+/// `GET /client/me/agents/{id}` (`hasClientToken: boolean`). Returns `null`
+/// when the API omits the field — older hubs or list aliases that do not
+/// surface it. The actual token value never travels through these payloads.
+bool? _parseOptionalHasClientTokenFromJson(Map<String, dynamic> json) {
+  const keys = <String>['hasClientToken', 'has_client_token'];
+  for (final key in keys) {
+    final value = json[key];
+    if (value is bool) {
+      return value;
+    }
+    if (value is String) {
+      final s = value.trim().toLowerCase();
+      if (s == 'true') {
+        return true;
+      }
+      if (s == 'false') {
+        return false;
+      }
+    }
+  }
+  return null;
+}
+
 /// Hub presence fields the API may send on `GET /client/me/agents` rows.
 bool? _parseOptionalHubConnectedFromJson(Map<String, dynamic> json) {
   const keys = <String>[
@@ -48,6 +72,7 @@ class ClientAgentProfileDto {
     this.observation,
     this.profileUpdatedAt,
     this.isHubConnected,
+    this.hasClientToken,
   });
 
   factory ClientAgentProfileDto.fromJson(Map<String, dynamic> json) {
@@ -79,6 +104,7 @@ class ClientAgentProfileDto {
         json['profileUpdatedAt'] as String? ?? '',
       ),
       isHubConnected: _parseOptionalHubConnectedFromJson(json),
+      hasClientToken: _parseOptionalHasClientTokenFromJson(json),
     );
   }
 
@@ -102,6 +128,12 @@ class ClientAgentProfileDto {
   /// Null: hub did not send per-row presence; UI may fall back to cached ids.
   final bool? isHubConnected;
 
+  /// Null: server did not include the field (older hub or non-listing endpoint).
+  /// `true`: a per-(client, agent) bearer token is stored server-side and the
+  /// hub will inject it as `params.client_token` on the SQL bridge. The actual
+  /// token is only readable via `GET /client/me/agents/{id}/client-token`.
+  final bool? hasClientToken;
+
   ClientAgent toEntity({
     AgentConnectionStatus connectionStatus = AgentConnectionStatus.unknown,
   }) {
@@ -124,6 +156,7 @@ class ClientAgentProfileDto {
       connectionStatus: connectionStatus,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      hasServerClientToken: hasClientToken,
     );
   }
 
@@ -146,6 +179,7 @@ class ClientAgentProfileDto {
       'observation': observation,
       'profileUpdatedAt': profileUpdatedAt?.toIso8601String(),
       if (isHubConnected != null) 'isHubConnected': isHubConnected,
+      if (hasClientToken != null) 'hasClientToken': hasClientToken,
     };
   }
 }

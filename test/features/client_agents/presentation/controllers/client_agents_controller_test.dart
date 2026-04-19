@@ -8,6 +8,7 @@ import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
@@ -16,6 +17,7 @@ import 'package:colmeia/features/client_agents/application/usecases/probe_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_key.dart';
@@ -25,6 +27,7 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:colmeia/features/client_agents/domain/entities/client_access_status_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_approved_agent_probe_outcome.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
@@ -72,6 +75,12 @@ class _MockSyncPendingClientAgentActionsUseCase extends Mock
 class _MockLocalAgentClientTokenStore extends Mock
     implements LocalAgentClientTokenStore {}
 
+class _MockGetClientAgentTokenUseCase extends Mock
+    implements GetClientAgentTokenUseCase {}
+
+class _MockSaveClientAgentTokenUseCase extends Mock
+    implements SaveClientAgentTokenUseCase {}
+
 void main() {
   late _MockAuthController authController;
   late _MockLocalAgentClientTokenStore clientTokenStore;
@@ -86,6 +95,8 @@ void main() {
       discardQueuedClientAgentRequestAccessUseCase;
   late _MockReadPendingClientAgentActionsUseCase readPendingActionsUseCase;
   late _MockSyncPendingClientAgentActionsUseCase syncPendingActionsUseCase;
+  late _MockGetClientAgentTokenUseCase getClientAgentTokenUseCase;
+  late _MockSaveClientAgentTokenUseCase saveClientAgentTokenUseCase;
   late ClientAgentsController controller;
 
   final approvedAgentsResult = PaginatedResult<ClientAgent>(
@@ -308,6 +319,29 @@ void main() {
         agentIds: any(named: 'agentIds'),
       ),
     ).thenAnswer((_) async => <String, String>{});
+    getClientAgentTokenUseCase = _MockGetClientAgentTokenUseCase();
+    when(
+      () => getClientAgentTokenUseCase(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<ClientAgentTokenSnapshot, AppFailure>(
+        ClientAgentTokenSnapshot.empty(),
+      ),
+    );
+    saveClientAgentTokenUseCase = _MockSaveClientAgentTokenUseCase();
+    when(
+      () => saveClientAgentTokenUseCase(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<ClientAgentTokenSnapshot, AppFailure>(
+        ClientAgentTokenSnapshot.empty(),
+      ),
+    );
     controller = ClientAgentsController(
       authController: authController,
       clientTokenStore: clientTokenStore,
@@ -322,6 +356,8 @@ void main() {
           discardQueuedClientAgentRequestAccessUseCase,
       readPendingActionsUseCase: readPendingActionsUseCase,
       syncPendingActionsUseCase: syncPendingActionsUseCase,
+      getClientAgentTokenUseCase: getClientAgentTokenUseCase,
+      saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
     )..activeLocalizations = AppLocalizationsEn();
   });
 

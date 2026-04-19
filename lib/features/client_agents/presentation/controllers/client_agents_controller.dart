@@ -9,6 +9,7 @@ import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
@@ -18,7 +19,9 @@ import 'package:colmeia/features/client_agents/application/usecases/probe_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/data/models/client_agent_token_request_dto.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
@@ -54,6 +57,8 @@ class ClientAgentsController extends ChangeNotifier {
         discardQueuedClientAgentRequestAccessUseCase,
     required ReadPendingClientAgentActionsUseCase readPendingActionsUseCase,
     required SyncPendingClientAgentActionsUseCase syncPendingActionsUseCase,
+    required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
+    required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
     ObserveAgentPresenceUseCase? observeAgentPresenceUseCase,
     AgentPresencePoller? agentPresencePoller,
     ConsumerSocketConnection? consumerSocketConnection,
@@ -71,6 +76,8 @@ class ClientAgentsController extends ChangeNotifier {
            discardQueuedClientAgentRequestAccessUseCase,
        _readPendingActionsUseCase = readPendingActionsUseCase,
        _syncPendingActionsUseCase = syncPendingActionsUseCase,
+       _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
+       _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase,
        _observeAgentPresenceUseCase = observeAgentPresenceUseCase,
        _agentPresencePoller = agentPresencePoller,
        _consumerSocketConnection = consumerSocketConnection,
@@ -96,6 +103,8 @@ class ClientAgentsController extends ChangeNotifier {
       _discardQueuedClientAgentRequestAccessUseCase;
   final ReadPendingClientAgentActionsUseCase _readPendingActionsUseCase;
   final SyncPendingClientAgentActionsUseCase _syncPendingActionsUseCase;
+  final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
+  final SaveClientAgentTokenUseCase _saveClientAgentTokenUseCase;
 
   /// PR-M part 2: optional dependency. When the build does not enable
   /// `SOCKET_PRESENCE_LISTENER_ENABLED`, the use case is `null` and the
@@ -298,16 +307,43 @@ class ClientAgentsController extends ChangeNotifier {
     }
   }
 
+  /// Reads the token to prefill in the request-access form for [agentId].
+  ///
+  /// Server is the source of truth for already-approved agents — we hit the
+  /// dedicated `GET /client/me/agents/{id}/client-token` endpoint when this
+  /// id is in the in-memory approved list and falls back to the local cache
+  /// on auth/network failure (so the form keeps working offline). For
+  /// agents that are NOT yet approved, the server returns 403 by design and
+  /// only the local draft is meaningful.
   Future<String?> readLocalClientToken(String agentId) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
       return null;
     }
-    return _clientTokenStore.read(userId: userId, agentId: agentId);
+    final trimmedAgentId = agentId.trim();
+    if (trimmedAgentId.isEmpty) {
+      return null;
+    }
+    if (_approvedAgentIds().contains(trimmedAgentId)) {
+      final result = await _getClientAgentTokenUseCase(
+        userId: userId,
+        agentId: trimmedAgentId,
+      );
+      final snapshot = result.getOrNull();
+      if (snapshot != null) {
+        return snapshot.token;
+      }
+      // Server unreachable / forbidden: fall back to local cache below.
+    }
+    return _clientTokenStore.read(userId: userId, agentId: trimmedAgentId);
   }
 
   /// Persists or clears the local token for a draft row when the agent id is
   /// a valid UUID (used from the request-access form while editing).
+  ///
+  /// Tokens longer than [ClientAgentTokenRequestDto.maxTokenLength] are
+  /// dropped before touching storage so a value the server would reject
+  /// never lands on disk.
   Future<void> persistLocalClientTokenDraftLine({
     required String agentIdRaw,
     required String clientTokenRaw,
@@ -321,6 +357,18 @@ class ClientAgentsController extends ChangeNotifier {
       return;
     }
     final token = clientTokenRaw.trim();
+    if (token.length > ClientAgentTokenRequestDto.maxTokenLength) {
+      AppLogger.warning(
+        'Client token draft exceeds server cap; not persisted',
+        context: <String, Object?>{
+          'operation': 'persistLocalClientTokenDraftLine',
+          'agentId': id,
+          'length': token.length,
+          'cap': ClientAgentTokenRequestDto.maxTokenLength,
+        },
+      );
+      return;
+    }
     if (token.isEmpty) {
       await _clientTokenStore.delete(userId: userId, agentId: id);
     } else {
@@ -332,7 +380,26 @@ class ClientAgentsController extends ChangeNotifier {
     }
   }
 
-  /// Writes tokens for each row, then enqueues access for valid agent ids.
+  /// Submits an access request transactionally w.r.t. the local token cache.
+  ///
+  /// 1. Snapshots existing local tokens for the rows we are about to touch
+  ///    so we can roll back on failure.
+  /// 2. Validates token length BEFORE touching storage.
+  /// 3. Calls [requestAccess] (which probes / classifies / queues).
+  /// 4. On success, applies the new token values:
+  ///    - For ids the server reported as **already linked** (relink path),
+  ///      pushes the token to the server via [SaveClientAgentTokenUseCase]
+  ///      so the bridge can use it on the next SQL call. The use case
+  ///      mirrors into the local cache on success.
+  ///    - For ids that landed in the local pending queue (new request),
+  ///      writes the token to the local cache. After approval polling
+  ///      detects the link, [_pushLocalTokenToServerAfterApproval] flushes
+  ///      it to the server.
+  ///    - For blocked ids (already approved/pending/queued), the local
+  ///      cache is left untouched — the user's draft cannot silently
+  ///      overwrite a token they did not intend to change.
+  /// 5. On failure of the underlying [requestAccess], the local cache for
+  ///    the touched ids is restored to its pre-submit state.
   Future<bool> submitAccessRequestWithLocalTokens(
     List<ClientAgentAccessRequestRowInput> rows,
   ) async {
@@ -343,40 +410,222 @@ class ClientAgentsController extends ChangeNotifier {
       return false;
     }
 
+    final tokenByAgentId = <String, String>{};
+    final tokensTooLongIds = <String>[];
     for (final row in rows) {
       final id = row.agentIdRaw.trim();
       if (!isValidClientAgentId(id)) {
         continue;
       }
       final token = row.clientTokenRaw.trim();
-      if (token.isEmpty) {
-        await _clientTokenStore.delete(userId: userId, agentId: id);
-      } else {
-        await _clientTokenStore.write(
-          userId: userId,
-          agentId: id,
-          clientToken: token,
-        );
+      if (token.length > ClientAgentTokenRequestDto.maxTokenLength) {
+        tokensTooLongIds.add(id);
+        continue;
       }
+      tokenByAgentId[id] = token;
     }
 
-    final requestedIds = <String>{};
-    for (final row in rows) {
-      final id = row.agentIdRaw.trim();
-      if (isValidClientAgentId(id)) {
-        requestedIds.add(id);
-      }
+    if (tokensTooLongIds.isNotEmpty) {
+      _actionErrorMessage = _s.clientAgentsValidationTokenTooLong(
+        ClientAgentTokenRequestDto.maxTokenLength,
+        tokensTooLongIds.join(', '),
+      );
+      _notifyListenersIfAlive();
+      return false;
     }
 
+    final requestedIds = tokenByAgentId.keys.toSet();
     if (requestedIds.isEmpty) {
       return false;
     }
 
-    return requestAccess(agentIds: requestedIds);
+    // Snapshot existing local tokens for the ids we may touch, so we can
+    // roll back on failure. `null` means "no token previously stored".
+    final localSnapshotById = <String, String?>{};
+    for (final id in requestedIds) {
+      localSnapshotById[id] = await _clientTokenStore.read(
+        userId: userId,
+        agentId: id,
+      );
+    }
+
+    AppLogger.info(
+      'Client agents request access submission starting',
+      context: <String, Object?>{
+        'operation': 'submitAccessRequestWithLocalTokens',
+        'requestedCount': requestedIds.length,
+        'withTokenCount':
+            tokenByAgentId.values.where((t) => t.isNotEmpty).length,
+      },
+    );
+
+    final outcome = await requestAccess(
+      agentIds: requestedIds,
+      onResolved: (snapshot) async {
+        await _applySubmittedTokensTransactionally(
+          userId: userId,
+          tokenByAgentId: tokenByAgentId,
+          snapshot: snapshot,
+        );
+      },
+    );
+
+    if (!outcome) {
+      // Best-effort rollback: requestAccess did not place anything in the
+      // local pending queue (auth abort or all blocked). Leave the local
+      // cache exactly as it was before this call so the form retry stays
+      // idempotent. We did not write anything yet, so restoring is a no-op
+      // unless `onResolved` ran (it does not when we abort early — the
+      // closure runs AFTER queueing succeeds).
+      // Defensive: re-write the snapshot in case any future change starts
+      // mutating the cache earlier in `requestAccess`.
+      await _restoreLocalTokenSnapshot(
+        userId: userId,
+        snapshotById: localSnapshotById,
+      );
+    }
+
+    return outcome;
   }
 
+  /// Server-applies the user-typed tokens for ids whose access was resolved
+  /// by [requestAccess].
+  ///
+  /// - **Relinked ids** (server already had this client linked): tokens are
+  ///   pushed to the server immediately via the dedicated PUT endpoint. The
+  ///   underlying repository mirrors successful writes into the local cache.
+  /// - **Queued ids** (new request placed in the local pending queue):
+  ///   tokens land in the local secure-storage cache only. After approval
+  ///   polling detects the link, [_pushLocalTokenToServerAfterApproval]
+  ///   flushes them to the server.
+  /// - Tokens NOT present in [tokenByAgentId] (or empty) trigger a server
+  ///   clear for relinked ids and a local delete for queued ids.
+  Future<void> _applySubmittedTokensTransactionally({
+    required String userId,
+    required Map<String, String> tokenByAgentId,
+    required RequestAccessSubmissionSnapshot snapshot,
+  }) async {
+    for (final agentId in snapshot.relinkedAgentIds) {
+      final token = tokenByAgentId[agentId] ?? '';
+      final result = await _saveClientAgentTokenUseCase(
+        userId: userId,
+        agentId: agentId,
+        clientToken: token,
+      );
+      if (result.isError()) {
+        final failure = result.exceptionOrNull()!;
+        AppLogger.warning(
+          'Server PUT of client-agent token after relink failed; falling '
+          'back to local cache (will retry on next approval flush)',
+          context: <String, Object?>{
+            'operation': 'applySubmittedTokens',
+            'agentId': agentId,
+            'phase': 'relinked',
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+        await _writeLocalTokenSafely(
+          userId: userId,
+          agentId: agentId,
+          token: token,
+        );
+      }
+    }
+
+    for (final agentId in snapshot.queuedAgentIds) {
+      final token = tokenByAgentId[agentId] ?? '';
+      await _writeLocalTokenSafely(
+        userId: userId,
+        agentId: agentId,
+        token: token,
+      );
+    }
+  }
+
+  Future<void> _writeLocalTokenSafely({
+    required String userId,
+    required String agentId,
+    required String token,
+  }) async {
+    if (token.isEmpty) {
+      await _clientTokenStore.delete(userId: userId, agentId: agentId);
+      return;
+    }
+    await _clientTokenStore.write(
+      userId: userId,
+      agentId: agentId,
+      clientToken: token,
+    );
+  }
+
+  Future<void> _restoreLocalTokenSnapshot({
+    required String userId,
+    required Map<String, String?> snapshotById,
+  }) async {
+    for (final entry in snapshotById.entries) {
+      final previous = entry.value;
+      if (previous == null || previous.isEmpty) {
+        await _clientTokenStore.delete(
+          userId: userId,
+          agentId: entry.key,
+        );
+      } else {
+        await _clientTokenStore.write(
+          userId: userId,
+          agentId: entry.key,
+          clientToken: previous,
+        );
+      }
+    }
+  }
+
+  /// After polling confirms an agent was approved, flush any local token we
+  /// stashed during submission to the server.
+  Future<void> _pushLocalTokenToServerAfterApproval({
+    required String userId,
+    required Iterable<String> agentIds,
+  }) async {
+    for (final agentId in agentIds) {
+      final localToken = await _clientTokenStore.read(
+        userId: userId,
+        agentId: agentId,
+      );
+      if (localToken == null) {
+        continue;
+      }
+      final result = await _saveClientAgentTokenUseCase(
+        userId: userId,
+        agentId: agentId,
+        clientToken: localToken,
+      );
+      if (result.isError()) {
+        final failure = result.exceptionOrNull()!;
+        AppLogger.warning(
+          'Server PUT of client-agent token after approval failed; local '
+          'cache kept as fallback',
+          context: <String, Object?>{
+            'operation': 'pushLocalTokenAfterApproval',
+            'agentId': agentId,
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+      }
+    }
+  }
+
+  /// Optional callback fired by [requestAccess] right after the controller
+  /// has resolved every id into either "relinked" (server already linked the
+  /// client) or "queued" (POST will fire on the next sync). Lets callers
+  /// (e.g. `submitAccessRequestWithLocalTokens`) apply side effects keyed by
+  /// the resolved ids without re-reading the controller's internal state.
   Future<bool> requestAccess({
     required Set<String> agentIds,
+    Future<void> Function(RequestAccessSubmissionSnapshot snapshot)?
+        onResolved,
   }) async {
     if (agentIds.isEmpty) {
       return false;
@@ -492,6 +741,14 @@ class ClientAgentsController extends ChangeNotifier {
             ),
             kind: ClientAgentsActionFeedbackKind.success,
           );
+          if (onResolved != null) {
+            await onResolved(
+              RequestAccessSubmissionSnapshot(
+                relinkedAgentIds: relinkedById.keys.toSet(),
+                queuedAgentIds: const <String>{},
+              ),
+            );
+          }
         }
         _notifyListenersIfAlive();
         await _reloadPendingAfterEnqueue(userId: userId);
@@ -523,6 +780,14 @@ class ClientAgentsController extends ChangeNotifier {
               pendingCleanupOk: pendingCleanupOk,
             ),
             kind: ClientAgentsActionFeedbackKind.info,
+          );
+        }
+        if (onResolved != null) {
+          await onResolved(
+            RequestAccessSubmissionSnapshot(
+              relinkedAgentIds: relinkedById.keys.toSet(),
+              queuedAgentIds: classification.allowed,
+            ),
           );
         }
       }
@@ -752,6 +1017,18 @@ class ClientAgentsController extends ChangeNotifier {
               debouncedIds: requestAccessDebouncedOnSync,
             ),
             kind: ClientAgentsActionFeedbackKind.success,
+          );
+        }
+        // Sync may have discovered that some queued ids were already
+        // approved server-side. Flush any local token we stashed for those
+        // ids to the server right away so the user does not have to wait
+        // for the polling loop to catch up.
+        if (requestAccessAlreadyApprovedOnSync.isNotEmpty) {
+          unawaited(
+            _pushLocalTokenToServerAfterApproval(
+              userId: userId,
+              agentIds: requestAccessAlreadyApprovedOnSync,
+            ),
           );
         }
         _startApprovalPolling(
@@ -999,6 +1276,16 @@ class ClientAgentsController extends ChangeNotifier {
     if (approvedNow.isNotEmpty) {
       await _refreshApprovedAgentsSnapshot(userId: userId);
       _upsertApprovedAgentsInMemory(approvedNow.values.toList(growable: false));
+      // Now that the server reports these agents as linked, flush any local
+      // token the user typed during the request-access flow up to the server
+      // so the SQL bridge sees it on the next call (and the detail page
+      // shows the correct status chip without requiring a manual save).
+      unawaited(
+        _pushLocalTokenToServerAfterApproval(
+          userId: userId,
+          agentIds: approvedNow.keys,
+        ),
+      );
     }
 
     if (approvedNow.isNotEmpty ||
@@ -1651,4 +1938,23 @@ class ClientAgentsController extends ChangeNotifier {
     _isDisposed = true;
     super.dispose();
   }
+}
+
+/// Snapshot passed from [ClientAgentsController.requestAccess] to its
+/// optional `onResolved` callback so the caller knows which ids ended up
+/// where after preflight + classification + queueing.
+class RequestAccessSubmissionSnapshot {
+  const RequestAccessSubmissionSnapshot({
+    required this.relinkedAgentIds,
+    required this.queuedAgentIds,
+  });
+
+  /// Ids the server already had linked for this client. Tokens for these
+  /// can be PUT to the server immediately.
+  final Set<String> relinkedAgentIds;
+
+  /// Ids the controller placed in the local pending queue (POST will fire
+  /// on the next sync). Tokens for these are stashed locally and PUT to the
+  /// server later, after approval polling sees the link.
+  final Set<String> queuedAgentIds;
 }

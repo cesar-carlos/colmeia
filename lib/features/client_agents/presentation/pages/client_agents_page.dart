@@ -319,9 +319,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                             initialAgentIdSlots:
                                 _pageSession.requestAccessDraftAgentIdSlots,
                             onDraftSlotsChanged: (slots) {
-                              _pageSession = _pageSession.copyWith(
-                                requestAccessDraftAgentIdSlots: slots,
-                              );
+                              if (!mounted) {
+                                return;
+                              }
+                              setState(() {
+                                _pageSession = _pageSession.copyWith(
+                                  requestAccessDraftAgentIdSlots: slots,
+                                );
+                              });
                               _scheduleDraftPersistence();
                             },
                             loadClientToken: controller.readLocalClientToken,

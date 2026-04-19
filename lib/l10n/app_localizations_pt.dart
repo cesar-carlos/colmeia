@@ -366,7 +366,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLoadingWeekdaySalesSemantics =>
-      'A carregar gráfico de vendas por dia da semana…';
+      'Carregando gráfico de vendas por dia da semana…';
 
   @override
   String get overviewMonthlyParcelsTitle => 'Ultimos 12 meses';
@@ -495,31 +495,31 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewWeekdayUserSalesTitle =>
-      'Vendas por dia da semana e utilizador';
+      'Vendas por dia da semana e usuário';
 
   @override
   String get overviewWeekdayUserRevenueTitle =>
-      'Receita por dia da semana e utilizador';
+      'Receita por dia da semana e usuário';
 
   @override
   String get overviewWeekdayUserSalesSubtitle =>
-      'Dias da semana no eixo horizontal; cada cor é um utilizador (ver legenda). Período e âmbito de filiais como no painel.';
+      'Dias da semana no eixo horizontal; cada cor é um usuário (ver legenda). Período e âmbito de filiais como no painel.';
 
   @override
   String get overviewWeekdayUserSalesEmpty =>
-      'Sem dados por utilizador e dia da semana neste período.';
+      'Sem dados por usuário e dia da semana neste período.';
 
   @override
   String get overviewWeekdayUserSalesLoadFailed =>
-      'Não foi possível carregar o gráfico por utilizador e dia da semana. Tente novamente mais tarde.';
+      'Não foi possível carregar o gráfico por usuário e dia da semana. Tente novamente mais tarde.';
 
   @override
   String get overviewWeekdayUserSalesChartSemantics =>
-      'Gráfico de vendas e valor em parcelas por dia da semana e utilizador';
+      'Gráfico de vendas e valor em parcelas por dia da semana e usuário';
 
   @override
   String get overviewWeekdayUserRevenueChartSemantics =>
-      'Gráfico de receita e vendas por dia da semana e utilizador';
+      'Gráfico de receita e vendas por dia da semana e usuário';
 
   @override
   String get overviewWeekdayUserChartScopeHint =>
@@ -533,7 +533,7 @@ class AppLocalizationsPt extends AppLocalizations {
     int shown,
     String othersLabel,
   ) {
-    return 'São mostrados os $shown utilizadores com totais mais altos; os restantes são somados em \"$othersLabel\".';
+    return 'São mostrados os $shown usuários com totais mais altos; os restantes são somados em \"$othersLabel\".';
   }
 
   @override
@@ -570,7 +570,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLoadingWeekdayUserSalesSemantics =>
-      'A carregar gráfico de vendas por dia da semana e utilizador…';
+      'Carregando gráfico de vendas por dia da semana e usuário…';
 
   @override
   String get overviewKpiTotalRevenue => 'Faturamento total';
@@ -849,7 +849,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsRequestAccessIntro1 =>
-      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.';
+      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execucao SQL.';
 
   @override
   String get clientAgentsRequestAccessIntro2 =>
@@ -857,7 +857,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsRequestAccessIntroToken =>
-      'O client token fica apenas neste dispositivo (criptografado) e nao e enviado ao enviar a solicitacao de acesso.';
+      'O client token fica em cache neste dispositivo enquanto a aprovacao esta pendente e e enviado ao servidor Colmeia assim que o agente for vinculado.';
 
   @override
   String get clientAgentsRequestAccessAddRow => 'Adicionar linha de agente';
@@ -871,11 +871,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get clientAgentsClientTokenLabel => 'Client token (local)';
+  String get clientAgentsClientTokenLabel => 'Client token';
 
   @override
   String get clientAgentsClientTokenHint =>
-      'Opcional — salvo apenas neste dispositivo';
+      'Opcional — cache local, enviado ao servidor apos aprovacao';
 
   @override
   String get clientAgentsClientTokenShow => 'Mostrar token';
@@ -896,6 +896,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String clientAgentsValidationInvalidIds(String ids) {
     return 'Os seguintes agentIds sao invalidos: $ids.';
+  }
+
+  @override
+  String clientAgentsValidationTokenTooLong(int limit, String ids) {
+    return 'O client token deve ter no maximo $limit caracteres. Reduza para: $ids.';
   }
 
   @override
@@ -1239,25 +1244,40 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentDetailSectionRecord => 'Registro';
 
   @override
-  String get clientAgentDetailSectionLocalToken => 'Client token local';
+  String get clientAgentDetailSectionServerToken => 'Client token';
 
   @override
-  String get clientAgentDetailSectionLocalTokenSubtitle =>
-      'Usado apenas neste dispositivo para consultas SQL (por exemplo na visao geral). Nunca enviado aos servidores Colmeia.';
+  String get clientAgentDetailSectionServerTokenSubtitle =>
+      'Salvo no servidor Colmeia e encaminhado ao agente como `params.client_token` quando este cliente executa SQL via bridge. O token tambem fica em cache neste dispositivo para dashboards seguirem funcionando brevemente sem conexao.';
 
   @override
-  String get clientAgentDetailLocalTokenSave => 'Salvar token';
+  String get clientAgentDetailServerTokenSave => 'Salvar token';
 
   @override
-  String get clientAgentDetailLocalTokenRemove => 'Remover token';
+  String get clientAgentDetailServerTokenRemove => 'Remover token';
 
   @override
-  String get clientAgentDetailLocalTokenSaved =>
-      'Token salvo neste dispositivo.';
+  String get clientAgentDetailServerTokenSaved => 'Token salvo no servidor.';
 
   @override
-  String get clientAgentDetailLocalTokenRemoved =>
-      'Token removido deste dispositivo.';
+  String get clientAgentDetailServerTokenRemoved =>
+      'Token removido do servidor.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusConfigured =>
+      'Token configurado para este agente no servidor.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusMissing =>
+      'Nenhum token configurado no servidor ainda.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusUnknown =>
+      'Status do token nao carregado — atualize a tela com acesso a internet para confirmar.';
+
+  @override
+  String get clientAgentDetailServerTokenLoadError =>
+      'Nao foi possivel ler o token atual no servidor. Exibindo o ultimo valor em cache neste dispositivo, se houver.';
 
   @override
   String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
@@ -1549,6 +1569,18 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentsErrorSyncPending =>
       'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+
+  @override
+  String get clientAgentsErrorGetClientAgentToken =>
+      'Nao foi possivel ler o token do agente no servidor.';
+
+  @override
+  String get clientAgentsErrorSaveClientAgentToken =>
+      'Nao foi possivel salvar o token do agente no servidor.';
+
+  @override
+  String get clientAgentsErrorRemoveClientAgentToken =>
+      'Nao foi possivel remover o token do agente no servidor.';
 
   @override
   String get clientAgentsErrorAgentDocumentConflict =>
@@ -2892,7 +2924,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsRequestAccessIntro1 =>
-      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.';
+      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execucao SQL.';
 
   @override
   String get clientAgentsRequestAccessIntro2 =>
@@ -2900,7 +2932,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsRequestAccessIntroToken =>
-      'O client token fica apenas neste dispositivo (criptografado) e nao e enviado ao enviar a solicitacao de acesso.';
+      'O client token fica em cache neste dispositivo enquanto a aprovacao esta pendente e e enviado ao servidor Colmeia assim que o agente for vinculado.';
 
   @override
   String get clientAgentsRequestAccessAddRow => 'Adicionar linha de agente';
@@ -2914,11 +2946,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
-  String get clientAgentsClientTokenLabel => 'Client token (local)';
+  String get clientAgentsClientTokenLabel => 'Client token';
 
   @override
   String get clientAgentsClientTokenHint =>
-      'Opcional — salvo apenas neste dispositivo';
+      'Opcional — cache local, enviado ao servidor apos aprovacao';
 
   @override
   String get clientAgentsClientTokenShow => 'Mostrar token';
@@ -2939,6 +2971,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String clientAgentsValidationInvalidIds(String ids) {
     return 'Os seguintes agentIds sao invalidos: $ids.';
+  }
+
+  @override
+  String clientAgentsValidationTokenTooLong(int limit, String ids) {
+    return 'O client token deve ter no maximo $limit caracteres. Reduza para: $ids.';
   }
 
   @override
@@ -3282,25 +3319,40 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentDetailSectionRecord => 'Registro';
 
   @override
-  String get clientAgentDetailSectionLocalToken => 'Client token local';
+  String get clientAgentDetailSectionServerToken => 'Client token';
 
   @override
-  String get clientAgentDetailSectionLocalTokenSubtitle =>
-      'Usado apenas neste dispositivo para consultas SQL (por exemplo na visao geral). Nunca enviado aos servidores Colmeia.';
+  String get clientAgentDetailSectionServerTokenSubtitle =>
+      'Salvo no servidor Colmeia e encaminhado ao agente como `params.client_token` quando este cliente executa SQL via bridge. O token tambem fica em cache neste dispositivo para dashboards seguirem funcionando brevemente sem conexao.';
 
   @override
-  String get clientAgentDetailLocalTokenSave => 'Salvar token';
+  String get clientAgentDetailServerTokenSave => 'Salvar token';
 
   @override
-  String get clientAgentDetailLocalTokenRemove => 'Remover token';
+  String get clientAgentDetailServerTokenRemove => 'Remover token';
 
   @override
-  String get clientAgentDetailLocalTokenSaved =>
-      'Token salvo neste dispositivo.';
+  String get clientAgentDetailServerTokenSaved => 'Token salvo no servidor.';
 
   @override
-  String get clientAgentDetailLocalTokenRemoved =>
-      'Token removido deste dispositivo.';
+  String get clientAgentDetailServerTokenRemoved =>
+      'Token removido do servidor.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusConfigured =>
+      'Token configurado para este agente no servidor.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusMissing =>
+      'Nenhum token configurado no servidor ainda.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusUnknown =>
+      'Status do token nao carregado — atualize a tela com acesso a internet para confirmar.';
+
+  @override
+  String get clientAgentDetailServerTokenLoadError =>
+      'Nao foi possivel ler o token atual no servidor. Exibindo o ultimo valor em cache neste dispositivo, se houver.';
 
   @override
   String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
@@ -3592,6 +3644,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsErrorSyncPending =>
       'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+
+  @override
+  String get clientAgentsErrorGetClientAgentToken =>
+      'Nao foi possivel ler o token do agente no servidor.';
+
+  @override
+  String get clientAgentsErrorSaveClientAgentToken =>
+      'Nao foi possivel salvar o token do agente no servidor.';
+
+  @override
+  String get clientAgentsErrorRemoveClientAgentToken =>
+      'Nao foi possivel remover o token do agente no servidor.';
 
   @override
   String get clientAgentsErrorAgentDocumentConflict =>

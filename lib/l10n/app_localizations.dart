@@ -1438,7 +1438,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsRequestAccessIntro1.
   ///
   /// In en, this message translates to:
-  /// **'Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.'**
+  /// **'Use one or more rows to request access. Each row needs an agent UUID; add the client token when that agent requires it for SQL execution.'**
   String get clientAgentsRequestAccessIntro1;
 
   /// No description provided for @clientAgentsRequestAccessIntro2.
@@ -1450,7 +1450,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsRequestAccessIntroToken.
   ///
   /// In en, this message translates to:
-  /// **'The client token is saved only on this device (encrypted) and is not sent when you submit the access request.'**
+  /// **'The client token is cached on this device while approval is pending and pushed to the Colmeia server as soon as the agent is linked.'**
   String get clientAgentsRequestAccessIntroToken;
 
   /// No description provided for @clientAgentsRequestAccessAddRow.
@@ -1474,13 +1474,13 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsClientTokenLabel.
   ///
   /// In en, this message translates to:
-  /// **'Client token (local)'**
+  /// **'Client token'**
   String get clientAgentsClientTokenLabel;
 
   /// No description provided for @clientAgentsClientTokenHint.
   ///
   /// In en, this message translates to:
-  /// **'Optional — stored only on this device'**
+  /// **'Optional — cached locally, pushed to the server after approval'**
   String get clientAgentsClientTokenHint;
 
   /// No description provided for @clientAgentsClientTokenShow.
@@ -1518,6 +1518,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The following agent IDs are invalid: {ids}.'**
   String clientAgentsValidationInvalidIds(String ids);
+
+  /// No description provided for @clientAgentsValidationTokenTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The client token must be {limit} characters or fewer. Shorten it for: {ids}.'**
+  String clientAgentsValidationTokenTooLong(int limit, String ids);
 
   /// No description provided for @clientAgentsDuplicatedIdsNote.
   ///
@@ -2038,41 +2044,65 @@ abstract class AppLocalizations {
   /// **'Record'**
   String get clientAgentDetailSectionRecord;
 
-  /// No description provided for @clientAgentDetailSectionLocalToken.
+  /// No description provided for @clientAgentDetailSectionServerToken.
   ///
   /// In en, this message translates to:
-  /// **'Local client token'**
-  String get clientAgentDetailSectionLocalToken;
+  /// **'Client token'**
+  String get clientAgentDetailSectionServerToken;
 
-  /// No description provided for @clientAgentDetailSectionLocalTokenSubtitle.
+  /// No description provided for @clientAgentDetailSectionServerTokenSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Used only on this device for SQL queries (for example in the overview). Never sent to Colmeia servers.'**
-  String get clientAgentDetailSectionLocalTokenSubtitle;
+  /// **'Stored on the Colmeia server and forwarded to the agent as `params.client_token` when this client runs SQL through the bridge. The token is also cached on this device so dashboards keep working briefly while offline.'**
+  String get clientAgentDetailSectionServerTokenSubtitle;
 
-  /// No description provided for @clientAgentDetailLocalTokenSave.
+  /// No description provided for @clientAgentDetailServerTokenSave.
   ///
   /// In en, this message translates to:
   /// **'Save token'**
-  String get clientAgentDetailLocalTokenSave;
+  String get clientAgentDetailServerTokenSave;
 
-  /// No description provided for @clientAgentDetailLocalTokenRemove.
+  /// No description provided for @clientAgentDetailServerTokenRemove.
   ///
   /// In en, this message translates to:
   /// **'Remove token'**
-  String get clientAgentDetailLocalTokenRemove;
+  String get clientAgentDetailServerTokenRemove;
 
-  /// No description provided for @clientAgentDetailLocalTokenSaved.
+  /// No description provided for @clientAgentDetailServerTokenSaved.
   ///
   /// In en, this message translates to:
-  /// **'Token saved on this device.'**
-  String get clientAgentDetailLocalTokenSaved;
+  /// **'Token saved on the server.'**
+  String get clientAgentDetailServerTokenSaved;
 
-  /// No description provided for @clientAgentDetailLocalTokenRemoved.
+  /// No description provided for @clientAgentDetailServerTokenRemoved.
   ///
   /// In en, this message translates to:
-  /// **'Token removed from this device.'**
-  String get clientAgentDetailLocalTokenRemoved;
+  /// **'Token removed from the server.'**
+  String get clientAgentDetailServerTokenRemoved;
+
+  /// No description provided for @clientAgentDetailServerTokenStatusConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'A token is configured for this agent on the server.'**
+  String get clientAgentDetailServerTokenStatusConfigured;
+
+  /// No description provided for @clientAgentDetailServerTokenStatusMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No token configured on the server yet.'**
+  String get clientAgentDetailServerTokenStatusMissing;
+
+  /// No description provided for @clientAgentDetailServerTokenStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Token status not loaded yet — refresh the screen with internet access to confirm.'**
+  String get clientAgentDetailServerTokenStatusUnknown;
+
+  /// No description provided for @clientAgentDetailServerTokenLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the current token from the server. Showing the last value cached on this device, if any.'**
+  String get clientAgentDetailServerTokenLoadError;
 
   /// No description provided for @clientAgentDetailSectionEditProfile.
   ///
@@ -2541,6 +2571,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not sync pending agent actions.'**
   String get clientAgentsErrorSyncPending;
+
+  /// No description provided for @clientAgentsErrorGetClientAgentToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the agent token from the server.'**
+  String get clientAgentsErrorGetClientAgentToken;
+
+  /// No description provided for @clientAgentsErrorSaveClientAgentToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the agent token on the server.'**
+  String get clientAgentsErrorSaveClientAgentToken;
+
+  /// No description provided for @clientAgentsErrorRemoveClientAgentToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the agent token on the server.'**
+  String get clientAgentsErrorRemoveClientAgentToken;
 
   /// No description provided for @clientAgentsErrorAgentDocumentConflict.
   ///

@@ -828,7 +828,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentsRequestAccessIntro1 =>
-      'Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.';
+      'Use one or more rows to request access. Each row needs an agent UUID; add the client token when that agent requires it for SQL execution.';
 
   @override
   String get clientAgentsRequestAccessIntro2 =>
@@ -836,7 +836,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentsRequestAccessIntroToken =>
-      'The client token is saved only on this device (encrypted) and is not sent when you submit the access request.';
+      'The client token is cached on this device while approval is pending and pushed to the Colmeia server as soon as the agent is linked.';
 
   @override
   String get clientAgentsRequestAccessAddRow => 'Add agent row';
@@ -850,11 +850,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get clientAgentsClientTokenLabel => 'Client token (local)';
+  String get clientAgentsClientTokenLabel => 'Client token';
 
   @override
   String get clientAgentsClientTokenHint =>
-      'Optional — stored only on this device';
+      'Optional — cached locally, pushed to the server after approval';
 
   @override
   String get clientAgentsClientTokenShow => 'Show token';
@@ -875,6 +875,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String clientAgentsValidationInvalidIds(String ids) {
     return 'The following agent IDs are invalid: $ids.';
+  }
+
+  @override
+  String clientAgentsValidationTokenTooLong(int limit, String ids) {
+    return 'The client token must be $limit characters or fewer. Shorten it for: $ids.';
   }
 
   @override
@@ -1215,24 +1220,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentDetailSectionRecord => 'Record';
 
   @override
-  String get clientAgentDetailSectionLocalToken => 'Local client token';
+  String get clientAgentDetailSectionServerToken => 'Client token';
 
   @override
-  String get clientAgentDetailSectionLocalTokenSubtitle =>
-      'Used only on this device for SQL queries (for example in the overview). Never sent to Colmeia servers.';
+  String get clientAgentDetailSectionServerTokenSubtitle =>
+      'Stored on the Colmeia server and forwarded to the agent as `params.client_token` when this client runs SQL through the bridge. The token is also cached on this device so dashboards keep working briefly while offline.';
 
   @override
-  String get clientAgentDetailLocalTokenSave => 'Save token';
+  String get clientAgentDetailServerTokenSave => 'Save token';
 
   @override
-  String get clientAgentDetailLocalTokenRemove => 'Remove token';
+  String get clientAgentDetailServerTokenRemove => 'Remove token';
 
   @override
-  String get clientAgentDetailLocalTokenSaved => 'Token saved on this device.';
+  String get clientAgentDetailServerTokenSaved => 'Token saved on the server.';
 
   @override
-  String get clientAgentDetailLocalTokenRemoved =>
-      'Token removed from this device.';
+  String get clientAgentDetailServerTokenRemoved =>
+      'Token removed from the server.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusConfigured =>
+      'A token is configured for this agent on the server.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusMissing =>
+      'No token configured on the server yet.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusUnknown =>
+      'Token status not loaded yet — refresh the screen with internet access to confirm.';
+
+  @override
+  String get clientAgentDetailServerTokenLoadError =>
+      'Could not load the current token from the server. Showing the last value cached on this device, if any.';
 
   @override
   String get clientAgentDetailSectionEditProfile => 'Catalog profile';
@@ -1522,6 +1543,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clientAgentsErrorSyncPending =>
       'Could not sync pending agent actions.';
+
+  @override
+  String get clientAgentsErrorGetClientAgentToken =>
+      'Could not read the agent token from the server.';
+
+  @override
+  String get clientAgentsErrorSaveClientAgentToken =>
+      'Could not save the agent token on the server.';
+
+  @override
+  String get clientAgentsErrorRemoveClientAgentToken =>
+      'Could not remove the agent token on the server.';
 
   @override
   String get clientAgentsErrorAgentDocumentConflict =>

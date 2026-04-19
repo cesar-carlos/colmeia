@@ -2,6 +2,7 @@ import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
@@ -11,6 +12,8 @@ import 'package:colmeia/features/client_agents/application/usecases/probe_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/remove_client_agent_token_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
@@ -60,6 +63,8 @@ void registerInjectorPresentation(GetIt getIt) {
             getIt<ReadPendingClientAgentActionsUseCase>(),
         syncPendingActionsUseCase:
             getIt<SyncPendingClientAgentActionsUseCase>(),
+        getClientAgentTokenUseCase: getIt<GetClientAgentTokenUseCase>(),
+        saveClientAgentTokenUseCase: getIt<SaveClientAgentTokenUseCase>(),
         // Optional: only registered when SOCKET_PRESENCE_LISTENER_ENABLED.
         // The controller falls back to the legacy Refresh-only flow when
         // null, which keeps non-socket builds untouched.
@@ -83,10 +88,12 @@ void registerInjectorPresentation(GetIt getIt) {
     ..registerFactory<ClientAgentDetailController>(
       () => ClientAgentDetailController(
         authController: getIt<AuthController>(),
-        clientTokenStore: getIt<LocalAgentClientTokenStore>(),
         loadClientAgentDetailUseCase: getIt<LoadClientAgentDetailUseCase>(),
         updateClientAgentProfileUseCase:
             getIt<UpdateClientAgentProfileUseCase>(),
+        getClientAgentTokenUseCase: getIt<GetClientAgentTokenUseCase>(),
+        saveClientAgentTokenUseCase: getIt<SaveClientAgentTokenUseCase>(),
+        removeClientAgentTokenUseCase: getIt<RemoveClientAgentTokenUseCase>(),
       ),
     );
 }

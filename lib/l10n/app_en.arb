@@ -482,9 +482,9 @@
   "clientAgentsBulkRemoveConfirmAction": "Queue removal",
   "clientAgentsApprovedBulkSelectAll": "Select all",
   "clientAgentsApprovedBulkClearSelection": "Clear selection",
-  "clientAgentsRequestAccessIntro1": "Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.",
+  "clientAgentsRequestAccessIntro1": "Use one or more rows to request access. Each row needs an agent UUID; add the client token when that agent requires it for SQL execution.",
   "clientAgentsRequestAccessIntro2": "The agent ID must be provided by the agent owner or an external flow. When the request is approved, the agent will be released automatically for this account.",
-  "clientAgentsRequestAccessIntroToken": "The client token is saved only on this device (encrypted) and is not sent when you submit the access request.",
+  "clientAgentsRequestAccessIntroToken": "The client token is cached on this device while approval is pending and pushed to the Colmeia server as soon as the agent is linked.",
   "clientAgentsRequestAccessAddRow": "Add agent row",
   "clientAgentsRequestAccessRemoveRow": "Remove row",
   "clientAgentsRequestAccessRowTitle": "Agent {index}",
@@ -493,8 +493,8 @@
       "index": {"type": "int"}
     }
   },
-  "clientAgentsClientTokenLabel": "Client token (local)",
-  "clientAgentsClientTokenHint": "Optional — stored only on this device",
+  "clientAgentsClientTokenLabel": "Client token",
+  "clientAgentsClientTokenHint": "Optional — cached locally, pushed to the server after approval",
   "clientAgentsClientTokenShow": "Show token",
   "clientAgentsClientTokenHide": "Hide token",
   "clientAgentsAgentIdsLabel": "Agent ID",
@@ -503,6 +503,13 @@
   "clientAgentsValidationInvalidIds": "The following agent IDs are invalid: {ids}.",
   "@clientAgentsValidationInvalidIds": {
     "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsValidationTokenTooLong": "The client token must be {limit} characters or fewer. Shorten it for: {ids}.",
+  "@clientAgentsValidationTokenTooLong": {
+    "placeholders": {
+      "limit": {"type": "int"},
       "ids": {"type": "String"}
     }
   },
@@ -720,12 +727,16 @@
   "clientAgentDetailSectionAddress": "Address",
   "clientAgentDetailSectionNotes": "Notes",
   "clientAgentDetailSectionRecord": "Record",
-  "clientAgentDetailSectionLocalToken": "Local client token",
-  "clientAgentDetailSectionLocalTokenSubtitle": "Used only on this device for SQL queries (for example in the overview). Never sent to Colmeia servers.",
-  "clientAgentDetailLocalTokenSave": "Save token",
-  "clientAgentDetailLocalTokenRemove": "Remove token",
-  "clientAgentDetailLocalTokenSaved": "Token saved on this device.",
-  "clientAgentDetailLocalTokenRemoved": "Token removed from this device.",
+  "clientAgentDetailSectionServerToken": "Client token",
+  "clientAgentDetailSectionServerTokenSubtitle": "Stored on the Colmeia server and forwarded to the agent as `params.client_token` when this client runs SQL through the bridge. The token is also cached on this device so dashboards keep working briefly while offline.",
+  "clientAgentDetailServerTokenSave": "Save token",
+  "clientAgentDetailServerTokenRemove": "Remove token",
+  "clientAgentDetailServerTokenSaved": "Token saved on the server.",
+  "clientAgentDetailServerTokenRemoved": "Token removed from the server.",
+  "clientAgentDetailServerTokenStatusConfigured": "A token is configured for this agent on the server.",
+  "clientAgentDetailServerTokenStatusMissing": "No token configured on the server yet.",
+  "clientAgentDetailServerTokenStatusUnknown": "Token status not loaded yet — refresh the screen with internet access to confirm.",
+  "clientAgentDetailServerTokenLoadError": "Could not load the current token from the server. Showing the last value cached on this device, if any.",
   "clientAgentDetailSectionEditProfile": "Catalog profile",
   "clientAgentDetailSaveProfile": "Save profile",
   "clientAgentDetailProfileSaved": "Profile saved on the server.",
@@ -861,6 +872,9 @@
   "clientAgentsErrorQueueRemove": "Could not queue the removal for sync.",
   "clientAgentsErrorSyncAction": "Could not sync the change for this agent.",
   "clientAgentsErrorSyncPending": "Could not sync pending agent actions.",
+  "clientAgentsErrorGetClientAgentToken": "Could not read the agent token from the server.",
+  "clientAgentsErrorSaveClientAgentToken": "Could not save the agent token on the server.",
+  "clientAgentsErrorRemoveClientAgentToken": "Could not remove the agent token on the server.",
   "clientAgentsErrorAgentDocumentConflict": "This CNPJ/CPF is already linked to another agent in the catalog. To change the link, contact support.",
   "agentSqlErrorAuthenticationFailed": "Authentication is required to query this agent.",
   "agentSqlErrorPermissionDenied": "You do not have permission to query this data on this agent.",

@@ -19,6 +19,7 @@ import 'package:colmeia/features/auth/domain/entities/client_account_status.dart
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
@@ -28,12 +29,14 @@ import 'package:colmeia/features/client_agents/application/usecases/probe_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -78,6 +81,12 @@ class _MockSyncPendingClientAgentActionsUseCase extends Mock
 
 class _MockLocalAgentClientTokenStore extends Mock
     implements LocalAgentClientTokenStore {}
+
+class _MockGetClientAgentTokenUseCase extends Mock
+    implements GetClientAgentTokenUseCase {}
+
+class _MockSaveClientAgentTokenUseCase extends Mock
+    implements SaveClientAgentTokenUseCase {}
 
 class _MockAgentPresencePoller extends Mock implements AgentPresencePoller {}
 
@@ -145,6 +154,8 @@ void main() {
       discardQueuedClientAgentRequestAccessUseCase;
   late _MockReadPendingClientAgentActionsUseCase readPendingActionsUseCase;
   late _MockSyncPendingClientAgentActionsUseCase syncPendingActionsUseCase;
+  late _MockGetClientAgentTokenUseCase getClientAgentTokenUseCase;
+  late _MockSaveClientAgentTokenUseCase saveClientAgentTokenUseCase;
   late _FakePresenceStream presenceStream;
   late ClientAgentsController controller;
 
@@ -176,6 +187,29 @@ void main() {
         _MockDiscardQueuedClientAgentRequestAccessUseCase();
     readPendingActionsUseCase = _MockReadPendingClientAgentActionsUseCase();
     syncPendingActionsUseCase = _MockSyncPendingClientAgentActionsUseCase();
+    getClientAgentTokenUseCase = _MockGetClientAgentTokenUseCase();
+    saveClientAgentTokenUseCase = _MockSaveClientAgentTokenUseCase();
+    when(
+      () => getClientAgentTokenUseCase(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<ClientAgentTokenSnapshot, AppFailure>(
+        ClientAgentTokenSnapshot.empty(),
+      ),
+    );
+    when(
+      () => saveClientAgentTokenUseCase(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<ClientAgentTokenSnapshot, AppFailure>(
+        ClientAgentTokenSnapshot.empty(),
+      ),
+    );
     presenceStream = _FakePresenceStream();
 
     when(() => authController.session).thenReturn(session);
@@ -232,6 +266,8 @@ void main() {
           discardQueuedClientAgentRequestAccessUseCase,
       readPendingActionsUseCase: readPendingActionsUseCase,
       syncPendingActionsUseCase: syncPendingActionsUseCase,
+      getClientAgentTokenUseCase: getClientAgentTokenUseCase,
+      saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
       observeAgentPresenceUseCase: ObserveAgentPresenceUseCase(presenceStream),
       // Tight delay so the debounce path runs in the test budget.
       hintConfirmDelay: const Duration(milliseconds: 30),
@@ -439,6 +475,8 @@ void main() {
               discardQueuedClientAgentRequestAccessUseCase,
           readPendingActionsUseCase: readPendingActionsUseCase,
           syncPendingActionsUseCase: syncPendingActionsUseCase,
+          getClientAgentTokenUseCase: getClientAgentTokenUseCase,
+          saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
           // No `observeAgentPresenceUseCase` argument.
         );
         addTearDown(legacyController.dispose);
@@ -495,6 +533,8 @@ void main() {
               discardQueuedClientAgentRequestAccessUseCase,
           readPendingActionsUseCase: readPendingActionsUseCase,
           syncPendingActionsUseCase: syncPendingActionsUseCase,
+          getClientAgentTokenUseCase: getClientAgentTokenUseCase,
+          saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
           observeAgentPresenceUseCase:
               ObserveAgentPresenceUseCase(presenceStream),
           agentPresencePoller: poller,

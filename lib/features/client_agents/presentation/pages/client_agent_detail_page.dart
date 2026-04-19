@@ -159,7 +159,7 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                     SizedBox(height: tokens.gapMd),
                     _RecordCard(agent: agent, l10n: l10n),
                     SizedBox(height: tokens.gapMd),
-                    _LocalClientTokenCard(
+                    _AgentClientTokenCard(
                       agentId: agent.agentId,
                       controller: _controller,
                       l10n: l10n,
@@ -186,8 +186,8 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
   }
 }
 
-class _LocalClientTokenCard extends StatefulWidget {
-  const _LocalClientTokenCard({
+class _AgentClientTokenCard extends StatefulWidget {
+  const _AgentClientTokenCard({
     required this.agentId,
     required this.controller,
     required this.l10n,
@@ -200,10 +200,10 @@ class _LocalClientTokenCard extends StatefulWidget {
   final AppThemeTokens tokens;
 
   @override
-  State<_LocalClientTokenCard> createState() => _LocalClientTokenCardState();
+  State<_AgentClientTokenCard> createState() => _AgentClientTokenCardState();
 }
 
-class _LocalClientTokenCardState extends State<_LocalClientTokenCard> {
+class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
   late final TextEditingController _tokenController;
   int _lastSyncedRevision = -1;
   bool _obscureToken = true;
@@ -225,11 +225,11 @@ class _LocalClientTokenCardState extends State<_LocalClientTokenCard> {
 
   void _syncTokenFieldFromController() {
     final c = widget.controller;
-    if (_lastSyncedRevision == c.localClientTokenRevision) {
+    if (_lastSyncedRevision == c.clientTokenRevision) {
       return;
     }
-    _lastSyncedRevision = c.localClientTokenRevision;
-    final text = c.persistedLocalClientTokenForField;
+    _lastSyncedRevision = c.clientTokenRevision;
+    final text = c.persistedClientTokenForField;
     if (_tokenController.text != text) {
       _tokenController.text = text;
     }
@@ -238,15 +238,24 @@ class _LocalClientTokenCardState extends State<_LocalClientTokenCard> {
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
-    final feedback = c.localClientTokenFeedback;
     final theme = Theme.of(context);
+    final feedback = c.clientTokenFeedback;
+    final feedbackError = c.clientTokenError;
+    final isMutating = c.isSavingClientToken;
 
     return AppSectionCardWithHeading(
-      title: widget.l10n.clientAgentDetailSectionLocalToken,
-      subtitle: widget.l10n.clientAgentDetailSectionLocalTokenSubtitle,
+      title: widget.l10n.clientAgentDetailSectionServerToken,
+      subtitle: widget.l10n.clientAgentDetailSectionServerTokenSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          _ClientTokenStatusRow(
+            status: c.clientTokenStatus,
+            isLoading: c.isLoadingClientToken,
+            l10n: widget.l10n,
+            tokens: widget.tokens,
+          ),
+          SizedBox(height: widget.tokens.gapMd),
           AppTextField(
             controller: _tokenController,
             label: widget.l10n.clientAgentsClientTokenLabel,
@@ -275,25 +284,25 @@ class _LocalClientTokenCardState extends State<_LocalClientTokenCard> {
             runSpacing: widget.tokens.gapSm,
             children: <Widget>[
               AppPrimaryButton(
-                label: widget.l10n.clientAgentDetailLocalTokenSave,
-                icon: const Icon(Icons.save_rounded),
-                isLoading: c.isSavingLocalClientToken,
-                onPressed: c.isSavingLocalClientToken
+                label: widget.l10n.clientAgentDetailServerTokenSave,
+                icon: const Icon(Icons.cloud_upload_rounded),
+                isLoading: isMutating,
+                onPressed: isMutating
                     ? null
                     : () => unawaited(
-                        c.saveLocalClientToken(
+                        c.saveClientAgentToken(
                           agentId: widget.agentId,
                           rawToken: _tokenController.text,
                         ),
                       ),
               ),
               AppSecondaryButton(
-                label: widget.l10n.clientAgentDetailLocalTokenRemove,
+                label: widget.l10n.clientAgentDetailServerTokenRemove,
                 icon: const Icon(Icons.delete_outline_rounded),
-                onPressed: c.isSavingLocalClientToken
+                onPressed: isMutating
                     ? null
                     : () => unawaited(
-                        c.removeLocalClientToken(agentId: widget.agentId),
+                        c.removeClientAgentToken(agentId: widget.agentId),
                       ),
               ),
             ],
@@ -307,8 +316,77 @@ class _LocalClientTokenCardState extends State<_LocalClientTokenCard> {
               ),
             ),
           ],
+          if (feedbackError != null) ...<Widget>[
+            SizedBox(height: widget.tokens.gapSm),
+            Text(
+              feedbackError,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _ClientTokenStatusRow extends StatelessWidget {
+  const _ClientTokenStatusRow({
+    required this.status,
+    required this.isLoading,
+    required this.l10n,
+    required this.tokens,
+  });
+
+  final ClientAgentTokenStatus status;
+  final bool isLoading;
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    final (IconData icon, Color color, String label) = switch (status) {
+      ClientAgentTokenStatus.configured => (
+        Icons.verified_rounded,
+        colors.primary,
+        l10n.clientAgentDetailServerTokenStatusConfigured,
+      ),
+      ClientAgentTokenStatus.missing => (
+        Icons.info_outline_rounded,
+        colors.onSurfaceVariant,
+        l10n.clientAgentDetailServerTokenStatusMissing,
+      ),
+      ClientAgentTokenStatus.unknown => (
+        Icons.help_outline_rounded,
+        colors.onSurfaceVariant,
+        l10n.clientAgentDetailServerTokenStatusUnknown,
+      ),
+    };
+
+    return Row(
+      children: <Widget>[
+        if (isLoading)
+          SizedBox.square(
+            dimension: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: color,
+            ),
+          )
+        else
+          Icon(icon, size: 20, color: color),
+        SizedBox(width: tokens.gapSm),
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(color: color),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -40,6 +40,12 @@ String clientAgentsFailureUserMessage(
       l10n.clientAgentsErrorSyncAction,
     ClientAgentsFailureUiKey.syncPendingActions =>
       l10n.clientAgentsErrorSyncPending,
+    ClientAgentsFailureUiKey.getClientAgentToken =>
+      l10n.clientAgentsErrorGetClientAgentToken,
+    ClientAgentsFailureUiKey.saveClientAgentToken =>
+      l10n.clientAgentsErrorSaveClientAgentToken,
+    ClientAgentsFailureUiKey.removeClientAgentToken =>
+      l10n.clientAgentsErrorRemoveClientAgentToken,
     _ => failure.displayMessage,
   };
 }

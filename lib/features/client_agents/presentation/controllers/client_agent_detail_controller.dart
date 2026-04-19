@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:colmeia/core/formatters/agent_document_digits.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/remove_client_agent_token_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
-import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_address.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
@@ -12,21 +16,41 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
 
+/// Visible state of the per-(client, agent) bearer token stored on the
+/// server. The detail page renders different copy/chips for each branch.
+enum ClientAgentTokenStatus {
+  /// Server snapshot has not been fetched yet (initial load or refresh in
+  /// flight). Treat the field value as the local cache fallback.
+  unknown,
+
+  /// Server confirmed there is no token stored for this `(client, agent)`.
+  missing,
+
+  /// Server confirmed a non-empty token is stored.
+  configured,
+}
+
 class ClientAgentDetailController extends ChangeNotifier {
   ClientAgentDetailController({
     required AuthController authController,
-    required LocalAgentClientTokenStore clientTokenStore,
     required LoadClientAgentDetailUseCase loadClientAgentDetailUseCase,
     required UpdateClientAgentProfileUseCase updateClientAgentProfileUseCase,
+    required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
+    required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
+    required RemoveClientAgentTokenUseCase removeClientAgentTokenUseCase,
   }) : _authController = authController,
-       _clientTokenStore = clientTokenStore,
        _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
-       _updateClientAgentProfileUseCase = updateClientAgentProfileUseCase;
+       _updateClientAgentProfileUseCase = updateClientAgentProfileUseCase,
+       _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
+       _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase,
+       _removeClientAgentTokenUseCase = removeClientAgentTokenUseCase;
 
   final AuthController _authController;
-  final LocalAgentClientTokenStore _clientTokenStore;
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;
   final UpdateClientAgentProfileUseCase _updateClientAgentProfileUseCase;
+  final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
+  final SaveClientAgentTokenUseCase _saveClientAgentTokenUseCase;
+  final RemoveClientAgentTokenUseCase _removeClientAgentTokenUseCase;
 
   AppLocalizations? _l10n;
 
@@ -43,10 +67,14 @@ class ClientAgentDetailController extends ChangeNotifier {
   bool _disposed = false;
   String? _loadedAgentId;
   int _loadGeneration = 0;
-  int _localTokenRevision = 0;
-  String? _persistedLocalClientToken;
-  bool _isSavingLocalClientToken = false;
-  String? _localClientTokenFeedback;
+  int _clientTokenRevision = 0;
+  int _clientTokenLoadGeneration = 0;
+  String? _persistedClientToken;
+  ClientAgentTokenStatus _clientTokenStatus = ClientAgentTokenStatus.unknown;
+  bool _isLoadingClientToken = false;
+  bool _isSavingClientToken = false;
+  String? _clientTokenFeedback;
+  String? _clientTokenError;
   bool _isSavingProfile = false;
   String? _profileSaveError;
   String? _profileSaveSuccess;
@@ -56,14 +84,30 @@ class ClientAgentDetailController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isRefreshing => _isRefreshing;
 
-  int get localClientTokenRevision => _localTokenRevision;
+  /// Bumped every time [persistedClientTokenForField] changes so the text
+  /// field can re-sync its content even though the value is a `String`.
+  int get clientTokenRevision => _clientTokenRevision;
 
-  String get persistedLocalClientTokenForField =>
-      _persistedLocalClientToken ?? '';
+  /// Most recent token resolved from the server (or local cache fallback)
+  /// for the current agent. Empty when no token is stored or when the field
+  /// has not been loaded yet.
+  String get persistedClientTokenForField => _persistedClientToken ?? '';
 
-  bool get isSavingLocalClientToken => _isSavingLocalClientToken;
+  bool get isLoadingClientToken => _isLoadingClientToken;
 
-  String? get localClientTokenFeedback => _localClientTokenFeedback;
+  bool get isSavingClientToken => _isSavingClientToken;
+
+  /// One-shot success message after a save/remove operation. The page should
+  /// clear it once shown via [clearClientTokenFeedback].
+  String? get clientTokenFeedback => _clientTokenFeedback;
+
+  /// One-shot error message after a save/remove operation. Cleared the same
+  /// way as [clientTokenFeedback].
+  String? get clientTokenError => _clientTokenError;
+
+  /// Server-confirmed token presence for the loaded agent. Defaults to
+  /// [ClientAgentTokenStatus.unknown] until the GET endpoint succeeds.
+  ClientAgentTokenStatus get clientTokenStatus => _clientTokenStatus;
 
   bool get isSavingProfile => _isSavingProfile;
 
@@ -119,13 +163,19 @@ class ClientAgentDetailController extends ChangeNotifier {
       if (loadedAgent != null) {
         _agent = loadedAgent;
         _errorMessage = null;
-        await _refreshPersistedLocalClientToken(agentId: agentId);
+        // Seed the token status from the freshly loaded agent: list/detail
+        // endpoints expose `hasClientToken` so we can render the chip
+        // immediately while the dedicated GET resolves the actual value.
+        _clientTokenStatus = _statusFromAgent(loadedAgent);
+        unawaited(_refreshPersistedClientTokenFromServer(agentId: agentId));
       } else {
         final failure = result.exceptionOrNull()!;
         if (!keepContentVisible) {
           _agent = null;
-          _persistedLocalClientToken = null;
-          _localTokenRevision++;
+          _persistedClientToken = null;
+          _clientTokenStatus = ClientAgentTokenStatus.unknown;
+          _clientTokenError = null;
+          _clientTokenRevision++;
         }
         _errorMessage = clientAgentsFailureUserMessage(failure, _s);
         AppLogger.warning(
@@ -165,90 +215,178 @@ class ClientAgentDetailController extends ChangeNotifier {
     await load(agentId, forceRefresh: true);
   }
 
-  Future<void> _refreshPersistedLocalClientToken({
+  Future<void> _refreshPersistedClientTokenFromServer({
     required String agentId,
   }) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
       return;
     }
-    final token = await _clientTokenStore.read(
-      userId: userId,
-      agentId: agentId,
-    );
-    if (_disposed) {
-      return;
-    }
-    _persistedLocalClientToken = token ?? '';
-    _localTokenRevision++;
+
+    final generation = ++_clientTokenLoadGeneration;
+    _isLoadingClientToken = true;
+    _clientTokenError = null;
     _notifyListenersIfAlive();
+
+    try {
+      final result = await _getClientAgentTokenUseCase(
+        userId: userId,
+        agentId: agentId,
+      );
+      if (_disposed || generation != _clientTokenLoadGeneration) {
+        return;
+      }
+      final snapshot = result.getOrNull();
+      if (snapshot != null) {
+        _persistedClientToken = snapshot.token ?? '';
+        _clientTokenStatus = snapshot.hasToken
+            ? ClientAgentTokenStatus.configured
+            : ClientAgentTokenStatus.missing;
+      } else {
+        final failure = result.exceptionOrNull()!;
+        _clientTokenError = clientAgentsFailureUserMessage(failure, _s);
+        AppLogger.warning(
+          'Client agent token load failed',
+          context: <String, Object?>{
+            'operation': 'getClientAgentToken',
+            'agentId': agentId,
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+      }
+      _clientTokenRevision++;
+    } finally {
+      if (!_disposed && generation == _clientTokenLoadGeneration) {
+        _isLoadingClientToken = false;
+        _notifyListenersIfAlive();
+      }
+    }
   }
 
-  Future<void> saveLocalClientToken({
+  Future<void> saveClientAgentToken({
     required String agentId,
     required String rawToken,
   }) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _localClientTokenFeedback = _s.clientAgentDetailSessionUnavailable;
+      _clientTokenError = _s.clientAgentDetailSessionUnavailable;
       _notifyListenersIfAlive();
       return;
     }
 
-    _isSavingLocalClientToken = true;
-    _localClientTokenFeedback = null;
+    _isSavingClientToken = true;
+    _clientTokenFeedback = null;
+    _clientTokenError = null;
     _notifyListenersIfAlive();
 
     try {
-      final trimmed = rawToken.trim();
-      if (trimmed.isEmpty) {
-        await _clientTokenStore.delete(userId: userId, agentId: agentId);
-        _persistedLocalClientToken = '';
+      final result = await _saveClientAgentTokenUseCase(
+        userId: userId,
+        agentId: agentId,
+        clientToken: rawToken,
+      );
+      final snapshot = result.getOrNull();
+      if (snapshot != null) {
+        _persistedClientToken = snapshot.token ?? '';
+        _clientTokenStatus = snapshot.hasToken
+            ? ClientAgentTokenStatus.configured
+            : ClientAgentTokenStatus.missing;
+        _clientTokenRevision++;
+        _clientTokenFeedback = snapshot.hasToken
+            ? _s.clientAgentDetailServerTokenSaved
+            : _s.clientAgentDetailServerTokenRemoved;
+        _refreshLoadedAgentTokenFlag(hasToken: snapshot.hasToken);
       } else {
-        await _clientTokenStore.write(
-          userId: userId,
-          agentId: agentId,
-          clientToken: trimmed,
+        final failure = result.exceptionOrNull()!;
+        _clientTokenError = clientAgentsFailureUserMessage(failure, _s);
+        AppLogger.warning(
+          'Client agent token save failed',
+          context: <String, Object?>{
+            'operation': 'saveClientAgentToken',
+            'agentId': agentId,
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
         );
-        _persistedLocalClientToken = trimmed;
       }
-      _localTokenRevision++;
-      _localClientTokenFeedback = _s.clientAgentDetailLocalTokenSaved;
     } finally {
-      _isSavingLocalClientToken = false;
+      _isSavingClientToken = false;
       _notifyListenersIfAlive();
     }
   }
 
-  Future<void> removeLocalClientToken({required String agentId}) async {
+  Future<void> removeClientAgentToken({required String agentId}) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _localClientTokenFeedback = _s.clientAgentDetailSessionUnavailable;
+      _clientTokenError = _s.clientAgentDetailSessionUnavailable;
       _notifyListenersIfAlive();
       return;
     }
 
-    _isSavingLocalClientToken = true;
-    _localClientTokenFeedback = null;
+    _isSavingClientToken = true;
+    _clientTokenFeedback = null;
+    _clientTokenError = null;
     _notifyListenersIfAlive();
 
     try {
-      await _clientTokenStore.delete(userId: userId, agentId: agentId);
-      _persistedLocalClientToken = '';
-      _localTokenRevision++;
-      _localClientTokenFeedback = _s.clientAgentDetailLocalTokenRemoved;
+      final result = await _removeClientAgentTokenUseCase(
+        userId: userId,
+        agentId: agentId,
+      );
+      if (result.isSuccess()) {
+        _persistedClientToken = '';
+        _clientTokenStatus = ClientAgentTokenStatus.missing;
+        _clientTokenRevision++;
+        _clientTokenFeedback = _s.clientAgentDetailServerTokenRemoved;
+        _refreshLoadedAgentTokenFlag(hasToken: false);
+      } else {
+        final failure = result.exceptionOrNull()!;
+        _clientTokenError = clientAgentsFailureUserMessage(failure, _s);
+        AppLogger.warning(
+          'Client agent token remove failed',
+          context: <String, Object?>{
+            'operation': 'removeClientAgentToken',
+            'agentId': agentId,
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+      }
     } finally {
-      _isSavingLocalClientToken = false;
+      _isSavingClientToken = false;
       _notifyListenersIfAlive();
     }
   }
 
-  void clearLocalClientTokenFeedback() {
-    if (_localClientTokenFeedback == null) {
+  void clearClientTokenFeedback() {
+    if (_clientTokenFeedback == null && _clientTokenError == null) {
       return;
     }
-    _localClientTokenFeedback = null;
+    _clientTokenFeedback = null;
+    _clientTokenError = null;
     _notifyListenersIfAlive();
+  }
+
+  void _refreshLoadedAgentTokenFlag({required bool hasToken}) {
+    final current = _agent;
+    if (current == null || current.hasServerClientToken == hasToken) {
+      return;
+    }
+    _agent = current.copyWith(hasServerClientToken: hasToken);
+  }
+
+  ClientAgentTokenStatus _statusFromAgent(ClientAgent agent) {
+    final flag = agent.hasServerClientToken;
+    if (flag == null) {
+      return ClientAgentTokenStatus.unknown;
+    }
+    return flag
+        ? ClientAgentTokenStatus.configured
+        : ClientAgentTokenStatus.missing;
   }
 
   Future<void> saveAgentProfile({

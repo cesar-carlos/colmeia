@@ -19,6 +19,7 @@ class ClientAccessibleAgentDto extends ClientAgentProfileDto {
     super.observation,
     super.profileUpdatedAt,
     super.isHubConnected,
+    super.hasClientToken,
   });
 
   factory ClientAccessibleAgentDto.fromJson(Map<String, dynamic> json) {
@@ -41,6 +42,7 @@ class ClientAccessibleAgentDto extends ClientAgentProfileDto {
       observation: base.observation,
       profileUpdatedAt: base.profileUpdatedAt,
       isHubConnected: base.isHubConnected,
+      hasClientToken: base.hasClientToken,
     );
   }
 }

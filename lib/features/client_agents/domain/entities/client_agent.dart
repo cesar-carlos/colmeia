@@ -22,6 +22,7 @@ class ClientAgent {
     this.notes,
     this.observation,
     this.profileUpdatedAt,
+    this.hasServerClientToken,
   });
 
   final String agentId;
@@ -43,8 +44,16 @@ class ClientAgent {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Server-side token presence flag (`hasClientToken` on
+  /// `ClientAccessibleAgent`). `null` when the API did not include the field
+  /// (older hubs or local cache built before the contract bumped). UI must
+  /// treat `null` as "unknown" and decide between local fallback and prompt.
+  final bool? hasServerClientToken;
+
   ClientAgent copyWith({
     AgentConnectionStatus? connectionStatus,
+    bool? hasServerClientToken,
+    bool resetHasServerClientToken = false,
   }) {
     return ClientAgent(
       agentId: agentId,
@@ -65,6 +74,9 @@ class ClientAgent {
       connectionStatus: connectionStatus ?? this.connectionStatus,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      hasServerClientToken: resetHasServerClientToken
+          ? null
+          : (hasServerClientToken ?? this.hasServerClientToken),
     );
   }
 }
