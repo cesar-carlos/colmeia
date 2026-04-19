@@ -66,6 +66,30 @@ todos os endpoints REST autenticados — `/client-auth/me`,
 middleware `socket_namespace_auth` que valida a role contra
 `SOCKET_CONSUMER_ROLES`.
 
+### Causa raiz (confirmada no código — não é bug do app)
+
+1. **Servidor (`plug_server`)** — `src/presentation/socket/auth/socket_namespace_auth.middleware.ts`:
+   - O token vem de `socket.handshake.auth.token` ou do header `Authorization: Bearer …` (`getToken`).
+   - `verifyAccessToken` corre **sem erro** (senão verias `Unauthorized`, não esta mensagem).
+   - A role é `resolveRole(user)` → string do claim JWT `role` (para contas client, **`client`**).
+   - A mensagem exacta `Role 'client' is not allowed to connect to /consumers` só é emitida quando
+     **`!env.socketConsumerRoles.includes(role)`** (linhas 124–126), ou seja: o **array carregado no
+     processo Node** não contém o literal **`client`**.
+   - O ramo *anterior* (linhas 119–121) rejeitaria se a role estivesse em **`SOCKET_AGENT_ROLES`**
+     (“cannot connect”) — não é o teu caso.
+
+2. **Cliente (`colmeia`)** — `lib/core/socket/socket_io_client_factory.dart` envia o mesmo access
+   token da sessão em `auth: { token: accessToken }`, alinhado com o que o middleware lê. O log
+   `Bootstrap: … transport=socket` confirma intenção de usar socket; o log `namespace forbidden`
+   confirma que o **hub** recusou a role, não que o token faltou ou era inválido.
+
+**Conclusão para correcção:** o `plug_server` **em execução** no host público tem `socketConsumerRoles`
+sem `client` — quase sempre por **`SOCKET_CONSUMER_ROLES` definida no ambiente** com valor antigo
+(`user,admin` apenas), typo (`clients`), ou deploy que **não** aplica o default do `env.ts` porque a
+variável está presente com valor incompleto. **Corrigir env + restart** (ou remover a variável para
+herdar o default `user,admin,client` do schema). Não há alteração necessária no Flutter para este
+erro específico.
+
 ### Verificar se a env está aplicada
 
 A diferença comum é "editei o `.env` mas não restartei o
