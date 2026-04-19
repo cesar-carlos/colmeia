@@ -26,9 +26,27 @@ Future<void> bootstrap() async {
   AppLogger.configureForRuntime();
   await loadAppDotenv();
 
+  // Boot-time observability: surface the resolved bridge transport
+  // immediately so triaging "why is the app still on REST?" does not
+  // require a Sentry round-trip — the answer shows up in the very
+  // first lines of `flutter logs`. Cheap (single info line per cold
+  // start) and pays for itself on every env-flip rollout.
+  final resolvedTransport = AppEnvironment.agentBridgeTransport;
+  AppLogger.info(
+    'Bootstrap: agent bridge transport resolved',
+    context: <String, Object?>{
+      'component': 'bootstrap',
+      'transport': resolvedTransport.name,
+      'socketRelayEnabled': AppEnvironment.socketRelayEnabled,
+      'socketPresenceListenerEnabled':
+          AppEnvironment.socketPresenceListenerEnabled,
+      'socketWarmUpAfterLogin': AppEnvironment.socketWarmUpAfterLogin,
+    },
+  );
+
   await runAppWithOptionalSentry(() async {
     await setupDependencies();
-    if (AppEnvironment.agentBridgeTransport == AgentBridgeTransport.socket) {
+    if (resolvedTransport == AgentBridgeTransport.socket) {
       // Activate metrics only when the socket channel is enabled. On REST
       // builds the listener stays unregistered (lazy singleton).
       getIt<SocketMetricsListener>().start();
