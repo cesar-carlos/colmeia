@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/localization/app_localizations_fallback.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
@@ -18,11 +19,24 @@ import 'package:flutter/scheduler.dart';
 class OverviewController extends ChangeNotifier {
   OverviewController(
     this._loadOverviewUseCase,
-    this._clientAgentsRepository,
-  );
+    this._clientAgentsRepository, {
+    RetryAfterGate? retryAfterGate,
+  }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate() {
+    // Re-publish gate ticks (countdown updates + window expired) through
+    // the controller so the home page's retry button reacts without
+    // subscribing to the gate directly.
+    _retryAfterGate.addListener(_notifyListenersIfAlive);
+  }
 
   final LoadOverviewUseCase _loadOverviewUseCase;
   final ClientAgentsRepository _clientAgentsRepository;
+
+  /// Cool-down gate fed by `Retry-After` hints surfaced by the bridge
+  /// (HTTP header, JSON-RPC `error.data.retry_after_ms`). The overview
+  /// fan-outs SQL across multiple agents in a single user-driven
+  /// refresh, so a rate-limit hit by **any** agent throttles the whole
+  /// "Reload" CTA — that is what the hub quotas are designed to enforce.
+  final RetryAfterGate _retryAfterGate;
 
   AppLocalizations? _l10n;
 
@@ -94,6 +108,9 @@ class OverviewController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _retryAfterGate
+      ..removeListener(_notifyListenersIfAlive)
+      ..dispose();
     super.dispose();
   }
 
@@ -110,6 +127,15 @@ class OverviewController extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
   bool get hasContent => _overview != null;
   String? get errorMessage => _errorMessage;
+
+  /// Read-only access to the cool-down gate so the home page can render
+  /// a "Retry in Ns" countdown.
+  RetryAfterGate get retryAfterGate => _retryAfterGate;
+
+  /// Convenience for "is the overview currently throttled by a server
+  /// `Retry-After` hint?". Page combines this with `isLoading` to gate
+  /// the CTA.
+  bool get isOnRetryCooldown => !_retryAfterGate.isOpen;
 
   /// Applies [filter] and immediately reloads the overview.
   Future<void> applyFilter({
@@ -160,6 +186,13 @@ class OverviewController extends ChangeNotifier {
   Future<void> refreshOverview({
     required String userId,
   }) async {
+    if (isOnRetryCooldown) {
+      // Server explicitly asked us to back off — respect the window.
+      // The page already renders the countdown, so we just no-op here
+      // instead of spamming the bridge with a refresh that would burn
+      // the same quota.
+      return;
+    }
     final signature = _signatureFor(userId: userId);
     final keepContentVisible =
         _loadedOverviewSignature == signature && _overview != null;
@@ -173,6 +206,9 @@ class OverviewController extends ChangeNotifier {
   Future<void> retryOverview({
     required String userId,
   }) async {
+    if (isOnRetryCooldown) {
+      return;
+    }
     final signature = _signatureFor(userId: userId);
     final keepContentVisible =
         _loadedOverviewSignature == signature && _overview != null;
@@ -251,6 +287,15 @@ class OverviewController extends ChangeNotifier {
         if (!keepContentVisible) {
           _overview = null;
           _loadedOverviewSignature = null;
+        }
+        // Arm the cool-down gate when the bridge propagated a
+        // `Retry-After` hint (HTTP header, JSON-RPC
+        // `error.data.retry_after_ms`, socket overload). Same
+        // semantics as the detail page and the request-access tab —
+        // the next `Reload` tap is debounced until the window closes.
+        final retryAfter = appFailureRetryAfter(failure);
+        if (retryAfter != null) {
+          _retryAfterGate.arm(retryAfter);
         }
         _errorMessage = overviewFailureUserMessage(failure, _s);
         AppLogger.warning(

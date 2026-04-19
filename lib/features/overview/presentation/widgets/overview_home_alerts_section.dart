@@ -21,6 +21,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
     required this.partialFailureAgentNamesNormalized,
     required this.onOpenAgents,
     this.onRetryOverview,
+    this.retryCountdownLabel,
     super.key,
   });
 
@@ -31,6 +32,11 @@ class OverviewHomeAlertsSection extends StatelessWidget {
   final List<String> partialFailureAgentNamesNormalized;
   final VoidCallback onOpenAgents;
   final VoidCallback? onRetryOverview;
+
+  /// Label rendered on the "Retry" button while the overview controller
+  /// is throttled by a server `Retry-After` hint. When non-null the
+  /// button is shown as disabled regardless of [onRetryOverview].
+  final String? retryCountdownLabel;
 
   bool get _hasAnyBanner {
     if (errorMessage != null) return true;
@@ -76,6 +82,11 @@ class OverviewHomeAlertsSection extends StatelessWidget {
             onRetry: onRetryOverview,
             onManageAgents: onOpenAgents,
             retryLabel: l10n.appInlineErrorRetry,
+            // Render the button as disabled with a countdown while the
+            // controller's `RetryAfterGate` is closed. The callback
+            // itself is also no-op'd by the controller — this is the
+            // visible feedback so the user understands why.
+            retryDisabledLabel: retryCountdownLabel,
             manageAgentsLabel: l10n.clientAgentsPageTitle,
           ),
         ),

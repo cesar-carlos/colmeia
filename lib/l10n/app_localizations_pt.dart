@@ -1014,6 +1014,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get appInlineErrorRetry => 'Tentar novamente';
 
   @override
+  String appInlineErrorRetryCountdown(int seconds) {
+    return 'Tentar em ${seconds}s';
+  }
+
+  @override
   String get clientAgentsNoLocalPendingToSync =>
       'Nao ha pendencias locais para sincronizar.';
 
@@ -3160,6 +3165,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get appInlineErrorRetry => 'Tentar novamente';
+
+  @override
+  String appInlineErrorRetryCountdown(int seconds) {
+    return 'Tentar em ${seconds}s';
+  }
 
   @override
   String get clientAgentsNoLocalPendingToSync =>

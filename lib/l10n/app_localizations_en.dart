@@ -991,6 +991,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appInlineErrorRetry => 'Try again';
 
   @override
+  String appInlineErrorRetryCountdown(int seconds) {
+    return 'Retry in ${seconds}s';
+  }
+
+  @override
   String get clientAgentsNoLocalPendingToSync =>
       'There are no local pending items to sync.';
 

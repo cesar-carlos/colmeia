@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -183,6 +184,56 @@ void main() {
       check(controller.overview!.paymentMethods.single.code).equals('Credito');
       check(controller.isLoadingInitial).isFalse();
     });
+
+    test(
+      'should arm RetryAfterGate when failure carries a retry hint and '
+      'short-circuit refreshOverview while the window is open',
+      () async {
+        final initialFailure = Future<AppResult<Overview>>.value(
+          const Failure<Overview, AppFailure>(
+            // Hub propagated `-32013 client_token_*_rate_limited` (or
+            // bridge overload) — the AgentSql failure mapper now
+            // forwards `retry_after_ms` to RpcFailure.retryAfter.
+            RpcFailure(
+              message: 'Rate limited',
+              userMessage: 'O servidor pediu para aguardar.',
+              rpcCode: -32013,
+              retryable: true,
+              retryAfter: Duration(seconds: 10),
+            ),
+          ),
+        );
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[initialFailure],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+          // Speed up the ticker so the test does not depend on wall
+          // clock seconds while still exercising the same code path.
+          retryAfterGate: RetryAfterGate(
+            tickInterval: const Duration(milliseconds: 5),
+          ),
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        check(controller.errorMessage).isNotNull();
+        check(controller.isOnRetryCooldown).isTrue();
+        check(controller.retryAfterGate.remaining).isNotNull();
+
+        // refreshOverview MUST be a no-op while the gate is closed. We
+        // assert no second hit on the repository (queue is empty —
+        // attempting to consume would throw a RangeError, which would
+        // surface as a test failure).
+        await controller.refreshOverview(userId: 'demo-user');
+        await controller.retryOverview(userId: 'demo-user');
+
+        check(repository.requestedPolicies).deepEquals(
+          <OverviewLoadPolicy>[OverviewLoadPolicy.defaultLoad],
+        );
+      },
+    );
 
     test('should ignore late use case completion after dispose', () async {
       final completer = Completer<AppResult<Overview>>();

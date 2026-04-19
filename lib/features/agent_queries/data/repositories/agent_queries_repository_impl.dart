@@ -87,6 +87,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           technicalMessage: error.details.technicalMessage,
           correlationId: error.details.correlationId,
           timestamp: error.details.timestamp,
+          retryAfter: _readRetryAfterFromErrorData(error.details.errorData),
           cause: error,
           stackTrace: stackTrace,
           context: failureContext,
@@ -602,5 +603,58 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
       stackTrace: stackTrace,
       context: baseContext,
     );
+  }
+
+  /// Pulls a `Duration` out of the JSON-RPC `error.data` block when the
+  /// agent (or hub) propagates the rate-limit hint that ships with
+  /// `-32013` and friends. Tolerates both `retry_after_ms` (snake) and
+  /// `retryAfterMs` (camel), plus a `reset_at` ISO date as last
+  /// resort. Returns `null` when nothing usable is present so the
+  /// caller can leave `RpcFailure.retryAfter` unset.
+  Duration? _readRetryAfterFromErrorData(Map<String, dynamic>? errorData) {
+    if (errorData == null || errorData.isEmpty) {
+      return null;
+    }
+    final ms = errorData['retry_after_ms'] ?? errorData['retryAfterMs'];
+    final fromMs = _durationFromMs(ms);
+    if (fromMs != null) {
+      return fromMs;
+    }
+    final resetAt = errorData['reset_at'] ?? errorData['resetAt'];
+    if (resetAt is String) {
+      final parsed = DateTime.tryParse(resetAt);
+      if (parsed != null) {
+        final delta = parsed.toUtc().difference(DateTime.now().toUtc());
+        if (delta.isNegative) {
+          return Duration.zero;
+        }
+        return delta;
+      }
+    }
+    return null;
+  }
+
+  Duration? _durationFromMs(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    if (raw is num) {
+      final ms = raw.toInt();
+      if (ms < 0) {
+        return Duration.zero;
+      }
+      return Duration(milliseconds: ms);
+    }
+    if (raw is String) {
+      final parsed = int.tryParse(raw.trim());
+      if (parsed == null) {
+        return null;
+      }
+      if (parsed < 0) {
+        return Duration.zero;
+      }
+      return Duration(milliseconds: parsed);
+    }
+    return null;
   }
 }

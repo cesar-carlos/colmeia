@@ -554,6 +554,13 @@
   "clientAgentsSessionUnavailableSync": "Session unavailable to sync pending items.",
   "clientAgentDetailSessionUnavailable": "Session unavailable to load the agent.",
   "appInlineErrorRetry": "Try again",
+  "appInlineErrorRetryCountdown": "Retry in {seconds}s",
+  "@appInlineErrorRetryCountdown": {
+    "description": "Compact label rendered on a disabled retry button while a Retry-After cooldown is active.",
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
   "clientAgentsNoLocalPendingToSync": "There are no local pending items to sync.",
   "clientAgentsRequestBlockedFallback": "Could not register the requested access request.",
   "clientAgentsRequestBlockedIntro": "No new agents can be requested with the IDs provided. {details}",

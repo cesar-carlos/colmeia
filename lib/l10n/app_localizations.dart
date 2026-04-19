@@ -1711,6 +1711,12 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get appInlineErrorRetry;
 
+  /// Compact label rendered on a disabled retry button while a Retry-After cooldown is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry in {seconds}s'**
+  String appInlineErrorRetryCountdown(int seconds);
+
   /// No description provided for @clientAgentsNoLocalPendingToSync.
   ///
   /// In en, this message translates to:

@@ -138,6 +138,7 @@ final class RpcFailure extends AppFailure {
     this.technicalMessage,
     this.correlationId,
     this.timestamp,
+    this.retryAfter,
     super.cause,
     super.stackTrace,
     super.context,
@@ -145,6 +146,13 @@ final class RpcFailure extends AppFailure {
 
   final int? rpcCode;
   final bool retryable;
+
+  /// Hint extracted from JSON-RPC `error.data.retry_after_ms` /
+  /// `reset_at` (typically present on `-32013` `client_token_*_rate_limited`
+  /// and bridge overload responses). Same semantics as
+  /// [NetworkFailure.retryAfter] — callers SHOULD respect it before
+  /// scheduling a retry.
+  final Duration? retryAfter;
   final String? reason;
   final String? category;
   final String? technicalMessage;
@@ -418,9 +426,12 @@ String? _extractApiErrorCode(Object? responseData) {
 ///
 /// Surfaced as a shared helper so controllers can apply a consistent
 /// "wait before allowing manual retry" UX across REST, socket and relay
-/// channels — see `RetryAfterGateMixin` in `core/state/`.
+/// channels — see `RetryAfterGate` in `core/errors/retry_after_gate.dart`.
 Duration? appFailureRetryAfter(AppFailure failure) {
   if (failure is NetworkFailure) {
+    return failure.retryAfter;
+  }
+  if (failure is RpcFailure) {
     return failure.retryAfter;
   }
   return null;
