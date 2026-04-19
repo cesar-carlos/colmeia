@@ -2,6 +2,12 @@ import 'dart:async';
 
 import 'package:colmeia/core/formatters/agent_document_digits.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
@@ -45,6 +51,9 @@ class ClientAgentDetailController extends ChangeNotifier {
     required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
     required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
     required RemoveClientAgentTokenUseCase removeClientAgentTokenUseCase,
+    required RefreshAgentProfileUseCase refreshAgentProfileUseCase,
+    required LoadClientTokenPolicyUseCase loadClientTokenPolicyUseCase,
+    required DiscoverAgentRpcMethodsUseCase discoverAgentRpcMethodsUseCase,
     String Function()? idempotencyKeyGenerator,
   }) : _authController = authController,
        _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
@@ -52,6 +61,9 @@ class ClientAgentDetailController extends ChangeNotifier {
        _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
        _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase,
        _removeClientAgentTokenUseCase = removeClientAgentTokenUseCase,
+       _refreshAgentProfileUseCase = refreshAgentProfileUseCase,
+       _loadClientTokenPolicyUseCase = loadClientTokenPolicyUseCase,
+       _discoverAgentRpcMethodsUseCase = discoverAgentRpcMethodsUseCase,
        _idempotencyKeyGenerator =
            idempotencyKeyGenerator ?? _defaultIdempotencyKeyGenerator;
 
@@ -61,6 +73,9 @@ class ClientAgentDetailController extends ChangeNotifier {
   final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
   final SaveClientAgentTokenUseCase _saveClientAgentTokenUseCase;
   final RemoveClientAgentTokenUseCase _removeClientAgentTokenUseCase;
+  final RefreshAgentProfileUseCase _refreshAgentProfileUseCase;
+  final LoadClientTokenPolicyUseCase _loadClientTokenPolicyUseCase;
+  final DiscoverAgentRpcMethodsUseCase _discoverAgentRpcMethodsUseCase;
 
   /// Source of the per-save UUID forwarded as `Idempotency-Key`. Tests
   /// inject a deterministic generator so the header value can be asserted
@@ -93,6 +108,32 @@ class ClientAgentDetailController extends ChangeNotifier {
   bool _isSavingProfile = false;
   String? _profileSaveError;
   String? _profileSaveSuccess;
+
+  // -- agent_meta state --
+
+  /// Catalogue of RPC methods the connected agent advertises via
+  /// `rpc.discover`. `null` while the discovery call is in flight or has
+  /// not been attempted; `AgentRpcDescriptor.empty()` when the call
+  /// failed gracefully (e.g. older agents without `rpc.discover`).
+  AgentRpcDescriptor? _agentRpcDescriptor;
+  bool _isDiscoveringRpc = false;
+  int _rpcDiscoveryGeneration = 0;
+
+  /// Result of the most recent `client_token.getPolicy` call. `null`
+  /// while the call is in flight or has not been attempted.
+  ClientTokenPolicy? _clientTokenPolicy;
+
+  /// Differentiates "not loaded yet" from "agent does not support the
+  /// method" (the second case keeps `_clientTokenPolicy = null` but flips
+  /// this flag to `true`).
+  bool _clientTokenPolicyUnsupported = false;
+  bool _isLoadingClientTokenPolicy = false;
+  String? _clientTokenPolicyError;
+  int _clientTokenPolicyGeneration = 0;
+
+  bool _isRefreshingFromAgent = false;
+  String? _refreshFromAgentFeedback;
+  String? _refreshFromAgentError;
 
   ClientAgent? get agent => _agent;
   String? get errorMessage => _errorMessage;
@@ -129,6 +170,39 @@ class ClientAgentDetailController extends ChangeNotifier {
   String? get profileSaveError => _profileSaveError;
 
   String? get profileSaveSuccess => _profileSaveSuccess;
+
+  // -- agent_meta getters --
+
+  /// RPC catalogue the agent advertises (or `null` while discovery has
+  /// not completed). UI uses [agentSupportsRpcMethod] to gate features.
+  AgentRpcDescriptor? get agentRpcDescriptor => _agentRpcDescriptor;
+
+  bool get isDiscoveringRpc => _isDiscoveringRpc;
+
+  /// Latest snapshot of `client_token.getPolicy`. `null` when the agent
+  /// did not implement the method (see [clientTokenPolicyUnsupported])
+  /// or when the call has not run yet.
+  ClientTokenPolicy? get clientTokenPolicy => _clientTokenPolicy;
+
+  bool get clientTokenPolicyUnsupported => _clientTokenPolicyUnsupported;
+  bool get isLoadingClientTokenPolicy => _isLoadingClientTokenPolicy;
+  String? get clientTokenPolicyError => _clientTokenPolicyError;
+
+  bool get isRefreshingFromAgent => _isRefreshingFromAgent;
+  String? get refreshFromAgentFeedback => _refreshFromAgentFeedback;
+  String? get refreshFromAgentError => _refreshFromAgentError;
+
+  /// `true` when the connected agent advertised [method] in its
+  /// `rpc.discover` catalogue. Returns `true` when the catalogue is
+  /// missing (older hub / discovery failed gracefully) so the UI does
+  /// not hide features that the agent might still support.
+  bool agentSupportsRpcMethod(String method) {
+    final descriptor = _agentRpcDescriptor;
+    if (descriptor == null || descriptor.isEmpty) {
+      return true;
+    }
+    return descriptor.supportsMethod(method);
+  }
 
   void clearProfileFeedback() {
     if (_profileSaveError == null && _profileSaveSuccess == null) {
@@ -183,6 +257,12 @@ class ClientAgentDetailController extends ChangeNotifier {
         // immediately while the dedicated GET resolves the actual value.
         _clientTokenStatus = _statusFromAgent(loadedAgent);
         unawaited(_refreshPersistedClientTokenFromServer(agentId: agentId));
+        // Side channel: ask the agent which RPC methods it supports so
+        // the UI can gate optional actions (Refresh from agent, Load
+        // policy, ...). Failure is silent — `agentSupportsRpcMethod`
+        // returns true when the catalogue is missing, so the UI keeps
+        // the feature visible.
+        unawaited(_discoverAgentRpcMethods(agentId: agentId));
       } else {
         final failure = result.exceptionOrNull()!;
         if (!keepContentVisible) {
@@ -191,6 +271,10 @@ class ClientAgentDetailController extends ChangeNotifier {
           _clientTokenStatus = ClientAgentTokenStatus.unknown;
           _clientTokenError = null;
           _clientTokenRevision++;
+          _agentRpcDescriptor = null;
+          _clientTokenPolicy = null;
+          _clientTokenPolicyUnsupported = false;
+          _clientTokenPolicyError = null;
         }
         _errorMessage = clientAgentsFailureUserMessage(failure, _s);
         AppLogger.warning(
@@ -503,6 +587,184 @@ class ClientAgentDetailController extends ChangeNotifier {
       _isSavingProfile = false;
       _notifyListenersIfAlive();
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // agent_meta wiring (rpc.discover, agent.getProfile, client_token.getPolicy)
+  // ---------------------------------------------------------------------------
+
+  Future<void> _discoverAgentRpcMethods({required String agentId}) async {
+    final generation = ++_rpcDiscoveryGeneration;
+    _isDiscoveringRpc = true;
+    _notifyListenersIfAlive();
+    try {
+      final result = await _discoverAgentRpcMethodsUseCase(agentId: agentId);
+      if (_disposed || generation != _rpcDiscoveryGeneration) {
+        return;
+      }
+      result.fold(
+        (descriptor) => _agentRpcDescriptor = descriptor,
+        (failure) {
+          // Failure is silent — older agents do not implement
+          // rpc.discover, but their other capabilities still work.
+          AppLogger.info(
+            'rpc.discover failed; treating agent as feature-permissive',
+            context: <String, Object?>{
+              'operation': 'discoverAgentRpcMethods',
+              'agentId': agentId,
+              'technicalMessage': failure.message,
+            },
+          );
+        },
+      );
+    } finally {
+      if (!_disposed && generation == _rpcDiscoveryGeneration) {
+        _isDiscoveringRpc = false;
+        _notifyListenersIfAlive();
+      }
+    }
+  }
+
+  /// Forces a `agent.getProfile` against the connected agent and applies
+  /// the returned snapshot on top of the local [agent]. Useful when the
+  /// catalog read shows stale data and the user wants to reconcile
+  /// without waiting for the realtime push.
+  ///
+  /// No-op when the agent's `rpc.discover` catalogue does not advertise
+  /// `agent.getProfile` — UI should hide the action in that case.
+  Future<void> refreshFromAgent({required String agentId}) async {
+    if (!agentSupportsRpcMethod('agent.getProfile')) {
+      _refreshFromAgentError =
+          _s.clientAgentDetailRefreshFromAgentUnsupported;
+      _notifyListenersIfAlive();
+      return;
+    }
+    final userId = _authController.session?.userId;
+    if (userId == null || userId.isEmpty) {
+      _refreshFromAgentError = _s.clientAgentDetailSessionUnavailable;
+      _notifyListenersIfAlive();
+      return;
+    }
+
+    _isRefreshingFromAgent = true;
+    _refreshFromAgentError = null;
+    _refreshFromAgentFeedback = null;
+    _notifyListenersIfAlive();
+
+    try {
+      final clientToken = (_persistedClientToken ?? '').trim();
+      final result = await _refreshAgentProfileUseCase(
+        agentId: agentId,
+        clientToken: clientToken.isEmpty ? null : clientToken,
+      );
+      final snapshot = result.getOrNull();
+      if (snapshot != null) {
+        _applyAgentProfileSnapshot(snapshot);
+        _refreshFromAgentFeedback =
+            _s.clientAgentDetailRefreshFromAgentSuccess;
+      } else {
+        final failure = result.exceptionOrNull()!;
+        _refreshFromAgentError =
+            clientAgentsFailureUserMessage(failure, _s);
+        AppLogger.warning(
+          'agent.getProfile refresh failed',
+          context: <String, Object?>{
+            'operation': 'refreshAgentProfileFromAgent',
+            'agentId': agentId,
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+      }
+    } finally {
+      _isRefreshingFromAgent = false;
+      _notifyListenersIfAlive();
+    }
+  }
+
+  void _applyAgentProfileSnapshot(AgentProfileSnapshot snapshot) {
+    final current = _agent;
+    if (current == null) {
+      return;
+    }
+    final newVersion = snapshot.profileVersion;
+    final updated = current.copyWith(
+      profileVersion: newVersion,
+    );
+    if (newVersion != null) {
+      _agent = updated;
+    } else {
+      _agent = updated;
+    }
+  }
+
+  /// Asks the connected agent for the policy resolved for the currently
+  /// stored token. Skips the call when there is no token to inspect or
+  /// when `client_token.getPolicy` is not in the agent's catalogue (sets
+  /// [clientTokenPolicyUnsupported] in that case).
+  Future<void> loadClientTokenPolicy({required String agentId}) async {
+    final token = (_persistedClientToken ?? '').trim();
+    if (token.isEmpty) {
+      _clientTokenPolicy = null;
+      _clientTokenPolicyUnsupported = false;
+      _clientTokenPolicyError = null;
+      _notifyListenersIfAlive();
+      return;
+    }
+    if (!agentSupportsRpcMethod('client_token.getPolicy')) {
+      _clientTokenPolicy = null;
+      _clientTokenPolicyUnsupported = true;
+      _clientTokenPolicyError = null;
+      _notifyListenersIfAlive();
+      return;
+    }
+    final generation = ++_clientTokenPolicyGeneration;
+    _isLoadingClientTokenPolicy = true;
+    _clientTokenPolicyError = null;
+    _notifyListenersIfAlive();
+    try {
+      final result = await _loadClientTokenPolicyUseCase(
+        agentId: agentId,
+        clientToken: token,
+      );
+      if (_disposed || generation != _clientTokenPolicyGeneration) {
+        return;
+      }
+      final snapshot = result.getOrNull();
+      if (snapshot != null) {
+        _clientTokenPolicy = snapshot.policy;
+        _clientTokenPolicyUnsupported = !snapshot.supported;
+      } else {
+        final failure = result.exceptionOrNull()!;
+        _clientTokenPolicyError =
+            clientAgentsFailureUserMessage(failure, _s);
+        AppLogger.warning(
+          'client_token.getPolicy failed',
+          context: <String, Object?>{
+            'operation': 'loadClientTokenPolicy',
+            'agentId': agentId,
+            'technicalMessage': failure.message,
+          },
+          error: failure.cause ?? failure,
+          stackTrace: failure.stackTrace,
+        );
+      }
+    } finally {
+      if (!_disposed && generation == _clientTokenPolicyGeneration) {
+        _isLoadingClientTokenPolicy = false;
+        _notifyListenersIfAlive();
+      }
+    }
+  }
+
+  void clearRefreshFromAgentFeedback() {
+    if (_refreshFromAgentFeedback == null && _refreshFromAgentError == null) {
+      return;
+    }
+    _refreshFromAgentFeedback = null;
+    _refreshFromAgentError = null;
+    _notifyListenersIfAlive();
   }
 
   void _notifyListenersIfAlive() {

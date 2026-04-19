@@ -1256,6 +1256,59 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not load the current token from the server. Showing the last value cached on this device, if any.';
 
   @override
+  String get clientAgentDetailRefreshFromAgent => 'Refresh from agent';
+
+  @override
+  String get clientAgentDetailRefreshFromAgentSuccess =>
+      'Profile refreshed straight from the agent.';
+
+  @override
+  String get clientAgentDetailRefreshFromAgentUnsupported =>
+      'This agent does not implement agent.getProfile via RPC.';
+
+  @override
+  String get clientAgentDetailSectionPolicy => 'Permissions of this token';
+
+  @override
+  String get clientAgentDetailSectionPolicySubtitle =>
+      'Resolved by the agent for the bearer token currently stored on the server. If the policy changes after a revocation or scope edit, refresh the screen.';
+
+  @override
+  String get clientAgentDetailPolicyFullAccess =>
+      'Full access (all tables, views and permissions).';
+
+  @override
+  String get clientAgentDetailPolicyAllTables => 'Allowed on every table.';
+
+  @override
+  String get clientAgentDetailPolicyAllViews => 'Allowed on every view.';
+
+  @override
+  String get clientAgentDetailPolicyAllPermissions =>
+      'Holds every permission flag.';
+
+  @override
+  String get clientAgentDetailPolicyTablesLabel => 'Allowed tables';
+
+  @override
+  String get clientAgentDetailPolicyViewsLabel => 'Allowed views';
+
+  @override
+  String get clientAgentDetailPolicyPermissionsLabel => 'Permissions';
+
+  @override
+  String get clientAgentDetailPolicyRevoked =>
+      'This token is reported as revoked by the agent.';
+
+  @override
+  String get clientAgentDetailPolicyUnsupported =>
+      'This agent does not expose token policy introspection.';
+
+  @override
+  String get clientAgentDetailPolicyEmpty =>
+      'Agent did not return any rule for this token.';
+
+  @override
   String get clientAgentDetailSectionEditProfile => 'Catalog profile';
 
   @override

@@ -2104,6 +2104,96 @@ abstract class AppLocalizations {
   /// **'Could not load the current token from the server. Showing the last value cached on this device, if any.'**
   String get clientAgentDetailServerTokenLoadError;
 
+  /// No description provided for @clientAgentDetailRefreshFromAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh from agent'**
+  String get clientAgentDetailRefreshFromAgent;
+
+  /// No description provided for @clientAgentDetailRefreshFromAgentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile refreshed straight from the agent.'**
+  String get clientAgentDetailRefreshFromAgentSuccess;
+
+  /// No description provided for @clientAgentDetailRefreshFromAgentUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent does not implement agent.getProfile via RPC.'**
+  String get clientAgentDetailRefreshFromAgentUnsupported;
+
+  /// No description provided for @clientAgentDetailSectionPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions of this token'**
+  String get clientAgentDetailSectionPolicy;
+
+  /// No description provided for @clientAgentDetailSectionPolicySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved by the agent for the bearer token currently stored on the server. If the policy changes after a revocation or scope edit, refresh the screen.'**
+  String get clientAgentDetailSectionPolicySubtitle;
+
+  /// No description provided for @clientAgentDetailPolicyFullAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Full access (all tables, views and permissions).'**
+  String get clientAgentDetailPolicyFullAccess;
+
+  /// No description provided for @clientAgentDetailPolicyAllTables.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed on every table.'**
+  String get clientAgentDetailPolicyAllTables;
+
+  /// No description provided for @clientAgentDetailPolicyAllViews.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed on every view.'**
+  String get clientAgentDetailPolicyAllViews;
+
+  /// No description provided for @clientAgentDetailPolicyAllPermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Holds every permission flag.'**
+  String get clientAgentDetailPolicyAllPermissions;
+
+  /// No description provided for @clientAgentDetailPolicyTablesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed tables'**
+  String get clientAgentDetailPolicyTablesLabel;
+
+  /// No description provided for @clientAgentDetailPolicyViewsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed views'**
+  String get clientAgentDetailPolicyViewsLabel;
+
+  /// No description provided for @clientAgentDetailPolicyPermissionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get clientAgentDetailPolicyPermissionsLabel;
+
+  /// No description provided for @clientAgentDetailPolicyRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'This token is reported as revoked by the agent.'**
+  String get clientAgentDetailPolicyRevoked;
+
+  /// No description provided for @clientAgentDetailPolicyUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent does not expose token policy introspection.'**
+  String get clientAgentDetailPolicyUnsupported;
+
+  /// No description provided for @clientAgentDetailPolicyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent did not return any rule for this token.'**
+  String get clientAgentDetailPolicyEmpty;
+
   /// No description provided for @clientAgentDetailSectionEditProfile.
   ///
   /// In en, this message translates to:

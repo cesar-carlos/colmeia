@@ -1280,6 +1280,60 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nao foi possivel ler o token atual no servidor. Exibindo o ultimo valor em cache neste dispositivo, se houver.';
 
   @override
+  String get clientAgentDetailRefreshFromAgent => 'Recarregar do agente';
+
+  @override
+  String get clientAgentDetailRefreshFromAgentSuccess =>
+      'Perfil recarregado direto do agente.';
+
+  @override
+  String get clientAgentDetailRefreshFromAgentUnsupported =>
+      'Este agente nao implementa agent.getProfile via RPC.';
+
+  @override
+  String get clientAgentDetailSectionPolicy => 'Permissoes deste token';
+
+  @override
+  String get clientAgentDetailSectionPolicySubtitle =>
+      'Resolvidas pelo agente para o token atualmente salvo no servidor. Se a politica mudar apos revogacao ou alteracao de escopo, recarregue a tela.';
+
+  @override
+  String get clientAgentDetailPolicyFullAccess =>
+      'Acesso total (todas as tabelas, views e permissoes).';
+
+  @override
+  String get clientAgentDetailPolicyAllTables =>
+      'Permitido em todas as tabelas.';
+
+  @override
+  String get clientAgentDetailPolicyAllViews => 'Permitido em todas as views.';
+
+  @override
+  String get clientAgentDetailPolicyAllPermissions =>
+      'Tem todas as permissoes.';
+
+  @override
+  String get clientAgentDetailPolicyTablesLabel => 'Tabelas permitidas';
+
+  @override
+  String get clientAgentDetailPolicyViewsLabel => 'Views permitidas';
+
+  @override
+  String get clientAgentDetailPolicyPermissionsLabel => 'Permissoes';
+
+  @override
+  String get clientAgentDetailPolicyRevoked =>
+      'Este token esta marcado como revogado pelo agente.';
+
+  @override
+  String get clientAgentDetailPolicyUnsupported =>
+      'Este agente nao expoe introspecao da politica do token.';
+
+  @override
+  String get clientAgentDetailPolicyEmpty =>
+      'O agente nao retornou nenhuma regra para este token.';
+
+  @override
   String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
 
   @override
@@ -3357,6 +3411,60 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentDetailServerTokenLoadError =>
       'Nao foi possivel ler o token atual no servidor. Exibindo o ultimo valor em cache neste dispositivo, se houver.';
+
+  @override
+  String get clientAgentDetailRefreshFromAgent => 'Recarregar do agente';
+
+  @override
+  String get clientAgentDetailRefreshFromAgentSuccess =>
+      'Perfil recarregado direto do agente.';
+
+  @override
+  String get clientAgentDetailRefreshFromAgentUnsupported =>
+      'Este agente nao implementa agent.getProfile via RPC.';
+
+  @override
+  String get clientAgentDetailSectionPolicy => 'Permissoes deste token';
+
+  @override
+  String get clientAgentDetailSectionPolicySubtitle =>
+      'Resolvidas pelo agente para o token atualmente salvo no servidor. Se a politica mudar apos revogacao ou alteracao de escopo, recarregue a tela.';
+
+  @override
+  String get clientAgentDetailPolicyFullAccess =>
+      'Acesso total (todas as tabelas, views e permissoes).';
+
+  @override
+  String get clientAgentDetailPolicyAllTables =>
+      'Permitido em todas as tabelas.';
+
+  @override
+  String get clientAgentDetailPolicyAllViews => 'Permitido em todas as views.';
+
+  @override
+  String get clientAgentDetailPolicyAllPermissions =>
+      'Tem todas as permissoes.';
+
+  @override
+  String get clientAgentDetailPolicyTablesLabel => 'Tabelas permitidas';
+
+  @override
+  String get clientAgentDetailPolicyViewsLabel => 'Views permitidas';
+
+  @override
+  String get clientAgentDetailPolicyPermissionsLabel => 'Permissoes';
+
+  @override
+  String get clientAgentDetailPolicyRevoked =>
+      'Este token esta marcado como revogado pelo agente.';
+
+  @override
+  String get clientAgentDetailPolicyUnsupported =>
+      'Este agente nao expoe introspecao da politica do token.';
+
+  @override
+  String get clientAgentDetailPolicyEmpty =>
+      'O agente nao retornou nenhuma regra para este token.';
 
   @override
   String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';

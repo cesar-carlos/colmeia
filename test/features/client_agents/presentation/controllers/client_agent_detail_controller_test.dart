@@ -1,5 +1,9 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -35,6 +39,15 @@ class _MockSaveClientAgentTokenUseCase extends Mock
 class _MockRemoveClientAgentTokenUseCase extends Mock
     implements RemoveClientAgentTokenUseCase {}
 
+class _MockRefreshAgentProfileUseCase extends Mock
+    implements RefreshAgentProfileUseCase {}
+
+class _MockLoadClientTokenPolicyUseCase extends Mock
+    implements LoadClientTokenPolicyUseCase {}
+
+class _MockDiscoverAgentRpcMethodsUseCase extends Mock
+    implements DiscoverAgentRpcMethodsUseCase {}
+
 void main() {
   late _MockAuthController auth;
   late _MockLoadClientAgentDetailUseCase loadDetail;
@@ -42,6 +55,9 @@ void main() {
   late _MockGetClientAgentTokenUseCase getToken;
   late _MockSaveClientAgentTokenUseCase saveToken;
   late _MockRemoveClientAgentTokenUseCase removeToken;
+  late _MockRefreshAgentProfileUseCase refreshFromAgent;
+  late _MockLoadClientTokenPolicyUseCase loadPolicy;
+  late _MockDiscoverAgentRpcMethodsUseCase discoverRpc;
   late ClientAgentDetailController controller;
 
   const agentId = '11111111-1111-1111-8111-111111111111';
@@ -71,6 +87,14 @@ void main() {
     getToken = _MockGetClientAgentTokenUseCase();
     saveToken = _MockSaveClientAgentTokenUseCase();
     removeToken = _MockRemoveClientAgentTokenUseCase();
+    refreshFromAgent = _MockRefreshAgentProfileUseCase();
+    loadPolicy = _MockLoadClientTokenPolicyUseCase();
+    discoverRpc = _MockDiscoverAgentRpcMethodsUseCase();
+    when(() => discoverRpc(agentId: any(named: 'agentId'))).thenAnswer(
+      (_) async => const Success<AgentRpcDescriptor, AppFailure>(
+        AgentRpcDescriptor.empty(),
+      ),
+    );
     controller = ClientAgentDetailController(
       authController: auth,
       loadClientAgentDetailUseCase: loadDetail,
@@ -78,6 +102,9 @@ void main() {
       getClientAgentTokenUseCase: getToken,
       saveClientAgentTokenUseCase: saveToken,
       removeClientAgentTokenUseCase: removeToken,
+      refreshAgentProfileUseCase: refreshFromAgent,
+      loadClientTokenPolicyUseCase: loadPolicy,
+      discoverAgentRpcMethodsUseCase: discoverRpc,
     )..activeLocalizations = AppLocalizationsEn();
     when(() => auth.session).thenReturn(session);
 
@@ -271,5 +298,91 @@ void main() {
 
     expect(controller.clientTokenFeedback, isNull);
     expect(controller.clientTokenError, isNull);
+  });
+
+  group('agent_meta integration', () {
+    test('agentSupportsRpcMethod is permissive when descriptor is empty',
+        () {
+      // Default state: no descriptor loaded yet -> hide nothing.
+      expect(controller.agentSupportsRpcMethod('agent.getProfile'), isTrue);
+      expect(
+        controller.agentSupportsRpcMethod('client_token.getPolicy'),
+        isTrue,
+      );
+    });
+
+    test(
+      'refreshFromAgent surfaces unsupported error when method is missing '
+      'from rpc.discover',
+      () async {
+        when(() => discoverRpc(agentId: any(named: 'agentId'))).thenAnswer(
+          (_) async => const Success<AgentRpcDescriptor, AppFailure>(
+            AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+          ),
+        );
+        when(
+          () => loadDetail(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        ).thenAnswer((_) async => Success<ClientAgent, AppFailure>(agent));
+
+        await controller.load(agentId);
+        // Wait for the unawaited discover.
+        await Future<void>.delayed(Duration.zero);
+
+        await controller.refreshFromAgent(agentId: agentId);
+
+        expect(controller.refreshFromAgentError, isNotNull);
+        verifyNever(
+          () => refreshFromAgent(
+            agentId: any(named: 'agentId'),
+            clientToken: any(named: 'clientToken'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'loadClientTokenPolicy is short-circuited when agent does not '
+      'advertise client_token.getPolicy',
+      () async {
+        when(() => discoverRpc(agentId: any(named: 'agentId'))).thenAnswer(
+          (_) async => const Success<AgentRpcDescriptor, AppFailure>(
+            AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+          ),
+        );
+        when(
+          () => loadDetail(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        ).thenAnswer((_) async => Success<ClientAgent, AppFailure>(agent));
+        when(
+          () => getToken(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        ).thenAnswer(
+          (_) async => const Success<ClientAgentTokenSnapshot, AppFailure>(
+            ClientAgentTokenSnapshot(token: 'tok'),
+          ),
+        );
+
+        await controller.load(agentId);
+        await Future<void>.delayed(Duration.zero);
+
+        await controller.loadClientTokenPolicy(agentId: agentId);
+
+        expect(controller.clientTokenPolicyUnsupported, isTrue);
+        expect(controller.clientTokenPolicy, isNull);
+        verifyNever(
+          () => loadPolicy(
+            agentId: any(named: 'agentId'),
+            clientToken: any(named: 'clientToken'),
+          ),
+        );
+      },
+    );
   });
 }

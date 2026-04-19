@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_address.dart';
@@ -99,17 +100,39 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                   title: l10n.clientAgentDetailTitle,
                   subtitle: l10n.clientAgentDetailSubtitle,
                   footer: showRefreshFooter
-                      ? AppSecondaryButton(
-                          label: l10n.clientAgentsRefresh,
-                          icon: const Icon(Icons.refresh_rounded),
-                          isLoading: controller.isRefreshing,
-                          onPressed:
-                              controller.isRefreshing ||
-                                  (controller.isLoading && agent == null)
-                              ? null
-                              : () => unawaited(
-                                  _controller.refresh(widget.agentId),
-                                ),
+                      ? Wrap(
+                          spacing: tokens.gapSm,
+                          runSpacing: tokens.gapSm,
+                          children: <Widget>[
+                            AppSecondaryButton(
+                              label: l10n.clientAgentsRefresh,
+                              icon: const Icon(Icons.refresh_rounded),
+                              isLoading: controller.isRefreshing,
+                              onPressed:
+                                  controller.isRefreshing ||
+                                      (controller.isLoading && agent == null)
+                                  ? null
+                                  : () => unawaited(
+                                      _controller.refresh(widget.agentId),
+                                    ),
+                            ),
+                            if (agent != null &&
+                                controller.agentSupportsRpcMethod(
+                                  'agent.getProfile',
+                                ))
+                              AppSecondaryButton(
+                                label: l10n.clientAgentDetailRefreshFromAgent,
+                                icon: const Icon(Icons.cloud_sync_rounded),
+                                isLoading: controller.isRefreshingFromAgent,
+                                onPressed: controller.isRefreshingFromAgent
+                                    ? null
+                                    : () => unawaited(
+                                        _controller.refreshFromAgent(
+                                          agentId: widget.agentId,
+                                        ),
+                                      ),
+                              ),
+                          ],
                         )
                       : null,
                 ),
@@ -165,6 +188,16 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                       l10n: l10n,
                       tokens: tokens,
                     ),
+                    if (controller.clientTokenStatus ==
+                        ClientAgentTokenStatus.configured) ...<Widget>[
+                      SizedBox(height: tokens.gapMd),
+                      _ClientTokenPolicyCard(
+                        agentId: agent.agentId,
+                        controller: _controller,
+                        l10n: l10n,
+                        tokens: tokens,
+                      ),
+                    ],
                   ],
                 ],
               ],
@@ -385,6 +418,303 @@ class _ClientTokenStatusRow extends StatelessWidget {
             label,
             style: theme.textTheme.bodySmall?.copyWith(color: color),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Renders the policy returned by `client_token.getPolicy` for the token
+/// the server currently holds for this `(client, agent)` pair. Displays
+/// graceful fallbacks when the agent does not implement the introspection
+/// method or has not been queried yet.
+class _ClientTokenPolicyCard extends StatefulWidget {
+  const _ClientTokenPolicyCard({
+    required this.agentId,
+    required this.controller,
+    required this.l10n,
+    required this.tokens,
+  });
+
+  final String agentId;
+  final ClientAgentDetailController controller;
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+
+  @override
+  State<_ClientTokenPolicyCard> createState() =>
+      _ClientTokenPolicyCardState();
+}
+
+class _ClientTokenPolicyCardState extends State<_ClientTokenPolicyCard> {
+  bool _hasRequested = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_maybeKickoff);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _maybeKickoff();
+    });
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_maybeKickoff);
+    super.dispose();
+  }
+
+  /// Triggers the policy load only once per visible mount, when the
+  /// token snapshot has resolved to "configured" and the controller is
+  /// not already busy with another policy call.
+  void _maybeKickoff() {
+    if (!mounted || _hasRequested) {
+      return;
+    }
+    final c = widget.controller;
+    if (c.clientTokenStatus != ClientAgentTokenStatus.configured) {
+      return;
+    }
+    if (c.isLoadingClientTokenPolicy) {
+      return;
+    }
+    if (c.clientTokenPolicy != null || c.clientTokenPolicyUnsupported) {
+      return;
+    }
+    _hasRequested = true;
+    unawaited(c.loadClientTokenPolicy(agentId: widget.agentId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.controller;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+
+    final Widget body;
+    if (c.isLoadingClientTokenPolicy) {
+      body = SizedBox(
+        height: 64,
+        child: Center(
+          child: SizedBox.square(
+            dimension: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colors.primary,
+            ),
+          ),
+        ),
+      );
+    } else if (c.clientTokenPolicyError != null) {
+      body = Text(
+        c.clientTokenPolicyError!,
+        style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+      );
+    } else if (c.clientTokenPolicyUnsupported) {
+      body = Text(
+        widget.l10n.clientAgentDetailPolicyUnsupported,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: colors.onSurfaceVariant,
+        ),
+      );
+    } else {
+      final policy = c.clientTokenPolicy;
+      if (policy == null) {
+        body = Text(
+          widget.l10n.clientAgentDetailPolicyEmpty,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colors.onSurfaceVariant,
+          ),
+        );
+      } else {
+        body = _ClientTokenPolicyBody(
+          policy: policy,
+          l10n: widget.l10n,
+          tokens: widget.tokens,
+        );
+      }
+    }
+
+    return AppSectionCardWithHeading(
+      title: widget.l10n.clientAgentDetailSectionPolicy,
+      subtitle: widget.l10n.clientAgentDetailSectionPolicySubtitle,
+      child: body,
+    );
+  }
+}
+
+class _ClientTokenPolicyBody extends StatelessWidget {
+  const _ClientTokenPolicyBody({
+    required this.policy,
+    required this.l10n,
+    required this.tokens,
+  });
+
+  final ClientTokenPolicy policy;
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final lines = <Widget>[];
+
+    if (policy.revoked) {
+      lines.add(
+        _ClientTokenPolicyLine(
+          icon: Icons.block_rounded,
+          color: colors.error,
+          text: l10n.clientAgentDetailPolicyRevoked,
+        ),
+      );
+    }
+
+    if (policy.hasFullAccess) {
+      lines.add(
+        _ClientTokenPolicyLine(
+          icon: Icons.verified_user_rounded,
+          color: colors.primary,
+          text: l10n.clientAgentDetailPolicyFullAccess,
+        ),
+      );
+    } else {
+      if (policy.allTables) {
+        lines.add(
+          _ClientTokenPolicyLine(
+            icon: Icons.table_chart_rounded,
+            color: colors.onSurface,
+            text: l10n.clientAgentDetailPolicyAllTables,
+          ),
+        );
+      } else if (policy.tableRules.isNotEmpty) {
+        lines.add(
+          _ClientTokenPolicyChips(
+            label: l10n.clientAgentDetailPolicyTablesLabel,
+            entries: policy.tableRules,
+          ),
+        );
+      }
+      if (policy.allViews) {
+        lines.add(
+          _ClientTokenPolicyLine(
+            icon: Icons.view_list_rounded,
+            color: colors.onSurface,
+            text: l10n.clientAgentDetailPolicyAllViews,
+          ),
+        );
+      } else if (policy.viewRules.isNotEmpty) {
+        lines.add(
+          _ClientTokenPolicyChips(
+            label: l10n.clientAgentDetailPolicyViewsLabel,
+            entries: policy.viewRules,
+          ),
+        );
+      }
+      if (policy.allPermissions) {
+        lines.add(
+          _ClientTokenPolicyLine(
+            icon: Icons.admin_panel_settings_rounded,
+            color: colors.onSurface,
+            text: l10n.clientAgentDetailPolicyAllPermissions,
+          ),
+        );
+      } else if (policy.permissionRules.isNotEmpty) {
+        lines.add(
+          _ClientTokenPolicyChips(
+            label: l10n.clientAgentDetailPolicyPermissionsLabel,
+            entries: policy.permissionRules,
+          ),
+        );
+      }
+    }
+
+    if (lines.isEmpty) {
+      return Text(
+        l10n.clientAgentDetailPolicyEmpty,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: colors.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (var i = 0; i < lines.length; i++) ...<Widget>[
+          if (i > 0) SizedBox(height: tokens.gapSm),
+          lines[i],
+        ],
+      ],
+    );
+  }
+}
+
+class _ClientTokenPolicyLine extends StatelessWidget {
+  const _ClientTokenPolicyLine({
+    required this.icon,
+    required this.color,
+    required this.text,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    return Row(
+      children: <Widget>[
+        Icon(icon, size: 18, color: color),
+        SizedBox(width: tokens.gapSm),
+        Expanded(
+          child: Text(
+            text,
+            style: theme.textTheme.bodySmall?.copyWith(color: color),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ClientTokenPolicyChips extends StatelessWidget {
+  const _ClientTokenPolicyChips({
+    required this.label,
+    required this.entries,
+  });
+
+  final String label;
+  final List<String> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final colors = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: colors.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: tokens.gapXs),
+        Wrap(
+          spacing: tokens.gapXs,
+          runSpacing: tokens.gapXs,
+          children: <Widget>[
+            for (final entry in entries)
+              Chip(
+                label: Text(entry),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+          ],
         ),
       ],
     );
