@@ -166,6 +166,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'Agentes aprovados sem token de cliente neste dispositivo';
 
   @override
+  String get dashboardAgentsOfflineTitle => 'Agentes offline no momento';
+
+  @override
+  String get dashboardAgentsOfflineMessage =>
+      'Estes agentes aprovados têm um token salvo, mas o hub os reporta como desconectados. Peça ao operador para reconectá-los e tente novamente.';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleOffline =>
+      'Agentes reportados como offline pelo hub';
+
+  @override
   String get dashboardMultiAgentAggregationTitle => 'Varios agentes';
 
   @override
@@ -1914,6 +1925,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get dashboardAffectedAgentsSheetTitleSetupRequired =>
       'Agentes aprovados sem token de cliente neste dispositivo';
+
+  @override
+  String get dashboardAgentsOfflineTitle => 'Agentes offline no momento';
+
+  @override
+  String get dashboardAgentsOfflineMessage =>
+      'Estes agentes aprovados têm um token salvo, mas o hub os reporta como desconectados. Peça ao operador para reconectá-los e tente novamente.';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleOffline =>
+      'Agentes reportados como offline pelo hub';
 
   @override
   String get dashboardMultiAgentAggregationTitle => 'Varios agentes';

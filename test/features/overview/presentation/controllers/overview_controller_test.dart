@@ -340,6 +340,44 @@ void main() {
 
       await loadFuture;
     });
+
+    test(
+      'skippedDueToHubPresenceAgentNamesNormalized exposes a sorted, '
+      'deduped, trimmed view of the names from the loaded overview',
+      () async {
+        // Acceptance for the new "agentes offline" banner: the
+        // controller must hand the widget a normalized list (same
+        // contract as the existing missing-token / partial-failure
+        // helpers) so the banner can render predictably without each
+        // call site re-doing the cleanup.
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(
+                _overview(
+                  'Pix',
+                  agentNamesSkippedDueToHubPresence: const <String>[
+                    '  Bravo  ',
+                    'Alpha',
+                    'bravo',
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        check(
+          controller.skippedDueToHubPresenceAgentNamesNormalized,
+        ).deepEquals(<String>['Alpha', 'Bravo']);
+      },
+    );
   });
 }
 
@@ -409,6 +447,7 @@ class _RecordingDiscoverRepository implements AgentMetaRepository {
 Overview _overview(
   String paymentMethodCode, {
   List<String> agentIdsMissingClientToken = const <String>[],
+  List<String> agentNamesSkippedDueToHubPresence = const <String>[],
 }) {
   return Overview(
     periodStart: DateTime(2026, 3, 9),
@@ -430,6 +469,11 @@ Overview _overview(
       ),
     ],
     agentIdsMissingClientToken: agentIdsMissingClientToken,
+    agentNamesSkippedDueToHubPresence: agentNamesSkippedDueToHubPresence,
+    agentIdsSkippedDueToHubPresence: agentNamesSkippedDueToHubPresence
+        .map((n) => n.trim().toLowerCase())
+        .toSet()
+        .toList(),
     agentRankings: const <OverviewAgentRanking>[
       OverviewAgentRanking(
         agentId: 'a1',

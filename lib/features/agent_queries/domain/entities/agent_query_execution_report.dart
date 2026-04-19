@@ -13,6 +13,7 @@ class AgentQueryExecutionReport<Row> {
     required this.participants,
     required this.totalElapsedMs,
     this.winnerAgentId,
+    this.skippedDueToHubPresenceTargets = const <AgentQueryTarget>[],
   });
 
   final AgentQueryKey queryKey;
@@ -23,6 +24,16 @@ class AgentQueryExecutionReport<Row> {
   final List<AgentQueryExecutionParticipant<Row>> participants;
   final String? winnerAgentId;
   final int totalElapsedMs;
+
+  /// Agents that DO carry a stored client_token but were excluded
+  /// at planning time because the hub-presence policy
+  /// (`is_hub_connected` from `/client/me/agents`) marked them as
+  /// offline. The agent operator must reconnect them to the hub —
+  /// fixing the missing-token agents would NOT bring these back.
+  /// Kept separate from [missingClientTokenTargets] so the
+  /// presentation layer can render a dedicated "agentes offline"
+  /// banner with actionable copy.
+  final List<AgentQueryTarget> skippedDueToHubPresenceTargets;
 
   List<Row> get mergedRows {
     return participants
@@ -67,6 +78,18 @@ class AgentQueryExecutionReport<Row> {
 
   List<String> get missingClientTokenAgentNames {
     return missingClientTokenTargets
+        .map((target) => target.displayName)
+        .toList(growable: false);
+  }
+
+  List<String> get skippedDueToHubPresenceAgentIds {
+    return skippedDueToHubPresenceTargets
+        .map((target) => target.agentId)
+        .toList(growable: false);
+  }
+
+  List<String> get skippedDueToHubPresenceAgentNames {
+    return skippedDueToHubPresenceTargets
         .map((target) => target.displayName)
         .toList(growable: false);
   }

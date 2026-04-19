@@ -20,6 +20,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
     required this.missingTokenAgentNamesNormalized,
     required this.partialFailureAgentNamesNormalized,
     required this.onOpenAgents,
+    this.skippedDueToHubPresenceAgentNamesNormalized = const <String>[],
     this.onRetryOverview,
     this.retryCountdownLabel,
     super.key,
@@ -30,6 +31,14 @@ class OverviewHomeAlertsSection extends StatelessWidget {
   final Overview? overview;
   final List<String> missingTokenAgentNamesNormalized;
   final List<String> partialFailureAgentNamesNormalized;
+
+  /// Display names for the dedicated "agentes offline" banner — agents
+  /// that DO have a stored client_token but were skipped at dispatch
+  /// because the hub-presence policy marked them as disconnected.
+  /// Default empty so legacy call sites keep compiling; the banner is
+  /// only rendered when this list is non-empty AND the underlying
+  /// [Overview.hasAgentsSkippedDueToHubPresence] flag is true.
+  final List<String> skippedDueToHubPresenceAgentNamesNormalized;
   final VoidCallback onOpenAgents;
   final VoidCallback? onRetryOverview;
 
@@ -45,6 +54,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
     if (o.requiresClientTokenSetup) return true;
     if (o.isStaleCache) return true;
     if (o.hasMissingClientToken && !o.requiresClientTokenSetup) return true;
+    if (o.hasAgentsSkippedDueToHubPresence) return true;
     if (o.hasPartialAgentQueryFailure) return true;
     if (o.shouldShowMultiAgentAggregationNote) return true;
     return false;
@@ -153,6 +163,31 @@ class OverviewHomeAlertsSection extends StatelessWidget {
           actions: OverviewPanelActions(
             onManageAgents: onOpenAgents,
             primaryLabel: l10n.clientAgentsPageTitle,
+            manageAgentsLabel: l10n.clientAgentsPageTitle,
+          ),
+        ),
+      );
+    }
+
+    if (o != null && o.hasAgentsSkippedDueToHubPresence) {
+      gapIfNeeded();
+      children.add(
+        AppInlineErrorPanel(
+          tone: AppInlinePanelTone.informational,
+          title: l10n.dashboardAgentsOfflineTitle,
+          message: l10n.dashboardAgentsOfflineMessage,
+          belowMessage: skippedDueToHubPresenceAgentNamesNormalized.isEmpty
+              ? null
+              : _OverviewAffectedAgentsListLink(
+                  l10n: l10n,
+                  normalizedNames:
+                      skippedDueToHubPresenceAgentNamesNormalized,
+                  sheetTitle: l10n.dashboardAffectedAgentsSheetTitleOffline,
+                ),
+          actions: OverviewPanelActions(
+            onRetry: onRetryOverview,
+            onManageAgents: onOpenAgents,
+            retryLabel: l10n.appInlineErrorRetry,
             manageAgentsLabel: l10n.clientAgentsPageTitle,
           ),
         ),

@@ -11,6 +11,7 @@ class AgentQueryPlan {
     required this.missingClientTokenTargets,
     required this.bridgeTimeoutMs,
     this.raceMaxSources,
+    this.skippedDueToHubPresenceTargets = const <AgentQueryTarget>[],
   });
 
   final AgentQueryKey queryKey;
@@ -20,6 +21,14 @@ class AgentQueryPlan {
   final List<AgentQueryTarget> missingClientTokenTargets;
   final int bridgeTimeoutMs;
   final int? raceMaxSources;
+
+  /// Approved agents that DO have a stored client_token but were
+  /// excluded because the hub-presence policy marked them as
+  /// offline at planning time. Surfaced separately from
+  /// [missingClientTokenTargets] so the executor can carry the
+  /// distinction into `AgentQueryExecutionReport` and the
+  /// presentation layer can render an actionable banner.
+  final List<AgentQueryTarget> skippedDueToHubPresenceTargets;
 
   bool get skippedOnlyDueToMissingClientTokens =>
       plannedTargets.isEmpty && missingClientTokenTargets.isNotEmpty;

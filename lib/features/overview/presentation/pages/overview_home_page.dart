@@ -121,6 +121,8 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                         missingTokenNames: c.missingTokenAgentNamesNormalized,
                         partialFailureNames:
                             c.partialQueryFailureAgentNamesNormalized,
+                        skippedDueToHubPresenceNames:
+                            c.skippedDueToHubPresenceAgentNamesNormalized,
                         retryRemainingSeconds:
                             c.retryAfterGate.remaining?.inSeconds ?? 0,
                       ),
@@ -137,6 +139,8 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                               slice.missingTokenNames,
                           partialFailureAgentNamesNormalized:
                               slice.partialFailureNames,
+                          skippedDueToHubPresenceAgentNamesNormalized:
+                              slice.skippedDueToHubPresenceNames,
                           retryCountdownLabel: retryCountdown,
                           onOpenAgents: () => context.goTo(AppRoute.agents),
                           onRetryOverview: sessionUserId == null
@@ -330,6 +334,7 @@ class _AlertsSlice {
     required this.overview,
     required this.missingTokenNames,
     required this.partialFailureNames,
+    required this.skippedDueToHubPresenceNames,
     required this.retryRemainingSeconds,
   });
 
@@ -337,6 +342,7 @@ class _AlertsSlice {
   final Overview? overview;
   final List<String> missingTokenNames;
   final List<String> partialFailureNames;
+  final List<String> skippedDueToHubPresenceNames;
 
   /// Snapshot of `OverviewController.retryAfterGate.remainingSeconds`.
   /// Zero (or negative) means the gate is open. We expose seconds, not a
@@ -352,7 +358,11 @@ class _AlertsSlice {
         identical(overview, other.overview) &&
         retryRemainingSeconds == other.retryRemainingSeconds &&
         listEquals(missingTokenNames, other.missingTokenNames) &&
-        listEquals(partialFailureNames, other.partialFailureNames);
+        listEquals(partialFailureNames, other.partialFailureNames) &&
+        listEquals(
+          skippedDueToHubPresenceNames,
+          other.skippedDueToHubPresenceNames,
+        );
   }
 
   @override
@@ -362,6 +372,7 @@ class _AlertsSlice {
     retryRemainingSeconds,
     Object.hashAll(missingTokenNames),
     Object.hashAll(partialFailureNames),
+    Object.hashAll(skippedDueToHubPresenceNames),
   );
 }
 

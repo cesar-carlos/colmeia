@@ -162,6 +162,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Approved agents without a client token on this device';
 
   @override
+  String get dashboardAgentsOfflineTitle => 'Agents currently offline';
+
+  @override
+  String get dashboardAgentsOfflineMessage =>
+      'These approved agents have a saved token but the hub reports them as disconnected. Ask the agent operator to reconnect them, then retry.';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleOffline =>
+      'Agents reported offline by the hub';
+
+  @override
   String get dashboardMultiAgentAggregationTitle => 'Multiple agents';
 
   @override

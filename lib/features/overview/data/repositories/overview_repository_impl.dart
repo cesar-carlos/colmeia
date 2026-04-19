@@ -279,6 +279,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
         agentNamesExcludedFromQueryFailure: report.failedAgentNames,
         agentIdsMissingClientToken: report.missingClientTokenAgentIds,
         agentNamesMissingClientToken: report.missingClientTokenAgentNames,
+        agentIdsSkippedDueToHubPresence:
+            report.skippedDueToHubPresenceAgentIds,
+        agentNamesSkippedDueToHubPresence:
+            report.skippedDueToHubPresenceAgentNames,
         monthlyParcelTrend: monthly.points,
         monthlyParcelTrendLoadFailed: monthly.loadFailed,
         monthlyParcelTrendLoadFailureMessage: monthly.loadFailureMessage,
@@ -920,6 +924,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<String> agentNamesExcludedFromQueryFailure = const <String>[],
     List<String> agentIdsMissingClientToken = const <String>[],
     List<String> agentNamesMissingClientToken = const <String>[],
+    List<String> agentIdsSkippedDueToHubPresence = const <String>[],
+    List<String> agentNamesSkippedDueToHubPresence = const <String>[],
     List<OverviewMonthlyParcelPoint> monthlyParcelTrend =
         const <OverviewMonthlyParcelPoint>[],
     bool monthlyParcelTrendLoadFailed = false,
@@ -1047,6 +1053,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
       agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,
       agentIdsMissingClientToken: agentIdsMissingClientToken,
       agentNamesMissingClientToken: agentNamesMissingClientToken,
+      agentIdsSkippedDueToHubPresence: agentIdsSkippedDueToHubPresence,
+      agentNamesSkippedDueToHubPresence: agentNamesSkippedDueToHubPresence,
       mainResumoHadPlannedTargets: mainResumoHadPlannedTargets,
     );
   }

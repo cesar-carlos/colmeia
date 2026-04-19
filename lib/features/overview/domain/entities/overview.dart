@@ -29,6 +29,8 @@ class Overview {
     this.agentNamesExcludedFromQueryFailure = const <String>[],
     this.agentIdsMissingClientToken = const <String>[],
     this.agentNamesMissingClientToken = const <String>[],
+    this.agentIdsSkippedDueToHubPresence = const <String>[],
+    this.agentNamesSkippedDueToHubPresence = const <String>[],
     this.mainResumoHadPlannedTargets = false,
   });
 
@@ -96,6 +98,18 @@ class Overview {
   /// `client_token` was stored.
   final List<String> agentNamesMissingClientToken;
 
+  /// Approved agents that DO have a stored client_token but were
+  /// excluded because the hub-presence policy (`is_hub_connected`
+  /// from `/client/me/agents`) marked them as offline at dispatch
+  /// time. Distinct from [agentIdsMissingClientToken] — fixing the
+  /// missing-token agents would NOT bring these agents back. The
+  /// agent operator needs to reconnect them to the hub. Surfaced
+  /// via a dedicated banner so the user can act on the right axis.
+  final List<String> agentIdsSkippedDueToHubPresence;
+
+  /// Display names for [agentIdsSkippedDueToHubPresence].
+  final List<String> agentNamesSkippedDueToHubPresence;
+
   /// True when the main forma-pagamento resumo had at least one planned agent
   /// target (so SQL could run), even if merged rows were empty. Drives
   /// [requiresClientTokenSetup] together with [hasMissingClientToken] and
@@ -108,6 +122,13 @@ class Overview {
       agentIdsExcludedFromQueryFailure.isNotEmpty;
 
   bool get hasMissingClientToken => agentIdsMissingClientToken.isNotEmpty;
+
+  /// True when at least one approved agent was skipped because the
+  /// hub considered it offline at dispatch time. May co-exist with
+  /// [hasMissingClientToken] — the user needs to act on both axes
+  /// independently. Drives the dedicated "agentes offline" banner.
+  bool get hasAgentsSkippedDueToHubPresence =>
+      agentIdsSkippedDueToHubPresence.isNotEmpty;
 
   bool get requiresClientTokenSetup =>
       hasMissingClientToken && !hasRows && !mainResumoHadPlannedTargets;
@@ -137,6 +158,8 @@ class Overview {
     List<String>? agentNamesExcludedFromQueryFailure,
     List<String>? agentIdsMissingClientToken,
     List<String>? agentNamesMissingClientToken,
+    List<String>? agentIdsSkippedDueToHubPresence,
+    List<String>? agentNamesSkippedDueToHubPresence,
     List<OverviewMonthlyParcelPoint>? monthlyParcelTrend,
     bool? monthlyParcelTrendLoadFailed,
     String? monthlyParcelTrendLoadFailureMessage,
@@ -186,6 +209,10 @@ class Overview {
           agentIdsMissingClientToken ?? this.agentIdsMissingClientToken,
       agentNamesMissingClientToken:
           agentNamesMissingClientToken ?? this.agentNamesMissingClientToken,
+      agentIdsSkippedDueToHubPresence: agentIdsSkippedDueToHubPresence ??
+          this.agentIdsSkippedDueToHubPresence,
+      agentNamesSkippedDueToHubPresence: agentNamesSkippedDueToHubPresence ??
+          this.agentNamesSkippedDueToHubPresence,
       mainResumoHadPlannedTargets:
           mainResumoHadPlannedTargets ?? this.mainResumoHadPlannedTargets,
     );

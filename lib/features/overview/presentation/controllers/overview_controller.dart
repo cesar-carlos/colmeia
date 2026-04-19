@@ -84,6 +84,7 @@ class OverviewController extends ChangeNotifier {
   Overview? _normalizedNamesCacheRef;
   List<String> _missingTokenNamesNormalized = const <String>[];
   List<String> _partialFailureNamesNormalized = const <String>[];
+  List<String> _skippedDueToHubPresenceNamesNormalized = const <String>[];
 
   /// Normalized display names for missing-token alerts (trim, sort, dedupe).
   List<String> get missingTokenAgentNamesNormalized {
@@ -97,6 +98,14 @@ class OverviewController extends ChangeNotifier {
     return _partialFailureNamesNormalized;
   }
 
+  /// Normalized display names for the "agentes offline" alert (agents
+  /// that have a stored client_token but were skipped because the hub
+  /// reported them disconnected at dispatch time).
+  List<String> get skippedDueToHubPresenceAgentNamesNormalized {
+    _ensureNormalizedAlertNamesCache();
+    return _skippedDueToHubPresenceNamesNormalized;
+  }
+
   void _ensureNormalizedAlertNamesCache() {
     final o = _overview;
     if (identical(o, _normalizedNamesCacheRef)) {
@@ -106,6 +115,7 @@ class OverviewController extends ChangeNotifier {
     if (o == null) {
       _missingTokenNamesNormalized = const <String>[];
       _partialFailureNamesNormalized = const <String>[];
+      _skippedDueToHubPresenceNamesNormalized = const <String>[];
       return;
     }
     _missingTokenNamesNormalized = normalizeOverviewAgentNames(
@@ -113,6 +123,9 @@ class OverviewController extends ChangeNotifier {
     );
     _partialFailureNamesNormalized = normalizeOverviewAgentNames(
       o.agentNamesExcludedFromQueryFailure,
+    );
+    _skippedDueToHubPresenceNamesNormalized = normalizeOverviewAgentNames(
+      o.agentNamesSkippedDueToHubPresence,
     );
   }
 

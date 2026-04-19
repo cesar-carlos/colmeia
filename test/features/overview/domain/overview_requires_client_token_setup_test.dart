@@ -88,4 +88,46 @@ void main() {
       expect(o.requiresClientTokenSetup, isFalse);
     });
   });
+
+  group('Overview.hasAgentsSkippedDueToHubPresence', () {
+    test('is false when the offline-by-hub list is empty', () {
+      final o = _overview(
+        hasPaymentMethods: false,
+        missingIds: const <String>['a'],
+        missingNames: const <String>['A'],
+      );
+      expect(o.hasAgentsSkippedDueToHubPresence, isFalse);
+    });
+
+    test(
+      'is true when at least one agent was skipped because the hub '
+      'reported it offline (independent of missing-token agents)',
+      () {
+        // Cross-axis sanity: this flag must NOT be derived from
+        // missingClientToken / partialFailure. The "agentes offline"
+        // banner addresses an entirely different recovery path
+        // (operator must reconnect the agent to the hub) than the
+        // "save your token" banner.
+        final o = Overview(
+          periodStart: DateTime(2026, 4),
+          periodEnd: DateTime(2026, 4, 30),
+          kpis: const OverviewPaymentKpis(
+            totalSalesCount: 0,
+            totalAmount: 0,
+            averageTicket: 0,
+            paymentMethodCount: 0,
+          ),
+          paymentMethods: const <OverviewPaymentMethodBreakdown>[],
+          agentRankings: const <OverviewAgentRanking>[],
+          userRankings: const <OverviewUserRanking>[],
+          agentIdsSkippedDueToHubPresence: const <String>['offline-1'],
+          agentNamesSkippedDueToHubPresence:
+              const <String>['Offline Agent 1'],
+        );
+        expect(o.hasAgentsSkippedDueToHubPresence, isTrue);
+        expect(o.hasMissingClientToken, isFalse);
+        expect(o.hasPartialAgentQueryFailure, isFalse);
+      },
+    );
+  });
 }

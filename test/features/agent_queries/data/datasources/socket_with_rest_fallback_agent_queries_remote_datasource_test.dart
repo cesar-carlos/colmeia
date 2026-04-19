@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
@@ -127,7 +125,8 @@ void main() {
       },
     );
 
-    test('fallback observability hook firing exception is swallowed', () {
+    test('fallback observability hook firing exception is swallowed',
+        () async {
       // Observability MUST NOT break the dispatch path that just
       // decided to fall back. Otherwise the user gets the same
       // "blank screen" the fallback was designed to prevent.
@@ -147,7 +146,8 @@ void main() {
 
       // No try/catch around the call: if the hook leaked the test
       // would fail with an uncaught exception.
-      check(fallback.postSqlExecute(request)).completes();
+      final response = await fallback.postSqlExecute(request);
+      check(response).deepEquals(<String, dynamic>{'response': 'still-works'});
     });
   });
 }

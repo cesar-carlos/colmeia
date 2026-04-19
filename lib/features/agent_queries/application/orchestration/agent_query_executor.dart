@@ -86,6 +86,7 @@ class AgentQueryExecutor<Row> {
       consideredApprovedAgentCount: plan.consideredApprovedAgentCount,
       plannedTargets: plan.plannedTargets,
       missingClientTokenTargets: plan.missingClientTokenTargets,
+      skippedDueToHubPresenceTargets: plan.skippedDueToHubPresenceTargets,
       participants: <AgentQueryExecutionParticipant<Row>>[
         participantResult.participant,
       ],
@@ -149,6 +150,7 @@ class AgentQueryExecutor<Row> {
       consideredApprovedAgentCount: plan.consideredApprovedAgentCount,
       plannedTargets: plan.plannedTargets,
       missingClientTokenTargets: plan.missingClientTokenTargets,
+      skippedDueToHubPresenceTargets: plan.skippedDueToHubPresenceTargets,
       participants: resolvedParticipants,
       totalElapsedMs: totalStopwatch.elapsedMilliseconds,
     );
@@ -282,6 +284,7 @@ class AgentQueryExecutor<Row> {
           consideredApprovedAgentCount: plan.consideredApprovedAgentCount,
           plannedTargets: plan.plannedTargets,
           missingClientTokenTargets: plan.missingClientTokenTargets,
+          skippedDueToHubPresenceTargets: plan.skippedDueToHubPresenceTargets,
           participants: participants,
           winnerAgentId: plan.plannedTargets[decision.winnerIndex].agentId,
           totalElapsedMs: totalStopwatch.elapsedMilliseconds,
@@ -333,6 +336,7 @@ class AgentQueryExecutor<Row> {
       consideredApprovedAgentCount: plan.consideredApprovedAgentCount,
       plannedTargets: plan.plannedTargets,
       missingClientTokenTargets: plan.missingClientTokenTargets,
+      skippedDueToHubPresenceTargets: plan.skippedDueToHubPresenceTargets,
       participants: <AgentQueryExecutionParticipant<Row>>[],
       totalElapsedMs: totalElapsedMs,
     );

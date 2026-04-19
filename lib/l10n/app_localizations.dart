@@ -381,6 +381,24 @@ abstract class AppLocalizations {
   /// **'Approved agents without a client token on this device'**
   String get dashboardAffectedAgentsSheetTitleSetupRequired;
 
+  /// No description provided for @dashboardAgentsOfflineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents currently offline'**
+  String get dashboardAgentsOfflineTitle;
+
+  /// No description provided for @dashboardAgentsOfflineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'These approved agents have a saved token but the hub reports them as disconnected. Ask the agent operator to reconnect them, then retry.'**
+  String get dashboardAgentsOfflineMessage;
+
+  /// No description provided for @dashboardAffectedAgentsSheetTitleOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents reported offline by the hub'**
+  String get dashboardAffectedAgentsSheetTitleOffline;
+
   /// No description provided for @dashboardMultiAgentAggregationTitle.
   ///
   /// In en, this message translates to:
