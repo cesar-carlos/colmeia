@@ -6,6 +6,7 @@ import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
+import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_coalesce_key.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
@@ -393,7 +394,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     final exception = SocketDispatchAppError(
       message: message,
       serverCode: code,
-      retryAfter: _extractRetryAfterFromAppError(map),
+      retryAfter: extractRetryAfterFromAppError(map),
     );
 
     if (rpcId != null) {
@@ -402,44 +403,6 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     }
     // Global app:error (e.g., SERVICE_UNAVAILABLE on overload). Fail all.
     _correlator.failAll(exception);
-  }
-
-  /// Picks the wait hint the hub propagates inside `app:error`. Mirrors
-  /// the REST `Retry-After` flow: `retryAfterMs` (`SERVICE_UNAVAILABLE`
-  /// overload), `error.data.retry_after_ms` / `reset_at`
-  /// (`RATE_LIMITED` and `client_token.getPolicy` `-32013`).
-  Duration? _extractRetryAfterFromAppError(Map<String, dynamic> map) {
-    final candidates = <Object?>[
-      map['retryAfterMs'],
-      map['retry_after_ms'],
-      _read(map, const <String>['data', 'retry_after_ms']),
-      _read(map, const <String>['data', 'retryAfterMs']),
-      _read(map, const <String>['error', 'data', 'retry_after_ms']),
-      _read(map, const <String>['error', 'data', 'retryAfterMs']),
-    ];
-    for (final candidate in candidates) {
-      final ms = _toIntOrNull(candidate);
-      if (ms != null) {
-        return Duration(milliseconds: ms < 0 ? 0 : ms);
-      }
-    }
-    return null;
-  }
-
-  int? _toIntOrNull(Object? raw) {
-    if (raw == null) {
-      return null;
-    }
-    if (raw is int) {
-      return raw;
-    }
-    if (raw is num) {
-      return raw.toInt();
-    }
-    if (raw is String) {
-      return int.tryParse(raw.trim());
-    }
-    return null;
   }
 
   void _onConnectionState(ConsumerSocketConnectionState state) {

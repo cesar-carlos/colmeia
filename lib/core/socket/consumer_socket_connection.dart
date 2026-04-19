@@ -5,6 +5,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/app_socket_url_resolver.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_auth_token_provider.dart';
 import 'package:colmeia/core/socket/socket_io_client_factory.dart';
 import 'package:colmeia/core/socket/socket_reconnect_backoff.dart';
@@ -191,18 +192,42 @@ class ConsumerSocketConnection {
               cause: outcome.error,
             ),
           );
-          await Future<void>.delayed(
-            SocketReconnectBackoff.jittered(
-              ceiling: delay,
-              random: _random,
-            ),
-          );
-          delay = SocketReconnectBackoff.nextCeiling(
-            current: delay,
-            maxDelay: _reconnectMaxDelay,
-          );
+          // Prefer the server hint when present: the hub explicitly told
+          // us how long to wait (e.g. `SERVICE_UNAVAILABLE` shed-load on
+          // `/consumers`). Falling back to our jittered backoff would
+          // amplify the very congestion the hub is trying to drain.
+          final serverHint = outcome.retryAfter;
+          if (serverHint != null && serverHint > Duration.zero) {
+            await Future<void>.delayed(
+              _clampServerHint(serverHint),
+            );
+            // Reset the local backoff floor — the next failure starts
+            // from `reconnectInitialDelay` again so a single overload
+            // window does not poison subsequent reconnects.
+            delay = _reconnectInitialDelay;
+          } else {
+            await Future<void>.delayed(
+              SocketReconnectBackoff.jittered(
+                ceiling: delay,
+                random: _random,
+              ),
+            );
+            delay = SocketReconnectBackoff.nextCeiling(
+              current: delay,
+              maxDelay: _reconnectMaxDelay,
+            );
+          }
       }
     }
+  }
+
+  /// Caps the server-provided hint to [_reconnectMaxDelay] so a buggy /
+  /// adversarial hub cannot pin the client offline indefinitely.
+  Duration _clampServerHint(Duration hint) {
+    if (hint > _reconnectMaxDelay) {
+      return _reconnectMaxDelay;
+    }
+    return hint;
   }
 
   Future<_ConnectOutcome> _connectOnce() async {
@@ -250,6 +275,16 @@ class ConsumerSocketConnection {
             ),
           );
         }
+      })
+      // The hub may emit `app:error` during the handshake window when
+      // `/consumers` is shedding load
+      // (`SOCKET_RELAY_OUTBOUND_OVERLOAD_BACKLOG`) or when an event quota
+      // burns before `connection:ready`. Capture the `retryAfterMs` hint
+      // so the reconnect loop can wait the requested window instead of
+      // running its own (faster) jittered backoff and amplifying the
+      // congestion. See `docs/socket_relay_protocol.md` (*Shed load*).
+      ..on('app:error', (raw) {
+        resolveError(_buildHandshakeAppErrorOutcome(raw));
       })
       ..onConnectError((err) async {
         if (_isAuthFailure(err)) {
@@ -302,9 +337,43 @@ class ConsumerSocketConnection {
     }
     socket
       ..off('connection:ready')
+      ..off('app:error')
       ..off('connect_error')
       ..off('disconnect');
     return outcome;
+  }
+
+  /// Maps an `app:error` payload received during the handshake into a
+  /// transient failure carrying the optional `retryAfterMs` the hub
+  /// surfaces in shed-load / rate-limit responses. Mapping is permissive
+  /// — anything we cannot parse is still treated as transient with a
+  /// stable error code, so the reconnect loop keeps making progress
+  /// instead of stalling on a malformed envelope.
+  _ConnectTransientFailure _buildHandshakeAppErrorOutcome(Object? raw) {
+    final map = _toStringKeyedMap(raw);
+    if (map == null) {
+      return const _ConnectTransientFailure(
+        error: 'handshake_app_error_invalid_shape',
+      );
+    }
+    final code = map['code']?.toString() ?? 'handshake_app_error';
+    final retryAfter = extractRetryAfterFromAppError(map);
+    return _ConnectTransientFailure(
+      error: code,
+      retryAfter: retryAfter,
+    );
+  }
+
+  Map<String, Object?>? _toStringKeyedMap(Object? raw) {
+    if (raw is Map<String, Object?>) {
+      return raw;
+    }
+    if (raw is Map) {
+      return raw.map(
+        (key, value) => MapEntry<String, Object?>(key.toString(), value),
+      );
+    }
+    return null;
   }
 
   Future<_ConnectOutcome> _timeoutFuture() {
@@ -358,6 +427,15 @@ final class _ConnectAuthFailure extends _ConnectOutcome {
 }
 
 final class _ConnectTransientFailure extends _ConnectOutcome {
-  const _ConnectTransientFailure({required this.error});
+  const _ConnectTransientFailure({required this.error, this.retryAfter});
   final Object error;
+
+  /// Hint extracted from a server-emitted `app:error` (e.g.
+  /// `SERVICE_UNAVAILABLE` shed-load on `/consumers`). When present the
+  /// reconnect loop honors it as the next delay instead of running the
+  /// jittered exponential backoff. Same semantics as
+  /// `NetworkFailure.retryAfter` and `SocketDispatchAppError.retryAfter`
+  /// — see `core/errors/app_failure.dart` and
+  /// `socket_app_error_retry_after.dart`.
+  final Duration? retryAfter;
 }
