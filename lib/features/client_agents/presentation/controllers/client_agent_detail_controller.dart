@@ -4,6 +4,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/formatters/agent_document_digits.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
@@ -56,6 +57,7 @@ class ClientAgentDetailController extends ChangeNotifier {
     required RefreshAgentProfileUseCase refreshAgentProfileUseCase,
     required LoadClientTokenPolicyUseCase loadClientTokenPolicyUseCase,
     required DiscoverAgentRpcMethodsUseCase discoverAgentRpcMethodsUseCase,
+    AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
     String Function()? idempotencyKeyGenerator,
     RetryAfterGate? retryAfterGate,
   }) : _authController = authController,
@@ -67,6 +69,7 @@ class ClientAgentDetailController extends ChangeNotifier {
        _refreshAgentProfileUseCase = refreshAgentProfileUseCase,
        _loadClientTokenPolicyUseCase = loadClientTokenPolicyUseCase,
        _discoverAgentRpcMethodsUseCase = discoverAgentRpcMethodsUseCase,
+       _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
        _idempotencyKeyGenerator =
            idempotencyKeyGenerator ?? _defaultIdempotencyKeyGenerator,
        _retryAfterGate = retryAfterGate ?? RetryAfterGate() {
@@ -85,6 +88,13 @@ class ClientAgentDetailController extends ChangeNotifier {
   final RefreshAgentProfileUseCase _refreshAgentProfileUseCase;
   final LoadClientTokenPolicyUseCase _loadClientTokenPolicyUseCase;
   final DiscoverAgentRpcMethodsUseCase _discoverAgentRpcMethodsUseCase;
+
+  /// Optional shared cache of `rpc.discover` results. When supplied we
+  /// hydrate from it synchronously on [load] to avoid an extra round
+  /// trip when the overview already prefetched the descriptor, and we
+  /// publish back into it so other surfaces (queries, banners) see the
+  /// fresh capabilities without re-discovering.
+  final AgentRpcCapabilitiesRegistry? _agentRpcCapabilitiesRegistry;
 
   /// Source of the per-save UUID forwarded as `Idempotency-Key`. Tests
   /// inject a deterministic generator so the header value can be asserted
@@ -611,6 +621,17 @@ class ClientAgentDetailController extends ChangeNotifier {
 
   Future<void> _discoverAgentRpcMethods({required String agentId}) async {
     final generation = ++_rpcDiscoveryGeneration;
+    final registry = _agentRpcCapabilitiesRegistry;
+    // Optimistic hydrate from the shared registry so UI can already
+    // gate features on the first frame even before the network call
+    // settles. We still kick the discover below — the descriptor in
+    // cache may be stale (older session, agent restarted, etc.).
+    if (registry != null) {
+      final cached = registry.descriptorFor(agentId);
+      if (cached != null) {
+        _agentRpcDescriptor = cached;
+      }
+    }
     _isDiscoveringRpc = true;
     _notifyListenersIfAlive();
     try {
@@ -619,7 +640,12 @@ class ClientAgentDetailController extends ChangeNotifier {
         return;
       }
       result.fold(
-        (descriptor) => _agentRpcDescriptor = descriptor,
+        (descriptor) {
+          _agentRpcDescriptor = descriptor;
+          // Share the fresh descriptor so the next surface that needs
+          // the capabilities does not pay another round-trip.
+          registry?.put(agentId, descriptor);
+        },
         (failure) {
           // Failure is silent — older agents do not implement
           // rpc.discover, but their other capabilities still work.

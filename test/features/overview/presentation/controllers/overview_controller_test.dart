@@ -4,6 +4,12 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
+import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
+import 'package:colmeia/features/agent_meta/domain/repositories/agent_meta_repository.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -235,6 +241,42 @@ void main() {
       },
     );
 
+    test(
+      'should prefetch agent RPC capabilities for every available agent '
+      'after a successful overview load',
+      () async {
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(_overview('Pix')),
+            ),
+          ],
+        );
+        final discoverRepository = _RecordingDiscoverRepository();
+        final registry = AgentRpcCapabilitiesRegistry(
+          discoverAgentRpcMethodsUseCase: DiscoverAgentRpcMethodsUseCase(
+            discoverRepository,
+          ),
+        );
+
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+          agentRpcCapabilitiesRegistry: registry,
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        // The fixture overview exposes agent `a1` as the only ranked
+        // agent — registry should pick it up and discover exactly once.
+        await Future<void>.delayed(Duration.zero);
+
+        check(discoverRepository.requestedAgentIds).deepEquals(<String>['a1']);
+        check(registry.descriptorFor('a1')!.supportsMethod('sql.execute'))
+            .isTrue();
+      },
+    );
+
     test('should ignore late use case completion after dispose', () async {
       final completer = Completer<AppResult<Overview>>();
       final controller = OverviewController(
@@ -291,6 +333,34 @@ class _QueuedOverviewRepository implements OverviewRepository {
     requestedPolicies.add(policy);
     return _results[_index++];
   }
+}
+
+class _RecordingDiscoverRepository implements AgentMetaRepository {
+  final List<String> requestedAgentIds = <String>[];
+
+  @override
+  Future<AppResult<AgentRpcDescriptor>> discoverAgentRpc({
+    required String agentId,
+  }) {
+    requestedAgentIds.add(agentId);
+    return Future<AppResult<AgentRpcDescriptor>>.value(
+      Success<AgentRpcDescriptor, AppFailure>(
+        const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+      ),
+    );
+  }
+
+  @override
+  Future<AppResult<AgentProfileSnapshot>> getAgentProfile({
+    required String agentId,
+    String? clientToken,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<AppResult<ClientTokenPolicySnapshot>> getClientTokenPolicy({
+    required String agentId,
+    required String clientToken,
+  }) => throw UnimplementedError();
 }
 
 Overview _overview(String paymentMethodCode) {

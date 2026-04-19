@@ -1,4 +1,5 @@
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
@@ -45,6 +46,7 @@ void registerInjectorPresentation(GetIt getIt) {
       () => OverviewController(
         getIt<LoadOverviewUseCase>(),
         getIt<ClientAgentsRepository>(),
+        agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
       ),
     )
     ..registerFactory<ClientAgentsController>(
@@ -101,6 +103,7 @@ void registerInjectorPresentation(GetIt getIt) {
         loadClientTokenPolicyUseCase: getIt<LoadClientTokenPolicyUseCase>(),
         discoverAgentRpcMethodsUseCase:
             getIt<DiscoverAgentRpcMethodsUseCase>(),
+        agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
       ),
     );
 }

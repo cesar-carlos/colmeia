@@ -4,6 +4,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/localization/app_localizations_fallback.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -21,7 +22,9 @@ class OverviewController extends ChangeNotifier {
     this._loadOverviewUseCase,
     this._clientAgentsRepository, {
     RetryAfterGate? retryAfterGate,
-  }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate() {
+    AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
+  })  : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+        _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry {
     // Re-publish gate ticks (countdown updates + window expired) through
     // the controller so the home page's retry button reacts without
     // subscribing to the gate directly.
@@ -37,6 +40,14 @@ class OverviewController extends ChangeNotifier {
   /// refresh, so a rate-limit hit by **any** agent throttles the whole
   /// "Reload" CTA — that is what the hub quotas are designed to enforce.
   final RetryAfterGate _retryAfterGate;
+
+  /// Optional bulk feature-gating cache. When provided we kick off a
+  /// `rpc.discover` for every approved agent right after the overview
+  /// settles so other surfaces (queries, detail page) can read
+  /// capabilities synchronously without waiting on a per-render
+  /// network call. Failures are swallowed by the registry — discovery
+  /// is best-effort.
+  final AgentRpcCapabilitiesRegistry? _agentRpcCapabilitiesRegistry;
 
   AppLocalizations? _l10n;
 
@@ -357,5 +368,27 @@ class OverviewController extends ChangeNotifier {
       return;
     }
     _availableAgents = assembled;
+    _scheduleAgentRpcCapabilityPrefetch();
+  }
+
+  /// Fire-and-forgets a `rpc.discover` for every agent we just exposed
+  /// in [_availableAgents]. The registry deduplicates per-agent
+  /// in-flight requests, so calling this on every successful overview
+  /// load is cheap (only new ids do work). The future is intentionally
+  /// not awaited: the overview UI must not block on a best-effort
+  /// capability cache.
+  void _scheduleAgentRpcCapabilityPrefetch() {
+    final registry = _agentRpcCapabilitiesRegistry;
+    if (registry == null || _availableAgents.isEmpty) {
+      return;
+    }
+    final ids = <String>{
+      for (final option in _availableAgents)
+        if (option.agentId.trim().isNotEmpty) option.agentId.trim(),
+    };
+    if (ids.isEmpty) {
+      return;
+    }
+    unawaited(registry.prefetch(ids));
   }
 }

@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
@@ -23,5 +24,13 @@ void registerInjectorAgentMeta(GetIt getIt) {
     )
     ..registerLazySingleton<DiscoverAgentRpcMethodsUseCase>(
       () => DiscoverAgentRpcMethodsUseCase(getIt<AgentMetaRepository>()),
+    )
+    // Registry is a process-wide cache — register as a singleton so
+    // every controller (overview, detail, queries) shares the same
+    // capability snapshot. Disposed implicitly when GetIt is reset.
+    ..registerLazySingleton<AgentRpcCapabilitiesRegistry>(
+      () => AgentRpcCapabilitiesRegistry(
+        discoverAgentRpcMethodsUseCase: getIt<DiscoverAgentRpcMethodsUseCase>(),
+      ),
     );
 }
