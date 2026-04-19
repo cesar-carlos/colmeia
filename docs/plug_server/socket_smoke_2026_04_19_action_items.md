@@ -17,13 +17,28 @@
 
 ---
 
+## Auditoria ao repo `plug_server` (docs + `env.ts`) — 2026
+
+Leitura cruzada com `D:\Developer\plug_database\plug_server` (código e
+`docs/`). Isto **não substitui** verificar o processo em produção, mas
+esclarece o que é bug de deploy vs desvio do cliente Colmeia:
+
+| Tópico | O que o upstream diz hoje | Implicação para produção |
+| ------ | ------------------------- | ------------------------- |
+| `SOCKET_CONSUMER_ROLES` | Em `src/shared/config/env.ts`, o default Zod é a string **`user,admin,client`** (parseada para lista). `docs/api_rest_bridge.md` repete o mesmo default. | Se o log ainda mostra `Role 'client' is not allowed`, o PID em produção quase de certeza tem **`SOCKET_CONSUMER_ROLES` definida explicitamente** sem `client` (override no `.env` / painel / compose), **ou** um artefacto antigo — **não** é o default do código atual. Remover a env (reiniciar) ou corrigir o valor + restart. |
+| Agente offline + REST | Tabela *Erros HTTP* em `docs/api_rest_bridge.md`: **`200`** com envelope JSON-RPC `error.code: -32000` / `agent_offline` quando o `agentId` está **conhecido em memória** no processo, não há socket em `/agents`, e o pedido tem **`id` correlacionável**; `503` cobre overload, disconnect a meio de request pendente, notification-only (`id: null`), etc. | O smoke com `503` em `rpc.discover` pode ser **compatível com a spec** se o corpo omitir `id` ou o hub não tiver o agente “em memória” nesse PID; se o pedido cumprir os pré-requisitos da tabela e ainda vier `503`, trata-se de **desalinhamento deploy ↔ doc** (abrir issue no `plug_server`). |
+| Handshake `connection:ready` | `docs/socket_relay_protocol.md`: contrato padrão é **`PayloadFrame`**; modo legado só via `SOCKET_CONNECTION_READY_COMPAT_MODE`. | Colmeia já decodifica `PayloadFrame` primeiro e tolera JSON legado — alinhado à doc. |
+| Relay + legado | `docs/socket_client_sdk.md` + `socket_relay_protocol.md`: `/consumers` com `relay:*` e `agents:command`, paridade com `POST /api/v1/agents/commands`. | Colmeia usa o mesmo namespace e os mesmos eventos; não há “socket errado” no sentido de contrato. |
+
+---
+
 ## TL;DR — Tabela de ações
 
 | # | Severidade | Ação | Onde | Tempo |
 | - | ---------- | ---- | ---- | ----- |
-| 1 | 🔴 Bloqueante | `SOCKET_CONSUMER_ROLES=user,admin,client` + restart | `.env` ativo do `plug_server` | 5 min |
-| 2 | 🟡 Recomendada | Resposta para `agents:command` quando agente offline (503 vs JSON-RPC `-32000`) | `agents.routes.ts` / bridge | 30-60 min |
-| 3 | 🟢 Verificação | Confirmar `SOCKET_CLIENT_AGENT_PROFILE_PUSH_ENABLED=true` | `.env` ativo do `plug_server` | 2 min |
+| 1 | 🔴 Bloqueante | Garantir `client` em `SOCKET_CONSUMER_ROLES` **ou** remover override errado (default do código = `user,admin,client`) + restart | `.env` / orquestrador + PID | 5 min |
+| 2 | 🟡 Recomendada | Confirmar que REST / bridge em produção cumpre `docs/api_rest_bridge.md` para offline (`200` + `-32000` quando aplicável); corrigir só se o deploy divergir | `agents.routes.ts` / bridge + smoke `curl` | 30-60 min |
+| 3 | 🟢 Verificação | Confirmar `SOCKET_CLIENT_AGENT_PROFILE_PUSH_ENABLED=true` (ou ausente = default `true` no schema) | `.env` ativo do `plug_server` | 2 min |
 
 > **Quando os 3 estiverem ✅, avise a equipe Flutter.** Vamos rodar
 > outro smoke test e validar o caminho feliz end-to-end (esperado:
@@ -68,14 +83,24 @@ pm2 env <id> | grep SOCKET_CONSUMER_ROLES
 docker exec <container> printenv | grep SOCKET_CONSUMER_ROLES
 ```
 
-**Resultado esperado:**
+**Resultado esperado (explícito no processo):**
 
 ```
 SOCKET_CONSUMER_ROLES=user,admin,client
 ```
 
-Se aparecer só `user,admin` (default antigo) ou nada, edite o
-`.env` ativo e **restart**:
+**Interpretação do `grep`:**
+
+- Valor **sem** `client` (ex.: só `user,admin`) → corrigir para incluir
+  `client` e **restart** (é a causa típica do erro visto no smoke).
+- Variável **ausente** no `printenv` → o Node pode estar a usar só o
+  **default do Zod** em `env.ts` (`user,admin,client`). Nesse caso o
+  handshake **não** deveria rejeitar `client`; se ainda rejeita, há
+  outro ramo (build antigo, segundo processo, middleware fork) —
+  investigar versão deployada e **um único** PID do `plug_server`.
+
+Após corrigir o `.env` (ou remover um override que exclua `client`),
+**sempre** reiniciar o processo para o Zod voltar a ler `process.env`:
 
 ```bash
 # Opção 1 — pm2:
@@ -97,7 +122,7 @@ deve receber `connection:ready` e o estado interno passa para
 
 ---
 
-## Ação #2 — `agents:command` para agente offline retorna 503 🟡
+## Ação #2 — Offline: `503` vs `200` + JSON-RPC `-32000` 🟡
 
 ### Sintoma observado no smoke test
 
@@ -113,16 +138,24 @@ HTTP request | method=POST, path=/api/v1/agents/commands  (client_token.getPolic
 HTTP request failed | statusCode=503
 ```
 
-O comportamento atual `503 Service Unavailable` está **alinhado**
-com a tabela na `docs/api_rest_bridge.md` linha 1309:
+A documentação canónica atual (`plug_server/docs/api_rest_bridge.md`,
+tabela *Erros HTTP*) já distingue:
 
-> *Falha rapida em disconnect do agente: pending requests REST do
-> socket desconectado sao encerradas com 503 sem aguardar timeout*
+- **`503`** — timeout, overload, disconnect **a meio** de request
+  pendente, notification-only (`id: null` em todos os itens), etc.
+- **`200`** com `response` JSON-RPC em erro — inclui **`agent_offline`**
+  (`-32000`) quando o `agentId` está **conhecido em memória** neste
+  processo (tipicamente após `agent:register`), não há socket ativo
+  em `/agents`, e o pedido tem **`id` correlacionável**.
 
-Mas essa linha cobre o caso de **disconnect no meio** de uma
-request pendente. Para uma request **nova** chegando para um
-agente já-conhecido-como-offline, o esperado pelo protocolo
-JSON-RPC é responder com:
+Ou seja: o `503` visto no smoke **pode** estar correto para alguns
+ramos da tabela; para validar se o deploy está **desalinhado da doc**,
+repetir o teste com um body que cumpra explicitamente os pré-requisitos
+do caso `200` + `-32000` (ver critério abaixo). Se mesmo assim vier
+`503`, aí sim é trabalho de código/deploy no `plug_server`.
+
+Para uma request **nova** que caiba no caso “agente catalogado offline
+com `id`”, o envelope esperado é:
 
 ```json
 HTTP/1.1 200 OK
@@ -194,9 +227,18 @@ if (!targetSocket) {
 
 ### Critério de aceitação
 
-Repetir o smoke do `rpc.discover` contra um agente offline e
-confirmar `HTTP/200` com payload JSON-RPC `error.code = -32000`
-em vez de `HTTP/503`.
+1. Escolher um `agentId` que **já tenha feito** `agent:register` neste
+   **mesmo** processo `plug_server` (e esteja offline agora).
+2. `POST /api/v1/agents/commands` com Bearer do client, body alinhado ao
+   OpenAPI, e o bloco `command` JSON-RPC com **`id` string não vazia**
+   (não usar notification `id: null` neste teste).
+3. Esperado pela doc: **`HTTP/200`** e `error.code = -32000` /
+   `agent_offline` no envelope de resposta.
+
+Se o passo 3 ainda devolver **`503`**, tratar como bug de implementação
+ou de **afinidade multi-réplica** (o agente estava “vivo” noutro pod) —
+correlacionar com `X-Hub-Instance-Id` e sticky session
+(`docs/nginx_production.md`).
 
 > **Nota**: essa mudança é **idempotente do ponto de vista do
 > cliente** — o app já trata ambas as respostas sem regredir
@@ -314,7 +356,8 @@ em nada do servidor.
 ## Estado do app (lado Flutter) — para sua tranquilidade
 
 Independentemente das 3 ações acima, o cliente **não trava**.
-Foram entregues nas últimas commits (`4caa5c9`, `05414c4`):
+Foram entregues commits recentes na `main` (entre outros
+`4caa5c9`, `05414c4`, `06332c8`):
 
 - **Detecção fina**: `Role 'X' not allowed` agora gera
   `SocketDispatchNamespaceForbidden` (não mais `Unauthorized`
@@ -325,6 +368,9 @@ Foram entregues nas últimas commits (`4caa5c9`, `05414c4`):
   Tanto o `agents:command` legado quanto o `relay:rpc.request`
   são cobertos. Falhas transientes (timeout / disconnect / app:error)
   continuam respeitando o backoff + Retry-After do socket.
+- **Overview**: banner dedicado **"Agentes offline no momento"** quando
+  o hub marca agentes com token como desconectados na fase de planeamento
+  SQL — separado do banner "sem token no dispositivo".
 
 Ou seja: se você demorar para aplicar as 3 ações, o app continua
 funcional via REST (com a perda de performance e push em tempo real,
