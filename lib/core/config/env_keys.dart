@@ -174,6 +174,14 @@ abstract final class EnvKeys {
   /// rejected with `-32001` `invalid_signature`.
   static const String socketPayloadSigningKeyId =
       'SOCKET_PAYLOAD_SIGNING_KEY_ID';
+
+  /// When `true` and a signing key is configured, inbound frames
+  /// MUST carry a valid `signature` — unsigned frames are rejected
+  /// with `signature_required`. Defence in depth against MITM on
+  /// transport layers below TLS. Default `false` (current hub
+  /// emits signed frames only when `PAYLOAD_SIGN_OUTBOUND=true`).
+  static const String socketPayloadRequireSignature =
+      'SOCKET_PAYLOAD_REQUIRE_SIGNATURE';
 }
 
 /// Asset paths for bundled env files (`loadAppDotenv`).

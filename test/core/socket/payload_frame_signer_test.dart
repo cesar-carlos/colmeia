@@ -181,4 +181,179 @@ void main() {
       },
     );
   });
+
+  group('Hmac256PayloadFrameSignatureVerifier', () {
+    const metadata = PayloadFrameSignatureMetadata(
+      schemaVersion: '1.0',
+      enc: 'json',
+      cmp: 'none',
+      contentType: 'application/json',
+      originalSize: 13,
+      compressedSize: 13,
+      requestId: 'req-1',
+    );
+    final payload = Uint8List.fromList(utf8.encode('{"hello":"hi"}'));
+
+    test('round-trip signer -> verifier accepts a valid signature', () {
+      final signer = Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k');
+      final signature = signer.sign(
+        metadata: metadata,
+        binaryPayload: payload,
+      );
+      final verifier =
+          Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+      check(
+        verifier.verify(
+          metadata: metadata,
+          binaryPayload: payload,
+          signature: signature,
+        ),
+      ).equals(PayloadFrameSignatureVerification.valid);
+    });
+
+    test('rejects mismatching key with invalid (constant-time path)', () {
+      final signer = Hmac256PayloadFrameSigner.fromUtf8Key(key: 'real');
+      final signature = signer.sign(
+        metadata: metadata,
+        binaryPayload: payload,
+      );
+      final verifier = Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+        key: 'wrong',
+      );
+      check(
+        verifier.verify(
+          metadata: metadata,
+          binaryPayload: payload,
+          signature: signature,
+        ),
+      ).equals(PayloadFrameSignatureVerification.invalid);
+    });
+
+    test('absent signature reports `absent` (caller decides policy)', () {
+      final verifier =
+          Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+      check(
+        verifier.verify(
+          metadata: metadata,
+          binaryPayload: payload,
+          signature: null,
+        ),
+      ).equals(PayloadFrameSignatureVerification.absent);
+    });
+
+    test('rejects unsupported algorithm', () {
+      final verifier =
+          Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+      check(
+        verifier.verify(
+          metadata: metadata,
+          binaryPayload: payload,
+          signature: const PayloadFrameSignature(
+            algorithm: 'rs256',
+            value: 'whatever',
+          ),
+        ),
+      ).equals(PayloadFrameSignatureVerification.unsupportedAlgorithm);
+    });
+
+    test('rejects empty / non-base64 signature value as malformed', () {
+      final verifier =
+          Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+      check(
+        verifier.verify(
+          metadata: metadata,
+          binaryPayload: payload,
+          signature: const PayloadFrameSignature(
+            algorithm: PayloadFrameSignature.algorithmHmacSha256,
+            value: '   ',
+          ),
+        ),
+      ).equals(PayloadFrameSignatureVerification.malformed);
+
+      check(
+        verifier.verify(
+          metadata: metadata,
+          binaryPayload: payload,
+          signature: const PayloadFrameSignature(
+            algorithm: PayloadFrameSignature.algorithmHmacSha256,
+            value: 'not_base64!!',
+          ),
+        ),
+      ).equals(PayloadFrameSignatureVerification.malformed);
+    });
+
+    test(
+      'enforces key_id when verifier was built with expectedKeyId',
+      () {
+        final signer = Hmac256PayloadFrameSigner.fromUtf8Key(
+          key: 'k',
+          keyId: 'rotated-2026',
+        );
+        final signature = signer.sign(
+          metadata: metadata,
+          binaryPayload: payload,
+        );
+        final strictVerifier = Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+          key: 'k',
+          expectedKeyId: 'rotated-2026',
+        );
+        check(
+          strictVerifier.verify(
+            metadata: metadata,
+            binaryPayload: payload,
+            signature: signature,
+          ),
+        ).equals(PayloadFrameSignatureVerification.valid);
+
+        // Same key, divergent key_id → mismatch.
+        final wrongIdSig = PayloadFrameSignature(
+          algorithm: signature.algorithm,
+          value: signature.value,
+          keyId: 'older-key',
+        );
+        check(
+          strictVerifier.verify(
+            metadata: metadata,
+            binaryPayload: payload,
+            signature: wrongIdSig,
+          ),
+        ).equals(PayloadFrameSignatureVerification.keyIdMismatch);
+
+        // Same key, missing key_id → mismatch (mirrors hub policy).
+        const missingIdSig = PayloadFrameSignature(
+          algorithm: PayloadFrameSignature.algorithmHmacSha256,
+          value: 'whatever',
+        );
+        check(
+          strictVerifier.verify(
+            metadata: metadata,
+            binaryPayload: payload,
+            signature: missingIdSig,
+          ),
+        ).equals(PayloadFrameSignatureVerification.keyIdMismatch);
+      },
+    );
+
+    test(
+      'single-key verifier (no expectedKeyId) accepts frames without key_id',
+      () {
+        final signer =
+            Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'); // no keyId
+        final signature = signer.sign(
+          metadata: metadata,
+          binaryPayload: payload,
+        );
+        final verifier =
+            Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+        check(signature.keyId).isNull();
+        check(
+          verifier.verify(
+            metadata: metadata,
+            binaryPayload: payload,
+            signature: signature,
+          ),
+        ).equals(PayloadFrameSignatureVerification.valid);
+      },
+    );
+  });
 }

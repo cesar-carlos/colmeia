@@ -139,3 +139,151 @@ class Hmac256PayloadFrameSigner implements PayloadFrameSigner {
     );
   }
 }
+
+/// Outcome of [PayloadFrameSignatureVerifier.verify]. Stable codes are
+/// surfaced so the codec can map them to `PayloadFrameDecodeException`
+/// instances with the same identifiers used by the hub
+/// (`payload_frame.ts` rejects with `Authentication failed`).
+enum PayloadFrameSignatureVerification {
+  /// Signature present and matches the configured key.
+  valid('signature_valid'),
+
+  /// Frame carries no `signature` block. The verifier reports this
+  /// outcome and lets the caller decide between "ignore" (current
+  /// hub default — signing is opt-in) and "reject" (when
+  /// `SOCKET_PAYLOAD_REQUIRE_SIGNATURE=true`).
+  absent('signature_absent'),
+
+  /// `signature.alg` is a string the verifier does not understand
+  /// (only `hmac-sha256` is supported today).
+  unsupportedAlgorithm('signature_unsupported_algorithm'),
+
+  /// `signature.value` is empty / not valid base64.
+  malformed('signature_malformed'),
+
+  /// Hub configured with `PAYLOAD_SIGNING_KEY_ID` and the frame either
+  /// omits `key_id` or carries a divergent value. Rejected because
+  /// the hub itself rejects the equivalent flow with `-32001`.
+  keyIdMismatch('signature_key_id_mismatch'),
+
+  /// HMAC computed locally does not match `signature.value`. Treat as
+  /// tampering or key drift.
+  invalid('signature_invalid');
+
+  const PayloadFrameSignatureVerification(this.code);
+
+  /// Stable identifier suitable for `PayloadFrameDecodeException.code`
+  /// and metrics labels — mirrors the codes the encoder uses.
+  final String code;
+}
+
+/// Validates an inbound [PayloadFrameSignature] against a shared key.
+/// Counterpart to [PayloadFrameSigner].
+// Single-method interface kept on purpose so future schemes (Ed25519,
+// JWS) can plug in without breaking the codec contract.
+// ignore: one_member_abstracts
+abstract interface class PayloadFrameSignatureVerifier {
+  PayloadFrameSignatureVerification verify({
+    required PayloadFrameSignatureMetadata metadata,
+    required Uint8List binaryPayload,
+    required PayloadFrameSignature? signature,
+  });
+}
+
+/// HMAC-SHA256 verifier sharing the same wire contract as
+/// [Hmac256PayloadFrameSigner]. Uses a constant-time byte comparison
+/// so signature mismatches do not leak per-byte timing information.
+class Hmac256PayloadFrameSignatureVerifier
+    implements PayloadFrameSignatureVerifier {
+  Hmac256PayloadFrameSignatureVerifier({
+    required Uint8List key,
+    String? expectedKeyId,
+  })  : _hmac = Hmac(sha256, key),
+        _expectedKeyId =
+            (expectedKeyId != null && expectedKeyId.trim().isNotEmpty)
+                ? expectedKeyId
+                : null;
+
+  /// Convenience constructor for keys provided as plain UTF-8
+  /// strings (i.e. coming straight from `.env`).
+  factory Hmac256PayloadFrameSignatureVerifier.fromUtf8Key({
+    required String key,
+    String? expectedKeyId,
+  }) {
+    return Hmac256PayloadFrameSignatureVerifier(
+      key: Uint8List.fromList(utf8.encode(key)),
+      expectedKeyId: expectedKeyId,
+    );
+  }
+
+  final Hmac _hmac;
+  final String? _expectedKeyId;
+
+  @override
+  PayloadFrameSignatureVerification verify({
+    required PayloadFrameSignatureMetadata metadata,
+    required Uint8List binaryPayload,
+    required PayloadFrameSignature? signature,
+  }) {
+    if (signature == null) {
+      return PayloadFrameSignatureVerification.absent;
+    }
+    if (signature.algorithm != PayloadFrameSignature.algorithmHmacSha256) {
+      return PayloadFrameSignatureVerification.unsupportedAlgorithm;
+    }
+    final providedValue = signature.value.trim();
+    if (providedValue.isEmpty) {
+      return PayloadFrameSignatureVerification.malformed;
+    }
+    // The hub enforces `key_id` only when it is itself configured with
+    // an expected id. We mirror that policy here so single-key
+    // deployments still accept frames without `key_id`.
+    final expected = _expectedKeyId;
+    if (expected != null) {
+      final providedKeyId = signature.keyId?.trim();
+      if (providedKeyId == null || providedKeyId.isEmpty) {
+        return PayloadFrameSignatureVerification.keyIdMismatch;
+      }
+      if (providedKeyId != expected) {
+        return PayloadFrameSignatureVerification.keyIdMismatch;
+      }
+    }
+    final List<int> providedBytes;
+    try {
+      providedBytes = base64Decode(providedValue);
+    } on FormatException {
+      return PayloadFrameSignatureVerification.malformed;
+    }
+
+    final metadataJson = metadata.toCanonicalJsonUtf8();
+    final input = Uint8List(metadataJson.length + 1 + binaryPayload.length)
+      ..setRange(0, metadataJson.length, metadataJson)
+      ..[metadataJson.length] = 0
+      ..setRange(
+        metadataJson.length + 1,
+        metadataJson.length + 1 + binaryPayload.length,
+        binaryPayload,
+      );
+
+    final expectedDigest = _hmac.convert(input).bytes;
+    if (!_constantTimeBytesEqual(expectedDigest, providedBytes)) {
+      return PayloadFrameSignatureVerification.invalid;
+    }
+    return PayloadFrameSignatureVerification.valid;
+  }
+}
+
+/// Constant-time byte comparison. The standard `List` `==` short-circuits
+/// on the first mismatch, leaking position info via timing — this loop
+/// folds every byte into a running OR so the work is independent of the
+/// data, mirroring `crypto.timingSafeEqual` on the hub side.
+bool _constantTimeBytesEqual(List<int> a, List<int> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  var result = 0;
+  for (var i = 0; i < a.length; i++) {
+    result |= a[i] ^ b[i];
+  }
+  return result == 0;
+}

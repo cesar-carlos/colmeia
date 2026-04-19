@@ -222,20 +222,32 @@ AgentLatencyOracle? _resolveLatencyOracle(GetIt getIt) {
 }
 
 /// Builds the shared [PayloadFrameCodec], wiring an HMAC-SHA256 signer
-/// when `SOCKET_PAYLOAD_SIGNING_KEY` is present. The signer reuses the
-/// hub's wire contract (UTF-8 key + base64 signature value over the
-/// `metadata || 0x00 || payload` block) so both ends agree byte-for-byte.
+/// **and** a verifier when `SOCKET_PAYLOAD_SIGNING_KEY` is present.
+/// The signer/verifier reuse the hub's wire contract (UTF-8 key +
+/// base64 signature value over the `metadata || 0x00 || payload` block)
+/// so both ends agree byte-for-byte.
+///
+/// The verifier is opt-in via `SOCKET_PAYLOAD_REQUIRE_SIGNATURE`:
+/// strict mode rejects unsigned frames with `signature_required`,
+/// while the default (permissive) tolerates unsigned ones — matching
+/// the hub's own opt-in policy controlled by `PAYLOAD_SIGN_OUTBOUND`.
 PayloadFrameCodec _buildPayloadFrameCodec() {
   final key = AppEnvironment.socketPayloadSigningKey;
   if (key.isEmpty) {
     return const PayloadFrameCodec();
   }
   final keyId = AppEnvironment.socketPayloadSigningKeyId;
+  final normalizedKeyId = keyId.isEmpty ? null : keyId;
   return PayloadFrameCodec(
     signer: Hmac256PayloadFrameSigner.fromUtf8Key(
       key: key,
-      keyId: keyId.isEmpty ? null : keyId,
+      keyId: normalizedKeyId,
     ),
+    verifier: Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+      key: key,
+      expectedKeyId: normalizedKeyId,
+    ),
+    requireSignature: AppEnvironment.socketPayloadRequireSignature,
   );
 }
 

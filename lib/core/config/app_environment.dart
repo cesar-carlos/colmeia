@@ -380,6 +380,19 @@ abstract final class AppEnvironment {
         fallback: '',
       );
 
+  /// Strict inbound mode: when `true` and a signing key is configured,
+  /// the codec rejects unsigned frames with `signature_required`.
+  /// Default `false` because the hub today emits signed frames only
+  /// when itself running with `PAYLOAD_SIGN_OUTBOUND=true`.
+  static bool get socketPayloadRequireSignature =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketPayloadRequireSignature,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketPayloadRequireSignature),
+        fallback: false,
+      );
+
   static String? _dotenvMaybe(String key) {
     if (!dotenv.isInitialized) {
       return null;

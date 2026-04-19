@@ -56,6 +56,8 @@ class PayloadFrameCodec {
     this.maxPayloadBytes = defaultMaxPayloadBytes,
     this.maxInflationRatio = defaultMaxInflationRatio,
     this.signer,
+    this.verifier,
+    this.requireSignature = false,
   });
 
   /// When non-null, [encodeJson] populates `frame.signature` by running
@@ -68,6 +70,26 @@ class PayloadFrameCodec {
   /// always wins over the codec-level signer so tests / one-off
   /// fixtures can inject deterministic values.
   final PayloadFrameSigner? signer;
+
+  /// When non-null, [decodeJson] validates `frame.signature` against
+  /// this verifier. Behavior matrix:
+  ///
+  /// * `verifier == null`            → signature ignored (legacy
+  ///   transparent mode; current hub default).
+  /// * verifier set, no signature    → accepted UNLESS
+  ///   [requireSignature] is `true`.
+  /// * verifier set, signature OK    → accepted.
+  /// * verifier set, signature bad   → throws
+  ///   [PayloadFrameDecodeException] with the verifier code
+  ///   (`signature_invalid`, `signature_key_id_mismatch`, etc.) so
+  ///   the dispatcher can map it to a transient socket error.
+  final PayloadFrameSignatureVerifier? verifier;
+
+  /// Strict mode: when `true` and a [verifier] is configured, frames
+  /// without a `signature` block are rejected with
+  /// `signature_required`. Use this on builds connecting to hubs that
+  /// run with `PAYLOAD_SIGN_OUTBOUND=true` and trust nothing else.
+  final bool requireSignature;
 
   /// 1 KiB — same value as the snippet bundled with the hub docs.
   static const int defaultCompressionThresholdBytes = 1024;
@@ -205,6 +227,13 @@ class PayloadFrameCodec {
       );
     }
 
+    // Verify the signature **before** the gzip pass: HMAC covers the
+    // wire bytes the hub actually emitted (and we already validated
+    // size/shape above), so cheap rejection happens before we burn
+    // CPU on inflation. Skips silently when the codec was built
+    // without a verifier — same path as the legacy unsigned mode.
+    _verifySignatureIfConfigured(frame);
+
     Uint8List jsonBytes;
     if (frame.cmp == PayloadFrame.compressionGzip) {
       if (frame.compressedSize > 0 &&
@@ -248,6 +277,68 @@ class PayloadFrameCodec {
       return jsonDecode(utf8.decode(jsonBytes));
     } on FormatException catch (e) {
       throw PayloadFrameDecodeException('json_decode_failed', e.message);
+    }
+  }
+
+  /// Runs the configured [verifier] against [frame] and turns any
+  /// rejection into a [PayloadFrameDecodeException] using the stable
+  /// codes from [PayloadFrameSignatureVerification]. No-op when no
+  /// verifier is wired (current default — signing is opt-in on the
+  /// hub).
+  void _verifySignatureIfConfigured(PayloadFrame frame) {
+    final activeVerifier = verifier;
+    if (activeVerifier == null) {
+      return;
+    }
+    final outcome = activeVerifier.verify(
+      metadata: PayloadFrameSignatureMetadata(
+        schemaVersion: frame.schemaVersion,
+        enc: frame.enc,
+        cmp: frame.cmp,
+        contentType: frame.contentType,
+        originalSize: frame.originalSize,
+        compressedSize: frame.compressedSize,
+        traceId: frame.traceId,
+        requestId: frame.requestId,
+      ),
+      binaryPayload: frame.payload,
+      signature: frame.signature,
+    );
+    switch (outcome) {
+      case PayloadFrameSignatureVerification.valid:
+        return;
+      case PayloadFrameSignatureVerification.absent:
+        // Strict builds (defence in depth against MITM on the wire)
+        // refuse unsigned frames; permissive builds still accept them
+        // — this matches the hub's own opt-in model.
+        if (requireSignature) {
+          throw const PayloadFrameDecodeException(
+            'signature_required',
+            'PayloadFrame is unsigned but requireSignature is true',
+          );
+        }
+        return;
+      case PayloadFrameSignatureVerification.unsupportedAlgorithm:
+        throw PayloadFrameDecodeException(
+          outcome.code,
+          'expected ${PayloadFrameSignature.algorithmHmacSha256}, '
+              'got ${frame.signature?.algorithm}',
+        );
+      case PayloadFrameSignatureVerification.malformed:
+        throw PayloadFrameDecodeException(
+          outcome.code,
+          'signature value is empty or not valid base64',
+        );
+      case PayloadFrameSignatureVerification.keyIdMismatch:
+        throw PayloadFrameDecodeException(
+          outcome.code,
+          'signature key_id does not match the configured expectation',
+        );
+      case PayloadFrameSignatureVerification.invalid:
+        throw PayloadFrameDecodeException(
+          outcome.code,
+          'HMAC mismatch — possible tampering or key drift',
+        );
     }
   }
 }

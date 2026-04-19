@@ -156,6 +156,107 @@ void main() {
     });
   });
 
+  group('PayloadFrameCodec.decodeJson — signature verification', () {
+    test('codec without verifier ignores signature (legacy mode)', () {
+      const codec = PayloadFrameCodec();
+      final signedFrame = PayloadFrameCodec(
+        signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'),
+      ).encodeJson(<String, Object?>{'a': 1}).frame;
+      // Even with a signature attached the decoder must succeed —
+      // verifier is opt-in via DI / constructor.
+      check(jsonEncode(codec.decodeJson(signedFrame))).equals('{"a":1}');
+    });
+
+    test(
+      'codec with verifier accepts a frame signed by the matching signer',
+      () {
+        final codec = PayloadFrameCodec(
+          signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'),
+          verifier:
+              Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
+        );
+        final result = codec.encodeJson(<String, Object?>{'agentId': 'a'});
+        check(jsonEncode(codec.decodeJson(result.frame)))
+            .equals('{"agentId":"a"}');
+      },
+    );
+
+    test(
+      'codec with verifier rejects mismatching HMAC with signature_invalid',
+      () {
+        final signed = PayloadFrameCodec(
+          signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'attacker'),
+        ).encodeJson(<String, Object?>{'a': 1}).frame;
+        final codec = PayloadFrameCodec(
+          verifier:
+              Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'real'),
+        );
+        check(() => codec.decodeJson(signed))
+            .throws<PayloadFrameDecodeException>()
+            .has((e) => e.code, 'code')
+            .equals('signature_invalid');
+      },
+    );
+
+    test(
+      'requireSignature=true rejects unsigned frames with signature_required',
+      () {
+        // The hub today emits unsigned frames by default. Strict
+        // builds (defence in depth) flip this on to require every
+        // inbound frame to carry a signature.
+        final unsigned = const PayloadFrameCodec()
+            .encodeJson(<String, Object?>{'a': 1})
+            .frame;
+        final strict = PayloadFrameCodec(
+          verifier:
+              Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
+          requireSignature: true,
+        );
+        check(() => strict.decodeJson(unsigned))
+            .throws<PayloadFrameDecodeException>()
+            .has((e) => e.code, 'code')
+            .equals('signature_required');
+      },
+    );
+
+    test(
+      'requireSignature=false (default) accepts unsigned frames',
+      () {
+        final unsigned = const PayloadFrameCodec()
+            .encodeJson(<String, Object?>{'a': 1})
+            .frame;
+        final permissive = PayloadFrameCodec(
+          verifier:
+              Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
+        );
+        check(jsonEncode(permissive.decodeJson(unsigned)))
+            .equals('{"a":1}');
+      },
+    );
+
+    test(
+      'codec with verifier rejects key_id mismatch with stable code',
+      () {
+        // Hub configured with PAYLOAD_SIGNING_KEY_ID — every signed
+        // frame MUST carry a matching `key_id`. Frames forged or
+        // signed by a stale key (no `key_id`) get rejected.
+        final signed = PayloadFrameCodec(
+          signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'),
+        ).encodeJson(<String, Object?>{'a': 1}).frame;
+        final codec = PayloadFrameCodec(
+          verifier: Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+            key: 'k',
+            expectedKeyId: 'rotated-2026',
+          ),
+        );
+        check(() => codec.decodeJson(signed))
+            .throws<PayloadFrameDecodeException>()
+            .has((e) => e.code, 'code')
+            .equals('signature_key_id_mismatch');
+      },
+    );
+  });
+
   group('PayloadFrameCodec.decodeJson — strict validation', () {
     const codec = PayloadFrameCodec();
 
