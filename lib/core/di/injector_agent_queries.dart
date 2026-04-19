@@ -35,6 +35,7 @@ import 'package:colmeia/features/agent_queries/data/datasources/hybrid_agent_que
 import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
@@ -122,13 +123,28 @@ void registerInjectorAgentQueries(GetIt getIt) {
         // with `useRelay: true` flow through the relay channel; everything
         // else stays on the legacy channel byte-for-byte identical.
         final relay = _resolveRelayDatasource(getIt);
-        if (relay == null) {
-          return base;
+        final relayWrapped = relay == null
+            ? base
+            : HybridAgentQueriesRemoteDataSource(
+                baseDelegate: base,
+                relayDelegate: relay,
+              );
+        // Permanent socket failures (`SOCKET_CONSUMER_ROLES`
+        // misconfigured on the hub, or auth refresh exhausted)
+        // pivot the datasource to REST for the rest of the
+        // session. Skipped on REST builds (no socket to fall back
+        // FROM) and on fake-backend builds.
+        if (AppEnvironment.agentBridgeTransport ==
+            AgentBridgeTransport.socket) {
+          return SocketWithRestFallbackAgentQueriesRemoteDataSource(
+            socketDelegate: relayWrapped,
+            restDelegate: ApiAgentQueriesRemoteDataSource(
+              dio: getIt<Dio>(),
+              bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+            ),
+          );
         }
-        return HybridAgentQueriesRemoteDataSource(
-          baseDelegate: base,
-          relayDelegate: relay,
-        );
+        return relayWrapped;
       },
     )
     ..registerLazySingleton<AgentSqlExecutionEligibilityPort>(

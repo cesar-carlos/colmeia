@@ -172,6 +172,47 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           },
         ),
       );
+    } on SocketDispatchNamespaceForbidden catch (error, stackTrace) {
+      // Server-side `SOCKET_CONSUMER_ROLES` does not include this
+      // JWT's role (or the namespace path is wrong). Refresh / re-
+      // login does NOT help — surface a hub-config message instead
+      // of "Sua sessao expirou" so the user does not get trapped in
+      // a logout loop. The upstream
+      // `SocketWithRestFallbackAgentQueriesRemoteDataSource` should
+      // intercept this BEFORE we reach here, but the mapping is
+      // kept in case the fallback is unwired (REST-only build still
+      // benefits from accurate copy).
+      AppLogger.warning(
+        'Agent SQL Socket dispatch namespace-forbidden (hub config)',
+        context: <String, Object?>{
+          'operation': 'executeAgentSql',
+          'agentId': request.trimmedAgentId,
+          AgentQueriesFailureContext.transportField: 'socket',
+          'role': error.role,
+          'namespace': error.namespace,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Failure<AgentSqlExecutionResult, AppFailure>(
+        AuthorizationFailure(
+          message: error.message,
+          userMessage:
+              'Servidor indisponivel para o seu perfil de acesso. '
+              'Contate o administrador (perfil "${error.role ?? '?'}" '
+              'nao autorizado em ${error.namespace ?? '/consumers'}).',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            'operation': 'executeAgentSql',
+            'agentId': request.trimmedAgentId,
+            AgentQueriesFailureContext.transportField: 'socket',
+            AgentQueriesFailureContext.transportCodeField: error.code,
+            'role': error.role,
+            'namespace': error.namespace,
+          },
+        ),
+      );
     } on SocketDispatchUnauthorized catch (error, stackTrace) {
       AppLogger.warning(
         'Agent SQL Socket dispatch unauthorized',

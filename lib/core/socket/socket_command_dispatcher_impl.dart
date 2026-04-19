@@ -146,6 +146,21 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     // StateError on purpose; this is the controlled exception to catch.
     // ignore: avoid_catching_errors
     on StateError catch (e) {
+      // Two terminal failures share `StateError` as the wire shape —
+      // disambiguate by the message marker the connection layer
+      // emits for namespace rejection. Without this distinction the
+      // upstream fallback datasource cannot tell "the JWT is bad"
+      // from "the hub policy excludes this role" and would not
+      // pivot to REST.
+      final message = e.message;
+      if (message.startsWith('Consumer socket namespace forbidden:')) {
+        throw SocketDispatchNamespaceForbidden(
+          message: message,
+          role: _extractMarker(message, 'role='),
+          namespace: _extractMarker(message, 'namespace='),
+          cause: e,
+        );
+      }
       throw SocketDispatchUnauthorized(
         message: 'Cannot connect to consumer socket: $e',
         cause: e,
@@ -637,6 +652,23 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       }
     }
     return _RpcErrorClass.transient;
+  }
+
+  /// Pulls a `key=value` token out of the `StateError.message` the
+  /// connection layer emits for namespace rejection, e.g.
+  /// `... role=client namespace=/consumers ...`. Returns `null` when
+  /// the marker is absent or unquoted weirdly so the caller can fall
+  /// back to the unparsed original string.
+  String? _extractMarker(String source, String key) {
+    final start = source.indexOf(key);
+    if (start < 0) {
+      return null;
+    }
+    final valueStart = start + key.length;
+    final remainder = source.substring(valueStart);
+    final endIndex = remainder.indexOf(' ');
+    final value = endIndex < 0 ? remainder : remainder.substring(0, endIndex);
+    return value.isEmpty ? null : value;
   }
 }
 

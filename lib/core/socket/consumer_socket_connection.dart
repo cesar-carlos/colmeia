@@ -172,6 +172,23 @@ class ConsumerSocketConnection {
             'Consumer socket unauthorized: ${outcome.reason}',
           );
 
+        case _ConnectNamespaceForbidden():
+          // Permanent: the hub's `SOCKET_CONSUMER_ROLES` does not
+          // include the JWT's role. Retrying / refreshing does not
+          // help — the upstream `SocketWithRestFallback…DataSource`
+          // pivots to REST permanently for the rest of the
+          // session. We surface a `StateError` here (same shape as
+          // the other terminal failures) carrying the namespace +
+          // role so the dispatcher's exception mapper can build a
+          // `SocketDispatchNamespaceForbidden` with the parsed bits.
+          _setState(const ConsumerSocketUnauthorized());
+          throw StateError(
+            'Consumer socket namespace forbidden: '
+            'role=${outcome.role ?? "<unknown>"} '
+            'namespace=${outcome.namespace ?? "<unknown>"} '
+            'message=${outcome.message}',
+          );
+
         case _ConnectTransientFailure():
           if (attempt >= _maxReconnectAttempts) {
             _setState(
@@ -287,6 +304,17 @@ class ConsumerSocketConnection {
         resolveError(_buildHandshakeAppErrorOutcome(raw));
       })
       ..onConnectError((err) async {
+        // Distinguish hub-side namespace policy rejection ("Role
+        // 'X' is not allowed to connect to /Y") from a real auth
+        // failure: refresh / re-login does NOT fix a server-side
+        // role allow-list, so we MUST NOT loop refreshing — emit
+        // a permanent terminal state with the right semantics so
+        // the upstream fallback (REST datasource) can take over.
+        final namespaceRejection = _tryParseNamespaceForbidden(err);
+        if (namespaceRejection != null) {
+          resolveError(namespaceRejection);
+          return;
+        }
         if (_isAuthFailure(err)) {
           try {
             final refreshed = await _tokenProvider.refreshAccessToken();
@@ -394,6 +422,51 @@ class ConsumerSocketConnection {
         message.contains('forbidden');
   }
 
+  /// Detects the hub's namespace-policy rejection that ships in the
+  /// `connect_error` payload as `{message: "Role 'X' is not allowed
+  /// to connect to /Y"}`. Returns a `_ConnectNamespaceForbidden` with
+  /// the parsed role/namespace so the loop can move to a permanent
+  /// terminal state, OR `null` when the payload does not look like a
+  /// namespace rejection (caller falls through to the generic auth /
+  /// transient handling).
+  _ConnectNamespaceForbidden? _tryParseNamespaceForbidden(Object? err) {
+    if (err == null) {
+      return null;
+    }
+    String? messageText;
+    if (err is Map) {
+      final candidate = err['message'];
+      if (candidate is String) {
+        messageText = candidate;
+      }
+    } else if (err is String) {
+      messageText = err;
+    } else {
+      messageText = err.toString();
+    }
+    if (messageText == null) {
+      return null;
+    }
+    // The hub uses this exact phrasing — see
+    // `plug_server` consumers namespace handler. Tolerant to
+    // surrounding whitespace / different quoting.
+    // Triple-quoted raw string so the inner `'` and `"` do not need
+    // escaping (a regular raw string can't contain its own delimiter).
+    final pattern = RegExp(
+      r'''role\s+['"](?<role>[^'"]+)['"]\s+is\s+not\s+allowed\s+to\s+connect\s+to\s+(?<ns>/?\S+)''',
+      caseSensitive: false,
+    );
+    final match = pattern.firstMatch(messageText);
+    if (match == null) {
+      return null;
+    }
+    return _ConnectNamespaceForbidden(
+      message: messageText,
+      role: match.namedGroup('role'),
+      namespace: match.namedGroup('ns'),
+    );
+  }
+
   void _setState(ConsumerSocketConnectionState newState) {
     if (_isDisposed) {
       return;
@@ -424,6 +497,21 @@ final class _ConnectSuccess extends _ConnectOutcome {
 final class _ConnectAuthFailure extends _ConnectOutcome {
   const _ConnectAuthFailure({required this.reason});
   final String reason;
+}
+
+/// Hub rejected the handshake because the JWT's `role` is not in
+/// `SOCKET_CONSUMER_ROLES`. Permanent until a server-side env edit
+/// + restart — refresh / re-login does NOT help.
+final class _ConnectNamespaceForbidden extends _ConnectOutcome {
+  const _ConnectNamespaceForbidden({
+    required this.message,
+    this.role,
+    this.namespace,
+  });
+
+  final String message;
+  final String? role;
+  final String? namespace;
 }
 
 final class _ConnectTransientFailure extends _ConnectOutcome {

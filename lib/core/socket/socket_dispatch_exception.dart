@@ -62,6 +62,38 @@ final class SocketDispatchUnauthorized extends SocketDispatchException {
   }) : super(code: 'unauthorized');
 }
 
+/// Hub rejected the handshake on `/consumers` because the JWT's
+/// `role` is **not present** in `SOCKET_CONSUMER_ROLES`. Distinct
+/// from [SocketDispatchUnauthorized] (which signals an actually
+/// invalid / expired token) — this one means the token is fine but
+/// the namespace policy on the server side excludes that role, so
+/// refresh / re-login does NOT fix it. Mostly seen during rollouts
+/// when the server-side env was not updated to include `client`
+/// alongside `user,admin`.
+///
+/// Dispatch consumers SHOULD treat this as a permanent server
+/// configuration error and either fall back to REST (see
+/// `SocketWithRestFallbackAgentQueriesRemoteDataSource`) or surface
+/// a hub-config user message instead of "Sua sessao expirou".
+final class SocketDispatchNamespaceForbidden
+    extends SocketDispatchException {
+  const SocketDispatchNamespaceForbidden({
+    required super.message,
+    this.role,
+    this.namespace,
+    super.cause,
+    super.stackTrace,
+  }) : super(code: 'namespace_forbidden');
+
+  /// Role from the JWT that the hub refused (e.g. `client`).
+  /// `null` when the upstream payload did not include it.
+  final String? role;
+
+  /// Namespace that emitted the rejection (e.g. `/consumers`).
+  /// `null` when not parseable from the upstream payload.
+  final String? namespace;
+}
+
 /// Server-emitted `app:error` mapped to a generic dispatch exception so the
 /// repository layer can decide how to translate it to an `AppFailure`. The
 /// `code` field carries the original server code (e.g. `AGENT_ACCESS_DENIED`,
