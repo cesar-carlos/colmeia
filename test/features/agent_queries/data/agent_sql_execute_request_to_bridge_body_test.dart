@@ -1,5 +1,7 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_outbound_compression.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -135,6 +137,79 @@ void main() {
       final relayBody = builder.build(request: withRelay, rpcId: 'rpc-r');
       check(relayBody.toString()).equals(baselineBody.toString());
       check(relayBody.containsKey('useRelay')).isFalse();
+    });
+
+    test('emits api_version by default (kColmeiaAgentApiVersion)', () {
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+      );
+      final body = builder.build(request: request, rpcId: 'rpc-api-default');
+      final command = body['command']! as Map<String, Object?>;
+      check(command['api_version']).equals(kColmeiaAgentApiVersion);
+    });
+
+    test('honors a custom api_version value', () {
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+        apiVersion: '2.8',
+      );
+      final body = builder.build(request: request, rpcId: 'rpc-api-custom');
+      final command = body['command']! as Map<String, Object?>;
+      check(command['api_version']).equals('2.8');
+    });
+
+    test('omits api_version when explicitly cleared', () {
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+        apiVersion: '',
+      );
+      final body = builder.build(request: request, rpcId: 'rpc-api-empty');
+      final command = body['command']! as Map<String, Object?>;
+      check(command.containsKey('api_version')).isFalse();
+    });
+
+    test('emits meta.outbound_compression when provided', () {
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+        outboundCompression: AgentOutboundCompression.gzip,
+      );
+      final body = builder.build(request: request, rpcId: 'rpc-meta-1');
+      final command = body['command']! as Map<String, Object?>;
+      final meta = command['meta']! as Map<String, Object?>;
+      check(meta['outbound_compression']).equals('gzip');
+    });
+
+    test('omits meta when outboundCompression is null', () {
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+      );
+      final body = builder.build(request: request, rpcId: 'rpc-meta-2');
+      final command = body['command']! as Map<String, Object?>;
+      check(command.containsKey('meta')).isFalse();
+    });
+
+    test('emits payloadFrameCompression at body level when provided', () {
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+        payloadFrameCompression: RelayPayloadFrameCompression.always,
+      );
+      final body = builder.build(request: request, rpcId: 'rpc-pfc-1');
+      check(body['payloadFrameCompression']).equals('always');
+    });
+
+    test('omits payloadFrameCompression when null', () {
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+      );
+      final body = builder.build(request: request, rpcId: 'rpc-pfc-2');
+      check(body.containsKey('payloadFrameCompression')).isFalse();
     });
   });
 }

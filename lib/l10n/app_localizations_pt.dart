@@ -1587,6 +1587,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Este CPF/CNPJ ja esta vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.';
 
   @override
+  String get clientAgentsErrorAgentProfileCasMismatch =>
+      'Outro dispositivo atualizou este agente. Recarregue a tela e reaplique suas alteracoes.';
+
+  @override
   String get agentSqlErrorAuthenticationFailed =>
       'A autenticacao para consultar este agente e invalida ou expirou.';
 
@@ -3660,6 +3664,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsErrorAgentDocumentConflict =>
       'Este CPF/CNPJ ja esta vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.';
+
+  @override
+  String get clientAgentsErrorAgentProfileCasMismatch =>
+      'Outro dispositivo atualizou este agente. Recarregue a tela e reaplique suas alteracoes.';
 
   @override
   String get agentSqlErrorAuthenticationFailed =>

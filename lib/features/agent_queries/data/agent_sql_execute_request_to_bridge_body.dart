@@ -37,14 +37,26 @@ class AgentSqlExecuteRequestToBridgeBody {
       'options': ?rpcOptions,
     };
 
+    final outboundCompression = request.outboundCompression?.wireValue;
+    final meta = outboundCompression == null
+        ? null
+        : <String, Object?>{'outbound_compression': outboundCompression};
+
+    final apiVersion = request.apiVersion.trim();
+    final payloadFrameCompression =
+        request.payloadFrameCompression?.wireValue;
+
     return <String, Object?>{
       'agentId': request.trimmedAgentId,
       'timeoutMs': ?request.bridgeTimeoutMs,
       'pagination': ?request.pagination?.toHttpBody(),
+      'payloadFrameCompression': ?payloadFrameCompression,
       'command': <String, Object?>{
         'jsonrpc': '2.0',
         'method': 'sql.execute',
         'id': rpcId,
+        if (apiVersion.isNotEmpty) 'api_version': apiVersion,
+        'meta': ?meta,
         'params': params,
       },
     };

@@ -11,6 +11,9 @@ String clientAgentsFailureUserMessage(
     if (code == ApiConflictErrorCode.agentDocumentConflict) {
       return l10n.clientAgentsErrorAgentDocumentConflict;
     }
+    if (code == ApiConflictErrorCode.agentProfileCasMismatch) {
+      return l10n.clientAgentsErrorAgentProfileCasMismatch;
+    }
   }
   final key = failure.context[ClientAgentsFailureUiKey.field] as String?;
   if (key == null) {

@@ -50,6 +50,13 @@ abstract final class AppDioClient {
     return dio;
   }
 
+  /// Header propagated by the hub when `HUB_INSTANCE_ID` is configured
+  /// (`plug_server/docs/client_agent_business_rules.md` §3.4). Captured
+  /// here purely for observability — sticky-session quirks become much
+  /// easier to debug when the log line tells you which replica answered
+  /// each call.
+  static const String _hubInstanceIdHeader = 'X-Hub-Instance-Id';
+
   static void _addLoggingInterceptor(Dio dio) {
     dio.interceptors.add(
       InterceptorsWrapper(
@@ -71,6 +78,7 @@ abstract final class AppDioClient {
               'method': response.requestOptions.method,
               'path': response.requestOptions.uri.path,
               'statusCode': response.statusCode,
+              'hubInstanceId': ?_extractHubInstanceId(response.headers.map),
             },
           );
           handler.next(response);
@@ -82,6 +90,9 @@ abstract final class AppDioClient {
               'method': error.requestOptions.method,
               'path': error.requestOptions.uri.path,
               'statusCode': error.response?.statusCode,
+              'hubInstanceId': ?_extractHubInstanceId(
+                error.response?.headers.map,
+              ),
             },
             error: error,
             stackTrace: error.stackTrace,
@@ -90,6 +101,24 @@ abstract final class AppDioClient {
         },
       ),
     );
+  }
+
+  static String? _extractHubInstanceId(Map<String, List<String>>? headers) {
+    if (headers == null) {
+      return null;
+    }
+    final lower = _hubInstanceIdHeader.toLowerCase();
+    for (final entry in headers.entries) {
+      if (entry.key.toLowerCase() == lower) {
+        for (final value in entry.value) {
+          final trimmed = value.trim();
+          if (trimmed.isNotEmpty) {
+            return trimmed;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   static Map<String, Object?>? _sanitizeQueryParameters(

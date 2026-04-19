@@ -300,6 +300,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       final remote = await _remoteDataSource.patchAgentProfile(
         agentId: trimmed,
         body: request.toWireJson(),
+        idempotencyKey: request.idempotencyKey,
       );
       await _localDataSource.saveCatalogAgentById(
         userId: userId,

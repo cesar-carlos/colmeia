@@ -2596,6 +2596,12 @@ abstract class AppLocalizations {
   /// **'This CNPJ/CPF is already linked to another agent in the catalog. To change the link, contact support.'**
   String get clientAgentsErrorAgentDocumentConflict;
 
+  /// No description provided for @clientAgentsErrorAgentProfileCasMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Another device updated this agent in the meantime. Reload the screen and reapply your changes.'**
+  String get clientAgentsErrorAgentProfileCasMismatch;
+
   /// No description provided for @agentSqlErrorAuthenticationFailed.
   ///
   /// In en, this message translates to:

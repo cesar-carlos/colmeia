@@ -1561,6 +1561,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This CNPJ/CPF is already linked to another agent in the catalog. To change the link, contact support.';
 
   @override
+  String get clientAgentsErrorAgentProfileCasMismatch =>
+      'Another device updated this agent in the meantime. Reload the screen and reapply your changes.';
+
+  @override
   String get agentSqlErrorAuthenticationFailed =>
       'Authentication is required to query this agent.';
 

@@ -67,9 +67,17 @@ abstract interface class ClientAgentsRemoteDataSource {
     required String token,
   });
 
+  /// `PATCH /api/v1/agents/{agentId}/profile` — partial profile update.
+  ///
+  /// [idempotencyKey] is forwarded as the `Idempotency-Key` HTTP header
+  /// (the contract preferred by the hub for safe retries — see
+  /// `plug_server/docs/api_rest_bridge.md` and Swagger). The same key
+  /// must be reused with the **same** body when retrying a request that
+  /// timed out client-side; reusing it with a different body yields 409.
   Future<AgentCatalogRecordDto> patchAgentProfile({
     required String agentId,
     required Map<String, Object?> body,
+    String? idempotencyKey,
   });
 
   /// `GET /client/me/agents/{agentId}/client-token` — returns the bearer token
@@ -291,10 +299,21 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   Future<AgentCatalogRecordDto> patchAgentProfile({
     required String agentId,
     required Map<String, Object?> body,
+    String? idempotencyKey,
   }) async {
+    final trimmedIdempotencyKey = idempotencyKey?.trim();
+    final hasHeader =
+        trimmedIdempotencyKey != null && trimmedIdempotencyKey.isNotEmpty;
     final response = await _dio.patch<Map<String, dynamic>>(
       AgentCatalogApiRoutes.profileByAgentId(agentId),
       data: body,
+      options: hasHeader
+          ? Options(
+              headers: <String, Object?>{
+                'Idempotency-Key': trimmedIdempotencyKey,
+              },
+            )
+          : null,
     );
     return _parseCatalogAgentBody(response.data ?? const <String, dynamic>{});
   }
@@ -641,6 +660,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   Future<AgentCatalogRecordDto> patchAgentProfile({
     required String agentId,
     required Map<String, Object?> body,
+    String? idempotencyKey,
   }) async {
     final index = _catalog.indexWhere((e) => e['agentId'] == agentId);
     if (index < 0) {
@@ -682,6 +702,29 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     }
 
     final current = Map<String, dynamic>.from(_catalog[index]);
+    final currentVersion = (current['profileVersion'] as num?)?.toInt() ?? 0;
+    final expectedVersion = (body['expectedProfileVersion'] as num?)?.toInt();
+    if (expectedVersion != null && expectedVersion != currentVersion) {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: AgentCatalogApiRoutes.profileByAgentId(agentId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: AgentCatalogApiRoutes.profileByAgentId(agentId),
+          ),
+          statusCode: 409,
+          data: <String, dynamic>{
+            'code': 'AGENT_PROFILE_CAS_MISMATCH',
+            'message': 'Profile version mismatch',
+            'expected': expectedVersion,
+            'current': currentVersion,
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+
     final now = DateTime.now().toIso8601String();
     final addressBody = body['address'];
     if (addressBody is Map<String, dynamic>) {
@@ -709,6 +752,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     put('observation');
     current['updatedAt'] = now;
     current['profileUpdatedAt'] = now;
+    current['profileVersion'] = currentVersion + 1;
     if (current['cnpjCpf'] != null) {
       final v = current['cnpjCpf']!.toString().replaceAll(RegExp(r'\D'), '');
       current['cnpjCpf'] = v.isEmpty ? null : v;

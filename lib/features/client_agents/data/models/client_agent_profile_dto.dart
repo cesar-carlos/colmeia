@@ -3,6 +3,33 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_sta
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 
+/// Server-side monotonic profile revision counter (`profileVersion`).
+///
+/// Required field on `ClientAccessibleAgent` and `AgentCatalogRecord` since
+/// the hub started exposing optimistic concurrency for agent profile writes.
+/// Older hub builds may still omit it — when missing or non-numeric, this
+/// helper returns `null` so the entity can decide to skip CAS rather than
+/// send `expectedProfileVersion: 0` (which behaves as "match a fresh
+/// profile" and would falsely succeed only on never-edited agents).
+int? _parseOptionalProfileVersionFromJson(Map<String, dynamic> json) {
+  final raw = json['profileVersion'] ?? json['profile_version'];
+  if (raw is int) {
+    return raw < 0 ? null : raw;
+  }
+  if (raw is num) {
+    final value = raw.toInt();
+    return value < 0 ? null : value;
+  }
+  if (raw is String) {
+    final parsed = int.tryParse(raw.trim());
+    if (parsed == null || parsed < 0) {
+      return null;
+    }
+    return parsed;
+  }
+  return null;
+}
+
 /// Server-side token presence flag exposed by `GET /client/me/agents` and
 /// `GET /client/me/agents/{id}` (`hasClientToken: boolean`). Returns `null`
 /// when the API omits the field — older hubs or list aliases that do not
@@ -71,6 +98,7 @@ class ClientAgentProfileDto {
     this.notes,
     this.observation,
     this.profileUpdatedAt,
+    this.profileVersion,
     this.isHubConnected,
     this.hasClientToken,
   });
@@ -103,6 +131,7 @@ class ClientAgentProfileDto {
       profileUpdatedAt: DateTime.tryParse(
         json['profileUpdatedAt'] as String? ?? '',
       ),
+      profileVersion: _parseOptionalProfileVersionFromJson(json),
       isHubConnected: _parseOptionalHubConnectedFromJson(json),
       hasClientToken: _parseOptionalHasClientTokenFromJson(json),
     );
@@ -124,6 +153,13 @@ class ClientAgentProfileDto {
   final String? notes;
   final String? observation;
   final DateTime? profileUpdatedAt;
+
+  /// Server-side monotonic profile revision counter — required field on
+  /// the current `ClientAccessibleAgent` / `AgentCatalogRecord` schema.
+  /// `null` is preserved for older hub builds and partial payloads so we
+  /// can omit `expectedProfileVersion` on PATCH instead of sending `0`,
+  /// which would behave like an unconditional CAS write.
+  final int? profileVersion;
 
   /// Null: hub did not send per-row presence; UI may fall back to cached ids.
   final bool? isHubConnected;
@@ -152,6 +188,7 @@ class ClientAgentProfileDto {
       notes: notes,
       observation: observation,
       profileUpdatedAt: profileUpdatedAt,
+      profileVersion: profileVersion,
       catalogStatus: AgentCatalogStatus.fromWireValue(status),
       connectionStatus: connectionStatus,
       createdAt: createdAt,
@@ -178,6 +215,7 @@ class ClientAgentProfileDto {
       'notes': notes,
       'observation': observation,
       'profileUpdatedAt': profileUpdatedAt?.toIso8601String(),
+      if (profileVersion != null) 'profileVersion': profileVersion,
       if (isHubConnected != null) 'isHubConnected': isHubConnected,
       if (hasClientToken != null) 'hasClientToken': hasClientToken,
     };

@@ -1,3 +1,4 @@
+import 'package:colmeia/core/di/injector_agent_meta.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/di/injector_auth.dart';
 import 'package:colmeia/core/di/injector_client_agents.dart';
@@ -22,6 +23,7 @@ Future<void> setupDependencies() async {
   registerInjectorUserContext(getIt);
   registerInjectorSocket(getIt);
   registerInjectorClientAgents(getIt);
+  registerInjectorAgentMeta(getIt);
   registerInjectorAgentQueries(getIt);
   registerInjectorOverview(getIt);
   registerInjectorPresentation(getIt);

@@ -614,6 +614,7 @@
   "clientAgentsErrorSaveClientAgentToken": "Nao foi possivel salvar o token do agente no servidor.",
   "clientAgentsErrorRemoveClientAgentToken": "Nao foi possivel remover o token do agente no servidor.",
   "clientAgentsErrorAgentDocumentConflict": "Este CPF/CNPJ ja esta vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.",
+  "clientAgentsErrorAgentProfileCasMismatch": "Outro dispositivo atualizou este agente. Recarregue a tela e reaplique suas alteracoes.",
   "agentSqlErrorAuthenticationFailed": "A autenticacao para consultar este agente e invalida ou expirou.",
   "agentSqlErrorPermissionDenied": "Voce nao tem permissao para consultar estes dados neste agente.",
   "agentSqlErrorTransportTimeout": "O agente demorou mais do que o esperado para responder. Tente novamente.",

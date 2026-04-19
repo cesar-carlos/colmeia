@@ -184,7 +184,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           ..off(RelayEventNames.rpcAccepted)
           ..off(RelayEventNames.rpcResponse)
           ..off(RelayEventNames.rpcChunk)
-          ..off(RelayEventNames.rpcComplete);
+          ..off(RelayEventNames.rpcComplete)
+          ..off(RelayEventNames.rpcStreamPullResponse);
       }
       // ConsumerSocketConnection.raw throws StateError when already torn
       // down; that's expected during dispose.
@@ -354,7 +355,89 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       ..on(RelayEventNames.rpcAccepted, _onAccepted)
       ..on(RelayEventNames.rpcResponse, _onResponseFrame)
       ..on(RelayEventNames.rpcChunk, _onChunkFrame)
-      ..on(RelayEventNames.rpcComplete, _onCompleteFrame);
+      ..on(RelayEventNames.rpcComplete, _onCompleteFrame)
+      ..on(RelayEventNames.rpcStreamPullResponse, _onStreamPullResponse);
+  }
+
+  /// JSON-only ack for `relay:rpc.stream.pull`. Carries either:
+  ///
+  /// - `success: true` + `windowSize` actually granted (may be smaller
+  ///   than what the dispatcher asked for) + a `rateLimit` snapshot;
+  /// - `success: false` + `error.code` (typically `RATE_LIMITED`) + the
+  ///   same `rateLimit` snapshot for diagnostics.
+  ///
+  /// On rejection we fail the streaming pending so the consumer learns
+  /// **immediately** that no more chunks are coming, instead of waiting
+  /// for the request timeout. The hub-supplied `Retry-After` hint
+  /// (`error.data.retry_after_ms`) is preserved so the caller can throttle.
+  void _onStreamPullResponse(Object? raw) {
+    final map = _toMap(raw);
+    if (map == null) {
+      return;
+    }
+    final clientRequestId = _resolveClientRequestIdForPull(map);
+    if (clientRequestId == null) {
+      return;
+    }
+    final pending = _pendingByClientId[clientRequestId];
+    if (pending is! _PendingStream) {
+      return;
+    }
+    final success = map['success'];
+    if (success is bool && !success) {
+      final error = _toMap(map['error']);
+      final code = error?['code']?.toString() ?? 'pull_rejected';
+      final message =
+          error?['message']?.toString() ??
+          'relay:rpc.stream.pull_response reported success=false';
+      _failPending(
+        clientRequestId,
+        RelayRequestRejected(
+          message: message,
+          serverCode: code,
+          conversationId: pending.conversationId,
+          clientRequestId: clientRequestId,
+        ),
+      );
+      return;
+    }
+    final granted = _toIntOrNull(map['windowSize']) ??
+        _toIntOrNull(map['window_size']);
+    if (granted != null && granted >= 0 && granted < pending.outstandingCredits) {
+      // Hub clamped the window: align the local counter so the next refill
+      // reflects what the server actually authorized.
+      pending.outstandingCredits = granted;
+    }
+  }
+
+  String? _resolveClientRequestIdForPull(Map<String, Object?> map) {
+    final clientRequestId =
+        map['clientRequestId']?.toString() ??
+        map['client_request_id']?.toString();
+    if (clientRequestId != null && clientRequestId.isNotEmpty) {
+      return clientRequestId;
+    }
+    final requestId = map['requestId']?.toString();
+    if (requestId != null && requestId.isNotEmpty) {
+      return _clientIdByRequestId[requestId];
+    }
+    return null;
+  }
+
+  int? _toIntOrNull(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    if (raw is int) {
+      return raw;
+    }
+    if (raw is num) {
+      return raw.toInt();
+    }
+    if (raw is String) {
+      return int.tryParse(raw.trim());
+    }
+    return null;
   }
 
   void _onAccepted(Object? raw) {

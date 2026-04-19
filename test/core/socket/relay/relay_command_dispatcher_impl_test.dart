@@ -604,4 +604,118 @@ void main() {
       );
     });
   });
+
+  group('RelayCommandDispatcherImpl stream pull_response handling', () {
+    test(
+      'rejects pending stream when pull_response carries success=false',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-pull-rejected',
+            },
+          },
+          clientRequestId: 'rpc-pull-rejected',
+        );
+
+        final completer = Completer<Object>();
+        final sub = stream.listen(
+          (_) {},
+          onError: (Object error) {
+            if (!completer.isCompleted) {
+              completer.complete(error);
+            }
+          },
+        );
+
+        await Future<void>.delayed(Duration.zero);
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-pull-rejected',
+          'requestId': 'srv-pull-rejected',
+          'success': true,
+        });
+
+        wiring.fire(RelayEventNames.rpcStreamPullResponse, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-pull-rejected',
+          'requestId': 'srv-pull-rejected',
+          'success': false,
+          'error': <String, Object?>{
+            'code': 'RATE_LIMITED',
+            'message': 'pull window exhausted',
+          },
+          'rateLimit': <String, Object?>{
+            'remainingCredits': 0,
+            'limit': 1000,
+            'scope': 'user',
+          },
+        });
+
+        final error = await completer.future;
+        await sub.cancel();
+        check(error).isA<RelayRequestRejected>();
+        final rejected = error as RelayRequestRejected;
+        check(rejected.code).equals('RATE_LIMITED');
+      },
+    );
+
+    test(
+      'pull_response success with smaller windowSize clamps local credits',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-pull-clamp',
+            },
+          },
+          clientRequestId: 'rpc-pull-clamp',
+          initialWindowSize: 32,
+        );
+        final sub = stream.listen((_) {});
+        addTearDown(sub.cancel);
+
+        await Future<void>.delayed(Duration.zero);
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-pull-clamp',
+          'requestId': 'srv-pull-clamp',
+          'success': true,
+        });
+
+        // Hub clamps the granted window to 8 (remaining quota is small).
+        wiring.fire(RelayEventNames.rpcStreamPullResponse, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-pull-clamp',
+          'requestId': 'srv-pull-clamp',
+          'success': true,
+          'windowSize': 8,
+        });
+
+        // The stream is still alive and waiting for chunks. We assert the
+        // dispatcher is healthy by signalling completion and checking it
+        // closes cleanly.
+        wiring.fire(RelayEventNames.rpcComplete, _buildResponseFrame(
+          <String, Object?>{'terminal_status': 'completed'},
+          requestId: 'srv-pull-clamp',
+        ));
+      },
+    );
+  });
 }

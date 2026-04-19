@@ -876,6 +876,7 @@
   "clientAgentsErrorSaveClientAgentToken": "Could not save the agent token on the server.",
   "clientAgentsErrorRemoveClientAgentToken": "Could not remove the agent token on the server.",
   "clientAgentsErrorAgentDocumentConflict": "This CNPJ/CPF is already linked to another agent in the catalog. To change the link, contact support.",
+  "clientAgentsErrorAgentProfileCasMismatch": "Another device updated this agent in the meantime. Reload the screen and reapply your changes.",
   "agentSqlErrorAuthenticationFailed": "Authentication is required to query this agent.",
   "agentSqlErrorPermissionDenied": "You do not have permission to query this data on this agent.",
   "agentSqlErrorTransportTimeout": "The agent took too long to respond. Please try again.",

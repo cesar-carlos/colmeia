@@ -149,6 +149,89 @@ void main() {
       check(failure).isA<NetworkFailure>();
       check(failure.displayMessage).equals('Some other conflict');
     });
+
+    test(
+      'should map 409 AGENT_PROFILE_CAS_MISMATCH to validation failure',
+      () {
+        final failure = mapToAppFailure(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/v1/agents/x/profile'),
+            response: Response<Map<String, dynamic>>(
+              requestOptions: RequestOptions(path: '/api/v1/agents/x/profile'),
+              statusCode: 409,
+              data: <String, dynamic>{
+                'code': 'AGENT_PROFILE_CAS_MISMATCH',
+                'message': 'Profile version mismatch',
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        check(failure).isA<ValidationFailure>();
+        check(failure.context['apiErrorCode']).equals(
+          'AGENT_PROFILE_CAS_MISMATCH',
+        );
+      },
+    );
+
+    test('should propagate Retry-After header (delta seconds) on 429', () {
+      final failure = mapToAppFailure(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(
+              path: '/api/v1/agents/commands',
+            ),
+            statusCode: 429,
+            headers: Headers.fromMap(<String, List<String>>{
+              'retry-after': <String>['42'],
+            }),
+            data: <String, dynamic>{'message': 'rate limited'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      check(failure).isA<NetworkFailure>();
+      check((failure as NetworkFailure).retryAfter).equals(
+        const Duration(seconds: 42),
+      );
+    });
+
+    test(
+      'should propagate retry_after_ms from JSON-RPC error.data',
+      () {
+        final failure = mapToAppFailure(
+          DioException(
+            requestOptions: RequestOptions(
+              path: '/api/v1/agents/commands',
+            ),
+            response: Response<Map<String, dynamic>>(
+              requestOptions: RequestOptions(
+                path: '/api/v1/agents/commands',
+              ),
+              statusCode: 503,
+              data: <String, dynamic>{
+                'error': <String, dynamic>{
+                  'code': -32013,
+                  'message': 'rate limited',
+                  'data': <String, dynamic>{
+                    'retry_after_ms': 1500,
+                  },
+                },
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        check(failure).isA<NetworkFailure>();
+        check((failure as NetworkFailure).retryAfter).equals(
+          const Duration(milliseconds: 1500),
+        );
+      },
+    );
   });
 }
 

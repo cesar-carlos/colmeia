@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:colmeia/core/value_objects/value_object_validation_exception.dart';
 import 'package:dio/dio.dart';
 
@@ -82,6 +84,12 @@ bool isDioUnauthorizedOrForbidden(DioException error) {
 /// Wire-level API error `code` values mapped by [mapToAppFailure] for HTTP 409.
 abstract final class ApiConflictErrorCode {
   static const String agentDocumentConflict = 'AGENT_DOCUMENT_CONFLICT';
+
+  /// Agent profile CAS mismatch — `expectedProfileVersion` did not match
+  /// the current server `profileVersion`, OR the same `Idempotency-Key`
+  /// was reused with a different body. UI should reload the agent and
+  /// ask the user to retry on top of the fresh data.
+  static const String agentProfileCasMismatch = 'AGENT_PROFILE_CAS_MISMATCH';
 }
 
 /// Context keys for conflict and API error mapping.
@@ -107,7 +115,16 @@ final class NetworkFailure extends AppFailure {
     super.stackTrace,
     super.context,
     super.isTransient = true,
+    this.retryAfter,
   });
+
+  /// Hint extracted from the `Retry-After` HTTP header (or its socket
+  /// equivalents `error.data.retry_after_ms` / `reset_at`) propagated by
+  /// the hub when a request is rate-limited. Callers SHOULD surface this
+  /// as a wait period to the user before allowing manual retry.
+  ///
+  /// `null` when the response did not carry a hint.
+  final Duration? retryAfter;
 }
 
 final class RpcFailure extends AppFailure {
@@ -254,6 +271,7 @@ AppFailure mapToAppFailure(
       error,
       fallbackUserMessage: fallbackUserMessage,
     );
+    final retryAfter = _extractRetryAfterFromDio(error);
     if (statusCode == 401) {
       return SessionFailure(
         message: fallbackMessage ?? 'Unauthorized request',
@@ -308,11 +326,25 @@ AppFailure mapToAppFailure(
           },
         );
       }
+      if (apiCode == ApiConflictErrorCode.agentProfileCasMismatch) {
+        return ValidationFailure(
+          message: 'Agent profile CAS mismatch',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            ...context,
+            'httpStatusCode': statusCode,
+            ApiErrorContext.apiErrorCode:
+                ApiConflictErrorCode.agentProfileCasMismatch,
+          },
+        );
+      }
       return NetworkFailure(
         message: fallbackMessage ?? 'Conflict request',
         userMessage: resolvedUserMessage,
         cause: error,
         stackTrace: stackTrace,
+        retryAfter: retryAfter,
         context: <String, Object?>{
           ...context,
           'httpStatusCode': statusCode,
@@ -322,6 +354,7 @@ AppFailure mapToAppFailure(
     return NetworkFailure(
       message: fallbackMessage ?? 'Network request failed',
       userMessage: resolvedUserMessage,
+      retryAfter: retryAfter,
       cause: error,
       stackTrace: stackTrace,
       context: context,
@@ -378,6 +411,127 @@ String? _extractApiErrorCode(Object? responseData) {
     responseData,
     const <String>['code', 'errorCode', 'failure_code'],
   );
+}
+
+/// Resolves the `Retry-After` hint for a [DioException].
+///
+/// Inspects, in order:
+///
+/// 1. The `Retry-After` HTTP header (RFC 7231 — either delta-seconds or
+///    HTTP-date).
+/// 2. JSON-RPC `error.data.retry_after_ms` propagated by the hub for the
+///    `-32013` rate-limit family (e.g. `client_token.getPolicy`).
+/// 3. JSON-RPC `error.data.reset_at` (HTTP-date or epoch seconds).
+///
+/// Returns `null` when the response did not carry a hint.
+Duration? _extractRetryAfterFromDio(DioException error) {
+  final headerValue = _firstHeaderValue(
+    error.response?.headers.map,
+    'retry-after',
+  );
+  final headerHint = _parseRetryAfterHeader(headerValue);
+  if (headerHint != null) {
+    return headerHint;
+  }
+  final responseData = error.response?.data;
+  if (responseData is Map) {
+    final errorBody = responseData['error'];
+    if (errorBody is Map) {
+      final data = errorBody['data'];
+      if (data is Map) {
+        final ms = data['retry_after_ms'] ?? data['retryAfterMs'];
+        final fromMs = _parseDurationFromMillis(ms);
+        if (fromMs != null) {
+          return fromMs;
+        }
+        final resetAt = data['reset_at'] ?? data['resetAt'];
+        final fromReset = _parseRetryAfterHeader(resetAt?.toString());
+        if (fromReset != null) {
+          return fromReset;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+String? _firstHeaderValue(
+  Map<String, List<String>>? headers,
+  String name,
+) {
+  if (headers == null) {
+    return null;
+  }
+  final lower = name.toLowerCase();
+  for (final entry in headers.entries) {
+    if (entry.key.toLowerCase() == lower) {
+      for (final value in entry.value) {
+        final trimmed = value.trim();
+        if (trimmed.isNotEmpty) {
+          return trimmed;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+Duration? _parseRetryAfterHeader(String? raw) {
+  if (raw == null) {
+    return null;
+  }
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  final asInt = int.tryParse(trimmed);
+  if (asInt != null) {
+    if (asInt <= 0) {
+      return Duration.zero;
+    }
+    return Duration(seconds: asInt);
+  }
+  final asDate = DateTime.tryParse(trimmed) ?? _tryParseHttpDate(trimmed);
+  if (asDate != null) {
+    final delta = asDate.toUtc().difference(DateTime.now().toUtc());
+    if (delta.isNegative) {
+      return Duration.zero;
+    }
+    return delta;
+  }
+  return null;
+}
+
+Duration? _parseDurationFromMillis(Object? raw) {
+  if (raw == null) {
+    return null;
+  }
+  if (raw is num) {
+    final ms = raw.toInt();
+    if (ms < 0) {
+      return Duration.zero;
+    }
+    return Duration(milliseconds: ms);
+  }
+  if (raw is String) {
+    final parsed = int.tryParse(raw.trim());
+    if (parsed == null) {
+      return null;
+    }
+    if (parsed < 0) {
+      return Duration.zero;
+    }
+    return Duration(milliseconds: parsed);
+  }
+  return null;
+}
+
+DateTime? _tryParseHttpDate(String value) {
+  try {
+    return HttpDate.parse(value);
+  } on Object {
+    return null;
+  }
 }
 
 String? _extractApiErrorMessage(Object? responseData) {

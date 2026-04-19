@@ -66,11 +66,18 @@ final class SocketDispatchUnauthorized extends SocketDispatchException {
 /// repository layer can decide how to translate it to an `AppFailure`. The
 /// `code` field carries the original server code (e.g. `AGENT_ACCESS_DENIED`,
 /// `SERVICE_UNAVAILABLE`, `RATE_LIMITED`).
+///
+/// [retryAfter] is filled when the hub propagates a wait hint (`retryAfterMs`
+/// in `SERVICE_UNAVAILABLE` payloads, or `error.data.retry_after_ms` for
+/// rate-limited RPC errors). Callers SHOULD respect it before retrying.
 final class SocketDispatchAppError extends SocketDispatchException {
   const SocketDispatchAppError({
     required super.message,
     required String serverCode,
+    this.retryAfter,
   }) : super(code: serverCode);
+
+  final Duration? retryAfter;
 }
 
 /// Caller (e.g. a `dispose()`-ing controller, or a screen leaving the

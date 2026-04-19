@@ -15,6 +15,13 @@ import 'package:colmeia/features/client_agents/presentation/localization/client_
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
+
+/// Process-wide UUID generator used as the default `Idempotency-Key`
+/// source for profile saves. The constructor allows tests to inject a
+/// deterministic generator instead.
+const Uuid _defaultUuid = Uuid();
+String _defaultIdempotencyKeyGenerator() => _defaultUuid.v4();
 
 /// Visible state of the per-(client, agent) bearer token stored on the
 /// server. The detail page renders different copy/chips for each branch.
@@ -38,12 +45,15 @@ class ClientAgentDetailController extends ChangeNotifier {
     required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
     required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
     required RemoveClientAgentTokenUseCase removeClientAgentTokenUseCase,
+    String Function()? idempotencyKeyGenerator,
   }) : _authController = authController,
        _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
        _updateClientAgentProfileUseCase = updateClientAgentProfileUseCase,
        _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
        _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase,
-       _removeClientAgentTokenUseCase = removeClientAgentTokenUseCase;
+       _removeClientAgentTokenUseCase = removeClientAgentTokenUseCase,
+       _idempotencyKeyGenerator =
+           idempotencyKeyGenerator ?? _defaultIdempotencyKeyGenerator;
 
   final AuthController _authController;
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;
@@ -51,6 +61,11 @@ class ClientAgentDetailController extends ChangeNotifier {
   final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
   final SaveClientAgentTokenUseCase _saveClientAgentTokenUseCase;
   final RemoveClientAgentTokenUseCase _removeClientAgentTokenUseCase;
+
+  /// Source of the per-save UUID forwarded as `Idempotency-Key`. Tests
+  /// inject a deterministic generator so the header value can be asserted
+  /// against an expected map.
+  final String Function() _idempotencyKeyGenerator;
 
   AppLocalizations? _l10n;
 
@@ -428,6 +443,17 @@ class ClientAgentDetailController extends ChangeNotifier {
     }
 
     final current = _agent;
+    // CAS token (`expectedProfileVersion`) is the **monotonic integer**
+    // counter served by the hub on `profileVersion`. We send it only when
+    // the entity carries a known value — older hub builds may omit the
+    // field, in which case we let the PATCH proceed without a version
+    // guard rather than send `0` (which would behave as "match a fresh
+    // profile" and silently overwrite genuine concurrent edits).
+    //
+    // `idempotencyKey` is a per-save UUID that the datasource turns into
+    // the `Idempotency-Key` HTTP header; the same key is used across
+    // automatic retries of the same logical save so the hub returns the
+    // original write outcome instead of duplicating the revision.
     final request = AgentProfileUpdateRequest(
       name: trimmedName,
       tradeName: tradeName.trim().isEmpty ? null : tradeName.trim(),
@@ -445,7 +471,8 @@ class ClientAgentDetailController extends ChangeNotifier {
       ),
       notes: notes.trim().isEmpty ? null : notes.trim(),
       observation: observation.trim().isEmpty ? null : observation.trim(),
-      expectedProfileVersion: current?.profileUpdatedAt,
+      expectedProfileVersion: current?.profileVersion,
+      idempotencyKey: _idempotencyKeyGenerator(),
     );
 
     try {
