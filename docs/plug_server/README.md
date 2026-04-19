@@ -9,9 +9,13 @@ não há mudança de código de servidor pendente.
 
 | Documento | Escopo | Quando ler |
 | --------- | ------ | ---------- |
-| [`socket_channel_server_setup.md`](./socket_channel_server_setup.md) | Canal Socket `/consumers` (PR-A → PR-M do `colmeia`): role allowlist, transports, PayloadFrame, relay, presença, validação via smoke e2e. | **Antes** de ligar `AGENT_BRIDGE_TRANSPORT=socket` em qualquer build (interna, homolog, prod). |
-| [`socket_enable_handoff_checklist.md`](./socket_enable_handoff_checklist.md) | Checklist passo-a-passo para o admin do servidor habilitar socket: nginx sticky session, envs, restart, validação. | Primeira vez que o servidor for configurado para socket. |
-| [`socket_smoke_2026_04_19_action_items.md`](./socket_smoke_2026_04_19_action_items.md) | **Achados específicos do smoke test de 2026-04-19**: 3 ações pontuais com sintomas literais do log + comandos de verificação. | **Agora** — para resolver os bloqueios atuais e finalizar o rollout. |
+| [`socket_smoke_2026_04_19_action_items.md`](./socket_smoke_2026_04_19_action_items.md) | **Achados do smoke test de 2026-04-19**: 3 ações pontuais com sintomas literais do log + comandos de verificação + critério de aceitação. | **Agora** — para resolver os bloqueios atuais e finalizar o rollout do socket. |
+
+> **Histórico**: documentos genéricos anteriores
+> (`socket_channel_server_setup.md`, `socket_enable_handoff_checklist.md`)
+> foram removidos em favor do snapshot focado acima. Histórico
+> completo no `git log` se precisar consultar a referência técnica
+> antiga (commits `36cdaf1` e `891ee4f`).
 
 ## Repositório do servidor
 

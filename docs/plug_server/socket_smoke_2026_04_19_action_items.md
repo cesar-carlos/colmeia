@@ -10,14 +10,10 @@
 > (fallback REST funcionou), mas três ajustes ficaram pendentes do
 > lado do servidor.
 >
-> **Documentos relacionados**:
-> - [`socket_enable_handoff_checklist.md`](./socket_enable_handoff_checklist.md) — checklist completo
->   original (passo a passo de tudo que precisa ser ligado).
-> - [`socket_channel_server_setup.md`](./socket_channel_server_setup.md) — referência técnica
->   detalhada das envs e endpoints.
->
 > Este documento é **focado nos achados de hoje** — leitura rápida,
 > 3 ações concretas, comando de verificação para cada uma.
+> Self-contained: as 3 ações + verificações + mensagem de handoff
+> estão todas aqui, sem necessidade de cross-reference.
 
 ---
 
