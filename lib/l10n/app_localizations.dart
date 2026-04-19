@@ -2134,6 +2134,12 @@ abstract class AppLocalizations {
   /// **'This agent does not implement agent.getProfile via RPC.'**
   String get clientAgentDetailRefreshFromAgentUnsupported;
 
+  /// No description provided for @clientAgentDetailRetryAfterCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'The server asked us to wait. Try again in {seconds}s.'**
+  String clientAgentDetailRetryAfterCountdown(int seconds);
+
   /// No description provided for @clientAgentDetailSectionPolicy.
   ///
   /// In en, this message translates to:

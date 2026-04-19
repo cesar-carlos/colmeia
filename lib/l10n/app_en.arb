@@ -752,6 +752,12 @@
   "clientAgentDetailRefreshFromAgent": "Refresh from agent",
   "clientAgentDetailRefreshFromAgentSuccess": "Profile refreshed straight from the agent.",
   "clientAgentDetailRefreshFromAgentUnsupported": "This agent does not implement agent.getProfile via RPC.",
+  "clientAgentDetailRetryAfterCountdown": "The server asked us to wait. Try again in {seconds}s.",
+  "@clientAgentDetailRetryAfterCountdown": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
   "clientAgentDetailSectionPolicy": "Permissions of this token",
   "clientAgentDetailSectionPolicySubtitle": "Resolved by the agent for the bearer token currently stored on the server. If the policy changes after a revocation or scope edit, refresh the screen.",
   "clientAgentDetailPolicyFullAccess": "Full access (all tables, views and permissions).",

@@ -100,38 +100,56 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                   title: l10n.clientAgentDetailTitle,
                   subtitle: l10n.clientAgentDetailSubtitle,
                   footer: showRefreshFooter
-                      ? Wrap(
-                          spacing: tokens.gapSm,
-                          runSpacing: tokens.gapSm,
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: <Widget>[
-                            AppSecondaryButton(
-                              label: l10n.clientAgentsRefresh,
-                              icon: const Icon(Icons.refresh_rounded),
-                              isLoading: controller.isRefreshing,
-                              onPressed:
-                                  controller.isRefreshing ||
-                                      (controller.isLoading && agent == null)
-                                  ? null
-                                  : () => unawaited(
-                                      _controller.refresh(widget.agentId),
-                                    ),
-                            ),
-                            if (agent != null &&
-                                controller.agentSupportsRpcMethod(
-                                  'agent.getProfile',
-                                ))
-                              AppSecondaryButton(
-                                label: l10n.clientAgentDetailRefreshFromAgent,
-                                icon: const Icon(Icons.cloud_sync_rounded),
-                                isLoading: controller.isRefreshingFromAgent,
-                                onPressed: controller.isRefreshingFromAgent
-                                    ? null
-                                    : () => unawaited(
-                                        _controller.refreshFromAgent(
-                                          agentId: widget.agentId,
+                            Wrap(
+                              spacing: tokens.gapSm,
+                              runSpacing: tokens.gapSm,
+                              children: <Widget>[
+                                AppSecondaryButton(
+                                  label: l10n.clientAgentsRefresh,
+                                  icon: const Icon(Icons.refresh_rounded),
+                                  isLoading: controller.isRefreshing,
+                                  onPressed:
+                                      controller.isRefreshing ||
+                                          (controller.isLoading &&
+                                              agent == null)
+                                      ? null
+                                      : () => unawaited(
+                                          _controller.refresh(widget.agentId),
                                         ),
-                                      ),
-                              ),
+                                ),
+                                if (agent != null &&
+                                    controller.agentSupportsRpcMethod(
+                                      'agent.getProfile',
+                                    ))
+                                  AppSecondaryButton(
+                                    label: controller.isOnRetryCooldown
+                                        ? l10n
+                                              .clientAgentDetailRetryAfterCountdown(
+                                                controller
+                                                        .retryAfterGate
+                                                        .remaining
+                                                        ?.inSeconds ??
+                                                    0,
+                                              )
+                                        : l10n
+                                              .clientAgentDetailRefreshFromAgent,
+                                    icon: const Icon(Icons.cloud_sync_rounded),
+                                    isLoading: controller.isRefreshingFromAgent,
+                                    onPressed:
+                                        controller.isRefreshingFromAgent ||
+                                            controller.isOnRetryCooldown
+                                        ? null
+                                        : () => unawaited(
+                                            _controller.refreshFromAgent(
+                                              agentId: widget.agentId,
+                                            ),
+                                          ),
+                                  ),
+                              ],
+                            ),
                           ],
                         )
                       : null,
@@ -317,10 +335,14 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
             runSpacing: widget.tokens.gapSm,
             children: <Widget>[
               AppPrimaryButton(
-                label: widget.l10n.clientAgentDetailServerTokenSave,
+                label: c.isOnRetryCooldown
+                    ? widget.l10n.clientAgentDetailRetryAfterCountdown(
+                        c.retryAfterGate.remaining?.inSeconds ?? 0,
+                      )
+                    : widget.l10n.clientAgentDetailServerTokenSave,
                 icon: const Icon(Icons.cloud_upload_rounded),
                 isLoading: isMutating,
-                onPressed: isMutating
+                onPressed: isMutating || c.isOnRetryCooldown
                     ? null
                     : () => unawaited(
                         c.saveClientAgentToken(
@@ -332,7 +354,7 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
               AppSecondaryButton(
                 label: widget.l10n.clientAgentDetailServerTokenRemove,
                 icon: const Icon(Icons.delete_outline_rounded),
-                onPressed: isMutating
+                onPressed: isMutating || c.isOnRetryCooldown
                     ? null
                     : () => unawaited(
                         c.removeClientAgentToken(agentId: widget.agentId),

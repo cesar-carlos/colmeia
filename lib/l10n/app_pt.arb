@@ -534,6 +534,7 @@
   "clientAgentDetailRefreshFromAgent": "Recarregar do agente",
   "clientAgentDetailRefreshFromAgentSuccess": "Perfil recarregado direto do agente.",
   "clientAgentDetailRefreshFromAgentUnsupported": "Este agente nao implementa agent.getProfile via RPC.",
+  "clientAgentDetailRetryAfterCountdown": "O servidor pediu para aguardar. Tente novamente em {seconds}s.",
   "clientAgentDetailSectionPolicy": "Permissoes deste token",
   "clientAgentDetailSectionPolicySubtitle": "Resolvidas pelo agente para o token atualmente salvo no servidor. Se a politica mudar apos revogacao ou alteracao de escopo, recarregue a tela.",
   "clientAgentDetailPolicyFullAccess": "Acesso total (todas as tabelas, views e permissoes).",

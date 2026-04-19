@@ -413,6 +413,19 @@ String? _extractApiErrorCode(Object? responseData) {
   );
 }
 
+/// Returns the `Retry-After` hint carried by [failure], or `null` when the
+/// failure does not advertise one.
+///
+/// Surfaced as a shared helper so controllers can apply a consistent
+/// "wait before allowing manual retry" UX across REST, socket and relay
+/// channels — see `RetryAfterGateMixin` in `core/state/`.
+Duration? appFailureRetryAfter(AppFailure failure) {
+  if (failure is NetworkFailure) {
+    return failure.retryAfter;
+  }
+  return null;
+}
+
 /// Resolves the `Retry-After` hint for a [DioException].
 ///
 /// Inspects, in order:

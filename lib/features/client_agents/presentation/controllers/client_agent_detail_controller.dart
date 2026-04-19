@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/formatters/agent_document_digits.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
@@ -55,6 +57,7 @@ class ClientAgentDetailController extends ChangeNotifier {
     required LoadClientTokenPolicyUseCase loadClientTokenPolicyUseCase,
     required DiscoverAgentRpcMethodsUseCase discoverAgentRpcMethodsUseCase,
     String Function()? idempotencyKeyGenerator,
+    RetryAfterGate? retryAfterGate,
   }) : _authController = authController,
        _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
        _updateClientAgentProfileUseCase = updateClientAgentProfileUseCase,
@@ -65,7 +68,13 @@ class ClientAgentDetailController extends ChangeNotifier {
        _loadClientTokenPolicyUseCase = loadClientTokenPolicyUseCase,
        _discoverAgentRpcMethodsUseCase = discoverAgentRpcMethodsUseCase,
        _idempotencyKeyGenerator =
-           idempotencyKeyGenerator ?? _defaultIdempotencyKeyGenerator;
+           idempotencyKeyGenerator ?? _defaultIdempotencyKeyGenerator,
+       _retryAfterGate = retryAfterGate ?? RetryAfterGate() {
+    // Re-publish gate ticks (countdown updates + window expired) so any
+    // listener of this controller — typically the detail page — reacts
+    // to the cooldown without subscribing to the gate directly.
+    _retryAfterGate.addListener(_notifyListenersIfAlive);
+  }
 
   final AuthController _authController;
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;
@@ -81,6 +90,13 @@ class ClientAgentDetailController extends ChangeNotifier {
   /// inject a deterministic generator so the header value can be asserted
   /// against an expected map.
   final String Function() _idempotencyKeyGenerator;
+
+  /// Cool-down gate fed by `Retry-After` hints surfaced by the bridge
+  /// (HTTP header, JSON-RPC `error.data.retry_after_ms`, socket
+  /// `app:error` overload payloads). Shared across every operation in
+  /// this controller because hub quotas are per-user / per-socket — a
+  /// rate-limit on save token throttles refresh-from-agent too.
+  final RetryAfterGate _retryAfterGate;
 
   AppLocalizations? _l10n;
 
@@ -276,7 +292,7 @@ class ClientAgentDetailController extends ChangeNotifier {
           _clientTokenPolicyUnsupported = false;
           _clientTokenPolicyError = null;
         }
-        _errorMessage = clientAgentsFailureUserMessage(failure, _s);
+        _errorMessage = _consumeFailure(failure);
         AppLogger.warning(
           'Client agent detail load failed',
           context: <String, Object?>{
@@ -343,7 +359,7 @@ class ClientAgentDetailController extends ChangeNotifier {
             : ClientAgentTokenStatus.missing;
       } else {
         final failure = result.exceptionOrNull()!;
-        _clientTokenError = clientAgentsFailureUserMessage(failure, _s);
+        _clientTokenError = _consumeFailure(failure);
         AppLogger.warning(
           'Client agent token load failed',
           context: <String, Object?>{
@@ -399,7 +415,7 @@ class ClientAgentDetailController extends ChangeNotifier {
         _refreshLoadedAgentTokenFlag(hasToken: snapshot.hasToken);
       } else {
         final failure = result.exceptionOrNull()!;
-        _clientTokenError = clientAgentsFailureUserMessage(failure, _s);
+        _clientTokenError = _consumeFailure(failure);
         AppLogger.warning(
           'Client agent token save failed',
           context: <String, Object?>{
@@ -443,7 +459,7 @@ class ClientAgentDetailController extends ChangeNotifier {
         _refreshLoadedAgentTokenFlag(hasToken: false);
       } else {
         final failure = result.exceptionOrNull()!;
-        _clientTokenError = clientAgentsFailureUserMessage(failure, _s);
+        _clientTokenError = _consumeFailure(failure);
         AppLogger.warning(
           'Client agent token remove failed',
           context: <String, Object?>{
@@ -571,7 +587,7 @@ class ClientAgentDetailController extends ChangeNotifier {
         _profileSaveSuccess = _s.clientAgentDetailProfileSaved;
       } else {
         final failure = result.exceptionOrNull()!;
-        _profileSaveError = clientAgentsFailureUserMessage(failure, _s);
+        _profileSaveError = _consumeFailure(failure);
         AppLogger.warning(
           'Client agent profile update failed',
           context: <String, Object?>{
@@ -664,8 +680,7 @@ class ClientAgentDetailController extends ChangeNotifier {
             _s.clientAgentDetailRefreshFromAgentSuccess;
       } else {
         final failure = result.exceptionOrNull()!;
-        _refreshFromAgentError =
-            clientAgentsFailureUserMessage(failure, _s);
+        _refreshFromAgentError = _consumeFailure(failure);
         AppLogger.warning(
           'agent.getProfile refresh failed',
           context: <String, Object?>{
@@ -737,8 +752,7 @@ class ClientAgentDetailController extends ChangeNotifier {
         _clientTokenPolicyUnsupported = !snapshot.supported;
       } else {
         final failure = result.exceptionOrNull()!;
-        _clientTokenPolicyError =
-            clientAgentsFailureUserMessage(failure, _s);
+        _clientTokenPolicyError = _consumeFailure(failure);
         AppLogger.warning(
           'client_token.getPolicy failed',
           context: <String, Object?>{
@@ -767,6 +781,29 @@ class ClientAgentDetailController extends ChangeNotifier {
     _notifyListenersIfAlive();
   }
 
+  /// Cool-down gate exposed read-only so the page can render a
+  /// countdown label and disable buttons while the window is closed.
+  RetryAfterGate get retryAfterGate => _retryAfterGate;
+
+  /// Convenience for "is the controller currently in a server-asked
+  /// cool-down?". Pages typically combine this with operation-specific
+  /// flags (e.g. `isSavingClientToken`).
+  bool get isOnRetryCooldown => !_retryAfterGate.isOpen;
+
+  /// Centralised failure handler for this controller.
+  ///
+  /// 1. Returns the localized message the UI should display.
+  /// 2. Arms the retry-after gate when the failure carries a
+  ///    `Retry-After` hint, so subsequent button taps are throttled
+  ///    automatically without each call site repeating the wiring.
+  String _consumeFailure(AppFailure failure) {
+    final retryAfter = appFailureRetryAfter(failure);
+    if (retryAfter != null) {
+      _retryAfterGate.arm(retryAfter);
+    }
+    return clientAgentsFailureUserMessage(failure, _s);
+  }
+
   void _notifyListenersIfAlive() {
     if (_disposed) {
       return;
@@ -777,6 +814,9 @@ class ClientAgentDetailController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _retryAfterGate
+      ..removeListener(_notifyListenersIfAlive)
+      ..dispose();
     super.dispose();
   }
 }

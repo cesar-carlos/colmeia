@@ -1301,6 +1301,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Este agente nao implementa agent.getProfile via RPC.';
 
   @override
+  String clientAgentDetailRetryAfterCountdown(int seconds) {
+    return 'O servidor pediu para aguardar. Tente novamente em ${seconds}s.';
+  }
+
+  @override
   String get clientAgentDetailSectionPolicy => 'Permissoes deste token';
 
   @override
@@ -3442,6 +3447,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentDetailRefreshFromAgentUnsupported =>
       'Este agente nao implementa agent.getProfile via RPC.';
+
+  @override
+  String clientAgentDetailRetryAfterCountdown(int seconds) {
+    return 'O servidor pediu para aguardar. Tente novamente em ${seconds}s.';
+  }
 
   @override
   String get clientAgentDetailSectionPolicy => 'Permissoes deste token';

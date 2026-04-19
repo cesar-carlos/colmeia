@@ -1,4 +1,5 @@
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
@@ -382,6 +383,98 @@ void main() {
             clientToken: any(named: 'clientToken'),
           ),
         );
+      },
+    );
+  });
+
+  group('Retry-After integration', () {
+    test(
+      'failure carrying NetworkFailure.retryAfter arms the cool-down gate',
+      () async {
+        when(
+          () => saveToken(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+            clientToken: any(named: 'clientToken'),
+          ),
+        ).thenAnswer(
+          (_) async => const Failure<ClientAgentTokenSnapshot, AppFailure>(
+            NetworkFailure(
+              message: 'rate limited',
+              userMessage: 'devagar',
+              retryAfter: Duration(seconds: 7),
+            ),
+          ),
+        );
+
+        expect(controller.isOnRetryCooldown, isFalse);
+
+        await controller.saveClientAgentToken(agentId: agentId, rawToken: 'x');
+
+        expect(controller.isOnRetryCooldown, isTrue);
+        expect(
+          controller.retryAfterGate.remaining?.inSeconds,
+          greaterThanOrEqualTo(6),
+        );
+      },
+    );
+
+    test(
+      'failure without retryAfter leaves the gate open',
+      () async {
+        when(
+          () => saveToken(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+            clientToken: any(named: 'clientToken'),
+          ),
+        ).thenAnswer(
+          (_) async => const Failure<ClientAgentTokenSnapshot, AppFailure>(
+            NetworkFailure(message: 'x', userMessage: 'y'),
+          ),
+        );
+
+        await controller.saveClientAgentToken(agentId: agentId, rawToken: 'x');
+
+        expect(controller.isOnRetryCooldown, isFalse);
+        expect(controller.retryAfterGate.remaining, isNull);
+      },
+    );
+
+    test(
+      'gate forwards listener notifications through the controller',
+      () async {
+        var notifyCount = 0;
+        controller.addListener(() => notifyCount++);
+
+        // Inject the gate manually via a fresh controller so we can drive
+        // it without going through a failure path.
+        final dedicatedGate = RetryAfterGate(
+          tickInterval: const Duration(milliseconds: 50),
+        );
+        final dedicatedController = ClientAgentDetailController(
+          authController: auth,
+          loadClientAgentDetailUseCase: loadDetail,
+          updateClientAgentProfileUseCase: updateProfile,
+          getClientAgentTokenUseCase: getToken,
+          saveClientAgentTokenUseCase: saveToken,
+          removeClientAgentTokenUseCase: removeToken,
+          refreshAgentProfileUseCase: refreshFromAgent,
+          loadClientTokenPolicyUseCase: loadPolicy,
+          discoverAgentRpcMethodsUseCase: discoverRpc,
+          retryAfterGate: dedicatedGate,
+        );
+        addTearDown(dedicatedController.dispose);
+
+        var dedicatedNotifyCount = 0;
+        dedicatedController.addListener(() => dedicatedNotifyCount++);
+
+        dedicatedGate.arm(const Duration(seconds: 2));
+        expect(dedicatedNotifyCount, greaterThanOrEqualTo(1));
+        expect(dedicatedController.isOnRetryCooldown, isTrue);
+
+        // The original `controller` (with its own gate) is untouched.
+        expect(notifyCount, 0);
       },
     );
   });

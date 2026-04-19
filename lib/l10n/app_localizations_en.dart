@@ -1277,6 +1277,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'This agent does not implement agent.getProfile via RPC.';
 
   @override
+  String clientAgentDetailRetryAfterCountdown(int seconds) {
+    return 'The server asked us to wait. Try again in ${seconds}s.';
+  }
+
+  @override
   String get clientAgentDetailSectionPolicy => 'Permissions of this token';
 
   @override
