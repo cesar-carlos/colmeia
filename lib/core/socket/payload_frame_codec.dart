@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:colmeia/core/socket/payload_frame.dart';
+import 'package:colmeia/core/socket/payload_frame_signer.dart';
 
 /// Result of encoding a logical JSON value into a [PayloadFrame].
 class PayloadFrameEncodeResult {
@@ -54,7 +55,19 @@ class PayloadFrameCodec {
     this.compressionThresholdBytes = defaultCompressionThresholdBytes,
     this.maxPayloadBytes = defaultMaxPayloadBytes,
     this.maxInflationRatio = defaultMaxInflationRatio,
+    this.signer,
   });
+
+  /// When non-null, [encodeJson] populates `frame.signature` by running
+  /// the resulting wire-bytes through this signer. Mirrors the hub's
+  /// `PAYLOAD_SIGN_OUTBOUND` switch — leaving it `null` keeps the
+  /// envelope unsigned, which is the default the hub also accepts when
+  /// `PAYLOAD_SIGNING_KEY` is not configured.
+  ///
+  /// A caller-supplied `signature` (passed directly to [encodeJson])
+  /// always wins over the codec-level signer so tests / one-off
+  /// fixtures can inject deterministic values.
+  final PayloadFrameSigner? signer;
 
   /// 1 KiB — same value as the snippet bundled with the hub docs.
   static const int defaultCompressionThresholdBytes = 1024;
@@ -98,6 +111,27 @@ class PayloadFrameCodec {
         cmp = PayloadFrame.compressionGzip;
       }
     }
+
+    // Sign **after** the gzip pass so the HMAC covers the exact bytes
+    // the hub will ingest — `validateFrameSignature` on the hub side
+    // hashes the wire payload, not the JSON. Caller-provided signature
+    // (e.g. tests with a deterministic value) always wins over the
+    // codec-level signer.
+    final resolvedSignature = signature ??
+        signer?.sign(
+          metadata: PayloadFrameSignatureMetadata(
+            schemaVersion: PayloadFrame.supportedSchemaVersion,
+            enc: PayloadFrame.supportedEncoding,
+            cmp: cmp,
+            contentType: PayloadFrame.supportedContentType,
+            originalSize: encoded.length,
+            compressedSize: wire.length,
+            traceId: traceId,
+            requestId: requestId,
+          ),
+          binaryPayload: wire,
+        );
+
     return PayloadFrameEncodeResult(
       frame: PayloadFrame(
         payload: wire,
@@ -106,7 +140,7 @@ class PayloadFrameCodec {
         cmp: cmp,
         requestId: requestId,
         traceId: traceId,
-        signature: signature,
+        signature: resolvedSignature,
       ),
       encoded: encoded,
     );

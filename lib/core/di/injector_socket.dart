@@ -13,6 +13,8 @@ import 'package:colmeia/core/socket/app_socket_url_resolver.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/direct_agent_command_sender.dart';
+import 'package:colmeia/core/socket/payload_frame_codec.dart';
+import 'package:colmeia/core/socket/payload_frame_signer.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
@@ -48,6 +50,12 @@ void registerInjectorSocket(GetIt getIt) {
       () => const DefaultSocketIoClientFactory(),
     )
     ..registerLazySingleton<ConnectionReadyDecoder>(_buildReadyDecoder)
+    // Single PayloadFrameCodec shared across the relay dispatcher and
+    // the connection:ready decoder. When `SOCKET_PAYLOAD_SIGNING_KEY`
+    // is set we also build a signer so every outbound frame is HMAC'd
+    // — the hub validates with `PAYLOAD_SIGNING_KEY`, so the two MUST
+    // agree byte-for-byte (UTF-8) for verification to succeed.
+    ..registerLazySingleton<PayloadFrameCodec>(_buildPayloadFrameCodec)
     ..registerLazySingleton<ConsumerSocketConnection>(
       () => ConsumerSocketConnection(
         urlResolver: getIt<AppSocketUrlResolver>(),
@@ -144,6 +152,9 @@ void registerInjectorSocket(GetIt getIt) {
         () => RelayCommandDispatcherImpl(
           connection: getIt<ConsumerSocketConnection>(),
           conversationManager: getIt<RelayConversationManager>(),
+          // Reuse the shared codec so signing config (if any) reaches
+          // every relay frame without duplicating the wire-up here.
+          codec: getIt<PayloadFrameCodec>(),
           defaultTimeout: Duration(
             milliseconds: AppEnvironment.socketRelayRequestTimeoutMs,
           ),
@@ -208,6 +219,24 @@ AgentLatencyOracle? _resolveLatencyOracle(GetIt getIt) {
     return getIt<AgentLatencyOracle>();
   }
   return null;
+}
+
+/// Builds the shared [PayloadFrameCodec], wiring an HMAC-SHA256 signer
+/// when `SOCKET_PAYLOAD_SIGNING_KEY` is present. The signer reuses the
+/// hub's wire contract (UTF-8 key + base64 signature value over the
+/// `metadata || 0x00 || payload` block) so both ends agree byte-for-byte.
+PayloadFrameCodec _buildPayloadFrameCodec() {
+  final key = AppEnvironment.socketPayloadSigningKey;
+  if (key.isEmpty) {
+    return const PayloadFrameCodec();
+  }
+  final keyId = AppEnvironment.socketPayloadSigningKeyId;
+  return PayloadFrameCodec(
+    signer: Hmac256PayloadFrameSigner.fromUtf8Key(
+      key: key,
+      keyId: keyId.isEmpty ? null : keyId,
+    ),
+  );
 }
 
 /// PR-K: picks the [ConnectionReadyDecoder] dictated by

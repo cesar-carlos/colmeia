@@ -350,6 +350,36 @@ abstract final class AppEnvironment {
         ),
       );
 
+  // ----- PayloadFrame signing (outbound) -----
+
+  /// Shared HMAC-SHA256 key used by the codec to sign every outbound
+  /// frame. Empty (default) → no signing, which mirrors the hub's
+  /// "no `PAYLOAD_SIGNING_KEY`" mode. When non-empty, the codec injects
+  /// a `signature` block that the hub validates against
+  /// `PAYLOAD_SIGNING_KEY` (and optionally enforces
+  /// `signature.key_id == PAYLOAD_SIGNING_KEY_ID`).
+  static String get socketPayloadSigningKey =>
+      AppEnvironmentResolution.resolveString(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketPayloadSigningKey,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketPayloadSigningKey),
+        fallback: '',
+      );
+
+  /// Optional id propagated as `signature.key_id`. Required when the
+  /// hub itself is configured with `PAYLOAD_SIGNING_KEY_ID` — otherwise
+  /// frames are rejected with `-32001 invalid_signature`. Leave empty
+  /// for single-key deployments.
+  static String get socketPayloadSigningKeyId =>
+      AppEnvironmentResolution.resolveString(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketPayloadSigningKeyId,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketPayloadSigningKeyId),
+        fallback: '',
+      );
+
   static String? _dotenvMaybe(String key) {
     if (!dotenv.isInitialized) {
       return null;

@@ -161,6 +161,19 @@ abstract final class EnvKeys {
   ///   and by tests against forked hubs.
   static const String socketConnectionReadyCompatMode =
       'SOCKET_CONNECTION_READY_COMPAT_MODE';
+
+  /// Shared HMAC-SHA256 key used to sign outbound `PayloadFrame`
+  /// envelopes. Must match `PAYLOAD_SIGNING_KEY` configured on the hub.
+  /// Empty (default) → frames are emitted unsigned, which the hub
+  /// also accepts when itself unconfigured.
+  static const String socketPayloadSigningKey = 'SOCKET_PAYLOAD_SIGNING_KEY';
+
+  /// Optional `signature.key_id` propagated alongside outbound HMACs.
+  /// Required by the hub when `PAYLOAD_SIGNING_KEY_ID` is configured
+  /// upstream — frames missing the id (or with a divergent one) are
+  /// rejected with `-32001` `invalid_signature`.
+  static const String socketPayloadSigningKeyId =
+      'SOCKET_PAYLOAD_SIGNING_KEY_ID';
 }
 
 /// Asset paths for bundled env files (`loadAppDotenv`).

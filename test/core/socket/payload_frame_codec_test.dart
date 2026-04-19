@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
+import 'package:colmeia/core/socket/payload_frame_signer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -85,6 +86,74 @@ void main() {
         check(jsonEncode(decoded)).equals(jsonEncode(value));
       },
     );
+  });
+
+  group('PayloadFrameCodec.encodeJson — signing', () {
+    test('does not populate signature when no signer is configured', () {
+      const codec = PayloadFrameCodec();
+      final result = codec.encodeJson(<String, Object?>{'a': 1});
+      check(result.frame.signature).isNull();
+    });
+
+    test(
+      'populates signature with HMAC over the wire payload when a signer '
+      'is configured',
+      () {
+        final codec = PayloadFrameCodec(
+          signer: Hmac256PayloadFrameSigner.fromUtf8Key(
+            key: 'k',
+            keyId: 'hub-2026-q2',
+          ),
+        );
+        final result = codec.encodeJson(
+          <String, Object?>{'hello': 'hi'},
+          requestId: 'req-1',
+        );
+        final signature = result.frame.signature;
+        check(signature).isNotNull();
+        check(signature!.algorithm).equals(
+          PayloadFrameSignature.algorithmHmacSha256,
+        );
+        check(signature.value).isNotEmpty();
+        check(signature.keyId).equals('hub-2026-q2');
+      },
+    );
+
+    test(
+      'caller-provided signature wins over codec-level signer',
+      () {
+        // Lets tests / replay fixtures inject a known signature without
+        // having to mock the signer. Documents the precedence in
+        // PayloadFrameCodec.signer's doc comment.
+        final codec = PayloadFrameCodec(
+          signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'),
+        );
+        const explicit = PayloadFrameSignature(
+          algorithm: PayloadFrameSignature.algorithmHmacSha256,
+          value: 'EXPLICIT_VALUE_BASE64',
+        );
+        final result = codec.encodeJson(
+          <String, Object?>{'a': 1},
+          signature: explicit,
+        );
+        check(result.frame.signature?.value).equals('EXPLICIT_VALUE_BASE64');
+      },
+    );
+
+    test('signature wraps gzipped bytes when cmp == gzip', () {
+      // Defensive — the hub validates against the wire payload, not
+      // the JSON, so a signer that hashed the pre-gzip bytes would
+      // silently pass tests but fail in production. We assert the
+      // signed frame is actually `cmp: gzip` so the codec contract is
+      // explicit.
+      final codec = PayloadFrameCodec(
+        signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'),
+      );
+      final repeated = 'A' * 4096;
+      final result = codec.encodeJson(<String, Object?>{'v': repeated});
+      check(result.frame.cmp).equals(PayloadFrame.compressionGzip);
+      check(result.frame.signature).isNotNull();
+    });
   });
 
   group('PayloadFrameCodec.decodeJson — strict validation', () {
