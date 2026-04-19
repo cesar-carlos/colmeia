@@ -218,6 +218,12 @@ AppFailure appFailureWithMergedContext(
       stackTrace: failure.stackTrace,
       context: mergedContext,
       isTransient: failure.isTransient,
+      // retryAfter MUST survive context merges — `RetryAfterGate`
+      // and `appFailureRetryAfter` rely on it to throttle the UI
+      // when the hub asks us to back off (e.g. `RATE_LIMITED` /
+      // overload). Dropping it on a context merge silently breaks
+      // the cool-down across the agent_queries coordinator hop.
+      retryAfter: failure.retryAfter,
     ),
     RpcFailure() => RpcFailure(
       message: failure.message,
@@ -229,6 +235,11 @@ AppFailure appFailureWithMergedContext(
       technicalMessage: failure.technicalMessage,
       correlationId: failure.correlationId,
       timestamp: failure.timestamp,
+      // Same rationale as NetworkFailure above: dropping retryAfter
+      // here would silently disable the overview's `RetryAfterGate`
+      // cooldown when the bridge propagates `-32013` rate-limit
+      // errors with `error.data.retry_after_ms`.
+      retryAfter: failure.retryAfter,
       cause: failure.cause,
       stackTrace: failure.stackTrace,
       context: mergedContext,
@@ -259,7 +270,15 @@ AppFailure mapToAppFailure(
   Map<String, Object?> context = const <String, Object?>{},
 }) {
   if (error is AppFailure) {
-    return error;
+    // Preserve any extra context the caller supplied — without this
+    // merge, a re-throw chain that wants to add `operation: 'foo'`
+    // would silently drop the breadcrumb every time the exception
+    // had already been mapped once. Empty `context` short-circuits
+    // to avoid a needless allocation.
+    if (context.isEmpty) {
+      return error;
+    }
+    return appFailureWithMergedContext(error, context);
   }
 
   if (error is ValueObjectValidationException) {

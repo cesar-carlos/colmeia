@@ -10,7 +10,7 @@ void main() {
         expiresAt: DateTime.utc(2026, 4, 18, 10, 0, 30),
       );
       check(
-        session.isExpiredAt(DateTime.utc(2026, 4, 18, 10, 0, 0)),
+        session.isExpiredAt(DateTime.utc(2026, 4, 18, 10)),
       ).isFalse();
     });
 
@@ -19,7 +19,7 @@ void main() {
       () {
         // Boundary is treated as expired because the bridge rejects
         // tokens whose `exp` equals the current second.
-        final expiresAt = DateTime.utc(2026, 4, 18, 10, 0, 0);
+        final expiresAt = DateTime.utc(2026, 4, 18, 10);
         final session = _session(expiresAt: expiresAt);
         check(session.isExpiredAt(expiresAt)).isTrue();
       },
@@ -27,7 +27,7 @@ void main() {
 
     test('returns true when now is past expiresAt', () {
       final session = _session(
-        expiresAt: DateTime.utc(2026, 4, 18, 10, 0, 0),
+        expiresAt: DateTime.utc(2026, 4, 18, 10),
       );
       check(
         session.isExpiredAt(DateTime.utc(2026, 4, 18, 10, 0, 1)),
@@ -38,12 +38,12 @@ void main() {
   group('AuthSession.isExpiringWithin', () {
     test('false when expiry is far beyond the window', () {
       final session = _session(
-        expiresAt: DateTime.utc(2026, 4, 18, 10, 5, 0),
+        expiresAt: DateTime.utc(2026, 4, 18, 10, 5),
       );
       check(
         session.isExpiringWithin(
           const Duration(seconds: 30),
-          now: DateTime.utc(2026, 4, 18, 10, 0, 0),
+          now: DateTime.utc(2026, 4, 18, 10),
         ),
       ).isFalse();
     });
@@ -58,7 +58,7 @@ void main() {
       check(
         session.isExpiringWithin(
           const Duration(seconds: 30),
-          now: DateTime.utc(2026, 4, 18, 10, 0, 0),
+          now: DateTime.utc(2026, 4, 18, 10),
         ),
       ).isTrue();
     });
@@ -67,12 +67,12 @@ void main() {
       // Expired tokens still report `true` so the proactive refresh
       // path catches stale boots / paused-then-resumed apps.
       final session = _session(
-        expiresAt: DateTime.utc(2026, 4, 18, 10, 0, 0),
+        expiresAt: DateTime.utc(2026, 4, 18, 10),
       );
       check(
         session.isExpiringWithin(
           const Duration(seconds: 30),
-          now: DateTime.utc(2026, 4, 18, 10, 5, 0),
+          now: DateTime.utc(2026, 4, 18, 10, 5),
         ),
       ).isTrue();
     });
@@ -84,7 +84,7 @@ void main() {
         // perpetual refresh on every request. Only frames that are
         // strictly expired qualify.
         final session = _session(
-          expiresAt: DateTime.utc(2026, 4, 18, 10, 0, 0),
+          expiresAt: DateTime.utc(2026, 4, 18, 10),
         );
         check(
           session.isExpiringWithin(

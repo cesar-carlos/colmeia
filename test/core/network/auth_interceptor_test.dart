@@ -196,7 +196,7 @@ void main() {
         // the proactive window — interceptor must refresh BEFORE the
         // request is sent so the user does not pay the 401 → refresh
         // → retry round-trip on every authenticated call.
-        final fixedNow = DateTime.utc(2026, 4, 18, 10, 0, 0);
+        final fixedNow = DateTime.utc(2026, 4, 18, 10);
         final session = AuthSessionModel(
           userId: 'client-1',
           email: 'client@corp.com',
@@ -275,7 +275,7 @@ void main() {
     test(
       'should NOT refresh proactively when token has plenty of life',
       () async {
-        final fixedNow = DateTime.utc(2026, 4, 18, 10, 0, 0);
+        final fixedNow = DateTime.utc(2026, 4, 18, 10);
         final session = AuthSessionModel(
           userId: 'client-1',
           email: 'client@corp.com',
@@ -320,7 +320,7 @@ void main() {
         // we must still send the request with the existing token —
         // the 401 retry path then takes over if the server rejects
         // it. Otherwise a flaky refresh blocks ALL traffic.
-        final fixedNow = DateTime.utc(2026, 4, 18, 10, 0, 0);
+        final fixedNow = DateTime.utc(2026, 4, 18, 10);
         final session = AuthSessionModel(
           userId: 'client-1',
           email: 'client@corp.com',
