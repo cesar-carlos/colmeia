@@ -181,6 +181,16 @@ class ConsumerSocketConnection {
           // the other terminal failures) carrying the namespace +
           // role so the dispatcher's exception mapper can build a
           // `SocketDispatchNamespaceForbidden` with the parsed bits.
+          AppLogger.warning(
+            'Consumer socket handshake rejected by hub role policy',
+            context: <String, Object?>{
+              'operation': 'consumerSocketConnect',
+              'hubOrigin': _urlResolver.hubOrigin,
+              'socketNamespace': _urlResolver.namespace,
+              'jwtRole': outcome.role,
+              'hubMessage': outcome.message,
+            },
+          );
           _setState(const ConsumerSocketUnauthorized());
           throw StateError(
             'Consumer socket namespace forbidden: '
