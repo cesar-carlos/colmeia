@@ -133,9 +133,7 @@
   "overviewLoadingRankingsSemantics": "Loading rankings…",
   "overviewLoadingMonthlyParcelsSemantics": "Loading last 12 months chart…",
   "overviewLoadingWeekdaySalesSemantics": "Loading sales by weekday chart…",
-  "@overviewLoadingWeekdaySalesSemantics": {
-    "description": "Screen reader label while the weekday overview card is loading."
-  },
+  "@overviewLoadingWeekdaySalesSemantics": {"description": "Screen reader label while the weekday overview card is loading."},
   "overviewMonthlyParcelsTitle": "Last 12 months",
   "overviewMonthlyParcelsSubtitle": "Sales count and parcel totals by month (all branches in scope).",
   "overviewMonthlyParcelsSalesSeriesLabel": "Sales",
@@ -148,37 +146,21 @@
   "overviewMonthlyParcelsSwitchValueLabel": "Parcel value",
   "overviewMonthlyParcelsChartSemanticsValueView": "Last twelve months parcel amounts and sales counts chart",
   "overviewWeekdaySalesTitle": "Sales by weekday",
-  "@overviewWeekdaySalesTitle": {
-    "description": "Card title when the weekday overview chart is plotting sales count."
-  },
+  "@overviewWeekdaySalesTitle": {"description": "Card title when the weekday overview chart is plotting sales count."},
   "overviewWeekdayRevenueTitle": "Revenue by weekday",
-  "@overviewWeekdayRevenueTitle": {
-    "description": "Card title when the weekday overview chart is plotting parcel amount."
-  },
+  "@overviewWeekdayRevenueTitle": {"description": "Card title when the weekday overview chart is plotting parcel amount."},
   "overviewWeekdaySalesSubtitle": "Weekday distribution in the selected period (all branches in scope).",
-  "@overviewWeekdaySalesSubtitle": {
-    "description": "Shared subtitle for the weekday overview card, clarifying that all branches in scope are aggregated."
-  },
+  "@overviewWeekdaySalesSubtitle": {"description": "Shared subtitle for the weekday overview card, clarifying that all branches in scope are aggregated."},
   "overviewWeekdaySalesEmpty": "No weekday data for this period.",
-  "@overviewWeekdaySalesEmpty": {
-    "description": "Placeholder shown when the weekday overview chart has no data."
-  },
+  "@overviewWeekdaySalesEmpty": {"description": "Placeholder shown when the weekday overview chart has no data."},
   "overviewWeekdaySalesLoadFailed": "Could not load the weekday chart. Try again later.",
-  "@overviewWeekdaySalesLoadFailed": {
-    "description": "Placeholder shown when the weekday overview chart query fails."
-  },
+  "@overviewWeekdaySalesLoadFailed": {"description": "Placeholder shown when the weekday overview chart query fails."},
   "overviewWeekdaySalesChartSemantics": "Weekday sales count and parcel amount chart",
-  "@overviewWeekdaySalesChartSemantics": {
-    "description": "Semantic label for the weekday overview chart when the primary metric is sales count."
-  },
+  "@overviewWeekdaySalesChartSemantics": {"description": "Semantic label for the weekday overview chart when the primary metric is sales count."},
   "overviewWeekdayRevenueChartSemantics": "Weekday revenue and sales count chart",
-  "@overviewWeekdayRevenueChartSemantics": {
-    "description": "Semantic label for the weekday overview chart when the primary metric is parcel amount."
-  },
+  "@overviewWeekdayRevenueChartSemantics": {"description": "Semantic label for the weekday overview chart when the primary metric is parcel amount."},
   "overviewWeekdayChartScopeHint": "Aggregated across all branches in the selected scope.",
-  "@overviewWeekdayChartScopeHint": {
-    "description": "Additional semantic hint clarifying that the weekday chart aggregates all branches in scope."
-  },
+  "@overviewWeekdayChartScopeHint": {"description": "Additional semantic hint clarifying that the weekday chart aggregates all branches in scope."},
   "overviewWeekdaySalesTooltip": "{weekday}: {salesCount} sales - {salesAmount}",
   "@overviewWeekdaySalesTooltip": {
     "description": "Tooltip for one weekday bar showing sales count and parcel amount.",
@@ -189,13 +171,9 @@
     }
   },
   "overviewWeekdayMetricSalesCountLabel": "Sales",
-  "@overviewWeekdayMetricSalesCountLabel": {
-    "description": "Segment label for plotting sales count in the weekday overview card."
-  },
+  "@overviewWeekdayMetricSalesCountLabel": {"description": "Segment label for plotting sales count in the weekday overview card."},
   "overviewWeekdayMetricSalesAmountLabel": "Revenue",
-  "@overviewWeekdayMetricSalesAmountLabel": {
-    "description": "Segment label for plotting parcel amount in the weekday overview card."
-  },
+  "@overviewWeekdayMetricSalesAmountLabel": {"description": "Segment label for plotting parcel amount in the weekday overview card."},
   "overviewWeekdaySalesSummarySemantics": "Total {totalSalesCount} sales and {totalSalesAmount} in the selected period. Highest day: {topWeekday} with {topSalesCount} sales.",
   "@overviewWeekdaySalesSummarySemantics": {
     "description": "Concise screen reader summary for the weekday overview chart when sales count is selected.",
@@ -217,69 +195,37 @@
     }
   },
   "overviewWeekdaySunday": "Sunday",
-  "@overviewWeekdaySunday": {
-    "description": "Localized label for weekday Sunday in the overview chart."
-  },
+  "@overviewWeekdaySunday": {"description": "Localized label for weekday Sunday in the overview chart."},
   "overviewWeekdayMonday": "Monday",
-  "@overviewWeekdayMonday": {
-    "description": "Localized label for weekday Monday in the overview chart."
-  },
+  "@overviewWeekdayMonday": {"description": "Localized label for weekday Monday in the overview chart."},
   "overviewWeekdayTuesday": "Tuesday",
-  "@overviewWeekdayTuesday": {
-    "description": "Localized label for weekday Tuesday in the overview chart."
-  },
+  "@overviewWeekdayTuesday": {"description": "Localized label for weekday Tuesday in the overview chart."},
   "overviewWeekdayWednesday": "Wednesday",
-  "@overviewWeekdayWednesday": {
-    "description": "Localized label for weekday Wednesday in the overview chart."
-  },
+  "@overviewWeekdayWednesday": {"description": "Localized label for weekday Wednesday in the overview chart."},
   "overviewWeekdayThursday": "Thursday",
-  "@overviewWeekdayThursday": {
-    "description": "Localized label for weekday Thursday in the overview chart."
-  },
+  "@overviewWeekdayThursday": {"description": "Localized label for weekday Thursday in the overview chart."},
   "overviewWeekdayFriday": "Friday",
-  "@overviewWeekdayFriday": {
-    "description": "Localized label for weekday Friday in the overview chart."
-  },
+  "@overviewWeekdayFriday": {"description": "Localized label for weekday Friday in the overview chart."},
   "overviewWeekdaySaturday": "Saturday",
-  "@overviewWeekdaySaturday": {
-    "description": "Localized label for weekday Saturday in the overview chart."
-  },
+  "@overviewWeekdaySaturday": {"description": "Localized label for weekday Saturday in the overview chart."},
   "overviewWeekdayUserSalesTitle": "Sales by weekday and user",
-  "@overviewWeekdayUserSalesTitle": {
-    "description": "Card title when the per-user weekday overview chart plots sales count."
-  },
+  "@overviewWeekdayUserSalesTitle": {"description": "Card title when the per-user weekday overview chart plots sales count."},
   "overviewWeekdayUserRevenueTitle": "Revenue by weekday and user",
-  "@overviewWeekdayUserRevenueTitle": {
-    "description": "Card title when the per-user weekday overview chart plots parcel amount."
-  },
+  "@overviewWeekdayUserRevenueTitle": {"description": "Card title when the per-user weekday overview chart plots parcel amount."},
   "overviewWeekdayUserSalesSubtitle": "Weekdays on the horizontal axis; each colour is a user (see legend). Same period and branch scope as the dashboard.",
-  "@overviewWeekdayUserSalesSubtitle": {
-    "description": "Subtitle for the per-user weekday overview card."
-  },
+  "@overviewWeekdayUserSalesSubtitle": {"description": "Subtitle for the per-user weekday overview card."},
   "overviewWeekdayUserSalesEmpty": "No per-user weekday data for this period.",
-  "@overviewWeekdayUserSalesEmpty": {
-    "description": "Placeholder when the per-user weekday chart has no data."
-  },
+  "@overviewWeekdayUserSalesEmpty": {"description": "Placeholder when the per-user weekday chart has no data."},
   "overviewWeekdayUserSalesLoadFailed": "Could not load the per-user weekday chart. Try again later.",
-  "@overviewWeekdayUserSalesLoadFailed": {
-    "description": "Placeholder when the per-user weekday chart query fails."
-  },
+  "@overviewWeekdayUserSalesLoadFailed": {"description": "Placeholder when the per-user weekday chart query fails."},
   "overviewWeekdayUserSalesChartSemantics": "Weekday and user sales count and parcel amount chart",
-  "@overviewWeekdayUserSalesChartSemantics": {
-    "description": "Semantics label when the primary metric is sales count."
-  },
+  "@overviewWeekdayUserSalesChartSemantics": {"description": "Semantics label when the primary metric is sales count."},
   "overviewWeekdayUserRevenueChartSemantics": "Weekday and user revenue and sales count chart",
-  "@overviewWeekdayUserRevenueChartSemantics": {
-    "description": "Semantics label when the primary metric is parcel amount."
-  },
+  "@overviewWeekdayUserRevenueChartSemantics": {"description": "Semantics label when the primary metric is parcel amount."},
   "overviewWeekdayUserChartScopeHint": "Aggregated across all branches in the selected scope.",
-  "@overviewWeekdayUserChartScopeHint": {
-    "description": "Semantic hint for the per-user weekday chart scope."
-  },
+  "@overviewWeekdayUserChartScopeHint": {"description": "Semantic hint for the per-user weekday chart scope."},
   "overviewWeekdayUserGroupedOthersLabel": "Others",
-  "@overviewWeekdayUserGroupedOthersLabel": {
-    "description": "Legend and tooltip label for users combined when the grouped weekday chart exceeds the series limit."
-  },
+  "@overviewWeekdayUserGroupedOthersLabel": {"description": "Legend and tooltip label for users combined when the grouped weekday chart exceeds the series limit."},
   "overviewWeekdayUserGroupedTruncationFootnote": "Showing the {shown} users with the highest totals; additional users are summed under \"{othersLabel}\".",
   "@overviewWeekdayUserGroupedTruncationFootnote": {
     "description": "Footnote when the grouped weekday-by-user chart merges extra users into an Others series.",
@@ -321,9 +267,7 @@
     }
   },
   "overviewLoadingWeekdayUserSalesSemantics": "Loading sales by weekday and user chart…",
-  "@overviewLoadingWeekdayUserSalesSemantics": {
-    "description": "Screen reader label while the per-user weekday overview card is loading."
-  },
+  "@overviewLoadingWeekdayUserSalesSemantics": {"description": "Screen reader label while the per-user weekday overview card is loading."},
   "overviewKpiTotalRevenue": "Total revenue",
   "overviewKpiSales": "Sales",
   "overviewKpiAvgTicket": "Average ticket",
@@ -358,9 +302,7 @@
   "overviewPaymentBarTitle": "Revenue by payment method",
   "overviewPaymentBarSubtitle": "Total amount accumulated in the period.",
   "overviewPaymentBarEmpty": "No payment method revenue in this period.",
-  "@overviewPaymentBarEmpty": {
-    "description": "Shown when every payment method has zero revenue for the period."
-  },
+  "@overviewPaymentBarEmpty": {"description": "Shown when every payment method has zero revenue for the period."},
   "overviewPaymentBarTooltip": "{label}: {amount}",
   "@overviewPaymentBarTooltip": {
     "placeholders": {
@@ -378,25 +320,19 @@
   "chartComboLoadingDefault": "Loading bar and line chart…",
   "chartComboEmptyDefault": "No combined data for this view.",
   "chartComboPanGestureHint": "Swipe sideways along the chart to see more periods.",
-  "@chartComboPanGestureHint": {
-    "description": "Footer hint when category-axis pan is enabled on bar+line combo charts."
-  },
+  "@chartComboPanGestureHint": {"description": "Footer hint when category-axis pan is enabled on bar+line combo charts."},
   "chartComboPanChartA11y": "{count, plural, =1{Bar and line chart, one category.} other{Bar and line chart, {count} categories.}} Swipe horizontally to see all.",
   "@chartComboPanChartA11y": {
     "description": "Screen reader summary when the combo chart uses horizontal pan on the category axis.",
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": {"type": "int"}
     }
   },
   "chartComparisonPanChartA11y": "{count, plural, =1{Bar chart, one category.} other{Bar chart, {count} categories.}} Swipe the chart horizontally to see all.",
   "@chartComparisonPanChartA11y": {
     "description": "Screen reader summary when the comparison chart uses horizontal panning for categories.",
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": {"type": "int"}
     }
   },
   "overviewSemanticsPaymentMethodRow": "Payment method {label}",
@@ -599,10 +535,8 @@
       "count": {"type": "int"}
     }
   },
-  "clientAgentsRequestRelinkUpdatedSingle":
-      "That agent is already approved on the server. Your agent list was updated.",
-  "clientAgentsRequestRelinkUpdatedPlural":
-      "{count} agents were already approved on the server. Your agent list was updated.",
+  "clientAgentsRequestRelinkUpdatedSingle": "That agent is already approved on the server. Your agent list was updated.",
+  "clientAgentsRequestRelinkUpdatedPlural": "{count} agents were already approved on the server. Your agent list was updated.",
   "@clientAgentsRequestRelinkUpdatedPlural": {
     "placeholders": {
       "count": {"type": "int"}
@@ -611,12 +545,8 @@
   "clientAgentsRequestRelinkAndQueued": "{relinkSummary}. {queueSummary}",
   "@clientAgentsRequestRelinkAndQueued": {
     "placeholders": {
-      "relinkSummary": {
-        "type": "String"
-      },
-      "queueSummary": {
-        "type": "String"
-      }
+      "relinkSummary": {"type": "String"},
+      "queueSummary": {"type": "String"}
     }
   },
   "clientAgentsRelinkPendingNotCleared": "Could not clear local pending requests; they may retry on the next sync.",
@@ -775,9 +705,7 @@
   "clientAgentDetailPolicyPermissionsLabel": "Permissions",
   "clientAgentDetailPolicyRevoked": "This token is reported as revoked by the agent.",
   "clientAgentDetailPolicyRevokedSaveNewToken": "Save new token",
-  "@clientAgentDetailPolicyRevokedSaveNewToken": {
-    "description": "CTA shown next to the revoked-token banner; scrolls the token card into view and focuses its input."
-  },
+  "@clientAgentDetailPolicyRevokedSaveNewToken": {"description": "CTA shown next to the revoked-token banner; scrolls the token card into view and focuses its input."},
   "clientAgentDetailPolicyUnsupported": "This agent does not expose token policy introspection.",
   "clientAgentDetailPolicyEmpty": "Agent did not return any rule for this token.",
   "clientAgentDetailSectionEditProfile": "Catalog profile",
@@ -903,12 +831,10 @@
   "reportFiltersAppliedSectionTitle": "Applied filters",
   "clientAgentsErrorLoadCatalog": "Could not load the agent catalog.",
   "clientAgentsErrorLoadCatalogAgent": "Could not load this catalog agent.",
-  "clientAgentsErrorLoadClientAccessStatus":
-      "Could not read the access request status.",
+  "clientAgentsErrorLoadClientAccessStatus": "Could not read the access request status.",
   "clientAgentsErrorLoadApproved": "Could not load approved agents for this account.",
   "clientAgentsErrorLoadAgentDetail": "Could not load agent details.",
-  "clientAgentsErrorProbeApproved":
-      "Could not verify whether the agent is already linked for this account.",
+  "clientAgentsErrorProbeApproved": "Could not verify whether the agent is already linked for this account.",
   "clientAgentsErrorLoadAccessRequests": "Could not load request history.",
   "clientAgentsErrorReadPending": "Could not load pending submissions to sync.",
   "clientAgentsErrorQueueRequest": "Could not queue the access request for sync.",
@@ -936,76 +862,10 @@
   "agentSqlErrorExecutionNotFound": "The requested execution was not found.",
   "agentSqlErrorExecutionCancelled": "The query was cancelled.",
   "agentSqlErrorGeneric": "The query could not be completed on the agent.",
-  "formsDemoEyebrow": "Forms",
-  "formsDemoTitle": "Shared fields",
-  "formsDemoIntroSubtitle": "Validation, enabled and disabled states, date pickers in Form, FormBuilder as in reports and groupings.",
-  "formsDemoFieldLibraryOverline": "Field library",
-  "formsDemoSharedFormControlsTitle": "Shared form controls",
-  "formsDemoPreviewBadge": "Preview",
-  "formsDemoShowcaseSubtitle": "Base fields, selectors, and calendar wrappers in the same visual rhythm as the system.",
-  "formsDemoFieldsEnabledLabel": "Fields enabled",
-  "formsDemoShowcaseFieldsEnabledHelper": "Turns the entire example surface below on or off.",
-  "formsDemoFormStateTitle": "Form state",
-  "formsDemoFormStateSubtitle": "Turn off to inspect disabled fields.",
-  "formsDemoFormStateFieldsEnabledHelper": "Applies the disabled state to every example below.",
-  "formsDemoTextEmailPasswordTitle": "AppTextField, email, and password",
-  "formsDemoTextEmailPasswordSubtitle": "Fake data; submit runs validation.",
-  "formsDemoFullNameLabel": "Full name",
-  "formsDemoFullNameHint": "As in registration",
-  "formsDemoNameValidatorMinLength": "Enter at least 3 characters.",
-  "formsDemoCorporateEmailLabel": "Work email",
-  "formsDemoPasswordLabel": "Password",
-  "formsDemoNotesLabel": "Notes",
-  "formsDemoNotesHint": "Optional",
   "formsDemoDatePickersFormTitle": "Date pickers in Form",
   "formsDemoDatePickersFormSubtitle": "Native Form + FormField. Tap Apply in the sheet to confirm; closing without applying keeps the current value. Remove clears explicitly.",
-  "formsDemoReferenceDateLabel": "Reference date",
-  "formsDemoReferenceDateHelper": "Opens in a bottom sheet with a styled calendar.",
-  "formsDemoSelectReferenceDateTitle": "Select reference date",
-  "formsDemoReferenceDateRequiredError": "Select the reference date.",
-  "formsDemoAssessmentPeriodLabel": "Desired capture period",
-  "formsDemoAssessmentPeriodHelper": "Ideal for filters and analytical queries.",
-  "formsDemoSelectPeriodTitle": "Select period",
-  "formsDemoAssessmentPeriodRequiredError": "Select the full period.",
-  "formsDemoDateRangeMiddle": " to ",
-  "formsDemoCheckboxTitle": "AppCheckboxField",
-  "formsDemoCheckboxSubtitle": "Fictitious consent.",
-  "formsDemoCheckboxLabel": "Receive a weekly summary by email",
-  "formsDemoCheckboxHelper": "Sends alerts, summaries, and indicator updates.",
-  "formsDemoRadioCompactTitle": "Compact AppRadioGroup",
-  "formsDemoRadioCompactSubtitle": "Single selection using the design system inline pattern.",
-  "formsDemoPeriodDaily": "Daily",
-  "formsDemoPeriodMonthly": "Monthly",
-  "formsDemoPeriodQuarterly": "Quarterly",
-  "formsDemoChoiceChipTitle": "AppChoiceChip",
-  "formsDemoChoiceChipSubtitle": "Point-in-time chips for context, store, or scope.",
-  "formsDemoScopeHeadquarters": "Head office",
-  "formsDemoScopeStoreCenter": "Downtown store",
-  "formsDemoScopeStoreSouth": "South store",
-  "formsDemoDropdownMenusTitle": "Dropdown menus",
-  "formsDemoDropdownMenusSubtitle": "Single-select and multi-select search in the same light/dark visual pattern as the references.",
-  "formsDemoStandardSelectLabel": "Standard select",
-  "formsDemoSelectHiveNodeHint": "Select Hive node…",
-  "formsDemoMultiSelectSearchLabel": "Multi-select search",
-  "formsDemoHiveNodeAlphaCore": "Alpha Core",
-  "formsDemoHiveNodeDeltaNode": "Delta Node",
-  "formsDemoHiveNodeSigmaGrid": "Sigma Grid",
-  "formsDemoTagAnalytics": "Analytics",
-  "formsDemoTagCloud": "Cloud",
-  "formsDemoTagAutomation": "Automation",
-  "formsDemoTagSecurity": "Security",
   "formsDemoFormBuilderSectionTitle": "FormBuilder with dropdowns and dates",
   "formsDemoFormBuilderSectionSubtitle": "Same wrappers as reports: dropdown, multi-select, and the same date pickers as the Form section above (FormBuilderField + AppFormBuilderDate*).",
-  "formsDemoFormBuilderNodeLabel": "Select node (FormBuilder)",
-  "formsDemoFormBuilderNodeHelper": "Single selection with the shared wrapper.",
-  "formsDemoFormBuilderTagsLabel": "Tags (FormBuilder)",
-  "formsDemoFormBuilderTagsHelper": "Inline search with removable chips.",
-  "formsDemoFormBuilderDateRequiredLabel": "Required date (FormBuilder)",
-  "formsDemoFormBuilderDateRequiredHelper": "Validation with form_builder_validators.",
-  "formsDemoFormBuilderSelectDateTitle": "Select date (FormBuilder)",
-  "formsDemoFormBuilderRangeLabel": "Period (FormBuilder)",
-  "formsDemoFormBuilderRangeHelper": "Optional in this demo.",
-  "formsDemoFormBuilderSelectRangeTitle": "Select period (FormBuilder)",
   "formsDemoValidateFormBuilderButton": "Validate FormBuilder",
   "formsDemoValidateFormSubmitButton": "Validate submit (Form)",
   "formsDemoFormValidSnackbar": "Valid form (fake demo). Ref: {refLabel}. Period: {rangeLabel}.",
@@ -1022,10 +882,6 @@
       "rangeLabel": {"type": "String"}
     }
   },
-  "formsDemoLegendInput": "Input",
-  "formsDemoLegendSelection": "Selection",
-  "formsDemoLegendDate": "Date",
-  "formsDemoLegendFormBuilder": "FormBuilder",
   "datePickerPlaceholderSelectDate": "Select a date",
   "dateRangePickerPlaceholderSelectPeriod": "Select the period",
   "datePickerSheetDefaultTitle": "Select date",
@@ -1036,54 +892,5 @@
   "datePickerSheetCloseTooltip": "Close",
   "datePickerSheetApply": "Apply",
   "datePickerSemanticsFallbackLabel": "Date",
-  "dateRangePickerSemanticsFallbackLabel": "Period",
-  "areaTrendDemoIntroEyebrow": "Area charts",
-  "areaTrendDemoIntroTitle": "AppAreaTrendChart",
-  "areaTrendDemoIntroSubtitle": "Temporal trend with filled area: gradient, markers, zoom, style variants, and structured per-series/point tap event.",
-  "areaTrendDemoShowcaseTitle": "Temporal trend with fill",
-  "areaTrendDemoShowcaseSubtitle": "Area chart for volume, growth, and comparisons over time, with good mass and intensity reading.",
-  "areaTrendDemoShowcaseBadge": "Trend",
-  "areaTrendDemoShowcaseHighlightTimeSeries": "Time series",
-  "areaTrendDemoShowcaseHighlightGradientMarkers": "Gradient and markers",
-  "areaTrendDemoShowcaseHighlightMultiseries": "Multi-series",
-  "areaTrendDemoS01Title": "1. Weekly revenue",
-  "areaTrendDemoS01Subtitle": "Area with gradient, formatted axis, tooltip, and tap.",
-  "areaTrendDemoS02Title": "2. With point markers",
-  "areaTrendDemoS02Subtitle": "Each point shows a visible marker.",
-  "areaTrendDemoS03Title": "3. No gradient (solid area)",
-  "areaTrendDemoS03Subtitle": "showGradientFill: false for a flat fill.",
-  "areaTrendDemoS04Title": "4. Orders by hour",
-  "areaTrendDemoS04Subtitle": "Operational peak of the day — unit scale.",
-  "areaTrendDemoS05Title": "5. Compact without shell",
-  "areaTrendDemoS05Subtitle": "Compact preset, no axes and no inner shell.",
-  "areaTrendDemoS06Title": "6. Loading state",
-  "areaTrendDemoS07Title": "7. Empty state",
-  "areaTrendDemoEmptyMessage": "No data for the selected period.",
-  "areaTrendDemoS08Title": "8. Multi-series (store comparison)",
-  "areaTrendDemoS08Subtitle": "Three overlaid stores with automatic palette. Legend on.",
-  "areaTrendDemoS09Title": "9. Multi-series with trackball",
-  "areaTrendDemoS09Subtitle": "Tap the area to see values for all series at the same X position.",
-  "areaTrendDemoS10Title": "10. Colors per entry",
-  "areaTrendDemoS10Subtitle": "Custom color per AppAreaTrendEntry.",
-  "areaTrendDemoSeriesRevenue": "Revenue",
-  "areaTrendDemoSeriesTarget": "Target",
-  "areaTrendDemoStoreCenter": "Downtown",
-  "areaTrendDemoStoreNorth": "North",
-  "areaTrendDemoStoreSouth": "South",
-  "areaTrendDemoDefaultSeriesName": "primary series",
-  "areaTrendDemoTapSnackbar": "Area: {seriesLabel} • {pointLabel} = {valueLabel}",
-  "@areaTrendDemoTapSnackbar": {
-    "placeholders": {
-      "seriesLabel": {"type": "String"},
-      "pointLabel": {"type": "String"},
-      "valueLabel": {"type": "String"}
-    }
-  },
-  "areaTrendDemoA11ySection": "Chart demo {sectionIndex}: {sectionTitle}",
-  "@areaTrendDemoA11ySection": {
-    "placeholders": {
-      "sectionIndex": {"type": "int"},
-      "sectionTitle": {"type": "String"}
-    }
-  }
+  "dateRangePickerSemanticsFallbackLabel": "Period"
 }
