@@ -26,6 +26,7 @@ void registerInjectorAuth(GetIt getIt) {
         localDataSource: getIt<AuthLocalDataSource>(),
         remoteDataSource: getIt<AuthRemoteDataSource>(),
         appCacheStore: getIt<AppCacheStore>(),
+        sessionEvents: getIt<AuthSessionEvents>(),
       ),
     )
     ..registerLazySingleton<LoginUseCase>(

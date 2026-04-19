@@ -2,6 +2,7 @@ import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
@@ -19,13 +20,22 @@ class AuthRepositoryImpl implements AuthRepository {
     required AuthLocalDataSource localDataSource,
     required AuthRemoteDataSource remoteDataSource,
     required AppCacheStore appCacheStore,
+    AuthSessionEvents? sessionEvents,
   }) : _localDataSource = localDataSource,
        _remoteDataSource = remoteDataSource,
-       _appCacheStore = appCacheStore;
+       _appCacheStore = appCacheStore,
+       _sessionEvents = sessionEvents;
 
   final AuthLocalDataSource _localDataSource;
   final AuthRemoteDataSource _remoteDataSource;
   final AppCacheStore _appCacheStore;
+
+  /// Optional sink used to broadcast invalidation when a stored session
+  /// fails to refresh on boot. Same channel the dio refresh
+  /// coordinator uses on 401/403, kept optional so existing tests
+  /// that wire the repository directly do not need to materialise
+  /// the events stream.
+  final AuthSessionEvents? _sessionEvents;
 
   @override
   Future<AppResult<ClientRegistrationSubmission>> register({
@@ -682,6 +692,13 @@ class AuthRepositoryImpl implements AuthRepository {
           return Success<AuthSession, AppFailure>(refreshedSession.toEntity());
         } on Object catch (error, stackTrace) {
           await _localDataSource.clearSession();
+          // Broadcast the invalidation so other consumers wired to
+          // `AuthSessionEvents` (typically the consumer socket
+          // connection) drop their state too. Without this, a failed
+          // boot-time refresh leaves the socket holding a stale
+          // assumption of "session present" until the next manual
+          // disconnect.
+          _sessionEvents?.notifyInvalidated();
           AppLogger.warning(
             'Stored session expired and refresh failed',
             context: <String, Object?>{

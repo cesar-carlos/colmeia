@@ -129,55 +129,235 @@ void main() {
       expect(authorizationHeader, isNull);
     });
 
-    test('should refresh and retry original request on 401', () async {
-      final session = AuthSessionModel(
-        userId: 'client-1',
-        email: 'client@corp.com',
-        accessToken: 'expired-access-token',
-        refreshToken: 'refresh-token-1',
-        expiresAt: DateTime.now().subtract(const Duration(minutes: 2)),
-      );
-      when(
-        () => localDataSource.readSession(),
-      ).thenAnswer((_) async => session);
-      when(
-        () => localDataSource.saveSession(any()),
-      ).thenAnswer((_) async {});
+    test(
+      'should refresh and retry original request on 401 '
+      '(server-side revocation of a still-valid token)',
+      () async {
+        // Use a token that is locally NOT inside the proactive
+        // refresh window (`expiresAt` 1 h ahead), so the
+        // interceptor's `onRequest` does not refresh upfront.
+        // This isolates the legacy 401 → refresh → retry path.
+        final session = AuthSessionModel(
+          userId: 'client-1',
+          email: 'client@corp.com',
+          accessToken: 'still-valid-locally-token',
+          refreshToken: 'refresh-token-1',
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        );
+        when(
+          () => localDataSource.readSession(),
+        ).thenAnswer((_) async => session);
+        when(
+          () => localDataSource.saveSession(any()),
+        ).thenAnswer((_) async {});
 
-      var refreshCalls = 0;
-      refreshDio.httpClientAdapter = _TestHttpClientAdapter((options) async {
-        refreshCalls += 1;
-        return _jsonBody(<String, Object?>{
-          'accessToken': 'new-access-token',
-          'refreshToken': 'new-refresh-token',
-          'expiresAt': DateTime.now()
-              .add(const Duration(hours: 1))
-              .toIso8601String(),
-        });
-      });
-
-      var profileCalls = 0;
-      dio.httpClientAdapter = _TestHttpClientAdapter((options) async {
-        profileCalls += 1;
-        final authorization = options.headers[_authorizationHeader] as String?;
-        final isRefreshedToken = authorization == 'Bearer new-access-token';
-        if (!isRefreshedToken) {
+        var refreshCalls = 0;
+        refreshDio.httpClientAdapter = _TestHttpClientAdapter((options) async {
+          refreshCalls += 1;
           return _jsonBody(<String, Object?>{
-            'error': 'expired',
-          }, statusCode: 401);
-        }
-        return _jsonBody(<String, Object?>{'ok': true});
-      });
+            'accessToken': 'new-access-token',
+            'refreshToken': 'new-refresh-token',
+            'expiresAt': DateTime.now()
+                .add(const Duration(hours: 1))
+                .toIso8601String(),
+          });
+        });
 
-      final response = await dio.get<Map<String, dynamic>>(
-        ClientAuthApiRoutes.me,
-      );
+        var profileCalls = 0;
+        dio.httpClientAdapter = _TestHttpClientAdapter((options) async {
+          profileCalls += 1;
+          final authorization =
+              options.headers[_authorizationHeader] as String?;
+          final isRefreshedToken = authorization == 'Bearer new-access-token';
+          if (!isRefreshedToken) {
+            return _jsonBody(<String, Object?>{
+              'error': 'expired',
+            }, statusCode: 401);
+          }
+          return _jsonBody(<String, Object?>{'ok': true});
+        });
 
-      expect(response.statusCode, equals(200));
-      expect(refreshCalls, equals(1));
-      expect(profileCalls, equals(2));
-      verify(() => localDataSource.saveSession(any())).called(1);
-    });
+        final response = await dio.get<Map<String, dynamic>>(
+          ClientAuthApiRoutes.me,
+        );
+
+        expect(response.statusCode, equals(200));
+        expect(refreshCalls, equals(1));
+        expect(profileCalls, equals(2));
+        verify(() => localDataSource.saveSession(any())).called(1);
+      },
+    );
+
+    test(
+      'should refresh proactively when token is inside the refresh '
+      'window (no 401 round-trip)',
+      () async {
+        // Token still technically valid (expiresAt > now) but inside
+        // the proactive window — interceptor must refresh BEFORE the
+        // request is sent so the user does not pay the 401 → refresh
+        // → retry round-trip on every authenticated call.
+        final fixedNow = DateTime.utc(2026, 4, 18, 10, 0, 0);
+        final session = AuthSessionModel(
+          userId: 'client-1',
+          email: 'client@corp.com',
+          accessToken: 'about-to-expire-token',
+          refreshToken: 'refresh-token-1',
+          // expiresAt 10s in the future; default proactive window is
+          // 30s, so this counts as expiring.
+          expiresAt: fixedNow.add(const Duration(seconds: 10)),
+        );
+        when(
+          () => localDataSource.readSession(),
+        ).thenAnswer((_) async => session);
+        when(
+          () => localDataSource.saveSession(any()),
+        ).thenAnswer((_) async {});
+
+        // Rewire the interceptor with a fixed clock so the test does
+        // not race with real time.
+        dio.interceptors.clear();
+        dio.interceptors.add(
+          AuthInterceptor(
+            dio: dio,
+            sessionAccessor: accessor,
+            refreshCoordinator: refreshCoordinator,
+            clock: () => fixedNow,
+          ),
+        );
+
+        var refreshCalls = 0;
+        refreshDio.httpClientAdapter = _TestHttpClientAdapter((options) async {
+          refreshCalls += 1;
+          // After refresh, the accessor still returns the OLD session
+          // because we use a single mock — we override the read here
+          // to give the second read (post-refresh) the fresh token.
+          when(
+            () => localDataSource.readSession(),
+          ).thenAnswer(
+            (_) async => AuthSessionModel(
+              userId: session.userId,
+              email: session.email,
+              accessToken: 'fresh-token',
+              refreshToken: 'fresh-refresh',
+              expiresAt: fixedNow.add(const Duration(hours: 1)),
+            ),
+          );
+          return _jsonBody(<String, Object?>{
+            'accessToken': 'fresh-token',
+            'refreshToken': 'fresh-refresh',
+            'expiresAt': fixedNow
+                .add(const Duration(hours: 1))
+                .toIso8601String(),
+          });
+        });
+
+        var profileCalls = 0;
+        String? sentAuthHeader;
+        dio.httpClientAdapter = _TestHttpClientAdapter((options) async {
+          profileCalls += 1;
+          sentAuthHeader = options.headers[_authorizationHeader] as String?;
+          return _jsonBody(<String, Object?>{'ok': true});
+        });
+
+        final response = await dio.get<Map<String, dynamic>>(
+          ClientAuthApiRoutes.me,
+        );
+
+        expect(response.statusCode, equals(200));
+        expect(refreshCalls, equals(1));
+        // Critical: only ONE outbound profile call, with the FRESH
+        // token. No 401 round-trip happened.
+        expect(profileCalls, equals(1));
+        expect(sentAuthHeader, equals('Bearer fresh-token'));
+      },
+    );
+
+    test(
+      'should NOT refresh proactively when token has plenty of life',
+      () async {
+        final fixedNow = DateTime.utc(2026, 4, 18, 10, 0, 0);
+        final session = AuthSessionModel(
+          userId: 'client-1',
+          email: 'client@corp.com',
+          accessToken: 'fresh-token',
+          refreshToken: 'refresh-token-1',
+          expiresAt: fixedNow.add(const Duration(hours: 1)),
+        );
+        when(
+          () => localDataSource.readSession(),
+        ).thenAnswer((_) async => session);
+
+        dio.interceptors.clear();
+        dio.interceptors.add(
+          AuthInterceptor(
+            dio: dio,
+            sessionAccessor: accessor,
+            refreshCoordinator: refreshCoordinator,
+            clock: () => fixedNow,
+          ),
+        );
+
+        var refreshCalls = 0;
+        refreshDio.httpClientAdapter = _TestHttpClientAdapter((options) async {
+          refreshCalls += 1;
+          return _jsonBody(<String, Object?>{}, statusCode: 500);
+        });
+
+        dio.httpClientAdapter = _TestHttpClientAdapter((options) async {
+          return _jsonBody(<String, Object?>{'ok': true});
+        });
+
+        await dio.get<Map<String, dynamic>>(ClientAuthApiRoutes.me);
+
+        expect(refreshCalls, equals(0));
+      },
+    );
+
+    test(
+      'proactive refresh failure falls back to sending the stale token',
+      () async {
+        // Resilience: if the refresh server is briefly unavailable
+        // we must still send the request with the existing token —
+        // the 401 retry path then takes over if the server rejects
+        // it. Otherwise a flaky refresh blocks ALL traffic.
+        final fixedNow = DateTime.utc(2026, 4, 18, 10, 0, 0);
+        final session = AuthSessionModel(
+          userId: 'client-1',
+          email: 'client@corp.com',
+          accessToken: 'about-to-expire',
+          refreshToken: 'refresh-token-1',
+          expiresAt: fixedNow.add(const Duration(seconds: 10)),
+        );
+        when(
+          () => localDataSource.readSession(),
+        ).thenAnswer((_) async => session);
+
+        dio.interceptors.clear();
+        dio.interceptors.add(
+          AuthInterceptor(
+            dio: dio,
+            sessionAccessor: accessor,
+            refreshCoordinator: refreshCoordinator,
+            clock: () => fixedNow,
+          ),
+        );
+
+        refreshDio.httpClientAdapter = _TestHttpClientAdapter((options) async {
+          return _jsonBody(<String, Object?>{}, statusCode: 500);
+        });
+
+        String? sentAuthHeader;
+        dio.httpClientAdapter = _TestHttpClientAdapter((options) async {
+          sentAuthHeader = options.headers[_authorizationHeader] as String?;
+          return _jsonBody(<String, Object?>{'ok': true});
+        });
+
+        await dio.get<Map<String, dynamic>>(ClientAuthApiRoutes.me);
+
+        // The stale token went out — 401 path can take over from here.
+        expect(sentAuthHeader, equals('Bearer about-to-expire'));
+      },
+    );
 
     test('should not retry multipart requests on 401', () async {
       final session = AuthSessionModel(
