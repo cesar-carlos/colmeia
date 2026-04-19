@@ -371,12 +371,21 @@ class OverviewController extends ChangeNotifier {
     _scheduleAgentRpcCapabilityPrefetch();
   }
 
-  /// Fire-and-forgets a `rpc.discover` for every agent we just exposed
-  /// in [_availableAgents]. The registry deduplicates per-agent
-  /// in-flight requests, so calling this on every successful overview
-  /// load is cheap (only new ids do work). The future is intentionally
-  /// not awaited: the overview UI must not block on a best-effort
-  /// capability cache.
+  /// Fire-and-forgets a `rpc.discover` for every agent that we both
+  /// have surfaced in [_availableAgents] **and** for which we hold a
+  /// client token (so the bridge can actually route the call). The
+  /// registry deduplicates per-agent in-flight requests, so calling
+  /// this on every successful overview load is cheap (only new ids
+  /// do work). The future is intentionally not awaited: the overview
+  /// UI must not block on a best-effort capability cache.
+  ///
+  /// Agents without a local client token are intentionally skipped:
+  /// the hub answers `404` to `agents/commands` for those (because
+  /// it cannot bind the request to a `(client, agent)` pair without
+  /// the token), so the prefetch would just spam the log + Sentry
+  /// with non-actionable failures. The legitimate
+  /// `requiresClientTokenSetup` UX banner already surfaces that
+  /// state separately.
   void _scheduleAgentRpcCapabilityPrefetch() {
     final registry = _agentRpcCapabilitiesRegistry;
     if (registry == null || _availableAgents.isEmpty) {
@@ -384,7 +393,9 @@ class OverviewController extends ChangeNotifier {
     }
     final ids = <String>{
       for (final option in _availableAgents)
-        if (option.agentId.trim().isNotEmpty) option.agentId.trim(),
+        if (option.agentId.trim().isNotEmpty &&
+            !option.missingLocalClientToken)
+          option.agentId.trim(),
     };
     if (ids.isEmpty) {
       return;

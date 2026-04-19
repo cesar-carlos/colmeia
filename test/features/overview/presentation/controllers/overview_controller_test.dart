@@ -277,6 +277,49 @@ void main() {
       },
     );
 
+    test(
+      'should NOT prefetch RPC capabilities for agents missing the local '
+      'client token (would otherwise spam 404s from the bridge)',
+      () async {
+        // The bridge returns 404 for `agents/commands` against an
+        // agent the caller has no token for — there is no
+        // `(client, agent)` binding to route through. Prefetching
+        // those would just fill Sentry with non-actionable
+        // NetworkFailure breadcrumbs.
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(
+                _overview(
+                  'Pix',
+                  agentIdsMissingClientToken: const <String>['a1'],
+                ),
+              ),
+            ),
+          ],
+        );
+        final discoverRepository = _RecordingDiscoverRepository();
+        final registry = AgentRpcCapabilitiesRegistry(
+          discoverAgentRpcMethodsUseCase: DiscoverAgentRpcMethodsUseCase(
+            discoverRepository,
+          ),
+        );
+
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+          agentRpcCapabilitiesRegistry: registry,
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+        await Future<void>.delayed(Duration.zero);
+
+        // a1 was the only ranked agent and it is missing the token,
+        // so the prefetch must do exactly zero discover calls.
+        check(discoverRepository.requestedAgentIds).isEmpty();
+      },
+    );
+
     test('should ignore late use case completion after dispose', () async {
       final completer = Completer<AppResult<Overview>>();
       final controller = OverviewController(
@@ -363,7 +406,10 @@ class _RecordingDiscoverRepository implements AgentMetaRepository {
   }) => throw UnimplementedError();
 }
 
-Overview _overview(String paymentMethodCode) {
+Overview _overview(
+  String paymentMethodCode, {
+  List<String> agentIdsMissingClientToken = const <String>[],
+}) {
   return Overview(
     periodStart: DateTime(2026, 3, 9),
     periodEnd: DateTime(2026, 4, 7),
@@ -383,6 +429,7 @@ Overview _overview(String paymentMethodCode) {
         sharePercent: 100,
       ),
     ],
+    agentIdsMissingClientToken: agentIdsMissingClientToken,
     agentRankings: const <OverviewAgentRanking>[
       OverviewAgentRanking(
         agentId: 'a1',
