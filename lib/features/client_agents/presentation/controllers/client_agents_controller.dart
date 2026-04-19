@@ -3,6 +3,7 @@ import 'dart:math' show min;
 
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
@@ -39,6 +40,7 @@ import 'package:colmeia/features/client_agents/presentation/utils/client_agent_i
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
+import 'package:result_dart/result_dart.dart' show Unit;
 
 enum ClientAgentsActionFeedbackKind { info, success }
 
@@ -63,6 +65,8 @@ class ClientAgentsController extends ChangeNotifier {
     AgentPresencePoller? agentPresencePoller,
     ConsumerSocketConnection? consumerSocketConnection,
     Duration hintConfirmDelay = const Duration(seconds: 5),
+    RetryAfterGate? syncRetryAfterGate,
+    RetryAfterGate? requestAccessRetryAfterGate,
   }) : _authController = authController,
        _clientTokenStore = clientTokenStore,
        _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
@@ -81,7 +85,16 @@ class ClientAgentsController extends ChangeNotifier {
        _observeAgentPresenceUseCase = observeAgentPresenceUseCase,
        _agentPresencePoller = agentPresencePoller,
        _consumerSocketConnection = consumerSocketConnection,
-       _hintConfirmDelay = hintConfirmDelay;
+       _hintConfirmDelay = hintConfirmDelay,
+       _syncRetryAfterGate = syncRetryAfterGate ?? RetryAfterGate(),
+       _requestAccessRetryAfterGate =
+           requestAccessRetryAfterGate ?? RetryAfterGate() {
+    // Re-broadcast gate ticks so consumer widgets that already listen to
+    // the controller refresh the countdown label without subscribing to
+    // each gate individually.
+    _syncRetryAfterGate.addListener(_notifyListenersIfAlive);
+    _requestAccessRetryAfterGate.addListener(_notifyListenersIfAlive);
+  }
 
   static const Duration _approvalPollingInterval = Duration(seconds: 10);
   static const Duration _approvalPollingTimeout = Duration(minutes: 3);
@@ -127,6 +140,16 @@ class ClientAgentsController extends ChangeNotifier {
   /// confirming REST refresh. Tests pass a small value to keep the
   /// suite fast.
   final Duration _hintConfirmDelay;
+
+  /// Cooldown for `syncPending`. Armed every time the underlying use
+  /// case fails with a `Retry-After` hint; the UI uses
+  /// [syncRetryAfter] / [isSyncOnCooldown] to gray the button out.
+  final RetryAfterGate _syncRetryAfterGate;
+
+  /// Same idea for the request-access flow. The hub returns
+  /// `Retry-After` for the dedicated `REST_CLIENT_ME_AGENTS_POST_RATE_LIMIT_*`
+  /// quota, so a flurry of submissions does not bypass the throttle.
+  final RetryAfterGate _requestAccessRetryAfterGate;
 
   AppLocalizations? _l10n;
 
@@ -209,6 +232,18 @@ class ClientAgentsController extends ChangeNotifier {
   PaginatedResult<ClientAgentAccessRequest>? get accessRequests =>
       _accessRequests;
   List<PendingAgentAction> get pendingActions => _pendingActions;
+
+  /// Time left in the `Retry-After` cooldown for the sync action, or
+  /// `null` when the action is allowed.
+  Duration? get syncRetryAfter => _syncRetryAfterGate.remaining;
+  bool get isSyncOnCooldown => !_syncRetryAfterGate.isOpen;
+
+  /// Time left in the `Retry-After` cooldown for the request-access
+  /// action, or `null` when the action is allowed.
+  Duration? get requestAccessRetryAfter =>
+      _requestAccessRetryAfterGate.remaining;
+  bool get isRequestAccessOnCooldown =>
+      !_requestAccessRetryAfterGate.isOpen;
 
   Future<void> initialize() async {
     if (_hasLoadedInitialData || isLoading) {
@@ -763,6 +798,7 @@ class ClientAgentsController extends ChangeNotifier {
         result: queueResult,
         operation: 'queueClientAgentRequestAccess',
       );
+      _maybeArmRequestAccessRetryGateFromResult(queueResult);
       if (_actionErrorMessage == null) {
         final queueMessage = _buildQueuedRequestMessage(classification);
         if (relinkedAgents.isEmpty) {
@@ -941,6 +977,20 @@ class ClientAgentsController extends ChangeNotifier {
       return;
     }
 
+    if (!_syncRetryAfterGate.isOpen) {
+      // Honour the server's `Retry-After`: do not even attempt the call
+      // until the cooldown elapses. Auto-triggered runs (post-enqueue
+      // schedule) are silent so we do not spam the user with the same
+      // banner across ticks; manual taps surface the wait window.
+      if (!autoTriggered) {
+        _actionErrorMessage = _buildSyncCooldownMessage(
+          _syncRetryAfterGate.remaining,
+        );
+        _notifyListenersIfAlive();
+      }
+      return;
+    }
+
     await _runPendingMutationSerialized(() async {
       if (_isDisposed) {
         return;
@@ -1003,6 +1053,7 @@ class ClientAgentsController extends ChangeNotifier {
         result: syncResult,
         operation: 'syncPendingClientAgentActions',
       );
+      _maybeArmSyncRetryGateFromResult(syncResult);
       await _refreshAfterMutation(userId: userId);
       if (_actionErrorMessage == null) {
         final outcome = syncResult.fold((v) => v, (_) => null);
@@ -1935,8 +1986,45 @@ class ClientAgentsController extends ChangeNotifier {
     _socketStateSub = null;
     _agentPresencePoller?.stop();
     _lastPresenceObservedByAgentId.clear();
+    _syncRetryAfterGate
+      ..removeListener(_notifyListenersIfAlive)
+      ..dispose();
+    _requestAccessRetryAfterGate
+      ..removeListener(_notifyListenersIfAlive)
+      ..dispose();
     _isDisposed = true;
     super.dispose();
+  }
+
+  /// Inspects [result] and arms [_syncRetryAfterGate] when the underlying
+  /// failure carries a `Retry-After` hint propagated from the hub.
+  void _maybeArmSyncRetryGateFromResult(
+    AppResult<SyncPendingAgentActionsResult> result,
+  ) {
+    final retryAfter = _retryAfterFromResult(result);
+    if (retryAfter != null) {
+      _syncRetryAfterGate.arm(retryAfter);
+    }
+  }
+
+  void _maybeArmRequestAccessRetryGateFromResult(AppResult<Unit> result) {
+    final retryAfter = _retryAfterFromResult(result);
+    if (retryAfter != null) {
+      _requestAccessRetryAfterGate.arm(retryAfter);
+    }
+  }
+
+  Duration? _retryAfterFromResult<T extends Object>(AppResult<T> result) {
+    final failure = result.exceptionOrNull();
+    if (failure is NetworkFailure) {
+      return failure.retryAfter;
+    }
+    return null;
+  }
+
+  String _buildSyncCooldownMessage(Duration? remaining) {
+    final seconds = (remaining?.inSeconds ?? 0).clamp(1, 86400);
+    return _s.clientAgentsSyncRetryAfterCountdown(seconds);
   }
 }
 

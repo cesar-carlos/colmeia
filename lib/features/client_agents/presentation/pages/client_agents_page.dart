@@ -185,9 +185,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                       ),
                       if (pendingCount > 0)
                         AppPrimaryButton(
-                          label: l10n.clientAgentsSubmitRequests,
+                          label: controller.isSyncOnCooldown
+                              ? l10n.clientAgentsSyncRetryAfterCountdown(
+                                  controller.syncRetryAfter?.inSeconds ?? 0,
+                                )
+                              : l10n.clientAgentsSubmitRequests,
                           icon: const Icon(Icons.sync_rounded),
-                          onPressed: controller.isSyncing
+                          onPressed: controller.isSyncing ||
+                                  controller.isSyncOnCooldown
                               ? null
                               : () => unawaited(controller.syncPending()),
                           isLoading: controller.isSyncing,
@@ -355,7 +360,8 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                                 ..clearActionError()
                                 ..clearActionFeedback();
                             },
-                            isMutating: controller.isSyncing,
+                            isMutating: controller.isSyncing ||
+                                controller.isRequestAccessOnCooldown,
                           ),
                         ),
                         AppTabViewItem(

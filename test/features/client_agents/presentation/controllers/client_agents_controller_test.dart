@@ -953,4 +953,72 @@ void main() {
       );
     },
   );
+
+  group('Retry-After integration', () {
+    test(
+      'syncPending arms the cooldown gate when failure carries retryAfter',
+      () async {
+        when(
+          () => readPendingActionsUseCase(userId: any(named: 'userId')),
+        ).thenAnswer(
+          (_) async => Success<List<PendingAgentAction>, AppFailure>(
+            queuedPendingActions,
+          ),
+        );
+        when(
+          () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+        ).thenAnswer(
+          (_) async => const Failure<SyncPendingAgentActionsResult, AppFailure>(
+            NetworkFailure(
+              message: 'rate limited',
+              userMessage: 'rate limited',
+              retryAfter: Duration(seconds: 10),
+            ),
+          ),
+        );
+
+        await controller.initialize();
+        await controller.syncPending();
+
+        expect(controller.isSyncOnCooldown, isTrue);
+        expect(controller.syncRetryAfter, isNotNull);
+        expect(controller.syncRetryAfter!.inSeconds, greaterThan(0));
+      },
+    );
+
+    test(
+      'second syncPending call short-circuits while cooldown is active',
+      () async {
+        when(
+          () => readPendingActionsUseCase(userId: any(named: 'userId')),
+        ).thenAnswer(
+          (_) async => Success<List<PendingAgentAction>, AppFailure>(
+            queuedPendingActions,
+          ),
+        );
+        when(
+          () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+        ).thenAnswer(
+          (_) async => const Failure<SyncPendingAgentActionsResult, AppFailure>(
+            NetworkFailure(
+              message: 'rate limited',
+              userMessage: 'rate limited',
+              retryAfter: Duration(seconds: 30),
+            ),
+          ),
+        );
+
+        await controller.initialize();
+        await controller.syncPending();
+        // Reset the mock so we can detect a second call.
+        clearInteractions(syncPendingActionsUseCase);
+        await controller.syncPending();
+
+        verifyNever(
+          () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+        );
+        expect(controller.actionErrorMessage, isNotNull);
+      },
+    );
+  });
 }

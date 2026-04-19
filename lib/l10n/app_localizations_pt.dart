@@ -1122,6 +1122,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'A sincronizacao terminou, mas nenhuma pendencia foi aplicada.';
 
   @override
+  String clientAgentsSyncRetryAfterCountdown(int seconds) {
+    return 'O servidor pediu para esperarmos. Tente de novo em ${seconds}s.';
+  }
+
+  @override
+  String clientAgentsRequestAccessRetryAfterCountdown(int seconds) {
+    return 'Muitas solicitacoes de acesso. Tente de novo em ${seconds}s.';
+  }
+
+  @override
   String clientAgentsSyncSuccessSomeFailedSuffix(int count) {
     return ' $count acao(oes) falhou e permanece na fila para nova tentativa.';
   }
@@ -3253,6 +3263,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsSyncSuccessNoneCompleted =>
       'A sincronizacao terminou, mas nenhuma pendencia foi aplicada.';
+
+  @override
+  String clientAgentsSyncRetryAfterCountdown(int seconds) {
+    return 'O servidor pediu para esperarmos. Tente de novo em ${seconds}s.';
+  }
+
+  @override
+  String clientAgentsRequestAccessRetryAfterCountdown(int seconds) {
+    return 'Muitas solicitacoes de acesso. Tente de novo em ${seconds}s.';
+  }
 
   @override
   String clientAgentsSyncSuccessSomeFailedSuffix(int count) {

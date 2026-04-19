@@ -1852,6 +1852,18 @@ abstract class AppLocalizations {
   /// **'Sync finished but no pending actions could be applied.'**
   String get clientAgentsSyncSuccessNoneCompleted;
 
+  /// No description provided for @clientAgentsSyncRetryAfterCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'The server asked us to wait. Try again in {seconds}s.'**
+  String clientAgentsSyncRetryAfterCountdown(int seconds);
+
+  /// No description provided for @clientAgentsRequestAccessRetryAfterCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many access requests. Try again in {seconds}s.'**
+  String clientAgentsRequestAccessRetryAfterCountdown(int seconds);
+
   /// No description provided for @clientAgentsSyncSuccessSomeFailedSuffix.
   ///
   /// In en, this message translates to:

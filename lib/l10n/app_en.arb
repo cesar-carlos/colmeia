@@ -654,6 +654,18 @@
     }
   },
   "clientAgentsSyncSuccessNoneCompleted": "Sync finished but no pending actions could be applied.",
+  "clientAgentsSyncRetryAfterCountdown": "The server asked us to wait. Try again in {seconds}s.",
+  "@clientAgentsSyncRetryAfterCountdown": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "clientAgentsRequestAccessRetryAfterCountdown": "Too many access requests. Try again in {seconds}s.",
+  "@clientAgentsRequestAccessRetryAfterCountdown": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
   "clientAgentsSyncSuccessSomeFailedSuffix": " {count} action(s) failed and remain queued to retry.",
   "@clientAgentsSyncSuccessSomeFailedSuffix": {
     "placeholders": {

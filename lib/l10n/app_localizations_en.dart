@@ -1100,6 +1100,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync finished but no pending actions could be applied.';
 
   @override
+  String clientAgentsSyncRetryAfterCountdown(int seconds) {
+    return 'The server asked us to wait. Try again in ${seconds}s.';
+  }
+
+  @override
+  String clientAgentsRequestAccessRetryAfterCountdown(int seconds) {
+    return 'Too many access requests. Try again in ${seconds}s.';
+  }
+
+  @override
   String clientAgentsSyncSuccessSomeFailedSuffix(int count) {
     return ' $count action(s) failed and remain queued to retry.';
   }
