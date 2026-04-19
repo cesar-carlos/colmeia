@@ -42,6 +42,15 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
   late final ClientAgentDetailController _controller;
   bool _initialLoadScheduled = false;
 
+  /// Anchor used by the policy card when the user taps "Save new token"
+  /// after the server reports the current token as revoked. We scroll
+  /// the token card back into view and focus its input so the user can
+  /// type a replacement without hunting up the page.
+  final GlobalKey _tokenCardAnchorKey = GlobalKey();
+  final FocusNode _tokenInputFocusNode = FocusNode(
+    debugLabel: 'AgentClientTokenInput',
+  );
+
   @override
   void initState() {
     super.initState();
@@ -64,8 +73,29 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
 
   @override
   void dispose() {
+    _tokenInputFocusNode.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Scrolls the token card back into view and focuses its input.
+  /// Triggered by the policy card's "Save new token" CTA after a
+  /// revocation. Defensive: does nothing when the anchor is detached
+  /// (e.g. card not visible because the user already cleared the
+  /// token elsewhere in the meantime).
+  Future<void> _focusTokenInput() async {
+    final ctx = _tokenCardAnchorKey.currentContext;
+    if (ctx != null) {
+      await Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 250),
+        alignment: 0.1,
+        curve: Curves.easeOutCubic,
+      );
+    }
+    if (mounted) {
+      _tokenInputFocusNode.requestFocus();
+    }
   }
 
   @override
@@ -200,11 +230,15 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                     SizedBox(height: tokens.gapMd),
                     _RecordCard(agent: agent, l10n: l10n),
                     SizedBox(height: tokens.gapMd),
-                    _AgentClientTokenCard(
-                      agentId: agent.agentId,
-                      controller: _controller,
-                      l10n: l10n,
-                      tokens: tokens,
+                    KeyedSubtree(
+                      key: _tokenCardAnchorKey,
+                      child: _AgentClientTokenCard(
+                        agentId: agent.agentId,
+                        controller: _controller,
+                        l10n: l10n,
+                        tokens: tokens,
+                        inputFocusNode: _tokenInputFocusNode,
+                      ),
                     ),
                     if (controller.clientTokenStatus ==
                         ClientAgentTokenStatus.configured) ...<Widget>[
@@ -214,6 +248,7 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                         controller: _controller,
                         l10n: l10n,
                         tokens: tokens,
+                        onRequestNewToken: () => unawaited(_focusTokenInput()),
                       ),
                     ],
                   ],
@@ -243,12 +278,17 @@ class _AgentClientTokenCard extends StatefulWidget {
     required this.controller,
     required this.l10n,
     required this.tokens,
+    this.inputFocusNode,
   });
 
   final String agentId;
   final ClientAgentDetailController controller;
   final AppLocalizations l10n;
   final AppThemeTokens tokens;
+
+  /// Optional focus node owned by the page so the policy card can ask
+  /// us to focus the input when the user reacts to a token revocation.
+  final FocusNode? inputFocusNode;
 
   @override
   State<_AgentClientTokenCard> createState() => _AgentClientTokenCardState();
@@ -309,6 +349,7 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
           SizedBox(height: widget.tokens.gapMd),
           AppTextField(
             controller: _tokenController,
+            focusNode: widget.inputFocusNode,
             label: widget.l10n.clientAgentsClientTokenLabel,
             hintText: widget.l10n.clientAgentsClientTokenHint,
             obscureText: _obscureToken,
@@ -456,12 +497,18 @@ class _ClientTokenPolicyCard extends StatefulWidget {
     required this.controller,
     required this.l10n,
     required this.tokens,
+    this.onRequestNewToken,
   });
 
   final String agentId;
   final ClientAgentDetailController controller;
   final AppLocalizations l10n;
   final AppThemeTokens tokens;
+
+  /// Invoked when the user taps the in-card "Save new token" CTA after
+  /// the policy reports the current token as revoked. The page wires
+  /// this to scroll the token card into view and focus its input.
+  final VoidCallback? onRequestNewToken;
 
   @override
   State<_ClientTokenPolicyCard> createState() =>
@@ -553,6 +600,9 @@ class _ClientTokenPolicyCardState extends State<_ClientTokenPolicyCard> {
           policy: policy,
           l10n: widget.l10n,
           tokens: widget.tokens,
+          controller: c,
+          agentId: widget.agentId,
+          onRequestNewToken: widget.onRequestNewToken,
         );
       }
     }
@@ -570,11 +620,23 @@ class _ClientTokenPolicyBody extends StatelessWidget {
     required this.policy,
     required this.l10n,
     required this.tokens,
+    this.controller,
+    this.agentId,
+    this.onRequestNewToken,
   });
 
   final ClientTokenPolicy policy;
   final AppLocalizations l10n;
   final AppThemeTokens tokens;
+
+  /// Optional controller wiring used to render the in-card recovery
+  /// CTAs ("Remove token" / "Save new token") after a revocation. When
+  /// `null` the body falls back to the read-only rendering — useful
+  /// for tests and for cases where the parent does not want to expose
+  /// destructive actions.
+  final ClientAgentDetailController? controller;
+  final String? agentId;
+  final VoidCallback? onRequestNewToken;
 
   @override
   Widget build(BuildContext context) {
@@ -590,6 +652,23 @@ class _ClientTokenPolicyBody extends StatelessWidget {
           text: l10n.clientAgentDetailPolicyRevoked,
         ),
       );
+      // Surface the recovery shortcut right next to the revocation
+      // banner so the user does not have to scroll back to the token
+      // card to react. Hidden when the parent did not wire a
+      // controller (tests, snapshot rendering).
+      final c = controller;
+      final agent = agentId;
+      if (c != null && agent != null) {
+        lines.add(
+          _RevokedTokenRecoveryActions(
+            l10n: l10n,
+            tokens: tokens,
+            controller: c,
+            agentId: agent,
+            onRequestNewToken: onRequestNewToken,
+          ),
+        );
+      }
     }
 
     if (policy.hasFullAccess) {
@@ -668,6 +747,69 @@ class _ClientTokenPolicyBody extends StatelessWidget {
           lines[i],
         ],
       ],
+    );
+  }
+}
+
+/// In-card recovery actions surfaced when `client_token.getPolicy`
+/// reports the current token as revoked. Wraps two buttons:
+///
+/// * **Remove token** — calls
+///   [ClientAgentDetailController.removeClientAgentToken], same
+///   semantics as the button on the token card above. Disabled when
+///   the controller is mutating or when a `Retry-After` cool-down is
+///   active.
+/// * **Save new token** — invokes the [onRequestNewToken] callback
+///   provided by the page so the token card scrolls into view and
+///   focuses its input. Hidden when no callback is wired.
+class _RevokedTokenRecoveryActions extends StatelessWidget {
+  const _RevokedTokenRecoveryActions({
+    required this.l10n,
+    required this.tokens,
+    required this.controller,
+    required this.agentId,
+    this.onRequestNewToken,
+  });
+
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+  final ClientAgentDetailController controller;
+  final String agentId;
+  final VoidCallback? onRequestNewToken;
+
+  @override
+  Widget build(BuildContext context) {
+    final isMutating = controller.isSavingClientToken;
+    final isCooldown = controller.isOnRetryCooldown;
+    final removeDisabled = isMutating || isCooldown;
+    final removeLabel = isCooldown
+        ? l10n.clientAgentDetailRetryAfterCountdown(
+            controller.retryAfterGate.remaining?.inSeconds ?? 0,
+          )
+        : l10n.clientAgentDetailServerTokenRemove;
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.gapSm),
+      child: Wrap(
+        spacing: tokens.gapSm,
+        runSpacing: tokens.gapSm,
+        children: <Widget>[
+          AppSecondaryButton(
+            label: removeLabel,
+            icon: const Icon(Icons.delete_outline_rounded),
+            onPressed: removeDisabled
+                ? null
+                : () => unawaited(
+                    controller.removeClientAgentToken(agentId: agentId),
+                  ),
+          ),
+          if (onRequestNewToken != null)
+            AppSecondaryButton(
+              label: l10n.clientAgentDetailPolicyRevokedSaveNewToken,
+              icon: const Icon(Icons.edit_rounded),
+              onPressed: isMutating ? null : onRequestNewToken,
+            ),
+        ],
+      ),
     );
   }
 }

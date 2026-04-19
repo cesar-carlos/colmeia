@@ -1346,6 +1346,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Este token esta marcado como revogado pelo agente.';
 
   @override
+  String get clientAgentDetailPolicyRevokedSaveNewToken => 'Salvar novo token';
+
+  @override
   String get clientAgentDetailPolicyUnsupported =>
       'Este agente nao expoe introspecao da politica do token.';
 
@@ -3497,6 +3500,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentDetailPolicyRevoked =>
       'Este token esta marcado como revogado pelo agente.';
+
+  @override
+  String get clientAgentDetailPolicyRevokedSaveNewToken => 'Salvar novo token';
 
   @override
   String get clientAgentDetailPolicyUnsupported =>

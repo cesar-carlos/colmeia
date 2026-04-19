@@ -1321,6 +1321,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'This token is reported as revoked by the agent.';
 
   @override
+  String get clientAgentDetailPolicyRevokedSaveNewToken => 'Save new token';
+
+  @override
   String get clientAgentDetailPolicyUnsupported =>
       'This agent does not expose token policy introspection.';
 

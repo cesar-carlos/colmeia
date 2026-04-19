@@ -85,8 +85,8 @@ void main() {
         final f3 = registry.ensure('a1');
 
         completer.complete(
-          Success<AgentRpcDescriptor, AppFailure>(
-            const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+          const Success<AgentRpcDescriptor, AppFailure>(
+            AgentRpcDescriptor(methods: <String>{'sql.execute'}),
           ),
         );
 
@@ -133,12 +133,12 @@ void main() {
       );
 
       var notifications = 0;
-      registry.addListener(() => notifications++);
-
-      registry.put(
-        'a1',
-        const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
-      );
+      registry
+        ..addListener(() => notifications++)
+        ..put(
+          'a1',
+          const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+        );
       check(notifications).equals(1);
       check(registry.supports(agentId: 'a1', method: 'sql.execute'))
           .equals(true);
@@ -155,20 +155,20 @@ void main() {
         discoverAgentRpcMethodsUseCase: DiscoverAgentRpcMethodsUseCase(
           _ProgrammableMetaRepository(),
         ),
-      );
-      registry.put(
-        'a1',
-        const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
-      );
-      registry.put(
-        'a2',
-        const AgentRpcDescriptor(methods: <String>{'agent.getProfile'}),
-      );
+      )
+        ..put(
+          'a1',
+          const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+        )
+        ..put(
+          'a2',
+          const AgentRpcDescriptor(methods: <String>{'agent.getProfile'}),
+        );
 
       var notifications = 0;
-      registry.addListener(() => notifications++);
-
-      registry.clear();
+      registry
+        ..addListener(() => notifications++)
+        ..clear();
       check(notifications).equals(1);
       check(registry.cachedAgentCount).equals(0);
 
@@ -215,8 +215,8 @@ class _ProgrammableMetaRepository implements AgentMetaRepository {
       );
     }
     return Future.value(
-      Failure<AgentRpcDescriptor, AppFailure>(
-        const NetworkFailure(message: 'no stub', userMessage: 'no stub'),
+      const Failure<AgentRpcDescriptor, AppFailure>(
+        NetworkFailure(message: 'no stub', userMessage: 'no stub'),
       ),
     );
   }

@@ -344,8 +344,8 @@ class _RecordingDiscoverRepository implements AgentMetaRepository {
   }) {
     requestedAgentIds.add(agentId);
     return Future<AppResult<AgentRpcDescriptor>>.value(
-      Success<AgentRpcDescriptor, AppFailure>(
-        const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+      const Success<AgentRpcDescriptor, AppFailure>(
+        AgentRpcDescriptor(methods: <String>{'sql.execute'}),
       ),
     );
   }

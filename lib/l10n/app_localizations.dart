@@ -2206,6 +2206,12 @@ abstract class AppLocalizations {
   /// **'This token is reported as revoked by the agent.'**
   String get clientAgentDetailPolicyRevoked;
 
+  /// CTA shown next to the revoked-token banner; scrolls the token card into view and focuses its input.
+  ///
+  /// In en, this message translates to:
+  /// **'Save new token'**
+  String get clientAgentDetailPolicyRevokedSaveNewToken;
+
   /// No description provided for @clientAgentDetailPolicyUnsupported.
   ///
   /// In en, this message translates to:

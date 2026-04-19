@@ -552,6 +552,10 @@
   "clientAgentDetailPolicyViewsLabel": "Views permitidas",
   "clientAgentDetailPolicyPermissionsLabel": "Permissoes",
   "clientAgentDetailPolicyRevoked": "Este token esta marcado como revogado pelo agente.",
+  "clientAgentDetailPolicyRevokedSaveNewToken": "Salvar novo token",
+  "@clientAgentDetailPolicyRevokedSaveNewToken": {
+    "description": "CTA exibido ao lado do aviso de token revogado; rola o card de token para a visao e foca o input."
+  },
   "clientAgentDetailPolicyUnsupported": "Este agente nao expoe introspecao da politica do token.",
   "clientAgentDetailPolicyEmpty": "O agente nao retornou nenhuma regra para este token.",
   "clientAgentDetailSectionEditProfile": "Perfil no catálogo",

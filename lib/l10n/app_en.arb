@@ -775,6 +775,10 @@
   "clientAgentDetailPolicyViewsLabel": "Allowed views",
   "clientAgentDetailPolicyPermissionsLabel": "Permissions",
   "clientAgentDetailPolicyRevoked": "This token is reported as revoked by the agent.",
+  "clientAgentDetailPolicyRevokedSaveNewToken": "Save new token",
+  "@clientAgentDetailPolicyRevokedSaveNewToken": {
+    "description": "CTA shown next to the revoked-token banner; scrolls the token card into view and focuses its input."
+  },
   "clientAgentDetailPolicyUnsupported": "This agent does not expose token policy introspection.",
   "clientAgentDetailPolicyEmpty": "Agent did not return any rule for this token.",
   "clientAgentDetailSectionEditProfile": "Catalog profile",
