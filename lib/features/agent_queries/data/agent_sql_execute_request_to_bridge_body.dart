@@ -43,8 +43,7 @@ class AgentSqlExecuteRequestToBridgeBody {
         : <String, Object?>{'outbound_compression': outboundCompression};
 
     final apiVersion = request.apiVersion.trim();
-    final payloadFrameCompression =
-        request.payloadFrameCompression?.wireValue;
+    final payloadFrameCompression = request.payloadFrameCompression?.wireValue;
 
     return <String, Object?>{
       'agentId': request.trimmedAgentId,

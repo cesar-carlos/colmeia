@@ -29,7 +29,8 @@ class AgentSqlExecutionEligibilityChecker
     bool? isHubConnected,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
   }) async {
-    final onlineIds = hubPresenceOnlineAgentIdsSnapshot ??
+    final onlineIds =
+        hubPresenceOnlineAgentIdsSnapshot ??
         await _loadOnlineAgentIdsCached(userId);
     if (onlineIds == null) {
       if (_policy.allowWhenPresenceSnapshotUnavailable()) {
