@@ -52,6 +52,7 @@ class AppComparisonBarChartStyle {
     this.minY,
     this.maxY,
     this.interval,
+    this.yAxisRangePadding,
     this.yAxisTitle,
     this.xAxisTitle,
     this.showTooltip = true,
@@ -80,6 +81,7 @@ class AppComparisonBarChartStyle {
     this.categoryViewportFootnote,
     this.categoryViewportPanSemanticsLabel,
     this.outerDataLabelTopReserve = 0,
+    this.dataLabelBackgroundColor,
     this.enableTapHighlight = false,
     this.tapHighlightDimmedOpacity = 0.35,
   });
@@ -138,6 +140,10 @@ class AppComparisonBarChartStyle {
   /// at the top of the plot at default [TextScaler] values.
   final double outerDataLabelTopReserve;
 
+  /// Optional fill behind each data label (e.g. chart/card surface) so grid
+  /// lines do not run through compact currency text on tall columns.
+  final Color? dataLabelBackgroundColor;
+
   /// Animation duration for the series.
   final Duration? animationDuration;
 
@@ -165,6 +171,14 @@ class AppComparisonBarChartStyle {
 
   /// Optional Y axis interval.
   final num? interval;
+
+  /// When set, applied as [NumericAxis.rangePadding] instead of the engine
+  /// default (outer labels use [ChartRangePadding.normal]).
+  ///
+  /// Use [ChartRangePadding.additionalEnd] when outer data labels still clip
+  /// at the plot top: Syncfusion extends the axis maximum by one tick
+  /// interval, shortening the tallest column and freeing vertical space.
+  final ChartRangePadding? yAxisRangePadding;
 
   /// Optional Y axis title.
   final String? yAxisTitle;

@@ -4,6 +4,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 enum OverviewHomeBarChartKind {
   payment,
@@ -23,11 +24,13 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
   required AppLocalizations l10n,
   bool showDataLabels = true,
   bool weekdayUsesCurrencyAxis = false,
+  Color? weekdayRevenueDataLabelBackground,
 }) {
   final localeName = l10n.localeName;
   final isRanking = kind == OverviewHomeBarChartKind.ranking;
   final isWeekday = kind == OverviewHomeBarChartKind.weekday;
   final isPayment = kind == OverviewHomeBarChartKind.payment;
+  final weekdayRevenue = isWeekday && weekdayUsesCurrencyAxis;
 
   return AppComparisonBarChartStyle(
     animationDuration: const Duration(milliseconds: 350),
@@ -48,8 +51,15 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     xLabelMaxChars: isRanking ? 22 : null,
     dataLabelOffset: Offset(
       0,
-      (isRanking || isPayment) ? tokens.gapSm : tokens.gapMd,
+      weekdayRevenue
+          ? tokens.gapMd + tokens.gapSm + tokens.gapXs
+          : ((isRanking || isPayment) ? tokens.gapSm : tokens.gapMd),
     ),
+    outerDataLabelTopReserve: weekdayRevenue ? tokens.contentSpacing : 0,
+    yAxisRangePadding:
+        weekdayRevenue ? ChartRangePadding.additionalEnd : null,
+    dataLabelBackgroundColor:
+        weekdayRevenue ? weekdayRevenueDataLabelBackground : null,
     tooltipLabelMaxChars: 56,
     minPlottedValueShareOfMax: isRanking
         ? 0.03

@@ -204,15 +204,15 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         ),
         primaryYAxis: NumericAxis(
           isVisible: style.showYAxis,
-          rangePadding:
-              comparisonBarChartNeedsOuterDataLabelHeadroom(
+          rangePadding: style.yAxisRangePadding ??
+              (comparisonBarChartNeedsOuterDataLabelHeadroom(
                 showDataLabels: style.showDataLabels,
                 dataLabelAlignment: style.dataLabelAlignment,
               )
               // additionalEnd stacks with chart margin top; normal keeps labels
               // readable without a second tall empty band inside the plot.
               ? ChartRangePadding.normal
-              : ChartRangePadding.auto,
+              : ChartRangePadding.auto),
           axisLine: const AxisLine(width: 0),
           // Column charts must anchor at zero when [style.minY] is unset.
           // Otherwise Syncfusion picks a data-relative minimum (often the
@@ -282,6 +282,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
               textStyle: style.dataLabelTextStyle,
               labelAlignment: style.dataLabelAlignment,
               offset: style.dataLabelOffset ?? Offset.zero,
+              color: style.dataLabelBackgroundColor,
+              margin: style.dataLabelBackgroundColor != null
+                  ? const EdgeInsets.symmetric(horizontal: 6, vertical: 8)
+                  : const EdgeInsets.all(5),
             ),
             onPointTap: onPointTap == null || !enableInteraction
                 ? null

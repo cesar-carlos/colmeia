@@ -158,6 +158,9 @@ class _OverviewWeekdaySalesTrendChartState
           kind: OverviewHomeBarChartKind.weekday,
           l10n: l10n,
           weekdayUsesCurrencyAxis: !isSalesCount,
+          weekdayRevenueDataLabelBackground: isSalesCount
+              ? null
+              : Theme.of(context).colorScheme.surface,
         ),
         emptyPlaceholder: showEmptyPlaceholder
             ? Padding(
