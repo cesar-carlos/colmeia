@@ -156,16 +156,14 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                                     ))
                                   AppSecondaryButton(
                                     label: controller.isOnRetryCooldown
-                                        ? l10n
-                                              .clientAgentDetailRetryAfterCountdown(
-                                                controller
-                                                        .retryAfterGate
-                                                        .remaining
-                                                        ?.inSeconds ??
-                                                    0,
-                                              )
-                                        : l10n
-                                              .clientAgentDetailRefreshFromAgent,
+                                        ? l10n.clientAgentDetailRetryAfterCountdown(
+                                            controller
+                                                    .retryAfterGate
+                                                    .remaining
+                                                    ?.inSeconds ??
+                                                0,
+                                          )
+                                        : l10n.clientAgentDetailRefreshFromAgent,
                                     icon: const Icon(Icons.cloud_sync_rounded),
                                     isLoading: controller.isRefreshingFromAgent,
                                     onPressed:
@@ -511,8 +509,7 @@ class _ClientTokenPolicyCard extends StatefulWidget {
   final VoidCallback? onRequestNewToken;
 
   @override
-  State<_ClientTokenPolicyCard> createState() =>
-      _ClientTokenPolicyCardState();
+  State<_ClientTokenPolicyCard> createState() => _ClientTokenPolicyCardState();
 }
 
 class _ClientTokenPolicyCardState extends State<_ClientTokenPolicyCard> {

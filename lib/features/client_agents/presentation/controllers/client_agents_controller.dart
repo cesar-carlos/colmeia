@@ -56,7 +56,7 @@ class ClientAgentsController extends ChangeNotifier {
     required QueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase,
     required ProbeClientApprovedAgentUseCase probeClientApprovedAgentUseCase,
     required DiscardQueuedClientAgentRequestAccessUseCase
-        discardQueuedClientAgentRequestAccessUseCase,
+    discardQueuedClientAgentRequestAccessUseCase,
     required ReadPendingClientAgentActionsUseCase readPendingActionsUseCase,
     required SyncPendingClientAgentActionsUseCase syncPendingActionsUseCase,
     required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
@@ -113,7 +113,7 @@ class ClientAgentsController extends ChangeNotifier {
   final QueueClientAgentRemoveAccessUseCase _queueRemoveAccessUseCase;
   final ProbeClientApprovedAgentUseCase _probeClientApprovedAgentUseCase;
   final DiscardQueuedClientAgentRequestAccessUseCase
-      _discardQueuedClientAgentRequestAccessUseCase;
+  _discardQueuedClientAgentRequestAccessUseCase;
   final ReadPendingClientAgentActionsUseCase _readPendingActionsUseCase;
   final SyncPendingClientAgentActionsUseCase _syncPendingActionsUseCase;
   final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
@@ -242,8 +242,7 @@ class ClientAgentsController extends ChangeNotifier {
   /// action, or `null` when the action is allowed.
   Duration? get requestAccessRetryAfter =>
       _requestAccessRetryAfterGate.remaining;
-  bool get isRequestAccessOnCooldown =>
-      !_requestAccessRetryAfterGate.isOpen;
+  bool get isRequestAccessOnCooldown => !_requestAccessRetryAfterGate.isOpen;
 
   Future<void> initialize() async {
     if (_hasLoadedInitialData || isLoading) {
@@ -489,8 +488,9 @@ class ClientAgentsController extends ChangeNotifier {
       context: <String, Object?>{
         'operation': 'submitAccessRequestWithLocalTokens',
         'requestedCount': requestedIds.length,
-        'withTokenCount':
-            tokenByAgentId.values.where((t) => t.isNotEmpty).length,
+        'withTokenCount': tokenByAgentId.values
+            .where((t) => t.isNotEmpty)
+            .length,
       },
     );
 
@@ -659,8 +659,7 @@ class ClientAgentsController extends ChangeNotifier {
   /// the resolved ids without re-reading the controller's internal state.
   Future<bool> requestAccess({
     required Set<String> agentIds,
-    Future<void> Function(RequestAccessSubmissionSnapshot snapshot)?
-        onResolved,
+    Future<void> Function(RequestAccessSubmissionSnapshot snapshot)? onResolved,
   }) async {
     if (agentIds.isEmpty) {
       return false;
@@ -850,8 +849,7 @@ class ClientAgentsController extends ChangeNotifier {
     required Set<String> agentIds,
   }) async {
     for (var attempt = 0; attempt < 2; attempt++) {
-      final discardResult =
-          await _discardQueuedClientAgentRequestAccessUseCase(
+      final discardResult = await _discardQueuedClientAgentRequestAccessUseCase(
         userId: userId,
         agentIds: agentIds,
       );
@@ -1292,7 +1290,11 @@ class ClientAgentsController extends ChangeNotifier {
     final timedOutNow = <String>{};
 
     final idsToCheck = _trackedApprovalAgentIds.toList(growable: false);
-    for (var i = 0; i < idsToCheck.length; i += _approvedAgentsProbeConcurrency) {
+    for (
+      var i = 0;
+      i < idsToCheck.length;
+      i += _approvedAgentsProbeConcurrency
+    ) {
       final upper = min(i + _approvedAgentsProbeConcurrency, idsToCheck.length);
       final chunk = idsToCheck.sublist(i, upper);
       final chunkResults = await Future.wait(
@@ -1363,12 +1365,14 @@ class ClientAgentsController extends ChangeNotifier {
   }
 
   Future<
-      ({
-        String agentId,
-        bool timedOut,
-        ClientAgent? approved,
-        bool denied,
-      })> _evaluateTrackedAgentForPoll({
+    ({
+      String agentId,
+      bool timedOut,
+      ClientAgent? approved,
+      bool denied,
+    })
+  >
+  _evaluateTrackedAgentForPoll({
     required String userId,
     required String agentId,
   }) async {
@@ -1398,7 +1402,8 @@ class ClientAgentsController extends ChangeNotifier {
       userId: userId,
       agentId: agentId,
     );
-    final denied = requestStatus == AgentAccessRequestStatus.rejected ||
+    final denied =
+        requestStatus == AgentAccessRequestStatus.rejected ||
         requestStatus == AgentAccessRequestStatus.expired;
     return (
       agentId: agentId,
@@ -1864,10 +1869,12 @@ class ClientAgentsController extends ChangeNotifier {
 
     switch (event) {
       case AgentPresenceCatalogUpdated():
-        unawaited(_refreshAgentDetailFromPresence(
-          userId: userId,
-          agentId: event.agentId,
-        ));
+        unawaited(
+          _refreshAgentDetailFromPresence(
+            userId: userId,
+            agentId: event.agentId,
+          ),
+        );
       case AgentPresenceHint():
         _applyHintInMemory(
           agentId: event.agentId,
@@ -1920,19 +1927,21 @@ class ClientAgentsController extends ChangeNotifier {
       return;
     }
     var changed = false;
-    final updatedItems = current.items.map((agent) {
-      if (agent.agentId != agentId) {
-        return agent;
-      }
-      final desired = online
-          ? AgentConnectionStatus.online
-          : AgentConnectionStatus.offline;
-      if (agent.connectionStatus == desired) {
-        return agent;
-      }
-      changed = true;
-      return agent.copyWith(connectionStatus: desired);
-    }).toList(growable: false);
+    final updatedItems = current.items
+        .map((agent) {
+          if (agent.agentId != agentId) {
+            return agent;
+          }
+          final desired = online
+              ? AgentConnectionStatus.online
+              : AgentConnectionStatus.offline;
+          if (agent.connectionStatus == desired) {
+            return agent;
+          }
+          changed = true;
+          return agent.copyWith(connectionStatus: desired);
+        })
+        .toList(growable: false);
     if (!changed) {
       return;
     }
@@ -1956,10 +1965,12 @@ class ClientAgentsController extends ChangeNotifier {
       if (_isDisposed) {
         return;
       }
-      unawaited(_refreshAgentDetailFromPresence(
-        userId: userId,
-        agentId: agentId,
-      ));
+      unawaited(
+        _refreshAgentDetailFromPresence(
+          userId: userId,
+          agentId: agentId,
+        ),
+      );
     });
   }
 

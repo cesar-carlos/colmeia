@@ -676,8 +676,7 @@ class ClientAgentDetailController extends ChangeNotifier {
   /// `agent.getProfile` — UI should hide the action in that case.
   Future<void> refreshFromAgent({required String agentId}) async {
     if (!agentSupportsRpcMethod('agent.getProfile')) {
-      _refreshFromAgentError =
-          _s.clientAgentDetailRefreshFromAgentUnsupported;
+      _refreshFromAgentError = _s.clientAgentDetailRefreshFromAgentUnsupported;
       _notifyListenersIfAlive();
       return;
     }
@@ -702,8 +701,7 @@ class ClientAgentDetailController extends ChangeNotifier {
       final snapshot = result.getOrNull();
       if (snapshot != null) {
         _applyAgentProfileSnapshot(snapshot);
-        _refreshFromAgentFeedback =
-            _s.clientAgentDetailRefreshFromAgentSuccess;
+        _refreshFromAgentFeedback = _s.clientAgentDetailRefreshFromAgentSuccess;
       } else {
         final failure = result.exceptionOrNull()!;
         _refreshFromAgentError = _consumeFailure(failure);
