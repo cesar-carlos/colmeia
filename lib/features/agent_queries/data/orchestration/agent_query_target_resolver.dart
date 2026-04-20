@@ -98,23 +98,25 @@ class AgentQueryTargetResolver {
     final tokensByAgentId = parallel[0]! as Map<String, String>;
     final onlineIds = parallel[1] as Set<String>?;
 
-    final consideredTargets = sortedAgents.map((agent) {
-      final hubSignal = _hubSignalFromFastApprovedPresenceRow(
-        agent.connectionStatus,
-      );
-      final presenceStatus = resolveAgentConnectionStatus(
-        agentId: agent.agentId,
-        isHubConnected: hubSignal,
-        onlineAgentIds: onlineIds,
-      );
-      return AgentQueryTarget(
-        agentId: agent.agentId,
-        displayName: resolveClientAgentDisplayName(agent, agent.agentId),
-        connectionStatus: presenceStatus,
-        clientToken: tokensByAgentId[agent.agentId],
-        hubConnectedFromApprovedCatalogRow: hubSignal,
-      );
-    }).toList(growable: false);
+    final consideredTargets = sortedAgents
+        .map((agent) {
+          final hubSignal = _hubSignalFromFastApprovedPresenceRow(
+            agent.connectionStatus,
+          );
+          final presenceStatus = resolveAgentConnectionStatus(
+            agentId: agent.agentId,
+            isHubConnected: hubSignal,
+            onlineAgentIds: onlineIds,
+          );
+          return AgentQueryTarget(
+            agentId: agent.agentId,
+            displayName: resolveClientAgentDisplayName(agent, agent.agentId),
+            connectionStatus: presenceStatus,
+            clientToken: tokensByAgentId[agent.agentId],
+            hubConnectedFromApprovedCatalogRow: hubSignal,
+          );
+        })
+        .toList(growable: false);
     final missingClientTokenTargets = consideredTargets
         .where((target) => !target.hasClientToken)
         .toList(growable: false);

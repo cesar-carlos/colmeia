@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -49,7 +50,11 @@ class AppCategoryDonutCardStyle {
   });
 
   /// Default donut sweep when [doughnutAnimationDurationMs] is null.
-  static const int defaultDoughnutAnimationDurationMs = 900;
+  ///
+  /// Aligned with the comparison bar charts (~350-500 ms) so that the staged
+  /// dashboard mounting in `OverviewHomeStagedBelowKpis` doesn't have one
+  /// outlier card animating for nearly a second while sibling charts mount.
+  static const int defaultDoughnutAnimationDurationMs = 500;
 
   /// Fixed width/height of the square chart area when not constrained.
   final double? chartSize;
@@ -109,6 +114,22 @@ class AppCategoryDonutCard extends StatefulWidget {
     this.loadingSemanticsLabel,
     this.reselectFiresSegmentTap = false,
   });
+
+  /// Loading-block height used when the card is mounted with `isLoading: true`
+  /// (mirrors `_LoadingBlock`). Exposed so callers that render their own staged
+  /// placeholder (e.g. `OverviewHomeStagedBelowKpis`) reserve the same vertical
+  /// space and avoid layout shift when the real card mounts.
+  static double loadingBlockHeight(
+    AppThemeTokens tokens, {
+    AppChartPreset preset = AppChartPreset.standard,
+  }) {
+    final h = switch (preset) {
+      AppChartPreset.compact => tokens.chartCompactHeight,
+      AppChartPreset.standard => tokens.chartStandardHeight,
+      AppChartPreset.explorable => tokens.chartStandardHeight,
+    };
+    return h * 0.85;
+  }
 
   final String title;
   final String? subtitle;
@@ -488,23 +509,35 @@ class _DonutSection extends StatelessWidget {
     final animationDuration = (reduceMotion || configuredMs <= 0)
         ? 0.0
         : configuredMs.toDouble();
-    final chartSeriesSignature = Object.hash(
-      segments.length,
-      Object.hashAll(
-        <int>[
-          for (final s in segments) Object.hash(s.label, s.value),
-        ],
-      ),
-    );
+    final segmentsTotal = segments.donutWeightTotal;
+    // Identity-based key: while the parent caches [segments] (e.g. the overview
+    // payment / category mix cards), the same instance is reused across rebuilds
+    // triggered by selection changes — keeping the key stable lets Syncfusion
+    // update the existing series instead of remounting [SfCircularChart], which
+    // is expensive (painters, hit-test cache). The key only changes when the
+    // parent recomputes its segments list.
     final chart = RepaintBoundary(
-      key: ValueKey<int>(chartSeriesSignature),
+      key: ValueKey<int>(identityHashCode(segments)),
       child: ExcludeSemantics(
         child: SfCircularChart(
           backgroundColor:
               style.chartBackgroundColor ??
               colors.surfaceContainerLow.withValues(alpha: 0.65),
-          tooltipBehavior: TooltipBehavior(
-            format: 'point.x : point.y',
+          tooltipBehavior: buildChartTooltipBehavior(
+            context,
+            enable: true,
+          ),
+          onTooltipRender: buildSanitizingTooltipRenderer(
+            bodyResolver: (args) {
+              final raw = args.pointIndex;
+              final i = raw is int ? raw : raw?.toInt();
+              if (i == null || i < 0 || i >= segments.length) {
+                return null;
+              }
+              final segment = segments[i];
+              return '${segment.label}: ${segment.resolveValueLabel()} '
+                  '(${segment.resolvePercentLabel(segmentsTotal)})';
+            },
           ),
           series: <CircularSeries<AppCategoryDonutSegment, String>>[
             DoughnutSeries<AppCategoryDonutSegment, String>(
@@ -514,6 +547,8 @@ class _DonutSection extends StatelessWidget {
               animationDuration: animationDuration,
               innerRadius: style.innerRadius,
               radius: style.outerRadius,
+              explode: true,
+              explodeOffset: '4%',
               explodeIndex: selectedIndex,
               pointColorMapper: (s, i) => s.color ?? palette[i % palette.length],
               onPointTap: (details) {
@@ -564,12 +599,30 @@ class _DonutSection extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   if (centerPrimary != null && centerPrimary!.isNotEmpty)
-                    Text(
-                      centerPrimary!,
-                      textAlign: TextAlign.center,
-                      style: typography.displayH1.copyWith(
-                        fontSize: centerPrimaryFontSize,
-                        fontWeight: FontWeight.w800,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        final fade = FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        );
+                        return ScaleTransition(
+                          scale: Tween<double>(begin: 0.92, end: 1).animate(
+                            animation,
+                          ),
+                          child: fade,
+                        );
+                      },
+                      child: Text(
+                        centerPrimary!,
+                        key: ValueKey<String>(centerPrimary!),
+                        textAlign: TextAlign.center,
+                        style: typography.displayH1.copyWith(
+                          fontSize: centerPrimaryFontSize,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   if (centerSecondary != null &&
@@ -704,9 +757,8 @@ class _LegendRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final surface = theme.colorScheme.surfaceContainerHighest.withValues(
-      alpha: isSelected ? 0.55 : 0,
-    );
+    final selectedSurface = theme.colorScheme.surfaceContainerHighest
+        .withValues(alpha: 0.55);
 
     return Semantics(
       button: true,
@@ -717,9 +769,11 @@ class _LegendRow extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: borderRadius,
-          child: Ink(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
             decoration: BoxDecoration(
-              color: isSelected ? surface : null,
+              color: isSelected ? selectedSurface : Colors.transparent,
               borderRadius: borderRadius,
             ),
             padding: padding,

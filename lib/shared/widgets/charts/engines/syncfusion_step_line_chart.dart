@@ -5,6 +5,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_step_line_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -143,9 +144,11 @@ class _SyncfusionStepLineChartState extends State<SyncfusionStepLineChart> {
           name: entry.label,
           color: seriesColor,
           width: widget.style.lineWidth ?? 2.5,
-          animationDuration:
-              widget.style.animationDuration?.inMilliseconds.toDouble() ??
-                  1200,
+          animationDuration: resolveChartAnimationDurationMs(
+            context: context,
+            styleDuration: widget.style.animationDuration,
+            defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+          ),
           markerSettings: MarkerSettings(
             isVisible: widget.style.showMarkers,
             height: widget.style.markerSize ?? 7,
@@ -180,7 +183,12 @@ class _SyncfusionStepLineChartState extends State<SyncfusionStepLineChart> {
       child: SfCartesianChart(
         margin: widget.style.chartPadding ?? EdgeInsets.zero,
         plotAreaBorderWidth: 0,
-        tooltipBehavior: TooltipBehavior(enable: widget.style.showTooltip),
+        onTooltipRender: buildSanitizingTooltipRenderer(),
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
+          enable: widget.style.showTooltip,
+          shared: widget.isMultiSeries,
+        ),
         trackballBehavior: widget.style.showTrackball
             ? TrackballBehavior(
                 enable: true,

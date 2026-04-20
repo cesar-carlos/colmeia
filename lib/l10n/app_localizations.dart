@@ -381,6 +381,24 @@ abstract class AppLocalizations {
   /// **'Approved agents without a client token on this device'**
   String get dashboardAffectedAgentsSheetTitleSetupRequired;
 
+  /// No description provided for @dashboardAgentsOfflineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents currently offline'**
+  String get dashboardAgentsOfflineTitle;
+
+  /// No description provided for @dashboardAgentsOfflineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'These approved agents have a saved token but the hub reports them as disconnected. Ask the agent operator to reconnect them, then retry.'**
+  String get dashboardAgentsOfflineMessage;
+
+  /// No description provided for @dashboardAffectedAgentsSheetTitleOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents reported offline by the hub'**
+  String get dashboardAffectedAgentsSheetTitleOffline;
+
   /// No description provided for @dashboardMultiAgentAggregationTitle.
   ///
   /// In en, this message translates to:
@@ -453,12 +471,6 @@ abstract class AppLocalizations {
   /// **'AVG.\nTICKET'**
   String get dashboardPaymentSummaryHeaderAvgTicket;
 
-  /// No description provided for @dashboardPaymentSummaryLoadingSemantics.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading payment method summary…'**
-  String get dashboardPaymentSummaryLoadingSemantics;
-
   /// No description provided for @dashboardHomeFiltersAgentsLabel.
   ///
   /// In en, this message translates to:
@@ -482,12 +494,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Current month'**
   String get dashboardHomeFiltersCurrentMonth;
-
-  /// No description provided for @dashboardHomeFiltersPeriodLast30Days.
-  ///
-  /// In en, this message translates to:
-  /// **'Last 30 days'**
-  String get dashboardHomeFiltersPeriodLast30Days;
 
   /// No description provided for @dashboardHomeFiltersReferenceRangeLabel.
   ///
@@ -1189,24 +1195,6 @@ abstract class AppLocalizations {
   /// **'No combined data for this view.'**
   String get chartComboEmptyDefault;
 
-  /// Footer hint when category-axis pan is enabled on bar+line combo charts.
-  ///
-  /// In en, this message translates to:
-  /// **'Swipe sideways along the chart to see more periods.'**
-  String get chartComboPanGestureHint;
-
-  /// Screen reader summary when the combo chart uses horizontal pan on the category axis.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Bar and line chart, one category.} other{Bar and line chart, {count} categories.}} Swipe horizontally to see all.'**
-  String chartComboPanChartA11y(int count);
-
-  /// Screen reader summary when the comparison chart uses horizontal panning for categories.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{Bar chart, one category.} other{Bar chart, {count} categories.}} Swipe the chart horizontally to see all.'**
-  String chartComparisonPanChartA11y(int count);
-
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///
   /// In en, this message translates to:
@@ -1248,12 +1236,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unable to load the overview.'**
   String get overviewLoadFailedUserMessage;
-
-  /// No description provided for @overviewSaveClientTokenForAgentUserMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Save this agent\'s client token to query their data.'**
-  String get overviewSaveClientTokenForAgentUserMessage;
 
   /// No description provided for @clientAgentsDataSourcesEyebrow.
   ///
@@ -1438,7 +1420,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsRequestAccessIntro1.
   ///
   /// In en, this message translates to:
-  /// **'Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.'**
+  /// **'Use one or more rows to request access. Each row needs an agent UUID; add the client token when that agent requires it for SQL execution.'**
   String get clientAgentsRequestAccessIntro1;
 
   /// No description provided for @clientAgentsRequestAccessIntro2.
@@ -1450,7 +1432,7 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsRequestAccessIntroToken.
   ///
   /// In en, this message translates to:
-  /// **'The client token is saved only on this device (encrypted) and is not sent when you submit the access request.'**
+  /// **'The client token is cached on this device while approval is pending and pushed to the Colmeia server as soon as the agent is linked.'**
   String get clientAgentsRequestAccessIntroToken;
 
   /// No description provided for @clientAgentsRequestAccessAddRow.
@@ -1474,13 +1456,13 @@ abstract class AppLocalizations {
   /// No description provided for @clientAgentsClientTokenLabel.
   ///
   /// In en, this message translates to:
-  /// **'Client token (local)'**
+  /// **'Client token'**
   String get clientAgentsClientTokenLabel;
 
   /// No description provided for @clientAgentsClientTokenHint.
   ///
   /// In en, this message translates to:
-  /// **'Optional — stored only on this device'**
+  /// **'Optional — cached locally, pushed to the server after approval'**
   String get clientAgentsClientTokenHint;
 
   /// No description provided for @clientAgentsClientTokenShow.
@@ -1518,6 +1500,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The following agent IDs are invalid: {ids}.'**
   String clientAgentsValidationInvalidIds(String ids);
+
+  /// No description provided for @clientAgentsValidationTokenTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'The client token must be {limit} characters or fewer. Shorten it for: {ids}.'**
+  String clientAgentsValidationTokenTooLong(int limit, String ids);
 
   /// No description provided for @clientAgentsDuplicatedIdsNote.
   ///
@@ -1705,6 +1693,12 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get appInlineErrorRetry;
 
+  /// Compact label rendered on a disabled retry button while a Retry-After cooldown is active.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry in {seconds}s'**
+  String appInlineErrorRetryCountdown(int seconds);
+
   /// No description provided for @clientAgentsNoLocalPendingToSync.
   ///
   /// In en, this message translates to:
@@ -1845,6 +1839,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sync finished but no pending actions could be applied.'**
   String get clientAgentsSyncSuccessNoneCompleted;
+
+  /// No description provided for @clientAgentsSyncRetryAfterCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'The server asked us to wait. Try again in {seconds}s.'**
+  String clientAgentsSyncRetryAfterCountdown(int seconds);
+
+  /// No description provided for @clientAgentsRequestAccessRetryAfterCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many access requests. Try again in {seconds}s.'**
+  String clientAgentsRequestAccessRetryAfterCountdown(int seconds);
 
   /// No description provided for @clientAgentsSyncSuccessSomeFailedSuffix.
   ///
@@ -2008,12 +2014,6 @@ abstract class AppLocalizations {
   /// **'N/A'**
   String get clientAgentValueNotAvailable;
 
-  /// No description provided for @clientAgentAddressNotProvided.
-  ///
-  /// In en, this message translates to:
-  /// **'Address not provided'**
-  String get clientAgentAddressNotProvided;
-
   /// No description provided for @clientAgentDetailSectionContact.
   ///
   /// In en, this message translates to:
@@ -2038,41 +2038,161 @@ abstract class AppLocalizations {
   /// **'Record'**
   String get clientAgentDetailSectionRecord;
 
-  /// No description provided for @clientAgentDetailSectionLocalToken.
+  /// No description provided for @clientAgentDetailSectionServerToken.
   ///
   /// In en, this message translates to:
-  /// **'Local client token'**
-  String get clientAgentDetailSectionLocalToken;
+  /// **'Client token'**
+  String get clientAgentDetailSectionServerToken;
 
-  /// No description provided for @clientAgentDetailSectionLocalTokenSubtitle.
+  /// No description provided for @clientAgentDetailSectionServerTokenSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Used only on this device for SQL queries (for example in the overview). Never sent to Colmeia servers.'**
-  String get clientAgentDetailSectionLocalTokenSubtitle;
+  /// **'Stored on the Colmeia server and forwarded to the agent as `params.client_token` when this client runs SQL through the bridge. The token is also cached on this device so dashboards keep working briefly while offline.'**
+  String get clientAgentDetailSectionServerTokenSubtitle;
 
-  /// No description provided for @clientAgentDetailLocalTokenSave.
+  /// No description provided for @clientAgentDetailServerTokenSave.
   ///
   /// In en, this message translates to:
   /// **'Save token'**
-  String get clientAgentDetailLocalTokenSave;
+  String get clientAgentDetailServerTokenSave;
 
-  /// No description provided for @clientAgentDetailLocalTokenRemove.
+  /// No description provided for @clientAgentDetailServerTokenRemove.
   ///
   /// In en, this message translates to:
   /// **'Remove token'**
-  String get clientAgentDetailLocalTokenRemove;
+  String get clientAgentDetailServerTokenRemove;
 
-  /// No description provided for @clientAgentDetailLocalTokenSaved.
+  /// No description provided for @clientAgentDetailServerTokenSaved.
   ///
   /// In en, this message translates to:
-  /// **'Token saved on this device.'**
-  String get clientAgentDetailLocalTokenSaved;
+  /// **'Token saved on the server.'**
+  String get clientAgentDetailServerTokenSaved;
 
-  /// No description provided for @clientAgentDetailLocalTokenRemoved.
+  /// No description provided for @clientAgentDetailServerTokenRemoved.
   ///
   /// In en, this message translates to:
-  /// **'Token removed from this device.'**
-  String get clientAgentDetailLocalTokenRemoved;
+  /// **'Token removed from the server.'**
+  String get clientAgentDetailServerTokenRemoved;
+
+  /// No description provided for @clientAgentDetailServerTokenStatusConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'A token is configured for this agent on the server.'**
+  String get clientAgentDetailServerTokenStatusConfigured;
+
+  /// No description provided for @clientAgentDetailServerTokenStatusMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No token configured on the server yet.'**
+  String get clientAgentDetailServerTokenStatusMissing;
+
+  /// No description provided for @clientAgentDetailServerTokenStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Token status not loaded yet — refresh the screen with internet access to confirm.'**
+  String get clientAgentDetailServerTokenStatusUnknown;
+
+  /// No description provided for @clientAgentDetailRefreshFromAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh from agent'**
+  String get clientAgentDetailRefreshFromAgent;
+
+  /// No description provided for @clientAgentDetailRefreshFromAgentSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile refreshed straight from the agent.'**
+  String get clientAgentDetailRefreshFromAgentSuccess;
+
+  /// No description provided for @clientAgentDetailRefreshFromAgentUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent does not implement agent.getProfile via RPC.'**
+  String get clientAgentDetailRefreshFromAgentUnsupported;
+
+  /// No description provided for @clientAgentDetailRetryAfterCountdown.
+  ///
+  /// In en, this message translates to:
+  /// **'The server asked us to wait. Try again in {seconds}s.'**
+  String clientAgentDetailRetryAfterCountdown(int seconds);
+
+  /// No description provided for @clientAgentDetailSectionPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions of this token'**
+  String get clientAgentDetailSectionPolicy;
+
+  /// No description provided for @clientAgentDetailSectionPolicySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolved by the agent for the bearer token currently stored on the server. If the policy changes after a revocation or scope edit, refresh the screen.'**
+  String get clientAgentDetailSectionPolicySubtitle;
+
+  /// No description provided for @clientAgentDetailPolicyFullAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Full access (all tables, views and permissions).'**
+  String get clientAgentDetailPolicyFullAccess;
+
+  /// No description provided for @clientAgentDetailPolicyAllTables.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed on every table.'**
+  String get clientAgentDetailPolicyAllTables;
+
+  /// No description provided for @clientAgentDetailPolicyAllViews.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed on every view.'**
+  String get clientAgentDetailPolicyAllViews;
+
+  /// No description provided for @clientAgentDetailPolicyAllPermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Holds every permission flag.'**
+  String get clientAgentDetailPolicyAllPermissions;
+
+  /// No description provided for @clientAgentDetailPolicyTablesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed tables'**
+  String get clientAgentDetailPolicyTablesLabel;
+
+  /// No description provided for @clientAgentDetailPolicyViewsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed views'**
+  String get clientAgentDetailPolicyViewsLabel;
+
+  /// No description provided for @clientAgentDetailPolicyPermissionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get clientAgentDetailPolicyPermissionsLabel;
+
+  /// No description provided for @clientAgentDetailPolicyRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'This token is reported as revoked by the agent.'**
+  String get clientAgentDetailPolicyRevoked;
+
+  /// CTA shown next to the revoked-token banner; scrolls the token card into view and focuses its input.
+  ///
+  /// In en, this message translates to:
+  /// **'Save new token'**
+  String get clientAgentDetailPolicyRevokedSaveNewToken;
+
+  /// No description provided for @clientAgentDetailPolicyUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent does not expose token policy introspection.'**
+  String get clientAgentDetailPolicyUnsupported;
+
+  /// No description provided for @clientAgentDetailPolicyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent did not return any rule for this token.'**
+  String get clientAgentDetailPolicyEmpty;
 
   /// No description provided for @clientAgentDetailSectionEditProfile.
   ///
@@ -2542,11 +2662,35 @@ abstract class AppLocalizations {
   /// **'Could not sync pending agent actions.'**
   String get clientAgentsErrorSyncPending;
 
+  /// No description provided for @clientAgentsErrorGetClientAgentToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the agent token from the server.'**
+  String get clientAgentsErrorGetClientAgentToken;
+
+  /// No description provided for @clientAgentsErrorSaveClientAgentToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the agent token on the server.'**
+  String get clientAgentsErrorSaveClientAgentToken;
+
+  /// No description provided for @clientAgentsErrorRemoveClientAgentToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the agent token on the server.'**
+  String get clientAgentsErrorRemoveClientAgentToken;
+
   /// No description provided for @clientAgentsErrorAgentDocumentConflict.
   ///
   /// In en, this message translates to:
   /// **'This CNPJ/CPF is already linked to another agent in the catalog. To change the link, contact support.'**
   String get clientAgentsErrorAgentDocumentConflict;
+
+  /// No description provided for @clientAgentsErrorAgentProfileCasMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Another device updated this agent in the meantime. Reload the screen and reapply your changes.'**
+  String get clientAgentsErrorAgentProfileCasMismatch;
 
   /// No description provided for @agentSqlErrorAuthenticationFailed.
   ///
@@ -2644,132 +2788,6 @@ abstract class AppLocalizations {
   /// **'The query could not be completed on the agent.'**
   String get agentSqlErrorGeneric;
 
-  /// No description provided for @formsDemoEyebrow.
-  ///
-  /// In en, this message translates to:
-  /// **'Forms'**
-  String get formsDemoEyebrow;
-
-  /// No description provided for @formsDemoTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Shared fields'**
-  String get formsDemoTitle;
-
-  /// No description provided for @formsDemoIntroSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Validation, enabled and disabled states, date pickers in Form, FormBuilder as in reports and groupings.'**
-  String get formsDemoIntroSubtitle;
-
-  /// No description provided for @formsDemoFieldLibraryOverline.
-  ///
-  /// In en, this message translates to:
-  /// **'Field library'**
-  String get formsDemoFieldLibraryOverline;
-
-  /// No description provided for @formsDemoSharedFormControlsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Shared form controls'**
-  String get formsDemoSharedFormControlsTitle;
-
-  /// No description provided for @formsDemoPreviewBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Preview'**
-  String get formsDemoPreviewBadge;
-
-  /// No description provided for @formsDemoShowcaseSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Base fields, selectors, and calendar wrappers in the same visual rhythm as the system.'**
-  String get formsDemoShowcaseSubtitle;
-
-  /// No description provided for @formsDemoFieldsEnabledLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Fields enabled'**
-  String get formsDemoFieldsEnabledLabel;
-
-  /// No description provided for @formsDemoShowcaseFieldsEnabledHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Turns the entire example surface below on or off.'**
-  String get formsDemoShowcaseFieldsEnabledHelper;
-
-  /// No description provided for @formsDemoFormStateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Form state'**
-  String get formsDemoFormStateTitle;
-
-  /// No description provided for @formsDemoFormStateSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Turn off to inspect disabled fields.'**
-  String get formsDemoFormStateSubtitle;
-
-  /// No description provided for @formsDemoFormStateFieldsEnabledHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Applies the disabled state to every example below.'**
-  String get formsDemoFormStateFieldsEnabledHelper;
-
-  /// No description provided for @formsDemoTextEmailPasswordTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AppTextField, email, and password'**
-  String get formsDemoTextEmailPasswordTitle;
-
-  /// No description provided for @formsDemoTextEmailPasswordSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Fake data; submit runs validation.'**
-  String get formsDemoTextEmailPasswordSubtitle;
-
-  /// No description provided for @formsDemoFullNameLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Full name'**
-  String get formsDemoFullNameLabel;
-
-  /// No description provided for @formsDemoFullNameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'As in registration'**
-  String get formsDemoFullNameHint;
-
-  /// No description provided for @formsDemoNameValidatorMinLength.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter at least 3 characters.'**
-  String get formsDemoNameValidatorMinLength;
-
-  /// No description provided for @formsDemoCorporateEmailLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Work email'**
-  String get formsDemoCorporateEmailLabel;
-
-  /// No description provided for @formsDemoPasswordLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Password'**
-  String get formsDemoPasswordLabel;
-
-  /// No description provided for @formsDemoNotesLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Notes'**
-  String get formsDemoNotesLabel;
-
-  /// No description provided for @formsDemoNotesHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional'**
-  String get formsDemoNotesHint;
-
   /// No description provided for @formsDemoDatePickersFormTitle.
   ///
   /// In en, this message translates to:
@@ -2782,216 +2800,6 @@ abstract class AppLocalizations {
   /// **'Native Form + FormField. Tap Apply in the sheet to confirm; closing without applying keeps the current value. Remove clears explicitly.'**
   String get formsDemoDatePickersFormSubtitle;
 
-  /// No description provided for @formsDemoReferenceDateLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Reference date'**
-  String get formsDemoReferenceDateLabel;
-
-  /// No description provided for @formsDemoReferenceDateHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Opens in a bottom sheet with a styled calendar.'**
-  String get formsDemoReferenceDateHelper;
-
-  /// No description provided for @formsDemoSelectReferenceDateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select reference date'**
-  String get formsDemoSelectReferenceDateTitle;
-
-  /// No description provided for @formsDemoReferenceDateRequiredError.
-  ///
-  /// In en, this message translates to:
-  /// **'Select the reference date.'**
-  String get formsDemoReferenceDateRequiredError;
-
-  /// No description provided for @formsDemoAssessmentPeriodLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Desired capture period'**
-  String get formsDemoAssessmentPeriodLabel;
-
-  /// No description provided for @formsDemoAssessmentPeriodHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Ideal for filters and analytical queries.'**
-  String get formsDemoAssessmentPeriodHelper;
-
-  /// No description provided for @formsDemoSelectPeriodTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select period'**
-  String get formsDemoSelectPeriodTitle;
-
-  /// No description provided for @formsDemoAssessmentPeriodRequiredError.
-  ///
-  /// In en, this message translates to:
-  /// **'Select the full period.'**
-  String get formsDemoAssessmentPeriodRequiredError;
-
-  /// No description provided for @formsDemoDateRangeMiddle.
-  ///
-  /// In en, this message translates to:
-  /// **' to '**
-  String get formsDemoDateRangeMiddle;
-
-  /// No description provided for @formsDemoCheckboxTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AppCheckboxField'**
-  String get formsDemoCheckboxTitle;
-
-  /// No description provided for @formsDemoCheckboxSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Fictitious consent.'**
-  String get formsDemoCheckboxSubtitle;
-
-  /// No description provided for @formsDemoCheckboxLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Receive a weekly summary by email'**
-  String get formsDemoCheckboxLabel;
-
-  /// No description provided for @formsDemoCheckboxHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Sends alerts, summaries, and indicator updates.'**
-  String get formsDemoCheckboxHelper;
-
-  /// No description provided for @formsDemoRadioCompactTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Compact AppRadioGroup'**
-  String get formsDemoRadioCompactTitle;
-
-  /// No description provided for @formsDemoRadioCompactSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Single selection using the design system inline pattern.'**
-  String get formsDemoRadioCompactSubtitle;
-
-  /// No description provided for @formsDemoPeriodDaily.
-  ///
-  /// In en, this message translates to:
-  /// **'Daily'**
-  String get formsDemoPeriodDaily;
-
-  /// No description provided for @formsDemoPeriodMonthly.
-  ///
-  /// In en, this message translates to:
-  /// **'Monthly'**
-  String get formsDemoPeriodMonthly;
-
-  /// No description provided for @formsDemoPeriodQuarterly.
-  ///
-  /// In en, this message translates to:
-  /// **'Quarterly'**
-  String get formsDemoPeriodQuarterly;
-
-  /// No description provided for @formsDemoChoiceChipTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AppChoiceChip'**
-  String get formsDemoChoiceChipTitle;
-
-  /// No description provided for @formsDemoChoiceChipSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Point-in-time chips for context, store, or scope.'**
-  String get formsDemoChoiceChipSubtitle;
-
-  /// No description provided for @formsDemoScopeHeadquarters.
-  ///
-  /// In en, this message translates to:
-  /// **'Head office'**
-  String get formsDemoScopeHeadquarters;
-
-  /// No description provided for @formsDemoScopeStoreCenter.
-  ///
-  /// In en, this message translates to:
-  /// **'Downtown store'**
-  String get formsDemoScopeStoreCenter;
-
-  /// No description provided for @formsDemoScopeStoreSouth.
-  ///
-  /// In en, this message translates to:
-  /// **'South store'**
-  String get formsDemoScopeStoreSouth;
-
-  /// No description provided for @formsDemoDropdownMenusTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Dropdown menus'**
-  String get formsDemoDropdownMenusTitle;
-
-  /// No description provided for @formsDemoDropdownMenusSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Single-select and multi-select search in the same light/dark visual pattern as the references.'**
-  String get formsDemoDropdownMenusSubtitle;
-
-  /// No description provided for @formsDemoStandardSelectLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Standard select'**
-  String get formsDemoStandardSelectLabel;
-
-  /// No description provided for @formsDemoSelectHiveNodeHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select Hive node…'**
-  String get formsDemoSelectHiveNodeHint;
-
-  /// No description provided for @formsDemoMultiSelectSearchLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Multi-select search'**
-  String get formsDemoMultiSelectSearchLabel;
-
-  /// No description provided for @formsDemoHiveNodeAlphaCore.
-  ///
-  /// In en, this message translates to:
-  /// **'Alpha Core'**
-  String get formsDemoHiveNodeAlphaCore;
-
-  /// No description provided for @formsDemoHiveNodeDeltaNode.
-  ///
-  /// In en, this message translates to:
-  /// **'Delta Node'**
-  String get formsDemoHiveNodeDeltaNode;
-
-  /// No description provided for @formsDemoHiveNodeSigmaGrid.
-  ///
-  /// In en, this message translates to:
-  /// **'Sigma Grid'**
-  String get formsDemoHiveNodeSigmaGrid;
-
-  /// No description provided for @formsDemoTagAnalytics.
-  ///
-  /// In en, this message translates to:
-  /// **'Analytics'**
-  String get formsDemoTagAnalytics;
-
-  /// No description provided for @formsDemoTagCloud.
-  ///
-  /// In en, this message translates to:
-  /// **'Cloud'**
-  String get formsDemoTagCloud;
-
-  /// No description provided for @formsDemoTagAutomation.
-  ///
-  /// In en, this message translates to:
-  /// **'Automation'**
-  String get formsDemoTagAutomation;
-
-  /// No description provided for @formsDemoTagSecurity.
-  ///
-  /// In en, this message translates to:
-  /// **'Security'**
-  String get formsDemoTagSecurity;
-
   /// No description provided for @formsDemoFormBuilderSectionTitle.
   ///
   /// In en, this message translates to:
@@ -3003,66 +2811,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Same wrappers as reports: dropdown, multi-select, and the same date pickers as the Form section above (FormBuilderField + AppFormBuilderDate*).'**
   String get formsDemoFormBuilderSectionSubtitle;
-
-  /// No description provided for @formsDemoFormBuilderNodeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Select node (FormBuilder)'**
-  String get formsDemoFormBuilderNodeLabel;
-
-  /// No description provided for @formsDemoFormBuilderNodeHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Single selection with the shared wrapper.'**
-  String get formsDemoFormBuilderNodeHelper;
-
-  /// No description provided for @formsDemoFormBuilderTagsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Tags (FormBuilder)'**
-  String get formsDemoFormBuilderTagsLabel;
-
-  /// No description provided for @formsDemoFormBuilderTagsHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Inline search with removable chips.'**
-  String get formsDemoFormBuilderTagsHelper;
-
-  /// No description provided for @formsDemoFormBuilderDateRequiredLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Required date (FormBuilder)'**
-  String get formsDemoFormBuilderDateRequiredLabel;
-
-  /// No description provided for @formsDemoFormBuilderDateRequiredHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Validation with form_builder_validators.'**
-  String get formsDemoFormBuilderDateRequiredHelper;
-
-  /// No description provided for @formsDemoFormBuilderSelectDateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select date (FormBuilder)'**
-  String get formsDemoFormBuilderSelectDateTitle;
-
-  /// No description provided for @formsDemoFormBuilderRangeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Period (FormBuilder)'**
-  String get formsDemoFormBuilderRangeLabel;
-
-  /// No description provided for @formsDemoFormBuilderRangeHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Optional in this demo.'**
-  String get formsDemoFormBuilderRangeHelper;
-
-  /// No description provided for @formsDemoFormBuilderSelectRangeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Select period (FormBuilder)'**
-  String get formsDemoFormBuilderSelectRangeTitle;
 
   /// No description provided for @formsDemoValidateFormBuilderButton.
   ///
@@ -3087,30 +2835,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Valid FormBuilder (fake demo). Date: {dateLabel}. Period: {rangeLabel}.'**
   String formsDemoFormBuilderValidSnackbar(String dateLabel, String rangeLabel);
-
-  /// No description provided for @formsDemoLegendInput.
-  ///
-  /// In en, this message translates to:
-  /// **'Input'**
-  String get formsDemoLegendInput;
-
-  /// No description provided for @formsDemoLegendSelection.
-  ///
-  /// In en, this message translates to:
-  /// **'Selection'**
-  String get formsDemoLegendSelection;
-
-  /// No description provided for @formsDemoLegendDate.
-  ///
-  /// In en, this message translates to:
-  /// **'Date'**
-  String get formsDemoLegendDate;
-
-  /// No description provided for @formsDemoLegendFormBuilder.
-  ///
-  /// In en, this message translates to:
-  /// **'FormBuilder'**
-  String get formsDemoLegendFormBuilder;
 
   /// No description provided for @datePickerPlaceholderSelectDate.
   ///
@@ -3177,226 +2901,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Period'**
   String get dateRangePickerSemanticsFallbackLabel;
-
-  /// No description provided for @areaTrendDemoIntroEyebrow.
-  ///
-  /// In en, this message translates to:
-  /// **'Area charts'**
-  String get areaTrendDemoIntroEyebrow;
-
-  /// No description provided for @areaTrendDemoIntroTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'AppAreaTrendChart'**
-  String get areaTrendDemoIntroTitle;
-
-  /// No description provided for @areaTrendDemoIntroSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Temporal trend with filled area: gradient, markers, zoom, style variants, and structured per-series/point tap event.'**
-  String get areaTrendDemoIntroSubtitle;
-
-  /// No description provided for @areaTrendDemoShowcaseTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Temporal trend with fill'**
-  String get areaTrendDemoShowcaseTitle;
-
-  /// No description provided for @areaTrendDemoShowcaseSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Area chart for volume, growth, and comparisons over time, with good mass and intensity reading.'**
-  String get areaTrendDemoShowcaseSubtitle;
-
-  /// No description provided for @areaTrendDemoShowcaseBadge.
-  ///
-  /// In en, this message translates to:
-  /// **'Trend'**
-  String get areaTrendDemoShowcaseBadge;
-
-  /// No description provided for @areaTrendDemoShowcaseHighlightTimeSeries.
-  ///
-  /// In en, this message translates to:
-  /// **'Time series'**
-  String get areaTrendDemoShowcaseHighlightTimeSeries;
-
-  /// No description provided for @areaTrendDemoShowcaseHighlightGradientMarkers.
-  ///
-  /// In en, this message translates to:
-  /// **'Gradient and markers'**
-  String get areaTrendDemoShowcaseHighlightGradientMarkers;
-
-  /// No description provided for @areaTrendDemoShowcaseHighlightMultiseries.
-  ///
-  /// In en, this message translates to:
-  /// **'Multi-series'**
-  String get areaTrendDemoShowcaseHighlightMultiseries;
-
-  /// No description provided for @areaTrendDemoS01Title.
-  ///
-  /// In en, this message translates to:
-  /// **'1. Weekly revenue'**
-  String get areaTrendDemoS01Title;
-
-  /// No description provided for @areaTrendDemoS01Subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Area with gradient, formatted axis, tooltip, and tap.'**
-  String get areaTrendDemoS01Subtitle;
-
-  /// No description provided for @areaTrendDemoS02Title.
-  ///
-  /// In en, this message translates to:
-  /// **'2. With point markers'**
-  String get areaTrendDemoS02Title;
-
-  /// No description provided for @areaTrendDemoS02Subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Each point shows a visible marker.'**
-  String get areaTrendDemoS02Subtitle;
-
-  /// No description provided for @areaTrendDemoS03Title.
-  ///
-  /// In en, this message translates to:
-  /// **'3. No gradient (solid area)'**
-  String get areaTrendDemoS03Title;
-
-  /// No description provided for @areaTrendDemoS03Subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'showGradientFill: false for a flat fill.'**
-  String get areaTrendDemoS03Subtitle;
-
-  /// No description provided for @areaTrendDemoS04Title.
-  ///
-  /// In en, this message translates to:
-  /// **'4. Orders by hour'**
-  String get areaTrendDemoS04Title;
-
-  /// No description provided for @areaTrendDemoS04Subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Operational peak of the day — unit scale.'**
-  String get areaTrendDemoS04Subtitle;
-
-  /// No description provided for @areaTrendDemoS05Title.
-  ///
-  /// In en, this message translates to:
-  /// **'5. Compact without shell'**
-  String get areaTrendDemoS05Title;
-
-  /// No description provided for @areaTrendDemoS05Subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Compact preset, no axes and no inner shell.'**
-  String get areaTrendDemoS05Subtitle;
-
-  /// No description provided for @areaTrendDemoS06Title.
-  ///
-  /// In en, this message translates to:
-  /// **'6. Loading state'**
-  String get areaTrendDemoS06Title;
-
-  /// No description provided for @areaTrendDemoS07Title.
-  ///
-  /// In en, this message translates to:
-  /// **'7. Empty state'**
-  String get areaTrendDemoS07Title;
-
-  /// No description provided for @areaTrendDemoEmptyMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'No data for the selected period.'**
-  String get areaTrendDemoEmptyMessage;
-
-  /// No description provided for @areaTrendDemoS08Title.
-  ///
-  /// In en, this message translates to:
-  /// **'8. Multi-series (store comparison)'**
-  String get areaTrendDemoS08Title;
-
-  /// No description provided for @areaTrendDemoS08Subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Three overlaid stores with automatic palette. Legend on.'**
-  String get areaTrendDemoS08Subtitle;
-
-  /// No description provided for @areaTrendDemoS09Title.
-  ///
-  /// In en, this message translates to:
-  /// **'9. Multi-series with trackball'**
-  String get areaTrendDemoS09Title;
-
-  /// No description provided for @areaTrendDemoS09Subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap the area to see values for all series at the same X position.'**
-  String get areaTrendDemoS09Subtitle;
-
-  /// No description provided for @areaTrendDemoS10Title.
-  ///
-  /// In en, this message translates to:
-  /// **'10. Colors per entry'**
-  String get areaTrendDemoS10Title;
-
-  /// No description provided for @areaTrendDemoS10Subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Custom color per AppAreaTrendEntry.'**
-  String get areaTrendDemoS10Subtitle;
-
-  /// No description provided for @areaTrendDemoSeriesRevenue.
-  ///
-  /// In en, this message translates to:
-  /// **'Revenue'**
-  String get areaTrendDemoSeriesRevenue;
-
-  /// No description provided for @areaTrendDemoSeriesTarget.
-  ///
-  /// In en, this message translates to:
-  /// **'Target'**
-  String get areaTrendDemoSeriesTarget;
-
-  /// No description provided for @areaTrendDemoStoreCenter.
-  ///
-  /// In en, this message translates to:
-  /// **'Downtown'**
-  String get areaTrendDemoStoreCenter;
-
-  /// No description provided for @areaTrendDemoStoreNorth.
-  ///
-  /// In en, this message translates to:
-  /// **'North'**
-  String get areaTrendDemoStoreNorth;
-
-  /// No description provided for @areaTrendDemoStoreSouth.
-  ///
-  /// In en, this message translates to:
-  /// **'South'**
-  String get areaTrendDemoStoreSouth;
-
-  /// No description provided for @areaTrendDemoDefaultSeriesName.
-  ///
-  /// In en, this message translates to:
-  /// **'primary series'**
-  String get areaTrendDemoDefaultSeriesName;
-
-  /// No description provided for @areaTrendDemoTapSnackbar.
-  ///
-  /// In en, this message translates to:
-  /// **'Area: {seriesLabel} • {pointLabel} = {valueLabel}'**
-  String areaTrendDemoTapSnackbar(
-    String seriesLabel,
-    String pointLabel,
-    String valueLabel,
-  );
-
-  /// No description provided for @areaTrendDemoA11ySection.
-  ///
-  /// In en, this message translates to:
-  /// **'Chart demo {sectionIndex}: {sectionTitle}'**
-  String areaTrendDemoA11ySection(int sectionIndex, String sectionTitle);
 }
 
 class _AppLocalizationsDelegate

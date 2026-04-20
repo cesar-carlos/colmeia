@@ -81,8 +81,30 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   }
 
   @override
+  void didPush() {
+    // PR-M part 3: visibility on first push so the REST poller (when
+    // wired) can decide if it should start polling on a degraded
+    // socket.
+    _controller.onScreenVisible();
+  }
+
+  @override
   void didPopNext() {
+    _controller.onScreenVisible();
     unawaited(_controller.refreshAll());
+  }
+
+  @override
+  void didPushNext() {
+    // PR-M part 3: pushed onto a child route (e.g. agent detail).
+    // Stop the REST poller — the badge stays in the in-memory
+    // snapshot and is reconciled when we come back via didPopNext.
+    _controller.onScreenHidden();
+  }
+
+  @override
+  void didPop() {
+    _controller.onScreenHidden();
   }
 
   @override
@@ -163,9 +185,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                       ),
                       if (pendingCount > 0)
                         AppPrimaryButton(
-                          label: l10n.clientAgentsSubmitRequests,
+                          label: controller.isSyncOnCooldown
+                              ? l10n.clientAgentsSyncRetryAfterCountdown(
+                                  controller.syncRetryAfter?.inSeconds ?? 0,
+                                )
+                              : l10n.clientAgentsSubmitRequests,
                           icon: const Icon(Icons.sync_rounded),
-                          onPressed: controller.isSyncing
+                          onPressed: controller.isSyncing ||
+                                  controller.isSyncOnCooldown
                               ? null
                               : () => unawaited(controller.syncPending()),
                           isLoading: controller.isSyncing,
@@ -297,9 +324,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                             initialAgentIdSlots:
                                 _pageSession.requestAccessDraftAgentIdSlots,
                             onDraftSlotsChanged: (slots) {
-                              _pageSession = _pageSession.copyWith(
-                                requestAccessDraftAgentIdSlots: slots,
-                              );
+                              if (!mounted) {
+                                return;
+                              }
+                              setState(() {
+                                _pageSession = _pageSession.copyWith(
+                                  requestAccessDraftAgentIdSlots: slots,
+                                );
+                              });
                               _scheduleDraftPersistence();
                             },
                             loadClientToken: controller.readLocalClientToken,
@@ -328,7 +360,18 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                                 ..clearActionError()
                                 ..clearActionFeedback();
                             },
-                            isMutating: controller.isSyncing,
+                            isMutating: controller.isSyncing ||
+                                controller.isRequestAccessOnCooldown,
+                            // Surface the server-armed cool-down so the
+                            // CTA can render the countdown — same UX as
+                            // the sync button above.
+                            retryAfterSeconds:
+                                controller.isRequestAccessOnCooldown
+                                    ? (controller
+                                              .requestAccessRetryAfter
+                                              ?.inSeconds ??
+                                          0)
+                                    : null,
                           ),
                         ),
                         AppTabViewItem(

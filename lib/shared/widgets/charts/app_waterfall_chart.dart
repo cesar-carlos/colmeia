@@ -25,6 +25,8 @@ class AppWaterfallChartStyle {
     this.intermediateSumColor,
     this.totalSumColor,
     this.connectorLineColor,
+    this.enableTapHighlight = false,
+    this.tapHighlightDimmedOpacity = 0.35,
   });
 
   final double? height;
@@ -45,6 +47,15 @@ class AppWaterfallChartStyle {
   final Color? intermediateSumColor;
   final Color? totalSumColor;
   final Color? connectorLineColor;
+
+  /// When true, tapping a bar highlights it (Syncfusion `SelectionBehavior`):
+  /// the tapped column keeps full opacity while the others fade to
+  /// [tapHighlightDimmedOpacity]. Independent from `onPointTap` callbacks.
+  final bool enableTapHighlight;
+
+  /// Opacity applied to non-selected bars while [enableTapHighlight] is
+  /// active. Defaults to `0.35`; set to `1.0` to disable the dim.
+  final double tapHighlightDimmedOpacity;
 }
 
 class AppWaterfallChart<T> extends StatelessWidget {

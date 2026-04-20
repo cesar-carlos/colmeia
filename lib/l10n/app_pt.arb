@@ -52,6 +52,9 @@
   "dashboardAffectedAgentsSheetTitlePartialFailure": "Agentes que nao retornaram dados",
   "dashboardAffectedAgentsSheetTitleMissingToken": "Agentes sem token de cliente salvo",
   "dashboardAffectedAgentsSheetTitleSetupRequired": "Agentes aprovados sem token de cliente neste dispositivo",
+  "dashboardAgentsOfflineTitle": "Agentes offline no momento",
+  "dashboardAgentsOfflineMessage": "Estes agentes aprovados têm um token salvo, mas o hub os reporta como desconectados. Peça ao operador para reconectá-los e tente novamente.",
+  "dashboardAffectedAgentsSheetTitleOffline": "Agentes reportados como offline pelo hub",
   "dashboardMultiAgentAggregationTitle": "Varios agentes",
   "dashboardMultiAgentAggregationMessage": "Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.",
   "dashboardPaymentSummaryTitle": "Resumo por forma de pagamento",
@@ -64,12 +67,10 @@
   "dashboardPaymentSummaryTooltipParticipationAbbr": "Participacao percentual no faturamento total",
   "dashboardPaymentSummaryHeaderSales": "VENDAS",
   "dashboardPaymentSummaryHeaderAvgTicket": "TICKET\nMEDIO",
-  "dashboardPaymentSummaryLoadingSemantics": "Carregando resumo por forma de pagamento…",
   "dashboardHomeFiltersAgentsLabel": "AGENTES",
   "dashboardHomeFiltersAgentsEmptyHint": "Carregue a visao geral para listar os agentes.",
   "dashboardHomeFiltersYearMonthLabel": "ANO / MÊS",
   "dashboardHomeFiltersCurrentMonth": "Mês atual",
-  "dashboardHomeFiltersPeriodLast30Days": "Últimos 30 dias",
   "dashboardHomeFiltersReferenceRangeLabel": "PERÍODO",
   "dashboardHomeFiltersReferenceRangeHelper": "Opcional. Escolha início e fim — o intervalo pode atravessar vários meses (no máximo {maxDays} dias corridos). Totais e rankings seguem esse período. O gráfico mensal continua com 12 meses até o mês do último dia.",
   "@dashboardHomeFiltersReferenceRangeHelper": {
@@ -143,7 +144,7 @@
   "overviewMonthlyParcelsSwitchSalesLabel": "Vendas",
   "overviewMonthlyParcelsSwitchValueLabel": "Valor",
   "overviewMonthlyParcelsChartSemanticsValueView": "Grafico dos ultimos doze meses de valor em parcelas e vendas",
-  "overviewLoadingWeekdaySalesSemantics": "A carregar gráfico de vendas por dia da semana…",
+  "overviewLoadingWeekdaySalesSemantics": "Carregando gráfico de vendas por dia da semana…",
   "overviewWeekdaySalesTitle": "Vendas por dia da semana",
   "overviewWeekdayRevenueTitle": "Receita por dia da semana",
   "overviewWeekdaySalesSubtitle": "Distribuição por dia da semana no período selecionado (todas as filiais no âmbito).",
@@ -187,16 +188,16 @@
   "overviewWeekdayThursday": "Quinta-feira",
   "overviewWeekdayFriday": "Sexta-feira",
   "overviewWeekdaySaturday": "Sábado",
-  "overviewWeekdayUserSalesTitle": "Vendas por dia da semana e utilizador",
-  "overviewWeekdayUserRevenueTitle": "Receita por dia da semana e utilizador",
-  "overviewWeekdayUserSalesSubtitle": "Dias da semana no eixo horizontal; cada cor é um utilizador (ver legenda). Período e âmbito de filiais como no painel.",
-  "overviewWeekdayUserSalesEmpty": "Sem dados por utilizador e dia da semana neste período.",
-  "overviewWeekdayUserSalesLoadFailed": "Não foi possível carregar o gráfico por utilizador e dia da semana. Tente novamente mais tarde.",
-  "overviewWeekdayUserSalesChartSemantics": "Gráfico de vendas e valor em parcelas por dia da semana e utilizador",
-  "overviewWeekdayUserRevenueChartSemantics": "Gráfico de receita e vendas por dia da semana e utilizador",
+  "overviewWeekdayUserSalesTitle": "Vendas por dia da semana e usuário",
+  "overviewWeekdayUserRevenueTitle": "Receita por dia da semana e usuário",
+  "overviewWeekdayUserSalesSubtitle": "Dias da semana no eixo horizontal; cada cor é um usuário (ver legenda). Período e âmbito de filiais como no painel.",
+  "overviewWeekdayUserSalesEmpty": "Sem dados por usuário e dia da semana neste período.",
+  "overviewWeekdayUserSalesLoadFailed": "Não foi possível carregar o gráfico por usuário e dia da semana. Tente novamente mais tarde.",
+  "overviewWeekdayUserSalesChartSemantics": "Gráfico de vendas e valor em parcelas por dia da semana e usuário",
+  "overviewWeekdayUserRevenueChartSemantics": "Gráfico de receita e vendas por dia da semana e usuário",
   "overviewWeekdayUserChartScopeHint": "Agregado em todas as filiais no âmbito selecionado.",
   "overviewWeekdayUserGroupedOthersLabel": "Outros",
-  "overviewWeekdayUserGroupedTruncationFootnote": "São mostrados os {shown} utilizadores com totais mais altos; os restantes são somados em \"{othersLabel}\".",
+  "overviewWeekdayUserGroupedTruncationFootnote": "São mostrados os {shown} usuários com totais mais altos; os restantes são somados em \"{othersLabel}\".",
   "@overviewWeekdayUserGroupedTruncationFootnote": {
     "placeholders": {
       "shown": {"type": "int"},
@@ -232,7 +233,7 @@
       "topSalesAmount": {"type": "String"}
     }
   },
-  "overviewLoadingWeekdayUserSalesSemantics": "A carregar gráfico de vendas por dia da semana e utilizador…",
+  "overviewLoadingWeekdayUserSalesSemantics": "Carregando gráfico de vendas por dia da semana e usuário…",
   "overviewKpiTotalRevenue": "Faturamento total",
   "overviewKpiSales": "Vendas",
   "overviewKpiAvgTicket": "Ticket medio",
@@ -267,9 +268,7 @@
   "overviewPaymentBarTitle": "Faturamento por forma de pagamento",
   "overviewPaymentBarSubtitle": "Valor total acumulado no periodo.",
   "overviewPaymentBarEmpty": "Sem faturamento por forma de pagamento neste periodo.",
-  "@overviewPaymentBarEmpty": {
-    "description": "Exibido quando todas as formas de pagamento estao com faturamento zero no periodo."
-  },
+  "@overviewPaymentBarEmpty": {"description": "Exibido quando todas as formas de pagamento estao com faturamento zero no periodo."},
   "overviewPaymentBarTooltip": "{label}: {amount}",
   "@overviewPaymentBarTooltip": {
     "placeholders": {
@@ -286,26 +285,6 @@
   "chartComparisonPanGestureHint": "Deslize o gráfico horizontalmente para ver mais categorias.",
   "chartComboLoadingDefault": "Carregando gráfico de barras e linha…",
   "chartComboEmptyDefault": "Sem dados combinados para este recorte.",
-  "chartComboPanGestureHint": "Deslize horizontalmente no grafico para ver mais periodos.",
-  "@chartComboPanGestureHint": {
-    "description": "Rodape quando o eixo de categorias do grafico combo permite deslizar para ver mais periodos."
-  },
-  "chartComboPanChartA11y": "{count, plural, =1{Grafico de barras e linha, uma categoria.} other{Grafico de barras e linha, {count} categorias.}} Deslize horizontalmente para ver todas.",
-  "@chartComboPanChartA11y": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "chartComparisonPanChartA11y": "{count, plural, =1{Gráfico de barras, uma categoria.} other{Gráfico de barras, {count} categorias.}} Deslize o gráfico horizontalmente para ver todas.",
-  "@chartComparisonPanChartA11y": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -338,7 +317,6 @@
   },
   "overviewNoApprovedAgentsUserMessage": "Nenhum agente aprovado esta disponivel para carregar a visao geral.",
   "overviewLoadFailedUserMessage": "Nao foi possivel carregar a visao geral.",
-  "overviewSaveClientTokenForAgentUserMessage": "Cadastre o token do cliente para este agente para consultar dados.",
   "clientAgentsDataSourcesEyebrow": "Fontes de dados",
   "clientAgentsPageTitle": "Gestao de agentes",
   "clientAgentsPageSubtitle": "Acompanhe seus agentes aprovados, solicite novos acessos e consulte o andamento das solicitacoes.",
@@ -379,20 +357,21 @@
   "clientAgentsBulkRemoveConfirmAction": "Enfileirar remocao",
   "clientAgentsApprovedBulkSelectAll": "Selecionar todos",
   "clientAgentsApprovedBulkClearSelection": "Limpar selecao",
-  "clientAgentsRequestAccessIntro1": "Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token local quando o agente exigir para execucao SQL.",
+  "clientAgentsRequestAccessIntro1": "Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execucao SQL.",
   "clientAgentsRequestAccessIntro2": "O agentId deve ser informado pelo responsavel do agente ou por um fluxo externo. Quando a solicitacao for aprovada, o agente sera liberado automaticamente para esta conta.",
-  "clientAgentsRequestAccessIntroToken": "O client token fica apenas neste dispositivo (criptografado) e nao e enviado ao enviar a solicitacao de acesso.",
+  "clientAgentsRequestAccessIntroToken": "O client token fica em cache neste dispositivo enquanto a aprovacao esta pendente e e enviado ao servidor Colmeia assim que o agente for vinculado.",
   "clientAgentsRequestAccessAddRow": "Adicionar linha de agente",
   "clientAgentsRequestAccessRemoveRow": "Remover linha",
   "clientAgentsRequestAccessRowTitle": "Agente {index}",
-  "clientAgentsClientTokenLabel": "Client token (local)",
-  "clientAgentsClientTokenHint": "Opcional — salvo apenas neste dispositivo",
+  "clientAgentsClientTokenLabel": "Client token",
+  "clientAgentsClientTokenHint": "Opcional — cache local, enviado ao servidor apos aprovacao",
   "clientAgentsClientTokenShow": "Mostrar token",
   "clientAgentsClientTokenHide": "Ocultar token",
   "clientAgentsAgentIdsLabel": "Agent ID",
   "clientAgentsRequestAccessCta": "Solicitar acesso",
   "clientAgentsValidationNeedOneValidId": "Informe pelo menos um agentId valido para continuar.",
   "clientAgentsValidationInvalidIds": "Os seguintes agentIds sao invalidos: {ids}.",
+  "clientAgentsValidationTokenTooLong": "O client token deve ter no maximo {limit} caracteres. Reduza para: {ids}.",
   "clientAgentsDuplicatedIdsNote": "IDs duplicados foram ignorados automaticamente: {ids}.",
   "clientAgentsLoadRequestsErrorTitle": "Nao foi possivel carregar as solicitacoes",
   "clientAgentsLoadPendingErrorTitle": "Nao foi possivel carregar os envios pendentes",
@@ -424,6 +403,13 @@
   "clientAgentsSessionUnavailableSync": "Sessao indisponivel para sincronizar pendencias.",
   "clientAgentDetailSessionUnavailable": "Sessao indisponivel para carregar o agente.",
   "appInlineErrorRetry": "Tentar novamente",
+  "appInlineErrorRetryCountdown": "Tentar em {seconds}s",
+  "@appInlineErrorRetryCountdown": {
+    "description": "Rotulo curto exibido em botao de retry desabilitado durante a janela de Retry-After.",
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
   "clientAgentsNoLocalPendingToSync": "Nao ha pendencias locais para sincronizar.",
   "clientAgentsRequestBlockedFallback": "Nao foi possivel registrar a solicitacao informada.",
   "clientAgentsRequestBlockedIntro": "Nenhum novo agente pode ser solicitado com os IDs informados. {details}",
@@ -433,26 +419,18 @@
   "clientAgentsRequestQueuedWatchingSingle": "Solicitacao enviada. Vamos acompanhar a aprovacao automaticamente.",
   "clientAgentsRequestQueuedWatchingPlural": "{count} solicitacoes enviadas. Vamos acompanhar as aprovacoes automaticamente.",
   "clientAgentsRequestQueuedIgnoredSuffix": "{count} IDs foram ignorados porque ja estavam aprovados ou em analise.",
-  "clientAgentsRequestRelinkUpdatedSingle":
-      "Esse agente ja esta aprovado no servidor. A lista de agentes foi atualizada.",
-  "clientAgentsRequestRelinkUpdatedPlural":
-      "{count} agentes ja estavam aprovados no servidor. A lista de agentes foi atualizada.",
+  "clientAgentsRequestRelinkUpdatedSingle": "Esse agente ja esta aprovado no servidor. A lista de agentes foi atualizada.",
+  "clientAgentsRequestRelinkUpdatedPlural": "{count} agentes ja estavam aprovados no servidor. A lista de agentes foi atualizada.",
   "@clientAgentsRequestRelinkUpdatedPlural": {
     "placeholders": {
-      "count": {
-        "type": "int"
-      }
+      "count": {"type": "int"}
     }
   },
   "clientAgentsRequestRelinkAndQueued": "{relinkSummary}. {queueSummary}",
   "@clientAgentsRequestRelinkAndQueued": {
     "placeholders": {
-      "relinkSummary": {
-        "type": "String"
-      },
-      "queueSummary": {
-        "type": "String"
-      }
+      "relinkSummary": {"type": "String"},
+      "queueSummary": {"type": "String"}
     }
   },
   "clientAgentsRelinkPendingNotCleared": "Nao foi possivel limpar solicitacoes pendentes locais; elas podem ser reenviadas na proxima sincronizacao.",
@@ -471,6 +449,8 @@
     }
   },
   "clientAgentsSyncSuccessNoneCompleted": "A sincronizacao terminou, mas nenhuma pendencia foi aplicada.",
+  "clientAgentsSyncRetryAfterCountdown": "O servidor pediu para esperarmos. Tente de novo em {seconds}s.",
+  "clientAgentsRequestAccessRetryAfterCountdown": "Muitas solicitacoes de acesso. Tente de novo em {seconds}s.",
   "clientAgentsSyncSuccessSomeFailedSuffix": " {count} acao(oes) falhou e permanece na fila para nova tentativa.",
   "@clientAgentsSyncSuccessSomeFailedSuffix": {
     "placeholders": {
@@ -513,17 +493,37 @@
   "clientAgentFieldPhone": "Telefone",
   "clientAgentFieldCity": "Cidade",
   "clientAgentValueNotAvailable": "N/A",
-  "clientAgentAddressNotProvided": "Endereco nao informado",
   "clientAgentDetailSectionContact": "Contato",
   "clientAgentDetailSectionAddress": "Endereco",
   "clientAgentDetailSectionNotes": "Anotacoes",
   "clientAgentDetailSectionRecord": "Registro",
-  "clientAgentDetailSectionLocalToken": "Client token local",
-  "clientAgentDetailSectionLocalTokenSubtitle": "Usado apenas neste dispositivo para consultas SQL (por exemplo na visao geral). Nunca enviado aos servidores Colmeia.",
-  "clientAgentDetailLocalTokenSave": "Salvar token",
-  "clientAgentDetailLocalTokenRemove": "Remover token",
-  "clientAgentDetailLocalTokenSaved": "Token salvo neste dispositivo.",
-  "clientAgentDetailLocalTokenRemoved": "Token removido deste dispositivo.",
+  "clientAgentDetailSectionServerToken": "Client token",
+  "clientAgentDetailSectionServerTokenSubtitle": "Salvo no servidor Colmeia e encaminhado ao agente como `params.client_token` quando este cliente executa SQL via bridge. O token tambem fica em cache neste dispositivo para dashboards seguirem funcionando brevemente sem conexao.",
+  "clientAgentDetailServerTokenSave": "Salvar token",
+  "clientAgentDetailServerTokenRemove": "Remover token",
+  "clientAgentDetailServerTokenSaved": "Token salvo no servidor.",
+  "clientAgentDetailServerTokenRemoved": "Token removido do servidor.",
+  "clientAgentDetailServerTokenStatusConfigured": "Token configurado para este agente no servidor.",
+  "clientAgentDetailServerTokenStatusMissing": "Nenhum token configurado no servidor ainda.",
+  "clientAgentDetailServerTokenStatusUnknown": "Status do token nao carregado — atualize a tela com acesso a internet para confirmar.",
+  "clientAgentDetailRefreshFromAgent": "Recarregar do agente",
+  "clientAgentDetailRefreshFromAgentSuccess": "Perfil recarregado direto do agente.",
+  "clientAgentDetailRefreshFromAgentUnsupported": "Este agente nao implementa agent.getProfile via RPC.",
+  "clientAgentDetailRetryAfterCountdown": "O servidor pediu para aguardar. Tente novamente em {seconds}s.",
+  "clientAgentDetailSectionPolicy": "Permissoes deste token",
+  "clientAgentDetailSectionPolicySubtitle": "Resolvidas pelo agente para o token atualmente salvo no servidor. Se a politica mudar apos revogacao ou alteracao de escopo, recarregue a tela.",
+  "clientAgentDetailPolicyFullAccess": "Acesso total (todas as tabelas, views e permissoes).",
+  "clientAgentDetailPolicyAllTables": "Permitido em todas as tabelas.",
+  "clientAgentDetailPolicyAllViews": "Permitido em todas as views.",
+  "clientAgentDetailPolicyAllPermissions": "Tem todas as permissoes.",
+  "clientAgentDetailPolicyTablesLabel": "Tabelas permitidas",
+  "clientAgentDetailPolicyViewsLabel": "Views permitidas",
+  "clientAgentDetailPolicyPermissionsLabel": "Permissoes",
+  "clientAgentDetailPolicyRevoked": "Este token esta marcado como revogado pelo agente.",
+  "clientAgentDetailPolicyRevokedSaveNewToken": "Salvar novo token",
+  "@clientAgentDetailPolicyRevokedSaveNewToken": {"description": "CTA exibido ao lado do aviso de token revogado; rola o card de token para a visao e foca o input."},
+  "clientAgentDetailPolicyUnsupported": "Este agente nao expoe introspecao da politica do token.",
+  "clientAgentDetailPolicyEmpty": "O agente nao retornou nenhuma regra para este token.",
   "clientAgentDetailSectionEditProfile": "Perfil no catálogo",
   "clientAgentDetailSaveProfile": "Salvar perfil",
   "clientAgentDetailProfileSaved": "Perfil salvo no servidor.",
@@ -591,21 +591,22 @@
   "reportInlineFiltersSelectDate": "Selecionar data",
   "reportFiltersAppliedSectionTitle": "Filtros aplicados",
   "clientAgentsErrorLoadCatalog": "Nao foi possivel carregar o catalogo de agentes.",
-  "clientAgentsErrorLoadCatalogAgent":
-      "Nao foi possivel carregar este agente do catalogo.",
-  "clientAgentsErrorLoadClientAccessStatus":
-      "Nao foi possivel ler o status da solicitacao de acesso.",
+  "clientAgentsErrorLoadCatalogAgent": "Nao foi possivel carregar este agente do catalogo.",
+  "clientAgentsErrorLoadClientAccessStatus": "Nao foi possivel ler o status da solicitacao de acesso.",
   "clientAgentsErrorLoadApproved": "Nao foi possivel carregar os agentes aprovados para esta conta.",
   "clientAgentsErrorLoadAgentDetail": "Nao foi possivel carregar os dados do agente.",
-  "clientAgentsErrorProbeApproved":
-      "Nao foi possivel verificar se o agente ja esta ligado a esta conta.",
+  "clientAgentsErrorProbeApproved": "Nao foi possivel verificar se o agente ja esta ligado a esta conta.",
   "clientAgentsErrorLoadAccessRequests": "Nao foi possivel carregar o historico de solicitacoes.",
   "clientAgentsErrorReadPending": "Nao foi possivel carregar as acoes pendentes de sincronizacao.",
   "clientAgentsErrorQueueRequest": "Nao foi possivel registrar a solicitacao para sincronizacao.",
   "clientAgentsErrorQueueRemove": "Nao foi possivel registrar a remocao para sincronizacao.",
   "clientAgentsErrorSyncAction": "Nao foi possivel sincronizar a alteracao do agente.",
   "clientAgentsErrorSyncPending": "Nao foi possivel sincronizar as acoes pendentes de agentes.",
+  "clientAgentsErrorGetClientAgentToken": "Nao foi possivel ler o token do agente no servidor.",
+  "clientAgentsErrorSaveClientAgentToken": "Nao foi possivel salvar o token do agente no servidor.",
+  "clientAgentsErrorRemoveClientAgentToken": "Nao foi possivel remover o token do agente no servidor.",
   "clientAgentsErrorAgentDocumentConflict": "Este CPF/CNPJ ja esta vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.",
+  "clientAgentsErrorAgentProfileCasMismatch": "Outro dispositivo atualizou este agente. Recarregue a tela e reaplique suas alteracoes.",
   "agentSqlErrorAuthenticationFailed": "A autenticacao para consultar este agente e invalida ou expirou.",
   "agentSqlErrorPermissionDenied": "Voce nao tem permissao para consultar estes dados neste agente.",
   "agentSqlErrorTransportTimeout": "O agente demorou mais do que o esperado para responder. Tente novamente.",
@@ -622,76 +623,10 @@
   "agentSqlErrorExecutionNotFound": "A execucao solicitada nao foi encontrada.",
   "agentSqlErrorExecutionCancelled": "A consulta foi cancelada.",
   "agentSqlErrorGeneric": "Nao foi possivel concluir a consulta no agente.",
-  "formsDemoEyebrow": "Formularios",
-  "formsDemoTitle": "Campos compartilhados",
-  "formsDemoIntroSubtitle": "Validacao, estados habilitado/desabilitado, date pickers no Form, FormBuilder como nos relatorios e agrupamentos.",
-  "formsDemoFieldLibraryOverline": "Biblioteca de campos",
-  "formsDemoSharedFormControlsTitle": "Campos de formulario compartilhados",
-  "formsDemoPreviewBadge": "Preview",
-  "formsDemoShowcaseSubtitle": "Campos base, seletores e wrappers de calendario no mesmo ritmo visual do sistema.",
-  "formsDemoFieldsEnabledLabel": "Campos habilitados",
-  "formsDemoShowcaseFieldsEnabledHelper": "Ativa ou desativa toda a superficie de exemplos abaixo.",
-  "formsDemoFormStateTitle": "Estado do formulario",
-  "formsDemoFormStateSubtitle": "Desligue para inspecionar campos desabilitados.",
-  "formsDemoFormStateFieldsEnabledHelper": "Aplica o estado disabled em todos os exemplos abaixo.",
-  "formsDemoTextEmailPasswordTitle": "AppTextField, e-mail e senha",
-  "formsDemoTextEmailPasswordSubtitle": "Dados fake; enviar dispara validacao.",
-  "formsDemoFullNameLabel": "Nome completo",
-  "formsDemoFullNameHint": "Como no cadastro",
-  "formsDemoNameValidatorMinLength": "Informe pelo menos 3 caracteres.",
-  "formsDemoCorporateEmailLabel": "E-mail corporativo",
-  "formsDemoPasswordLabel": "Senha",
-  "formsDemoNotesLabel": "Observacoes",
-  "formsDemoNotesHint": "Opcional",
   "formsDemoDatePickersFormTitle": "Date pickers no Form",
   "formsDemoDatePickersFormSubtitle": "Form nativo + FormField. Toque em Aplicar no sheet para confirmar; fechar sem aplicar mantem o valor. Remover limpa de forma explicita.",
-  "formsDemoReferenceDateLabel": "Data de referencia",
-  "formsDemoReferenceDateHelper": "Abre em bottom sheet com calendario estilizado.",
-  "formsDemoSelectReferenceDateTitle": "Selecionar data de referencia",
-  "formsDemoReferenceDateRequiredError": "Selecione a data de referencia.",
-  "formsDemoAssessmentPeriodLabel": "Periodo de captacao desejado",
-  "formsDemoAssessmentPeriodHelper": "Ideal para filtros e consultas analiticas.",
-  "formsDemoSelectPeriodTitle": "Selecionar periodo",
-  "formsDemoAssessmentPeriodRequiredError": "Selecione o periodo de captacao completo.",
-  "formsDemoDateRangeMiddle": " a ",
-  "formsDemoCheckboxTitle": "AppCheckboxField",
-  "formsDemoCheckboxSubtitle": "Aceite ficticio.",
-  "formsDemoCheckboxLabel": "Receber resumo semanal por e-mail",
-  "formsDemoCheckboxHelper": "Envia alertas, resumos e atualizacoes de indicadores.",
-  "formsDemoRadioCompactTitle": "AppRadioGroup compacto",
-  "formsDemoRadioCompactSubtitle": "Selecao unica no padrao inline do design system.",
-  "formsDemoPeriodDaily": "Diario",
-  "formsDemoPeriodMonthly": "Mensal",
-  "formsDemoPeriodQuarterly": "Trimestral",
-  "formsDemoChoiceChipTitle": "AppChoiceChip",
-  "formsDemoChoiceChipSubtitle": "Selecao pontual em chips para contexto, loja ou escopo.",
-  "formsDemoScopeHeadquarters": "Matriz",
-  "formsDemoScopeStoreCenter": "Loja Centro",
-  "formsDemoScopeStoreSouth": "Loja Sul",
-  "formsDemoDropdownMenusTitle": "Dropdown menus",
-  "formsDemoDropdownMenusSubtitle": "Selecao unica e multi-select search no mesmo padrao visual das referencias light/dark.",
-  "formsDemoStandardSelectLabel": "Standard Select",
-  "formsDemoSelectHiveNodeHint": "Select Hive Node...",
-  "formsDemoMultiSelectSearchLabel": "Multi-Select Search",
-  "formsDemoHiveNodeAlphaCore": "Alpha Core",
-  "formsDemoHiveNodeDeltaNode": "Delta Node",
-  "formsDemoHiveNodeSigmaGrid": "Sigma Grid",
-  "formsDemoTagAnalytics": "Analytics",
-  "formsDemoTagCloud": "Cloud",
-  "formsDemoTagAutomation": "Automation",
-  "formsDemoTagSecurity": "Security",
   "formsDemoFormBuilderSectionTitle": "FormBuilder + dropdowns e datas",
   "formsDemoFormBuilderSectionSubtitle": "Mesmos wrappers dos relatorios: dropdown, multi-select e os mesmos date pickers da secao Form acima (FormBuilderField + AppFormBuilderDate*).",
-  "formsDemoFormBuilderNodeLabel": "Select node (FormBuilder)",
-  "formsDemoFormBuilderNodeHelper": "Selecao unica com o wrapper compartilhado.",
-  "formsDemoFormBuilderTagsLabel": "Tags (FormBuilder)",
-  "formsDemoFormBuilderTagsHelper": "Busca inline com chips removiveis.",
-  "formsDemoFormBuilderDateRequiredLabel": "Data obrigatoria (FormBuilder)",
-  "formsDemoFormBuilderDateRequiredHelper": "Validacao com form_builder_validators.",
-  "formsDemoFormBuilderSelectDateTitle": "Selecionar data (FormBuilder)",
-  "formsDemoFormBuilderRangeLabel": "Periodo (FormBuilder)",
-  "formsDemoFormBuilderRangeHelper": "Opcional nesta demo.",
-  "formsDemoFormBuilderSelectRangeTitle": "Selecionar periodo (FormBuilder)",
   "formsDemoValidateFormBuilderButton": "Validar FormBuilder",
   "formsDemoValidateFormSubmitButton": "Validar envio (Form)",
   "formsDemoFormValidSnackbar": "Formulario valido (demo fake). Ref: {refLabel}. Periodo: {rangeLabel}.",
@@ -708,10 +643,6 @@
       "rangeLabel": {"type": "String"}
     }
   },
-  "formsDemoLegendInput": "Input",
-  "formsDemoLegendSelection": "Selection",
-  "formsDemoLegendDate": "Date",
-  "formsDemoLegendFormBuilder": "FormBuilder",
   "datePickerPlaceholderSelectDate": "Selecione uma data",
   "dateRangePickerPlaceholderSelectPeriod": "Selecione o periodo",
   "datePickerSheetDefaultTitle": "Selecionar data",
@@ -722,54 +653,5 @@
   "datePickerSheetCloseTooltip": "Fechar",
   "datePickerSheetApply": "Aplicar",
   "datePickerSemanticsFallbackLabel": "Data",
-  "dateRangePickerSemanticsFallbackLabel": "Periodo",
-  "areaTrendDemoIntroEyebrow": "Graficos de area",
-  "areaTrendDemoIntroTitle": "AppAreaTrendChart",
-  "areaTrendDemoIntroSubtitle": "Tendencia temporal com area preenchida: gradiente, marcadores, zoom, variantes de estilo e evento estruturado por serie/ponto.",
-  "areaTrendDemoShowcaseTitle": "Tendencia temporal com preenchimento",
-  "areaTrendDemoShowcaseSubtitle": "Grafico de area para volume, crescimento e comparativos no tempo, com boa leitura de massa e intensidade.",
-  "areaTrendDemoShowcaseBadge": "Trend",
-  "areaTrendDemoShowcaseHighlightTimeSeries": "Serie temporal",
-  "areaTrendDemoShowcaseHighlightGradientMarkers": "Gradiente e markers",
-  "areaTrendDemoShowcaseHighlightMultiseries": "Multiseries",
-  "areaTrendDemoS01Title": "1. Faturamento semanal",
-  "areaTrendDemoS01Subtitle": "Area com gradiente, eixo formatado, tooltip e tap.",
-  "areaTrendDemoS02Title": "2. Com marcadores de ponto",
-  "areaTrendDemoS02Subtitle": "Cada ponto recebe um marcador visivel.",
-  "areaTrendDemoS03Title": "3. Sem gradiente (area solida)",
-  "areaTrendDemoS03Subtitle": "showGradientFill: false para area plana.",
-  "areaTrendDemoS04Title": "4. Pedidos por hora",
-  "areaTrendDemoS04Subtitle": "Pico operacional do dia — escala de unidades.",
-  "areaTrendDemoS05Title": "5. Compacto sem shell",
-  "areaTrendDemoS05Subtitle": "Preset compact, sem eixos e sem shell interno.",
-  "areaTrendDemoS06Title": "6. Estado de loading",
-  "areaTrendDemoS07Title": "7. Estado vazio",
-  "areaTrendDemoEmptyMessage": "Sem dados para o periodo selecionado.",
-  "areaTrendDemoS08Title": "8. Multi-series (comparativo de lojas)",
-  "areaTrendDemoS08Subtitle": "Tres lojas sobrepostas com palette automatica. Legenda ativada.",
-  "areaTrendDemoS09Title": "9. Multi-series com trackball",
-  "areaTrendDemoS09Subtitle": "Toque na area para ver os valores de todas as series na mesma posicao do eixo X.",
-  "areaTrendDemoS10Title": "10. Cores por entrada",
-  "areaTrendDemoS10Subtitle": "Cor customizada por AppAreaTrendEntry.",
-  "areaTrendDemoSeriesRevenue": "Faturamento",
-  "areaTrendDemoSeriesTarget": "Meta",
-  "areaTrendDemoStoreCenter": "Centro",
-  "areaTrendDemoStoreNorth": "Norte",
-  "areaTrendDemoStoreSouth": "Sul",
-  "areaTrendDemoDefaultSeriesName": "serie principal",
-  "areaTrendDemoTapSnackbar": "Area: {seriesLabel} • {pointLabel} = {valueLabel}",
-  "@areaTrendDemoTapSnackbar": {
-    "placeholders": {
-      "seriesLabel": {"type": "String"},
-      "pointLabel": {"type": "String"},
-      "valueLabel": {"type": "String"}
-    }
-  },
-  "areaTrendDemoA11ySection": "Demonstracao de grafico {sectionIndex}: {sectionTitle}",
-  "@areaTrendDemoA11ySection": {
-    "placeholders": {
-      "sectionIndex": {"type": "int"},
-      "sectionTitle": {"type": "String"}
-    }
-  }
+  "dateRangePickerSemanticsFallbackLabel": "Periodo"
 }

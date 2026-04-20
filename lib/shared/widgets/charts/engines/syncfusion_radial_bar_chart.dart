@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_radial_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -136,28 +137,44 @@ class _SyncfusionRadialBarChartState<T> extends State<SyncfusionRadialBarChart<T
                   }
                 }
               },
-        onTooltipRender: widget.tooltipLabelBuilder == null
-            ? null
-            : (args) {
-                final pointIndex = args.pointIndex?.toInt();
-                if (pointIndex != null &&
-                    pointIndex >= 0 &&
-                    pointIndex < widget.items.length) {
+        onTooltipRender: buildSanitizingTooltipRenderer(
+          bodyResolver: widget.tooltipLabelBuilder == null
+              ? null
+              : (args) {
+                  final pointIndex = args.pointIndex?.toInt();
+                  if (pointIndex == null ||
+                      pointIndex < 0 ||
+                      pointIndex >= widget.items.length) {
+                    return null;
+                  }
                   final item = widget.items[pointIndex];
-                  final label = widget.tooltipLabelBuilder!(
+                  return widget.tooltipLabelBuilder!(
                     item,
                     widget.valueBuilder(item),
                   );
-                  if (label?.trim().isNotEmpty ?? false) {
-                    args.text = label;
-                  }
-                }
-              },
-        tooltipBehavior: TooltipBehavior(enable: widget.style.showTooltip),
+                },
+        ),
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
+          enable: widget.style.showTooltip,
+        ),
         series: <RadialBarSeries<T, String>>[
           RadialBarSeries<T, String>(
             dataSource: widget.items,
-            animationDuration: 0,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: null,
+              defaultMs:
+                  AppChartEngineAnimationDefaults.circularSeriesMs,
+            ),
+            selectionBehavior: widget.style.enableTapHighlight
+                ? SelectionBehavior(
+                    enable: true,
+                    unselectedOpacity: widget.style.tapHighlightDimmedOpacity
+                        .clamp(0, 1)
+                        .toDouble(),
+                  )
+                : null,
             maximumValue: _maximumValue,
             innerRadius: '28%',
             gap: '12%',

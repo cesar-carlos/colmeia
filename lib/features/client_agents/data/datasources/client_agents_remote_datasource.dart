@@ -7,6 +7,8 @@ import 'package:colmeia/features/client_agents/data/models/client_access_status_
 import 'package:colmeia/features/client_agents/data/models/client_accessible_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_access_request_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_ids_request_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_agent_token_request_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_agent_token_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_request_access_response_dto.dart';
@@ -65,9 +67,34 @@ abstract interface class ClientAgentsRemoteDataSource {
     required String token,
   });
 
+  /// `PATCH /api/v1/agents/{agentId}/profile` — partial profile update.
+  ///
+  /// [idempotencyKey] is forwarded as the `Idempotency-Key` HTTP header
+  /// (the contract preferred by the hub for safe retries — see
+  /// `plug_server/docs/api_rest_bridge.md` and Swagger). The same key
+  /// must be reused with the **same** body when retrying a request that
+  /// timed out client-side; reusing it with a different body yields 409.
   Future<AgentCatalogRecordDto> patchAgentProfile({
     required String agentId,
     required Map<String, Object?> body,
+    String? idempotencyKey,
+  });
+
+  /// `GET /client/me/agents/{agentId}/client-token` — returns the bearer token
+  /// the hub forwards as `params.client_token` on the SQL bridge, or `null`
+  /// when no token is stored. Throws on 401/403/404 so the repository layer
+  /// can map to typed failures.
+  Future<ClientAgentTokenResponseDto> fetchClientAgentToken({
+    required String agentId,
+  });
+
+  /// `PUT /client/me/agents/{agentId}/client-token` — stores or clears the
+  /// bearer token for the authenticated client + agent pair. Pass
+  /// [ClientAgentTokenRequestDto] with `clientToken: null` (or empty) to
+  /// clear. Returns the updated state.
+  Future<ClientAgentTokenResponseDto> putClientAgentToken({
+    required String agentId,
+    required ClientAgentTokenRequestDto request,
   });
 }
 
@@ -272,12 +299,51 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   Future<AgentCatalogRecordDto> patchAgentProfile({
     required String agentId,
     required Map<String, Object?> body,
+    String? idempotencyKey,
   }) async {
+    final trimmedIdempotencyKey = idempotencyKey?.trim();
+    final hasHeader =
+        trimmedIdempotencyKey != null && trimmedIdempotencyKey.isNotEmpty;
     final response = await _dio.patch<Map<String, dynamic>>(
       AgentCatalogApiRoutes.profileByAgentId(agentId),
       data: body,
+      options: hasHeader
+          ? Options(
+              headers: <String, Object?>{
+                'Idempotency-Key': trimmedIdempotencyKey,
+              },
+            )
+          : null,
     );
     return _parseCatalogAgentBody(response.data ?? const <String, dynamic>{});
+  }
+
+  @override
+  Future<ClientAgentTokenResponseDto> fetchClientAgentToken({
+    required String agentId,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ClientAgentApiRoutes.clientTokenForAgent(agentId),
+    );
+    return _parseClientAgentTokenBody(
+      response.data ?? const <String, dynamic>{},
+      fallbackAgentId: agentId,
+    );
+  }
+
+  @override
+  Future<ClientAgentTokenResponseDto> putClientAgentToken({
+    required String agentId,
+    required ClientAgentTokenRequestDto request,
+  }) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      ClientAgentApiRoutes.clientTokenForAgent(agentId),
+      data: request.toJson(),
+    );
+    return _parseClientAgentTokenBody(
+      response.data ?? const <String, dynamic>{},
+      fallbackAgentId: agentId,
+    );
   }
 
   Set<String> _resolveMutatedAgentIds({
@@ -304,6 +370,20 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   }
 }
 
+ClientAgentTokenResponseDto _parseClientAgentTokenBody(
+  Map<String, dynamic> json, {
+  required String fallbackAgentId,
+}) {
+  final dto = ClientAgentTokenResponseDto.fromJson(json);
+  if (dto.agentId.isNotEmpty) {
+    return dto;
+  }
+  return ClientAgentTokenResponseDto(
+    agentId: fallbackAgentId,
+    clientToken: dto.clientToken,
+  );
+}
+
 AgentCatalogRecordDto _parseCatalogAgentBody(Map<String, dynamic> json) {
   final direct = json['agent'];
   if (direct is Map<String, dynamic>) {
@@ -322,6 +402,10 @@ AgentCatalogRecordDto _parseCatalogAgentBody(Map<String, dynamic> json) {
 
 class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   FakeClientAgentsRemoteDataSource();
+
+  /// Per-agent server-side client tokens. Mirrors the `client-token` REST
+  /// endpoints so dev builds can exercise the same UI flow.
+  final Map<String, String> _serverClientTokens = <String, String>{};
 
   final List<Map<String, dynamic>> _catalog = <Map<String, dynamic>>[
     _agentRecord(
@@ -419,7 +503,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     final paged = _slice(filtered, query);
     return ClientApprovedAgentsResponseDto(
       agents: paged
-          .map(ClientAccessibleAgentDto.fromJson)
+          .map(_accessibleAgentDtoWithServerTokenFlag)
           .toList(growable: false),
       agentIds: approved.map((item) => item['agentId'] as String).toSet(),
       count: filtered.length,
@@ -435,7 +519,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   ) async {
     final agent = _catalog.firstWhere((item) => item['agentId'] == agentId);
     return ClientApprovedAgentDetailResponseDto(
-      agent: ClientAccessibleAgentDto.fromJson(agent),
+      agent: _accessibleAgentDtoWithServerTokenFlag(agent),
     );
   }
 
@@ -455,7 +539,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
       },
     );
     return ClientApprovedAgentDetailResponseDto(
-      agent: ClientAccessibleAgentDto.fromJson(agent),
+      agent: _accessibleAgentDtoWithServerTokenFlag(agent),
     );
   }
 
@@ -576,6 +660,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   Future<AgentCatalogRecordDto> patchAgentProfile({
     required String agentId,
     required Map<String, Object?> body,
+    String? idempotencyKey,
   }) async {
     final index = _catalog.indexWhere((e) => e['agentId'] == agentId);
     if (index < 0) {
@@ -617,6 +702,29 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     }
 
     final current = Map<String, dynamic>.from(_catalog[index]);
+    final currentVersion = (current['profileVersion'] as num?)?.toInt() ?? 0;
+    final expectedVersion = (body['expectedProfileVersion'] as num?)?.toInt();
+    if (expectedVersion != null && expectedVersion != currentVersion) {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: AgentCatalogApiRoutes.profileByAgentId(agentId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: AgentCatalogApiRoutes.profileByAgentId(agentId),
+          ),
+          statusCode: 409,
+          data: <String, dynamic>{
+            'code': 'AGENT_PROFILE_CAS_MISMATCH',
+            'message': 'Profile version mismatch',
+            'expected': expectedVersion,
+            'current': currentVersion,
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+
     final now = DateTime.now().toIso8601String();
     final addressBody = body['address'];
     if (addressBody is Map<String, dynamic>) {
@@ -644,6 +752,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     put('observation');
     current['updatedAt'] = now;
     current['profileUpdatedAt'] = now;
+    current['profileVersion'] = currentVersion + 1;
     if (current['cnpjCpf'] != null) {
       final v = current['cnpjCpf']!.toString().replaceAll(RegExp(r'\D'), '');
       current['cnpjCpf'] = v.isEmpty ? null : v;
@@ -651,6 +760,81 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     }
     _catalog[index] = current;
     return AgentCatalogRecordDto.fromJson(current);
+  }
+
+  @override
+  Future<ClientAgentTokenResponseDto> fetchClientAgentToken({
+    required String agentId,
+  }) async {
+    if (!_approvedAgentIds.contains(agentId)) {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: ClientAgentApiRoutes.clientTokenForAgent(agentId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: ClientAgentApiRoutes.clientTokenForAgent(agentId),
+          ),
+          statusCode: 403,
+          data: <String, dynamic>{
+            'code': 'CLIENT_AGENT_ACCESS_REQUIRED',
+            'message':
+                'Client does not have approved access to this agent',
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+    return ClientAgentTokenResponseDto(
+      agentId: agentId,
+      clientToken: _serverClientTokens[agentId],
+    );
+  }
+
+  @override
+  Future<ClientAgentTokenResponseDto> putClientAgentToken({
+    required String agentId,
+    required ClientAgentTokenRequestDto request,
+  }) async {
+    if (!_approvedAgentIds.contains(agentId)) {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: ClientAgentApiRoutes.clientTokenForAgent(agentId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: ClientAgentApiRoutes.clientTokenForAgent(agentId),
+          ),
+          statusCode: 403,
+          data: <String, dynamic>{
+            'code': 'CLIENT_AGENT_ACCESS_REQUIRED',
+            'message':
+                'Client does not have approved access to this agent',
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+    final normalized = request.normalized;
+    if (normalized == null) {
+      _serverClientTokens.remove(agentId);
+    } else {
+      _serverClientTokens[agentId] = normalized;
+    }
+    return ClientAgentTokenResponseDto(
+      agentId: agentId,
+      clientToken: normalized,
+    );
+  }
+
+  ClientAccessibleAgentDto _accessibleAgentDtoWithServerTokenFlag(
+    Map<String, dynamic> raw,
+  ) {
+    final agentId = raw['agentId'] as String? ?? '';
+    final hasToken =
+        agentId.isNotEmpty && _serverClientTokens.containsKey(agentId);
+    final enriched = <String, dynamic>{...raw, 'hasClientToken': hasToken};
+    return ClientAccessibleAgentDto.fromJson(enriched);
   }
 
   static Map<String, dynamic> _agentRecord({

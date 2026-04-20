@@ -19,6 +19,7 @@ class AgentCatalogRecordDto extends ClientAgentProfileDto {
     super.notes,
     super.observation,
     super.profileUpdatedAt,
+    super.profileVersion,
     super.isHubConnected,
   });
 
@@ -41,6 +42,7 @@ class AgentCatalogRecordDto extends ClientAgentProfileDto {
       notes: base.notes,
       observation: base.observation,
       profileUpdatedAt: base.profileUpdatedAt,
+      profileVersion: base.profileVersion,
       isHubConnected: base.isHubConnected,
       lastLoginUserId: json['lastLoginUserId'] as String?,
     );

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:colmeia/core/value_objects/value_object_validation_exception.dart';
 import 'package:dio/dio.dart';
 
@@ -82,6 +84,12 @@ bool isDioUnauthorizedOrForbidden(DioException error) {
 /// Wire-level API error `code` values mapped by [mapToAppFailure] for HTTP 409.
 abstract final class ApiConflictErrorCode {
   static const String agentDocumentConflict = 'AGENT_DOCUMENT_CONFLICT';
+
+  /// Agent profile CAS mismatch — `expectedProfileVersion` did not match
+  /// the current server `profileVersion`, OR the same `Idempotency-Key`
+  /// was reused with a different body. UI should reload the agent and
+  /// ask the user to retry on top of the fresh data.
+  static const String agentProfileCasMismatch = 'AGENT_PROFILE_CAS_MISMATCH';
 }
 
 /// Context keys for conflict and API error mapping.
@@ -107,7 +115,16 @@ final class NetworkFailure extends AppFailure {
     super.stackTrace,
     super.context,
     super.isTransient = true,
+    this.retryAfter,
   });
+
+  /// Hint extracted from the `Retry-After` HTTP header (or its socket
+  /// equivalents `error.data.retry_after_ms` / `reset_at`) propagated by
+  /// the hub when a request is rate-limited. Callers SHOULD surface this
+  /// as a wait period to the user before allowing manual retry.
+  ///
+  /// `null` when the response did not carry a hint.
+  final Duration? retryAfter;
 }
 
 final class RpcFailure extends AppFailure {
@@ -121,6 +138,7 @@ final class RpcFailure extends AppFailure {
     this.technicalMessage,
     this.correlationId,
     this.timestamp,
+    this.retryAfter,
     super.cause,
     super.stackTrace,
     super.context,
@@ -128,6 +146,13 @@ final class RpcFailure extends AppFailure {
 
   final int? rpcCode;
   final bool retryable;
+
+  /// Hint extracted from JSON-RPC `error.data.retry_after_ms` /
+  /// `reset_at` (typically present on `-32013` `client_token_*_rate_limited`
+  /// and bridge overload responses). Same semantics as
+  /// [NetworkFailure.retryAfter] — callers SHOULD respect it before
+  /// scheduling a retry.
+  final Duration? retryAfter;
   final String? reason;
   final String? category;
   final String? technicalMessage;
@@ -193,6 +218,12 @@ AppFailure appFailureWithMergedContext(
       stackTrace: failure.stackTrace,
       context: mergedContext,
       isTransient: failure.isTransient,
+      // retryAfter MUST survive context merges — `RetryAfterGate`
+      // and `appFailureRetryAfter` rely on it to throttle the UI
+      // when the hub asks us to back off (e.g. `RATE_LIMITED` /
+      // overload). Dropping it on a context merge silently breaks
+      // the cool-down across the agent_queries coordinator hop.
+      retryAfter: failure.retryAfter,
     ),
     RpcFailure() => RpcFailure(
       message: failure.message,
@@ -204,6 +235,11 @@ AppFailure appFailureWithMergedContext(
       technicalMessage: failure.technicalMessage,
       correlationId: failure.correlationId,
       timestamp: failure.timestamp,
+      // Same rationale as NetworkFailure above: dropping retryAfter
+      // here would silently disable the overview's `RetryAfterGate`
+      // cooldown when the bridge propagates `-32013` rate-limit
+      // errors with `error.data.retry_after_ms`.
+      retryAfter: failure.retryAfter,
       cause: failure.cause,
       stackTrace: failure.stackTrace,
       context: mergedContext,
@@ -234,7 +270,15 @@ AppFailure mapToAppFailure(
   Map<String, Object?> context = const <String, Object?>{},
 }) {
   if (error is AppFailure) {
-    return error;
+    // Preserve any extra context the caller supplied — without this
+    // merge, a re-throw chain that wants to add `operation: 'foo'`
+    // would silently drop the breadcrumb every time the exception
+    // had already been mapped once. Empty `context` short-circuits
+    // to avoid a needless allocation.
+    if (context.isEmpty) {
+      return error;
+    }
+    return appFailureWithMergedContext(error, context);
   }
 
   if (error is ValueObjectValidationException) {
@@ -254,6 +298,7 @@ AppFailure mapToAppFailure(
       error,
       fallbackUserMessage: fallbackUserMessage,
     );
+    final retryAfter = _extractRetryAfterFromDio(error);
     if (statusCode == 401) {
       return SessionFailure(
         message: fallbackMessage ?? 'Unauthorized request',
@@ -308,11 +353,25 @@ AppFailure mapToAppFailure(
           },
         );
       }
+      if (apiCode == ApiConflictErrorCode.agentProfileCasMismatch) {
+        return ValidationFailure(
+          message: 'Agent profile CAS mismatch',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            ...context,
+            'httpStatusCode': statusCode,
+            ApiErrorContext.apiErrorCode:
+                ApiConflictErrorCode.agentProfileCasMismatch,
+          },
+        );
+      }
       return NetworkFailure(
         message: fallbackMessage ?? 'Conflict request',
         userMessage: resolvedUserMessage,
         cause: error,
         stackTrace: stackTrace,
+        retryAfter: retryAfter,
         context: <String, Object?>{
           ...context,
           'httpStatusCode': statusCode,
@@ -322,6 +381,7 @@ AppFailure mapToAppFailure(
     return NetworkFailure(
       message: fallbackMessage ?? 'Network request failed',
       userMessage: resolvedUserMessage,
+      retryAfter: retryAfter,
       cause: error,
       stackTrace: stackTrace,
       context: context,
@@ -378,6 +438,143 @@ String? _extractApiErrorCode(Object? responseData) {
     responseData,
     const <String>['code', 'errorCode', 'failure_code'],
   );
+}
+
+/// Returns the `Retry-After` hint carried by [failure], or `null` when the
+/// failure does not advertise one.
+///
+/// Surfaced as a shared helper so controllers can apply a consistent
+/// "wait before allowing manual retry" UX across REST, socket and relay
+/// channels — see `RetryAfterGate` in `core/errors/retry_after_gate.dart`.
+Duration? appFailureRetryAfter(AppFailure failure) {
+  if (failure is NetworkFailure) {
+    return failure.retryAfter;
+  }
+  if (failure is RpcFailure) {
+    return failure.retryAfter;
+  }
+  return null;
+}
+
+/// Resolves the `Retry-After` hint for a [DioException].
+///
+/// Inspects, in order:
+///
+/// 1. The `Retry-After` HTTP header (RFC 7231 — either delta-seconds or
+///    HTTP-date).
+/// 2. JSON-RPC `error.data.retry_after_ms` propagated by the hub for the
+///    `-32013` rate-limit family (e.g. `client_token.getPolicy`).
+/// 3. JSON-RPC `error.data.reset_at` (HTTP-date or epoch seconds).
+///
+/// Returns `null` when the response did not carry a hint.
+Duration? _extractRetryAfterFromDio(DioException error) {
+  final headerValue = _firstHeaderValue(
+    error.response?.headers.map,
+    'retry-after',
+  );
+  final headerHint = _parseRetryAfterHeader(headerValue);
+  if (headerHint != null) {
+    return headerHint;
+  }
+  final responseData = error.response?.data;
+  if (responseData is Map) {
+    final errorBody = responseData['error'];
+    if (errorBody is Map) {
+      final data = errorBody['data'];
+      if (data is Map) {
+        final ms = data['retry_after_ms'] ?? data['retryAfterMs'];
+        final fromMs = _parseDurationFromMillis(ms);
+        if (fromMs != null) {
+          return fromMs;
+        }
+        final resetAt = data['reset_at'] ?? data['resetAt'];
+        final fromReset = _parseRetryAfterHeader(resetAt?.toString());
+        if (fromReset != null) {
+          return fromReset;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+String? _firstHeaderValue(
+  Map<String, List<String>>? headers,
+  String name,
+) {
+  if (headers == null) {
+    return null;
+  }
+  final lower = name.toLowerCase();
+  for (final entry in headers.entries) {
+    if (entry.key.toLowerCase() == lower) {
+      for (final value in entry.value) {
+        final trimmed = value.trim();
+        if (trimmed.isNotEmpty) {
+          return trimmed;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+Duration? _parseRetryAfterHeader(String? raw) {
+  if (raw == null) {
+    return null;
+  }
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  final asInt = int.tryParse(trimmed);
+  if (asInt != null) {
+    if (asInt <= 0) {
+      return Duration.zero;
+    }
+    return Duration(seconds: asInt);
+  }
+  final asDate = DateTime.tryParse(trimmed) ?? _tryParseHttpDate(trimmed);
+  if (asDate != null) {
+    final delta = asDate.toUtc().difference(DateTime.now().toUtc());
+    if (delta.isNegative) {
+      return Duration.zero;
+    }
+    return delta;
+  }
+  return null;
+}
+
+Duration? _parseDurationFromMillis(Object? raw) {
+  if (raw == null) {
+    return null;
+  }
+  if (raw is num) {
+    final ms = raw.toInt();
+    if (ms < 0) {
+      return Duration.zero;
+    }
+    return Duration(milliseconds: ms);
+  }
+  if (raw is String) {
+    final parsed = int.tryParse(raw.trim());
+    if (parsed == null) {
+      return null;
+    }
+    if (parsed < 0) {
+      return Duration.zero;
+    }
+    return Duration(milliseconds: parsed);
+  }
+  return null;
+}
+
+DateTime? _tryParseHttpDate(String value) {
+  try {
+    return HttpDate.parse(value);
+  } on Object {
+    return null;
+  }
 }
 
 String? _extractApiErrorMessage(Object? responseData) {

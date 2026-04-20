@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -125,10 +126,13 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 zoomMode: ZoomMode.x,
               )
             : null,
-        tooltipBehavior: TooltipBehavior(
+        onTooltipRender:
+            enableTooltip ? buildSanitizingTooltipRenderer() : null,
+        // One tooltip for bar + line so the line stays readable when the
+        // right Y-axis ticks are hidden ([AppComboChartStyle.showRightYAxis]).
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
           enable: enableTooltip && style.showTooltip,
-          // One tooltip for bar + line so the line stays readable when the
-          // right Y-axis ticks are hidden ([AppComboChartStyle.showRightYAxis]).
           shared: true,
         ),
         legend: Legend(
@@ -201,8 +205,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             width: style.barWidth ?? 0.6,
             spacing: style.barSpacing ?? 0.2,
             borderRadius: style.barBorderRadius,
-            animationDuration:
-                style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: style.animationDuration,
+              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+            ),
             dataLabelMapper: barLabelsVisible
                 ? (data, _) =>
                       barDataLabelBuilder?.call(data, barValueBuilder(data)) ??
@@ -233,8 +240,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 ? resolvedLineColor.withValues(alpha: 0)
                 : resolvedLineColor,
             width: style.lineWidth ?? 2.5,
-            animationDuration:
-                style.animationDuration?.inMilliseconds.toDouble() ?? 1200,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: style.animationDuration,
+              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+            ),
             markerSettings: MarkerSettings(
               isVisible: style.showMarkers && layout != _ComboLayout.yAxisStrip,
               height: 6,
@@ -383,8 +393,14 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               ? _kComboExternalLegendHeight
               : 0.0;
           final coreH = resolvedHeight - legendReserve;
-          const scrollSlot = kChartHorizontalScrollBottomTrackSlot;
-          final plotChartBodyHeight = coreH - scrollSlot;
+          // [ChartHorizontalScrollShell] scales its bottom strip by the
+          // platform [TextScaler] for accessibility, so engines must deduct
+          // the *resolved* slot — not the raw constant — to avoid the inner
+          // column overflowing at large text scales (text scaler 2.25 turns
+          // a 22 px slot into ~49 px).
+          final resolvedScrollSlot =
+              chartHorizontalScrollBottomTrackSlotHeight(context);
+          final plotChartBodyHeight = coreH - resolvedScrollSlot;
 
           if (!sticky) {
             final plotInner = SizedBox(
@@ -404,7 +420,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             );
             return ChartHorizontalScrollShell(
               plotInner,
-              bottomTrackSlot: scrollSlot,
+              bottomTrackSlot: kChartHorizontalScrollBottomTrackSlot,
               showFade: style.showScrollFade,
               semanticsHint: style.horizontalScrollSemanticsHint,
             );
@@ -457,7 +473,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 Expanded(
                   child: ChartHorizontalScrollShell(
                     plotChart,
-                    bottomTrackSlot: scrollSlot,
+                    bottomTrackSlot: kChartHorizontalScrollBottomTrackSlot,
                     showFade: style.showScrollFade,
                     semanticsHint: style.horizontalScrollSemanticsHint,
                   ),

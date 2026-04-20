@@ -1,0 +1,83 @@
+import 'package:colmeia/core/socket/relay/relay_event_names.dart';
+import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
+
+/// High-level entry point for sending a JSON-RPC request through the relay
+/// channel and receiving the correlated response.
+///
+/// Two surfaces are exposed:
+///
+  /// 1. `sendUnary` — single-shot request that resolves with the same
+///    `Map<String, dynamic>` shape used by `agents:command` / REST. Use it
+///    for queries that produce a bounded payload.
+  /// 2. `sendStreaming` (PR-L+ part 2) — opens the request and exposes the
+///    inbound `relay:rpc.chunk` events as a `Stream<Map<String, dynamic>>`.
+///    The dispatcher manages backpressure by emitting `relay:rpc.stream.pull`
+///    automatically with a configurable rolling window. Stream closes when
+///    `relay:rpc.complete` arrives with `terminal_status: completed`;
+///    surfaces an error when the hub aborts the stream (`aborted`, `error`).
+abstract interface class RelayCommandDispatcher {
+  /// Sends a single JSON-RPC payload (`body`) over the relay conversation
+  /// for [agentId] and resolves with the JSON-decoded `relay:rpc.response`.
+  ///
+  /// The [body] mirrors the body sent through `agents:command`; the
+  /// dispatcher will:
+  ///
+  /// 1. Encode it as a `PayloadFrame` (auto-gzip per `PayloadFrameCodec`).
+  /// 2. Open a conversation via the manager (or reuse the active one).
+  /// 3. Emit `relay:rpc.request` with `{conversationId, frame, payloadFrameCompression}`.
+  /// 4. Wait for `relay:rpc.accepted`, then either:
+  ///    - resolve on the first `relay:rpc.response` (single response), or
+  ///    - resolve on `relay:rpc.complete` if the hub bundles the response
+  ///      into a single completion frame.
+  ///
+  /// Throws subtypes of `RelayDispatchException`; never throws raw
+  /// `StateError` for transport problems.
+  Future<Map<String, dynamic>> sendUnary({
+    required String agentId,
+    required Map<String, Object?> body,
+    required String clientRequestId,
+    Duration? timeout,
+    RelayPayloadFrameCompression compression =
+        RelayPayloadFrameCompression.auto,
+  });
+
+  /// Same wire payload as [sendUnary], but consumes the response as a
+  /// `Stream` of decoded `relay:rpc.chunk` payloads. Use when the agent is
+  /// expected to deliver a large result progressively.
+  ///
+  /// Backpressure is managed automatically:
+  ///
+  /// - On `relay:rpc.accepted`, the dispatcher grants
+  ///   [initialWindowSize] chunk credits via `relay:rpc.stream.pull`.
+  /// - Whenever the outstanding budget falls to or below
+  ///   [refillThreshold], the dispatcher refills back to
+  ///   [initialWindowSize].
+  /// - A non-streaming `relay:rpc.response` is forwarded as a single
+  ///   chunk and immediately closes the stream.
+  /// - `relay:rpc.complete` with `terminal_status: completed`/`success`
+  ///   closes the stream normally; any other status (or invalid
+  ///   PayloadFrame on response/chunk) raises a `RelayDispatchException`
+  ///   on the stream and closes it.
+  ///
+  /// Cancelling the returned subscription does **not** notify the hub
+  /// (the relay protocol has no client-side cancel today). The dispatcher
+  /// drops further chunks and lets the request settle; combined with the
+  /// existing [timeout], this prevents leaks.
+  Stream<Map<String, dynamic>> sendStreaming({
+    required String agentId,
+    required Map<String, Object?> body,
+    required String clientRequestId,
+    Duration? timeout,
+    int? initialWindowSize,
+    int? refillThreshold,
+    RelayPayloadFrameCompression compression =
+        RelayPayloadFrameCompression.auto,
+  });
+
+  /// Broadcast stream of outcomes (success or failure). Subscribers from
+  /// the presence layer / metrics see exactly one event per `sendUnary`
+  /// or `sendStreaming` invocation.
+  Stream<RelayRpcOutcome> outcomes();
+
+  Future<void> dispose();
+}

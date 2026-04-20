@@ -3,6 +3,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_distribution_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -115,11 +116,20 @@ class _SyncfusionDistributionChartState
         margin: widget.style.chartPadding ?? EdgeInsets.zero,
         palette: chartTheme.palette,
         legend: Legend(isVisible: widget.style.showLegend),
-        tooltipBehavior: TooltipBehavior(enable: widget.style.showTooltip),
+        onTooltipRender: buildSanitizingTooltipRenderer(),
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
+          enable: widget.style.showTooltip,
+        ),
         series: <CircularSeries<AppChartPoint, String>>[
           DoughnutSeries<AppChartPoint, String>(
             dataSource: _visiblePoints,
-            animationDuration: 0,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: null,
+              defaultMs:
+                  AppChartEngineAnimationDefaults.circularSeriesMs,
+            ),
             xValueMapper: (point, _) => point.label,
             yValueMapper: (point, _) => point.value,
             onPointTap: widget.onSegmentTap == null

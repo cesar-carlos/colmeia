@@ -40,6 +40,7 @@ class AppRegionMapDataSnapshot<TItem> {
     this.loadedAt,
     this.isStale = false,
     this.emptyHint,
+    this.points = const <AppMapPoint>[],
   });
 
   final List<TItem> items;
@@ -61,6 +62,11 @@ class AppRegionMapDataSnapshot<TItem> {
 
   /// Optional hint when [items] is empty (e.g. filters, permissions).
   final String? emptyHint;
+
+  /// Geographic markers overlaid on top of region shapes (lat/lng pins).
+  /// Empty by default; populate when the data source resolves coordinate
+  /// data (stores, agencies, events).
+  final List<AppMapPoint> points;
 }
 
 /// Generic data source contract used by map explorers.

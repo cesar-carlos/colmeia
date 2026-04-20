@@ -11,6 +11,33 @@ const double kChartHorizontalScrollEdgeThreshold = 0.5;
 /// labels (see [ChartHorizontalScrollShell]).
 const double kChartHorizontalScrollBottomTrackSlot = 22;
 
+/// Lower / upper clamp for the `textScaler`-scaled bottom track slot. Mirrors
+/// the values used inside the shell's build so engines that pre-compute their
+/// plot height can deduct the same amount.
+const double _kChartHorizontalScrollBottomTrackSlotMin = 18;
+const double _kChartHorizontalScrollBottomTrackSlotMax = 56;
+
+/// Returns the actual height occupied by the bottom-track strip used by
+/// [ChartHorizontalScrollShell] when [bottomTrackSlot] is positive.
+///
+/// The shell scales the strip by the platform [TextScaler] so the scrollbar
+/// thumb stays comfortably tappable for users with large text. Engines that
+/// pre-compute `plotChartBodyHeight = resolvedHeight - scrollSlot` must use
+/// this helper instead of the raw [bottomTrackSlot] constant — otherwise large
+/// text scalers cause the column inside the scroll shell to overflow.
+double chartHorizontalScrollBottomTrackSlotHeight(
+  BuildContext context, {
+  double bottomTrackSlot = kChartHorizontalScrollBottomTrackSlot,
+}) {
+  if (bottomTrackSlot <= 0) {
+    return 0;
+  }
+  return MediaQuery.textScalerOf(context).scale(bottomTrackSlot).clamp(
+        _kChartHorizontalScrollBottomTrackSlotMin,
+        _kChartHorizontalScrollBottomTrackSlotMax,
+      );
+}
+
 bool chartHorizontalScrollScrollbarThumbVisible(BuildContext context) {
   switch (Theme.of(context).platform) {
     case TargetPlatform.windows:
@@ -74,6 +101,7 @@ class _ChartHorizontalScrollShellState
   void _onScroll() {
     if (!_controller.hasClients) return;
     final pos = _controller.position;
+    if (!pos.hasContentDimensions) return;
     final showLeft = pos.pixels > kChartHorizontalScrollEdgeThreshold;
     final showRight =
         pos.pixels < pos.maxScrollExtent - kChartHorizontalScrollEdgeThreshold;
@@ -95,14 +123,19 @@ class _ChartHorizontalScrollShellState
 
   @override
   Widget build(BuildContext context) {
-    final baseSlot = widget.bottomTrackSlot;
-    final slot = baseSlot <= 0
-        ? 0.0
-        : MediaQuery.textScalerOf(context).scale(baseSlot).clamp(18.0, 56.0);
+    final slot = chartHorizontalScrollBottomTrackSlotHeight(
+      context,
+      bottomTrackSlot: widget.bottomTrackSlot,
+    );
     final scrollChild = slot > 0
         ? Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            // Inside a horizontal [SingleChildScrollView] the cross-axis (width)
+            // is unbounded, so [CrossAxisAlignment.stretch] would assert. The
+            // trailing [SizedBox] is purely vertical space for the scrollbar
+            // thumb; left-aligning the column lets [widget.child] keep its own
+            // intrinsic width without inflating the trailing strip.
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               widget.child,
               SizedBox(height: slot),

@@ -22,6 +22,8 @@ class ClientAgent {
     this.notes,
     this.observation,
     this.profileUpdatedAt,
+    this.profileVersion,
+    this.hasServerClientToken,
   });
 
   final String agentId;
@@ -43,8 +45,30 @@ class ClientAgent {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Monotonic profile revision counter served by the hub
+  /// (`profileVersion` on `ClientAccessibleAgent` / `AgentCatalogRecord`).
+  /// Used as the CAS token for `PATCH /api/v1/agents/{id}/profile`
+  /// (`expectedProfileVersion`) and to compare against the
+  /// `profile_version` field carried by `client:agent.profile.updated`
+  /// realtime events.
+  ///
+  /// `null` when the field was not present in the response (older hub
+  /// builds) or the entity was rebuilt from a partial payload — callers
+  /// must omit `expectedProfileVersion` in that case.
+  final int? profileVersion;
+
+  /// Server-side token presence flag (`hasClientToken` on
+  /// `ClientAccessibleAgent`). `null` when the API did not include the field
+  /// (older hubs or local cache built before the contract bumped). UI must
+  /// treat `null` as "unknown" and decide between local fallback and prompt.
+  final bool? hasServerClientToken;
+
   ClientAgent copyWith({
     AgentConnectionStatus? connectionStatus,
+    bool? hasServerClientToken,
+    bool resetHasServerClientToken = false,
+    int? profileVersion,
+    bool resetProfileVersion = false,
   }) {
     return ClientAgent(
       agentId: agentId,
@@ -61,10 +85,16 @@ class ClientAgent {
       notes: notes,
       observation: observation,
       profileUpdatedAt: profileUpdatedAt,
+      profileVersion: resetProfileVersion
+          ? null
+          : (profileVersion ?? this.profileVersion),
       catalogStatus: catalogStatus,
       connectionStatus: connectionStatus ?? this.connectionStatus,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      hasServerClientToken: resetHasServerClientToken
+          ? null
+          : (hasServerClientToken ?? this.hasServerClientToken),
     );
   }
 }

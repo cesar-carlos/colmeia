@@ -70,6 +70,53 @@ void main() {
     });
   });
 
+  group('AppEnvironmentResolution.resolveInt', () {
+    test('should prefer non-empty define over dotenv and fallback', () {
+      final r = AppEnvironmentResolution.resolveInt(
+        fromDefine: '42',
+        fromDotenv: '7',
+        fallback: 1,
+      );
+      check(r).equals(42);
+    });
+
+    test('should use dotenv when define empty', () {
+      final r = AppEnvironmentResolution.resolveInt(
+        fromDefine: '',
+        fromDotenv: '7',
+        fallback: 1,
+      );
+      check(r).equals(7);
+    });
+
+    test('should fall back when define is invalid', () {
+      final r = AppEnvironmentResolution.resolveInt(
+        fromDefine: 'not-a-number',
+        fromDotenv: '7',
+        fallback: 1,
+      );
+      check(r).equals(1);
+    });
+
+    test('should fall back when dotenv is invalid', () {
+      final r = AppEnvironmentResolution.resolveInt(
+        fromDefine: '',
+        fromDotenv: 'NaN',
+        fallback: 99,
+      );
+      check(r).equals(99);
+    });
+
+    test('should fall back when both absent', () {
+      final r = AppEnvironmentResolution.resolveInt(
+        fromDefine: '',
+        fromDotenv: null,
+        fallback: 5,
+      );
+      check(r).equals(5);
+    });
+  });
+
   group('AppEnvironmentResolution.parseBoolString', () {
     test('should parse true and 1', () {
       check(

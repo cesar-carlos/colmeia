@@ -63,6 +63,10 @@ void main() {
       find.bySemanticsLabel(l10n.overviewMonthlyParcelsChartSemanticsValueView),
       findsOneWidget,
     );
+
+    // Drain the Syncfusion column / line animation timers (350 ms each)
+    // before the test tears down, otherwise pending timers fail the test.
+    await tester.pump(const Duration(milliseconds: 500));
   });
 
   testWidgets('builds at elevated text scale without throwing', (tester) async {
@@ -94,5 +98,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(OverviewMonthlyParcelsComboChart), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 500));
   });
 }

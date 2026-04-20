@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
@@ -51,6 +52,7 @@ class AppComparisonBarChartStyle {
     this.minY,
     this.maxY,
     this.interval,
+    this.yAxisRangePadding,
     this.yAxisTitle,
     this.xAxisTitle,
     this.showTooltip = true,
@@ -79,6 +81,9 @@ class AppComparisonBarChartStyle {
     this.categoryViewportFootnote,
     this.categoryViewportPanSemanticsLabel,
     this.outerDataLabelTopReserve = 0,
+    this.dataLabelBackgroundColor,
+    this.enableTapHighlight = false,
+    this.tapHighlightDimmedOpacity = 0.35,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -135,6 +140,10 @@ class AppComparisonBarChartStyle {
   /// at the top of the plot at default [TextScaler] values.
   final double outerDataLabelTopReserve;
 
+  /// Optional fill behind each data label (e.g. chart/card surface) so grid
+  /// lines do not run through compact currency text on tall columns.
+  final Color? dataLabelBackgroundColor;
+
   /// Animation duration for the series.
   final Duration? animationDuration;
 
@@ -162,6 +171,14 @@ class AppComparisonBarChartStyle {
 
   /// Optional Y axis interval.
   final num? interval;
+
+  /// When set, applied as [NumericAxis.rangePadding] instead of the engine
+  /// default (outer labels use [ChartRangePadding.normal]).
+  ///
+  /// Use [ChartRangePadding.additionalEnd] when outer data labels still clip
+  /// at the plot top: Syncfusion extends the axis maximum by one tick
+  /// interval, shortening the tallest column and freeing vertical space.
+  final ChartRangePadding? yAxisRangePadding;
 
   /// Optional Y axis title.
   final String? yAxisTitle;
@@ -300,6 +317,18 @@ class AppComparisonBarChartStyle {
   /// Screen reader label when category viewport pan is active.
   /// Ignored when null (hint may still come from horizontal scroll semantics).
   final String? categoryViewportPanSemanticsLabel;
+
+  /// When true, tapping a bar visually highlights it (Syncfusion
+  /// [SelectionBehavior]): the tapped column keeps full opacity while siblings
+  /// fade to [tapHighlightDimmedOpacity]. Single-select; tapping again clears.
+  ///
+  /// Independent from `AppComparisonBarChart.onPointTap` / `onPointTapEvent` —
+  /// those callbacks still fire on the same gesture.
+  final bool enableTapHighlight;
+
+  /// Opacity applied to non-selected bars while [enableTapHighlight] is active.
+  /// Defaults to `0.35`; set lower to dim more, `1.0` to disable the dim.
+  final double tapHighlightDimmedOpacity;
 }
 
 /// Structured payload emitted when the user taps a bar.
@@ -361,6 +390,28 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     this.plotFloorAccessibilityNotice,
     this.extremeSpreadAccessibilityNotice,
   });
+
+  /// Height the engine will reserve for the chart body when `style.height` is
+  /// not set. Useful for callers that render their own staged-mounting
+  /// placeholder and need to keep the same vertical footprint between the
+  /// placeholder and the eventual real card (avoids layout shift).
+  ///
+  /// When [styleHeight] is non-null it is returned verbatim — mirrors the
+  /// engine resolution (`style.height ?? chartTheme.height`).
+  static double loadingBlockHeight(
+    AppThemeTokens tokens, {
+    AppChartPreset preset = AppChartPreset.standard,
+    double? styleHeight,
+  }) {
+    if (styleHeight != null) {
+      return styleHeight;
+    }
+    return switch (preset) {
+      AppChartPreset.compact => tokens.chartCompactHeight,
+      AppChartPreset.standard => tokens.chartStandardHeight,
+      AppChartPreset.explorable => tokens.chartStandardHeight,
+    };
+  }
 
   /// Data items to plot.
   final List<T> items;

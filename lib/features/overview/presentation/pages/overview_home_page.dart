@@ -121,8 +121,16 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                         missingTokenNames: c.missingTokenAgentNamesNormalized,
                         partialFailureNames:
                             c.partialQueryFailureAgentNamesNormalized,
+                        skippedDueToHubPresenceNames:
+                            c.skippedDueToHubPresenceAgentNamesNormalized,
+                        retryRemainingSeconds:
+                            c.retryAfterGate.remaining?.inSeconds ?? 0,
                       ),
                       builder: (context, slice, _) {
+                        final remaining = slice.retryRemainingSeconds;
+                        final retryCountdown = remaining > 0
+                            ? l10n.appInlineErrorRetryCountdown(remaining)
+                            : null;
                         return OverviewHomeAlertsSection(
                           l10n: l10n,
                           errorMessage: slice.errorMessage,
@@ -131,6 +139,9 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                               slice.missingTokenNames,
                           partialFailureAgentNamesNormalized:
                               slice.partialFailureNames,
+                          skippedDueToHubPresenceAgentNamesNormalized:
+                              slice.skippedDueToHubPresenceNames,
+                          retryCountdownLabel: retryCountdown,
                           onOpenAgents: () => context.goTo(AppRoute.agents),
                           onRetryOverview: sessionUserId == null
                               ? null
@@ -323,12 +334,21 @@ class _AlertsSlice {
     required this.overview,
     required this.missingTokenNames,
     required this.partialFailureNames,
+    required this.skippedDueToHubPresenceNames,
+    required this.retryRemainingSeconds,
   });
 
   final String? errorMessage;
   final Overview? overview;
   final List<String> missingTokenNames;
   final List<String> partialFailureNames;
+  final List<String> skippedDueToHubPresenceNames;
+
+  /// Snapshot of `OverviewController.retryAfterGate.remainingSeconds`.
+  /// Zero (or negative) means the gate is open. We expose seconds, not a
+  /// `Duration`, so the slice equality stays cheap and the per-tick
+  /// rebuilds only happen when the displayed value actually changes.
+  final int retryRemainingSeconds;
 
   @override
   bool operator ==(Object other) {
@@ -336,16 +356,23 @@ class _AlertsSlice {
     return other is _AlertsSlice &&
         errorMessage == other.errorMessage &&
         identical(overview, other.overview) &&
+        retryRemainingSeconds == other.retryRemainingSeconds &&
         listEquals(missingTokenNames, other.missingTokenNames) &&
-        listEquals(partialFailureNames, other.partialFailureNames);
+        listEquals(partialFailureNames, other.partialFailureNames) &&
+        listEquals(
+          skippedDueToHubPresenceNames,
+          other.skippedDueToHubPresenceNames,
+        );
   }
 
   @override
   int get hashCode => Object.hash(
     errorMessage,
     overview,
+    retryRemainingSeconds,
     Object.hashAll(missingTokenNames),
     Object.hashAll(partialFailureNames),
+    Object.hashAll(skippedDueToHubPresenceNames),
   );
 }
 

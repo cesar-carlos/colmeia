@@ -162,6 +162,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Approved agents without a client token on this device';
 
   @override
+  String get dashboardAgentsOfflineTitle => 'Agents currently offline';
+
+  @override
+  String get dashboardAgentsOfflineMessage =>
+      'These approved agents have a saved token but the hub reports them as disconnected. Ask the agent operator to reconnect them, then retry.';
+
+  @override
+  String get dashboardAffectedAgentsSheetTitleOffline =>
+      'Agents reported offline by the hub';
+
+  @override
   String get dashboardMultiAgentAggregationTitle => 'Multiple agents';
 
   @override
@@ -203,10 +214,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardPaymentSummaryHeaderAvgTicket => 'AVG.\nTICKET';
 
   @override
-  String get dashboardPaymentSummaryLoadingSemantics =>
-      'Loading payment method summary…';
-
-  @override
   String get dashboardHomeFiltersAgentsLabel => 'Agents';
 
   @override
@@ -218,9 +225,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardHomeFiltersCurrentMonth => 'Current month';
-
-  @override
-  String get dashboardHomeFiltersPeriodLast30Days => 'Last 30 days';
 
   @override
   String get dashboardHomeFiltersReferenceRangeLabel => 'Date range';
@@ -658,32 +662,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartComboEmptyDefault => 'No combined data for this view.';
 
   @override
-  String get chartComboPanGestureHint =>
-      'Swipe sideways along the chart to see more periods.';
-
-  @override
-  String chartComboPanChartA11y(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Bar and line chart, $count categories.',
-      one: 'Bar and line chart, one category.',
-    );
-    return '$_temp0 Swipe horizontally to see all.';
-  }
-
-  @override
-  String chartComparisonPanChartA11y(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Bar chart, $count categories.',
-      one: 'Bar chart, one category.',
-    );
-    return '$_temp0 Swipe the chart horizontally to see all.';
-  }
-
-  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Payment method $label';
   }
@@ -714,10 +692,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewLoadFailedUserMessage => 'Unable to load the overview.';
-
-  @override
-  String get overviewSaveClientTokenForAgentUserMessage =>
-      'Save this agent\'s client token to query their data.';
 
   @override
   String get clientAgentsDataSourcesEyebrow => 'Data sources';
@@ -828,7 +802,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentsRequestAccessIntro1 =>
-      'Use one or more rows to request access. Each row needs an agent UUID; add the local client token when that agent requires it for SQL execution.';
+      'Use one or more rows to request access. Each row needs an agent UUID; add the client token when that agent requires it for SQL execution.';
 
   @override
   String get clientAgentsRequestAccessIntro2 =>
@@ -836,7 +810,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentsRequestAccessIntroToken =>
-      'The client token is saved only on this device (encrypted) and is not sent when you submit the access request.';
+      'The client token is cached on this device while approval is pending and pushed to the Colmeia server as soon as the agent is linked.';
 
   @override
   String get clientAgentsRequestAccessAddRow => 'Add agent row';
@@ -850,11 +824,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get clientAgentsClientTokenLabel => 'Client token (local)';
+  String get clientAgentsClientTokenLabel => 'Client token';
 
   @override
   String get clientAgentsClientTokenHint =>
-      'Optional — stored only on this device';
+      'Optional — cached locally, pushed to the server after approval';
 
   @override
   String get clientAgentsClientTokenShow => 'Show token';
@@ -875,6 +849,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String clientAgentsValidationInvalidIds(String ids) {
     return 'The following agent IDs are invalid: $ids.';
+  }
+
+  @override
+  String clientAgentsValidationTokenTooLong(int limit, String ids) {
+    return 'The client token must be $limit characters or fewer. Shorten it for: $ids.';
   }
 
   @override
@@ -986,6 +965,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appInlineErrorRetry => 'Try again';
 
   @override
+  String appInlineErrorRetryCountdown(int seconds) {
+    return 'Retry in ${seconds}s';
+  }
+
+  @override
   String get clientAgentsNoLocalPendingToSync =>
       'There are no local pending items to sync.';
 
@@ -1095,6 +1079,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sync finished but no pending actions could be applied.';
 
   @override
+  String clientAgentsSyncRetryAfterCountdown(int seconds) {
+    return 'The server asked us to wait. Try again in ${seconds}s.';
+  }
+
+  @override
+  String clientAgentsRequestAccessRetryAfterCountdown(int seconds) {
+    return 'Too many access requests. Try again in ${seconds}s.';
+  }
+
+  @override
   String clientAgentsSyncSuccessSomeFailedSuffix(int count) {
     return ' $count action(s) failed and remain queued to retry.';
   }
@@ -1200,9 +1194,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentValueNotAvailable => 'N/A';
 
   @override
-  String get clientAgentAddressNotProvided => 'Address not provided';
-
-  @override
   String get clientAgentDetailSectionContact => 'Contact';
 
   @override
@@ -1215,24 +1206,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentDetailSectionRecord => 'Record';
 
   @override
-  String get clientAgentDetailSectionLocalToken => 'Local client token';
+  String get clientAgentDetailSectionServerToken => 'Client token';
 
   @override
-  String get clientAgentDetailSectionLocalTokenSubtitle =>
-      'Used only on this device for SQL queries (for example in the overview). Never sent to Colmeia servers.';
+  String get clientAgentDetailSectionServerTokenSubtitle =>
+      'Stored on the Colmeia server and forwarded to the agent as `params.client_token` when this client runs SQL through the bridge. The token is also cached on this device so dashboards keep working briefly while offline.';
 
   @override
-  String get clientAgentDetailLocalTokenSave => 'Save token';
+  String get clientAgentDetailServerTokenSave => 'Save token';
 
   @override
-  String get clientAgentDetailLocalTokenRemove => 'Remove token';
+  String get clientAgentDetailServerTokenRemove => 'Remove token';
 
   @override
-  String get clientAgentDetailLocalTokenSaved => 'Token saved on this device.';
+  String get clientAgentDetailServerTokenSaved => 'Token saved on the server.';
 
   @override
-  String get clientAgentDetailLocalTokenRemoved =>
-      'Token removed from this device.';
+  String get clientAgentDetailServerTokenRemoved =>
+      'Token removed from the server.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusConfigured =>
+      'A token is configured for this agent on the server.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusMissing =>
+      'No token configured on the server yet.';
+
+  @override
+  String get clientAgentDetailServerTokenStatusUnknown =>
+      'Token status not loaded yet — refresh the screen with internet access to confirm.';
+
+  @override
+  String get clientAgentDetailRefreshFromAgent => 'Refresh from agent';
+
+  @override
+  String get clientAgentDetailRefreshFromAgentSuccess =>
+      'Profile refreshed straight from the agent.';
+
+  @override
+  String get clientAgentDetailRefreshFromAgentUnsupported =>
+      'This agent does not implement agent.getProfile via RPC.';
+
+  @override
+  String clientAgentDetailRetryAfterCountdown(int seconds) {
+    return 'The server asked us to wait. Try again in ${seconds}s.';
+  }
+
+  @override
+  String get clientAgentDetailSectionPolicy => 'Permissions of this token';
+
+  @override
+  String get clientAgentDetailSectionPolicySubtitle =>
+      'Resolved by the agent for the bearer token currently stored on the server. If the policy changes after a revocation or scope edit, refresh the screen.';
+
+  @override
+  String get clientAgentDetailPolicyFullAccess =>
+      'Full access (all tables, views and permissions).';
+
+  @override
+  String get clientAgentDetailPolicyAllTables => 'Allowed on every table.';
+
+  @override
+  String get clientAgentDetailPolicyAllViews => 'Allowed on every view.';
+
+  @override
+  String get clientAgentDetailPolicyAllPermissions =>
+      'Holds every permission flag.';
+
+  @override
+  String get clientAgentDetailPolicyTablesLabel => 'Allowed tables';
+
+  @override
+  String get clientAgentDetailPolicyViewsLabel => 'Allowed views';
+
+  @override
+  String get clientAgentDetailPolicyPermissionsLabel => 'Permissions';
+
+  @override
+  String get clientAgentDetailPolicyRevoked =>
+      'This token is reported as revoked by the agent.';
+
+  @override
+  String get clientAgentDetailPolicyRevokedSaveNewToken => 'Save new token';
+
+  @override
+  String get clientAgentDetailPolicyUnsupported =>
+      'This agent does not expose token policy introspection.';
+
+  @override
+  String get clientAgentDetailPolicyEmpty =>
+      'Agent did not return any rule for this token.';
 
   @override
   String get clientAgentDetailSectionEditProfile => 'Catalog profile';
@@ -1524,8 +1588,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not sync pending agent actions.';
 
   @override
+  String get clientAgentsErrorGetClientAgentToken =>
+      'Could not read the agent token from the server.';
+
+  @override
+  String get clientAgentsErrorSaveClientAgentToken =>
+      'Could not save the agent token on the server.';
+
+  @override
+  String get clientAgentsErrorRemoveClientAgentToken =>
+      'Could not remove the agent token on the server.';
+
+  @override
   String get clientAgentsErrorAgentDocumentConflict =>
       'This CNPJ/CPF is already linked to another agent in the catalog. To change the link, contact support.';
+
+  @override
+  String get clientAgentsErrorAgentProfileCasMismatch =>
+      'Another device updated this agent in the meantime. Reload the screen and reapply your changes.';
 
   @override
   String get agentSqlErrorAuthenticationFailed =>
@@ -1589,194 +1669,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'The query could not be completed on the agent.';
 
   @override
-  String get formsDemoEyebrow => 'Forms';
-
-  @override
-  String get formsDemoTitle => 'Shared fields';
-
-  @override
-  String get formsDemoIntroSubtitle =>
-      'Validation, enabled and disabled states, date pickers in Form, FormBuilder as in reports and groupings.';
-
-  @override
-  String get formsDemoFieldLibraryOverline => 'Field library';
-
-  @override
-  String get formsDemoSharedFormControlsTitle => 'Shared form controls';
-
-  @override
-  String get formsDemoPreviewBadge => 'Preview';
-
-  @override
-  String get formsDemoShowcaseSubtitle =>
-      'Base fields, selectors, and calendar wrappers in the same visual rhythm as the system.';
-
-  @override
-  String get formsDemoFieldsEnabledLabel => 'Fields enabled';
-
-  @override
-  String get formsDemoShowcaseFieldsEnabledHelper =>
-      'Turns the entire example surface below on or off.';
-
-  @override
-  String get formsDemoFormStateTitle => 'Form state';
-
-  @override
-  String get formsDemoFormStateSubtitle =>
-      'Turn off to inspect disabled fields.';
-
-  @override
-  String get formsDemoFormStateFieldsEnabledHelper =>
-      'Applies the disabled state to every example below.';
-
-  @override
-  String get formsDemoTextEmailPasswordTitle =>
-      'AppTextField, email, and password';
-
-  @override
-  String get formsDemoTextEmailPasswordSubtitle =>
-      'Fake data; submit runs validation.';
-
-  @override
-  String get formsDemoFullNameLabel => 'Full name';
-
-  @override
-  String get formsDemoFullNameHint => 'As in registration';
-
-  @override
-  String get formsDemoNameValidatorMinLength => 'Enter at least 3 characters.';
-
-  @override
-  String get formsDemoCorporateEmailLabel => 'Work email';
-
-  @override
-  String get formsDemoPasswordLabel => 'Password';
-
-  @override
-  String get formsDemoNotesLabel => 'Notes';
-
-  @override
-  String get formsDemoNotesHint => 'Optional';
-
-  @override
   String get formsDemoDatePickersFormTitle => 'Date pickers in Form';
 
   @override
   String get formsDemoDatePickersFormSubtitle =>
       'Native Form + FormField. Tap Apply in the sheet to confirm; closing without applying keeps the current value. Remove clears explicitly.';
-
-  @override
-  String get formsDemoReferenceDateLabel => 'Reference date';
-
-  @override
-  String get formsDemoReferenceDateHelper =>
-      'Opens in a bottom sheet with a styled calendar.';
-
-  @override
-  String get formsDemoSelectReferenceDateTitle => 'Select reference date';
-
-  @override
-  String get formsDemoReferenceDateRequiredError =>
-      'Select the reference date.';
-
-  @override
-  String get formsDemoAssessmentPeriodLabel => 'Desired capture period';
-
-  @override
-  String get formsDemoAssessmentPeriodHelper =>
-      'Ideal for filters and analytical queries.';
-
-  @override
-  String get formsDemoSelectPeriodTitle => 'Select period';
-
-  @override
-  String get formsDemoAssessmentPeriodRequiredError =>
-      'Select the full period.';
-
-  @override
-  String get formsDemoDateRangeMiddle => ' to ';
-
-  @override
-  String get formsDemoCheckboxTitle => 'AppCheckboxField';
-
-  @override
-  String get formsDemoCheckboxSubtitle => 'Fictitious consent.';
-
-  @override
-  String get formsDemoCheckboxLabel => 'Receive a weekly summary by email';
-
-  @override
-  String get formsDemoCheckboxHelper =>
-      'Sends alerts, summaries, and indicator updates.';
-
-  @override
-  String get formsDemoRadioCompactTitle => 'Compact AppRadioGroup';
-
-  @override
-  String get formsDemoRadioCompactSubtitle =>
-      'Single selection using the design system inline pattern.';
-
-  @override
-  String get formsDemoPeriodDaily => 'Daily';
-
-  @override
-  String get formsDemoPeriodMonthly => 'Monthly';
-
-  @override
-  String get formsDemoPeriodQuarterly => 'Quarterly';
-
-  @override
-  String get formsDemoChoiceChipTitle => 'AppChoiceChip';
-
-  @override
-  String get formsDemoChoiceChipSubtitle =>
-      'Point-in-time chips for context, store, or scope.';
-
-  @override
-  String get formsDemoScopeHeadquarters => 'Head office';
-
-  @override
-  String get formsDemoScopeStoreCenter => 'Downtown store';
-
-  @override
-  String get formsDemoScopeStoreSouth => 'South store';
-
-  @override
-  String get formsDemoDropdownMenusTitle => 'Dropdown menus';
-
-  @override
-  String get formsDemoDropdownMenusSubtitle =>
-      'Single-select and multi-select search in the same light/dark visual pattern as the references.';
-
-  @override
-  String get formsDemoStandardSelectLabel => 'Standard select';
-
-  @override
-  String get formsDemoSelectHiveNodeHint => 'Select Hive node…';
-
-  @override
-  String get formsDemoMultiSelectSearchLabel => 'Multi-select search';
-
-  @override
-  String get formsDemoHiveNodeAlphaCore => 'Alpha Core';
-
-  @override
-  String get formsDemoHiveNodeDeltaNode => 'Delta Node';
-
-  @override
-  String get formsDemoHiveNodeSigmaGrid => 'Sigma Grid';
-
-  @override
-  String get formsDemoTagAnalytics => 'Analytics';
-
-  @override
-  String get formsDemoTagCloud => 'Cloud';
-
-  @override
-  String get formsDemoTagAutomation => 'Automation';
-
-  @override
-  String get formsDemoTagSecurity => 'Security';
 
   @override
   String get formsDemoFormBuilderSectionTitle =>
@@ -1785,41 +1682,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get formsDemoFormBuilderSectionSubtitle =>
       'Same wrappers as reports: dropdown, multi-select, and the same date pickers as the Form section above (FormBuilderField + AppFormBuilderDate*).';
-
-  @override
-  String get formsDemoFormBuilderNodeLabel => 'Select node (FormBuilder)';
-
-  @override
-  String get formsDemoFormBuilderNodeHelper =>
-      'Single selection with the shared wrapper.';
-
-  @override
-  String get formsDemoFormBuilderTagsLabel => 'Tags (FormBuilder)';
-
-  @override
-  String get formsDemoFormBuilderTagsHelper =>
-      'Inline search with removable chips.';
-
-  @override
-  String get formsDemoFormBuilderDateRequiredLabel =>
-      'Required date (FormBuilder)';
-
-  @override
-  String get formsDemoFormBuilderDateRequiredHelper =>
-      'Validation with form_builder_validators.';
-
-  @override
-  String get formsDemoFormBuilderSelectDateTitle => 'Select date (FormBuilder)';
-
-  @override
-  String get formsDemoFormBuilderRangeLabel => 'Period (FormBuilder)';
-
-  @override
-  String get formsDemoFormBuilderRangeHelper => 'Optional in this demo.';
-
-  @override
-  String get formsDemoFormBuilderSelectRangeTitle =>
-      'Select period (FormBuilder)';
 
   @override
   String get formsDemoValidateFormBuilderButton => 'Validate FormBuilder';
@@ -1839,18 +1701,6 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return 'Valid FormBuilder (fake demo). Date: $dateLabel. Period: $rangeLabel.';
   }
-
-  @override
-  String get formsDemoLegendInput => 'Input';
-
-  @override
-  String get formsDemoLegendSelection => 'Selection';
-
-  @override
-  String get formsDemoLegendDate => 'Date';
-
-  @override
-  String get formsDemoLegendFormBuilder => 'FormBuilder';
 
   @override
   String get datePickerPlaceholderSelectDate => 'Select a date';
@@ -1884,129 +1734,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dateRangePickerSemanticsFallbackLabel => 'Period';
-
-  @override
-  String get areaTrendDemoIntroEyebrow => 'Area charts';
-
-  @override
-  String get areaTrendDemoIntroTitle => 'AppAreaTrendChart';
-
-  @override
-  String get areaTrendDemoIntroSubtitle =>
-      'Temporal trend with filled area: gradient, markers, zoom, style variants, and structured per-series/point tap event.';
-
-  @override
-  String get areaTrendDemoShowcaseTitle => 'Temporal trend with fill';
-
-  @override
-  String get areaTrendDemoShowcaseSubtitle =>
-      'Area chart for volume, growth, and comparisons over time, with good mass and intensity reading.';
-
-  @override
-  String get areaTrendDemoShowcaseBadge => 'Trend';
-
-  @override
-  String get areaTrendDemoShowcaseHighlightTimeSeries => 'Time series';
-
-  @override
-  String get areaTrendDemoShowcaseHighlightGradientMarkers =>
-      'Gradient and markers';
-
-  @override
-  String get areaTrendDemoShowcaseHighlightMultiseries => 'Multi-series';
-
-  @override
-  String get areaTrendDemoS01Title => '1. Weekly revenue';
-
-  @override
-  String get areaTrendDemoS01Subtitle =>
-      'Area with gradient, formatted axis, tooltip, and tap.';
-
-  @override
-  String get areaTrendDemoS02Title => '2. With point markers';
-
-  @override
-  String get areaTrendDemoS02Subtitle => 'Each point shows a visible marker.';
-
-  @override
-  String get areaTrendDemoS03Title => '3. No gradient (solid area)';
-
-  @override
-  String get areaTrendDemoS03Subtitle =>
-      'showGradientFill: false for a flat fill.';
-
-  @override
-  String get areaTrendDemoS04Title => '4. Orders by hour';
-
-  @override
-  String get areaTrendDemoS04Subtitle =>
-      'Operational peak of the day — unit scale.';
-
-  @override
-  String get areaTrendDemoS05Title => '5. Compact without shell';
-
-  @override
-  String get areaTrendDemoS05Subtitle =>
-      'Compact preset, no axes and no inner shell.';
-
-  @override
-  String get areaTrendDemoS06Title => '6. Loading state';
-
-  @override
-  String get areaTrendDemoS07Title => '7. Empty state';
-
-  @override
-  String get areaTrendDemoEmptyMessage => 'No data for the selected period.';
-
-  @override
-  String get areaTrendDemoS08Title => '8. Multi-series (store comparison)';
-
-  @override
-  String get areaTrendDemoS08Subtitle =>
-      'Three overlaid stores with automatic palette. Legend on.';
-
-  @override
-  String get areaTrendDemoS09Title => '9. Multi-series with trackball';
-
-  @override
-  String get areaTrendDemoS09Subtitle =>
-      'Tap the area to see values for all series at the same X position.';
-
-  @override
-  String get areaTrendDemoS10Title => '10. Colors per entry';
-
-  @override
-  String get areaTrendDemoS10Subtitle => 'Custom color per AppAreaTrendEntry.';
-
-  @override
-  String get areaTrendDemoSeriesRevenue => 'Revenue';
-
-  @override
-  String get areaTrendDemoSeriesTarget => 'Target';
-
-  @override
-  String get areaTrendDemoStoreCenter => 'Downtown';
-
-  @override
-  String get areaTrendDemoStoreNorth => 'North';
-
-  @override
-  String get areaTrendDemoStoreSouth => 'South';
-
-  @override
-  String get areaTrendDemoDefaultSeriesName => 'primary series';
-
-  @override
-  String areaTrendDemoTapSnackbar(
-    String seriesLabel,
-    String pointLabel,
-    String valueLabel,
-  ) {
-    return 'Area: $seriesLabel • $pointLabel = $valueLabel';
-  }
-
-  @override
-  String areaTrendDemoA11ySection(int sectionIndex, String sectionTitle) {
-    return 'Chart demo $sectionIndex: $sectionTitle';
-  }
 }

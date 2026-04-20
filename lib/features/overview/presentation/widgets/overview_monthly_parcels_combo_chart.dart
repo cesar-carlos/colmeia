@@ -27,12 +27,19 @@ class OverviewMonthlyParcelsComboChart extends StatefulWidget {
     required this.l10n,
     required this.points,
     required this.loadFailed,
+    this.loadFailureMessage,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<OverviewMonthlyParcelPoint> points;
   final bool loadFailed;
+
+  /// Specific message extracted from the underlying `AppFailure` (e.g.
+  /// "Voce nao tem acesso a este agente."). When set AND [loadFailed] is
+  /// true, the chart shows this instead of the generic l10n "load failed"
+  /// label so the user gets actionable context (BUG #4).
+  final String? loadFailureMessage;
 
   @override
   State<OverviewMonthlyParcelsComboChart> createState() =>
@@ -49,8 +56,6 @@ enum _OverviewMonthlyParcelDisplay {
 
 class _OverviewMonthlyParcelsComboChartState
     extends State<OverviewMonthlyParcelsComboChart> {
-  static const int _panCategoryDelta = 6;
-
   _OverviewMonthlyParcelDisplay _display =
       _OverviewMonthlyParcelDisplay.bySalesCount;
 
@@ -122,75 +127,60 @@ class _OverviewMonthlyParcelsComboChartState
   String _barDataLabelCurrency(OverviewMonthlyParcelPoint _, num v) =>
       _compactCurrencyFormat.format(v);
 
-  String _styleCacheKeyFor(
-    AppThemeTokens tokens,
-    int pointCount,
-    bool showCategoryPanHints,
-  ) =>
-      '$_formatsLocaleTag|${showCategoryPanHints ? 1 : 0}|'
-      '${tokens.gapSm}|${tokens.contentSpacing}|${tokens.chartStandardHeight}|'
+  String _styleCacheKeyFor(AppThemeTokens tokens, int pointCount) =>
+      '$_formatsLocaleTag|${tokens.gapSm}|${tokens.contentSpacing}|'
+      '${tokens.chartStandardHeight}|'
       '${tokens.chartOverviewMonthlyCategoryMinSlotWidth}|$pointCount';
 
   void _ensureComboStyles({
     required AppThemeTokens tokens,
     required AppLocalizations l10n,
     required int pointCount,
-    required bool showCategoryPanHints,
   }) {
-    final key = _styleCacheKeyFor(tokens, pointCount, showCategoryPanHints);
+    final key = _styleCacheKeyFor(tokens, pointCount);
     if (_cachedStyleKey == key &&
         _cachedStyleSales != null &&
         _cachedStyleValue != null) {
       return;
     }
     _cachedStyleKey = key;
-    _cachedStyleSales = AppComboChartStyle(
-      height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
-      animationDuration: Duration.zero,
-      leftAxisFormat: _decimalFormat,
-      rightAxisFormat: _compactCurrencyFormat,
-      chartPadding: EdgeInsets.zero,
-      showRightYAxis: false,
-      showDataLabels: true,
-      barDataLabelOffset: Offset(0, tokens.gapSm),
-      minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
-      horizontalScrollSemanticsHint:
-          l10n.overviewComparisonBarHorizontalScrollHint,
-      stickyPrimaryYAxisWhileScrolling: false,
-      enableAutoScroll: false,
-      loadingLabel: l10n.overviewComparisonChartLoading,
-      categoryAutoScrollingDelta:
-          showCategoryPanHints ? _panCategoryDelta : null,
-      categoryViewportFootnote: showCategoryPanHints
-          ? l10n.chartComboPanGestureHint
-          : null,
-      categoryViewportPanSemanticsLabel: showCategoryPanHints
-          ? l10n.chartComboPanChartA11y(pointCount)
-          : null,
+
+    AppComboChartStyle build({
+      required NumberFormat leftAxis,
+      required NumberFormat rightAxis,
+    }) {
+      return AppComboChartStyle(
+        height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
+        // Aligned with the bar charts (350 ms): the previous Duration.zero left
+        // this card visually static while siblings animated in via staged
+        // mounting + 350 ms entrance.
+        animationDuration: const Duration(milliseconds: 350),
+        leftAxisFormat: leftAxis,
+        rightAxisFormat: rightAxis,
+        chartPadding: EdgeInsets.zero,
+        showRightYAxis: false,
+        showDataLabels: true,
+        barDataLabelOffset: Offset(0, tokens.gapSm),
+        minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
+        horizontalScrollSemanticsHint:
+            l10n.overviewComparisonBarHorizontalScrollHint,
+        // Use horizontal scroll (default) instead of category-axis pan: pan
+        // kept the chart width fixed but Y-axis was still scaled by the *full*
+        // dataset, making low-volume months invisible (e.g. a bar of 8 with
+        // Y-max 2.500 is < 0.4% of the plot height). Scroll widens the plot so
+        // all months are reachable with the same axis.
+        stickyPrimaryYAxisWhileScrolling: false,
+        loadingLabel: l10n.overviewComparisonChartLoading,
+      );
+    }
+
+    _cachedStyleSales = build(
+      leftAxis: _decimalFormat,
+      rightAxis: _compactCurrencyFormat,
     );
-    _cachedStyleValue = AppComboChartStyle(
-      height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
-      animationDuration: Duration.zero,
-      leftAxisFormat: _compactCurrencyFormat,
-      rightAxisFormat: _decimalFormat,
-      chartPadding: EdgeInsets.zero,
-      showRightYAxis: false,
-      showDataLabels: true,
-      barDataLabelOffset: Offset(0, tokens.gapSm),
-      minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
-      horizontalScrollSemanticsHint:
-          l10n.overviewComparisonBarHorizontalScrollHint,
-      stickyPrimaryYAxisWhileScrolling: false,
-      enableAutoScroll: false,
-      loadingLabel: l10n.overviewComparisonChartLoading,
-      categoryAutoScrollingDelta:
-          showCategoryPanHints ? _panCategoryDelta : null,
-      categoryViewportFootnote: showCategoryPanHints
-          ? l10n.chartComboPanGestureHint
-          : null,
-      categoryViewportPanSemanticsLabel: showCategoryPanHints
-          ? l10n.chartComboPanChartA11y(pointCount)
-          : null,
+    _cachedStyleValue = build(
+      leftAxis: _compactCurrencyFormat,
+      rightAxis: _decimalFormat,
     );
   }
 
@@ -220,17 +210,15 @@ class _OverviewMonthlyParcelsComboChartState
     final valuePrimary =
         _display == _OverviewMonthlyParcelDisplay.byParcelValue;
     final pointCount = widget.points.length;
-    final showCategoryPanHints = pointCount > _panCategoryDelta;
 
     _ensureComboStyles(
       tokens: tokens,
       l10n: l10n,
       pointCount: pointCount,
-      showCategoryPanHints: showCategoryPanHints,
     );
 
     final emptyMessage = widget.loadFailed
-        ? l10n.overviewMonthlyParcelsLoadFailed
+        ? (widget.loadFailureMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
         : l10n.overviewMonthlyParcelsEmpty;
 
     final activeStyle =
@@ -241,8 +229,12 @@ class _OverviewMonthlyParcelsComboChartState
           ? l10n.overviewMonthlyParcelsChartSemanticsValueView
           : l10n.overviewMonthlyParcelsChartSemantics,
       child: RepaintBoundary(
+        // Stable key: re-mounting the SfCartesianChart on every new payload is
+        // expensive (Syncfusion rebuilds painters). Pegging the key to the
+        // list identity lets the engine update points in place when the parent
+        // caches the list (mirrors the donut card fix).
         child: AppComboChart<OverviewMonthlyParcelPoint>(
-          key: ObjectKey(widget.points),
+          key: ValueKey<int>(identityHashCode(widget.points)),
           title: l10n.overviewMonthlyParcelsTitle,
           subtitle: valuePrimary
               ? l10n.overviewMonthlyParcelsSubtitleValueView

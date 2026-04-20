@@ -11,6 +11,9 @@ String clientAgentsFailureUserMessage(
     if (code == ApiConflictErrorCode.agentDocumentConflict) {
       return l10n.clientAgentsErrorAgentDocumentConflict;
     }
+    if (code == ApiConflictErrorCode.agentProfileCasMismatch) {
+      return l10n.clientAgentsErrorAgentProfileCasMismatch;
+    }
   }
   final key = failure.context[ClientAgentsFailureUiKey.field] as String?;
   if (key == null) {
@@ -40,6 +43,12 @@ String clientAgentsFailureUserMessage(
       l10n.clientAgentsErrorSyncAction,
     ClientAgentsFailureUiKey.syncPendingActions =>
       l10n.clientAgentsErrorSyncPending,
+    ClientAgentsFailureUiKey.getClientAgentToken =>
+      l10n.clientAgentsErrorGetClientAgentToken,
+    ClientAgentsFailureUiKey.saveClientAgentToken =>
+      l10n.clientAgentsErrorSaveClientAgentToken,
+    ClientAgentsFailureUiKey.removeClientAgentToken =>
+      l10n.clientAgentsErrorRemoveClientAgentToken,
     _ => failure.displayMessage,
   };
 }

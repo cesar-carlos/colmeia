@@ -1,3 +1,7 @@
+// NOT_RENDERED: not mounted by any current page/route. Kept for the upcoming
+// overview revamp where the AI-insights callout is planned to live above the
+// donut. See `lib/features/overview/presentation/widgets/README.md`.
+
 import 'package:colmeia/features/overview/domain/entities/overview_ai_insight.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';

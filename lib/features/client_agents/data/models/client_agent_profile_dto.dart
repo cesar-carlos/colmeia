@@ -3,6 +3,57 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_sta
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 
+/// Server-side monotonic profile revision counter (`profileVersion`).
+///
+/// Required field on `ClientAccessibleAgent` and `AgentCatalogRecord` since
+/// the hub started exposing optimistic concurrency for agent profile writes.
+/// Older hub builds may still omit it — when missing or non-numeric, this
+/// helper returns `null` so the entity can decide to skip CAS rather than
+/// send `expectedProfileVersion: 0` (which behaves as "match a fresh
+/// profile" and would falsely succeed only on never-edited agents).
+int? _parseOptionalProfileVersionFromJson(Map<String, dynamic> json) {
+  final raw = json['profileVersion'] ?? json['profile_version'];
+  if (raw is int) {
+    return raw < 0 ? null : raw;
+  }
+  if (raw is num) {
+    final value = raw.toInt();
+    return value < 0 ? null : value;
+  }
+  if (raw is String) {
+    final parsed = int.tryParse(raw.trim());
+    if (parsed == null || parsed < 0) {
+      return null;
+    }
+    return parsed;
+  }
+  return null;
+}
+
+/// Server-side token presence flag exposed by `GET /client/me/agents` and
+/// `GET /client/me/agents/{id}` (`hasClientToken: boolean`). Returns `null`
+/// when the API omits the field — older hubs or list aliases that do not
+/// surface it. The actual token value never travels through these payloads.
+bool? _parseOptionalHasClientTokenFromJson(Map<String, dynamic> json) {
+  const keys = <String>['hasClientToken', 'has_client_token'];
+  for (final key in keys) {
+    final value = json[key];
+    if (value is bool) {
+      return value;
+    }
+    if (value is String) {
+      final s = value.trim().toLowerCase();
+      if (s == 'true') {
+        return true;
+      }
+      if (s == 'false') {
+        return false;
+      }
+    }
+  }
+  return null;
+}
+
 /// Hub presence fields the API may send on `GET /client/me/agents` rows.
 bool? _parseOptionalHubConnectedFromJson(Map<String, dynamic> json) {
   const keys = <String>[
@@ -47,7 +98,9 @@ class ClientAgentProfileDto {
     this.notes,
     this.observation,
     this.profileUpdatedAt,
+    this.profileVersion,
     this.isHubConnected,
+    this.hasClientToken,
   });
 
   factory ClientAgentProfileDto.fromJson(Map<String, dynamic> json) {
@@ -78,7 +131,9 @@ class ClientAgentProfileDto {
       profileUpdatedAt: DateTime.tryParse(
         json['profileUpdatedAt'] as String? ?? '',
       ),
+      profileVersion: _parseOptionalProfileVersionFromJson(json),
       isHubConnected: _parseOptionalHubConnectedFromJson(json),
+      hasClientToken: _parseOptionalHasClientTokenFromJson(json),
     );
   }
 
@@ -99,8 +154,21 @@ class ClientAgentProfileDto {
   final String? observation;
   final DateTime? profileUpdatedAt;
 
+  /// Server-side monotonic profile revision counter — required field on
+  /// the current `ClientAccessibleAgent` / `AgentCatalogRecord` schema.
+  /// `null` is preserved for older hub builds and partial payloads so we
+  /// can omit `expectedProfileVersion` on PATCH instead of sending `0`,
+  /// which would behave like an unconditional CAS write.
+  final int? profileVersion;
+
   /// Null: hub did not send per-row presence; UI may fall back to cached ids.
   final bool? isHubConnected;
+
+  /// Null: server did not include the field (older hub or non-listing endpoint).
+  /// `true`: a per-(client, agent) bearer token is stored server-side and the
+  /// hub will inject it as `params.client_token` on the SQL bridge. The actual
+  /// token is only readable via `GET /client/me/agents/{id}/client-token`.
+  final bool? hasClientToken;
 
   ClientAgent toEntity({
     AgentConnectionStatus connectionStatus = AgentConnectionStatus.unknown,
@@ -120,10 +188,12 @@ class ClientAgentProfileDto {
       notes: notes,
       observation: observation,
       profileUpdatedAt: profileUpdatedAt,
+      profileVersion: profileVersion,
       catalogStatus: AgentCatalogStatus.fromWireValue(status),
       connectionStatus: connectionStatus,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      hasServerClientToken: hasClientToken,
     );
   }
 
@@ -145,7 +215,9 @@ class ClientAgentProfileDto {
       'notes': notes,
       'observation': observation,
       'profileUpdatedAt': profileUpdatedAt?.toIso8601String(),
+      if (profileVersion != null) 'profileVersion': profileVersion,
       if (isHubConnected != null) 'isHubConnected': isHubConnected,
+      if (hasClientToken != null) 'hasClientToken': hasClientToken,
     };
   }
 }

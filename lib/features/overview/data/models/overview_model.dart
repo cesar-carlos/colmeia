@@ -19,10 +19,13 @@ class OverviewModel {
     required this.userRankings,
     this.monthlyParcelTrend = const <OverviewMonthlyParcelPoint>[],
     this.monthlyParcelTrendLoadFailed = false,
+    this.monthlyParcelTrendLoadFailureMessage,
     this.weekdaySalesTrend = const <OverviewWeekdaySalesTrendPoint>[],
     this.weekdaySalesTrendLoadFailed = false,
+    this.weekdaySalesTrendLoadFailureMessage,
     this.weekdayUserSalesTrend = const <OverviewWeekdayUserSalesTrendPoint>[],
     this.weekdayUserSalesTrendLoadFailed = false,
+    this.weekdayUserSalesTrendLoadFailureMessage,
     this.cachedAt,
     this.sourceAgentIds,
   });
@@ -158,10 +161,16 @@ class OverviewModel {
       userRankings: overview.userRankings,
       monthlyParcelTrend: overview.monthlyParcelTrend,
       monthlyParcelTrendLoadFailed: overview.monthlyParcelTrendLoadFailed,
+      monthlyParcelTrendLoadFailureMessage:
+          overview.monthlyParcelTrendLoadFailureMessage,
       weekdaySalesTrend: overview.weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: overview.weekdaySalesTrendLoadFailed,
+      weekdaySalesTrendLoadFailureMessage:
+          overview.weekdaySalesTrendLoadFailureMessage,
       weekdayUserSalesTrend: overview.weekdayUserSalesTrend,
       weekdayUserSalesTrendLoadFailed: overview.weekdayUserSalesTrendLoadFailed,
+      weekdayUserSalesTrendLoadFailureMessage:
+          overview.weekdayUserSalesTrendLoadFailureMessage,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -178,13 +187,24 @@ class OverviewModel {
 
   final bool monthlyParcelTrendLoadFailed;
 
+  /// Transient runtime field; not persisted in [toJson] (cache is offline /
+  /// signature-driven, so a stale auth message would be misleading after
+  /// app restart).
+  final String? monthlyParcelTrendLoadFailureMessage;
+
   final List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend;
 
   final bool weekdaySalesTrendLoadFailed;
 
+  /// See [monthlyParcelTrendLoadFailureMessage] — transient runtime field.
+  final String? weekdaySalesTrendLoadFailureMessage;
+
   final List<OverviewWeekdayUserSalesTrendPoint> weekdayUserSalesTrend;
 
   final bool weekdayUserSalesTrendLoadFailed;
+
+  /// See [monthlyParcelTrendLoadFailureMessage] — transient runtime field.
+  final String? weekdayUserSalesTrendLoadFailureMessage;
 
   /// When the overview was persisted locally (for TTL / signature checks).
   final DateTime? cachedAt;
@@ -202,10 +222,16 @@ class OverviewModel {
       userRankings: userRankings,
       monthlyParcelTrend: monthlyParcelTrend,
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
+      monthlyParcelTrendLoadFailureMessage:
+          monthlyParcelTrendLoadFailureMessage,
       weekdaySalesTrend: weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
+      weekdaySalesTrendLoadFailureMessage:
+          weekdaySalesTrendLoadFailureMessage,
       weekdayUserSalesTrend: weekdayUserSalesTrend,
       weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
+      weekdayUserSalesTrendLoadFailureMessage:
+          weekdayUserSalesTrendLoadFailureMessage,
       isStaleCache: isStaleCache,
     );
   }

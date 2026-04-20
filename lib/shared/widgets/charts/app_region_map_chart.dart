@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
@@ -100,6 +102,9 @@ class AppRegionMapChartStyle {
     this.scopeRootLabel = 'Brasil',
     this.mapLoadingMessage = 'Carregando mapa...',
     this.emptyStateMessage = 'Nenhum dado territorial para exibir.',
+    this.metricGroupLabel = 'Métrica',
+    this.scopeGroupLabel = 'Escopo',
+    this.showGroupLabels = true,
   });
 
   final double? height;
@@ -133,6 +138,16 @@ class AppRegionMapChartStyle {
 
   /// Shown when the chart has no rows and no custom empty placeholder.
   final String emptyStateMessage;
+
+  /// Overline shown above the metric chips. Set [showGroupLabels] to `false`
+  /// to hide both labels.
+  final String metricGroupLabel;
+
+  /// Overline shown above the scope chips.
+  final String scopeGroupLabel;
+
+  /// Whether to render the overline labels above the chip groups.
+  final bool showGroupLabels;
 }
 
 class AppRegionMapChart<T> extends StatefulWidget {
@@ -166,6 +181,10 @@ class AppRegionMapChart<T> extends StatefulWidget {
     this.isLoading = false,
     this.isRefreshing = false,
     this.emptyPlaceholder,
+    this.points = const <AppMapPoint>[],
+    this.markerStyle = const AppMapMarkerStyle(),
+    this.markerBuilder,
+    this.onPointTap,
   });
 
   final List<T> items;
@@ -206,6 +225,23 @@ class AppRegionMapChart<T> extends StatefulWidget {
   final bool isRefreshing;
   final Widget? emptyPlaceholder;
 
+  /// Optional list of geographic markers overlaid on top of the region
+  /// shapes. Use to highlight stores, agencies, events, etc.
+  final List<AppMapPoint> points;
+
+  /// Default visual style for markers. Per-point [AppMapPoint.style]
+  /// overrides this when provided.
+  final AppMapMarkerStyle markerStyle;
+
+  /// Builder for a custom marker widget. When provided, the resulting
+  /// widget is used as the marker child instead of the icon shape from
+  /// [AppMapMarkerStyle.iconType].
+  final Widget Function(BuildContext context, AppMapPoint point, int index)?
+  markerBuilder;
+
+  /// Called when the user taps a marker.
+  final ValueChanged<AppMapPointTapEvent>? onPointTap;
+
   @override
   State<AppRegionMapChart<T>> createState() => _AppRegionMapChartState<T>();
 }
@@ -234,12 +270,19 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final resolvedMetric = _resolveSelectedMetric();
 
+    final showGroupLabels = widget.style.showGroupLabels;
     final metricSelector = _MetricSelector<T>(
       metrics: widget.metrics,
       selectedMetricKey: resolvedMetric.key,
       style: widget.style,
       onMetricChanged: _handleMetricChanged,
     );
+    final labeledMetricSelector = showGroupLabels
+        ? _MapControlGroup(
+            label: widget.style.metricGroupLabel,
+            child: metricSelector,
+          )
+        : metricSelector;
 
     final innerChart = SyncfusionRegionMapChart<T>(
       items: widget.items,
@@ -260,6 +303,10 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       isLoading: widget.isLoading,
       isRefreshing: widget.isRefreshing,
       emptyPlaceholder: widget.emptyPlaceholder,
+      points: widget.points,
+      markerStyle: widget.markerStyle,
+      markerBuilder: widget.markerBuilder,
+      onPointTap: widget.onPointTap,
     );
 
     final drillUpButton = _buildDrillUpButton();
@@ -271,7 +318,7 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       children: <Widget>[
         if (widget.style.showMetricSelector &&
             widget.metrics.length > 1) ...<Widget>[
-          metricSelector,
+          labeledMetricSelector,
           SizedBox(height: tokens.gapMd),
         ],
         if (scopeNavigator != null) ...<Widget>[
@@ -381,7 +428,7 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final rootLabel = widget.style.scopeRootLabel;
 
-    return Semantics(
+    final navigator = Semantics(
       label: 'Escopo territorial',
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -427,6 +474,44 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
           ],
         ),
       ),
+    );
+
+    if (!widget.style.showGroupLabels) {
+      return navigator;
+    }
+    return _MapControlGroup(
+      label: widget.style.scopeGroupLabel,
+      child: navigator,
+    );
+  }
+}
+
+class _MapControlGroup extends StatelessWidget {
+  const _MapControlGroup({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
+    final colors = theme.appColors;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          label.toUpperCase(),
+          style: typography.utilityOverline.copyWith(
+            color: colors.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: tokens.gapXs),
+        child,
+      ],
     );
   }
 }

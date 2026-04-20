@@ -1,5 +1,6 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_http_receive_timeout.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -13,9 +14,15 @@ abstract interface class AgentQueriesRemoteDataSource {
 }
 
 class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
-  ApiAgentQueriesRemoteDataSource(this._dio);
+  ApiAgentQueriesRemoteDataSource({
+    required Dio dio,
+    AgentSqlExecuteRequestToBridgeBody bodyMapper =
+        const AgentSqlExecuteRequestToBridgeBody(),
+  }) : _dio = dio,
+       _bodyMapper = bodyMapper;
 
   final Dio _dio;
+  final AgentSqlExecuteRequestToBridgeBody _bodyMapper;
   static const Uuid _uuid = Uuid();
 
   @override
@@ -23,28 +30,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     AgentSqlExecuteRequest request,
   ) async {
     final rpcId = _uuid.v4();
-    final trimmedToken = request.trimmedClientToken;
-    final rpcOptions = request.executeOptions?.toRpcOptions();
-    final params = <String, Object?>{
-      'sql': _normalizeSqlForRpc(request.trimmedSql),
-      'params': ?(request.namedParams.isEmpty ? null : request.namedParams),
-      'client_token': ?(trimmedToken == null || trimmedToken.isEmpty
-          ? null
-          : trimmedToken),
-      'options': ?rpcOptions,
-    };
-
-    final body = <String, Object?>{
-      'agentId': request.trimmedAgentId,
-      'timeoutMs': ?request.bridgeTimeoutMs,
-      'pagination': ?request.pagination?.toHttpBody(),
-      'command': <String, Object?>{
-        'jsonrpc': '2.0',
-        'method': 'sql.execute',
-        'id': rpcId,
-        'params': params,
-      },
-    };
+    final body = _bodyMapper.build(request: request, rpcId: rpcId);
 
     final receiveTimeout = agentSqlHttpReceiveTimeout(
       bridgeTimeoutMs: request.bridgeTimeoutMs,

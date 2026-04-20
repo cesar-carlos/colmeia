@@ -1,13 +1,23 @@
+import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/observe_agent_presence_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/probe_client_approved_agent_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/remove_client_agent_token_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
@@ -36,6 +46,7 @@ void registerInjectorPresentation(GetIt getIt) {
       () => OverviewController(
         getIt<LoadOverviewUseCase>(),
         getIt<ClientAgentsRepository>(),
+        agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
       ),
     )
     ..registerFactory<ClientAgentsController>(
@@ -57,15 +68,42 @@ void registerInjectorPresentation(GetIt getIt) {
             getIt<ReadPendingClientAgentActionsUseCase>(),
         syncPendingActionsUseCase:
             getIt<SyncPendingClientAgentActionsUseCase>(),
+        getClientAgentTokenUseCase: getIt<GetClientAgentTokenUseCase>(),
+        saveClientAgentTokenUseCase: getIt<SaveClientAgentTokenUseCase>(),
+        // Optional: only registered when SOCKET_PRESENCE_LISTENER_ENABLED.
+        // The controller falls back to the legacy Refresh-only flow when
+        // null, which keeps non-socket builds untouched.
+        observeAgentPresenceUseCase:
+            getIt.isRegistered<ObserveAgentPresenceUseCase>()
+                ? getIt<ObserveAgentPresenceUseCase>()
+                : null,
+        // PR-M part 3: REST fallback poller + the connection used to
+        // observe socket-state transitions. Both are nullable so
+        // builds without the socket layer keep working unchanged.
+        agentPresencePoller:
+            getIt.isRegistered<AgentPresencePoller>()
+                ? getIt<AgentPresencePoller>()
+                : null,
+        consumerSocketConnection:
+            getIt.isRegistered<ConsumerSocketConnection>()
+                ? getIt<ConsumerSocketConnection>()
+                : null,
       ),
     )
     ..registerFactory<ClientAgentDetailController>(
       () => ClientAgentDetailController(
         authController: getIt<AuthController>(),
-        clientTokenStore: getIt<LocalAgentClientTokenStore>(),
         loadClientAgentDetailUseCase: getIt<LoadClientAgentDetailUseCase>(),
         updateClientAgentProfileUseCase:
             getIt<UpdateClientAgentProfileUseCase>(),
+        getClientAgentTokenUseCase: getIt<GetClientAgentTokenUseCase>(),
+        saveClientAgentTokenUseCase: getIt<SaveClientAgentTokenUseCase>(),
+        removeClientAgentTokenUseCase: getIt<RemoveClientAgentTokenUseCase>(),
+        refreshAgentProfileUseCase: getIt<RefreshAgentProfileUseCase>(),
+        loadClientTokenPolicyUseCase: getIt<LoadClientTokenPolicyUseCase>(),
+        discoverAgentRpcMethodsUseCase:
+            getIt<DiscoverAgentRpcMethodsUseCase>(),
+        agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
       ),
     );
 }

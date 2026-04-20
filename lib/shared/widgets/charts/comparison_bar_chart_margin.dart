@@ -13,7 +13,7 @@ const double kComparisonBarOuterLabelLineHeightMin = 18;
 ///
 /// Kept above typical single-line body text so compact currency labels (e.g.
 /// `R$ 16,7 mil`) and modest [TextScaler] values are not clipped at the chart top.
-const double kComparisonBarOuterLabelLineHeightMax = 42;
+const double kComparisonBarOuterLabelLineHeightMax = 50;
 
 /// Whether data labels sit outside the column and need extra top margin.
 bool comparisonBarChartNeedsOuterDataLabelHeadroom({

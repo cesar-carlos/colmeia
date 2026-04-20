@@ -4,6 +4,17 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_profile_add
 ///
 /// Wire JSON sends only [cnpjCpf] for the tax id (digits as returned by the
 /// server). [address] is omitted when null or when every part is empty.
+///
+/// [expectedProfileVersion] is the **monotonic integer** counter served by
+/// the hub on `ClientAccessibleAgent.profileVersion`. The server uses it as
+/// a CAS token: when present, the PATCH only succeeds if the stored
+/// `profileVersion` matches; otherwise the hub responds `409` and the
+/// caller should reload the agent and retry.
+///
+/// [idempotencyKey] is the body fallback for safe retries when the caller
+/// cannot send a header. The HTTP layer prefers the `Idempotency-Key`
+/// header (set by the datasource); this field is forwarded only when the
+/// caller explicitly provides it.
 class AgentProfileUpdateRequest {
   const AgentProfileUpdateRequest({
     required this.name,
@@ -17,6 +28,7 @@ class AgentProfileUpdateRequest {
     this.notes,
     this.observation,
     this.expectedProfileVersion,
+    this.idempotencyKey,
   });
 
   final String name;
@@ -29,10 +41,12 @@ class AgentProfileUpdateRequest {
   final AgentProfileAddress? address;
   final String? notes;
   final String? observation;
-  final DateTime? expectedProfileVersion;
+  final int? expectedProfileVersion;
+  final String? idempotencyKey;
 
   Map<String, Object?> toWireJson() {
     final addressWire = _compactAddressWire(address);
+    final trimmedIdempotencyKey = idempotencyKey?.trim();
     return <String, Object?>{
       'name': name,
       if (tradeName != null) 'tradeName': tradeName,
@@ -45,8 +59,9 @@ class AgentProfileUpdateRequest {
       if (notes != null) 'notes': notes,
       if (observation != null) 'observation': observation,
       if (expectedProfileVersion != null)
-        'expectedProfileVersion':
-            expectedProfileVersion!.toUtc().toIso8601String(),
+        'expectedProfileVersion': expectedProfileVersion,
+      if (trimmedIdempotencyKey != null && trimmedIdempotencyKey.isNotEmpty)
+        'idempotencyKey': trimmedIdempotencyKey,
     };
   }
 }

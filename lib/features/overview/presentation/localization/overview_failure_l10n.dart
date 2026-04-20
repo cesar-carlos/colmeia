@@ -18,8 +18,6 @@ String overviewFailureUserMessage(
       OverviewFailureUiKey.noApprovedAgents =>
         l10n.overviewNoApprovedAgentsUserMessage,
       OverviewFailureUiKey.loadFailed => l10n.overviewLoadFailedUserMessage,
-      OverviewFailureUiKey.missingLocalClientToken =>
-        l10n.overviewSaveClientTokenForAgentUserMessage,
       _ => failure.displayMessage,
     };
   }

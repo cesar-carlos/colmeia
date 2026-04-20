@@ -10,6 +10,8 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:flutter/material.dart';
 
 /// Stages the payment mix donut and each Syncfusion-heavy chart on separate
@@ -46,8 +48,6 @@ class _OverviewHomeStagedBelowKpisState
   int _mountGeneration = 0;
 
   static const int _finalStage = 7;
-
-  static const double _mixPlaceholderHeight = 220;
 
   Overview? _sortedListsSource;
   List<OverviewAgentRanking>? _sortedAgentsCache;
@@ -167,6 +167,7 @@ class _OverviewHomeStagedBelowKpisState
     final chartBlockHeight = tokens.chartStandardHeight + tokens.contentSpacing;
     final paymentBarChartHeight =
         tokens.chartStandardHeight + tokens.contentSpacing * 2;
+    final mixPlaceholderHeight = AppCategoryDonutCard.loadingBlockHeight(tokens);
 
     if (showSkeleton) {
       return Column(
@@ -201,6 +202,8 @@ class _OverviewHomeStagedBelowKpisState
               l10n: l10n,
               points: displayOverview.monthlyParcelTrend,
               loadFailed: displayOverview.monthlyParcelTrendLoadFailed,
+              loadFailureMessage:
+                  displayOverview.monthlyParcelTrendLoadFailureMessage,
             ),
           ),
           SizedBox(height: tokens.sectionSpacing),
@@ -212,6 +215,8 @@ class _OverviewHomeStagedBelowKpisState
               l10n: l10n,
               points: displayOverview.weekdaySalesTrend,
               loadFailed: displayOverview.weekdaySalesTrendLoadFailed,
+              loadFailureMessage:
+                  displayOverview.weekdaySalesTrendLoadFailureMessage,
             ),
           ),
           SizedBox(height: tokens.sectionSpacing),
@@ -223,6 +228,8 @@ class _OverviewHomeStagedBelowKpisState
               l10n: l10n,
               points: displayOverview.weekdayUserSalesTrend,
               loadFailed: displayOverview.weekdayUserSalesTrendLoadFailed,
+              loadFailureMessage:
+                  displayOverview.weekdayUserSalesTrendLoadFailureMessage,
             ),
           ),
           SizedBox(height: tokens.sectionSpacing),
@@ -245,7 +252,7 @@ class _OverviewHomeStagedBelowKpisState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           SizedBox(height: tokens.sectionSpacing),
-          const SizedBox(height: _mixPlaceholderHeight),
+          SizedBox(height: mixPlaceholderHeight),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: paymentBarChartHeight),
           SizedBox(height: tokens.sectionSpacing),
@@ -275,13 +282,15 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: Duration.zero,
           loadingSemanticsLabel: l10n.overviewLoadingPaymentMixSemantics,
           child: _belowKpisStage >= 1
-              ? RepaintBoundary(
-                  child: OverviewPaymentMixCard(
-                    l10n: l10n,
-                    methods: overview.paymentMethods,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewPaymentMixCard(
+                      l10n: l10n,
+                      methods: overview.paymentMethods,
+                    ),
                   ),
                 )
-              : const SizedBox(height: _mixPlaceholderHeight),
+              : SizedBox(height: mixPlaceholderHeight),
         ),
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
@@ -289,10 +298,12 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: const Duration(milliseconds: 80),
           loadingSemanticsLabel: l10n.overviewLoadingPaymentBarSemantics,
           child: _belowKpisStage >= 2
-              ? RepaintBoundary(
-                  child: OverviewPaymentBarChart(
-                    l10n: l10n,
-                    methods: overview.paymentMethods,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewPaymentBarChart(
+                      l10n: l10n,
+                      methods: overview.paymentMethods,
+                    ),
                   ),
                 )
               : SizedBox(height: paymentBarChartHeight),
@@ -303,11 +314,15 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: const Duration(milliseconds: 40),
           loadingSemanticsLabel: l10n.overviewLoadingMonthlyParcelsSemantics,
           child: _belowKpisStage >= 3
-              ? RepaintBoundary(
-                  child: OverviewMonthlyParcelsComboChart(
-                    l10n: l10n,
-                    points: overview.monthlyParcelTrend,
-                    loadFailed: overview.monthlyParcelTrendLoadFailed,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewMonthlyParcelsComboChart(
+                      l10n: l10n,
+                      points: overview.monthlyParcelTrend,
+                      loadFailed: overview.monthlyParcelTrendLoadFailed,
+                      loadFailureMessage:
+                          overview.monthlyParcelTrendLoadFailureMessage,
+                    ),
                   ),
                 )
               : SizedBox(height: chartBlockHeight),
@@ -318,11 +333,15 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: const Duration(milliseconds: 80),
           loadingSemanticsLabel: l10n.overviewLoadingWeekdaySalesSemantics,
           child: _belowKpisStage >= 4
-              ? RepaintBoundary(
-                  child: OverviewWeekdaySalesTrendChart(
-                    l10n: l10n,
-                    points: overview.weekdaySalesTrend,
-                    loadFailed: overview.weekdaySalesTrendLoadFailed,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewWeekdaySalesTrendChart(
+                      l10n: l10n,
+                      points: overview.weekdaySalesTrend,
+                      loadFailed: overview.weekdaySalesTrendLoadFailed,
+                      loadFailureMessage:
+                          overview.weekdaySalesTrendLoadFailureMessage,
+                    ),
                   ),
                 )
               : SizedBox(height: chartBlockHeight),
@@ -333,11 +352,15 @@ class _OverviewHomeStagedBelowKpisState
           showDelay: const Duration(milliseconds: 100),
           loadingSemanticsLabel: l10n.overviewLoadingWeekdayUserSalesSemantics,
           child: _belowKpisStage >= 5
-              ? RepaintBoundary(
-                  child: OverviewWeekdayUserSalesTrendChart(
-                    l10n: l10n,
-                    points: overview.weekdayUserSalesTrend,
-                    loadFailed: overview.weekdayUserSalesTrendLoadFailed,
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewWeekdayUserSalesTrendChart(
+                      l10n: l10n,
+                      points: overview.weekdayUserSalesTrend,
+                      loadFailed: overview.weekdayUserSalesTrendLoadFailed,
+                      loadFailureMessage:
+                          overview.weekdayUserSalesTrendLoadFailureMessage,
+                    ),
                   ),
                 )
               : SizedBox(height: chartBlockHeight),
@@ -354,36 +377,40 @@ class _OverviewHomeStagedBelowKpisState
                       tokens.sectionSpacing +
                       _userRankingPlaceholderHeight(tokens),
                 )
-              : RepaintBoundary(
-                  key: const ValueKey<String>('overview-agent-ranking'),
-                  child: Builder(
-                    builder: (context) {
-                      final rankings = _sortedRankings(overview);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          OverviewAgentRankingCard(
-                            l10n: l10n,
-                            agentRankings: rankings.agents,
-                          ),
-                          SizedBox(height: tokens.sectionSpacing),
-                          if (_belowKpisStage >= 7)
-                            RepaintBoundary(
-                              key: const ValueKey<String>(
-                                'overview-user-ranking',
-                              ),
-                              child: OverviewUserRankingCard(
-                                l10n: l10n,
-                                userRankings: rankings.users,
-                              ),
-                            )
-                          else
-                            SizedBox(
-                              height: _userRankingPlaceholderHeight(tokens),
+              : _StagedFadeIn(
+                  child: RepaintBoundary(
+                    key: const ValueKey<String>('overview-agent-ranking'),
+                    child: Builder(
+                      builder: (context) {
+                        final rankings = _sortedRankings(overview);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            OverviewAgentRankingCard(
+                              l10n: l10n,
+                              agentRankings: rankings.agents,
                             ),
-                        ],
-                      );
-                    },
+                            SizedBox(height: tokens.sectionSpacing),
+                            if (_belowKpisStage >= 7)
+                              _StagedFadeIn(
+                                child: RepaintBoundary(
+                                  key: const ValueKey<String>(
+                                    'overview-user-ranking',
+                                  ),
+                                  child: OverviewUserRankingCard(
+                                    l10n: l10n,
+                                    userRankings: rankings.users,
+                                  ),
+                                ),
+                              )
+                            else
+                              SizedBox(
+                                height: _userRankingPlaceholderHeight(tokens),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
         ),
@@ -391,3 +418,9 @@ class _OverviewHomeStagedBelowKpisState
     );
   }
 }
+
+/// Local alias kept for source-compatibility with the staged-mounter call
+/// sites; the actual widget lives in
+/// [lib/shared/widgets/charts/app_chart_fade_in.dart] so any other dashboard
+/// can opt into the same entrance treatment without copy/pasting it.
+typedef _StagedFadeIn = AppChartFadeIn;

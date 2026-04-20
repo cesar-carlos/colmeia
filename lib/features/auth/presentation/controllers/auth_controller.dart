@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:colmeia/app/authentication_gate.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/logging/log_redaction.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
@@ -13,7 +15,7 @@ import 'package:colmeia/features/auth/domain/entities/client_registration_submis
 import 'package:colmeia/features/auth/presentation/state/auth_presentation_state.dart';
 import 'package:flutter/foundation.dart';
 
-class AuthController extends ChangeNotifier {
+class AuthController extends ChangeNotifier implements AuthenticationGate {
   AuthController({
     required LoginUseCase loginUseCase,
     required LogoutUseCase logoutUseCase,
@@ -43,6 +45,7 @@ class AuthController extends ChangeNotifier {
 
   AuthPresentationState get presentation => _presentation;
 
+  @override
   bool get isAuthenticated => _presentation.isAuthenticated;
   AuthSession? get session => _presentation.session;
   bool get isLoading => _presentation.isLoading;
@@ -148,7 +151,7 @@ class AuthController extends ChangeNotifier {
       'Starting sign in flow',
       context: <String, Object?>{
         'operation': 'signIn',
-        'email': email,
+        'email': LogRedaction.redactEmail(email),
       },
     );
     _presentation = _presentation.copyWith(
@@ -198,7 +201,7 @@ class AuthController extends ChangeNotifier {
           'Sign in failed in controller',
           context: <String, Object?>{
             'operation': 'signIn',
-            'email': email,
+            'email': LogRedaction.redactEmail(email),
           },
         );
       },
@@ -220,8 +223,8 @@ class AuthController extends ChangeNotifier {
       'Starting register flow',
       context: <String, Object?>{
         'operation': 'register',
-        'ownerEmail': ownerEmail,
-        'email': email,
+        'ownerEmail': LogRedaction.redactEmail(ownerEmail),
+        'email': LogRedaction.redactEmail(email),
       },
     );
 
@@ -269,8 +272,8 @@ class AuthController extends ChangeNotifier {
           'Register flow failed in controller',
           context: <String, Object?>{
             'operation': 'register',
-            'ownerEmail': ownerEmail,
-            'email': email,
+            'ownerEmail': LogRedaction.redactEmail(ownerEmail),
+            'email': LogRedaction.redactEmail(email),
           },
         );
       },
@@ -355,7 +358,7 @@ class AuthController extends ChangeNotifier {
         'Invalid e-mail provided for sign in',
         context: <String, Object?>{
           'operation': 'signIn',
-          'email': email,
+          'email': LogRedaction.redactEmail(email),
         },
         error: error,
         stackTrace: stackTrace,

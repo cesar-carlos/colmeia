@@ -15,4 +15,8 @@ abstract final class ClientAgentsFailureUiKey {
   static const String queueRemoveAccess = 'queueRemoveAccess';
   static const String syncPendingAction = 'syncPendingAction';
   static const String syncPendingActions = 'syncPendingActions';
+
+  static const String getClientAgentToken = 'getClientAgentToken';
+  static const String saveClientAgentToken = 'saveClientAgentToken';
+  static const String removeClientAgentToken = 'removeClientAgentToken';
 }

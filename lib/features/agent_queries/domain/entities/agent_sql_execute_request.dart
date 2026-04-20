@@ -1,5 +1,14 @@
+import 'package:colmeia/core/socket/relay/relay_event_names.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_outbound_compression.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
+
+/// Default `api_version` advertised by Colmeia. Aligned with the hub
+/// `plug-jsonrpc-profile/2.8` profile (REST examples in
+/// `plug_server/docs/api_rest_bridge.md` use 2.5+; the hub accepts any
+/// value the underlying agent supports). Forward-compatible: the bridge
+/// silently ignores the field on agents that do not check it.
+const String kColmeiaAgentApiVersion = '2.5';
 
 /// Semantic input for a single `sql.execute` call through the bridge.
 ///
@@ -24,6 +33,10 @@ class AgentSqlExecuteRequest {
     this.bridgeTimeoutMs,
     this.pagination,
     this.executeOptions,
+    this.useRelay = false,
+    this.apiVersion = kColmeiaAgentApiVersion,
+    this.outboundCompression,
+    this.payloadFrameCompression,
   });
 
   final String agentId;
@@ -55,6 +68,42 @@ class AgentSqlExecuteRequest {
 
   /// Agent-side execution flags under `params.options`.
   final AgentSqlExecuteOptions? executeOptions;
+
+  /// Routing hint for the data layer (PR-L+): when `true`, the
+  /// `HybridAgentQueriesRemoteDataSource` dispatches this request through the
+  /// **relay channel** (`relay:rpc.request` over a `RelayConversation`)
+  /// instead of the unitary `agents:command` event. Used for queries that
+  /// either return very large result sets or that benefit from the `relay`
+  /// rate-limit pool (separate from the shared `agents:command`/REST quota).
+  ///
+  /// This flag never reaches the bridge body — it is consumed by the
+  /// datasource selector and stripped before serialization. Defaults to
+  /// `false` so existing call sites remain on the legacy channel.
+  ///
+  /// Effective only when `SOCKET_RELAY_ENABLED=true` and
+  /// `AGENT_BRIDGE_TRANSPORT=socket`. With other configurations the hybrid
+  /// datasource falls back to its base channel and logs the bypass for
+  /// observability.
+  final bool useRelay;
+
+  /// JSON-RPC `command.api_version`. Defaults to [kColmeiaAgentApiVersion]
+  /// so every outgoing request advertises the profile we are coding
+  /// against. Pass an explicit value when the call is targeting a tool
+  /// known to require an older / newer version.
+  final String apiVersion;
+
+  /// Hint serialized as `meta.outbound_compression` — tells the agent
+  /// which `PayloadFrame.cmp` policy to apply on the response stream.
+  /// `null` means "do not send a hint" (agent decides locally). Today the
+  /// hub treats this as a no-op on the runtime; we still send it so we
+  /// are forward-compatible with future agent profiles.
+  final AgentOutboundCompression? outboundCompression;
+
+  /// Body-level `payloadFrameCompression` (`default` | `none` | `always`).
+  /// Drives the gzip policy of the **hub → agent** frame the server
+  /// re-encodes after decoding our request. `null` keeps the channel
+  /// default (`auto`).
+  final RelayPayloadFrameCompression? payloadFrameCompression;
 
   String get trimmedAgentId => agentId.trim();
   String get trimmedSql => sql.trim();

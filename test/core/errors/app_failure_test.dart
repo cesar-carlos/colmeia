@@ -149,6 +149,196 @@ void main() {
       check(failure).isA<NetworkFailure>();
       check(failure.displayMessage).equals('Some other conflict');
     });
+
+    test(
+      'should map 409 AGENT_PROFILE_CAS_MISMATCH to validation failure',
+      () {
+        final failure = mapToAppFailure(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/v1/agents/x/profile'),
+            response: Response<Map<String, dynamic>>(
+              requestOptions: RequestOptions(path: '/api/v1/agents/x/profile'),
+              statusCode: 409,
+              data: <String, dynamic>{
+                'code': 'AGENT_PROFILE_CAS_MISMATCH',
+                'message': 'Profile version mismatch',
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        check(failure).isA<ValidationFailure>();
+        check(failure.context['apiErrorCode']).equals(
+          'AGENT_PROFILE_CAS_MISMATCH',
+        );
+      },
+    );
+
+    test('should propagate Retry-After header (delta seconds) on 429', () {
+      final failure = mapToAppFailure(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(
+              path: '/api/v1/agents/commands',
+            ),
+            statusCode: 429,
+            headers: Headers.fromMap(<String, List<String>>{
+              'retry-after': <String>['42'],
+            }),
+            data: <String, dynamic>{'message': 'rate limited'},
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      check(failure).isA<NetworkFailure>();
+      check((failure as NetworkFailure).retryAfter).equals(
+        const Duration(seconds: 42),
+      );
+    });
+
+    test(
+      'should propagate retry_after_ms from JSON-RPC error.data',
+      () {
+        final failure = mapToAppFailure(
+          DioException(
+            requestOptions: RequestOptions(
+              path: '/api/v1/agents/commands',
+            ),
+            response: Response<Map<String, dynamic>>(
+              requestOptions: RequestOptions(
+                path: '/api/v1/agents/commands',
+              ),
+              statusCode: 503,
+              data: <String, dynamic>{
+                'error': <String, dynamic>{
+                  'code': -32013,
+                  'message': 'rate limited',
+                  'data': <String, dynamic>{
+                    'retry_after_ms': 1500,
+                  },
+                },
+              },
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        check(failure).isA<NetworkFailure>();
+        check((failure as NetworkFailure).retryAfter).equals(
+          const Duration(milliseconds: 1500),
+        );
+      },
+    );
+
+    test(
+      'merges extra context when re-mapping an existing AppFailure',
+      () {
+        // Regression: a re-throw chain that wants to add a breadcrumb
+        // (e.g. `operation: 'foo'`) used to silently drop the new
+        // context whenever the exception was already an AppFailure.
+        const original = NetworkFailure(
+          message: 'down',
+          userMessage: 'down',
+          context: <String, Object?>{'origin': 'remote'},
+        );
+        final remapped = mapToAppFailure(
+          original,
+          context: <String, Object?>{'operation': 'loadOverview'},
+        );
+        check(remapped).isA<NetworkFailure>();
+        check(remapped.context['origin']).equals('remote');
+        check(remapped.context['operation']).equals('loadOverview');
+      },
+    );
+
+    test(
+      'returns the original AppFailure unchanged when no extra context',
+      () {
+        const original = SessionFailure(
+          message: 'expired',
+          userMessage: 'expired',
+        );
+        // Identity check — the no-extra-context path must not allocate
+        // a new failure (cheap path for the typical re-throw).
+        check(identical(mapToAppFailure(original), original)).isTrue();
+      },
+    );
+  });
+
+  group('appFailureWithMergedContext', () {
+    test(
+      'preserves NetworkFailure.retryAfter when merging context '
+      '(regression: was silently dropped before fix)',
+      () {
+        const original = NetworkFailure(
+          message: 'rate limited',
+          userMessage: 'rate limited',
+          retryAfter: Duration(seconds: 7),
+          context: <String, Object?>{'origin': 'remote'},
+        );
+        final merged = appFailureWithMergedContext(
+          original,
+          <String, Object?>{'operation': 'loadOverview'},
+        );
+        check(merged).isA<NetworkFailure>();
+        // retryAfter MUST survive — `RetryAfterGate` reads it via
+        // `appFailureRetryAfter` and arms the cooldown. Dropping it
+        // here would silently disable the UX countdown.
+        check((merged as NetworkFailure).retryAfter).equals(
+          const Duration(seconds: 7),
+        );
+        check(appFailureRetryAfter(merged))
+            .equals(const Duration(seconds: 7));
+        // And the context is properly merged.
+        check(merged.context['origin']).equals('remote');
+        check(merged.context['operation']).equals('loadOverview');
+      },
+    );
+
+    test(
+      'preserves RpcFailure.retryAfter and isTransient (retryable) '
+      'when merging context',
+      () {
+        const original = RpcFailure(
+          message: 'rate limited',
+          userMessage: 'rate limited',
+          rpcCode: -32013,
+          retryable: true,
+          retryAfter: Duration(milliseconds: 1500),
+          reason: 'client_token_get_policy_rate_limited',
+        );
+        final merged = appFailureWithMergedContext(
+          original,
+          <String, Object?>{'operation': 'loadOverview'},
+        );
+        check(merged).isA<RpcFailure>();
+        check((merged as RpcFailure).retryAfter)
+            .equals(const Duration(milliseconds: 1500));
+        check(merged.retryable).isTrue();
+        check(merged.isTransient).isTrue();
+        check(merged.rpcCode).equals(-32013);
+        check(merged.reason).equals('client_token_get_policy_rate_limited');
+        check(appFailureRetryAfter(merged))
+            .equals(const Duration(milliseconds: 1500));
+      },
+    );
+
+    test('later keys overwrite earlier context entries', () {
+      const original = ValidationFailure(
+        message: 'bad input',
+        context: <String, Object?>{'field': 'email', 'attempt': 1},
+      );
+      final merged = appFailureWithMergedContext(
+        original,
+        <String, Object?>{'attempt': 2, 'operation': 'register'},
+      );
+      check(merged.context['field']).equals('email');
+      check(merged.context['attempt']).equals(2);
+      check(merged.context['operation']).equals('register');
+    });
   });
 }
 

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
@@ -212,6 +215,108 @@ void main() {
     final report = result.getOrThrow();
     check(report.winnerAgentId).equals('agent-b');
     check(report.failedAgentIds).deepEquals(const <String>['agent-a']);
+  });
+
+  group('race total timeout (BUG #3: avoid frozen UI)', () {
+    test(
+      'should fail with NetworkFailure when no participant settles within '
+      'raceTotalTimeout (defensive deadlock guard)',
+      () async {
+        final executor = AgentQueryExecutor<int>(
+          mergeAllConcurrency: 2,
+          raceTotalTimeout: const Duration(milliseconds: 100),
+        );
+        final result = await executor.execute(
+          plan: _plan(
+            strategy: AgentQueryExecutionStrategy.race,
+            plannedTargets: <AgentQueryTarget>[
+              _target('agent-a'),
+              _target('agent-b'),
+            ],
+          ),
+          loadTarget: (_) {
+            // Future that never completes -> simulates a buggy upstream
+            // that swallows the dispatcher timeout.
+            return Completer<AppResult<List<int>>>().future;
+          },
+        );
+
+        check(result.isError()).isTrue();
+        final failure = result.exceptionOrNull()!;
+        check(failure).isA<NetworkFailure>();
+        check(failure.userMessage)
+            .isNotNull()
+            .contains('demorou mais que o tempo permitido');
+        check(failure.context['reason']).equals('race_total_timeout');
+        check(failure.context['raceTotalTimeoutMs']).equals(100);
+        check(failure.context['plannedTargetCount']).equals(2);
+        check(failure.context['settledTargetCount']).equals(0);
+      },
+    );
+
+    test(
+      'race total timeout does NOT fire when at least one participant '
+      'succeeds within the window',
+      () async {
+        final executor = AgentQueryExecutor<int>(
+          mergeAllConcurrency: 2,
+          raceTotalTimeout: const Duration(seconds: 5),
+        );
+        final result = await executor.execute(
+          plan: _plan(
+            strategy: AgentQueryExecutionStrategy.race,
+            plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          ),
+          loadTarget: (_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+            return const Success<List<int>, AppFailure>(<int>[1]);
+          },
+        );
+
+        check(result.isSuccess()).isTrue();
+        check(result.getOrThrow().winnerAgentId).equals('agent-a');
+      },
+    );
+
+    test(
+      'race total timeout still fires when only some participants settle '
+      '(others never resolve and not all have failed)',
+      () async {
+        final executor = AgentQueryExecutor<int>(
+          mergeAllConcurrency: 2,
+          raceTotalTimeout: const Duration(milliseconds: 100),
+        );
+        final result = await executor.execute(
+          plan: _plan(
+            strategy: AgentQueryExecutionStrategy.race,
+            plannedTargets: <AgentQueryTarget>[
+              _target('agent-a'),
+              _target('agent-b'),
+              _target('agent-c'),
+            ],
+          ),
+          loadTarget: (target) {
+            if (target.agentId == 'agent-a') {
+              // Settles with failure quickly.
+              return Future.value(
+                const Failure<List<int>, AppFailure>(
+                  NetworkFailure(message: 'down', userMessage: 'down'),
+                ),
+              );
+            }
+            // The other two never settle.
+            return Completer<AppResult<List<int>>>().future;
+          },
+        );
+
+        check(result.isError()).isTrue();
+        final failure = result.exceptionOrNull()!;
+        check(failure).isA<NetworkFailure>();
+        check(failure.context['reason']).equals('race_total_timeout');
+        check(failure.context['settledTargetCount']).equals(1);
+        check(failure.context['failedCount']).equals(1);
+      },
+    );
   });
 }
 

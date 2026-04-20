@@ -1,3 +1,8 @@
+// NOT_RENDERED: not mounted by any current page/route. The home dashboard
+// uses `OverviewPaymentMixCard` (payment-method mix), not this category mix.
+// Kept for the upcoming overview revamp; modifications here will not surface
+// in the running app. See `lib/features/overview/presentation/widgets/README.md`.
+
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_category_share.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -38,16 +43,19 @@ class _OverviewCategoryMixCardState extends State<OverviewCategoryMixCard> {
 
   List<OverviewCategoryShare>? _sharesRef;
   double? _fallbackOptRef;
+  String? _localeNameRef;
   late List<AppCategoryDonutSegment> _segments;
   String? _centerPrimary;
 
   void _recomputeIfNeeded() {
     if (identical(_sharesRef, widget.shares) &&
-        _fallbackOptRef == widget.fallbackTotalRevenue) {
+        _fallbackOptRef == widget.fallbackTotalRevenue &&
+        _localeNameRef == widget.l10n.localeName) {
       return;
     }
     _sharesRef = widget.shares;
     _fallbackOptRef = widget.fallbackTotalRevenue;
+    _localeNameRef = widget.l10n.localeName;
     final fallback = widget.fallbackTotalRevenue ?? _defaultFallbackTotalRevenue;
     _segments = _buildSegments(widget.shares, fallback);
     _centerPrimary = _buildCenterPrimary(widget.shares, fallback);

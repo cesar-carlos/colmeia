@@ -8,6 +8,7 @@ import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_data_source.dart';
+import 'package:colmeia/shared/widgets/feedback/app_data_stale_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -37,6 +38,10 @@ class AppRegionMapExplorer<TItem, TFilters> extends StatefulWidget {
     this.initialMapDefinition,
     this.onLoadError,
     this.onViewportChanged,
+    this.scopeInSubtitle = false,
+    this.markerStyle = const AppMapMarkerStyle(),
+    this.markerBuilder,
+    this.onPointTap,
   });
 
   final AppRegionMapDataSource<TItem, TFilters> dataSource;
@@ -69,6 +74,23 @@ class AppRegionMapExplorer<TItem, TFilters> extends StatefulWidget {
 
   /// Forwards to [AppRegionMapChart.onViewportChanged].
   final ValueChanged<AppMapViewportChangedEvent>? onViewportChanged;
+
+  /// Quando `true`, anexa "Escopo: <label>" ao subtitulo. Por padrao `false`
+  /// porque o navegador de escopos do proprio chart ja exibe a selecao ativa
+  /// e duplicar a informacao polui o cabecalho em layouts mobile.
+  final bool scopeInSubtitle;
+
+  /// Estilo padrao dos marcadores quando o snapshot retorna `points` sem
+  /// estilo proprio.
+  final AppMapMarkerStyle markerStyle;
+
+  /// Builder opcional para o widget desenhado dentro do marcador. Quando
+  /// `null`, o engine usa um shape colorido conforme [markerStyle].
+  final Widget Function(BuildContext context, AppMapPoint point, int index)?
+  markerBuilder;
+
+  /// Disparado ao tocar em um ponto do mapa.
+  final ValueChanged<AppMapPointTapEvent>? onPointTap;
 
   @override
   State<AppRegionMapExplorer<TItem, TFilters>> createState() =>
@@ -116,6 +138,10 @@ class _AppRegionMapExplorerState<TItem, TFilters>
   @override
   void dispose() {
     _filterReloadDebounceTimer?.cancel();
+    _filterReloadDebounceTimer = null;
+    // Invalida qualquer request in-flight: o token aumenta para que o fold
+    // que retornar apos dispose seja descartado pelo guard `token != _requestToken`.
+    _requestToken += 1;
     super.dispose();
   }
 
@@ -160,34 +186,39 @@ class _AppRegionMapExplorerState<TItem, TFilters>
             filters,
             SizedBox(height: gapMd),
           ],
-          AppRegionMapChart<TItem>(
-            title: widget.title,
-            subtitle: widget.subtitle,
-            titleTrailing: widget.titleTrailing,
-            belowSubtitle: widget.belowSubtitle,
-            items: List<TItem>.empty(),
-            mapDefinition:
-                widget.initialMapDefinition ??
-                const AppMapDefinition.network(
-                  url:
-                      'https://raw.githubusercontent.com/luizpedone/'
-                      'municipal-brazilian-geodata/master/data/Brasil.json',
-                  shapeDataField: 'UF',
-                  regionLevel: AppMapRegionLevel.state,
+          RepaintBoundary(
+            child: AppRegionMapChart<TItem>(
+              title: widget.title,
+              subtitle: widget.subtitle,
+              titleTrailing: widget.titleTrailing,
+              belowSubtitle: widget.belowSubtitle,
+              items: List<TItem>.empty(),
+              mapDefinition:
+                  widget.initialMapDefinition ??
+                  const AppMapDefinition.network(
+                    url:
+                        'https://raw.githubusercontent.com/luizpedone/'
+                        'municipal-brazilian-geodata/master/data/Brasil.json',
+                    shapeDataField: 'UF',
+                    regionLevel: AppMapRegionLevel.state,
+                  ),
+              metrics: <AppMapMetric<TItem>>[
+                AppMapMetric<TItem>(
+                  key: 'loading',
+                  label: 'Carregando',
+                  valueBuilder: _zeroMetric,
                 ),
-            metrics: <AppMapMetric<TItem>>[
-              AppMapMetric<TItem>(
-                key: 'loading',
-                label: 'Carregando',
-                valueBuilder: _zeroMetric,
-              ),
-            ],
-            selectedMetricKey: 'loading',
-            regionKeyBuilder: widget.regionKeyBuilder,
-            regionLabelBuilder: widget.regionLabelBuilder,
-            isLoading: true,
-            style: widget.style,
-            preset: widget.preset,
+              ],
+              selectedMetricKey: 'loading',
+              regionKeyBuilder: widget.regionKeyBuilder,
+              regionLabelBuilder: widget.regionLabelBuilder,
+              isLoading: true,
+              style: widget.style,
+              preset: widget.preset,
+              markerStyle: widget.markerStyle,
+              markerBuilder: widget.markerBuilder,
+              onPointTap: widget.onPointTap,
+            ),
           ),
         ],
       );
@@ -213,69 +244,79 @@ class _AppRegionMapExplorerState<TItem, TFilters>
           SizedBox(height: gapMd),
         ],
         if (snapshot.isStale && _loadErrorMessage == null) ...<Widget>[
-          _StaleDataBanner(onRefresh: () => unawaited(_loadData())),
+          AppDataStaleBanner(onRefresh: () => unawaited(_loadData())),
           SizedBox(height: gapMd),
         ],
-        AppRegionMapChart<TItem>(
-          title: widget.title,
-          subtitle: _composeSubtitle(snapshot.scopeLabel),
-          titleTrailing: widget.titleTrailing,
-          belowSubtitle: widget.belowSubtitle,
-          scopeOptions: snapshot.availableScopes,
-          activeScopeKey: snapshot.activeScopeKey,
-          preferredViewport: snapshot.preferredViewport,
-          items: snapshot.items,
-          mapDefinition: snapshot.mapDefinition,
-          metrics: snapshot.metrics,
-          selectedMetricKey:
-              _selectedMetricKey ??
-              snapshot.selectedMetricKey ??
-              snapshot.metrics.first.key,
-          selectedRegionKey: _selectedRegionKey,
-          currentDrillLevel: _drillLevel,
-          regionKeyBuilder: widget.regionKeyBuilder,
-          regionLabelBuilder: widget.regionLabelBuilder,
-          onSelectionChanged: (event) {
-            setState(() {
-              _selectedRegionKey = event.currentRegionKey;
-            });
-          },
-          onMetricChanged: (event) {
-            setState(() {
-              _selectedMetricKey = event.metricKey;
-            });
-            unawaited(_loadData(preserveViewport: true));
-          },
-          onScopeChanged: _handleScopeChanged,
-          onDrillDownRequested: _handleDrillDownRequested,
-          onDrillUpRequested: _drillLevel == AppMapDrillLevel.region
-              ? null
-              : _handleDrillUpRequested,
-          onViewportChanged: (event) {
-            // Capture the user's viewport so it can be preserved across
-            // metric changes. No setState needed; only used at load time.
-            _lastUserViewport = event.viewport;
-            widget.onViewportChanged?.call(event);
-          },
-          style: widget.style,
-          preset: widget.preset,
-          isRefreshing: _isLoading,
-          emptyPlaceholder: snapshot.items.isEmpty && snapshot.emptyHint != null
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    snapshot.emptyHint!,
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : null,
+        RepaintBoundary(
+          child: AppRegionMapChart<TItem>(
+            title: widget.title,
+            subtitle: _composeSubtitle(snapshot.scopeLabel),
+            titleTrailing: widget.titleTrailing,
+            belowSubtitle: widget.belowSubtitle,
+            scopeOptions: snapshot.availableScopes,
+            activeScopeKey: snapshot.activeScopeKey,
+            preferredViewport: snapshot.preferredViewport,
+            items: snapshot.items,
+            mapDefinition: snapshot.mapDefinition,
+            metrics: snapshot.metrics,
+            selectedMetricKey:
+                _selectedMetricKey ??
+                snapshot.selectedMetricKey ??
+                snapshot.metrics.first.key,
+            selectedRegionKey: _selectedRegionKey,
+            currentDrillLevel: _drillLevel,
+            regionKeyBuilder: widget.regionKeyBuilder,
+            regionLabelBuilder: widget.regionLabelBuilder,
+            onSelectionChanged: (event) {
+              setState(() {
+                _selectedRegionKey = event.currentRegionKey;
+              });
+            },
+            onMetricChanged: (event) {
+              setState(() {
+                _selectedMetricKey = event.metricKey;
+              });
+              unawaited(_loadData(preserveViewport: true));
+            },
+            onScopeChanged: _handleScopeChanged,
+            onDrillDownRequested: _handleDrillDownRequested,
+            onDrillUpRequested: _drillLevel == AppMapDrillLevel.region
+                ? null
+                : _handleDrillUpRequested,
+            onViewportChanged: (event) {
+              // Capture the user's viewport so it can be preserved across
+              // metric changes. No setState needed; only used at load time.
+              _lastUserViewport = event.viewport;
+              widget.onViewportChanged?.call(event);
+            },
+            style: widget.style,
+            preset: widget.preset,
+            isRefreshing: _isLoading,
+            emptyPlaceholder:
+                snapshot.items.isEmpty && snapshot.emptyHint != null
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      snapshot.emptyHint!,
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : null,
+            points: snapshot.points,
+            markerStyle: widget.markerStyle,
+            markerBuilder: widget.markerBuilder,
+            onPointTap: widget.onPointTap,
+          ),
         ),
       ],
     );
   }
 
-  String _composeSubtitle(String scopeLabel) {
+  String? _composeSubtitle(String scopeLabel) {
     final baseSubtitle = widget.subtitle;
+    if (!widget.scopeInSubtitle) {
+      return baseSubtitle;
+    }
     if (baseSubtitle == null || baseSubtitle.isEmpty) {
       return 'Escopo: $scopeLabel';
     }
@@ -455,42 +496,6 @@ AppRegionMapDataSnapshot<TItem> _withViewport<TItem>(
     loadedAt: source.loadedAt,
     isStale: source.isStale,
     emptyHint: source.emptyHint,
+    points: source.points,
   );
-}
-
-class _StaleDataBanner extends StatelessWidget {
-  const _StaleDataBanner({required this.onRefresh});
-
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: <Widget>[
-        Icon(
-          Icons.update_rounded,
-          size: 16,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            'Dados podem estar desatualizados.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: onRefresh,
-          style: TextButton.styleFrom(
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-          ),
-          child: const Text('Atualizar'),
-        ),
-      ],
-    );
-  }
 }

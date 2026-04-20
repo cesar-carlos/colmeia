@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -170,20 +171,23 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 );
               }
             : null,
-        onTooltipRender: enableInteraction && tooltipLabels != null
-            ? (args) {
-                final index = args.pointIndex?.toInt();
-                if (index != null &&
-                    index >= 0 &&
-                    index < tooltipLabels!.length) {
-                  final tooltipLabel = tooltipLabels![index];
-                  if (tooltipLabel?.trim().isNotEmpty ?? false) {
-                    args.text = tooltipLabel;
-                  }
-                }
-              }
+        onTooltipRender: enableInteraction
+            ? buildSanitizingTooltipRenderer(
+                bodyResolver: tooltipLabels == null
+                    ? null
+                    : (args) {
+                        final index = args.pointIndex?.toInt();
+                        if (index == null ||
+                            index < 0 ||
+                            index >= tooltipLabels!.length) {
+                          return null;
+                        }
+                        return tooltipLabels![index];
+                      },
+              )
             : null,
-        tooltipBehavior: TooltipBehavior(
+        tooltipBehavior: buildChartTooltipBehavior(
+          context,
           enable: enableInteraction && style.showTooltip,
         ),
         primaryXAxis: CategoryAxis(
@@ -200,15 +204,15 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         ),
         primaryYAxis: NumericAxis(
           isVisible: style.showYAxis,
-          rangePadding:
-              comparisonBarChartNeedsOuterDataLabelHeadroom(
+          rangePadding: style.yAxisRangePadding ??
+              (comparisonBarChartNeedsOuterDataLabelHeadroom(
                 showDataLabels: style.showDataLabels,
                 dataLabelAlignment: style.dataLabelAlignment,
               )
               // additionalEnd stacks with chart margin top; normal keeps labels
               // readable without a second tall empty band inside the plot.
               ? ChartRangePadding.normal
-              : ChartRangePadding.auto,
+              : ChartRangePadding.auto),
           axisLine: const AxisLine(width: 0),
           // Column charts must anchor at zero when [style.minY] is unset.
           // Otherwise Syncfusion picks a data-relative minimum (often the
@@ -235,6 +239,9 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                   details.textStyle,
                 ),
         ),
+        selectionType: style.enableTapHighlight && enableInteraction
+            ? SelectionType.point
+            : SelectionType.series,
         series: <CartesianSeries<AppChartPoint, String>>[
           ColumnSeries<AppChartPoint, String>(
             dataSource: points,
@@ -258,13 +265,27 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             borderRadius: style.barBorderRadius,
             borderColor: style.borderColor ?? Colors.transparent,
             borderWidth: style.borderWidth ?? 0,
-            animationDuration:
-                style.animationDuration?.inMilliseconds.toDouble() ?? 1500,
+            animationDuration: resolveChartAnimationDurationMs(
+              context: context,
+              styleDuration: style.animationDuration,
+              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+            ),
+            selectionBehavior: style.enableTapHighlight && enableInteraction
+                ? SelectionBehavior(
+                    enable: true,
+                    unselectedOpacity:
+                        style.tapHighlightDimmedOpacity.clamp(0, 1).toDouble(),
+                  )
+                : null,
             dataLabelSettings: DataLabelSettings(
               isVisible: style.showDataLabels && enableInteraction,
               textStyle: style.dataLabelTextStyle,
               labelAlignment: style.dataLabelAlignment,
               offset: style.dataLabelOffset ?? Offset.zero,
+              color: style.dataLabelBackgroundColor,
+              margin: style.dataLabelBackgroundColor != null
+                  ? const EdgeInsets.symmetric(horizontal: 6, vertical: 8)
+                  : const EdgeInsets.all(5),
             ),
             onPointTap: onPointTap == null || !enableInteraction
                 ? null
@@ -388,7 +409,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             );
           }
 
-          const scrollSlot = kChartHorizontalScrollBottomTrackSlot;
+          // Slot is scaled by [TextScaler] inside the shell — deduct the
+          // resolved height here so accessible text scales don't overflow.
+          final scrollSlot =
+              chartHorizontalScrollBottomTrackSlotHeight(context);
           final chartBodyHeight = resolvedHeight - scrollSlot;
 
           final sticky = style.stickyPrimaryYAxisWhileScrolling;
@@ -407,7 +431,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 chartBodyHeight,
                 categoryViewportPan: false,
               ),
-              bottomTrackSlot: scrollSlot,
+              bottomTrackSlot: kChartHorizontalScrollBottomTrackSlot,
               showFade: style.showScrollFade,
               semanticsHint: style.horizontalScrollSemanticsHint,
             );
@@ -456,7 +480,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 Expanded(
                   child: ChartHorizontalScrollShell(
                     plotInner,
-                    bottomTrackSlot: scrollSlot,
+                    bottomTrackSlot: kChartHorizontalScrollBottomTrackSlot,
                     showFade: style.showScrollFade,
                     semanticsHint: style.horizontalScrollSemanticsHint,
                   ),

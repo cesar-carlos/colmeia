@@ -31,7 +31,7 @@
 **Não responde por:**
 
 - Envio de RPC (é do `SocketCommandDispatcher` — doc próprio).
-- Decode/validação de payloads de domínio (é dos *listeners* específicos).
+- Decode/validação de payloads de domínio (é dos _listeners_ específicos).
 - Gating por visibilidade de tela (é do controller de feature).
 - Reconnect em transições de foreground/background (delegado ao app
   shell que chama `pause()`/`resume()`).
@@ -627,13 +627,13 @@ final class _ConnectTransientFailure extends _ConnectOutcome {
 
 ## 8. Política de reconexão
 
-| Camada | Comportamento |
-| ------ | ------------- |
-| `socket.io` nativo | **Desativado** (`disableReconnection()`). |
+| Camada                                      | Comportamento                                                                                             |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `socket.io` nativo                          | **Desativado** (`disableReconnection()`).                                                                 |
 | `ConsumerSocketConnection._connectInternal` | Retry com **backoff exponencial** (`1s → 2s → 4s → 8s → 16s → 30s teto`), até `maxReconnectAttempts = 5`. |
-| Após `unauthorized` | **Não reconecta**. Estado terminal; UI deve mandar usuário para login. |
-| Após `error` final | Permanece em `error`; nova tentativa só com `connect()` explícito (ex.: usuário aciona "Reconectar"). |
-| `pause()` (background) | `disconnect(reason: 'app_paused')`; em `resume()` chama `connect()` que reinicia o ciclo. |
+| Após `unauthorized`                         | **Não reconecta**. Estado terminal; UI deve mandar usuário para login.                                    |
+| Após `error` final                          | Permanece em `error`; nova tentativa só com `connect()` explícito (ex.: usuário aciona "Reconectar").     |
+| `pause()` (background)                      | `disconnect(reason: 'app_paused')`; em `resume()` chama `connect()` que reinicia o ciclo.                 |
 
 > Por que single-flight: chamadas concorrentes a `connect()` durante
 > reconexão pendente devem **compartilhar** o mesmo Future, e nunca
@@ -698,7 +698,19 @@ class _AppLifecycleHookState extends State<_AppLifecycleHook>
 
 ## 10. Estratégia para `connection:ready` em PayloadFrame (Fase 2)
 
-A `ConnectionReadyDecoder` é um *port*. Em Fase 1 a implementação
+> **PR-K (entregue):** o decoder PayloadFrame e o compat decoder agora
+> existem em `lib/core/socket/connection_ready_payload.dart`
+> (`PayloadFrameConnectionReadyDecoder`,
+> `CompatConnectionReadyDecoder`). O DI escolhe a implementação ativa
+> via `SOCKET_CONNECTION_READY_COMPAT_MODE` (`compat` por padrão;
+> `payload_frame_only` ou `raw_json_only` para forçar). O `compat`
+> tenta primeiro o frame e cai para JSON puro, emitindo
+> `ConnectionReadyShape` para que o `AppLogger` (`shape=payloadFrame`
+> | `rawJson`) deixe rastro de quando podemos remover o fallback.
+> A migração final está prevista pelo hub para após **2026-09-30**
+> (`SOCKET_CONNECTION_READY_COMPAT_MODE` no `plug_server`).
+
+A `ConnectionReadyDecoder` é um _port_. Em Fase 1 a implementação
 default detecta o formato:
 
 ```dart
@@ -796,22 +808,213 @@ void registerInjectorSocket(GetIt getIt) {
 > para frames com `cmp == 'gzip'`. Em Fase 2, troca-se a implementação
 > sem mexer em `ConsumerSocketConnection`.
 
+> **PR-K (entregue):** o `PayloadFrameCodec` substituiu o no-op acima.
+> O `injector_socket` agora resolve o `ConnectionReadyDecoder` por env
+> (`SOCKET_CONNECTION_READY_COMPAT_MODE`):
+> `payload_frame_only` → `PayloadFrameConnectionReadyDecoder`,
+> `raw_json_only` → `JsonOnlyConnectionReadyDecoder`,
+> `compat` (default) → `CompatConnectionReadyDecoder` que loga
+> `ConnectionReadyShape` (`payloadFrame` | `rawJson`) via `AppLogger`.
+
+> **PR-L (entregue):** o `injector_socket` ganhou um bloco gated por
+> `SOCKET_RELAY_ENABLED` que registra `RelayConversationManager` e
+> `RelayCommandDispatcher` reaproveitando o **mesmo
+> `ConsumerSocketConnection`**. Quando o flag está em `false` (default),
+> o relay não consome listeners adicionais nem aloca o
+> `PayloadFrameCodec` — paridade exata com Fase 1 garantida.
+
+---
+
+## 11.1 Relay (PR-L) — `relay:*` em cima da mesma conexão
+
+A mesma `ConsumerSocketConnection` carrega tanto `agents:command` quanto
+`relay:*`. PR-L adicionou três peças em `lib/core/socket/relay/`:
+
+| Arquivo                                | Papel                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `relay_event_names.dart`               | Constantes para todos os eventos do protocolo (`relay:conversation.*`, `relay:rpc.*`, `app:error`) + enum `RelayPayloadFrameCompression` (`auto`/`none`/`always` com `wireValue` `default`/`none`/`always`).                                                                                                                                                                                                                    |
+| `relay_dispatch_exception.dart`        | Sealed `RelayDispatchException` com subtipos estáveis: `RelayConversationStartFailure`, `RelayConversationLost`, `RelayRequestRejected`, `RelayStreamTerminated`, `RelayRequestTimeout`, `RelayDecodeFailure`, `RelayDuplicateRequestId`, `RelayDispatcherDisposed`. Todos carregam `code`, `conversationId`, `clientRequestId` para metric pivots.                                                                             |
+| `relay_conversation_state.dart`        | Sealed (`Idle`, `Starting`, `Active`, `Ending`, `Ended`).                                                                                                                                                                                                                                                                                                                                                                       |
+| `relay_conversation.dart`              | Single-flight em `start()` (não emite dois `relay:conversation.start` em paralelo); `end()` idempotente; `forceEnd(reason)` para socket drop sem emitir nada para o hub.                                                                                                                                                                                                                                                        |
+| `relay_conversation_manager.dart`      | Map `agentId → RelayConversation`. Reescuta `connection.states()` e descarta tudo em `Disconnected/Error/Unauthorized`. Reabre on demand via `obtain(agentId)` (que primeiro garante `connection.connect()`).                                                                                                                                                                                                                   |
+| `relay_command_dispatcher.dart` (port) | `Future<Map> sendUnary({agentId, body, clientRequestId, timeout, compression})` + `Stream<RelayRpcOutcome> outcomes()`.                                                                                                                                                                                                                                                                                                         |
+| `relay_command_dispatcher_impl.dart`   | Encoda `body` como `PayloadFrame` (auto-gzip via `PayloadFrameCodec`), emite `relay:rpc.request` com `{conversationId, frame, payloadFrameCompression}`, registra ouvintes uma vez por conexão para `accepted/response/chunk/complete`. Correlaciona via `clientRequestId` ↔ `requestId` (do `accepted`). Ignora `chunk` graciosamente (esqueleto pronto para PR-L+) e termina em `response` ou `complete` (`terminal_status`). |
+| `relay_rpc_outcome.dart`               | Sealed `RelayRpcOutcome` (`RelayRpcSuccess` com `deduplicated/replayed`, `RelayRpcFailure` com `exception`). Mesmo padrão do `AgentCommandOutcome`.                                                                                                                                                                                                                                                                             |
+
+A correlação interna do dispatcher mantém **dois mapas**:
+
+```dart
+Map<String, _PendingRelayRpc> _pendingByClientId;  // primário
+Map<String, String> _clientIdByRequestId;          // depois do accepted
+```
+
+Em eventos de stream de alto débito o hub pode omitir `traceId`/`requestId`
+no envelope (`socket_relay_protocol.md` §PayloadFrame). Quando isso acontece
+e há uma única request pendente naquela `conversationId`, o dispatcher
+roteia para ela como fallback determinístico (`_pendingFromFrame`).
+
+### Política de erro
+
+| Evento                                                  | Mapeamento                                                                                |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `relay:conversation.started` com `success: false`       | `RelayConversationStartFailure(code: error.code)`                                         |
+| Timeout do `start()`                                    | `RelayConversationStartFailure(code: 'start_timeout')`                                    |
+| `relay:rpc.accepted` com `success: false`               | `RelayRequestRejected(code: error.code)` (preserva `RATE_LIMITED`, `VALIDATION_ERROR`, …) |
+| `relay:rpc.complete` com `terminal_status != completed` | `RelayStreamTerminated(code: 'stream_<status>')`                                          |
+| Frame inválido (`enc != json`, gzip ratio, schema)      | `RelayDecodeFailure(code: <PayloadFrameDecodeException.code>)`                            |
+| Sem resposta no `defaultTimeout`/`timeout`              | `RelayRequestTimeout`                                                                     |
+| `dispatcher.dispose()` com pendentes                    | `RelayDispatcherDisposed`                                                                 |
+
+### PR-L+ parte 2 — streaming (entregue)
+
+`RelayCommandDispatcher` ganhou um segundo modo via
+`Stream<Map<String, dynamic>> sendStreaming(...)`. Mesmo wire format do
+`sendUnary` (mesmo `relay:rpc.request`, mesmo PayloadFrame), mas a
+resposta é entregue chunk por chunk via `relay:rpc.chunk`.
+
+**Refator interno.** Para o mesmo dispatcher cobrir os dois modos sem
+duplicar correlator/timeout/listeners, o `_PendingRelayRpc` original
+virou uma sealed class:
+
+| Tipo             | Consumidor                                           | Como entrega resultado                                                      |
+| ---------------- | ---------------------------------------------------- | --------------------------------------------------------------------------- |
+| `_PendingUnary`  | `Completer<Map<String, dynamic>>`                    | `complete(response)` na primeira `rpc.response` ou `rpc.complete`           |
+| `_PendingStream` | `StreamController<Map<String, dynamic>>.broadcast()` | `add(chunk)` por chunk; `close()` em `rpc.complete` (`completed`/`success`) |
+
+Os erros caem no mesmo `_failPending` (que chama
+`failExternally(exception)` no pending — completer ou controller).
+Outcomes em `RelayRpcSuccess`/`RelayRpcFailure` continuam idênticos
+para presença e métricas.
+
+**Auto-pull rolante.** Ao receber `relay:rpc.accepted`, o dispatcher
+emite imediatamente `relay:rpc.stream.pull` com
+`windowSize = initialWindow` (env `SOCKET_RELAY_STREAM_INITIAL_WINDOW`,
+default 32). A cada chunk decrementa `outstandingCredits`; quando ele
+cai a/abaixo de `refillThreshold` (env
+`SOCKET_RELAY_STREAM_REFILL_THRESHOLD`, default 16), emite um novo
+pull granting `initialWindow - outstanding` créditos para reenchemer
+até a janela cheia.
+
+**Casos limite cobertos pelos testes**
+(`test/core/socket/relay/relay_command_dispatcher_streaming_test.dart`):
+
+| Cenário                                              | Comportamento                                                                               |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Pull antes de `accepted`                             | Não emite. Pull só sai após `requestId` conhecido.                                          |
+| `relay:rpc.response` inesperado num caller streaming | Forward como single-chunk + `close()` (legal sob o protocolo).                              |
+| `terminal_status: aborted`/`error`                   | `addError(RelayStreamTerminated(stream_<status>))` + `close()`.                             |
+| `accepted` com `success: false`                      | `addError(RelayRequestRejected(serverCode: ...))` + `close()`.                              |
+| Timeout                                              | `addError(RelayRequestTimeout)` + `close()`.                                                |
+| `dispatcher.dispose()` mid-stream                    | `addError(RelayDispatcherDisposed)` + `close()`.                                            |
+| `relay:rpc.chunk` num caller unitário                | Conta para diagnóstico (`receivedChunkCount`) e ignora — o `complete` ainda fecha o futuro. |
+
+**Não fazemos cancel ao hub.** O protocolo relay atual não tem ack
+de cancel; cancelar a subscription apenas para de drenar localmente.
+O timeout existente (`SOCKET_RELAY_REQUEST_TIMEOUT_MS`) mais o
+`forceEnd` da conversação no socket drop garantem que pendings não
+vazam.
+
+**PR-L+ p3 (entregue).** A camada de dados ganhou a opção 2 do
+trio acima — port irmão **`AgentQueriesStreamingRemoteDataSource`**
++ impl **`RelayStreamingAgentQueriesRemoteDataSource`** + DI gated
+(`lib/features/agent_queries/data/datasources/`,
+`lib/core/di/injector_agent_queries.dart`). Por que opção 2:
+
+- Mantém o port unary intacto: callers que só precisam de
+  `Future<Map>` continuam dependendo de
+  `AgentQueriesRemoteDataSource` e nunca veem o stream (ISP).
+- Reusa o mesmo `AgentSqlExecuteRequestToBridgeBody`, então o
+  payload vai byte-igual ao REST/`agents:command`/relay unitário.
+- DI fica condicional em `RelayCommandDispatcher` — builds sem
+  `SOCKET_RELAY_ENABLED` não pagam allocation extra.
+
+**PR-L+ p3.5 (entregue) — collector + adapter.** Para que o
+streaming wire vire usável **sem reescrever o `AgentQueryExecutor`**,
+a parte 3.5 fechou três peças:
+
+1. O dispatcher (`RelayCommandDispatcherImpl`) agora forwarda o
+   payload de `relay:rpc.complete` como o **item final** do stream
+   (em vez de descartá-lo antes de fechar). Sem isso, todo
+   collector perderia `total_rows` / `execution_id` /
+   `started_at` / `finished_at` — só veria os `rows`.
+2. `BridgeShapedSqlExecuteCollector` (em
+   `lib/features/agent_queries/data/streaming_sql_execute_collector.dart`)
+   agrega N `rpc.chunk` (`{rows, chunk_index, ...}`) + 1
+   `rpc.complete` (`{total_rows, execution_id, ...}`) num único
+   `Map` no formato canônico que `AgentSqlBridgeResponse.parseSuccess`
+   já entende:
+   `response.{type:'single',item:{success:true,result:{rows,row_count,
+   execution_id,started_at,finished_at,affected_rows,column_metadata}}}`.
+   Tolerante: se o `complete` nunca chegar, `row_count` cai pra
+   `rows.length` e os campos opcionais ficam ausentes — o parser
+   ainda aceita.
+3. `CollectingRelayStreamingAgentQueriesRemoteDataSource` implementa
+   o **port unitário** `AgentQueriesRemoteDataSource` por dentro
+   usando `streamSqlExecute(...) → collect(...)`. Repositories
+   continuam dependendo do mesmo port, mas o transporte vira
+   relay streaming — economia de RAM no hub + backpressure
+   correto, sem mudar o repositório nem o executor.
+
+A integração efetiva (registrar o adapter para uma query específica)
+fica para **PR-L+ p4**: é um swap de DI (uma linha no
+`injector_agent_queries.dart`) que não muda contrato nem comportamento
+observável; depende só de identificar a query que sofre com
+materialização, decisão de produto.
+
+---
+
+### PR-L+ parte 1 — selector per-query (entregue)
+
+Adotamos a opção 1 (flag por request) por ter o menor blast radius e
+manter as decisões de roteamento na borda da feature, sem precisar
+mudar o domínio para classificar queries.
+
+**Mudanças:**
+
+- `AgentSqlExecuteRequest` ganhou `useRelay` (default `false`). O campo
+  é puramente uma dica para a camada de dados — o
+  `AgentSqlExecuteRequestToBridgeBody` continua produzindo o **mesmo
+  body byte-a-byte** quando `useRelay` muda (snapshot test pinou esse
+  invariante em
+  `agent_sql_execute_request_to_bridge_body_test.dart`).
+- `HybridAgentQueriesRemoteDataSource` (em
+  `lib/features/agent_queries/data/datasources/`) recebe um
+  `baseDelegate` (REST ou `agents:command`) e um `relayDelegate`
+  opcional. Despacha por chamada:
+  - `useRelay == false` → `baseDelegate.postSqlExecute(request)`.
+  - `useRelay == true` + `relayDelegate != null` → relay.
+  - `useRelay == true` + `relayDelegate == null` → fallback no
+    `baseDelegate` com warning estruturado
+    (`reason: relay_datasource_missing`) para a métrica de bypass.
+- `injector_agent_queries.dart` constrói o `baseDelegate` como antes
+  e, **se** `RelayCommandDispatcher` estiver registrado (i.e.
+  `SOCKET_RELAY_ENABLED=true` no `injector_socket`), embrulha tudo
+  num `HybridAgentQueriesRemoteDataSource`. Caso contrário,
+  `baseDelegate` é registrado direto — paridade exata com Phase 1.
+
+**O que ainda falta (PR-L+ parte 2):** agregar `relay:rpc.chunk` num
+`Stream<Map>` real (auto-pull com `relay:rpc.stream.pull`). O
+`RelayCommandDispatcher.sendUnary` atual continua adequado para
+queries unitárias; o método streaming será uma adição
+(`Stream<Map<String,dynamic>> sendStreaming(...)`) sem quebrar o
+contrato unitário.
+
 ---
 
 ## 12. Casos de borda
 
-| # | Cenário | Comportamento esperado |
-| - | ------- | ---------------------- |
-| 1 | `connect()` chamado duas vezes em paralelo | Único Future single-flight. Apenas um socket aberto. |
-| 2 | `connect()` em estado `unauthorized` | Lança `StateError`; UI deve forçar login. |
-| 3 | `connection:ready` nunca chega | Timeout de `handshakeTimeout` (10 s) → backoff → retry. |
-| 4 | `connect_error` com mensagem 401 | Refresh token, retry **uma vez**; em segunda 401 → `unauthorized`. |
-| 5 | `disconnect` server-side com motivo `transport close` | Estado `disconnected` (sem auto-reconnect); chamador decide quando reconectar. |
-| 6 | `AuthSessionEvents.invalidated` durante `connecting` | Cancela cleanup; estado vai para `disconnected(reason: 'session_invalidated')`. |
-| 7 | App vai para background durante streaming pendente | `pause()` desconecta; o `SocketCommandDispatcher` falha pendentes com `NetworkFailure(transient: true)`. |
-| 8 | `dispose()` durante `connect()` em curso | Single-flight é completado; `dispose()` aguarda e fecha tudo. |
-| 9 | `apiBaseUrl` vazio | `AppSocketUrlResolver.consumersUrl` é uma string inválida; `connect_error` imediato; `error` com causa "invalid url". |
-| 10 | Hub multi-réplica (sem sticky) e refresh REST cai em outra réplica | `hubInstanceId` no `connection:ready` muda; logar transição como `info` para diagnóstico. |
+| #   | Cenário                                                            | Comportamento esperado                                                                                                |
+| --- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| 1   | `connect()` chamado duas vezes em paralelo                         | Único Future single-flight. Apenas um socket aberto.                                                                  |
+| 2   | `connect()` em estado `unauthorized`                               | Lança `StateError`; UI deve forçar login.                                                                             |
+| 3   | `connection:ready` nunca chega                                     | Timeout de `handshakeTimeout` (10 s) → backoff → retry.                                                               |
+| 4   | `connect_error` com mensagem 401                                   | Refresh token, retry **uma vez**; em segunda 401 → `unauthorized`.                                                    |
+| 5   | `disconnect` server-side com motivo `transport close`              | Estado `disconnected` (sem auto-reconnect); chamador decide quando reconectar.                                        |
+| 6   | `AuthSessionEvents.invalidated` durante `connecting`               | Cancela cleanup; estado vai para `disconnected(reason: 'session_invalidated')`.                                       |
+| 7   | App vai para background durante streaming pendente                 | `pause()` desconecta; o `SocketCommandDispatcher` falha pendentes com `NetworkFailure(transient: true)`.              |
+| 8   | `dispose()` durante `connect()` em curso                           | Single-flight é completado; `dispose()` aguarda e fecha tudo.                                                         |
+| 9   | `apiBaseUrl` vazio                                                 | `AppSocketUrlResolver.consumersUrl` é uma string inválida; `connect_error` imediato; `error` com causa "invalid url". |
+| 10  | Hub multi-réplica (sem sticky) e refresh REST cai em outra réplica | `hubInstanceId` no `connection:ready` muda; logar transição como `info` para diagnóstico.                             |
 
 ---
 
@@ -857,14 +1060,14 @@ void registerInjectorSocket(GetIt getIt) {
 
 ## 14. Logging / Sentry
 
-| Evento | Nível | `component` |
-| ------ | ----- | ----------- |
-| Transição de estado | `info` | `ConsumerSocketConnection` |
-| Refresh de token disparado pelo socket | `info` | `ConsumerSocketConnection` |
-| Refresh falhou → unauthorized | `warning` | `ConsumerSocketConnection` |
-| `connection:ready` decode falhou | `warning` | `ConnectionReadyDecoder` |
-| Backoff acionado | `info` | `ConsumerSocketConnection` |
-| `Max reconnect attempts reached` | `error` + Sentry breadcrumb | `ConsumerSocketConnection` |
+| Evento                                 | Nível                       | `component`                |
+| -------------------------------------- | --------------------------- | -------------------------- |
+| Transição de estado                    | `info`                      | `ConsumerSocketConnection` |
+| Refresh de token disparado pelo socket | `info`                      | `ConsumerSocketConnection` |
+| Refresh falhou → unauthorized          | `warning`                   | `ConsumerSocketConnection` |
+| `connection:ready` decode falhou       | `warning`                   | `ConnectionReadyDecoder`   |
+| Backoff acionado                       | `info`                      | `ConsumerSocketConnection` |
+| `Max reconnect attempts reached`       | `error` + Sentry breadcrumb | `ConsumerSocketConnection` |
 
 > **Nunca** logar `auth.token`. Logar apenas presença/ausência e
 > primeiros 6 caracteres do `socketId` se necessário diagnosticar.

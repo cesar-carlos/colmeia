@@ -11,6 +11,7 @@ class OverviewPanelActions extends StatelessWidget {
     this.onManageAgents,
     this.retryLabel,
     this.primaryLabel,
+    this.retryDisabledLabel,
     super.key,
   });
 
@@ -20,24 +21,35 @@ class OverviewPanelActions extends StatelessWidget {
   final String? primaryLabel;
   final String manageAgentsLabel;
 
+  /// When non-null, the retry button is rendered in a disabled state
+  /// using this label (e.g. a "Retry in 5s" countdown set by the
+  /// overview controller's `RetryAfterGate`) regardless of [onRetry].
+  /// Use this — instead of nulling [onRetry] — to keep the button
+  /// visible while the cool-down window is open.
+  final String? retryDisabledLabel;
+
   @override
   Widget build(BuildContext context) {
     assert(
-      onRetry == null || (retryLabel != null && retryLabel!.isNotEmpty),
+      onRetry == null ||
+          retryDisabledLabel != null ||
+          (retryLabel != null && retryLabel!.isNotEmpty),
       'retryLabel is required when onRetry is set',
     );
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final disabledLabel = retryDisabledLabel;
+    final showRetryButton = onRetry != null || disabledLabel != null;
     return Wrap(
       spacing: tokens.gapSm,
       runSpacing: tokens.gapSm,
       children: <Widget>[
-        if (onRetry != null)
+        if (showRetryButton)
           AppPrimaryButton(
-            label: primaryLabel ?? retryLabel!,
-            onPressed: onRetry,
+            label: disabledLabel ?? primaryLabel ?? retryLabel!,
+            onPressed: disabledLabel != null ? null : onRetry,
           ),
         if (onManageAgents != null)
-          (onRetry == null
+          (!showRetryButton
               ? AppPrimaryButton(
                   label: primaryLabel ?? manageAgentsLabel,
                   icon: const Icon(Icons.hub_rounded),

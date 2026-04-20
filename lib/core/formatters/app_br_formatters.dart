@@ -56,6 +56,29 @@ abstract final class AppBrFormatters {
   static String compactCurrency(num value) =>
       compactCurrencyFormat.format(value);
 
+  /// Currency formatter that picks between full and compact notation:
+  /// - Below R$ 1.000 (in absolute value), uses [currency] so a tiny bar like
+  ///   `R$ 26,80` is not visually confused with `R$ 26,8 mil`.
+  /// - From R$ 1.000 onward, uses the locale-aware compact formatter
+  ///   (`R$ 1,2 mil`, `R$ 1,2 mi`).
+  ///
+  /// Useful for chart data labels where bars span several orders of magnitude.
+  static String smartCompactCurrency(num value) {
+    if (value.abs() < 1000) {
+      return currency(value);
+    }
+    return compactCurrencyFormat.format(value);
+  }
+
+  /// Locale-aware variant of [smartCompactCurrency] for chart axes that should
+  /// follow the UI locale rather than the fixed `pt_BR` symbol grouping.
+  static String smartCompactCurrencyForLocale(num value, String localeName) {
+    if (value.abs() < 1000) {
+      return currency(value);
+    }
+    return compactCurrencyFormatForLocale(localeName).format(value);
+  }
+
   static double parseCurrency(String value) =>
       UtilBrasilFields.converterMoedaParaDouble(value);
 

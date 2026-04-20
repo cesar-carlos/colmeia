@@ -24,6 +24,8 @@ class AppStackedBarChartStyle {
     this.dataLabelTextStyle,
     this.isPercentStack = false,
     this.orientation = Axis.vertical,
+    this.enableTapHighlight = false,
+    this.tapHighlightDimmedOpacity = 0.35,
   });
 
   final double? height;
@@ -52,6 +54,16 @@ class AppStackedBarChartStyle {
   /// [Axis.vertical] renders column bars (default).
   /// [Axis.horizontal] renders horizontal bars — useful for long group labels.
   final Axis orientation;
+
+  /// When true, tapping a segment highlights it visually (Syncfusion
+  /// `SelectionBehavior`): the tapped segment keeps full opacity while the
+  /// remaining bars fade to [tapHighlightDimmedOpacity]. Independent from
+  /// `onSegmentTap` callbacks.
+  final bool enableTapHighlight;
+
+  /// Opacity applied to non-selected segments while [enableTapHighlight] is
+  /// active. Defaults to `0.35`; set to `1.0` to disable the dim.
+  final double tapHighlightDimmedOpacity;
 }
 
 /// A series entry for [AppStackedBarChart].

@@ -239,10 +239,14 @@ class _ClientAgentProfileEditCardState
           ),
           SizedBox(height: tokens.gapMd),
           AppPrimaryButton(
-            label: l10n.clientAgentDetailSaveProfile,
+            label: c.isOnRetryCooldown
+                ? l10n.clientAgentDetailRetryAfterCountdown(
+                    c.retryAfterGate.remaining?.inSeconds ?? 0,
+                  )
+                : l10n.clientAgentDetailSaveProfile,
             icon: const Icon(Icons.save_outlined),
             isLoading: c.isSavingProfile,
-            onPressed: c.isSavingProfile
+            onPressed: c.isSavingProfile || c.isOnRetryCooldown
                 ? null
                 : () {
                     c.clearProfileFeedback();

@@ -234,7 +234,7 @@ packages:
     source: hosted
     version: "2.1.2"
   fake_async:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: fake_async
       sha256: "5368f224a74523e8d2e7399ea1638b37aecfca824a3cc4dfdf77bf1fa905ac44"
@@ -1026,6 +1026,22 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  socket_io_client:
+    dependency: "direct main"
+    description:
+      name: socket_io_client
+      sha256: ef6c989e5eee8d04baf18482ec3d7699b91bc41e279794a99d8e3bef897b074a
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.4"
+  socket_io_common:
+    dependency: transitive
+    description:
+      name: socket_io_common
+      sha256: "162fbaecbf4bf9a9372a62a341b3550b51dcef2f02f3e5830a297fd48203d45b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.1"
   source_span:
     dependency: transitive
     description:
@@ -1086,10 +1102,10 @@ packages:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: cdc9f865a2447b75446c6583e68b2800411687cc1a36df83769b66f96ed70df1
+      sha256: "06ca4169ed9fc3fc881a984772ac4c6ab4626a69770c073ed76b25defb2ac55c"
       url: "https://pub.dev"
     source: hosted
-    version: "33.1.45"
+    version: "33.1.49"
   syncfusion_flutter_datagrid:
     dependency: "direct main"
     description:
@@ -1118,10 +1134,10 @@ packages:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_maps
-      sha256: "94d8b84e56edac8669abc71b12ce4d225d6d72f3b805fd4549b3024abce1f8ca"
+      sha256: "11f355f294b49a926a3f80625ffa64dc4cb8a9a0f4641f3fb52379b68aed3dc6"
       url: "https://pub.dev"
     source: hosted
-    version: "33.1.45"
+    version: "33.1.49"
   syncfusion_flutter_treemap:
     dependency: "direct main"
     description:

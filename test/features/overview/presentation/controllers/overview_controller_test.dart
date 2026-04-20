@@ -3,6 +3,13 @@ import 'dart:async';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
+import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
+import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
+import 'package:colmeia/features/agent_meta/domain/repositories/agent_meta_repository.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -184,6 +191,135 @@ void main() {
       check(controller.isLoadingInitial).isFalse();
     });
 
+    test(
+      'should arm RetryAfterGate when failure carries a retry hint and '
+      'short-circuit refreshOverview while the window is open',
+      () async {
+        final initialFailure = Future<AppResult<Overview>>.value(
+          const Failure<Overview, AppFailure>(
+            // Hub propagated `-32013 client_token_*_rate_limited` (or
+            // bridge overload) — the AgentSql failure mapper now
+            // forwards `retry_after_ms` to RpcFailure.retryAfter.
+            RpcFailure(
+              message: 'Rate limited',
+              userMessage: 'O servidor pediu para aguardar.',
+              rpcCode: -32013,
+              retryable: true,
+              retryAfter: Duration(seconds: 10),
+            ),
+          ),
+        );
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[initialFailure],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+          // Speed up the ticker so the test does not depend on wall
+          // clock seconds while still exercising the same code path.
+          retryAfterGate: RetryAfterGate(
+            tickInterval: const Duration(milliseconds: 5),
+          ),
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        check(controller.errorMessage).isNotNull();
+        check(controller.isOnRetryCooldown).isTrue();
+        check(controller.retryAfterGate.remaining).isNotNull();
+
+        // refreshOverview MUST be a no-op while the gate is closed. We
+        // assert no second hit on the repository (queue is empty —
+        // attempting to consume would throw a RangeError, which would
+        // surface as a test failure).
+        await controller.refreshOverview(userId: 'demo-user');
+        await controller.retryOverview(userId: 'demo-user');
+
+        check(repository.requestedPolicies).deepEquals(
+          <OverviewLoadPolicy>[OverviewLoadPolicy.defaultLoad],
+        );
+      },
+    );
+
+    test(
+      'should prefetch agent RPC capabilities for every available agent '
+      'after a successful overview load',
+      () async {
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(_overview('Pix')),
+            ),
+          ],
+        );
+        final discoverRepository = _RecordingDiscoverRepository();
+        final registry = AgentRpcCapabilitiesRegistry(
+          discoverAgentRpcMethodsUseCase: DiscoverAgentRpcMethodsUseCase(
+            discoverRepository,
+          ),
+        );
+
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+          agentRpcCapabilitiesRegistry: registry,
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        // The fixture overview exposes agent `a1` as the only ranked
+        // agent — registry should pick it up and discover exactly once.
+        await Future<void>.delayed(Duration.zero);
+
+        check(discoverRepository.requestedAgentIds).deepEquals(<String>['a1']);
+        check(registry.descriptorFor('a1')!.supportsMethod('sql.execute'))
+            .isTrue();
+      },
+    );
+
+    test(
+      'should NOT prefetch RPC capabilities for agents missing the local '
+      'client token (would otherwise spam 404s from the bridge)',
+      () async {
+        // The bridge returns 404 for `agents/commands` against an
+        // agent the caller has no token for — there is no
+        // `(client, agent)` binding to route through. Prefetching
+        // those would just fill Sentry with non-actionable
+        // NetworkFailure breadcrumbs.
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(
+                _overview(
+                  'Pix',
+                  agentIdsMissingClientToken: const <String>['a1'],
+                ),
+              ),
+            ),
+          ],
+        );
+        final discoverRepository = _RecordingDiscoverRepository();
+        final registry = AgentRpcCapabilitiesRegistry(
+          discoverAgentRpcMethodsUseCase: DiscoverAgentRpcMethodsUseCase(
+            discoverRepository,
+          ),
+        );
+
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+          agentRpcCapabilitiesRegistry: registry,
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+        await Future<void>.delayed(Duration.zero);
+
+        // a1 was the only ranked agent and it is missing the token,
+        // so the prefetch must do exactly zero discover calls.
+        check(discoverRepository.requestedAgentIds).isEmpty();
+      },
+    );
+
     test('should ignore late use case completion after dispose', () async {
       final completer = Completer<AppResult<Overview>>();
       final controller = OverviewController(
@@ -204,6 +340,44 @@ void main() {
 
       await loadFuture;
     });
+
+    test(
+      'skippedDueToHubPresenceAgentNamesNormalized exposes a sorted, '
+      'deduped, trimmed view of the names from the loaded overview',
+      () async {
+        // Acceptance for the new "agentes offline" banner: the
+        // controller must hand the widget a normalized list (same
+        // contract as the existing missing-token / partial-failure
+        // helpers) so the banner can render predictably without each
+        // call site re-doing the cleanup.
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(
+                _overview(
+                  'Pix',
+                  agentNamesSkippedDueToHubPresence: const <String>[
+                    '  Bravo  ',
+                    'Alpha',
+                    'bravo',
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        check(
+          controller.skippedDueToHubPresenceAgentNamesNormalized,
+        ).deepEquals(<String>['Alpha', 'Bravo']);
+      },
+    );
   });
 }
 
@@ -242,7 +416,39 @@ class _QueuedOverviewRepository implements OverviewRepository {
   }
 }
 
-Overview _overview(String paymentMethodCode) {
+class _RecordingDiscoverRepository implements AgentMetaRepository {
+  final List<String> requestedAgentIds = <String>[];
+
+  @override
+  Future<AppResult<AgentRpcDescriptor>> discoverAgentRpc({
+    required String agentId,
+  }) {
+    requestedAgentIds.add(agentId);
+    return Future<AppResult<AgentRpcDescriptor>>.value(
+      const Success<AgentRpcDescriptor, AppFailure>(
+        AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+      ),
+    );
+  }
+
+  @override
+  Future<AppResult<AgentProfileSnapshot>> getAgentProfile({
+    required String agentId,
+    String? clientToken,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<AppResult<ClientTokenPolicySnapshot>> getClientTokenPolicy({
+    required String agentId,
+    required String clientToken,
+  }) => throw UnimplementedError();
+}
+
+Overview _overview(
+  String paymentMethodCode, {
+  List<String> agentIdsMissingClientToken = const <String>[],
+  List<String> agentNamesSkippedDueToHubPresence = const <String>[],
+}) {
   return Overview(
     periodStart: DateTime(2026, 3, 9),
     periodEnd: DateTime(2026, 4, 7),
@@ -262,6 +468,12 @@ Overview _overview(String paymentMethodCode) {
         sharePercent: 100,
       ),
     ],
+    agentIdsMissingClientToken: agentIdsMissingClientToken,
+    agentNamesSkippedDueToHubPresence: agentNamesSkippedDueToHubPresence,
+    agentIdsSkippedDueToHubPresence: agentNamesSkippedDueToHubPresence
+        .map((n) => n.trim().toLowerCase())
+        .toSet()
+        .toList(),
     agentRankings: const <OverviewAgentRanking>[
       OverviewAgentRanking(
         agentId: 'a1',

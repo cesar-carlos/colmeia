@@ -50,6 +50,8 @@ repositorio.
 - `sentry_flutter` para erros e performance, com DSN fornecido via
   `--dart-define=SENTRY_DSN=`
 - `mocktail` como biblioteca padrao de mocks em testes
+- `socket_io_client` para o canal Socket `/consumers` do `plug_server`
+  (PR-A em `docs/Features/socket_consumer_channel_plan.md`)
 
 ## Dependencias Fora de Escopo
 
@@ -58,8 +60,9 @@ repositorio.
 - Nao adicione `syncfusion_flutter_core` diretamente sem uso explicito de API
 - Nao adicione `protoc_plugin` sem pipeline real de protobuf
 - Evite `mailer` no app cliente; prefira envio de email no backend
-- Pacotes como `socket_io_client`, `jose` e `crypto` devem entrar apenas quando
-  existir caso de uso concreto
+- Pacotes como `jose` devem entrar apenas quando existir caso de uso concreto
+  (`crypto` já está ativo; `socket_io_client` foi promovido para a lista de
+  dependências preferenciais — ver acima)
 
 ## Referencias
 

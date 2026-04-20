@@ -75,6 +75,8 @@ class AgentQueryPlanBuilder {
                 resolution.consideredApprovedAgentCount,
             plannedTargets: plannedTargets,
             missingClientTokenTargets: resolution.missingClientTokenTargets,
+            skippedDueToHubPresenceTargets:
+                resolution.skippedDueToHubPresenceTargets,
             bridgeTimeoutMs: resolvedTimeoutMs,
           ),
         );
@@ -87,6 +89,8 @@ class AgentQueryPlanBuilder {
                 resolution.consideredApprovedAgentCount,
             plannedTargets: plannedTargets,
             missingClientTokenTargets: resolution.missingClientTokenTargets,
+            skippedDueToHubPresenceTargets:
+                resolution.skippedDueToHubPresenceTargets,
             bridgeTimeoutMs: resolvedTimeoutMs,
           ),
         );
@@ -113,6 +117,8 @@ class AgentQueryPlanBuilder {
                 .take(resolvedRaceMaxSources)
                 .toList(growable: false),
             missingClientTokenTargets: resolution.missingClientTokenTargets,
+            skippedDueToHubPresenceTargets:
+                resolution.skippedDueToHubPresenceTargets,
             bridgeTimeoutMs: resolvedTimeoutMs,
             raceMaxSources: resolvedRaceMaxSources,
           ),
