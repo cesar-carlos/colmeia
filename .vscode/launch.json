@@ -1,31 +1,45 @@
 {
     // https://go.microsoft.com/fwlink/?linkid=830387
-    // Android emulator ids (`emulator-5554`, `emulator-5556`, …) come from `flutter devices` — update if launch fails
-    // (e.g. only Pixel Tablet running may use 5554; with phone + tablet, tablet is often the second port).
+    // Android: `emulatorId` = id de `flutter emulators` — inicia o AVD se estiver desligado (Dart-Code >= 3.114).
+    // `deviceId` = id de `flutter devices` (útil para físico / iOS / Chrome).
+    //
+    // Canal Socket: ATIVO POR PADRÃO desde 2026-04 (ver
+    // `assets/env/default.env`). Todos os perfis abaixo herdam
+    // `AGENT_BRIDGE_TRANSPORT=socket` + `SOCKET_RELAY_ENABLED=true` +
+    // `SOCKET_PRESENCE_LISTENER_ENABLED=true` do dotenv.
+    //
+    // Para forçar REST localmente sem editar o repo, crie
+    // `assets/env/local.env` com `AGENT_BRIDGE_TRANSPORT=rest`
+    // (esse arquivo está em `.gitignore`). O perfil `(force REST)`
+    // abaixo faz o mesmo via `--dart-define` para builds one-off.
     "version": "0.2.0",
     "configurations": [
         {
             "name": "colmeia",
             "request": "launch",
             "type": "dart",
+            "emulatorId": "Pixel_Tablet",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
         },
         {
-            "name": "colmeia (Android emulator)",
+            "name": "colmeia (force REST, Android tablet)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "emulator-5554",
+            "emulatorId": "Pixel_Tablet",
             "toolArgs": [
-                "--dart-define=USE_FAKE_BACKEND=false"
+                "--dart-define=USE_FAKE_BACKEND=false",
+                "--dart-define=AGENT_BRIDGE_TRANSPORT=rest",
+                "--dart-define=SOCKET_RELAY_ENABLED=false",
+                "--dart-define=SOCKET_PRESENCE_LISTENER_ENABLED=false"
             ]
         },
         {
-            "name": "colmeia (Android Pixel Tablet)",
+            "name": "colmeia (Android phone)",
             "request": "launch",
             "type": "dart",
-            "deviceId": "emulator-5556",
+            "emulatorId": "Medium_Phone_API_36",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
@@ -58,19 +72,21 @@
             ]
         },
         {
-            "name": "colmeia (profile mode)",
+            "name": "colmeia (profile, Android tablet)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile",
+            "emulatorId": "Pixel_Tablet",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
         },
         {
-            "name": "colmeia (release mode)",
+            "name": "colmeia (release, Android tablet)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release",
+            "emulatorId": "Pixel_Tablet",
             "toolArgs": [
                 "--dart-define=USE_FAKE_BACKEND=false"
             ]
