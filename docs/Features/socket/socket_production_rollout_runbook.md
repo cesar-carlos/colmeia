@@ -15,20 +15,20 @@ listed here.
 
 ## 0. Capabilities recap (what the code already supports)
 
-| Capability | Implementation | Default behavior |
-| --- | --- | --- |
-| `/consumers` namespace, single connection | `ConsumerSocketConnection` | Disconnected until `connect()` |
-| Handshake `connection:ready` (PayloadFrame **or** raw JSON) | `CompatConnectionReadyDecoder` | `compat` (auto-detect) |
-| Auth via JWT (`auth: { token }`) + single-flight refresh on 401/403 | `SessionSocketAuthTokenProvider` | Reuses `AuthRefreshCoordinator` |
-| Reconnect with exponential backoff + full jitter | `SocketReconnectBackoff` | 5 attempts, 1 s → 30 s |
-| `Retry-After` honored on handshake (`app:error`) and on per-command failures | `socket_app_error_retry_after.dart` | Server hint clamped to `reconnectMaxDelay` |
-| `agents:command` (legacy bridge over `/consumers`) | `SocketCommandDispatcherImpl` | Coalescing on, concurrency gate at 8/agent |
-| `relay:*` unary + streaming (with `rpc.stream.pull` window clamp) | `RelayCommandDispatcherImpl` | Opt-in via `SOCKET_RELAY_ENABLED` |
-| PayloadFrame v1.0 encode/decode (auto-gzip, 10 MiB cap, 20× inflation guard) | `PayloadFrameCodec` | Always on once socket selected |
-| HMAC-SHA256 outbound signing | `Hmac256PayloadFrameSigner` | Off until `SOCKET_PAYLOAD_SIGNING_KEY` set |
-| HMAC-SHA256 inbound verification | `Hmac256PayloadFrameSignatureVerifier` | Auto-wired with the signer |
-| `client:agent.profile.updated` push | `ClientAgentProfileUpdatedListener` | Opt-in via `SOCKET_PRESENCE_LISTENER_ENABLED` |
-| App lifecycle pause/resume + post-login warm-up | `SocketLifecycleObserver` | Active when `transport=socket` |
+| Capability                                                                   | Implementation                         | Default behavior                              |
+| ---------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------- |
+| `/consumers` namespace, single connection                                    | `ConsumerSocketConnection`             | Disconnected until `connect()`                |
+| Handshake `connection:ready` (PayloadFrame **or** raw JSON)                  | `CompatConnectionReadyDecoder`         | `compat` (auto-detect)                        |
+| Auth via JWT (`auth: { token }`) + single-flight refresh on 401/403          | `SessionSocketAuthTokenProvider`       | Reuses `AuthRefreshCoordinator`               |
+| Reconnect with exponential backoff + full jitter                             | `SocketReconnectBackoff`               | 5 attempts, 1 s → 30 s                        |
+| `Retry-After` honored on handshake (`app:error`) and on per-command failures | `socket_app_error_retry_after.dart`    | Server hint clamped to `reconnectMaxDelay`    |
+| `agents:command` (legacy bridge over `/consumers`)                           | `SocketCommandDispatcherImpl`          | Coalescing on, concurrency gate at 8/agent    |
+| `relay:*` unary + streaming (with `rpc.stream.pull` window clamp)            | `RelayCommandDispatcherImpl`           | Opt-in via `SOCKET_RELAY_ENABLED`             |
+| PayloadFrame v1.0 encode/decode (auto-gzip, 10 MiB cap, 20× inflation guard) | `PayloadFrameCodec`                    | Always on once socket selected                |
+| HMAC-SHA256 outbound signing                                                 | `Hmac256PayloadFrameSigner`            | Off until `SOCKET_PAYLOAD_SIGNING_KEY` set    |
+| HMAC-SHA256 inbound verification                                             | `Hmac256PayloadFrameSignatureVerifier` | Auto-wired with the signer                    |
+| `client:agent.profile.updated` push                                          | `ClientAgentProfileUpdatedListener`    | Opt-in via `SOCKET_PRESENCE_LISTENER_ENABLED` |
+| App lifecycle pause/resume + post-login warm-up                              | `SocketLifecycleObserver`              | Active when `transport=socket`                |
 
 ---
 

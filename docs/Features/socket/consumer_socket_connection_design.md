@@ -916,16 +916,17 @@ vazam.
 
 **PR-L+ p3 (entregue).** A camada de dados ganhou a opção 2 do
 trio acima — port irmão **`AgentQueriesStreamingRemoteDataSource`**
-+ impl **`RelayStreamingAgentQueriesRemoteDataSource`** + DI gated
-(`lib/features/agent_queries/data/datasources/`,
-`lib/core/di/injector_agent_queries.dart`). Por que opção 2:
 
-- Mantém o port unary intacto: callers que só precisam de
+- impl **`RelayStreamingAgentQueriesRemoteDataSource`** + DI gated
+  (`lib/features/agent_queries/data/datasources/`,
+  `lib/core/di/injector_agent_queries.dart`). Por que opção 2:
+
+* Mantém o port unary intacto: callers que só precisam de
   `Future<Map>` continuam dependendo de
   `AgentQueriesRemoteDataSource` e nunca veem o stream (ISP).
-- Reusa o mesmo `AgentSqlExecuteRequestToBridgeBody`, então o
+* Reusa o mesmo `AgentSqlExecuteRequestToBridgeBody`, então o
   payload vai byte-igual ao REST/`agents:command`/relay unitário.
-- DI fica condicional em `RelayCommandDispatcher` — builds sem
+* DI fica condicional em `RelayCommandDispatcher` — builds sem
   `SOCKET_RELAY_ENABLED` não pagam allocation extra.
 
 **PR-L+ p3.5 (entregue) — collector + adapter.** Para que o
@@ -944,7 +945,7 @@ a parte 3.5 fechou três peças:
    `Map` no formato canônico que `AgentSqlBridgeResponse.parseSuccess`
    já entende:
    `response.{type:'single',item:{success:true,result:{rows,row_count,
-   execution_id,started_at,finished_at,affected_rows,column_metadata}}}`.
+execution_id,started_at,finished_at,affected_rows,column_metadata}}}`.
    Tolerante: se o `complete` nunca chegar, `row_count` cai pra
    `rows.length` e os campos opcionais ficam ausentes — o parser
    ainda aceita.

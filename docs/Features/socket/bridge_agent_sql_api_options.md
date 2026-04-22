@@ -13,15 +13,15 @@ HTTP and socket consumer commands share the same internal pipeline (`executeAgen
 
 ## `sql.execute` — `options` (excerpt)
 
-| Field | Role |
-| ----- | ---- |
-| `timeout_ms` | Agent-side SQL timeout (1..300000 ms). |
-| `max_rows` | Cap on returned rows (negotiated with agent capabilities). |
-| `page` / `page_size` | Offset pagination (1-based page; requires both). |
-| `cursor` | Keyset continuation token (exclusive with `page` / `page_size`). |
-| `execution_mode` | `managed` (default, allows rewrite for pagination) or `preserve` (SQL sent as-is; **not** combinable with pagination options). |
-| `preserve_sql` | Legacy boolean alias for `execution_mode: preserve`. |
-| `multi_result` | Return **multiple result sets** from **one** SQL string; **not** combinable with pagination or named `params`. |
+| Field                | Role                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `timeout_ms`         | Agent-side SQL timeout (1..300000 ms).                                                                                         |
+| `max_rows`           | Cap on returned rows (negotiated with agent capabilities).                                                                     |
+| `page` / `page_size` | Offset pagination (1-based page; requires both).                                                                               |
+| `cursor`             | Keyset continuation token (exclusive with `page` / `page_size`).                                                               |
+| `execution_mode`     | `managed` (default, allows rewrite for pagination) or `preserve` (SQL sent as-is; **not** combinable with pagination options). |
+| `preserve_sql`       | Legacy boolean alias for `execution_mode: preserve`.                                                                           |
+| `multi_result`       | Return **multiple result sets** from **one** SQL string; **not** combinable with pagination or named `params`.                 |
 
 **Pagination rules (contract):** with `page`+`page_size` or `cursor`, SQL must include an explicit **`ORDER BY`** (stable ordering for offset/keyset).
 
@@ -54,7 +54,7 @@ This is the **semantic** batch API on the agent (ordered SQL list), distinct fro
 ## Native JSON-RPC batch (`command` as array)
 
 - `command` may be an **array** of up to **32** JSON-RPC requests (not only `sql.execute`).
-- Rules for `id`, notifications (`id: null`), HTTP 200 vs 202, and socket `agents:command_response` are defined in `api_rest_bridge.md` (section *Batch JSON-RPC nativo*).
+- Rules for `id`, notifications (`id: null`), HTTP 200 vs 202, and socket `agents:command_response` are defined in `api_rest_bridge.md` (section _Batch JSON-RPC nativo_).
 - Optional `pagination` on the body applies only to a **single** `sql.execute` command, not to the whole array.
 
 This is **several RPC calls in one POST**, not the same as `multi_result`.
@@ -63,11 +63,11 @@ This is **several RPC calls in one POST**, not the same as `multi_result`.
 
 ## Quick comparison
 
-| Mechanism | What it does |
-| --------- | ------------ |
-| `multi_result` | One `sql.execute`, multiple **result sets** from one SQL text. |
-| `sql.executeBatch` | Multiple **SQL commands** in order; structured `items[]` results. |
-| JSON-RPC batch array | Up to 32 independent RPC requests in one bridge command. |
+| Mechanism                    | What it does                                                                                                      |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `multi_result`               | One `sql.execute`, multiple **result sets** from one SQL text.                                                    |
+| `sql.executeBatch`           | Multiple **SQL commands** in order; structured `items[]` results.                                                 |
+| JSON-RPC batch array         | Up to 32 independent RPC requests in one bridge command.                                                          |
 | Pagination (`page`/`cursor`) | Chunks **one** query’s rows; requires `ORDER BY`; conflicts with `preserve` + pagination and with `multi_result`. |
 
 ---

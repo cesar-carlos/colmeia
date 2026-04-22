@@ -30,15 +30,15 @@
 
 ## 1. Matriz de responsabilidades (quem controla o quê)
 
-| Camada | Cliente (Colmeia) | Hub (`plug_server`) | Agente (`plug_agente`) |
-| ------ | ----------------- | ------------------- | ---------------------- |
-| Transport | `websocket`, single socket, auth header | `SOCKET_IO_TRANSPORTS`, `PER_MESSAGE_DEFLATE`, `HTTP_COMPRESSION`, `MAX_HTTP_BUFFER_BYTES` | WebSocket no `/agents` |
-| Compressão | gzip do PayloadFrame (Fase 2, modo auto) | `PAYLOAD_FRAME_*` (gzip auto, async acima de 128 KiB, level 3 em prod) | `compressions` anunciado no handshake |
-| Correlation / timeout | `rpcId` + `SocketRequestCorrelator` + timeout client | correlação por processo (em memória); `SOCKET_RELAY_REQUEST_TIMEOUT_MS` | responde `rpc:response` / chunks |
-| Rate limit | nenhum (respeita o do hub) | `REST_AGENTS_COMMANDS_RATE_LIMIT_*` (compartilhado REST + `agents:command`); `SOCKET_RELAY_RATE_LIMIT_*` | — |
-| Backpressure | **ausente hoje no plano** (melhoria §5.5) | fila relay outbound, `SOCKET_RELAY_MAX_BUFFERED_CHUNKS_*`, overload gate O(1) | capabilities (`recommendedStreamPullWindowSize`) |
-| Parallelism | `AgentQueryExecutor.mergeAllConcurrency = 16` | `SOCKET_REST_AGENT_MAX_INFLIGHT = 32` (REST); relay sem teto global explícito | `max_concurrent_streams` no handshake |
-| Auditoria | — | `SOCKET_AUDIT_HIGH_VOLUME_SAMPLE_PERCENT`, batch DB | — |
+| Camada                | Cliente (Colmeia)                                    | Hub (`plug_server`)                                                                                      | Agente (`plug_agente`)                           |
+| --------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Transport             | `websocket`, single socket, auth header              | `SOCKET_IO_TRANSPORTS`, `PER_MESSAGE_DEFLATE`, `HTTP_COMPRESSION`, `MAX_HTTP_BUFFER_BYTES`               | WebSocket no `/agents`                           |
+| Compressão            | gzip do PayloadFrame (Fase 2, modo auto)             | `PAYLOAD_FRAME_*` (gzip auto, async acima de 128 KiB, level 3 em prod)                                   | `compressions` anunciado no handshake            |
+| Correlation / timeout | `rpcId` + `SocketRequestCorrelator` + timeout client | correlação por processo (em memória); `SOCKET_RELAY_REQUEST_TIMEOUT_MS`                                  | responde `rpc:response` / chunks                 |
+| Rate limit            | nenhum (respeita o do hub)                           | `REST_AGENTS_COMMANDS_RATE_LIMIT_*` (compartilhado REST + `agents:command`); `SOCKET_RELAY_RATE_LIMIT_*` | —                                                |
+| Backpressure          | **ausente hoje no plano** (melhoria §5.5)            | fila relay outbound, `SOCKET_RELAY_MAX_BUFFERED_CHUNKS_*`, overload gate O(1)                            | capabilities (`recommendedStreamPullWindowSize`) |
+| Parallelism           | `AgentQueryExecutor.mergeAllConcurrency = 16`        | `SOCKET_REST_AGENT_MAX_INFLIGHT = 32` (REST); relay sem teto global explícito                            | `max_concurrent_streams` no handshake            |
+| Auditoria             | —                                                    | `SOCKET_AUDIT_HIGH_VOLUME_SAMPLE_PERCENT`, batch DB                                                      | —                                                |
 
 Conclusão: o **hub** já tem a maioria das válvulas. Do lado do **cliente**,
 as melhorias práticas vivem em: **coalescing**, **batch**, **timeout
@@ -49,31 +49,31 @@ adaptativo**, **backoff com jitter**, **teto in-flight por agente**,
 
 ## 2. Análise do plano atual (onde já acertamos)
 
-| Item | Status no plano | Justificativa |
-| ---- | --------------- | ------------- |
-| Transport `websocket` apenas | ✅ `consumer_socket_connection_design.md` §5 | Alinha com `SOCKET_IO_TRANSPORTS=websocket` default em produção do hub. |
-| **Sem** `perMessageDeflate` no cliente | ✅ implícito (não setamos) | Hub desliga `SOCKET_IO_PER_MESSAGE_DEFLATE` para evitar dupla compressão. `socket_io_client` Dart não habilita deflate por padrão, então estamos OK. |
-| Single socket compartilhado | ✅ singleton via `get_it` | Evita handshake redundante; reusa auditoria/correlação. |
-| Reconexão controlada (não nativa) | ✅ `disableReconnection()` + backoff | Reconexão nativa do socket.io não refresca token. |
-| Single-flight de `connect()` | ✅ §7 do design | Evita sockets paralelos. |
-| Refresh de token automático em 401 | ✅ | Reaproveita `AuthRefreshCoordinator` (single-flight no HTTP). |
-| Body idêntico REST ↔ Socket | ✅ helper compartilhado | Garante paridade (mesmos tetos UTF-8 que o REST). |
-| Gzip **do cliente** alinhado ao hub (modo auto) | ✅ Fase 2, threshold 1024 B | Evita que o hub desperdice CPU gunzipando algo que não compensou. |
-| Listener único por evento | ✅ `_ensureListenersAttached` | Evita memory leak por re-anexar em cada emit. |
+| Item                                            | Status no plano                              | Justificativa                                                                                                                                        |
+| ----------------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transport `websocket` apenas                    | ✅ `consumer_socket_connection_design.md` §5 | Alinha com `SOCKET_IO_TRANSPORTS=websocket` default em produção do hub.                                                                              |
+| **Sem** `perMessageDeflate` no cliente          | ✅ implícito (não setamos)                   | Hub desliga `SOCKET_IO_PER_MESSAGE_DEFLATE` para evitar dupla compressão. `socket_io_client` Dart não habilita deflate por padrão, então estamos OK. |
+| Single socket compartilhado                     | ✅ singleton via `get_it`                    | Evita handshake redundante; reusa auditoria/correlação.                                                                                              |
+| Reconexão controlada (não nativa)               | ✅ `disableReconnection()` + backoff         | Reconexão nativa do socket.io não refresca token.                                                                                                    |
+| Single-flight de `connect()`                    | ✅ §7 do design                              | Evita sockets paralelos.                                                                                                                             |
+| Refresh de token automático em 401              | ✅                                           | Reaproveita `AuthRefreshCoordinator` (single-flight no HTTP).                                                                                        |
+| Body idêntico REST ↔ Socket                     | ✅ helper compartilhado                      | Garante paridade (mesmos tetos UTF-8 que o REST).                                                                                                    |
+| Gzip **do cliente** alinhado ao hub (modo auto) | ✅ Fase 2, threshold 1024 B                  | Evita que o hub desperdice CPU gunzipando algo que não compensou.                                                                                    |
+| Listener único por evento                       | ✅ `_ensureListenersAttached`                | Evita memory leak por re-anexar em cada emit.                                                                                                        |
 
 ---
 
 ## 3. Gargalos esperados e onde eles se manifestam
 
-| Fonte | Impacto visível | Instrumentação recomendada |
-| ----- | --------------- | -------------------------- |
-| **TTFB do handshake** (`connect` + `connection:ready`) | latência só na **primeira** query após login/background | log `handshake_at - connect_at` em `info`, enviar como breadcrumb Sentry |
-| **CPU de gzip/gunzip** no cliente (Fase 2) | travamentos ocasionais na UI thread | medir via `Stopwatch` em `encodePayloadFrame` / `decodePayloadFrame`; considerar `compute(...)` para > 128 KiB |
-| **Wave de requests paralelas** do `AgentQueryExecutor` (16 em paralelo) | spikes de CPU no hub + rate-limit do `agents:command` | teto in-flight **por agente** no cliente (melhoria §5.5) |
-| **Queries idênticas simultâneas** (mesmo SQL, mesmo agente, paginação igual) | bytes desperdiçados, CPU duplicada | **coalescing** no dispatcher (melhoria §5.1) |
-| **Overhead por request do JSON-RPC** | muitas queries pequenas = muitos emits | **batch** via `command: [...]` (melhoria §5.2) |
-| **Reconexões em rede instável (4G)** | UX engasga; pendentes falham com `disconnected` | **jitter no backoff** (melhoria §5.4); retry transparente no dispatcher (melhoria §5.3) |
-| **Requests "zumbis"** (UI saiu da tela mas o Future continua) | bytes consumidos à toa + pressão no rate limit | cancelamento com `sql.cancel` (melhoria §5.6) |
+| Fonte                                                                        | Impacto visível                                         | Instrumentação recomendada                                                                                     |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **TTFB do handshake** (`connect` + `connection:ready`)                       | latência só na **primeira** query após login/background | log `handshake_at - connect_at` em `info`, enviar como breadcrumb Sentry                                       |
+| **CPU de gzip/gunzip** no cliente (Fase 2)                                   | travamentos ocasionais na UI thread                     | medir via `Stopwatch` em `encodePayloadFrame` / `decodePayloadFrame`; considerar `compute(...)` para > 128 KiB |
+| **Wave de requests paralelas** do `AgentQueryExecutor` (16 em paralelo)      | spikes de CPU no hub + rate-limit do `agents:command`   | teto in-flight **por agente** no cliente (melhoria §5.5)                                                       |
+| **Queries idênticas simultâneas** (mesmo SQL, mesmo agente, paginação igual) | bytes desperdiçados, CPU duplicada                      | **coalescing** no dispatcher (melhoria §5.1)                                                                   |
+| **Overhead por request do JSON-RPC**                                         | muitas queries pequenas = muitos emits                  | **batch** via `command: [...]` (melhoria §5.2)                                                                 |
+| **Reconexões em rede instável (4G)**                                         | UX engasga; pendentes falham com `disconnected`         | **jitter no backoff** (melhoria §5.4); retry transparente no dispatcher (melhoria §5.3)                        |
+| **Requests "zumbis"** (UI saiu da tela mas o Future continua)                | bytes consumidos à toa + pressão no rate limit          | cancelamento com `sql.cancel` (melhoria §5.6)                                                                  |
 
 ---
 
@@ -82,16 +82,16 @@ adaptativo**, **backoff com jitter**, **teto in-flight por agente**,
 Matriz de decisão que o `AgentQueryExecutor` (ou um coordenador novo) deve
 aplicar **por wave** de queries:
 
-| Situação | Estratégia recomendada | Canal | Porquê |
-| -------- | ---------------------- | ----- | ------ |
-| 1 query, resposta pequena/média | `sql.execute` unitário | `agents:command` (Fase 1) | menor overhead, envelope único |
-| 1 query, resultado stream grande | `sql.execute` + paginação server-side | `agents:command` com `page`/`pageSize` ou `cursor` | evita materialização no hub (REST materializaria tudo em 1 JSON) |
-| 1 query, resposta enorme (> 10 MiB decodificado) | relay com `stream.pull` | `relay:*` (Fase 2) | streaming progressivo com backpressure |
-| N queries **independentes** ao **mesmo agente** | **batch JSON-RPC** (`command: [...]`, máx **32**) | `agents:command` (Fase 1) | 1 emit, 1 correlação, reduz overhead por query |
-| N queries ao **mesmo agente** com mesmo SQL mudando só `params` | `sql.executeBatch` | `agents:command` (Fase 1) | **uma** transação opcional no agente, resultados em `items[]` |
-| 1 SQL com vários `SELECT` agregados | `multi_result: true` | `agents:command` (Fase 1) | 1 round-trip ao banco, 1 RPC |
-| Queries em **agentes diferentes** simultaneamente | fan-out com teto por agente | `agents:command` em paralelo | `AgentQueryExecutor.mergeAll` **já existe**; só adicionar teto in-flight por agente |
-| Push de catálogo (`client:agent.profile.updated`) | listener passivo | `/consumers` Socket | nenhum polling; já é o desenho da presença |
+| Situação                                                        | Estratégia recomendada                            | Canal                                              | Porquê                                                                              |
+| --------------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 1 query, resposta pequena/média                                 | `sql.execute` unitário                            | `agents:command` (Fase 1)                          | menor overhead, envelope único                                                      |
+| 1 query, resultado stream grande                                | `sql.execute` + paginação server-side             | `agents:command` com `page`/`pageSize` ou `cursor` | evita materialização no hub (REST materializaria tudo em 1 JSON)                    |
+| 1 query, resposta enorme (> 10 MiB decodificado)                | relay com `stream.pull`                           | `relay:*` (Fase 2)                                 | streaming progressivo com backpressure                                              |
+| N queries **independentes** ao **mesmo agente**                 | **batch JSON-RPC** (`command: [...]`, máx **32**) | `agents:command` (Fase 1)                          | 1 emit, 1 correlação, reduz overhead por query                                      |
+| N queries ao **mesmo agente** com mesmo SQL mudando só `params` | `sql.executeBatch`                                | `agents:command` (Fase 1)                          | **uma** transação opcional no agente, resultados em `items[]`                       |
+| 1 SQL com vários `SELECT` agregados                             | `multi_result: true`                              | `agents:command` (Fase 1)                          | 1 round-trip ao banco, 1 RPC                                                        |
+| Queries em **agentes diferentes** simultaneamente               | fan-out com teto por agente                       | `agents:command` em paralelo                       | `AgentQueryExecutor.mergeAll` **já existe**; só adicionar teto in-flight por agente |
+| Push de catálogo (`client:agent.profile.updated`)               | listener passivo                                  | `/consumers` Socket                                | nenhum polling; já é o desenho da presença                                          |
 
 > **Importante**: o relay (`relay:*`) **não aceita batch JSON-RPC** e
 > **não aceita notifications (`id: null`)**. Para batch, o canal é
@@ -171,6 +171,7 @@ agente, 1 batch reduz latência total de `5 * RTT` para `1 * RTT`
 (+ tempo no agente).
 **Esforço**: médio (~250 linhas + testes de ordenação e erros parciais).
 **Cuidados**:
+
 - Batch JSON-RPC **não** aceita `pagination` no nível do body — apenas
   por comando. Manter paginação em `params.options`.
 - Se um item do batch falhar, os demais continuam; precisamos mapear
@@ -325,15 +326,15 @@ manter socket aberto à toa.
 
 **Proposta** — `SocketChannelMetrics` como serviço em `core/observability/`:
 
-| Métrica | Tipo | Agregação |
-| ------- | ---- | --------- |
-| `handshake_ms` | histograma | p50, p95 por sessão |
-| `dispatch_ms` (Success) | histograma | p50, p95, p99 por `(agentId, method)` |
-| `outcomes_total` | counter | por `(kind, reasonCode)` |
-| `inflight_peak_per_agent` | gauge | max por sessão |
-| `reconnects_total` | counter | por `reason` |
-| `coalesced_total` | counter | (Melhoria §5.1) |
-| `batch_size_distribution` | histograma | (Melhoria §5.2) |
+| Métrica                   | Tipo       | Agregação                             |
+| ------------------------- | ---------- | ------------------------------------- |
+| `handshake_ms`            | histograma | p50, p95 por sessão                   |
+| `dispatch_ms` (Success)   | histograma | p50, p95, p99 por `(agentId, method)` |
+| `outcomes_total`          | counter    | por `(kind, reasonCode)`              |
+| `inflight_peak_per_agent` | gauge      | max por sessão                        |
+| `reconnects_total`        | counter    | por `reason`                          |
+| `coalesced_total`         | counter    | (Melhoria §5.1)                       |
+| `batch_size_distribution` | histograma | (Melhoria §5.2)                       |
 
 Emitir para `AppLogger` (info) + Sentry breadcrumb. Em ambiente de
 diagnóstico, pode rodar um `sink` HTTP para painel interno.
@@ -389,16 +390,16 @@ listeners futuros).
 
 ## 6. Anti-padrões a evitar (riscos do caminho errado)
 
-| Anti-padrão | Por quê |
-| ----------- | ------- |
-| Pool de múltiplos sockets | Socket.IO foi desenhado para um canal por cliente; múltiplos pioram rate-limit e auditoria. |
-| `autoConnect: true` | Vai conectar antes de termos token; `connect_error` inútil no startup. |
-| Habilitar `perMessageDeflate` no cliente | Dupla compressão com PayloadFrame; CPU desperdiçada. |
-| Retry infinito sem backoff terminal | Loop de refresh em 401 persistente; o plano já trata com `unauthorized` após 1 tentativa. |
-| Logar `command.params.sql` ou `client_token` | Privacidade + tamanho. Logar só `agentId`, `method`, `rpcId`. |
-| Usar REST para streams grandes | Hub materializa tudo em RAM; pode gerar 503. Socket é o canal certo para > ~50 k linhas. |
-| Mudar `AGENT_BRIDGE_TRANSPORT` em runtime | Invalidaria caches/correlator; decisão é por build/env. |
-| Paralelizar batch JSON-RPC sem necessidade | Batch já empacota 32; paralelizar N batches fura o rate-limit. |
+| Anti-padrão                                  | Por quê                                                                                     |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Pool de múltiplos sockets                    | Socket.IO foi desenhado para um canal por cliente; múltiplos pioram rate-limit e auditoria. |
+| `autoConnect: true`                          | Vai conectar antes de termos token; `connect_error` inútil no startup.                      |
+| Habilitar `perMessageDeflate` no cliente     | Dupla compressão com PayloadFrame; CPU desperdiçada.                                        |
+| Retry infinito sem backoff terminal          | Loop de refresh em 401 persistente; o plano já trata com `unauthorized` após 1 tentativa.   |
+| Logar `command.params.sql` ou `client_token` | Privacidade + tamanho. Logar só `agentId`, `method`, `rpcId`.                               |
+| Usar REST para streams grandes               | Hub materializa tudo em RAM; pode gerar 503. Socket é o canal certo para > ~50 k linhas.    |
+| Mudar `AGENT_BRIDGE_TRANSPORT` em runtime    | Invalidaria caches/correlator; decisão é por build/env.                                     |
+| Paralelizar batch JSON-RPC sem necessidade   | Batch já empacota 32; paralelizar N batches fura o rate-limit.                              |
 
 ---
 
@@ -408,32 +409,34 @@ Segue o mesmo padrão do `plug_server/docs/performance_hub_agent.md`
 § "Baseline antes/depois". Adaptado ao cliente:
 
 ### 7.1 Janela mínima
+
 15–30 min de uso real (ou sessão e2e scripted com carga representativa
 das telas `agent_queries` + `overview`).
 
 ### 7.2 KPIs obrigatórios
 
-| KPI | Descrição |
-| --- | --------- |
-| `p95(dispatch_ms)` por `(agentId, method)` | principal indicador de regressão |
-| `rate(outcomes_total{kind='Success'})` | volume útil |
-| `rate(outcomes_total{kind='FailedOffline'})` | presença vs rede |
-| `rate(outcomes_total{kind='FailedTransient'})` | qualidade do canal |
-| `reconnects_total` | estabilidade |
-| `p95(handshake_ms)` | TTFB do canal |
-| `inflight_peak_per_agent` | pressão sobre o hub |
-| `dropped_frames_total` (presença) | perda de push |
+| KPI                                            | Descrição                        |
+| ---------------------------------------------- | -------------------------------- |
+| `p95(dispatch_ms)` por `(agentId, method)`     | principal indicador de regressão |
+| `rate(outcomes_total{kind='Success'})`         | volume útil                      |
+| `rate(outcomes_total{kind='FailedOffline'})`   | presença vs rede                 |
+| `rate(outcomes_total{kind='FailedTransient'})` | qualidade do canal               |
+| `reconnects_total`                             | estabilidade                     |
+| `p95(handshake_ms)`                            | TTFB do canal                    |
+| `inflight_peak_per_agent`                      | pressão sobre o hub              |
+| `dropped_frames_total` (presença)              | perda de push                    |
 
 ### 7.3 Template
 
-| Indicador | Baseline | Pós-mudança | Δ | Observação |
-| --------- | -------- | ----------- | - | ---------- |
-| `p95(dispatch_ms)` |   |   |   |   |
-| `handshake_ms` |   |   |   |   |
-| `outcomes_total{FailedTransient}` |   |   |   |   |
-| `reconnects_total` |   |   |   |   |
+| Indicador                         | Baseline | Pós-mudança | Δ   | Observação |
+| --------------------------------- | -------- | ----------- | --- | ---------- |
+| `p95(dispatch_ms)`                |          |             |     |            |
+| `handshake_ms`                    |          |             |     |            |
+| `outcomes_total{FailedTransient}` |          |             |     |            |
+| `reconnects_total`                |          |             |     |            |
 
 ### 7.4 Regra de rollout
+
 1. Medir baseline com a mesma build (só o transporte muda).
 2. Alterar **um** bloco por vez (§5.1 → §5.2 → …).
 3. Manter mudança apenas se `p95(dispatch_ms)` não subiu e
@@ -446,18 +449,18 @@ das telas `agent_queries` + `overview`).
 
 Valores **estimados** com base na arquitetura; confirmar com §7.
 
-| Melhoria | Latência p50 | Latência p95 | CPU cliente | Bandwidth |
-| -------- | ------------ | ------------ | ----------- | --------- |
-| §5.1 coalescing | ≈ | ≈ | ≈ | **-10 a -30%** em telas abertas rápido |
-| §5.2 batch JSON-RPC | **-30 a -60%** em waves | **-30 a -50%** | ≈ | **-20 a -40%** |
-| §5.3 timeout adaptativo | ≈ | **-10 a -20%** (menos falsos timeouts) | ≈ | ≈ |
-| §5.4 jitter | ≈ | ≈ (ocasiões de thundering herd somem) | ≈ | ≈ |
-| §5.5 backpressure por agente | +≈5% em picos (enfileira) | **-20 a -40%** (evita 429) | ≈ | ≈ |
-| §5.6 cancelamento | ≈ | ≈ | ≈ | **-5 a -15%** em navegação rápida |
-| §5.7 warm-up | — | — | ≈ | ≈ (**-100 a -300 ms** percebido) |
-| §5.8 métricas | ≈ | ≈ | +negligível | ≈ |
-| §5.9 compressão adaptativa | ≈ | **-100 a -500 ms** em payloads > 256 KiB | -variável | ≈ |
-| §5.10 dedup pós-reconexão | ≈ | ≈ | ≈ | ≈ |
+| Melhoria                     | Latência p50              | Latência p95                             | CPU cliente | Bandwidth                              |
+| ---------------------------- | ------------------------- | ---------------------------------------- | ----------- | -------------------------------------- |
+| §5.1 coalescing              | ≈                         | ≈                                        | ≈           | **-10 a -30%** em telas abertas rápido |
+| §5.2 batch JSON-RPC          | **-30 a -60%** em waves   | **-30 a -50%**                           | ≈           | **-20 a -40%**                         |
+| §5.3 timeout adaptativo      | ≈                         | **-10 a -20%** (menos falsos timeouts)   | ≈           | ≈                                      |
+| §5.4 jitter                  | ≈                         | ≈ (ocasiões de thundering herd somem)    | ≈           | ≈                                      |
+| §5.5 backpressure por agente | +≈5% em picos (enfileira) | **-20 a -40%** (evita 429)               | ≈           | ≈                                      |
+| §5.6 cancelamento            | ≈                         | ≈                                        | ≈           | **-5 a -15%** em navegação rápida      |
+| §5.7 warm-up                 | —                         | —                                        | ≈           | ≈ (**-100 a -300 ms** percebido)       |
+| §5.8 métricas                | ≈                         | ≈                                        | +negligível | ≈                                      |
+| §5.9 compressão adaptativa   | ≈                         | **-100 a -500 ms** em payloads > 256 KiB | -variável   | ≈                                      |
+| §5.10 dedup pós-reconexão    | ≈                         | ≈                                        | ≈           | ≈                                      |
 
 > Nenhuma melhoria piora caso base; todas são **orthogonais**.
 
@@ -468,18 +471,18 @@ Valores **estimados** com base na arquitetura; confirmar com §7.
 Faseamento otimizado por **custo-benefício**, assumindo que o plano
 executivo §11 já deu Fase 1 (`agents:command`):
 
-| Prio | Melhoria | Depende de | Entrega |
-| ---- | -------- | ---------- | ------- |
-| P0 | §5.8 métricas cliente | Fase 1 | Destrava comparação |
-| P0 | §5.4 jitter | Fase 1 | Trivial; evita regressão coordenada |
-| P1 | §5.1 coalescing | Fase 1 | Grande ganho / baixo esforço |
-| P1 | §5.5 backpressure por agente | Fase 1 | Evita 429 em produção |
-| P1 | §5.7 warm-up | Fase 1 | UX percebida |
-| P2 | §5.3 timeout adaptativo | Métricas (P0) | Só faz sentido com histórico |
-| P2 | §5.2 batch JSON-RPC | Fase 1 | Grande ganho; esforço médio |
-| P2 | §5.6 cancelamento | Fase 1 | Bom cidadão com o hub |
-| P3 | §5.9 compressão adaptativa | Fase 2 (PayloadFrame) | Entra junto com relay |
-| P3 | §5.10 dedup pós-reconexão | Presença | Entra junto com realtime |
+| Prio | Melhoria                     | Depende de            | Entrega                             |
+| ---- | ---------------------------- | --------------------- | ----------------------------------- |
+| P0   | §5.8 métricas cliente        | Fase 1                | Destrava comparação                 |
+| P0   | §5.4 jitter                  | Fase 1                | Trivial; evita regressão coordenada |
+| P1   | §5.1 coalescing              | Fase 1                | Grande ganho / baixo esforço        |
+| P1   | §5.5 backpressure por agente | Fase 1                | Evita 429 em produção               |
+| P1   | §5.7 warm-up                 | Fase 1                | UX percebida                        |
+| P2   | §5.3 timeout adaptativo      | Métricas (P0)         | Só faz sentido com histórico        |
+| P2   | §5.2 batch JSON-RPC          | Fase 1                | Grande ganho; esforço médio         |
+| P2   | §5.6 cancelamento            | Fase 1                | Bom cidadão com o hub               |
+| P3   | §5.9 compressão adaptativa   | Fase 2 (PayloadFrame) | Entra junto com relay               |
+| P3   | §5.10 dedup pós-reconexão    | Presença              | Entra junto com realtime            |
 
 **Meta razoável para MVP do canal Socket**: P0 + P1 no mesmo cycle;
 P2 em cycle seguinte; P3 com Fase 2.
@@ -492,7 +495,7 @@ P2 em cycle seguinte; P3 com Fase 2.
    session) — fora do controle do cliente; mitigação é operacional
    (single replica / sticky / mesma base URL). Documentado.
 2. **Rate limit compartilhado REST + `agents:command`** — se o Colmeia
-   em *hybrid* futuro (§7-B do plano principal) dobra a carga sobre o
+   em _hybrid_ futuro (§7-B do plano principal) dobra a carga sobre o
    mesmo `sub`. Só ativar hybrid com telemetria.
 3. **Backpressure explícito só com relay** (Fase 2) — em `agents:command`
    legado, o cliente não tem créditos por stream. Para streams muito

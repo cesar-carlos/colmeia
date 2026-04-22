@@ -23,22 +23,22 @@ Leitura cruzada com `D:\Developer\plug_database\plug_server` (código e
 `docs/`). Isto **não substitui** verificar o processo em produção, mas
 esclarece o que é bug de deploy vs desvio do cliente Colmeia:
 
-| Tópico | O que o upstream diz hoje | Implicação para produção |
-| ------ | ------------------------- | ------------------------- |
-| `SOCKET_CONSUMER_ROLES` | Em `src/shared/config/env.ts`, o default Zod é a string **`user,admin,client`** (parseada para lista). `docs/api_rest_bridge.md` repete o mesmo default. | Se o log ainda mostra `Role 'client' is not allowed`, o PID em produção quase de certeza tem **`SOCKET_CONSUMER_ROLES` definida explicitamente** sem `client` (override no `.env` / painel / compose), **ou** um artefacto antigo — **não** é o default do código atual. Remover a env (reiniciar) ou corrigir o valor + restart. |
-| Agente offline + REST | Tabela *Erros HTTP* em `docs/api_rest_bridge.md`: **`200`** com envelope JSON-RPC `error.code: -32000` / `agent_offline` quando o `agentId` está **conhecido em memória** no processo, não há socket em `/agents`, e o pedido tem **`id` correlacionável**; `503` cobre overload, disconnect a meio de request pendente, notification-only (`id: null`), etc. | O smoke com `503` em `rpc.discover` pode ser **compatível com a spec** se o corpo omitir `id` ou o hub não tiver o agente “em memória” nesse PID; se o pedido cumprir os pré-requisitos da tabela e ainda vier `503`, trata-se de **desalinhamento deploy ↔ doc** (abrir issue no `plug_server`). |
-| Handshake `connection:ready` | `docs/socket_relay_protocol.md`: contrato padrão é **`PayloadFrame`**; modo legado só via `SOCKET_CONNECTION_READY_COMPAT_MODE`. | Colmeia já decodifica `PayloadFrame` primeiro e tolera JSON legado — alinhado à doc. |
-| Relay + legado | `docs/socket_client_sdk.md` + `socket_relay_protocol.md`: `/consumers` com `relay:*` e `agents:command`, paridade com `POST /api/v1/agents/commands`. | Colmeia usa o mesmo namespace e os mesmos eventos; não há “socket errado” no sentido de contrato. |
+| Tópico                       | O que o upstream diz hoje                                                                                                                                                                                                                                                                                                                                     | Implicação para produção                                                                                                                                                                                                                                                                                                          |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SOCKET_CONSUMER_ROLES`      | Em `src/shared/config/env.ts`, o default Zod é a string **`user,admin,client`** (parseada para lista). `docs/api_rest_bridge.md` repete o mesmo default.                                                                                                                                                                                                      | Se o log ainda mostra `Role 'client' is not allowed`, o PID em produção quase de certeza tem **`SOCKET_CONSUMER_ROLES` definida explicitamente** sem `client` (override no `.env` / painel / compose), **ou** um artefacto antigo — **não** é o default do código atual. Remover a env (reiniciar) ou corrigir o valor + restart. |
+| Agente offline + REST        | Tabela _Erros HTTP_ em `docs/api_rest_bridge.md`: **`200`** com envelope JSON-RPC `error.code: -32000` / `agent_offline` quando o `agentId` está **conhecido em memória** no processo, não há socket em `/agents`, e o pedido tem **`id` correlacionável**; `503` cobre overload, disconnect a meio de request pendente, notification-only (`id: null`), etc. | O smoke com `503` em `rpc.discover` pode ser **compatível com a spec** se o corpo omitir `id` ou o hub não tiver o agente “em memória” nesse PID; se o pedido cumprir os pré-requisitos da tabela e ainda vier `503`, trata-se de **desalinhamento deploy ↔ doc** (abrir issue no `plug_server`).                                 |
+| Handshake `connection:ready` | `docs/socket_relay_protocol.md`: contrato padrão é **`PayloadFrame`**; modo legado só via `SOCKET_CONNECTION_READY_COMPAT_MODE`.                                                                                                                                                                                                                              | Colmeia já decodifica `PayloadFrame` primeiro e tolera JSON legado — alinhado à doc.                                                                                                                                                                                                                                              |
+| Relay + legado               | `docs/socket_client_sdk.md` + `socket_relay_protocol.md`: `/consumers` com `relay:*` e `agents:command`, paridade com `POST /api/v1/agents/commands`.                                                                                                                                                                                                         | Colmeia usa o mesmo namespace e os mesmos eventos; não há “socket errado” no sentido de contrato.                                                                                                                                                                                                                                 |
 
 ---
 
 ## TL;DR — Tabela de ações
 
-| # | Severidade | Ação | Onde | Tempo |
-| - | ---------- | ---- | ---- | ----- |
-| 1 | 🔴 Bloqueante | Garantir `client` em `SOCKET_CONSUMER_ROLES` **ou** remover override errado (default do código = `user,admin,client`) + restart | `.env` / orquestrador + PID | 5 min |
-| 2 | 🟡 Recomendada | Confirmar que REST / bridge em produção cumpre `docs/api_rest_bridge.md` para offline (`200` + `-32000` quando aplicável); corrigir só se o deploy divergir | `agents.routes.ts` / bridge + smoke `curl` | 30-60 min |
-| 3 | 🟢 Verificação | Confirmar `SOCKET_CLIENT_AGENT_PROFILE_PUSH_ENABLED=true` (ou ausente = default `true` no schema) | `.env` ativo do `plug_server` | 2 min |
+| #   | Severidade     | Ação                                                                                                                                                        | Onde                                       | Tempo     |
+| --- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --------- |
+| 1   | 🔴 Bloqueante  | Garantir `client` em `SOCKET_CONSUMER_ROLES` **ou** remover override errado (default do código = `user,admin,client`) + restart                             | `.env` / orquestrador + PID                | 5 min     |
+| 2   | 🟡 Recomendada | Confirmar que REST / bridge em produção cumpre `docs/api_rest_bridge.md` para offline (`200` + `-32000` quando aplicável); corrigir só se o deploy divergir | `agents.routes.ts` / bridge + smoke `curl` | 30-60 min |
+| 3   | 🟢 Verificação | Confirmar `SOCKET_CLIENT_AGENT_PROFILE_PUSH_ENABLED=true` (ou ausente = default `true` no schema)                                                           | `.env` ativo do `plug_server`              | 2 min     |
 
 > **Quando os 3 estiverem ✅, avise a equipe Flutter.** Vamos rodar
 > outro smoke test e validar o caminho feliz end-to-end (esperado:
@@ -75,7 +75,7 @@ middleware `socket_namespace_auth` que valida a role contra
    - A mensagem exacta `Role 'client' is not allowed to connect to /consumers` só é emitida quando
      **`!env.socketConsumerRoles.includes(role)`** (linhas 124–126), ou seja: o **array carregado no
      processo Node** não contém o literal **`client`**.
-   - O ramo *anterior* (linhas 119–121) rejeitaria se a role estivesse em **`SOCKET_AGENT_ROLES`**
+   - O ramo _anterior_ (linhas 119–121) rejeitaria se a role estivesse em **`SOCKET_AGENT_ROLES`**
      (“cannot connect”) — não é o teu caso.
 
 2. **Cliente (`colmeia`)** — `lib/core/socket/socket_io_client_factory.dart` envia o mesmo access
@@ -163,7 +163,7 @@ HTTP request failed | statusCode=503
 ```
 
 A documentação canónica atual (`plug_server/docs/api_rest_bridge.md`,
-tabela *Erros HTTP*) já distingue:
+tabela _Erros HTTP_) já distingue:
 
 - **`503`** — timeout, overload, disconnect **a meio** de request
   pendente, notification-only (`id: null` em todos os itens), etc.
@@ -219,27 +219,27 @@ tem algo como:
 // pseudo, em src/presentation/api/agents/agents.routes.ts:
 const targetSocket = agentRegistry.findByAgentId(agentId);
 if (!targetSocket) {
-  return reply.code(503).send({ error: 'agent_unavailable' });
+  return reply.code(503).send({ error: "agent_unavailable" });
   //          ^^^^^^^ aqui é onde precisa virar JSON-RPC error
 }
 ```
 
 Substituir por uma resposta `200` com envelope JSON-RPC `error`,
-documentado em `docs/api_rest_bridge.md` (seção *erros*):
+documentado em `docs/api_rest_bridge.md` (seção _erros_):
 
 ```typescript
 if (!targetSocket) {
   return reply.code(200).send({
     response: {
-      type: 'rpc_error',
+      type: "rpc_error",
       item: {
-        jsonrpc: '2.0',
+        jsonrpc: "2.0",
         id: rpcId,
         error: {
           code: -32000,
-          message: 'agent_offline',
+          message: "agent_offline",
           data: {
-            reason: 'agent_not_connected',
+            reason: "agent_not_connected",
             agent_id: agentId,
           },
         },
@@ -284,6 +284,7 @@ emitido. O app cai em modo **polling** (chama `GET
 - Mudança de nome / dados cadastrais
 
 Funciona, mas:
+
 - ↑ Latência percebida (até 30 s para refletir mudança).
 - ↑ Carga REST desnecessária no hub.
 - A UX de "token revogado" no detail page do agente (commit
@@ -365,7 +366,7 @@ A equipe Flutter então:
    `relay=true`, `presence_listener=true`).
 2. `flutter clean && flutter run` para rebuildar o asset bundle.
 3. Confirma `Bootstrap: agent bridge transport resolved
-   transport=socket` na primeira linha do log.
+transport=socket` na primeira linha do log.
 4. Confirma `ConsumerSocketConnected` em vez de
    `ConsumerSocketUnauthorized`.
 5. Promove para builds de prod (release Beta / canary primeiro,

@@ -396,7 +396,7 @@ class ClientAgentProfileUpdatedListener {
 
 `lib/features/client_agents/data/socket/agent_command_presence_hinter.dart`
 
-```dart
+````dart
 import 'dart:async';
 
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
@@ -460,7 +460,7 @@ class AgentCommandPresenceHinter {
     }
   }
 }
-```
+````
 
 ### 4.3 Composição: `SocketAgentPresenceStream`
 
@@ -765,18 +765,18 @@ void dispose() {
 
 ## 7. Casos de borda (testar 1-a-1)
 
-| # | Cenário | Comportamento esperado |
-| - | ------- | ---------------------- |
-| 1 | Evento de catálogo com `agent_id` desconhecido (não aprovado) | Ignorar silenciosamente; não chamar REST. |
-| 2 | Evento com `observedAt` mais antigo que o último visto | Descartar via dedup §6.4. |
-| 3 | Hint `online: true` seguido de hint `online: false` em < 1 s | Aplica os dois (último ganha); confirm timer roda só uma vez (debounce). |
-| 4 | `AgentPresenceCatalogUpdated.changedFields` só com `phone`/`address` | Refresh ainda acontece (perfil precisa atualizar). Otimização futura: filtrar para refresh somente quando `connectionStatus` puder ter mudado. |
-| 5 | `client:agent.profile.updated` chega antes do `connection:ready` | Listener só anexa **depois** do ready (§4.1: chame `attach()` no callback de `connected`). |
-| 6 | Socket cai durante hint pendente | Hint já aplicado in-memory; poller assume; ao reconectar, stream retoma normalmente. |
-| 7 | Logout durante stream | `AuthSessionEvents.invalidated` → `ConsumerSocketConnection.disconnect()` → listeners caem; controller `dispose()` cancela `presenceSub`. |
-| 8 | Hub multi-instância sem sticky session | `isHubConnected` pode oscilar entre refreshes. Documentar; não há mitigação no app. |
-| 9 | Frame Socket inválido | `_onEvent` engole exceção e loga; stream principal segue vivo. |
-| 10 | Tela hidden + socket connected | Não emite hint para UI invisível? **Emite sim** (state já está in-memory para próximo `onScreenVisible`); só o poller REST respeita visibility. |
+| #   | Cenário                                                              | Comportamento esperado                                                                                                                          |
+| --- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Evento de catálogo com `agent_id` desconhecido (não aprovado)        | Ignorar silenciosamente; não chamar REST.                                                                                                       |
+| 2   | Evento com `observedAt` mais antigo que o último visto               | Descartar via dedup §6.4.                                                                                                                       |
+| 3   | Hint `online: true` seguido de hint `online: false` em < 1 s         | Aplica os dois (último ganha); confirm timer roda só uma vez (debounce).                                                                        |
+| 4   | `AgentPresenceCatalogUpdated.changedFields` só com `phone`/`address` | Refresh ainda acontece (perfil precisa atualizar). Otimização futura: filtrar para refresh somente quando `connectionStatus` puder ter mudado.  |
+| 5   | `client:agent.profile.updated` chega antes do `connection:ready`     | Listener só anexa **depois** do ready (§4.1: chame `attach()` no callback de `connected`).                                                      |
+| 6   | Socket cai durante hint pendente                                     | Hint já aplicado in-memory; poller assume; ao reconectar, stream retoma normalmente.                                                            |
+| 7   | Logout durante stream                                                | `AuthSessionEvents.invalidated` → `ConsumerSocketConnection.disconnect()` → listeners caem; controller `dispose()` cancela `presenceSub`.       |
+| 8   | Hub multi-instância sem sticky session                               | `isHubConnected` pode oscilar entre refreshes. Documentar; não há mitigação no app.                                                             |
+| 9   | Frame Socket inválido                                                | `_onEvent` engole exceção e loga; stream principal segue vivo.                                                                                  |
+| 10  | Tela hidden + socket connected                                       | Não emite hint para UI invisível? **Emite sim** (state já está in-memory para próximo `onScreenVisible`); só o poller REST respeita visibility. |
 
 ---
 
@@ -851,15 +851,15 @@ mesmas envs do plano §13.2):
 
 `AppLogger` keys padronizadas (alinhadas a `project_conventions.mdc`):
 
-| Evento | `component` | `operation` | Nível |
-| ------ | ----------- | ----------- | ----- |
-| Listener anexado | `ClientAgentProfileUpdatedListener` | `attach` | `info` |
-| Frame inválido | `ClientAgentProfileUpdatedListener` | `decode_failed` | `warning` |
-| Hinter outcome | `AgentCommandPresenceHinter` | `outcome` | `debug` |
-| Poller tick OK | `AgentPresencePoller` | `tick` | `debug` |
-| Poller tick falhou | `AgentPresencePoller` | `tick_failed` | `warning` |
-| Refresh agente | `ClientAgentsController` | `refreshAfterPresence` | `info` |
-| Hint dedup | `ClientAgentsController` | `presence_dedup` | `debug` |
+| Evento             | `component`                         | `operation`            | Nível     |
+| ------------------ | ----------------------------------- | ---------------------- | --------- |
+| Listener anexado   | `ClientAgentProfileUpdatedListener` | `attach`               | `info`    |
+| Frame inválido     | `ClientAgentProfileUpdatedListener` | `decode_failed`        | `warning` |
+| Hinter outcome     | `AgentCommandPresenceHinter`        | `outcome`              | `debug`   |
+| Poller tick OK     | `AgentPresencePoller`               | `tick`                 | `debug`   |
+| Poller tick falhou | `AgentPresencePoller`               | `tick_failed`          | `warning` |
+| Refresh agente     | `ClientAgentsController`            | `refreshAfterPresence` | `info`    |
+| Hint dedup         | `ClientAgentsController`            | `presence_dedup`       | `debug`   |
 
 Sentry breadcrumbs: estado da `ConsumerSocketConnection` (transições) +
 contagem agregada de hints/min (não logar `agentId` em produção fora
@@ -888,13 +888,13 @@ de erro real).
 
 ## 11. Ordem sugerida de implementação
 
-| PR | Conteúdo | Depende de |
-| -- | -------- | ---------- |
-| **PR-1** | Apenas domain: `agent_presence_event.dart` + `agent_presence_stream.dart` + tests. | — |
-| **PR-2** | `AgentPresencePoller` + `ObserveAgentPresenceUseCase` + tests; ainda sem socket. | PR-1, plano principal §11 (Fase 1 Socket). |
+| PR       | Conteúdo                                                                                                       | Depende de                                         |
+| -------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| **PR-1** | Apenas domain: `agent_presence_event.dart` + `agent_presence_stream.dart` + tests.                             | —                                                  |
+| **PR-2** | `AgentPresencePoller` + `ObserveAgentPresenceUseCase` + tests; ainda sem socket.                               | PR-1, plano principal §11 (Fase 1 Socket).         |
 | **PR-3** | `ClientAgentProfileUpdatedListener` + `AgentCommandPresenceHinter` + `SocketAgentPresenceStream` + DI + tests. | PR-2 + Fase 2 do plano principal (`PayloadFrame`). |
-| **PR-4** | Wire-up no `ClientAgentsController` (subscription, hint cache, poller gating) + tests do controller. | PR-3. |
-| **PR-5** | Telemetria/breadcrumbs + métricas internas (contadores). | PR-4. |
+| **PR-4** | Wire-up no `ClientAgentsController` (subscription, hint cache, poller gating) + tests do controller.           | PR-3.                                              |
+| **PR-5** | Telemetria/breadcrumbs + métricas internas (contadores).                                                       | PR-4.                                              |
 
 > Nenhum PR introduz dependência runtime nova: `socket_io_client` já é
 > trazido no PR-1 do plano principal; tudo aqui usa `dart:async`.
@@ -917,7 +917,7 @@ o esqueleto do design com estas escolhas concretas:
   pin esse comportamento.
 - **Onde mora a regra de gating.** O esqueleto sugere que o
   `_socketStateSub` viva no controller. A implementação faz isso
-  *e* introduz `_reconcilePollerGate()` como o único ponto que
+  _e_ introduz `_reconcilePollerGate()` como o único ponto que
   decide ligar/desligar o poller — chamado por **ambas** as
   transições (visibilidade e estado do socket). Isso garante a
   invariante "poller liga só quando tela visível AND socket
@@ -1009,7 +1009,7 @@ simplificações para reduzir o blast radius do primeiro PR:
 - **Re-attach automático.** O `SocketAgentPresenceStream` observa
   `ConsumerSocketConnection.states()` e reanexa o listener em cada
   transição para `ConsumerSocketConnected`; em `Disconnected/Error/
-  Unauthorized` faz `dispose()` no listener para que o próximo
+Unauthorized` faz `dispose()` no listener para que o próximo
   `connect` instale um handler fresco no novo `io.Socket`. O hinter
   permanece anexado porque consome o stream em memória do dispatcher,
   não o socket cru.

@@ -34,13 +34,13 @@ flutter build apk --dart-define=SENTRY_DSN=https://...@...ingest.sentry.io/...
 
 ## Documentação adicional neste repositório
 
-| Caminho          | Conteúdo (resumo)     |
-| ---------------- | --------------------- |
-| `docs/analysis/` | Análises em texto     |
-| `docs/bridge_agent_sql_api_options.md` | Resumo das opções do bridge (`multi_result`, batch, paginação); spec canónica em `plug_server/docs/api_rest_bridge.md` |
-| `docs/plug_server_docs_index_for_colmeia.md` | Mapa da pasta `plug_server/docs` (REST vs socket, relay, negócio Client/Agent, limites, multi-instância) |
-| Relatórios agregados multi-agente | `AgentQueryExecutionReport` + `agent_query_execution_report_resumo_parcelas.dart`: `chartRowsWeek` / `chartRowsFilledPeriod` para séries completas; `max_rows` em `agent_queries_bounded_result_max_rows.dart` |
-| `docs/design/`   | Referências de design |
+| Caminho                                      | Conteúdo (resumo)                                                                                                                                                                                              |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/analysis/`                             | Análises em texto                                                                                                                                                                                              |
+| `docs/bridge_agent_sql_api_options.md`       | Resumo das opções do bridge (`multi_result`, batch, paginação); spec canónica em `plug_server/docs/api_rest_bridge.md`                                                                                         |
+| `docs/plug_server_docs_index_for_colmeia.md` | Mapa da pasta `plug_server/docs` (REST vs socket, relay, negócio Client/Agent, limites, multi-instância)                                                                                                       |
+| Relatórios agregados multi-agente            | `AgentQueryExecutionReport` + `agent_query_execution_report_resumo_parcelas.dart`: `chartRowsWeek` / `chartRowsFilledPeriod` para séries completas; `max_rows` em `agent_queries_bounded_result_max_rows.dart` |
+| `docs/design/`                               | Referências de design                                                                                                                                                                                          |
 
 ## CI e qualidade local
 

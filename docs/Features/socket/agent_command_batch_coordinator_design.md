@@ -41,7 +41,7 @@
 - Conexão / handshake (é `ConsumerSocketConnection`).
 - Correlação por `rpcId` na camada socket (é `SocketRequestCorrelator`
   dentro do dispatcher — o batch tem **um** `rpcId externo** mas o coordenador
-  conhece os `rpcId internos` dos itens).
+conhece os `rpcId internos` dos itens).
 - Decidir entre `agents:command` e `relay:*` (selecionado a montante).
 - Construir o body interno de cada `command.params` (continua sendo do
   `AgentSqlExecuteRequestToBridgeBody`).
@@ -52,16 +52,16 @@
 
 Tabela normativa para o caller decidir `batchEligible: true|false`:
 
-| Caso | Elegível? | Motivo |
-| ---- | --------- | ------ |
-| `sql.execute` simples sem `multi_result` | **Sim** | Caso ideal para batch. |
-| `sql.execute` com `body.pagination` | **Não** | `pagination` no body só vale para `sql.execute` **único**, não para batch (regra do hub). |
-| `sql.execute` com `multi_result: true` | **Não** | Já é multi-result em 1 RPC; não compor com batch. |
-| `sql.executeBatch` | **Não** | Já é batch semântico no agente. Compor com JSON-RPC batch acrescenta confusão. |
-| `agent.getProfile`, `client_token.getPolicy`, `rpc.discover` | **Sim** | Pequenos, ideais para piggyback. |
-| `sql.cancel` | **Não** | Tempo-crítico; envio imediato sem janela de espera. |
-| Caminho `relay:*` (Fase 2) | **Não** | Relay aceita só **um** RPC por `relay:rpc.request`. |
-| Notification (`id: null`) | **Não suportado pelo coordenador** | Sem correlação para distribuir resposta. |
+| Caso                                                         | Elegível?                          | Motivo                                                                                    |
+| ------------------------------------------------------------ | ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| `sql.execute` simples sem `multi_result`                     | **Sim**                            | Caso ideal para batch.                                                                    |
+| `sql.execute` com `body.pagination`                          | **Não**                            | `pagination` no body só vale para `sql.execute` **único**, não para batch (regra do hub). |
+| `sql.execute` com `multi_result: true`                       | **Não**                            | Já é multi-result em 1 RPC; não compor com batch.                                         |
+| `sql.executeBatch`                                           | **Não**                            | Já é batch semântico no agente. Compor com JSON-RPC batch acrescenta confusão.            |
+| `agent.getProfile`, `client_token.getPolicy`, `rpc.discover` | **Sim**                            | Pequenos, ideais para piggyback.                                                          |
+| `sql.cancel`                                                 | **Não**                            | Tempo-crítico; envio imediato sem janela de espera.                                       |
+| Caminho `relay:*` (Fase 2)                                   | **Não**                            | Relay aceita só **um** RPC por `relay:rpc.request`.                                       |
+| Notification (`id: null`)                                    | **Não suportado pelo coordenador** | Sem correlação para distribuir resposta.                                                  |
 
 **Regra dura**: o coordenador **rejeita** submissions com `id: null` ou
 sem `rpcId` lançando `ArgumentError`.
@@ -697,34 +697,34 @@ Acrescentar ao `SocketChannelMetrics`:
 
 ## 8. Edge cases
 
-| # | Cenário | Comportamento esperado |
-| - | ------- | ---------------------- |
-| 1 | Submit com `id: null` | `ArgumentError` síncrono. |
-| 2 | Submit com `id != rpcId` | `ArgumentError` síncrono. |
-| 3 | Fila cheia no momento do submit | Cancela timer; flush imediato; agendamento de próximo timer só no próximo submit. |
-| 4 | Timer dispara com fila vazia | No-op (defensivo, embora o set do timer só aconteça com fila não-vazia). |
-| 5 | `dispose()` durante batch in-flight | Pendentes do coletor (ainda não flushados) recebem `SocketDispatchDisconnected`. Os já flushados continuam aguardando o dispatcher; quando ele falha (próximo `disconnect`), também recebem erro. |
-| 6 | Resposta com `type: 'single'` para batch de 1 item | Aceito (defensivo): completa o único pendente com a resposta tal qual. |
-| 7 | Resposta com `type: 'batch'` mas `items` vazio | Todos os pendentes falham com `SocketDispatchDecodeFailure`. |
-| 8 | `items[i].id` desconhecido (não bate com nenhum pendente) | Log `warning`; descarta. Métricas registram `late_or_duplicate`. |
-| 9 | Pendente sem item correspondente na resposta | Falha aquele pendente com `decode failure`. Métrica `batch_unmatched_id_total`. |
-| 10 | Erro de despacho (timeout / disconnect) | Todos os pendentes do batch recebem o **mesmo** erro. |
-| 11 | Falha parcial (`items[i].error`) | Cada item falho recebe seu erro JSON-RPC; demais sucesso. **Sem fail-fast**. |
-| 12 | Batch ultrapassa rate-limit do hub (`429`) | Hub responde com `app:error` global → `_failAll`. Próximas submissões respeitam backoff via dispatcher. |
-| 13 | Coalescing dentro do batch (mesmo SQL+params duplicado em 2 submits) | Segundo submit compartilha o completer do primeiro; batch envia 1 só item. Métrica `coalesced_total`. |
-| 14 | Submit com `batchEligible: true` mas `multi_result: true` | Bypass automático: vai pelo dispatcher unitário. |
-| 15 | Submit em **dois agentes diferentes** "ao mesmo tempo" | Dois coletores independentes; duas emissões paralelas (respeitando o gate por agente). |
+| #   | Cenário                                                              | Comportamento esperado                                                                                                                                                                            |
+| --- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Submit com `id: null`                                                | `ArgumentError` síncrono.                                                                                                                                                                         |
+| 2   | Submit com `id != rpcId`                                             | `ArgumentError` síncrono.                                                                                                                                                                         |
+| 3   | Fila cheia no momento do submit                                      | Cancela timer; flush imediato; agendamento de próximo timer só no próximo submit.                                                                                                                 |
+| 4   | Timer dispara com fila vazia                                         | No-op (defensivo, embora o set do timer só aconteça com fila não-vazia).                                                                                                                          |
+| 5   | `dispose()` durante batch in-flight                                  | Pendentes do coletor (ainda não flushados) recebem `SocketDispatchDisconnected`. Os já flushados continuam aguardando o dispatcher; quando ele falha (próximo `disconnect`), também recebem erro. |
+| 6   | Resposta com `type: 'single'` para batch de 1 item                   | Aceito (defensivo): completa o único pendente com a resposta tal qual.                                                                                                                            |
+| 7   | Resposta com `type: 'batch'` mas `items` vazio                       | Todos os pendentes falham com `SocketDispatchDecodeFailure`.                                                                                                                                      |
+| 8   | `items[i].id` desconhecido (não bate com nenhum pendente)            | Log `warning`; descarta. Métricas registram `late_or_duplicate`.                                                                                                                                  |
+| 9   | Pendente sem item correspondente na resposta                         | Falha aquele pendente com `decode failure`. Métrica `batch_unmatched_id_total`.                                                                                                                   |
+| 10  | Erro de despacho (timeout / disconnect)                              | Todos os pendentes do batch recebem o **mesmo** erro.                                                                                                                                             |
+| 11  | Falha parcial (`items[i].error`)                                     | Cada item falho recebe seu erro JSON-RPC; demais sucesso. **Sem fail-fast**.                                                                                                                      |
+| 12  | Batch ultrapassa rate-limit do hub (`429`)                           | Hub responde com `app:error` global → `_failAll`. Próximas submissões respeitam backoff via dispatcher.                                                                                           |
+| 13  | Coalescing dentro do batch (mesmo SQL+params duplicado em 2 submits) | Segundo submit compartilha o completer do primeiro; batch envia 1 só item. Métrica `coalesced_total`.                                                                                             |
+| 14  | Submit com `batchEligible: true` mas `multi_result: true`            | Bypass automático: vai pelo dispatcher unitário.                                                                                                                                                  |
+| 15  | Submit em **dois agentes diferentes** "ao mesmo tempo"               | Dois coletores independentes; duas emissões paralelas (respeitando o gate por agente).                                                                                                            |
 
 ---
 
 ## 9. Configuração
 
-| Env | Default | Efeito |
-| --- | ------- | ------ |
-| `SOCKET_BATCH_ENABLED` | `true` | Kill switch global. `false` força bypass de tudo. |
-| `SOCKET_BATCH_WINDOW_MS` | `8` | Janela de coalescência. **0** = flush imediato a cada submit (efetivamente sem batch). Tuning: 4–16 ms é razoável para mobile. |
-| `SOCKET_BATCH_MAX_SIZE` | `32` | Limite oficial do hub. **Não exceder.** |
-| `SOCKET_BATCH_MIN_SIZE` | `1` | `1` = sempre batch (mesmo com 1 item; envia como `command: [x]`). `2` = se só houver 1 item ao flush, manda como `single` (mais legível em logs do hub). Recomendado: **1** (simplicidade). |
+| Env                      | Default | Efeito                                                                                                                                                                                      |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SOCKET_BATCH_ENABLED`   | `true`  | Kill switch global. `false` força bypass de tudo.                                                                                                                                           |
+| `SOCKET_BATCH_WINDOW_MS` | `8`     | Janela de coalescência. **0** = flush imediato a cada submit (efetivamente sem batch). Tuning: 4–16 ms é razoável para mobile.                                                              |
+| `SOCKET_BATCH_MAX_SIZE`  | `32`    | Limite oficial do hub. **Não exceder.**                                                                                                                                                     |
+| `SOCKET_BATCH_MIN_SIZE`  | `1`     | `1` = sempre batch (mesmo com 1 item; envia como `command: [x]`). `2` = se só houver 1 item ao flush, manda como `single` (mais legível em logs do hub). Recomendado: **1** (simplicidade). |
 
 > **Tuning operacional**: medir `batch_size_distribution.p50/p95` em
 > produção; se p50 < 2, considerar bumping `SOCKET_BATCH_WINDOW_MS`
@@ -796,26 +796,26 @@ programadas).
 
 Cobertura:
 
-| Teste | O que verifica |
-| ----- | -------------- |
-| `submit_alone_flushes_after_window` | 1 submit + tick de `windowDuration` → 1 emissão batch com 1 item. |
-| `submits_within_window_aggregate` | 5 submits em < window → 1 emissão batch com 5 itens. |
-| `max_size_triggers_immediate_flush` | 33 submits seguidos → 1 emissão de 32 + outra de 1 (agenda novo timer). |
-| `mixed_agents_use_independent_collectors` | 3 submits para A + 4 para B na mesma window → 2 emissões batch, isoladas. |
-| `bypass_for_multi_result` | submit com `options.multi_result: true` → vai direto ao dispatcher unitário. |
-| `bypass_for_pagination_in_body` | submit com `batchEligible: false` → bypass. |
-| `bypass_for_executeBatch` | submit com `method: 'sql.executeBatch'` → bypass. |
-| `bypass_for_cancel` | submit com `method: 'sql.cancel'` → bypass. |
-| `rejects_notification` | `id: null` → `ArgumentError` síncrono. |
-| `rejects_id_mismatch` | `command.id != rpcId` → `ArgumentError` síncrono. |
-| `partial_failure_distributes_individually` | resposta com 3 itens (2 success, 1 error) → 2 completers OK, 1 com `AgentSqlRpcException`. |
-| `unmatched_id_in_response_logged_and_failed` | resposta omite 1 dos pendings → aquele falha com `decode_failure`. |
-| `extra_id_in_response_logged_and_dropped` | resposta tem 1 item extra → log warning; demais OK. |
-| `dispatcher_failure_fails_all_pending` | dispatcher lança `Timeout` → todos os pendings recebem o **mesmo** erro. |
-| `dispose_fails_pending` | submit + `dispose()` antes do flush → pending recebe `SocketDispatchDisconnected`. |
-| `coalesce_within_collector` | 2 submits idênticos antes do flush → 1 item no batch, 2 completers. |
-| `single_response_for_batch_of_one_accepted` | hub responde com `type: 'single'` para batch de 1 → completer recebe a resposta sem reformatar. |
-| `synthetic_envelope_parsable` | item de batch é envelopado para passar `AgentSqlBridgeResponse.parseSuccess` sem regressão. |
+| Teste                                        | O que verifica                                                                                  |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `submit_alone_flushes_after_window`          | 1 submit + tick de `windowDuration` → 1 emissão batch com 1 item.                               |
+| `submits_within_window_aggregate`            | 5 submits em < window → 1 emissão batch com 5 itens.                                            |
+| `max_size_triggers_immediate_flush`          | 33 submits seguidos → 1 emissão de 32 + outra de 1 (agenda novo timer).                         |
+| `mixed_agents_use_independent_collectors`    | 3 submits para A + 4 para B na mesma window → 2 emissões batch, isoladas.                       |
+| `bypass_for_multi_result`                    | submit com `options.multi_result: true` → vai direto ao dispatcher unitário.                    |
+| `bypass_for_pagination_in_body`              | submit com `batchEligible: false` → bypass.                                                     |
+| `bypass_for_executeBatch`                    | submit com `method: 'sql.executeBatch'` → bypass.                                               |
+| `bypass_for_cancel`                          | submit com `method: 'sql.cancel'` → bypass.                                                     |
+| `rejects_notification`                       | `id: null` → `ArgumentError` síncrono.                                                          |
+| `rejects_id_mismatch`                        | `command.id != rpcId` → `ArgumentError` síncrono.                                               |
+| `partial_failure_distributes_individually`   | resposta com 3 itens (2 success, 1 error) → 2 completers OK, 1 com `AgentSqlRpcException`.      |
+| `unmatched_id_in_response_logged_and_failed` | resposta omite 1 dos pendings → aquele falha com `decode_failure`.                              |
+| `extra_id_in_response_logged_and_dropped`    | resposta tem 1 item extra → log warning; demais OK.                                             |
+| `dispatcher_failure_fails_all_pending`       | dispatcher lança `Timeout` → todos os pendings recebem o **mesmo** erro.                        |
+| `dispose_fails_pending`                      | submit + `dispose()` antes do flush → pending recebe `SocketDispatchDisconnected`.              |
+| `coalesce_within_collector`                  | 2 submits idênticos antes do flush → 1 item no batch, 2 completers.                             |
+| `single_response_for_batch_of_one_accepted`  | hub responde com `type: 'single'` para batch de 1 → completer recebe a resposta sem reformatar. |
+| `synthetic_envelope_parsable`                | item de batch é envelopado para passar `AgentSqlBridgeResponse.parseSuccess` sem regressão.     |
 
 ### 11.2 Contract test — paridade com response single
 
@@ -856,13 +856,13 @@ Cobertura:
 
 Logging estruturado (`AppLogger`):
 
-| Evento | Nível | Campos |
-| ------ | ----- | ------ |
-| Batch dispatch | `debug` | `agentId`, `batchSize`, `batchRpcId`, `flushReason: 'timer'\|'size'` |
-| Batch response distribuído | `debug` | `agentId`, `batchSize`, `successCount`, `errorCount`, `unmatchedCount` |
-| Batch dispatcher failure | `warning` | `agentId`, `batchSize`, `errorCode` |
-| Bypass | `debug` | `agentId`, `method`, `bypassReason` |
-| Coalesced within batch | `debug` | `agentId`, `coalesceKey` (hashado) |
+| Evento                     | Nível     | Campos                                                                 |
+| -------------------------- | --------- | ---------------------------------------------------------------------- |
+| Batch dispatch             | `debug`   | `agentId`, `batchSize`, `batchRpcId`, `flushReason: 'timer'\|'size'`   |
+| Batch response distribuído | `debug`   | `agentId`, `batchSize`, `successCount`, `errorCount`, `unmatchedCount` |
+| Batch dispatcher failure   | `warning` | `agentId`, `batchSize`, `errorCode`                                    |
+| Bypass                     | `debug`   | `agentId`, `method`, `bypassReason`                                    |
+| Coalesced within batch     | `debug`   | `agentId`, `coalesceKey` (hashado)                                     |
 
 > **Nunca** logar `command.params.sql` ou `client_token` no batch. Para
 > diagnóstico, basta `agentId`, `method`, `rpcId`, `batchRpcId`.
@@ -899,7 +899,7 @@ Logging estruturado (`AppLogger`):
    - **(c)** Apresentação consome só `outcomes()` do coordenador, e o
      `dispatcher.outcomes()` é restrito ao caso unitário. — risco de
      gap.
-   **Sugestão**: **(a)**.
+     **Sugestão**: **(a)**.
 
 2. **Coalescing dentro do coletor**: introduzir aqui ou esperar o
    coalescing global do dispatcher pegar?

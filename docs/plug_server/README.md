@@ -7,8 +7,8 @@ não há mudança de código de servidor pendente.
 
 ## Índice
 
-| Documento | Escopo | Quando ler |
-| --------- | ------ | ---------- |
+| Documento                                                                              | Escopo                                                                                                                                                                        | Quando ler                                                                     |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | [`socket_smoke_2026_04_19_action_items.md`](./socket_smoke_2026_04_19_action_items.md) | **Achados do smoke test de 2026-04-19** + **auditoria cruzada** ao `plug_server` (`env.ts` + `docs/api_rest_bridge.md`): 3 ações, verificação de PID, critérios de aceitação. | **Agora** — para resolver os bloqueios atuais e finalizar o rollout do socket. |
 
 > **Histórico**: documentos genéricos anteriores

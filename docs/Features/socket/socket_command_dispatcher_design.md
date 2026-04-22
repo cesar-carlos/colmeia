@@ -892,20 +892,20 @@ getIt.registerLazySingleton<AgentSqlExecuteRequestToBridgeBody>(
 
 ## 9. Casos de borda
 
-| # | Cenário | Comportamento esperado |
-| - | ------- | ---------------------- |
-| 1 | `sendAgentsCommand` chamado antes do `connect()` | Dispatcher chama `_connection.connect()` (single-flight). |
-| 2 | Socket cai durante request pendente | `_correlator.failAll(SocketDispatchDisconnected)`; outcome `Transient(reason: disconnected)`. |
-| 3 | Timeout antes da resposta | `SocketDispatchTimeout` → outcome `Transient(reason: timeout)`. |
-| 4 | Resposta chega DEPOIS do timeout | `_correlator.completeWith` é no-op silencioso (entry não existe). Log `info`. |
-| 5 | Dois `sendAgentsCommand` com mesmo `rpcId` | Segundo lança `SocketDispatchDuplicateId` síncrono. |
-| 6 | `app:error` global (sem rpcId) | `failAll`; todos os outcomes ficam `Transient(reason: <code do app:error>)`. |
-| 7 | `app:error` com `code: AGENT_ACCESS_DENIED` para um rpcId | Outcome `FailedAuth`; repository mapeia para `AuthorizationFailure`. |
-| 8 | Resposta com erro JSON-RPC `agent_offline` | `parseSuccess` lança `AgentSqlRpcException`; outcome `FailedOffline`; repository mapeia para `RpcFailure(retryable: …)` como hoje. |
-| 9 | `dispose()` durante request pendente | `failAll(SocketDispatchDisconnected('correlator disposed'))`; pendente recebe erro. |
-| 10 | Resposta com `requestId` ausente | Log `warning` e descarta; o caller bate em timeout. |
-| 11 | Rate-limit `RATE_LIMITED` | Tratado como `Transient(reason: 'rate_limited')`; repository devolve `NetworkFailure(isTransient: true)`. |
-| 12 | App em background (`pause`) interrompe pendente | Mesmo cenário 2; `resume()` reabre o socket; cliente precisa **reenviar**. |
+| #   | Cenário                                                   | Comportamento esperado                                                                                                             |
+| --- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `sendAgentsCommand` chamado antes do `connect()`          | Dispatcher chama `_connection.connect()` (single-flight).                                                                          |
+| 2   | Socket cai durante request pendente                       | `_correlator.failAll(SocketDispatchDisconnected)`; outcome `Transient(reason: disconnected)`.                                      |
+| 3   | Timeout antes da resposta                                 | `SocketDispatchTimeout` → outcome `Transient(reason: timeout)`.                                                                    |
+| 4   | Resposta chega DEPOIS do timeout                          | `_correlator.completeWith` é no-op silencioso (entry não existe). Log `info`.                                                      |
+| 5   | Dois `sendAgentsCommand` com mesmo `rpcId`                | Segundo lança `SocketDispatchDuplicateId` síncrono.                                                                                |
+| 6   | `app:error` global (sem rpcId)                            | `failAll`; todos os outcomes ficam `Transient(reason: <code do app:error>)`.                                                       |
+| 7   | `app:error` com `code: AGENT_ACCESS_DENIED` para um rpcId | Outcome `FailedAuth`; repository mapeia para `AuthorizationFailure`.                                                               |
+| 8   | Resposta com erro JSON-RPC `agent_offline`                | `parseSuccess` lança `AgentSqlRpcException`; outcome `FailedOffline`; repository mapeia para `RpcFailure(retryable: …)` como hoje. |
+| 9   | `dispose()` durante request pendente                      | `failAll(SocketDispatchDisconnected('correlator disposed'))`; pendente recebe erro.                                                |
+| 10  | Resposta com `requestId` ausente                          | Log `warning` e descarta; o caller bate em timeout.                                                                                |
+| 11  | Rate-limit `RATE_LIMITED`                                 | Tratado como `Transient(reason: 'rate_limited')`; repository devolve `NetworkFailure(isTransient: true)`.                          |
+| 12  | App em background (`pause`) interrompe pendente           | Mesmo cenário 2; `resume()` reabre o socket; cliente precisa **reenviar**.                                                         |
 
 ---
 
@@ -933,9 +933,9 @@ getIt.registerLazySingleton<AgentSqlExecuteRequestToBridgeBody>(
   - Happy path: `sendAgentsCommand` emite `agents:command`,
     correlator resolve, retorna Map, outcome `Success`.
   - Resposta com erro JSON-RPC `agent_offline` → outcome `FailedOffline`
-    + `AgentSqlRpcException` propagada.
+    - `AgentSqlRpcException` propagada.
   - Resposta com `app:error` `AGENT_ACCESS_DENIED` → outcome `FailedAuth`
-    + `SocketDispatchException` propagada.
+    - `SocketDispatchException` propagada.
   - Timeout → outcome `Transient(reason: timeout)` + `SocketDispatchTimeout`.
   - Disconnect durante request → outcome `Transient(reason: disconnected)`.
   - Duplicate id → `SocketDispatchDuplicateId` síncrona, outcome
@@ -981,15 +981,15 @@ getIt.registerLazySingleton<AgentSqlExecuteRequestToBridgeBody>(
 
 ## 11. Métricas e logging
 
-| Evento | Nível | `component` | Campos extras |
-| ------ | ----- | ----------- | ------------- |
-| Send iniciado | `debug` | `SocketCommandDispatcherImpl` | `agentId`, `rpcId`, `timeoutMs` |
-| Outcome Success | `info` | `SocketCommandDispatcherImpl` | `agentId`, `rpcId`, `elapsedMs` |
-| Outcome FailedOffline | `info` | `SocketCommandDispatcherImpl` | `agentId`, `rpcId`, `reasonCode` |
-| Outcome FailedAuth | `warning` | `SocketCommandDispatcherImpl` | `agentId`, `reasonCode` |
-| Outcome Transient | `warning` | `SocketCommandDispatcherImpl` | `agentId`, `reasonCode`, `elapsedMs` |
-| Resposta sem rpcId | `warning` | `SocketCommandDispatcherImpl` | `responseKeys` (sem dados sensíveis) |
-| Late response (descartada) | `info` | `SocketRequestCorrelator` | `rpcId` |
+| Evento                     | Nível     | `component`                   | Campos extras                        |
+| -------------------------- | --------- | ----------------------------- | ------------------------------------ |
+| Send iniciado              | `debug`   | `SocketCommandDispatcherImpl` | `agentId`, `rpcId`, `timeoutMs`      |
+| Outcome Success            | `info`    | `SocketCommandDispatcherImpl` | `agentId`, `rpcId`, `elapsedMs`      |
+| Outcome FailedOffline      | `info`    | `SocketCommandDispatcherImpl` | `agentId`, `rpcId`, `reasonCode`     |
+| Outcome FailedAuth         | `warning` | `SocketCommandDispatcherImpl` | `agentId`, `reasonCode`              |
+| Outcome Transient          | `warning` | `SocketCommandDispatcherImpl` | `agentId`, `reasonCode`, `elapsedMs` |
+| Resposta sem rpcId         | `warning` | `SocketCommandDispatcherImpl` | `responseKeys` (sem dados sensíveis) |
+| Late response (descartada) | `info`    | `SocketRequestCorrelator`     | `rpcId`                              |
 
 > **Nunca** logar `command.params.sql` em produção (pode conter
 > dados de usuário). Logar somente `agentId`, contagem de params
@@ -1021,8 +1021,8 @@ getIt.registerLazySingleton<AgentSqlExecuteRequestToBridgeBody>(
    - **(c)** Não chamar `parseSuccess` no dispatcher; deixar repository
      fazer e dispatcher só emite outcomes a partir de `app:error` /
      timeout / disconnect (sem distinguir `FailedOffline`).
-   Sugestão: **(a)** com função top-level `parseAgentSqlBridgeResponse`
-   exportada de `core/network/jsonrpc/agent_sql_bridge_response.dart`.
+     Sugestão: **(a)** com função top-level `parseAgentSqlBridgeResponse`
+     exportada de `core/network/jsonrpc/agent_sql_bridge_response.dart`.
 
 2. **`hub_instance_id` em `AgentCommandOutcome`**: útil para diagnóstico
    multi-réplica. Adicionar campo opcional?

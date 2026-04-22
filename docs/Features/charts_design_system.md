@@ -12,14 +12,14 @@ The home dashboard mounts six charts via
 each wrapped by [`AppChartFadeIn`](../../lib/shared/widgets/charts/app_chart_fade_in.dart)
 and a `RepaintBoundary`:
 
-| # | Widget | Underlying engine |
-|---|---|---|
-| 1 | `OverviewPaymentMixCard` | `AppCategoryDonutCard` (Syncfusion `DoughnutSeries`) |
-| 2 | `OverviewPaymentBarChart` | `AppComparisonBarChart` (Syncfusion `ColumnSeries`) |
-| 3 | `OverviewMonthlyParcelsComboChart` | `AppComboChart` (`ColumnSeries` + `LineSeries`) |
-| 4 | `OverviewWeekdaySalesTrendChart` | `AppComparisonBarChart` |
-| 5 | `OverviewWeekdayUserGroupedBarChart` | direct `SfCartesianChart` (clustered columns) |
-| 6 | `OverviewRankingsSection` (agent + user) | `AppComparisonBarChart` x2 |
+| #   | Widget                                   | Underlying engine                                    |
+| --- | ---------------------------------------- | ---------------------------------------------------- |
+| 1   | `OverviewPaymentMixCard`                 | `AppCategoryDonutCard` (Syncfusion `DoughnutSeries`) |
+| 2   | `OverviewPaymentBarChart`                | `AppComparisonBarChart` (Syncfusion `ColumnSeries`)  |
+| 3   | `OverviewMonthlyParcelsComboChart`       | `AppComboChart` (`ColumnSeries` + `LineSeries`)      |
+| 4   | `OverviewWeekdaySalesTrendChart`         | `AppComparisonBarChart`                              |
+| 5   | `OverviewWeekdayUserGroupedBarChart`     | direct `SfCartesianChart` (clustered columns)        |
+| 6   | `OverviewRankingsSection` (agent + user) | `AppComparisonBarChart` x2                           |
 
 ### Shared design-system catalog (24 widgets)
 
@@ -28,32 +28,32 @@ Each item below has a demo page under `Settings → Cardapio de UI → Graficos`
 Demos are the only consumers today; they double as design references and as
 smoke tests for the engines.
 
-| Widget | Engine path |
-|---|---|
-| `AppComparisonBarChart` | `engines/syncfusion_comparison_bar_chart.dart` |
-| `AppStackedBarChart` | `engines/syncfusion_stacked_bar_chart.dart` |
-| `AppAreaTrendChart` | `engines/syncfusion_area_trend_chart.dart` |
-| `AppRangeAreaChart` | `engines/syncfusion_range_area_chart.dart` |
-| `AppStepLineChart` | `engines/syncfusion_step_line_chart.dart` |
-| `AppTimeSeriesChart` | `engines/syncfusion_time_series_chart.dart` |
-| `AppComboChart` | `engines/syncfusion_combo_chart.dart` |
-| `AppWaterfallChart` | `engines/syncfusion_waterfall_chart.dart` |
-| `AppDistributionChart` | `engines/syncfusion_distribution_chart.dart` |
-| `AppCategoryDonutCard` | `app_category_donut_card.dart` (engine inline) |
-| `AppFunnelChart` | `engines/syncfusion_funnel_chart.dart` |
-| `AppPyramidChart` | `engines/syncfusion_pyramid_chart.dart` |
-| `AppRadialBarChart` | `engines/syncfusion_radial_bar_chart.dart` |
-| `AppGaugeChart` | `engines/syncfusion_gauge_chart.dart` |
-| `AppScatterBubbleChart` | `engines/syncfusion_scatter_bubble_chart.dart` |
-| `AppRegionMapChart` | `engines/syncfusion_region_map_chart.dart` (Syncfusion Maps) |
-| `AppTreemapChart` | `engines/syncfusion_treemap_chart.dart` (Syncfusion Treemap) |
-| `AppHeatmapChart` | bespoke (CustomPaint + scrollable matrix) |
-| `AppHorizontalProgressChart` | bespoke (Material + tween) |
-| `AppSparklineChart` | bespoke (CustomPaint micro-line) |
-| `AppRadarChart` | `engines/custom_radar_chart.dart` (CustomPainter) |
-| `AppPolarChart` | `engines/custom_polar_chart.dart` (CustomPainter) |
-| `AppSunburstChart` | `engines/custom_sunburst_chart.dart` (CustomPainter) |
-| `AppBulletChart` | `engines/custom_bullet_chart.dart` (Material rows) |
+| Widget                       | Engine path                                                  |
+| ---------------------------- | ------------------------------------------------------------ |
+| `AppComparisonBarChart`      | `engines/syncfusion_comparison_bar_chart.dart`               |
+| `AppStackedBarChart`         | `engines/syncfusion_stacked_bar_chart.dart`                  |
+| `AppAreaTrendChart`          | `engines/syncfusion_area_trend_chart.dart`                   |
+| `AppRangeAreaChart`          | `engines/syncfusion_range_area_chart.dart`                   |
+| `AppStepLineChart`           | `engines/syncfusion_step_line_chart.dart`                    |
+| `AppTimeSeriesChart`         | `engines/syncfusion_time_series_chart.dart`                  |
+| `AppComboChart`              | `engines/syncfusion_combo_chart.dart`                        |
+| `AppWaterfallChart`          | `engines/syncfusion_waterfall_chart.dart`                    |
+| `AppDistributionChart`       | `engines/syncfusion_distribution_chart.dart`                 |
+| `AppCategoryDonutCard`       | `app_category_donut_card.dart` (engine inline)               |
+| `AppFunnelChart`             | `engines/syncfusion_funnel_chart.dart`                       |
+| `AppPyramidChart`            | `engines/syncfusion_pyramid_chart.dart`                      |
+| `AppRadialBarChart`          | `engines/syncfusion_radial_bar_chart.dart`                   |
+| `AppGaugeChart`              | `engines/syncfusion_gauge_chart.dart`                        |
+| `AppScatterBubbleChart`      | `engines/syncfusion_scatter_bubble_chart.dart`               |
+| `AppRegionMapChart`          | `engines/syncfusion_region_map_chart.dart` (Syncfusion Maps) |
+| `AppTreemapChart`            | `engines/syncfusion_treemap_chart.dart` (Syncfusion Treemap) |
+| `AppHeatmapChart`            | bespoke (CustomPaint + scrollable matrix)                    |
+| `AppHorizontalProgressChart` | bespoke (Material + tween)                                   |
+| `AppSparklineChart`          | bespoke (CustomPaint micro-line)                             |
+| `AppRadarChart`              | `engines/custom_radar_chart.dart` (CustomPainter)            |
+| `AppPolarChart`              | `engines/custom_polar_chart.dart` (CustomPainter)            |
+| `AppSunburstChart`           | `engines/custom_sunburst_chart.dart` (CustomPainter)         |
+| `AppBulletChart`             | `engines/custom_bullet_chart.dart` (Material rows)           |
 
 ### NOT_RENDERED widgets
 
@@ -71,18 +71,18 @@ The following conventions are applied to every Syncfusion engine consumed by
 the design system. New engines must follow them; pull requests that opt out
 of any item should explain why in the engine's source.
 
-| # | Convention | How |
-|---|---|---|
-| 1 | Tooltip header is sanitized | use [`buildSanitizingTooltipRenderer`](../../lib/shared/widgets/charts/engines/chart_engine_defaults.dart) — clears Syncfusion's `"Series 0"` header. |
-| 2 | Tooltip uses dark inverse-surface coloring | use [`buildChartTooltipBehavior`](../../lib/shared/widgets/charts/engines/chart_engine_defaults.dart) — consistent body text, no border, 2.4 s duration. |
-| 3 | Animation default is uniform | use [`resolveChartAnimationDurationMs`](../../lib/shared/widgets/charts/engines/chart_engine_defaults.dart) with `AppChartEngineAnimationDefaults.cartesianSeriesMs` (350 ms) for bar/line/area/scatter/step series and `circularSeriesMs` (500 ms) for donut/pie/funnel/pyramid. |
-| 4 | OS reduce-motion is respected | `resolveChartAnimationDurationMs` collapses to 0 ms when `MediaQuery.disableAnimations` is `true`. The gauge engine guards its `enableAnimation` flag manually for the same reason. |
-| 5 | Identity-based key when remount is expensive | `RepaintBoundary(key: ValueKey<int>(identityHashCode(items)))` lets Syncfusion update the existing `SfCircularChart` / `SfCartesianChart` instead of remounting on every rebuild. Used by `AppCategoryDonutCard` and `OverviewMonthlyParcelsComboChart`. |
-| 6 | Horizontal scroll uses the shared shell | Wide charts wrap the inner chart with [`ChartHorizontalScrollShell`](../../lib/shared/widgets/charts/chart_horizontal_scroll_shell.dart) and deduct `chartHorizontalScrollBottomTrackSlotHeight(context)` (not the raw constant) from the chart body height to honour `TextScaler` scaling. |
-| 7 | Tap-highlight is opt-in | Bar / radial engines expose `enableTapHighlight` on their style; when `true`, tapped point keeps full opacity while the rest fade to `tapHighlightDimmedOpacity` (default `0.35`) via Syncfusion `SelectionBehavior`. |
-| 8 | Smart compact currency for chart labels | `AppBrFormatters.smartCompactCurrency` keeps full `R$ 26,80` below R$ 1.000 and switches to `R$ 1,2 mil` above, avoiding the "compact label cropped" reading. |
-| 9 | Staged entrance animation | host pages can wrap chart cards with [`AppChartFadeIn`](../../lib/shared/widgets/charts/app_chart_fade_in.dart) (220 ms fade + 6 px slide). Auto-disables under reduce-motion. |
-| 10 | Staged placeholder height | engines that have an `_LoadingBlock` expose a static `loadingBlockHeight(tokens)` (donut card, comparison bar, combo) so external staged-mounting placeholders don't cause layout shift when the real card mounts. |
+| #   | Convention                                   | How                                                                                                                                                                                                                                                                                         |
+| --- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Tooltip header is sanitized                  | use [`buildSanitizingTooltipRenderer`](../../lib/shared/widgets/charts/engines/chart_engine_defaults.dart) — clears Syncfusion's `"Series 0"` header.                                                                                                                                       |
+| 2   | Tooltip uses dark inverse-surface coloring   | use [`buildChartTooltipBehavior`](../../lib/shared/widgets/charts/engines/chart_engine_defaults.dart) — consistent body text, no border, 2.4 s duration.                                                                                                                                    |
+| 3   | Animation default is uniform                 | use [`resolveChartAnimationDurationMs`](../../lib/shared/widgets/charts/engines/chart_engine_defaults.dart) with `AppChartEngineAnimationDefaults.cartesianSeriesMs` (350 ms) for bar/line/area/scatter/step series and `circularSeriesMs` (500 ms) for donut/pie/funnel/pyramid.           |
+| 4   | OS reduce-motion is respected                | `resolveChartAnimationDurationMs` collapses to 0 ms when `MediaQuery.disableAnimations` is `true`. The gauge engine guards its `enableAnimation` flag manually for the same reason.                                                                                                         |
+| 5   | Identity-based key when remount is expensive | `RepaintBoundary(key: ValueKey<int>(identityHashCode(items)))` lets Syncfusion update the existing `SfCircularChart` / `SfCartesianChart` instead of remounting on every rebuild. Used by `AppCategoryDonutCard` and `OverviewMonthlyParcelsComboChart`.                                    |
+| 6   | Horizontal scroll uses the shared shell      | Wide charts wrap the inner chart with [`ChartHorizontalScrollShell`](../../lib/shared/widgets/charts/chart_horizontal_scroll_shell.dart) and deduct `chartHorizontalScrollBottomTrackSlotHeight(context)` (not the raw constant) from the chart body height to honour `TextScaler` scaling. |
+| 7   | Tap-highlight is opt-in                      | Bar / radial engines expose `enableTapHighlight` on their style; when `true`, tapped point keeps full opacity while the rest fade to `tapHighlightDimmedOpacity` (default `0.35`) via Syncfusion `SelectionBehavior`.                                                                       |
+| 8   | Smart compact currency for chart labels      | `AppBrFormatters.smartCompactCurrency` keeps full `R$ 26,80` below R$ 1.000 and switches to `R$ 1,2 mil` above, avoiding the "compact label cropped" reading.                                                                                                                               |
+| 9   | Staged entrance animation                    | host pages can wrap chart cards with [`AppChartFadeIn`](../../lib/shared/widgets/charts/app_chart_fade_in.dart) (220 ms fade + 6 px slide). Auto-disables under reduce-motion.                                                                                                              |
+| 10  | Staged placeholder height                    | engines that have an `_LoadingBlock` expose a static `loadingBlockHeight(tokens)` (donut card, comparison bar, combo) so external staged-mounting placeholders don't cause layout shift when the real card mounts.                                                                          |
 
 ## Helpers
 
