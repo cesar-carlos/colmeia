@@ -81,9 +81,6 @@ enum AppRoute {
   static const List<AppRoute> shellRoutes = <AppRoute>[
     dashboard,
     sales,
-    returns,
-    finance,
-    purchases,
     inventory,
     agents,
     settings,

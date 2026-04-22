@@ -9,7 +9,7 @@ class AppLocalizationsPt extends AppLocalizations {
   AppLocalizationsPt([String locale = 'pt']) : super(locale);
 
   @override
-  String get shellNavDashboardLabel => 'Visao geral';
+  String get shellNavDashboardLabel => 'Visão geral';
 
   @override
   String get shellNavDashboardSubtitle => 'Resumo operacional e KPIs';
@@ -24,7 +24,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavSettingsLabel => 'Perfil';
 
   @override
-  String get shellNavSettingsSubtitle => 'Conta e preferencias';
+  String get shellNavSettingsSubtitle => 'Conta e preferências';
 
   @override
   String get shellNavSalesLabel => 'Vendas';
@@ -34,10 +34,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Pedidos, receita e indicadores comerciais';
 
   @override
-  String get shellNavReturnsLabel => 'Devolucoes';
+  String get shellNavReturnsLabel => 'Devoluções';
 
   @override
-  String get shellNavReturnsSubtitle => 'Devolucoes, trocas e notas de credito';
+  String get shellNavReturnsSubtitle => 'Devoluções, trocas e notas de crédito';
 
   @override
   String get shellNavFinanceLabel => 'Financeiro';
@@ -56,20 +56,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavInventoryLabel => 'Estoque';
 
   @override
-  String get shellNavInventorySubtitle => 'Niveis de estoque e movimentacoes';
+  String get shellNavInventorySubtitle => 'Níveis de estoque e movimentações';
 
   @override
-  String get shellPlaceholderUnderConstructionTitle => 'Em construcao';
+  String get shellPlaceholderUnderConstructionTitle => 'Em construção';
 
   @override
   String get shellPlaceholderUnderConstructionBody =>
-      'Esta secao estara disponivel em uma atualizacao futura.';
+      'Esta seção estará disponível em uma atualização futura.';
 
   @override
   String get shellAppBrandName => 'Colmeia';
 
   @override
-  String get shellOpenSettingsSemantics => 'Abrir configuracoes';
+  String get shellOpenSettingsSemantics => 'Abrir configurações';
 
   @override
   String get shellOpenProfileSemantics => 'Abrir perfil e conta';
@@ -81,7 +81,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavSigningOut => 'Saindo...';
 
   @override
-  String get shellNavSignOutSemanticsLoading => 'Encerrando sessao';
+  String get shellNavSignOutSemanticsLoading => 'Encerrando sessão';
 
   @override
   String get shellSignOutDialogTitle => 'Sair da conta?';
@@ -91,39 +91,39 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shellSignOutDialogMessage =>
-      'Voce precisara entrar novamente para acessar os dados.';
+      'Você precisará entrar novamente para acessar os dados.';
 
   @override
-  String get shellNavMainSemantics => 'Navegacao principal';
+  String get shellNavMainSemantics => 'Navegação principal';
 
   @override
-  String get userPermissionViewDashboard => 'Visao geral';
+  String get userPermissionViewDashboard => 'Visão geral';
 
   @override
-  String get userPermissionManageAgents => 'Gestao de agentes';
+  String get userPermissionManageAgents => 'Gestão de agentes';
 
   @override
-  String get userPermissionViewSales => 'Vendas (acesso ao modulo)';
+  String get userPermissionViewSales => 'Vendas (acesso ao módulo)';
 
   @override
-  String get userPermissionViewReturns => 'Devolucoes (acesso ao modulo)';
+  String get userPermissionViewReturns => 'Devoluções (acesso ao módulo)';
 
   @override
-  String get userPermissionViewFinance => 'Financeiro (acesso ao modulo)';
+  String get userPermissionViewFinance => 'Financeiro (acesso ao módulo)';
 
   @override
-  String get userPermissionViewPurchases => 'Compras (acesso ao modulo)';
+  String get userPermissionViewPurchases => 'Compras (acesso ao módulo)';
 
   @override
-  String get userPermissionViewInventory => 'Estoque (acesso ao modulo)';
+  String get userPermissionViewInventory => 'Estoque (acesso ao módulo)';
 
   @override
   String get dashboardPartialAgentQueriesTitle =>
-      'Dados da visao geral incompletos';
+      'Dados da visão geral incompletos';
 
   @override
   String get dashboardPartialAgentQueriesMessage =>
-      'Alguns agentes aprovados nao retornaram dados. Os totais podem estar incompletos.';
+      'Alguns agentes aprovados não retornaram dados. Os totais podem estar incompletos.';
 
   @override
   String get dashboardMissingClientTokenTitle =>
@@ -131,7 +131,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardMissingClientTokenMessage =>
-      'Estes agentes aprovados foram ignorados porque nao ha token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
+      'Estes agentes aprovados foram ignorados porque não há token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
 
   @override
   String get overviewResumoUnknownPaymentMethod =>
@@ -146,7 +146,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardSetupRequiredMessage =>
-      'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.';
+      'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.';
 
   @override
   String dashboardViewAffectedAgentsList(int count) {
@@ -1770,7 +1770,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   AppLocalizationsPtBr() : super('pt_BR');
 
   @override
-  String get shellNavDashboardLabel => 'Visao geral';
+  String get shellNavDashboardLabel => 'Visão geral';
 
   @override
   String get shellNavDashboardSubtitle => 'Resumo operacional e KPIs';
@@ -1785,7 +1785,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get shellNavSettingsLabel => 'Perfil';
 
   @override
-  String get shellNavSettingsSubtitle => 'Conta e preferencias';
+  String get shellNavSettingsSubtitle => 'Conta e preferências';
 
   @override
   String get shellNavSalesLabel => 'Vendas';
@@ -1795,10 +1795,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Pedidos, receita e indicadores comerciais';
 
   @override
-  String get shellNavReturnsLabel => 'Devolucoes';
+  String get shellNavReturnsLabel => 'Devoluções';
 
   @override
-  String get shellNavReturnsSubtitle => 'Devolucoes, trocas e notas de credito';
+  String get shellNavReturnsSubtitle => 'Devoluções, trocas e notas de crédito';
 
   @override
   String get shellNavFinanceLabel => 'Financeiro';
@@ -1817,20 +1817,20 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get shellNavInventoryLabel => 'Estoque';
 
   @override
-  String get shellNavInventorySubtitle => 'Niveis de estoque e movimentacoes';
+  String get shellNavInventorySubtitle => 'Níveis de estoque e movimentações';
 
   @override
-  String get shellPlaceholderUnderConstructionTitle => 'Em construcao';
+  String get shellPlaceholderUnderConstructionTitle => 'Em construção';
 
   @override
   String get shellPlaceholderUnderConstructionBody =>
-      'Esta secao estara disponivel em uma atualizacao futura.';
+      'Esta seção estará disponível em uma atualização futura.';
 
   @override
   String get shellAppBrandName => 'Colmeia';
 
   @override
-  String get shellOpenSettingsSemantics => 'Abrir configuracoes';
+  String get shellOpenSettingsSemantics => 'Abrir configurações';
 
   @override
   String get shellOpenProfileSemantics => 'Abrir perfil e conta';
@@ -1842,7 +1842,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get shellNavSigningOut => 'Saindo...';
 
   @override
-  String get shellNavSignOutSemanticsLoading => 'Encerrando sessao';
+  String get shellNavSignOutSemanticsLoading => 'Encerrando sessão';
 
   @override
   String get shellSignOutDialogTitle => 'Sair da conta?';
@@ -1852,39 +1852,39 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get shellSignOutDialogMessage =>
-      'Voce precisara entrar novamente para acessar os dados.';
+      'Você precisará entrar novamente para acessar os dados.';
 
   @override
-  String get shellNavMainSemantics => 'Navegacao principal';
+  String get shellNavMainSemantics => 'Navegação principal';
 
   @override
-  String get userPermissionViewDashboard => 'Visao geral';
+  String get userPermissionViewDashboard => 'Visão geral';
 
   @override
-  String get userPermissionManageAgents => 'Gestao de agentes';
+  String get userPermissionManageAgents => 'Gestão de agentes';
 
   @override
-  String get userPermissionViewSales => 'Vendas (acesso ao modulo)';
+  String get userPermissionViewSales => 'Vendas (acesso ao módulo)';
 
   @override
-  String get userPermissionViewReturns => 'Devolucoes (acesso ao modulo)';
+  String get userPermissionViewReturns => 'Devoluções (acesso ao módulo)';
 
   @override
-  String get userPermissionViewFinance => 'Financeiro (acesso ao modulo)';
+  String get userPermissionViewFinance => 'Financeiro (acesso ao módulo)';
 
   @override
-  String get userPermissionViewPurchases => 'Compras (acesso ao modulo)';
+  String get userPermissionViewPurchases => 'Compras (acesso ao módulo)';
 
   @override
-  String get userPermissionViewInventory => 'Estoque (acesso ao modulo)';
+  String get userPermissionViewInventory => 'Estoque (acesso ao módulo)';
 
   @override
   String get dashboardPartialAgentQueriesTitle =>
-      'Dados da visao geral incompletos';
+      'Dados da visão geral incompletos';
 
   @override
   String get dashboardPartialAgentQueriesMessage =>
-      'Alguns agentes aprovados nao retornaram dados. Os totais podem estar incompletos.';
+      'Alguns agentes aprovados não retornaram dados. Os totais podem estar incompletos.';
 
   @override
   String get dashboardMissingClientTokenTitle =>
@@ -1892,7 +1892,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardMissingClientTokenMessage =>
-      'Estes agentes aprovados foram ignorados porque nao ha token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
+      'Estes agentes aprovados foram ignorados porque não há token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
 
   @override
   String get overviewResumoUnknownPaymentMethod =>
@@ -1907,7 +1907,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardSetupRequiredMessage =>
-      'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestao de agentes para cadastrar o token e liberar a consulta da visao geral.';
+      'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.';
 
   @override
   String dashboardViewAffectedAgentsList(int count) {
