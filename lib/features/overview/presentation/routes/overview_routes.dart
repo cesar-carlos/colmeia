@@ -2,6 +2,7 @@ import 'package:colmeia/app/router/app_route_data.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_page_use_case.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_home_page.dart';
 import 'package:flutter/material.dart';
@@ -41,8 +42,15 @@ final class OverviewStoreRouteData implements AppRouteData {
 }
 
 Widget _buildOverviewHomeRoute(BuildContext context, GoRouterState state) {
-  return ChangeNotifierProvider<OverviewController>(
-    create: (_) => getIt<OverviewController>(),
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<OverviewController>(
+        create: (_) => getIt<OverviewController>(),
+      ),
+      Provider<LoadResumoProdutoVendaPageUseCase>.value(
+        value: getIt<LoadResumoProdutoVendaPageUseCase>(),
+      ),
+    ],
     child: const OverviewHomePage(),
   );
 }

@@ -54,6 +54,9 @@ void main() {
       check(failure.displayMessage).equals(
         'Sua conta esta pendente de aprovacao.',
       );
+      final body =
+          failure.context[DioHttpFailureContext.responseBodyField]! as Map;
+      check(body['message']).equals('Sua conta esta pendente de aprovacao.');
     });
 
     test(
@@ -78,8 +81,34 @@ void main() {
         check(failure.displayMessage).equals(
           'Sua conta esta bloqueada. Entre em contato com o administrador.',
         );
+        final body =
+            failure.context[DioHttpFailureContext.responseBodyField]! as Map;
+        check(body['message']).equals('Account is blocked');
       },
     );
+
+    test('should attach string 403 bodies to httpResponseBody context', () {
+      final failure = mapToAppFailure(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+          response: Response<String>(
+            requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+            statusCode: 403,
+            data:
+                'You do not have access to agent 3183a9f2-429b-46d6-a339-3580e5e5cb31',
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      check(failure).isA<AuthorizationFailure>();
+      check(failure.displayMessage).equals(
+        'You do not have access to agent 3183a9f2-429b-46d6-a339-3580e5e5cb31',
+      );
+      check(failure.context[DioHttpFailureContext.responseBodyField]).equals(
+        'You do not have access to agent 3183a9f2-429b-46d6-a339-3580e5e5cb31',
+      );
+    });
 
     test('should join validation errors from Dio response body', () {
       final failure = mapToAppFailure(

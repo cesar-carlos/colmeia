@@ -97,6 +97,13 @@ abstract final class ApiErrorContext {
   static const String apiErrorCode = 'apiErrorCode';
 }
 
+/// Snapshot of [DioException.response] data attached to [mapToAppFailure] for
+/// HTTP 401 / 403 so logs and tests can inspect the hub payload (e.g. agent
+/// access denial) beyond [AppFailure.userMessage].
+abstract final class DioHttpFailureContext {
+  static const String responseBodyField = 'httpResponseBody';
+}
+
 final class StorageFailure extends AppFailure {
   const StorageFailure({
     required super.message,
@@ -308,6 +315,7 @@ AppFailure mapToAppFailure(
         context: <String, Object?>{
           ...context,
           'httpStatusCode': statusCode,
+          ..._dioHttpResponseBodyContext(responseData),
         },
       );
     }
@@ -324,6 +332,7 @@ AppFailure mapToAppFailure(
             ...context,
             'httpStatusCode': statusCode,
             AuthorizationFailureContext.accountBlockedField: true,
+            ..._dioHttpResponseBodyContext(responseData),
           },
         );
       }
@@ -335,6 +344,7 @@ AppFailure mapToAppFailure(
         context: <String, Object?>{
           ...context,
           'httpStatusCode': statusCode,
+          ..._dioHttpResponseBodyContext(responseData),
         },
       );
     }
@@ -575,6 +585,45 @@ DateTime? _tryParseHttpDate(String value) {
   } on Object {
     return null;
   }
+}
+
+/// Best-effort copy of Dio's parsed `response.data` for the failure context map.
+Object? _snapshotDioResponseBodyForContext(Object? responseData) {
+  if (responseData == null) {
+    return null;
+  }
+  if (responseData is String) {
+    final trimmed = responseData.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    const maxLen = 8000;
+    if (trimmed.length > maxLen) {
+      return '${trimmed.substring(0, maxLen)}…';
+    }
+    return trimmed;
+  }
+  if (responseData is Map) {
+    final out = <String, dynamic>{};
+    for (final entry in responseData.entries) {
+      out[entry.key.toString()] = entry.value;
+    }
+    return out;
+  }
+  if (responseData is List) {
+    return responseData;
+  }
+  return responseData.toString();
+}
+
+Map<String, Object?> _dioHttpResponseBodyContext(Object? responseData) {
+  final snapshot = _snapshotDioResponseBodyForContext(responseData);
+  if (snapshot == null) {
+    return const <String, Object?>{};
+  }
+  return <String, Object?>{
+    DioHttpFailureContext.responseBodyField: snapshot,
+  };
 }
 
 String? _extractApiErrorMessage(Object? responseData) {

@@ -324,6 +324,45 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sem faturamento por operador neste período.';
 
   @override
+  String get overviewTopProductsTitle => 'Produtos mais vendidos';
+
+  @override
+  String overviewTopProductsSubtitle(int count) {
+    return 'Por agente (sem unir cadastros). Até $count produtos.';
+  }
+
+  @override
+  String get overviewTopProductsNoEligibleAgents =>
+      'Nenhum agente disponível para este gráfico. Salve o token no agente ou ajuste o filtro.';
+
+  @override
+  String get overviewTopProductsInvalidPeriod =>
+      'O período selecionado não é válido para este gráfico.';
+
+  @override
+  String get overviewTopProductsEmpty =>
+      'Sem vendas de produto neste período para este agente.';
+
+  @override
+  String get overviewTopProductsLoadFailed =>
+      'Não foi possível carregar este gráfico. Tente novamente.';
+
+  @override
+  String get overviewTopProductsLoadingSemantics =>
+      'Carregando gráfico de produtos…';
+
+  @override
+  String overviewTopProductsTooltipLine(
+    int sales,
+    String items,
+    String revenue,
+    String cost,
+    String margin,
+  ) {
+    return '$sales vendas · $items itens · $revenue faturamento · $cost custo rep. · $margin% margem';
+  }
+
+  @override
   String get overviewDefaultGreetingName => 'Gestor';
 
   @override
@@ -2083,6 +2122,45 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewUserRankingEmpty =>
       'Sem faturamento por operador neste período.';
+
+  @override
+  String get overviewTopProductsTitle => 'Produtos mais vendidos';
+
+  @override
+  String overviewTopProductsSubtitle(int count) {
+    return 'Por agente (sem unir cadastros). Até $count produtos.';
+  }
+
+  @override
+  String get overviewTopProductsNoEligibleAgents =>
+      'Nenhum agente disponível para este gráfico. Salve o token no agente ou ajuste o filtro.';
+
+  @override
+  String get overviewTopProductsInvalidPeriod =>
+      'O período selecionado não é válido para este gráfico.';
+
+  @override
+  String get overviewTopProductsEmpty =>
+      'Sem vendas de produto neste período para este agente.';
+
+  @override
+  String get overviewTopProductsLoadFailed =>
+      'Não foi possível carregar este gráfico. Tente novamente.';
+
+  @override
+  String get overviewTopProductsLoadingSemantics =>
+      'Carregando gráfico de produtos…';
+
+  @override
+  String overviewTopProductsTooltipLine(
+    int sales,
+    String items,
+    String revenue,
+    String cost,
+    String margin,
+  ) {
+    return '$sales vendas · $items itens · $revenue faturamento · $cost custo rep. · $margin% margem';
+  }
 
   @override
   String get overviewDefaultGreetingName => 'Gestor';

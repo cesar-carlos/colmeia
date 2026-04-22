@@ -15,6 +15,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'e2e_stub_client_agents_for_agent_queries.dart';
 
+/// Prints once per VM so skipped E2E tests still show which agent id is configured.
+bool _e2eAnnouncedConfiguredAgentId = false;
+
 /// Loads bundled env and registers `Dio` plus the agent-queries stack only.
 ///
 /// Avoids full app DI setup so VM tests do not need `path_provider` / Hive
@@ -60,6 +63,16 @@ Future<void> e2eSetupDependencies() async {
       E2eStubAgentClientTokenReader(),
     );
   registerInjectorAgentQueries(getIt);
+
+  // Visible in `flutter test` stdout so runs clearly target this agent for sql.execute.
+  // E2E_CLIENT_TOKEN is not printed (secret); only whether it was loaded from env.
+  // ignore: avoid_print
+  print(
+    'E2E agent-queries: E2E_AGENT_ID=${AppEnvironment.e2eAgentId} '
+    'client_token_loaded=${AppEnvironment.e2eClientToken.isNotEmpty} '
+    'api=${AppEnvironment.apiBaseUrl} '
+    'bearer=${AppEnvironment.hasE2eClientLoginCredentials}',
+  );
 }
 
 List<String> missingE2eBridgeKeys() {
@@ -81,6 +94,17 @@ List<String> missingE2eRepositoryKeys() {
   }
   if (AppEnvironment.e2eClientPassword.isEmpty) {
     missing.add(EnvKeys.e2eClientPassword);
+  }
+  if (!_e2eAnnouncedConfiguredAgentId &&
+      missing.isNotEmpty &&
+      AppEnvironment.e2eAgentId.isNotEmpty) {
+    _e2eAnnouncedConfiguredAgentId = true;
+    // E2E hint: agent id is loaded from env even when login or token keys block the run.
+    // ignore: avoid_print
+    print(
+      'E2E: E2E_AGENT_ID=${AppEnvironment.e2eAgentId} '
+      '(sql.execute will target this agent once all required E2E_* vars are set).',
+    );
   }
   return missing;
 }

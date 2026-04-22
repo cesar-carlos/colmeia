@@ -116,6 +116,28 @@
   "dashboardUserRankingSubtitle": "Faturamento por operador no periodo.",
   "overviewAgentRankingEmpty": "Sem faturamento por agente neste período.",
   "overviewUserRankingEmpty": "Sem faturamento por operador neste período.",
+  "overviewTopProductsTitle": "Produtos mais vendidos",
+  "overviewTopProductsSubtitle": "Por agente (sem unir cadastros). Até {count} produtos.",
+  "@overviewTopProductsSubtitle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "overviewTopProductsNoEligibleAgents": "Nenhum agente disponível para este gráfico. Salve o token no agente ou ajuste o filtro.",
+  "overviewTopProductsInvalidPeriod": "O período selecionado não é válido para este gráfico.",
+  "overviewTopProductsEmpty": "Sem vendas de produto neste período para este agente.",
+  "overviewTopProductsLoadFailed": "Não foi possível carregar este gráfico. Tente novamente.",
+  "overviewTopProductsLoadingSemantics": "Carregando gráfico de produtos…",
+  "overviewTopProductsTooltipLine": "{sales} vendas · {items} itens · {revenue} faturamento · {cost} custo rep. · {margin}% margem",
+  "@overviewTopProductsTooltipLine": {
+    "placeholders": {
+      "sales": {"type": "int"},
+      "items": {"type": "String"},
+      "revenue": {"type": "String"},
+      "cost": {"type": "String"},
+      "margin": {"type": "String"}
+    }
+  },
   "overviewDefaultGreetingName": "Gestor",
   "overviewGreetingEyebrow": "Olá, {name}",
   "@overviewGreetingEyebrow": {

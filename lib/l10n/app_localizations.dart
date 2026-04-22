@@ -645,6 +645,60 @@ abstract class AppLocalizations {
   /// **'No operator revenue in this period.'**
   String get overviewUserRankingEmpty;
 
+  /// No description provided for @overviewTopProductsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top products by sales'**
+  String get overviewTopProductsTitle;
+
+  /// No description provided for @overviewTopProductsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Per agent (not merged across databases). Up to {count} products.'**
+  String overviewTopProductsSubtitle(int count);
+
+  /// No description provided for @overviewTopProductsNoEligibleAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'No agents available for this chart. Save a client token on the agent or adjust the filter.'**
+  String get overviewTopProductsNoEligibleAgents;
+
+  /// No description provided for @overviewTopProductsInvalidPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected period is not valid for this chart.'**
+  String get overviewTopProductsInvalidPeriod;
+
+  /// No description provided for @overviewTopProductsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No product sales in this period for this agent.'**
+  String get overviewTopProductsEmpty;
+
+  /// No description provided for @overviewTopProductsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this chart. Try again later.'**
+  String get overviewTopProductsLoadFailed;
+
+  /// No description provided for @overviewTopProductsLoadingSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading top products chart…'**
+  String get overviewTopProductsLoadingSemantics;
+
+  /// No description provided for @overviewTopProductsTooltipLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{sales} sales · {items} items · {revenue} revenue · {cost} cost · {margin}% margin'**
+  String overviewTopProductsTooltipLine(
+    int sales,
+    String items,
+    String revenue,
+    String cost,
+    String margin,
+  );
+
   /// No description provided for @overviewDefaultGreetingName.
   ///
   /// In en, this message translates to:

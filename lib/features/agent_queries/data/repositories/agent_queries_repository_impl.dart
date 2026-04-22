@@ -118,30 +118,31 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
         ),
       );
     } on DioException catch (error, stackTrace) {
+      const sqlHttpUserMessage =
+          'Nao foi possivel executar a consulta no agente. Tente novamente.';
+      final failure = mapToAppFailure(
+        error,
+        stackTrace: stackTrace,
+        fallbackMessage: 'Agent SQL request failed',
+        fallbackUserMessage: sqlHttpUserMessage,
+        context: <String, Object?>{
+          'operation': 'executeAgentSql',
+          'agentId': request.trimmedAgentId,
+        },
+      );
       AppLogger.error(
         'Agent SQL HTTP request failed',
         context: <String, Object?>{
           'operation': 'executeAgentSql',
           'agentId': request.trimmedAgentId,
           'statusCode': error.response?.statusCode,
+          'failureType': failure.runtimeType.toString(),
+          ...failure.context,
         },
         error: error,
         stackTrace: stackTrace,
       );
-      const sqlHttpUserMessage =
-          'Nao foi possivel executar a consulta no agente. Tente novamente.';
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Agent SQL request failed',
-          fallbackUserMessage: sqlHttpUserMessage,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-          },
-        ),
-      );
+      return Failure<AgentSqlExecutionResult, AppFailure>(failure);
     } on SocketDispatchCancelled catch (error, stackTrace) {
       // Cancellation is benign: caller (controller in dispose, navigation
       // away, explicit `SocketCommandCancelToken`) requested it. We still

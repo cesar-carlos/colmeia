@@ -316,6 +316,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewUserRankingEmpty => 'No operator revenue in this period.';
 
   @override
+  String get overviewTopProductsTitle => 'Top products by sales';
+
+  @override
+  String overviewTopProductsSubtitle(int count) {
+    return 'Per agent (not merged across databases). Up to $count products.';
+  }
+
+  @override
+  String get overviewTopProductsNoEligibleAgents =>
+      'No agents available for this chart. Save a client token on the agent or adjust the filter.';
+
+  @override
+  String get overviewTopProductsInvalidPeriod =>
+      'The selected period is not valid for this chart.';
+
+  @override
+  String get overviewTopProductsEmpty =>
+      'No product sales in this period for this agent.';
+
+  @override
+  String get overviewTopProductsLoadFailed =>
+      'Could not load this chart. Try again later.';
+
+  @override
+  String get overviewTopProductsLoadingSemantics =>
+      'Loading top products chart…';
+
+  @override
+  String overviewTopProductsTooltipLine(
+    int sales,
+    String items,
+    String revenue,
+    String cost,
+    String margin,
+  ) {
+    return '$sales sales · $items items · $revenue revenue · $cost cost · $margin% margin';
+  }
+
+  @override
   String get overviewDefaultGreetingName => 'Manager';
 
   @override

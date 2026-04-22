@@ -116,6 +116,28 @@
   "dashboardUserRankingSubtitle": "Revenue by operator in the period.",
   "overviewAgentRankingEmpty": "No agent revenue in this period.",
   "overviewUserRankingEmpty": "No operator revenue in this period.",
+  "overviewTopProductsTitle": "Top products by sales",
+  "overviewTopProductsSubtitle": "Per agent (not merged across databases). Up to {count} products.",
+  "@overviewTopProductsSubtitle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "overviewTopProductsNoEligibleAgents": "No agents available for this chart. Save a client token on the agent or adjust the filter.",
+  "overviewTopProductsInvalidPeriod": "The selected period is not valid for this chart.",
+  "overviewTopProductsEmpty": "No product sales in this period for this agent.",
+  "overviewTopProductsLoadFailed": "Could not load this chart. Try again later.",
+  "overviewTopProductsLoadingSemantics": "Loading top products chart…",
+  "overviewTopProductsTooltipLine": "{sales} sales · {items} items · {revenue} revenue · {cost} cost · {margin}% margin",
+  "@overviewTopProductsTooltipLine": {
+    "placeholders": {
+      "sales": {"type": "int"},
+      "items": {"type": "String"},
+      "revenue": {"type": "String"},
+      "cost": {"type": "String"},
+      "margin": {"type": "String"}
+    }
+  },
   "overviewDefaultGreetingName": "Manager",
   "overviewGreetingEyebrow": "Hello, {name}",
   "@overviewGreetingEyebrow": {

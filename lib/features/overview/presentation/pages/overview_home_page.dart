@@ -17,6 +17,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_filter_b
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_alerts_section.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_kpi_bar.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_top_products_per_agent_section.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -160,6 +161,8 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                       selector: (_, c) => _MetricsSlice(
                         isLoadingInitial: c.isLoadingInitial,
                         overview: c.overview,
+                        filter: c.activeFilter,
+                        availableAgents: c.availableAgents,
                       ),
                       builder: (context, slice, _) {
                         final overview = slice.overview;
@@ -194,6 +197,16 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                                 showSkeleton: showSkeleton,
                                 displayOverview: displayOverview,
                               ),
+                              if (!showSkeleton &&
+                                  overview != null &&
+                                  sessionUserId != null)
+                                OverviewTopProductsPerAgentSection(
+                                  userId: sessionUserId,
+                                  overview: overview,
+                                  filter: slice.filter,
+                                  availableAgents: slice.availableAgents,
+                                  l10n: l10n,
+                                ),
                             ],
                           ),
                         );
@@ -381,18 +394,29 @@ class _MetricsSlice {
   const _MetricsSlice({
     required this.isLoadingInitial,
     required this.overview,
+    required this.filter,
+    required this.availableAgents,
   });
 
   final bool isLoadingInitial;
   final Overview? overview;
+  final OverviewFilter filter;
+  final List<OverviewAgentOption> availableAgents;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is _MetricsSlice &&
           isLoadingInitial == other.isLoadingInitial &&
-          identical(overview, other.overview));
+          identical(overview, other.overview) &&
+          filter == other.filter &&
+          listEquals(availableAgents, other.availableAgents));
 
   @override
-  int get hashCode => Object.hash(isLoadingInitial, overview);
+  int get hashCode => Object.hash(
+    isLoadingInitial,
+    overview,
+    filter,
+    Object.hashAll(availableAgents),
+  );
 }

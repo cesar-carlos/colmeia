@@ -17,9 +17,12 @@ void main() {
       test(
         'executeSql loads Cliente with page pagination',
         () async {
-          final missingKeys = missingE2eBridgeKeys();
+          final missingKeys = missingE2eRepositoryKeys();
           if (missingKeys.isNotEmpty) {
-            // Console hint when dart-defines are absent (integration runs only).
+            // Same gate as repository e2e: e2eSetupDependencies only attaches
+            // Bearer after client-auth login when email/password are set.
+            // E2E_AGENT_ID + E2E_CLIENT_TOKEN alone yield HTTP 401 on /agents/commands.
+            // E2E skip hint; `print` is intentional for local diagnostics.
             // ignore: avoid_print
             print(
               'SKIP agent_sql_bridge_e2e: missing ${missingKeys.join(', ')}. '
