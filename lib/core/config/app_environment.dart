@@ -218,12 +218,11 @@ abstract final class AppEnvironment {
   /// Whether to wire the agent-queries datasource through
   /// `AgentCommandBatchCoordinator` (PR-I, review §5.2). Default `false`
   /// (opt-in until baseline metrics validate the savings).
-  static bool get socketBatchEnabled =>
-      AppEnvironmentResolution.resolveBool(
-        fromDefine: const String.fromEnvironment(EnvKeys.socketBatchEnabled),
-        fromDotenv: _dotenvMaybe(EnvKeys.socketBatchEnabled),
-        fallback: false,
-      );
+  static bool get socketBatchEnabled => AppEnvironmentResolution.resolveBool(
+    fromDefine: const String.fromEnvironment(EnvKeys.socketBatchEnabled),
+    fromDotenv: _dotenvMaybe(EnvKeys.socketBatchEnabled),
+    fallback: false,
+  );
 
   static const int defaultSocketBatchWindowMs = 8;
   static const int defaultSocketBatchMaxSize = 32;

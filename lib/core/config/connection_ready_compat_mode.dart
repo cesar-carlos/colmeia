@@ -14,7 +14,8 @@ enum ConnectionReadyCompatMode {
 
   /// Legacy strict — only accept the raw JSON shape; useful in tests against
   /// older hub forks.
-  rawJsonOnly;
+  rawJsonOnly
+  ;
 
   /// Parses the raw env value (`SOCKET_CONNECTION_READY_COMPAT_MODE`).
   /// Unknown values fall back to [fallback].

@@ -7,7 +7,8 @@
 /// `docs/Features/socket_consumer_channel_plan.md`.
 enum AgentBridgeTransport {
   rest,
-  socket;
+  socket
+  ;
 
   /// Parses the raw env value (`AGENT_BRIDGE_TRANSPORT`). Unknown values
   /// fall back to [fallback].
