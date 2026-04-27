@@ -93,6 +93,7 @@ void main() {
             as AgentSqlExecuteRequest;
     check(capturedRequest.trimmedAgentId).equals('agent-1');
     check(capturedRequest.trimmedClientToken).equals('token-123');
+    check(capturedRequest.useRelay).isTrue();
     check(capturedRequest.bridgeTimeoutMs).equals(120000);
     check(capturedRequest.executeOptions!.executionMode?.name).equals(
       'preserve',
@@ -107,37 +108,40 @@ void main() {
     check(capturedRequest.sql).contains('DATEDIFF');
   });
 
-  test('inlines dimension filters in SQL when a dimension filter is set', () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
+  test(
+    'inlines dimension filters in SQL when a dimension filter is set',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
 
-    await repository.load(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      filter: ResumoParcelasDiaSemanaFilter(
-        dataVendaInicio: DateTime.utc(2026),
-        dataVendaFim: DateTime.utc(2026, 12, 31),
-        codEmpresa: 10,
-        codFilial: 2,
-      ),
-    );
+      await repository.load(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: ResumoParcelasDiaSemanaFilter(
+          dataVendaInicio: DateTime.utc(2026),
+          dataVendaFim: DateTime.utc(2026, 12, 31),
+          codEmpresa: 10,
+          codFilial: 2,
+        ),
+      );
 
-    final capturedRequest =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
-    check(capturedRequest.namedParams.length).equals(5);
-    check(capturedRequest.namedParams.containsKey('codEmpresa')).isFalse();
-    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
-    check(capturedRequest.sql).contains('AND CodEmpresa = 10');
-    check(capturedRequest.sql).contains('AND CodFilial = 2');
-  });
+      final capturedRequest =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(capturedRequest.namedParams.length).equals(5);
+      check(capturedRequest.namedParams.containsKey('codEmpresa')).isFalse();
+      expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
+      check(capturedRequest.sql).contains('AND CodEmpresa = 10');
+      check(capturedRequest.sql).contains('AND CodFilial = 2');
+    },
+  );
 
   test('returns UnknownFailure when row mapping fails', () async {
     when(

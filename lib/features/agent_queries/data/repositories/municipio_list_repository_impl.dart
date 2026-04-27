@@ -123,7 +123,8 @@ class MunicipioListRepositoryImpl implements MunicipioListRepository {
       return Failure<MunicipioListPageResult, AppFailure>(
         UnknownFailure(
           message: error.message,
-          userMessage: 'Resposta do agente estava em formato inesperado. '
+          userMessage:
+              'Resposta do agente estava em formato inesperado. '
               'Tente novamente.',
           cause: error,
           stackTrace: stackTrace,

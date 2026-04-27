@@ -97,6 +97,7 @@ void main() {
             as AgentSqlExecuteRequest;
     check(capturedRequest.trimmedAgentId).equals('agent-1');
     check(capturedRequest.trimmedClientToken).equals('token-123');
+    check(capturedRequest.useRelay).isTrue();
     check(capturedRequest.bridgeTimeoutMs).equals(120000);
     check(capturedRequest.executeOptions!.executionMode?.name).equals(
       'preserve',

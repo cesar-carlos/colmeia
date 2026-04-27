@@ -2,13 +2,13 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/bridge_rpc_response.dart';
+import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_meta/data/datasources/agent_meta_remote_datasource.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/agent_meta/domain/repositories/agent_meta_repository.dart';
-import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:dio/dio.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -111,8 +111,7 @@ class AgentMetaRepositoryImpl implements AgentMetaRepository {
       return Failure<AgentProfileSnapshot, AppFailure>(
         NetworkFailure(
           message: error.message,
-          userMessage:
-              'Falha de comunicacao com o servidor. Tente novamente.',
+          userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{
@@ -129,7 +128,10 @@ class AgentMetaRepositoryImpl implements AgentMetaRepository {
           fallbackMessage: 'Unable to read agent profile via RPC',
           fallbackUserMessage:
               'Nao foi possivel ler o perfil do agente atraves do bridge.',
-          context: _context(operation: 'agent.getProfile', agentId: trimmedAgentId),
+          context: _context(
+            operation: 'agent.getProfile',
+            agentId: trimmedAgentId,
+          ),
         ),
       );
     }
@@ -259,8 +261,7 @@ class AgentMetaRepositoryImpl implements AgentMetaRepository {
       return Failure<ClientTokenPolicySnapshot, AppFailure>(
         NetworkFailure(
           message: error.message,
-          userMessage:
-              'Falha de comunicacao com o servidor. Tente novamente.',
+          userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{
@@ -378,8 +379,7 @@ class AgentMetaRepositoryImpl implements AgentMetaRepository {
       return Failure<AgentRpcDescriptor, AppFailure>(
         NetworkFailure(
           message: error.message,
-          userMessage:
-              'Falha de comunicacao com o servidor. Tente novamente.',
+          userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{
@@ -440,6 +440,7 @@ class AgentMetaRepositoryImpl implements AgentMetaRepository {
       technicalMessage: details.technicalMessage,
       correlationId: details.correlationId,
       timestamp: details.timestamp,
+      retryAfter: _readRetryAfterFromErrorData(details.errorData),
       cause: error,
       stackTrace: stackTrace,
       context: mergedContext,
@@ -455,8 +456,7 @@ class AgentMetaRepositoryImpl implements AgentMetaRepository {
     if (isSocketAuthenticationFailedCode(error.code)) {
       return SessionFailure(
         message: error.message,
-        userMessage:
-            'Sua sessao expirou. Faca login novamente para continuar.',
+        userMessage: 'Sua sessao expirou. Faca login novamente para continuar.',
         cause: error,
         stackTrace: stackTrace,
         context: <String, Object?>{
@@ -488,5 +488,43 @@ class AgentMetaRepositoryImpl implements AgentMetaRepository {
         'transportCode': error.code,
       },
     );
+  }
+
+  Duration? _readRetryAfterFromErrorData(Map<String, dynamic>? errorData) {
+    if (errorData == null || errorData.isEmpty) {
+      return null;
+    }
+    final ms = errorData['retry_after_ms'] ?? errorData['retryAfterMs'];
+    final fromMs = _durationFromMs(ms);
+    if (fromMs != null) {
+      return fromMs;
+    }
+    final resetAt = errorData['reset_at'] ?? errorData['resetAt'];
+    if (resetAt is String) {
+      final parsed = DateTime.tryParse(resetAt);
+      if (parsed != null) {
+        final delta = parsed.toUtc().difference(DateTime.now().toUtc());
+        return delta.isNegative ? Duration.zero : delta;
+      }
+    }
+    return null;
+  }
+
+  Duration? _durationFromMs(Object? raw) {
+    if (raw == null) {
+      return null;
+    }
+    if (raw is num) {
+      final ms = raw.toInt();
+      return ms < 0 ? Duration.zero : Duration(milliseconds: ms);
+    }
+    if (raw is String) {
+      final parsed = int.tryParse(raw.trim());
+      if (parsed == null) {
+        return null;
+      }
+      return parsed < 0 ? Duration.zero : Duration(milliseconds: parsed);
+    }
+    return null;
   }
 }

@@ -105,8 +105,8 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured
-            .single as AgentSqlExecuteRequest;
+            ).captured.single
+            as AgentSqlExecuteRequest;
 
     check(
       captured.sql,
@@ -125,6 +125,7 @@ void main() {
     check(captured.executeOptions?.executionMode).equals(
       AgentSqlExecutionMode.preserve,
     );
+    check(captured.useRelay).isTrue();
   });
 
   test('execute uses ROW_NUMBER order from filter.sortBy', () async {
@@ -149,8 +150,8 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured
-            .single as AgentSqlExecuteRequest;
+            ).captured.single
+            as AgentSqlExecuteRequest;
 
     check(
       captured.sql,
@@ -184,8 +185,8 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured
-            .single as AgentSqlExecuteRequest;
+            ).captured.single
+            as AgentSqlExecuteRequest;
 
     check(
       captured.sql,
@@ -220,8 +221,8 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured
-            .single as AgentSqlExecuteRequest;
+            ).captured.single
+            as AgentSqlExecuteRequest;
 
     check(
       captured.sql,

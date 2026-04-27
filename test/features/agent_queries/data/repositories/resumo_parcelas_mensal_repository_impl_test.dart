@@ -96,6 +96,7 @@ void main() {
             as AgentSqlExecuteRequest;
     check(capturedRequest.trimmedAgentId).equals('agent-1');
     check(capturedRequest.trimmedClientToken).equals('token-123');
+    check(capturedRequest.useRelay).isTrue();
     check(capturedRequest.bridgeTimeoutMs).equals(240000);
     check(capturedRequest.executeOptions!.executionMode?.name).equals(
       'preserve',
@@ -116,36 +117,39 @@ void main() {
     check(capturedRequest.sql.contains(':codEmpresa')).isFalse();
   });
 
-  test('inlines dimension filters in SQL when dimension filters are set', () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
+  test(
+    'inlines dimension filters in SQL when dimension filters are set',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
 
-    await repository.load(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      filter: ResumoParcelasMensalFilter(
-        dataVendaInicio: DateTime.utc(2026),
-        dataVendaFim: DateTime.utc(2026, 12, 31),
-        codEmpresa: 9,
-        codFilial: 2,
-      ),
-    );
+      await repository.load(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: ResumoParcelasMensalFilter(
+          dataVendaInicio: DateTime.utc(2026),
+          dataVendaFim: DateTime.utc(2026, 12, 31),
+          codEmpresa: 9,
+          codFilial: 2,
+        ),
+      );
 
-    final capturedRequest =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
-    check(capturedRequest.namedParams.length).equals(5);
-    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
-    check(capturedRequest.sql).contains('AND CodEmpresa = 9');
-    check(capturedRequest.sql).contains('AND CodFilial = 2');
-  });
+      final capturedRequest =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(capturedRequest.namedParams.length).equals(5);
+      expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
+      check(capturedRequest.sql).contains('AND CodEmpresa = 9');
+      check(capturedRequest.sql).contains('AND CodFilial = 2');
+    },
+  );
 
   test('maps row when bridge uses camelCase keys', () async {
     when(

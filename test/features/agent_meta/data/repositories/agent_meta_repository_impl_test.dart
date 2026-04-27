@@ -1,11 +1,11 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/network/bridge_rpc_response.dart';
 import 'package:colmeia/features/agent_meta/data/datasources/agent_meta_remote_datasource.dart';
 import 'package:colmeia/features/agent_meta/data/models/agent_get_profile_response_dto.dart';
 import 'package:colmeia/features/agent_meta/data/models/client_token_policy_response_dto.dart';
 import 'package:colmeia/features/agent_meta/data/models/rpc_discover_response_dto.dart';
 import 'package:colmeia/features/agent_meta/data/repositories/agent_meta_repository_impl.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -18,6 +18,7 @@ void main() {
 
   setUp(() {
     remote = _MockAgentMetaRemoteDataSource();
+    when(() => remote.transportLabel).thenReturn('socket');
     sut = AgentMetaRepositoryImpl(remote);
   });
 
@@ -52,6 +53,31 @@ void main() {
           clientToken: any(named: 'clientToken'),
         ),
       );
+    });
+
+    test('maps BridgeRpcException to RpcFailure', () async {
+      when(
+        () => remote.agentGetProfile(
+          agentId: any(named: 'agentId'),
+          clientToken: any(named: 'clientToken'),
+        ),
+      ).thenThrow(
+        BridgeRpcException(
+          const BridgeRpcErrorDetails(
+            userMessage: 'Agent denied the request.',
+            message: 'Agent denied the request.',
+            code: '-32001',
+            reason: 'agent_access_denied',
+          ),
+        ),
+      );
+
+      final result = await sut.getAgentProfile(agentId: 'a');
+      check(result.isError()).isTrue();
+      final failure = result.exceptionOrNull();
+      check(failure).isA<RpcFailure>();
+      check(failure?.context['transport']).equals('socket');
+      check(failure?.context['rpcCode']).equals('-32001');
     });
   });
 
@@ -93,19 +119,13 @@ void main() {
             clientToken: any(named: 'clientToken'),
           ),
         ).thenThrow(
-          DioException(
-            requestOptions: RequestOptions(path: '/x'),
-            response: Response<dynamic>(
-              requestOptions: RequestOptions(path: '/x'),
-              statusCode: 200,
-              data: <String, dynamic>{
-                'error': <String, dynamic>{
-                  'code': '-32601',
-                  'message': 'method not found',
-                },
-              },
+          BridgeRpcException(
+            const BridgeRpcErrorDetails(
+              userMessage: 'method not found',
+              message: 'method not found',
+              code: '-32601',
+              reason: 'method_not_found',
             ),
-            type: DioExceptionType.badResponse,
           ),
         );
 
@@ -150,21 +170,16 @@ void main() {
     test(
       'maps -32601 to empty descriptor (Success)',
       () async {
-        when(() => remote.rpcDiscover(agentId: any(named: 'agentId')))
-            .thenThrow(
-          DioException(
-            requestOptions: RequestOptions(path: '/x'),
-            response: Response<dynamic>(
-              requestOptions: RequestOptions(path: '/x'),
-              statusCode: 200,
-              data: <String, dynamic>{
-                'error': <String, dynamic>{
-                  'code': '-32601',
-                  'message': 'method not found',
-                },
-              },
+        when(
+          () => remote.rpcDiscover(agentId: any(named: 'agentId')),
+        ).thenThrow(
+          BridgeRpcException(
+            const BridgeRpcErrorDetails(
+              userMessage: 'method not found',
+              message: 'method not found',
+              code: '-32601',
+              reason: 'method_not_found',
             ),
-            type: DioExceptionType.badResponse,
           ),
         );
 

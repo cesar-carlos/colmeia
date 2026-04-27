@@ -75,6 +75,7 @@ class ResumoParcelasDiaSemanaUsuarioRepositoryImpl
         maxRows:
             AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemanaUsuario,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

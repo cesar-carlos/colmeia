@@ -131,8 +131,6 @@ The recommended target for most production deployments.
 
 ```bash
 AGENT_BRIDGE_TRANSPORT=socket               # changed
-SOCKET_RELAY_ENABLED=true                   # changed (large SQL via relay)
-SOCKET_PRESENCE_LISTENER_ENABLED=true       # idem
 SOCKET_RECONNECT_ATTEMPTS=8                 # mobile-friendly
 SOCKET_WARM_UP_AFTER_LOGIN=true             # default; spelled out for ops
 # SOCKET_PAYLOAD_SIGNING_KEY=               # leave empty when hub unsigned
@@ -141,7 +139,9 @@ SOCKET_WARM_UP_AFTER_LOGIN=true             # default; spelled out for ops
 Effect: every `agents:command` and `relay:*` flows through the socket;
 unsigned frames in both directions; falls back to local exponential
 backoff on transient failures, respects server `Retry-After` hints when
-they arrive.
+they arrive. In the app runtime, `AGENT_BRIDGE_TRANSPORT=socket`
+implicitly enables relay and realtime presence, so no extra client-side
+flag is required for those paths.
 
 ### Mode C — Full socket, strict signing (defence in depth)
 
@@ -150,8 +150,6 @@ key is rotated under controlled change management.
 
 ```bash
 AGENT_BRIDGE_TRANSPORT=socket
-SOCKET_RELAY_ENABLED=true
-SOCKET_PRESENCE_LISTENER_ENABLED=true
 SOCKET_PAYLOAD_SIGNING_KEY=<must match hub PAYLOAD_SIGNING_KEY>
 SOCKET_PAYLOAD_SIGNING_KEY_ID=hub-2026-q2   # only if hub uses key_id
 SOCKET_PAYLOAD_REQUIRE_SIGNATURE=true       # reject unsigned inbound

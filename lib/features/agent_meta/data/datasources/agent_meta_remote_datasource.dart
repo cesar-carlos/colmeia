@@ -1,5 +1,6 @@
-import 'package:colmeia/core/network/bridge_rpc_response.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/core/network/bridge_rpc_response.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/features/agent_meta/data/models/agent_get_profile_response_dto.dart';
 import 'package:colmeia/features/agent_meta/data/models/client_token_policy_response_dto.dart';
@@ -85,6 +86,15 @@ abstract class _BridgeAgentMetaRemoteDataSource
   }) {
     final trimmedAgentId = agentId.trim();
     final rpcId = _uuid.v4();
+    AppLogger.debug(
+      'Agent meta bridge RPC request prepared',
+      context: <String, Object?>{
+        'component': 'AgentMetaRemoteDataSource',
+        'agentId': trimmedAgentId,
+        'method': method,
+        'transport': transportLabel,
+      },
+    );
     return postBridgeCommand(
       agentId: trimmedAgentId,
       rpcId: rpcId,

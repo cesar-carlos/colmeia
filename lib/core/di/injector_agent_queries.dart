@@ -528,10 +528,10 @@ void registerInjectorAgentQueries(GetIt getIt) {
   }
 }
 
-/// Returns a [RelayAgentQueriesRemoteDataSource] when the relay layer is
-/// available — i.e. `SOCKET_RELAY_ENABLED=true` registered the dispatcher
-/// in `injector_socket`. Returns `null` otherwise so the agent-queries
-/// stack stays on the unitary `agents:command` / REST path.
+/// Returns the relay-backed datasource when the relay layer is available.
+/// Prefer the collected streaming adapter when the streaming port is
+/// registered so repositories opting into `useRelay` get the lower-memory
+/// relay wire path without changing their unary `Future<Map>` contract.
 AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
   if (!getIt.isRegistered<RelayCommandDispatcher>()) {
     return null;

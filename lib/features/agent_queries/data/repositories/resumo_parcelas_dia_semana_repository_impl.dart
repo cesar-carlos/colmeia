@@ -74,6 +74,7 @@ class ResumoParcelasDiaSemanaRepositoryImpl
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemana,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

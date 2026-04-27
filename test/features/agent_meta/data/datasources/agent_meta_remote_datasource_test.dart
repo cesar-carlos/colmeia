@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/network/bridge_rpc_response.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_meta/data/datasources/agent_meta_remote_datasource.dart';
@@ -102,5 +103,29 @@ void main() {
     await check(
       dataSource.rpcDiscover(agentId: 'agent-42'),
     ).throws<SocketDispatchTimeout>();
+  });
+
+  test('throws BridgeRpcException when bridge returns item.error', () async {
+    sender.response = const <String, dynamic>{
+      'response': <String, dynamic>{
+        'type': 'single',
+        'success': true,
+        'item': <String, dynamic>{
+          'id': 'fake-rpc',
+          'success': false,
+          'error': <String, dynamic>{
+            'code': -32601,
+            'message': 'method not found',
+            'data': <String, dynamic>{
+              'reason': 'method_not_found',
+            },
+          },
+        },
+      },
+    };
+
+    await check(
+      dataSource.rpcDiscover(agentId: 'agent-42'),
+    ).throws<BridgeRpcException>();
   });
 }

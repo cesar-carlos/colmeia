@@ -75,6 +75,7 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
         maxRows:
             AgentQueriesBoundedResultMaxRows.resumoVendasDiariasPorVendedor,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

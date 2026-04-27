@@ -47,40 +47,44 @@ void main() {
     verifyNever(() => agentQueriesRepository.executeSql(any()));
   });
 
-  test('builds request with five named params; optional filters in SQL', () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
+  test(
+    'builds request with five named params; optional filters in SQL',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
 
-    await repository.load(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      filter: ResumoVendasDiariasPorVendedorFilter(
-        dataVendaInicio: DateTime.utc(2026, 4),
-        dataVendaFim: DateTime.utc(2026, 4, 30),
-      ),
-    );
+      await repository.load(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: ResumoVendasDiariasPorVendedorFilter(
+          dataVendaInicio: DateTime.utc(2026, 4),
+          dataVendaFim: DateTime.utc(2026, 4, 30),
+        ),
+      );
 
-    final captured =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
-    check(captured.namedParams['origem']).equals('FrenteLoja');
-    check(captured.namedParams['geraFinanceiro']).equals('S');
-    check(captured.namedParams['preVenda']).equals('N');
-    check(captured.namedParams.length).equals(5);
-    expect(captured.sql, isNot(contains(':codVendedor')));
-    expect(captured.sql, isNot(contains(':bairro')));
-    expect(captured.sql, isNot(contains(':municipio')));
-    check(captured.bridgeTimeoutMs).equals(120000);
-    check(captured.executeOptions!.executionMode?.name).equals('preserve');
-    check(captured.sql).contains('ResumoVendasDiario');
-  });
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(captured.namedParams['origem']).equals('FrenteLoja');
+      check(captured.namedParams['geraFinanceiro']).equals('S');
+      check(captured.namedParams['preVenda']).equals('N');
+      check(captured.namedParams.length).equals(5);
+      expect(captured.sql, isNot(contains(':codVendedor')));
+      expect(captured.sql, isNot(contains(':bairro')));
+      expect(captured.sql, isNot(contains(':municipio')));
+      check(captured.bridgeTimeoutMs).equals(120000);
+      check(captured.useRelay).isTrue();
+      check(captured.executeOptions!.executionMode?.name).equals('preserve');
+      check(captured.sql).contains('ResumoVendasDiario');
+    },
+  );
 
   test('inlines codVendedor bairro municipio in SQL when provided', () async {
     when(

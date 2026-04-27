@@ -97,14 +97,15 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured
-            .single as AgentSqlExecuteRequest;
+            ).captured.single
+            as AgentSqlExecuteRequest;
 
     check(captured.sql).equals(MunicipioListSql.pagedQuery);
     check(captured.namedParams['uf']).equals('PR');
     check(captured.namedParams['searchPattern']).equals('Cur%');
     check(captured.namedParams['startRow']).equals(11);
     check(captured.namedParams['endRow']).equals(20);
+    check(captured.useRelay).isTrue();
   });
 
   test('maps rows with CodMunicipio to entities', () async {

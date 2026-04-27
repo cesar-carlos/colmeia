@@ -101,7 +101,10 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
   }) {
     if (executionResult.rows.isEmpty) {
       return const Success<ResumoProdutoVendaPageResult, AppFailure>(
-        ResumoProdutoVendaPageResult(items: <ResumoProdutoVendaRow>[], totalCount: 0),
+        ResumoProdutoVendaPageResult(
+          items: <ResumoProdutoVendaRow>[],
+          totalCount: 0,
+        ),
       );
     }
 
@@ -144,7 +147,8 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
       return Failure<ResumoProdutoVendaPageResult, AppFailure>(
         UnknownFailure(
           message: error.message,
-          userMessage: 'Resposta do agente estava em formato inesperado. '
+          userMessage:
+              'Resposta do agente estava em formato inesperado. '
               'Tente novamente.',
           cause: error,
           stackTrace: stackTrace,
