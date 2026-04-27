@@ -3,6 +3,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -15,6 +17,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
@@ -44,6 +49,12 @@ class _MockLoadResumoParcelasDiaSemanaAcrossAgents extends Mock
 class _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents extends Mock
     implements LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase {}
 
+class _MockLoadResumoProdutoVendaLucratividadeMensal extends Mock
+    implements LoadResumoProdutoVendaLucratividadeMensalUseCase {}
+
+class _MockLoadResumoProdutoVendaLucratividade extends Mock
+    implements LoadResumoProdutoVendaLucratividadeUseCase {}
+
 void main() {
   late _MockOverviewLocalDataSource local;
   late _MockResumoAcrossAgentsRepository resumoAcrossAgentsRepository;
@@ -53,6 +64,10 @@ void main() {
   loadResumoParcelasDiaSemanaAcrossAgents;
   late _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents
   loadResumoParcelasDiaSemanaUsuarioAcrossAgents;
+  late _MockLoadResumoProdutoVendaLucratividadeMensal
+  loadResumoProdutoVendaLucratividadeMensal;
+  late _MockLoadResumoProdutoVendaLucratividade
+  loadResumoProdutoVendaLucratividade;
 
   final fixedNow = DateTime(2026, 4, 8);
 
@@ -77,6 +92,12 @@ void main() {
       ),
     );
     registerFallbackValue(<String>{'agent-fallback'});
+    registerFallbackValue(
+      ResumoProdutoVendaLucratividadeMensalFilter(
+        dataVendaInicio: DateTime(2025, 5),
+        dataVendaFim: DateTime(2026, 4, 30),
+      ),
+    );
     registerFallbackValue(
       OverviewModel(
         periodStart: DateTime(2026),
@@ -103,6 +124,37 @@ void main() {
         _MockLoadResumoParcelasDiaSemanaAcrossAgents();
     loadResumoParcelasDiaSemanaUsuarioAcrossAgents =
         _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents();
+    loadResumoProdutoVendaLucratividadeMensal =
+        _MockLoadResumoProdutoVendaLucratividadeMensal();
+    when(
+      () => loadResumoProdutoVendaLucratividadeMensal(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          const Success<
+            List<ResumoProdutoVendaLucratividadeMensalRow>,
+            AppFailure
+          >(<ResumoProdutoVendaLucratividadeMensalRow>[]),
+    );
+    loadResumoProdutoVendaLucratividade =
+        _MockLoadResumoProdutoVendaLucratividade();
+    when(
+      () => loadResumoProdutoVendaLucratividade(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          const Success<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
+            <ResumoProdutoVendaLucratividadeRow>[],
+          ),
+    );
     when(
       () => loadResumoParcelasMensalAcrossAgents(
         userId: any(named: 'userId'),
@@ -173,6 +225,9 @@ void main() {
           loadResumoParcelasDiaSemanaAcrossAgents,
       loadResumoParcelasDiaSemanaUsuarioAcrossAgents:
           loadResumoParcelasDiaSemanaUsuarioAcrossAgents,
+      loadResumoProdutoVendaLucratividadeMensal:
+          loadResumoProdutoVendaLucratividadeMensal,
+      loadResumoProdutoVendaLucratividade: loadResumoProdutoVendaLucratividade,
       now: () => fixedNow,
     );
   }
@@ -773,15 +828,18 @@ void main() {
               missingClientTokenTargets: <AgentQueryTarget>[
                 _target('agent-miss', name: 'Sem token', clientToken: null),
               ],
-              participants: <AgentQueryExecutionParticipant<
-                ResumoParcelaFormaPagamentoRow
-              >>[
-                _successParticipant(
-                  agentId: 'agent-online',
-                  displayName: 'Online Loja',
-                  rows: const <ResumoParcelaFormaPagamentoRow>[],
-                ),
-              ],
+              participants:
+                  <
+                    AgentQueryExecutionParticipant<
+                      ResumoParcelaFormaPagamentoRow
+                    >
+                  >[
+                    _successParticipant(
+                      agentId: 'agent-online',
+                      displayName: 'Online Loja',
+                      rows: const <ResumoParcelaFormaPagamentoRow>[],
+                    ),
+                  ],
             ),
           ),
         );
@@ -1179,8 +1237,8 @@ _emptyWeekdayUsuarioReport() {
     consideredApprovedAgentCount: 0,
     plannedTargets: <AgentQueryTarget>[],
     missingClientTokenTargets: <AgentQueryTarget>[],
-    participants: <AgentQueryExecutionParticipant<
-      ResumoParcelasDiaSemanaUsuarioRow>>[],
+    participants:
+        <AgentQueryExecutionParticipant<ResumoParcelasDiaSemanaUsuarioRow>>[],
     totalElapsedMs: 0,
   );
 }

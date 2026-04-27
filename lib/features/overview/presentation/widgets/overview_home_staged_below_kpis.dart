@@ -1,6 +1,7 @@
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_bar_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
@@ -24,6 +25,7 @@ class OverviewHomeStagedBelowKpis extends StatefulWidget {
     required this.l10n,
     required this.showSkeleton,
     required this.displayOverview,
+    required this.isSingleAgentSelected,
     super.key,
   });
 
@@ -31,6 +33,11 @@ class OverviewHomeStagedBelowKpis extends StatefulWidget {
   final AppLocalizations l10n;
   final bool showSkeleton;
   final Overview displayOverview;
+
+  /// True when exactly one agent is selected in the active filter.
+  /// The lucratividade mensal chart is only shown in single-agent context
+  /// because product cost aggregation across stores is not meaningful.
+  final bool isSingleAgentSelected;
 
   @override
   State<OverviewHomeStagedBelowKpis> createState() =>
@@ -47,7 +54,7 @@ class _OverviewHomeStagedBelowKpisState
   /// [dispose], so post-frame callbacks do not call [setState] after teardown.
   int _mountGeneration = 0;
 
-  static const int _finalStage = 7;
+  static const int _finalStage = 8;
 
   Overview? _sortedListsSource;
   List<OverviewAgentRanking>? _sortedAgentsCache;
@@ -167,7 +174,9 @@ class _OverviewHomeStagedBelowKpisState
     final chartBlockHeight = tokens.chartStandardHeight + tokens.contentSpacing;
     final paymentBarChartHeight =
         tokens.chartStandardHeight + tokens.contentSpacing * 2;
-    final mixPlaceholderHeight = AppCategoryDonutCard.loadingBlockHeight(tokens);
+    final mixPlaceholderHeight = AppCategoryDonutCard.loadingBlockHeight(
+      tokens,
+    );
 
     if (showSkeleton) {
       return Column(
@@ -223,7 +232,8 @@ class _OverviewHomeStagedBelowKpisState
           AppSkeleton(
             enabled: true,
             showDelay: const Duration(milliseconds: 100),
-            loadingSemanticsLabel: l10n.overviewLoadingWeekdayUserSalesSemantics,
+            loadingSemanticsLabel:
+                l10n.overviewLoadingWeekdayUserSalesSemantics,
             child: OverviewWeekdayUserSalesTrendChart(
               l10n: l10n,
               points: displayOverview.weekdayUserSalesTrend,
@@ -241,6 +251,20 @@ class _OverviewHomeStagedBelowKpisState
               l10n: l10n,
               agentRankings: displayOverview.agentRankings,
               userRankings: displayOverview.userRankings,
+            ),
+          ),
+          SizedBox(height: tokens.sectionSpacing),
+          AppSkeleton(
+            enabled: true,
+            showDelay: const Duration(milliseconds: 140),
+            loadingSemanticsLabel: l10n.overviewLoadingLucratividadeSemantics,
+            child: OverviewLucratividadeChart(
+              l10n: l10n,
+              points: displayOverview.lucratividadeTrend,
+              loadFailed: displayOverview.lucratividadeTrendLoadFailed,
+              loadFailureMessage:
+                  displayOverview.lucratividadeTrendLoadFailureMessage,
+              isSingleOrMultiAgentSelected: widget.isSingleAgentSelected,
             ),
           ),
         ],
@@ -268,6 +292,8 @@ class _OverviewHomeStagedBelowKpisState
                 tokens.sectionSpacing +
                 _userRankingPlaceholderHeight(tokens),
           ),
+          SizedBox(height: tokens.sectionSpacing),
+          SizedBox(height: chartBlockHeight),
         ],
       );
     }
@@ -375,7 +401,9 @@ class _OverviewHomeStagedBelowKpisState
                   height:
                       chartBlockHeight +
                       tokens.sectionSpacing +
-                      _userRankingPlaceholderHeight(tokens),
+                      _userRankingPlaceholderHeight(tokens) +
+                      tokens.sectionSpacing +
+                      chartBlockHeight,
                 )
               : _StagedFadeIn(
                   child: RepaintBoundary(
@@ -407,6 +435,27 @@ class _OverviewHomeStagedBelowKpisState
                               SizedBox(
                                 height: _userRankingPlaceholderHeight(tokens),
                               ),
+                            SizedBox(height: tokens.sectionSpacing),
+                            if (_belowKpisStage >= 8)
+                              _StagedFadeIn(
+                                child: RepaintBoundary(
+                                  key: const ValueKey<String>(
+                                    'overview-lucratividade-mensal',
+                                  ),
+                                  child: OverviewLucratividadeChart(
+                                    l10n: l10n,
+                                    points: overview.lucratividadeTrend,
+                                    loadFailed:
+                                        overview.lucratividadeTrendLoadFailed,
+                                    loadFailureMessage: overview
+                                        .lucratividadeTrendLoadFailureMessage,
+                                    isSingleOrMultiAgentSelected:
+                                        widget.isSingleAgentSelected,
+                                  ),
+                                ),
+                              )
+                            else
+                              SizedBox(height: chartBlockHeight),
                           ],
                         );
                       },

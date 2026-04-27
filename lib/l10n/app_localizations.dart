@@ -2955,6 +2955,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Period'**
   String get dateRangePickerSemanticsFallbackLabel;
+
+  /// No description provided for @overviewLucratividadeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Profitability by branch'**
+  String get overviewLucratividadeTitle;
+
+  /// No description provided for @overviewLucratividadeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue, cost and margin for the selected period, by branch.'**
+  String get overviewLucratividadeSubtitle;
+
+  /// No description provided for @overviewLucratividadeSwitchRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get overviewLucratividadeSwitchRevenue;
+
+  /// No description provided for @overviewLucratividadeSwitchCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get overviewLucratividadeSwitchCost;
+
+  /// No description provided for @overviewLucratividadeSwitchMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin %'**
+  String get overviewLucratividadeSwitchMargin;
+
+  /// No description provided for @overviewLucratividadeRevenueSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get overviewLucratividadeRevenueSeriesLabel;
+
+  /// No description provided for @overviewLucratividadeCostSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement cost'**
+  String get overviewLucratividadeCostSeriesLabel;
+
+  /// No description provided for @overviewLucratividadeMarginSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin %'**
+  String get overviewLucratividadeMarginSeriesLabel;
+
+  /// No description provided for @overviewLucratividadeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No profitability data for this period.'**
+  String get overviewLucratividadeEmpty;
+
+  /// No description provided for @overviewLucratividadeMultiAgentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select one or more agents to view profitability.'**
+  String get overviewLucratividadeMultiAgentHint;
+
+  /// No description provided for @overviewLoadingLucratividadeSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading profitability by branch chart…'**
+  String get overviewLoadingLucratividadeSemantics;
+
+  /// No description provided for @overviewLucratividadeMensalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly product profitability'**
+  String get overviewLucratividadeMensalTitle;
+
+  /// No description provided for @overviewLucratividadeMensalSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue, replacement cost and margin per month (selected agent).'**
+  String get overviewLucratividadeMensalSubtitle;
+
+  /// No description provided for @overviewLucratividadeMensalEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No profitability data for this period.'**
+  String get overviewLucratividadeMensalEmpty;
+
+  /// No description provided for @overviewLucratividadeMensalMultiAgentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a single agent to view monthly profitability.'**
+  String get overviewLucratividadeMensalMultiAgentHint;
+
+  /// No description provided for @overviewLucratividadeMensalSwitchRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get overviewLucratividadeMensalSwitchRevenue;
+
+  /// No description provided for @overviewLucratividadeMensalSwitchCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get overviewLucratividadeMensalSwitchCost;
+
+  /// No description provided for @overviewLucratividadeMensalSwitchMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin %'**
+  String get overviewLucratividadeMensalSwitchMargin;
+
+  /// No description provided for @overviewLucratividadeMensalRevenueSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get overviewLucratividadeMensalRevenueSeriesLabel;
+
+  /// No description provided for @overviewLucratividadeMensalCostSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement cost'**
+  String get overviewLucratividadeMensalCostSeriesLabel;
+
+  /// No description provided for @overviewLucratividadeMensalMarginSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin %'**
+  String get overviewLucratividadeMensalMarginSeriesLabel;
+
+  /// No description provided for @overviewLoadingLucratividadeMensalSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading monthly product profitability chart…'**
+  String get overviewLoadingLucratividadeMensalSemantics;
 }
 
 class _AppLocalizationsDelegate

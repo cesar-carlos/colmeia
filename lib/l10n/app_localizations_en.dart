@@ -1773,4 +1773,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dateRangePickerSemanticsFallbackLabel => 'Period';
+
+  @override
+  String get overviewLucratividadeTitle => 'Profitability by branch';
+
+  @override
+  String get overviewLucratividadeSubtitle =>
+      'Revenue, cost and margin for the selected period, by branch.';
+
+  @override
+  String get overviewLucratividadeSwitchRevenue => 'Revenue';
+
+  @override
+  String get overviewLucratividadeSwitchCost => 'Cost';
+
+  @override
+  String get overviewLucratividadeSwitchMargin => 'Margin %';
+
+  @override
+  String get overviewLucratividadeRevenueSeriesLabel => 'Revenue';
+
+  @override
+  String get overviewLucratividadeCostSeriesLabel => 'Replacement cost';
+
+  @override
+  String get overviewLucratividadeMarginSeriesLabel => 'Margin %';
+
+  @override
+  String get overviewLucratividadeEmpty =>
+      'No profitability data for this period.';
+
+  @override
+  String get overviewLucratividadeMultiAgentHint =>
+      'Select one or more agents to view profitability.';
+
+  @override
+  String get overviewLoadingLucratividadeSemantics =>
+      'Loading profitability by branch chart…';
+
+  @override
+  String get overviewLucratividadeMensalTitle =>
+      'Monthly product profitability';
+
+  @override
+  String get overviewLucratividadeMensalSubtitle =>
+      'Revenue, replacement cost and margin per month (selected agent).';
+
+  @override
+  String get overviewLucratividadeMensalEmpty =>
+      'No profitability data for this period.';
+
+  @override
+  String get overviewLucratividadeMensalMultiAgentHint =>
+      'Select a single agent to view monthly profitability.';
+
+  @override
+  String get overviewLucratividadeMensalSwitchRevenue => 'Revenue';
+
+  @override
+  String get overviewLucratividadeMensalSwitchCost => 'Cost';
+
+  @override
+  String get overviewLucratividadeMensalSwitchMargin => 'Margin %';
+
+  @override
+  String get overviewLucratividadeMensalRevenueSeriesLabel => 'Revenue';
+
+  @override
+  String get overviewLucratividadeMensalCostSeriesLabel => 'Replacement cost';
+
+  @override
+  String get overviewLucratividadeMensalMarginSeriesLabel => 'Margin %';
+
+  @override
+  String get overviewLoadingLucratividadeMensalSemantics =>
+      'Loading monthly product profitability chart…';
 }

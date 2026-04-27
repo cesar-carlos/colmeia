@@ -41,4 +41,8 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Monthly product profitability buckets: `(months in range) × filiais`.
   /// At most ~13 months × many branches; 2 000 is a conservative safety cap.
   static const int resumoProdutoVendaLucratividadeMensal = 2000;
+
+  /// Period product profitability: one row per `CodEmpresa/CodFilial`.
+  /// Bounded by the number of active branches; 200 is a generous safety cap.
+  static const int resumoProdutoVendaLucratividade = 200;
 }

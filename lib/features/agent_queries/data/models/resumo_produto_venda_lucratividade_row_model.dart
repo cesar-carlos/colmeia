@@ -1,13 +1,10 @@
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_reader.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 
-class ResumoProdutoVendaLucratividadeMensalRowModel {
-  const ResumoProdutoVendaLucratividadeMensalRowModel({
+class ResumoProdutoVendaLucratividadeRowModel {
+  const ResumoProdutoVendaLucratividadeRowModel({
     required this.codEmpresa,
     required this.codFilial,
-    required this.ano,
-    required this.mes,
-    required this.anoMes,
     required this.qtdVendas,
     required this.qtdItensVendido,
     required this.valorTotalCustoMedio,
@@ -16,10 +13,10 @@ class ResumoProdutoVendaLucratividadeMensalRowModel {
     required this.valorTotalItem,
   });
 
-  factory ResumoProdutoVendaLucratividadeMensalRowModel.fromMap(
+  factory ResumoProdutoVendaLucratividadeRowModel.fromMap(
     Map<String, dynamic> map,
   ) {
-    return ResumoProdutoVendaLucratividadeMensalRowModel(
+    return ResumoProdutoVendaLucratividadeRowModel(
       codEmpresa: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodEmpresa'),
@@ -27,18 +24,6 @@ class ResumoProdutoVendaLucratividadeMensalRowModel {
       codFilial: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodFilial'),
-      ),
-      ano: AgentQueriesSqlRowMapReader.readRequiredInt(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Ano'),
-      ),
-      mes: AgentQueriesSqlRowMapReader.readRequiredInt(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('Mes'),
-      ),
-      anoMes: AgentQueriesSqlRowMapReader.readRequiredNonEmptyString(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('AnoMes'),
       ),
       qtdVendas: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
@@ -69,9 +54,6 @@ class ResumoProdutoVendaLucratividadeMensalRowModel {
 
   final int codEmpresa;
   final int codFilial;
-  final int ano;
-  final int mes;
-  final String anoMes;
   final int qtdVendas;
   final double qtdItensVendido;
   final double valorTotalCustoMedio;
@@ -79,13 +61,10 @@ class ResumoProdutoVendaLucratividadeMensalRowModel {
   final double pontoEquilibrio;
   final double valorTotalItem;
 
-  ResumoProdutoVendaLucratividadeMensalRow toEntity() {
-    return ResumoProdutoVendaLucratividadeMensalRow(
+  ResumoProdutoVendaLucratividadeRow toEntity() {
+    return ResumoProdutoVendaLucratividadeRow(
       codEmpresa: codEmpresa,
       codFilial: codFilial,
-      ano: ano,
-      mes: mes,
-      anoMes: anoMes,
       qtdVendas: qtdVendas,
       qtdItensVendido: qtdItensVendido,
       valorTotalCustoMedio: valorTotalCustoMedio,

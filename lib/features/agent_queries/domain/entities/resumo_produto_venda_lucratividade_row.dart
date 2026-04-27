@@ -1,17 +1,14 @@
-/// One monthly profitability bucket from the
-/// `ResumoProdutoVendaLucratividadeMensal` aggregate query.
+/// One profitability bucket from the `ResumoProdutoVendaLucratividade`
+/// aggregate query.
 ///
-/// Grouped by `CodEmpresa`, `CodFilial`, `Ano`, `Mes`. `percentualLucro`
-/// is computed in the app from `custoReposicao` and `valorTotalItem` to avoid
-/// SQL compatibility issues with Sybase SQL Anywhere and SQL Server when using
-/// aggregate expressions inside a CASE WHEN.
-class ResumoProdutoVendaLucratividadeMensalRow {
-  const ResumoProdutoVendaLucratividadeMensalRow({
+/// Grouped by `CodEmpresa` and `CodFilial` for the requested date range.
+/// `percentualLucro` is computed in the app from `custoReposicao` and
+/// `valorTotalItem` to avoid SQL compatibility issues with Sybase SQL Anywhere
+/// and SQL Server when using aggregate expressions inside a CASE WHEN.
+class ResumoProdutoVendaLucratividadeRow {
+  const ResumoProdutoVendaLucratividadeRow({
     required this.codEmpresa,
     required this.codFilial,
-    required this.ano,
-    required this.mes,
-    required this.anoMes,
     required this.qtdVendas,
     required this.qtdItensVendido,
     required this.valorTotalCustoMedio,
@@ -22,18 +19,10 @@ class ResumoProdutoVendaLucratividadeMensalRow {
 
   final int codEmpresa;
   final int codFilial;
-  final int ano;
-
-  /// Calendar month (1–12).
-  final int mes;
-
-  /// Zero-padded `"YYYY/MM"` label suitable for display (e.g. `"2026/03"`).
-  final String anoMes;
-
   final int qtdVendas;
   final double qtdItensVendido;
 
-  /// `SUM(qty × custo médio ponderado)` for the month.
+  /// `SUM(qty × custo médio ponderado)` for the period.
   final double valorTotalCustoMedio;
   final double custoReposicao;
   final double pontoEquilibrio;
@@ -47,4 +36,7 @@ class ResumoProdutoVendaLucratividadeMensalRow {
     }
     return 0;
   }
+
+  /// Short label for chart X-axis: `"<empresa>-<filial>"`.
+  String get filialLabel => '$codEmpresa-$codFilial';
 }

@@ -130,10 +130,9 @@ void main() {
               'QtdVendas': 42,
               'QtdItensVendido': 150,
               'ValorTotalCustoMedio': 3000,
-              'CustoReposicao': 2800,
+              'CustoReposicao': 2500,
               'PontoEquilibrio': 0,
               'ValorTotalItem': 5000,
-              'PercentualLucro': 56,
             },
           ],
           rowCount: 1,
@@ -163,6 +162,8 @@ void main() {
     check(row.qtdItensVendido).equals(150);
     check(row.valorTotalCustoMedio).equals(3000);
     check(row.valorTotalItem).equals(5000);
-    check(row.percentualLucro).equals(56);
+    // percentualLucro is computed in-app: (custoReposicao / valorTotalItem) * 100
+    // = (2500 / 5000) * 100 = 50.0 (exact in IEEE 754)
+    check(row.percentualLucro).equals(50);
   });
 }

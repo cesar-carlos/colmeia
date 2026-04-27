@@ -1,3 +1,5 @@
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
@@ -23,6 +25,13 @@ class Overview {
     this.weekdayUserSalesTrend = const <OverviewWeekdayUserSalesTrendPoint>[],
     this.weekdayUserSalesTrendLoadFailed = false,
     this.weekdayUserSalesTrendLoadFailureMessage,
+    this.lucratividadeMensalTrend =
+        const <ResumoProdutoVendaLucratividadeMensalRow>[],
+    this.lucratividadeMensalTrendLoadFailed = false,
+    this.lucratividadeMensalTrendLoadFailureMessage,
+    this.lucratividadeTrend = const <ResumoProdutoVendaLucratividadeRow>[],
+    this.lucratividadeTrendLoadFailed = false,
+    this.lucratividadeTrendLoadFailureMessage,
     this.isStaleCache = false,
     this.approvedAgentCount = 0,
     this.agentIdsExcludedFromQueryFailure = const <String>[],
@@ -78,6 +87,31 @@ class Overview {
   /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
   /// weekday-by-user chart.
   final String? weekdayUserSalesTrendLoadFailureMessage;
+
+  /// Monthly product profitability trend (lucratividade mensal): 12 months
+  /// ending at the filter month. Each row carries `anoMes`, costs, revenue
+  /// and `percentualLucro`. Empty when not loaded or when the query fails.
+  final List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalTrend;
+
+  /// True when the lucratividade mensal query failed.
+  final bool lucratividadeMensalTrendLoadFailed;
+
+  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
+  /// lucratividade mensal chart.
+  final String? lucratividadeMensalTrendLoadFailureMessage;
+
+  /// Period product profitability by branch (lucratividade): one row per
+  /// `CodEmpresa/CodFilial` for the overview filter date range. Runs in
+  /// parallel for each selected agent and results are concatenated.
+  /// Empty when not loaded or when the query fails.
+  final List<ResumoProdutoVendaLucratividadeRow> lucratividadeTrend;
+
+  /// True when the lucratividade (period, by branch) query failed.
+  final bool lucratividadeTrendLoadFailed;
+
+  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
+  /// lucratividade chart.
+  final String? lucratividadeTrendLoadFailureMessage;
 
   /// True when recovered from local cache after a remote error.
   final bool isStaleCache;
@@ -169,6 +203,12 @@ class Overview {
     List<OverviewWeekdayUserSalesTrendPoint>? weekdayUserSalesTrend,
     bool? weekdayUserSalesTrendLoadFailed,
     String? weekdayUserSalesTrendLoadFailureMessage,
+    List<ResumoProdutoVendaLucratividadeMensalRow>? lucratividadeMensalTrend,
+    bool? lucratividadeMensalTrendLoadFailed,
+    String? lucratividadeMensalTrendLoadFailureMessage,
+    List<ResumoProdutoVendaLucratividadeRow>? lucratividadeTrend,
+    bool? lucratividadeTrendLoadFailed,
+    String? lucratividadeTrendLoadFailureMessage,
     bool? mainResumoHadPlannedTargets,
   }) {
     return Overview(
@@ -183,20 +223,35 @@ class Overview {
           monthlyParcelTrendLoadFailed ?? this.monthlyParcelTrendLoadFailed,
       monthlyParcelTrendLoadFailureMessage:
           monthlyParcelTrendLoadFailureMessage ??
-              this.monthlyParcelTrendLoadFailureMessage,
+          this.monthlyParcelTrendLoadFailureMessage,
       weekdaySalesTrend: weekdaySalesTrend ?? this.weekdaySalesTrend,
       weekdaySalesTrendLoadFailed:
           weekdaySalesTrendLoadFailed ?? this.weekdaySalesTrendLoadFailed,
       weekdaySalesTrendLoadFailureMessage:
           weekdaySalesTrendLoadFailureMessage ??
-              this.weekdaySalesTrendLoadFailureMessage,
+          this.weekdaySalesTrendLoadFailureMessage,
       weekdayUserSalesTrend:
           weekdayUserSalesTrend ?? this.weekdayUserSalesTrend,
-      weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed ??
+      weekdayUserSalesTrendLoadFailed:
+          weekdayUserSalesTrendLoadFailed ??
           this.weekdayUserSalesTrendLoadFailed,
       weekdayUserSalesTrendLoadFailureMessage:
           weekdayUserSalesTrendLoadFailureMessage ??
-              this.weekdayUserSalesTrendLoadFailureMessage,
+          this.weekdayUserSalesTrendLoadFailureMessage,
+      lucratividadeMensalTrend:
+          lucratividadeMensalTrend ?? this.lucratividadeMensalTrend,
+      lucratividadeMensalTrendLoadFailed:
+          lucratividadeMensalTrendLoadFailed ??
+          this.lucratividadeMensalTrendLoadFailed,
+      lucratividadeMensalTrendLoadFailureMessage:
+          lucratividadeMensalTrendLoadFailureMessage ??
+          this.lucratividadeMensalTrendLoadFailureMessage,
+      lucratividadeTrend: lucratividadeTrend ?? this.lucratividadeTrend,
+      lucratividadeTrendLoadFailed:
+          lucratividadeTrendLoadFailed ?? this.lucratividadeTrendLoadFailed,
+      lucratividadeTrendLoadFailureMessage:
+          lucratividadeTrendLoadFailureMessage ??
+          this.lucratividadeTrendLoadFailureMessage,
       isStaleCache: isStaleCache ?? this.isStaleCache,
       approvedAgentCount: approvedAgentCount ?? this.approvedAgentCount,
       agentIdsExcludedFromQueryFailure:
@@ -209,9 +264,11 @@ class Overview {
           agentIdsMissingClientToken ?? this.agentIdsMissingClientToken,
       agentNamesMissingClientToken:
           agentNamesMissingClientToken ?? this.agentNamesMissingClientToken,
-      agentIdsSkippedDueToHubPresence: agentIdsSkippedDueToHubPresence ??
+      agentIdsSkippedDueToHubPresence:
+          agentIdsSkippedDueToHubPresence ??
           this.agentIdsSkippedDueToHubPresence,
-      agentNamesSkippedDueToHubPresence: agentNamesSkippedDueToHubPresence ??
+      agentNamesSkippedDueToHubPresence:
+          agentNamesSkippedDueToHubPresence ??
           this.agentNamesSkippedDueToHubPresence,
       mainResumoHadPlannedTargets:
           mainResumoHadPlannedTargets ?? this.mainResumoHadPlannedTargets,

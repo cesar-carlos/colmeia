@@ -5,9 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const sql = ResumoProdutoVendaLucratividadeMensalSql.query;
 
-  test('query contains DetalheProdutoVenda CTE', () {
-    check(sql).contains('DetalheProdutoVenda AS');
-    check(sql).contains('Agregada AS');
+  test('query uses DetalheProdutoVenda subquery (no CTEs)', () {
+    check(sql).contains('DetalheProdutoVenda');
+    check(sql.contains('WITH ')).isFalse();
+    check(sql.contains('Agregada AS')).isFalse();
   });
 
   test('query groups by CodEmpresa, CodFilial, Ano, Mes', () {

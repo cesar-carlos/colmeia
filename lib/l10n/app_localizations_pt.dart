@@ -1802,6 +1802,81 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
+
+  @override
+  String get overviewLucratividadeTitle => 'Lucratividade por filial';
+
+  @override
+  String get overviewLucratividadeSubtitle =>
+      'Receita, custo e margem no periodo selecionado, por filial.';
+
+  @override
+  String get overviewLucratividadeSwitchRevenue => 'Receita';
+
+  @override
+  String get overviewLucratividadeSwitchCost => 'Custo';
+
+  @override
+  String get overviewLucratividadeSwitchMargin => 'Margem %';
+
+  @override
+  String get overviewLucratividadeRevenueSeriesLabel => 'Receita';
+
+  @override
+  String get overviewLucratividadeCostSeriesLabel => 'Custo reposicao';
+
+  @override
+  String get overviewLucratividadeMarginSeriesLabel => 'Margem %';
+
+  @override
+  String get overviewLucratividadeEmpty =>
+      'Sem dados de lucratividade para este periodo.';
+
+  @override
+  String get overviewLucratividadeMultiAgentHint =>
+      'Selecione um ou mais agentes para visualizar a lucratividade.';
+
+  @override
+  String get overviewLoadingLucratividadeSemantics =>
+      'Carregando grafico de lucratividade por filial…';
+
+  @override
+  String get overviewLucratividadeMensalTitle =>
+      'Lucratividade mensal do produto';
+
+  @override
+  String get overviewLucratividadeMensalSubtitle =>
+      'Receita, custo de reposicao e margem por mes (agente selecionado).';
+
+  @override
+  String get overviewLucratividadeMensalEmpty =>
+      'Sem dados de lucratividade para este periodo.';
+
+  @override
+  String get overviewLucratividadeMensalMultiAgentHint =>
+      'Selecione um unico agente para visualizar a lucratividade mensal.';
+
+  @override
+  String get overviewLucratividadeMensalSwitchRevenue => 'Receita';
+
+  @override
+  String get overviewLucratividadeMensalSwitchCost => 'Custo';
+
+  @override
+  String get overviewLucratividadeMensalSwitchMargin => 'Margem %';
+
+  @override
+  String get overviewLucratividadeMensalRevenueSeriesLabel => 'Receita';
+
+  @override
+  String get overviewLucratividadeMensalCostSeriesLabel => 'Custo reposicao';
+
+  @override
+  String get overviewLucratividadeMensalMarginSeriesLabel => 'Margem %';
+
+  @override
+  String get overviewLoadingLucratividadeMensalSemantics =>
+      'Carregando grafico de lucratividade mensal do produto…';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -3602,4 +3677,79 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
+
+  @override
+  String get overviewLucratividadeTitle => 'Lucratividade por filial';
+
+  @override
+  String get overviewLucratividadeSubtitle =>
+      'Receita, custo e margem no periodo selecionado, por filial.';
+
+  @override
+  String get overviewLucratividadeSwitchRevenue => 'Receita';
+
+  @override
+  String get overviewLucratividadeSwitchCost => 'Custo';
+
+  @override
+  String get overviewLucratividadeSwitchMargin => 'Margem %';
+
+  @override
+  String get overviewLucratividadeRevenueSeriesLabel => 'Receita';
+
+  @override
+  String get overviewLucratividadeCostSeriesLabel => 'Custo reposicao';
+
+  @override
+  String get overviewLucratividadeMarginSeriesLabel => 'Margem %';
+
+  @override
+  String get overviewLucratividadeEmpty =>
+      'Sem dados de lucratividade para este periodo.';
+
+  @override
+  String get overviewLucratividadeMultiAgentHint =>
+      'Selecione um ou mais agentes para visualizar a lucratividade.';
+
+  @override
+  String get overviewLoadingLucratividadeSemantics =>
+      'Carregando grafico de lucratividade por filial…';
+
+  @override
+  String get overviewLucratividadeMensalTitle =>
+      'Lucratividade mensal do produto';
+
+  @override
+  String get overviewLucratividadeMensalSubtitle =>
+      'Receita, custo de reposicao e margem por mes (agente selecionado).';
+
+  @override
+  String get overviewLucratividadeMensalEmpty =>
+      'Sem dados de lucratividade para este periodo.';
+
+  @override
+  String get overviewLucratividadeMensalMultiAgentHint =>
+      'Selecione um unico agente para visualizar a lucratividade mensal.';
+
+  @override
+  String get overviewLucratividadeMensalSwitchRevenue => 'Receita';
+
+  @override
+  String get overviewLucratividadeMensalSwitchCost => 'Custo';
+
+  @override
+  String get overviewLucratividadeMensalSwitchMargin => 'Margem %';
+
+  @override
+  String get overviewLucratividadeMensalRevenueSeriesLabel => 'Receita';
+
+  @override
+  String get overviewLucratividadeMensalCostSeriesLabel => 'Custo reposicao';
+
+  @override
+  String get overviewLucratividadeMensalMarginSeriesLabel => 'Margem %';
+
+  @override
+  String get overviewLoadingLucratividadeMensalSemantics =>
+      'Carregando grafico de lucratividade mensal do produto…';
 }
