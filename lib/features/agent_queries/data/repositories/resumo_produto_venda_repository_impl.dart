@@ -80,6 +80,7 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
         maxRows: filter.sqlMaxRowsCap,
         sqlTimeoutMs: _defaultSqlTimeoutMs,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

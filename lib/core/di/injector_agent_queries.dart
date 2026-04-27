@@ -32,11 +32,11 @@ import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to
 import 'package:colmeia/features/agent_queries/data/agent_sql_execution_eligibility_checker.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/hybrid_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
-import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
@@ -132,21 +132,6 @@ void registerInjectorAgentQueries(GetIt getIt) {
                 baseDelegate: base,
                 relayDelegate: relay,
               );
-        // Permanent socket failures (`SOCKET_CONSUMER_ROLES`
-        // misconfigured on the hub, or auth refresh exhausted)
-        // pivot the datasource to REST for the rest of the
-        // session. Skipped on REST builds (no socket to fall back
-        // FROM) and on fake-backend builds.
-        if (AppEnvironment.agentBridgeTransport ==
-            AgentBridgeTransport.socket) {
-          return SocketWithRestFallbackAgentQueriesRemoteDataSource(
-            socketDelegate: relayWrapped,
-            restDelegate: ApiAgentQueriesRemoteDataSource(
-              dio: getIt<Dio>(),
-              bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
-            ),
-          );
-        }
         return relayWrapped;
       },
     )
@@ -547,9 +532,14 @@ void registerInjectorAgentQueries(GetIt getIt) {
 /// available — i.e. `SOCKET_RELAY_ENABLED=true` registered the dispatcher
 /// in `injector_socket`. Returns `null` otherwise so the agent-queries
 /// stack stays on the unitary `agents:command` / REST path.
-RelayAgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
+AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
   if (!getIt.isRegistered<RelayCommandDispatcher>()) {
     return null;
+  }
+  if (getIt.isRegistered<AgentQueriesStreamingRemoteDataSource>()) {
+    return CollectingRelayStreamingAgentQueriesRemoteDataSource(
+      streamingDelegate: getIt<AgentQueriesStreamingRemoteDataSource>(),
+    );
   }
   return RelayAgentQueriesRemoteDataSource(
     dispatcher: getIt<RelayCommandDispatcher>(),

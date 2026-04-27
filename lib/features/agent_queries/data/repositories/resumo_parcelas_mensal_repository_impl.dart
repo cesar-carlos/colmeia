@@ -95,6 +95,7 @@ class ResumoParcelasMensalRepositoryImpl
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasMensal,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

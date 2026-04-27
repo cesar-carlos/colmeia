@@ -1,3 +1,6 @@
+import 'package:colmeia/core/config/agent_bridge_transport.dart';
+import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
@@ -11,7 +14,12 @@ import 'package:get_it/get_it.dart';
 void registerInjectorAgentMeta(GetIt getIt) {
   getIt
     ..registerLazySingleton<AgentMetaRemoteDataSource>(
-      () => ApiAgentMetaRemoteDataSource(getIt<Dio>()),
+      () => switch (AppEnvironment.agentBridgeTransport) {
+        AgentBridgeTransport.socket => SocketAgentMetaRemoteDataSource(
+          sender: getIt<AgentCommandSender>(),
+        ),
+        AgentBridgeTransport.rest => ApiAgentMetaRemoteDataSource(getIt<Dio>()),
+      },
     )
     ..registerLazySingleton<AgentMetaRepository>(
       () => AgentMetaRepositoryImpl(getIt<AgentMetaRemoteDataSource>()),

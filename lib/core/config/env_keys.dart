@@ -95,10 +95,9 @@ abstract final class EnvKeys {
 
   // ----- Socket channel (PR-L: relay) -----
 
-  /// Master switch for the relay datasource. When `true`, the agent-queries
-  /// DI registers the relay-aware datasource alongside the unitary
-  /// `agents:command` sender. Default `false` (opt-in until baseline
-  /// metrics validate the upside for large queries).
+  /// Optional relay datasource switch. `AGENT_BRIDGE_TRANSPORT=socket` also
+  /// enables relay automatically so socket builds get the complete bridge
+  /// stack with one parameter.
   static const String socketRelayEnabled = 'SOCKET_RELAY_ENABLED';
 
   /// Per-request relay timeout (ms). Default 30000 — must be larger than the
@@ -141,10 +140,8 @@ abstract final class EnvKeys {
 
   // ----- Socket presence (PR-M: client:agent.profile.updated) -----
 
-  /// Master switch for the realtime presence stack. When `true` the DI
-  /// registers `SocketAgentPresenceStream` (Camadas 1+2 do plano §19) and
-  /// the `ObserveAgentPresenceUseCase`. Default `false` (opt-in until the
-  /// `ClientAgentsController` integration ships).
+  /// Optional realtime presence switch. Socket bridge transport also enables
+  /// it automatically so catalog hints follow the selected realtime channel.
   static const String socketPresenceListenerEnabled =
       'SOCKET_PRESENCE_LISTENER_ENABLED';
 

@@ -248,13 +248,17 @@ abstract final class AppEnvironment {
 
   // ----- Socket channel (PR-L) -----
 
-  /// Whether to register the relay-aware datasource. When `false` the
-  /// agent-queries DI keeps the legacy `agents:command` path only.
-  static bool get socketRelayEnabled => AppEnvironmentResolution.resolveBool(
-    fromDefine: const String.fromEnvironment(EnvKeys.socketRelayEnabled),
-    fromDotenv: _dotenvMaybe(EnvKeys.socketRelayEnabled),
-    fallback: false,
-  );
+  /// Whether to register the relay-aware datasource. Socket transport implies
+  /// relay availability so `AGENT_BRIDGE_TRANSPORT=socket` is the only switch
+  /// needed for the full bridge stack; the env flag still enables relay for
+  /// targeted experiments when the primary transport remains REST.
+  static bool get socketRelayEnabled =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(EnvKeys.socketRelayEnabled),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketRelayEnabled),
+        fallback: false,
+      ) ||
+      agentBridgeTransport == AgentBridgeTransport.socket;
 
   static const int defaultSocketRelayRequestTimeoutMs = 30000;
   static const int defaultSocketRelayConversationStartTimeoutMs = 10000;
@@ -322,8 +326,9 @@ abstract final class AppEnvironment {
   // ----- Socket presence (PR-M) -----
 
   /// Whether to register the realtime presence stack
-  /// (`SocketAgentPresenceStream` + `ObserveAgentPresenceUseCase`).
-  /// Default `false` (opt-in).
+  /// (`SocketAgentPresenceStream` + `ObserveAgentPresenceUseCase`). Socket
+  /// transport implies presence so a socket build gets the complete realtime
+  /// bridge stack with a single parameter.
   static bool get socketPresenceListenerEnabled =>
       AppEnvironmentResolution.resolveBool(
         fromDefine: const String.fromEnvironment(
@@ -331,7 +336,8 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketPresenceListenerEnabled),
         fallback: false,
-      );
+      ) ||
+      agentBridgeTransport == AgentBridgeTransport.socket;
 
   // ----- Socket channel (PR-K) -----
 

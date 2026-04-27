@@ -1,6 +1,5 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
-import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 
 /// Per-call routing datasource that dispatches each [AgentSqlExecuteRequest]
@@ -25,12 +24,12 @@ class HybridAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   HybridAgentQueriesRemoteDataSource({
     required AgentQueriesRemoteDataSource baseDelegate,
-    RelayAgentQueriesRemoteDataSource? relayDelegate,
+    AgentQueriesRemoteDataSource? relayDelegate,
   }) : _baseDelegate = baseDelegate,
        _relayDelegate = relayDelegate;
 
   final AgentQueriesRemoteDataSource _baseDelegate;
-  final RelayAgentQueriesRemoteDataSource? _relayDelegate;
+  final AgentQueriesRemoteDataSource? _relayDelegate;
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
@@ -52,6 +51,13 @@ class HybridAgentQueriesRemoteDataSource
       );
       return _baseDelegate.postSqlExecute(request);
     }
+    AppLogger.debug(
+      'HybridAgentQueriesRemoteDataSource routing request through relay',
+      context: <String, Object?>{
+        'component': 'HybridAgentQueriesRemoteDataSource',
+        'agentId': request.trimmedAgentId,
+      },
+    );
     return relay.postSqlExecute(request);
   }
 }

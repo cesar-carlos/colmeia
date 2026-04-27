@@ -129,18 +129,17 @@ void registerInjectorSocket(GetIt getIt) {
   }
 
   // PR-L: relay (relay:*) lives on top of the same ConsumerSocketConnection
-  // and is opt-in via SOCKET_RELAY_ENABLED. We register both the
-  // conversation manager and the dispatcher only when the flag is set so
-  // builds keeping the legacy `agents:command` path are not paying for
-  // PayloadFrame allocations or extra listeners.
+  // and is active for socket transport (or explicitly through
+  // SOCKET_RELAY_ENABLED). We register both the conversation manager and the
+  // dispatcher only when needed so REST builds do not pay for PayloadFrame
+  // allocations or extra listeners.
   if (AppEnvironment.socketRelayEnabled) {
     getIt
       ..registerLazySingleton<RelayConversationManager>(
         () => RelayConversationManager(
           connection: getIt<ConsumerSocketConnection>(),
           startTimeout: Duration(
-            milliseconds:
-                AppEnvironment.socketRelayConversationStartTimeoutMs,
+            milliseconds: AppEnvironment.socketRelayConversationStartTimeoutMs,
           ),
           endTimeout: Duration(
             milliseconds: AppEnvironment.socketRelayConversationEndTimeoutMs,
@@ -158,8 +157,7 @@ void registerInjectorSocket(GetIt getIt) {
           defaultTimeout: Duration(
             milliseconds: AppEnvironment.socketRelayRequestTimeoutMs,
           ),
-          defaultCompression:
-              AppEnvironment.socketRelayPayloadFrameCompression,
+          defaultCompression: AppEnvironment.socketRelayPayloadFrameCompression,
           defaultStreamInitialWindow:
               AppEnvironment.socketRelayStreamInitialWindow,
           defaultStreamRefillThreshold:

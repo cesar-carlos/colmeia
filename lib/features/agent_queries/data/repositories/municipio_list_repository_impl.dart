@@ -63,6 +63,7 @@ class MunicipioListRepositoryImpl implements MunicipioListRepository {
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: AgentQueriesBoundedResultMaxRows.municipioListPage,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);
