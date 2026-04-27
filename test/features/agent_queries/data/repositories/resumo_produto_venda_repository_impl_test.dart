@@ -6,7 +6,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_row_number_ordering.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -108,11 +107,9 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(
-      captured.sql,
-    ).equals(
+    check(captured.sql).equals(
       ResumoProdutoVendaSql.pagedQuery(
-        sortBy: ResumoProdutoVendaSortBy.qtdVendas,
+        sortBy: ResumoProdutoVendaSortBy.nomeProduto,
       ),
     );
     check(captured.namedParams['dataVendaInicio']).equals('2026-03-01');
@@ -120,15 +117,15 @@ void main() {
     check(captured.namedParams['origem']).equals('FrenteLoja');
     check(captured.namedParams['startRow']).equals(11);
     check(captured.namedParams['endRow']).equals(20);
-    check(captured.executeOptions?.maxRows).equals(34);
-    check(captured.executeOptions?.sqlTimeoutMs).equals(180000);
+    check(captured.executeOptions?.maxRows).equals(35);
+    check(captured.executeOptions?.sqlTimeoutMs).equals(162000);
     check(captured.executeOptions?.executionMode).equals(
       AgentSqlExecutionMode.preserve,
     );
     check(captured.useRelay).isTrue();
   });
 
-  test('execute uses ROW_NUMBER order from filter.sortBy', () async {
+  test('execute uses ROW_NUMBER order from filter.sortBy qtdVendas', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -143,7 +140,8 @@ void main() {
       filter: ResumoProdutoVendaFilter(
         dataVendaInicio: periodStart,
         dataVendaFim: periodEnd,
-        sortBy: ResumoProdutoVendaSortBy.percentualLucro,
+        sortBy: ResumoProdutoVendaSortBy.qtdVendas,
+        sortDirection: ResumoProdutoVendaSortDirection.descending,
       ),
     );
 
@@ -153,14 +151,46 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(
-      captured.sql,
-    ).equals(
+    check(captured.sql).equals(
       ResumoProdutoVendaSql.pagedQuery(
-        sortBy: ResumoProdutoVendaSortBy.percentualLucro,
+        sortBy: ResumoProdutoVendaSortBy.qtdVendas,
+        sortDirection: ResumoProdutoVendaSortDirection.descending,
       ),
     );
-    check(captured.sql.contains('a.PercentualLucro DESC')).isTrue();
+    final numbered = captured.sql.split('Numbered AS (').last;
+    final filial = numbered.indexOf('a.CodFilial ASC');
+    final qtd = numbered.indexOf('a.QtdVendas DESC');
+    check(filial).isLessThan(qtd);
+  });
+
+  test('execute uses ROW_NUMBER order from filter.sortBy nomeProduto', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: ResumoProdutoVendaFilter(
+        dataVendaInicio: periodStart,
+        dataVendaFim: periodEnd,
+      ),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+
+    final numbered = captured.sql.split('Numbered AS (').last;
+    final filial = numbered.indexOf('a.CodFilial ASC');
+    final nome = numbered.indexOf('a.NomeProduto ASC');
+    check(filial).isLessThan(nome);
   });
 
   test('execute passes sortDirection to pagedQuery', () async {
@@ -178,7 +208,8 @@ void main() {
       filter: ResumoProdutoVendaFilter(
         dataVendaInicio: periodStart,
         dataVendaFim: periodEnd,
-        sortDirection: ResumoProdutoVendaSortDirection.ascending,
+        sortBy: ResumoProdutoVendaSortBy.codProduto,
+        sortDirection: ResumoProdutoVendaSortDirection.descending,
       ),
     );
 
@@ -188,54 +219,13 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(
-      captured.sql,
-    ).equals(
+    check(captured.sql).equals(
       ResumoProdutoVendaSql.pagedQuery(
-        sortBy: ResumoProdutoVendaSortBy.qtdVendas,
-        sortDirection: ResumoProdutoVendaSortDirection.ascending,
+        sortBy: ResumoProdutoVendaSortBy.codProduto,
+        sortDirection: ResumoProdutoVendaSortDirection.descending,
       ),
     );
-    check(captured.sql.contains('a.QtdVendas ASC')).isTrue();
-  });
-
-  test('execute passes rowNumberOrdering to pagedQuery', () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
-
-    await repository.loadPage(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      filter: ResumoProdutoVendaFilter(
-        dataVendaInicio: periodStart,
-        dataVendaFim: periodEnd,
-        rowNumberOrdering: ResumoProdutoVendaRowNumberOrdering.metricGlobal,
-      ),
-    );
-
-    final captured =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
-
-    check(
-      captured.sql,
-    ).equals(
-      ResumoProdutoVendaSql.pagedQuery(
-        sortBy: ResumoProdutoVendaSortBy.qtdVendas,
-        rowNumberOrdering: ResumoProdutoVendaRowNumberOrdering.metricGlobal,
-      ),
-    );
-    final numbered = captured.sql.split('Numbered AS (').last;
-    final metric = numbered.indexOf('a.QtdVendas DESC');
-    final empresa = numbered.indexOf('a.CodEmpresa ASC');
-    check(metric).isLessThan(empresa);
+    check(captured.sql.contains('a.CodProduto DESC')).isTrue();
   });
 
   test('maps rows with CodProduto to entities', () async {

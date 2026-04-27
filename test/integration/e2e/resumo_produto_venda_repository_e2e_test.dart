@@ -3,7 +3,8 @@ import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_row_number_ordering.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produto_venda_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
@@ -211,7 +212,8 @@ void main() {
               dataVendaInicio: periodStart,
               dataVendaFim: periodEnd,
               pageSize: homePageSize,
-              rowNumberOrdering: ResumoProdutoVendaRowNumberOrdering.metricGlobal,
+              sortBy: ResumoProdutoVendaSortBy.qtdVendas,
+              sortDirection: ResumoProdutoVendaSortDirection.descending,
             ),
           );
 
@@ -228,8 +230,7 @@ void main() {
                     page.items[i].qtdVendas,
                     greaterThanOrEqualTo(page.items[i + 1].qtdVendas),
                     reason:
-                        'metricGlobal + qtdVendas DESC should not increase '
-                        'down the page',
+                        'qtdVendas DESC should not increase down the page',
                   );
                 }
               }

@@ -18,14 +18,25 @@ import 'package:result_dart/result_dart.dart';
 class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
   ResumoProdutoVendaRepositoryImpl(this._agentQueriesRepository);
 
-  /// HTTP bridge wait — resumo can be heavy (wide joins + aggregate + parcel
-  /// pick); aligned with other multi-join agent reports.
+  /// HTTP bridge wait — resumo can be heavy (wide joins + CustoProduto +
+  /// aggregate); aligned with other multi-join agent reports.
   static const int _defaultBridgeTimeoutMs = 180000;
 
-  /// Agent-side SQL timeout (`options.timeout_ms`), same order of magnitude
-  /// as [_defaultBridgeTimeoutMs] so the DB does not stop after the HTTP
-  /// channel has already waited longer.
-  static const int _defaultSqlTimeoutMs = 180000;
+  /// Upper bound for the agent-side SQL timeout (`options.timeout_ms`).
+  /// The effective value is derived as 90 % of the active bridge timeout,
+  /// so a slow query surfaces as a DB-level timeout rather than HTTP cancellation.
+  static const int _defaultSqlTimeoutMs = 170000;
+
+  /// Floor for the effective SQL timeout regardless of how small a caller sets
+  /// the bridge timeout. Prevents near-zero values when the bridge timeout is
+  /// unusually short.
+  static const int _minSqlTimeoutMs = 5000;
+
+  /// Margin added above [ResumoProdutoVendaFilter.pageSize] when setting
+  /// `max_rows` on the agent. Prevents the agent from truncating a full page
+  /// while staying well below the bridge payload limit.
+  static const int _maxRowsPageBuffer = 25;
+
   static const String _operation = 'loadResumoProdutoVendaPage';
 
   final AgentQueriesRepository _agentQueriesRepository;
@@ -54,6 +65,15 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
       );
     }
 
+    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    // 90 % of the bridge timeout, capped at the default SQL ceiling and floored
+    // at the minimum so very short bridge timeouts don't produce near-zero SQL
+    // timeouts that would fire before the query even starts.
+    final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
+      _minSqlTimeoutMs,
+      _defaultSqlTimeoutMs,
+    );
+
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
       requestingUserId: userId,
@@ -62,10 +82,9 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
       sql: ResumoProdutoVendaSql.pagedQuery(
         sortBy: filter.sortBy,
         sortDirection: filter.sortDirection,
-        rowNumberOrdering: filter.rowNumberOrdering,
       ),
       clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
+      bridgeTimeoutMs: effectiveBridgeMs,
       namedParams: <String, Object?>{
         'dataVendaInicio': AgentQueriesSqlLocalDate.format(
           filter.dataVendaInicio,
@@ -77,8 +96,8 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
       },
       executeOptions: AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
-        maxRows: filter.sqlMaxRowsCap,
-        sqlTimeoutMs: _defaultSqlTimeoutMs,
+        maxRows: filter.pageSize + _maxRowsPageBuffer,
+        sqlTimeoutMs: effectiveSqlMs,
       ),
       useRelay: true,
     );
@@ -88,7 +107,7 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
       (executionResult) => _mapPagedExecution(
         executionResult,
         agentId: agentId.trim(),
-        sqlMaxRowsCap: filter.sqlMaxRowsCap,
+        sqlMaxRowsCap: filter.pageSize + _maxRowsPageBuffer,
       ),
       Failure<ResumoProdutoVendaPageResult, AppFailure>.new,
     );

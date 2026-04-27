@@ -1,8 +1,14 @@
-/// Coluna da métrica no `ROW_NUMBER() OVER`, após `CodEmpresa`/`CodFilial`
-/// ASC; a direção vem de `ResumoProdutoVendaSortDirection`. Desempates: colunas
-/// do agrupamento em ASC.
+/// Primary sort column for `ROW_NUMBER() OVER` in the resumo produto venda
+/// query. `CodEmpresa` and `CodFilial` always lead in ascending order; the
+/// chosen column follows with the direction from `ResumoProdutoVendaSortDirection`.
+/// Remaining columns serve as stable tiebreakers.
 enum ResumoProdutoVendaSortBy {
+  /// Sort by product code.
+  codProduto,
+
+  /// Sort by quantity sold — most-sold products first (descending recommended).
   qtdVendas,
-  qtdItensVendido,
-  percentualLucro,
+
+  /// Sort alphabetically by product name (default — empresa, filial, nome, qtdVendas DESC).
+  nomeProduto,
 }

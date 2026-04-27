@@ -33,7 +33,8 @@ class ResumoProdutoVendaRow {
   final double pontoEquilibrio;
   final double valorTotalItem;
 
-  /// Margem bruta aproximada: `(ValorTotalItem - CustoReposicao agregado) / ValorTotalItem * 100`.
+  /// Razão custo/receita em %: `(Σ qty×custo reposição) / (Σ qty×valor líquido)) × 100`
+  /// quando ambos os totais são positivos; caso contrário `0` (alinhado ao SQL legado).
   final double percentualLucro;
   final int? codGrupoProduto;
   final String? nomeGrupoProduto;

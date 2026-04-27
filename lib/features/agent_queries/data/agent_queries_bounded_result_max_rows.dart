@@ -37,4 +37,8 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// One page of `Municipio` list rows (same order of magnitude as list filter
   /// max page size in domain).
   static const int municipioListPage = 100;
+
+  /// Monthly product profitability buckets: `(months in range) × filiais`.
+  /// At most ~13 months × many branches; 2 000 is a conservative safety cap.
+  static const int resumoProdutoVendaLucratividadeMensal = 2000;
 }

@@ -1,93 +1,141 @@
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_row_number_ordering.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
 
 /// Paged product sales summary (`ResumoProdutoVenda`) with total count in one
 /// `sql.execute` round-trip.
 ///
-/// **Tables read:** `ItemProdutoVendido`, `Produto`, `Marca`, `GrupoProduto`,
-/// `TipoGrupoProduto`, `ProdutoVendido`, `ParcelaProdutoVendido` (first parcel
-/// row per sale for `GeraFinanceiro`, matching `ParcelaProdutoVendidoDetalheSql`),
-/// `TipoOperacaoSaida`, `Cliente`, `Municipio`, `GrupoCliente`, `Regiao`,
-/// `Vendedor`.
+/// ---
+///
+/// ## Active joins and columns in `DetalheProdutoVenda`
+///
+/// The CTE only projects the columns consumed by `Agregada`. Any addition for
+/// future display or filtering must be added here first.
+///
+/// | Alias | Table | Active columns |
+/// |---|---|---|
+/// | `ipv` | `ItemProdutoVendido` | `CodProduto`, `NomeProduto`, `Quantidade`, `PontoEquilibrio`, `ValorUnitarioLiquido` |
+/// | `pv` | `ProdutoVendido` | `CodEmpresa`, `CodFilial`, `CodProdutoVendido` (→ `Id`), `DataVenda`, `Origem`, `PreVenda`, `CodTipoOperacaoSaida` |
+/// | `p` | `Produto` | `CodGrupoProduto`, `CodMarca` |
+/// | `cp` | `CustoProduto` | `CustoMedioPonderado` (→ `CustoMedio`), `CustoCompra` (→ `CustoReposicao`) |
+/// | `mc` | `Marca` | `Nome` (→ `NomeMarca`) |
+/// | `gp` | `GrupoProduto` | `Nome` (→ `NomeGrupoProduto`), `CodTipoGrupoProduto` |
+/// | `tgp` | `TipoGrupoProduto` | `Descricao` (→ `DescricaoTipoGrupoProduto`) |
+/// | `tos` | `TipoOperacaoSaida` | `GeraFinanceiro` (filter only — not projected) |
+///
+/// ## Columns available from active joins but not currently projected
+///
+/// Add these to the `DetalheProdutoVenda` SELECT when needed:
+///
+/// | Table alias | Column | Use case |
+/// |---|---|---|
+/// | `pv` | `CodVendedor` | filter / group by seller |
+/// | `pv` | `CodCliente`, `NomeCliente` | filter / group by client |
+/// | `pv` | `CodMunicipio` | prerequisite for Municipio join |
+/// | `ipv` | `CodUnidadeMedida` | unit-of-measure display |
+/// | `ipv` | `PrecoUnitario` | unit price display or margin analysis |
+/// | `ipv` | `ItemProdutoVendido` | line-item reference |
+/// | `cp` | `UltimoPrecoCompra` (→ `CustoCompra`) | last purchase price display |
+///
+/// ## Extension joins (not active — add to `DetalheProdutoVenda` to enable)
+///
+/// These joins and their columns were removed because they do not contribute
+/// to the current aggregation. Re-add them to support the corresponding
+/// filters or display columns:
+///
+/// ```sql
+/// -- Provides: CodGrupoCliente, CodRegiao (prerequisite for GrupoCliente and Regiao joins)
+/// INNER JOIN Cliente c ON c.CodCliente = pv.CodCliente
+///
+/// -- Provides: NomeMunicipio, UFMunicipio; group/filter by city or state
+/// INNER JOIN Municipio m ON m.CodMunicipio = pv.CodMunicipio
+///
+/// -- Provides: NomeGrupoCliente; requires Cliente join above
+/// LEFT JOIN GrupoCliente gc ON gc.CodGrupoCliente = c.CodGrupoCliente
+///
+/// -- Provides: NomeRegiao; requires Cliente join above
+/// LEFT JOIN Regiao r ON r.CodRegiao = c.CodRegiao
+///
+/// -- Provides: NomeVendedor; group/filter by seller name
+/// LEFT JOIN Vendedor v ON v.CodVendedor = pv.CodVendedor
+/// ```
+///
+/// > **Note:** `Cliente` and `Municipio` were previously `INNER JOIN`s. If
+/// > referential integrity is not guaranteed (orphaned sales), consider using
+/// > `LEFT JOIN` when re-adding them to avoid silently dropping rows.
+///
+/// ---
+///
+/// ## Query parameters and pagination
 ///
 /// Named params: `:dataVendaInicio`, `:dataVendaFim`, `:origem`, `:startRow`,
 /// `:endRow` (five binds — bridge cap).
 ///
-/// **Performance:** `CAST(pv.DataVenda AS DATE)` and `PreVenda` are applied on
-/// the `ProdutoVendido` join to shrink the working set before optional joins.
-/// `ParcelaProdutoVendido` is touched only via an aggregate that picks the
-/// minimum `NumeroParcela` per sale — index `(CodEmpresa, CodProdutoVendido,
-/// NumeroParcela)` helps.
+/// **Ordering:** `CodEmpresa ASC, CodFilial ASC` always lead. The sort column
+/// chosen via the filter sets the next primary column; remaining group-by
+/// columns follow as stable tiebreakers. Default (`nomeProduto ASC`) produces:
+/// empresa, filial, nomeProduto ASC, codProduto ASC, qtdVendas DESC.
 ///
-/// `PreVenda = 'N'` and financeiro `= 'S'` stay in SQL for v1 (named-param
-/// budget). Inner projection stays wide for future `WHERE` filters; the outer
-/// aggregate lists explicit columns only.
-///
-/// Pagination: `Agregada` → `Tot` → `Numbered` (`ROW_NUMBER` with stable
-/// `ORDER BY`) → `Tot LEFT JOIN Numbered` on `Rn BETWEEN :startRow AND :endRow`.
-///
-/// `pagedQuery`: `sortBy` / `sortDirection` definem a métrica. `rowNumberOrdering`
-/// escolhe se empresa/filial vêm antes da métrica (`ledgerDefault`) ou a métrica
-/// primeiro para ranking global (`metricGlobal`). Desempates: `CodProduto` e
-/// demais colunas do `GROUP BY` em **crescente** (sem bind extra).
+/// Pagination: `Agregada` → `Tot` → `Numbered` (`ROW_NUMBER`) →
+/// `Tot LEFT JOIN Numbered` on `Rn BETWEEN :startRow AND :endRow`.
 
 abstract final class ResumoProdutoVendaSql {
   static String pagedQuery({
     required ResumoProdutoVendaSortBy sortBy,
     ResumoProdutoVendaSortDirection sortDirection =
-        ResumoProdutoVendaSortDirection.descending,
-    ResumoProdutoVendaRowNumberOrdering rowNumberOrdering =
-        ResumoProdutoVendaRowNumberOrdering.ledgerDefault,
+        ResumoProdutoVendaSortDirection.ascending,
   }) {
-    final metricDir = switch (sortDirection) {
+    final dir = switch (sortDirection) {
       ResumoProdutoVendaSortDirection.ascending => 'ASC',
       ResumoProdutoVendaSortDirection.descending => 'DESC',
     };
-    final rowNumberMetricOrder = switch (sortBy) {
-      ResumoProdutoVendaSortBy.qtdVendas => 'a.QtdVendas $metricDir',
-      ResumoProdutoVendaSortBy.qtdItensVendido =>
-        'a.QtdItensVendido $metricDir',
-      ResumoProdutoVendaSortBy.percentualLucro =>
-        'a.PercentualLucro $metricDir',
+
+    // empresa/filial are always the leading sort columns (fixed, non-removable).
+    // Each sortBy value defines the primary column and the stable tiebreaker
+    // sequence that follows.
+    final rowNumberOrderBy = switch (sortBy) {
+      ResumoProdutoVendaSortBy.codProduto =>
+        '\n            a.CodEmpresa ASC,\n            a.CodFilial ASC,'
+            '\n            a.CodProduto $dir,'
+            '\n            a.NomeProduto ASC,'
+            '\n            a.QtdVendas DESC,'
+            '\n            a.CodGrupoProduto ASC,'
+            '\n            a.NomeGrupoProduto ASC,'
+            '\n            a.CodMarca ASC,'
+            '\n            a.NomeMarca ASC,'
+            '\n            a.CodTipoGrupoProduto ASC,'
+            '\n            a.DescricaoTipoGrupoProduto ASC',
+      ResumoProdutoVendaSortBy.qtdVendas =>
+        '\n            a.CodEmpresa ASC,\n            a.CodFilial ASC,'
+            '\n            a.QtdVendas $dir,'
+            '\n            a.CodProduto ASC,'
+            '\n            a.NomeProduto ASC,'
+            '\n            a.CodGrupoProduto ASC,'
+            '\n            a.NomeGrupoProduto ASC,'
+            '\n            a.CodMarca ASC,'
+            '\n            a.NomeMarca ASC,'
+            '\n            a.CodTipoGrupoProduto ASC,'
+            '\n            a.DescricaoTipoGrupoProduto ASC',
+      ResumoProdutoVendaSortBy.nomeProduto =>
+        '\n            a.CodEmpresa ASC,\n            a.CodFilial ASC,'
+            '\n            a.NomeProduto $dir,'
+            '\n            a.CodProduto ASC,'
+            '\n            a.QtdVendas DESC,'
+            '\n            a.CodGrupoProduto ASC,'
+            '\n            a.NomeGrupoProduto ASC,'
+            '\n            a.CodMarca ASC,'
+            '\n            a.NomeMarca ASC,'
+            '\n            a.CodTipoGrupoProduto ASC,'
+            '\n            a.DescricaoTipoGrupoProduto ASC',
     };
-    final rowNumberOrderByLeading = switch (rowNumberOrdering) {
-      ResumoProdutoVendaRowNumberOrdering.ledgerDefault =>
-        'a.CodEmpresa ASC,\n            a.CodFilial ASC,\n            $rowNumberMetricOrder',
-      ResumoProdutoVendaRowNumberOrdering.metricGlobal =>
-        '$rowNumberMetricOrder,\n            a.CodEmpresa ASC,\n            a.CodFilial ASC',
-    };
+
     return '''
     WITH DetalheProdutoVenda AS (
       SELECT
         pv.CodEmpresa,
         pv.CodFilial,
-        pv.CodProdutoVendido,
-        pv.Origem AS Origem,
-        pv.CodOrigem AS CodOrigem,
         CAST(pv.CodEmpresa AS VARCHAR) + '-' +
           CAST(pv.CodFilial AS VARCHAR) + '-' +
           CAST(pv.CodProdutoVendido AS VARCHAR) AS Id,
-        pv.CodTipoOperacaoSaida,
-        tos.Descricao AS DescricaoTipoOperacaoSaida,
-        COALESCE(
-          SUBSTRING(ppv_head.ParcelaGeraFinanceiro, 1, 1),
-          tos.GeraFinanceiro
-        ) AS GeraFinanceiro,
-        pv.PreVenda AS PreVenda,
-        pv.CodVendedor,
-        v.Nome AS NomeVendedor,
-        pv.CodCliente,
-        pv.NomeCliente,
-        c.CodGrupoCliente,
-        gc.nome AS NomeGrupoCliente,
-        pv.CodMunicipio,
-        m.Nome AS NomeMunicipio,
-        m.UF AS UFMunicipio,
-        c.CodRegiao,
-        r.Nome AS NomeRegiao,
-        CAST(pv.DataVenda AS DATE) AS DataVenda,
-        ipv.ItemProdutoVendido,
         ipv.CodProduto,
         ipv.NomeProduto,
         p.CodGrupoProduto,
@@ -96,68 +144,36 @@ abstract final class ResumoProdutoVendaSql {
         tgp.Descricao AS DescricaoTipoGrupoProduto,
         p.CodMarca,
         mc.Nome AS NomeMarca,
-        ipv.CodUnidadeMedida,
         ipv.Quantidade,
-        ipv.PrecoUnitario,
-        ipv.PontoEquilibrio,
-        ipv.CustoMedio,
-        ipv.CustoReposicao,
-        ipv.PrecoCompra AS CustoCompra,
+        COALESCE(ipv.PontoEquilibrio, 0.00) AS PontoEquilibrio,
+        COALESCE(cp.CustoMedioPonderado, 0.00) AS CustoMedio,
+        COALESCE(cp.CustoCompra, 0.00) AS CustoReposicao,
         ipv.ValorUnitarioLiquido
       FROM ItemProdutoVendido ipv
+      INNER JOIN ProdutoVendido pv ON
+        pv.CodEmpresa = ipv.CodEmpresa
+        AND pv.CodProdutoVendido = ipv.CodProdutoVendido
       INNER JOIN Produto p ON
         p.CodProduto = ipv.CodProduto
+      LEFT JOIN CustoProduto cp ON
+        cp.CodEmpresa = pv.CodEmpresa
+        AND cp.CodFilial = pv.CodFilial
+        AND cp.CodProduto = ipv.CodProduto
       LEFT JOIN Marca mc ON
         mc.CodMarca = p.CodMarca
       LEFT JOIN GrupoProduto gp ON
         gp.CodGrupoProduto = p.CodGrupoProduto
       LEFT JOIN TipoGrupoProduto tgp ON
         tgp.CodTipoGrupoProduto = gp.CodTipoGrupoProduto
-      INNER JOIN ProdutoVendido pv ON
-        pv.CodEmpresa = ipv.CodEmpresa
-        AND pv.CodProdutoVendido = ipv.CodProdutoVendido
-        AND CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
-        AND pv.PreVenda = 'N'
-        AND pv.Origem LIKE :origem
       INNER JOIN TipoOperacaoSaida tos ON
         tos.CodEmpresa = pv.CodEmpresa
         AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
-      LEFT JOIN (
-        SELECT
-          p1.CodEmpresa,
-          p1.CodProdutoVendido,
-          p1.GeraFinanceiro AS ParcelaGeraFinanceiro
-        FROM ParcelaProdutoVendido p1
-        INNER JOIN (
-          SELECT
-            CodEmpresa,
-            CodProdutoVendido,
-            MIN(NumeroParcela) AS MinNum
-          FROM ParcelaProdutoVendido
-          GROUP BY CodEmpresa, CodProdutoVendido
-        ) pick ON pick.CodEmpresa = p1.CodEmpresa
-          AND pick.CodProdutoVendido = p1.CodProdutoVendido
-          AND pick.MinNum = p1.NumeroParcela
-      ) ppv_head ON ppv_head.CodEmpresa = pv.CodEmpresa
-        AND ppv_head.CodProdutoVendido = pv.CodProdutoVendido
-      LEFT JOIN Cliente c ON
-        c.CodCliente = pv.CodCliente
-      LEFT JOIN Municipio m ON
-        m.CodMunicipio = pv.CodMunicipio
-      LEFT JOIN GrupoCliente gc ON
-        gc.CodGrupoCliente = c.CodGrupoCliente
-      LEFT JOIN Regiao r ON
-        r.CodRegiao = c.CodRegiao
-      LEFT JOIN Vendedor v ON
-        v.CodVendedor = pv.CodVendedor
-      WHERE COALESCE(
-          SUBSTRING(ppv_head.ParcelaGeraFinanceiro, 1, 1),
-          tos.GeraFinanceiro
-        ) = 'S'
+      WHERE CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
+        AND pv.Origem LIKE :origem
+        AND tos.GeraFinanceiro = 'S'
+        AND pv.PreVenda = 'N'
     ),
     Agregada AS (
-      -- ValorTotalCustoMedio: SUM(qty * custo médio linha). PercentualLucro:
-      -- margem (receita líquida - custo reposição) / receita * 100 quando receita > 0.
       SELECT
         CodEmpresa,
         CodFilial,
@@ -175,20 +191,15 @@ abstract final class ResumoProdutoVendaSql {
         SUM(Quantidade * CustoReposicao) AS CustoReposicao,
         SUM(Quantidade * PontoEquilibrio) AS PontoEquilibrio,
         SUM(Quantidade * ValorUnitarioLiquido) AS ValorTotalItem,
-        COALESCE(
-          CASE
-            WHEN SUM(Quantidade * ValorUnitarioLiquido) > 0.00 THEN
-              (
-                (
-                  SUM(Quantidade * ValorUnitarioLiquido) -
-                    SUM(Quantidade * CustoReposicao)
-                ) /
-                SUM(Quantidade * ValorUnitarioLiquido)
-              ) * 100
-            ELSE 0.00
-          END,
-          0.00
-        ) AS PercentualLucro
+        CASE
+          WHEN SUM(Quantidade * CustoReposicao) > 0.00
+            AND SUM(Quantidade * ValorUnitarioLiquido) > 0.00 THEN
+            (
+              SUM(Quantidade * CustoReposicao) /
+              SUM(Quantidade * ValorUnitarioLiquido)
+            ) * 100
+          ELSE 0.00
+        END AS PercentualLucro
       FROM DetalheProdutoVenda
       GROUP BY
         CodEmpresa,
@@ -210,15 +221,7 @@ abstract final class ResumoProdutoVendaSql {
         a.*,
         ROW_NUMBER() OVER (
           ORDER BY
-            $rowNumberOrderByLeading,
-            a.CodProduto ASC,
-            a.NomeProduto ASC,
-            a.CodGrupoProduto ASC,
-            a.NomeGrupoProduto ASC,
-            a.CodMarca ASC,
-            a.NomeMarca ASC,
-            a.CodTipoGrupoProduto ASC,
-            a.DescricaoTipoGrupoProduto ASC
+            $rowNumberOrderBy
         ) AS Rn
       FROM Agregada a
     )

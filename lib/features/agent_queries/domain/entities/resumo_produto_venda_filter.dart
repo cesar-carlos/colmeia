@@ -1,4 +1,3 @@
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_row_number_ordering.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
 
@@ -7,31 +6,29 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 /// **Período de venda:** o usuário informa [dataVendaInicio] e [dataVendaFim]
 /// (obrigatórios). Apenas a parte de **data** importa: o repositório envia
 /// `yyyy-MM-dd` ao agente e a SQL aplica
-/// `CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim`
-/// (intervalo **inclusivo**). Hora/minuto em [DateTime] é ignorada na validação
-/// e no bind.
+/// `CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim` no
+/// `WHERE` do detalhe (intervalo **inclusivo**). Hora/minuto em [DateTime] é
+/// ignorada na validação e no bind.
 ///
-/// [sortBy] escolhe a coluna da métrica no `ORDER BY` do `ROW_NUMBER()`;
-/// [sortDirection] define ASC ou **DESC** só para essa métrica (padrão: maior
-/// primeiro). `CodEmpresa` e `CodFilial` vêm **sempre** antes em **crescente**;
-/// em seguida desempates estáveis (`CodProduto` e demais chaves do agrupamento)
-/// em crescente, exceto com `rowNumberOrdering` em modo ranking global
-/// (`metricGlobal`: métrica antes de empresa/filial).
+/// **Ordenação:** `CodEmpresa` e `CodFilial` sempre lideram em ASC. [sortBy]
+/// define a coluna primária seguinte (`codProduto`, `qtdVendas` ou `nomeProduto`)
+/// e [sortDirection] define a direção. Colunas restantes do agrupamento servem
+/// como desempate estável.
 class ResumoProdutoVendaFilter {
   const ResumoProdutoVendaFilter({
     /// Limite inferior (inclusivo) do filtro em `ProdutoVendido.DataVenda`.
     required this.dataVendaInicio,
+
     /// Limite superior (inclusivo) do filtro em `ProdutoVendido.DataVenda`.
     required this.dataVendaFim,
     this.origem = 'FrenteLoja',
-    this.sortBy = ResumoProdutoVendaSortBy.qtdVendas,
-    this.sortDirection = ResumoProdutoVendaSortDirection.descending,
-    this.rowNumberOrdering = ResumoProdutoVendaRowNumberOrdering.ledgerDefault,
+    this.sortBy = ResumoProdutoVendaSortBy.nomeProduto,
+    this.sortDirection = ResumoProdutoVendaSortDirection.ascending,
     this.page = 1,
     this.pageSize = defaultPageSize,
   });
 
-  static const int defaultPageSize = 100;
+  static const int defaultPageSize = 20;
 
   /// Upper bound for page size (agent `max_rows` and payload safety).
   static const int maxPageSize = 500;
@@ -46,14 +43,12 @@ class ResumoProdutoVendaFilter {
   /// Bound to `pv.Origem LIKE :origem` (same default as parcel-line resumos).
   final String origem;
 
-  /// Coluna da métrica no `ROW_NUMBER()` (após empresa/filial ASC).
+  /// Primary sort column after the fixed `CodEmpresa ASC, CodFilial ASC` lead.
   final ResumoProdutoVendaSortBy sortBy;
 
-  /// ASC ou DESC só para [sortBy]; demais chaves do `ORDER BY` permanecem ASC.
+  /// ASC or DESC for [sortBy]; remaining tiebreaker columns follow a fixed
+  /// stable order in the SQL.
   final ResumoProdutoVendaSortDirection sortDirection;
-
-  /// Ledger (empresa/filial antes da métrica) vs ranking global (métrica antes).
-  final ResumoProdutoVendaRowNumberOrdering rowNumberOrdering;
 
   final int page;
   final int pageSize;
@@ -67,9 +62,6 @@ class ResumoProdutoVendaFilter {
 
   /// Inclusive end row index for `ROW_NUMBER()` paging (`offset + pageSize`).
   int get endRow => offset + pageSize;
-
-  /// `max_rows` safety margin above [pageSize] for the bridge execute options.
-  int get sqlMaxRowsCap => pageSize + 24;
 
   String? validationError() {
     if (page < 1) {
