@@ -59,6 +59,12 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
             ).toEntity(),
           )
           .toList(growable: false),
+      // The vendedor catalog query reads from Vendedor directly — no date range
+      // needed. Override params to send only limit + searchPattern.
+      namedParamsOverride: _vendedorSuggestionNamedParams(
+        searchTerm: searchTerm,
+        limit: limit,
+      ),
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
@@ -146,6 +152,22 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
     );
+  }
+
+  Map<String, Object?> _vendedorSuggestionNamedParams({
+    required String? searchTerm,
+    required int limit,
+  }) {
+    final effectiveLimit = ResumoVendasDiariasSuggestionSqlParams.clampLimit(
+      limit,
+    );
+    return <String, Object?>{
+      'searchPattern':
+          ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(
+            searchTerm,
+          ),
+      'limit': effectiveLimit,
+    };
   }
 
   Map<String, Object?> _bairroSuggestionNamedParams({
