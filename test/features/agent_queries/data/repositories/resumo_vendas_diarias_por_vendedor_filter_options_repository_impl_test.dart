@@ -75,13 +75,9 @@ void main() {
               ).captured.single
               as AgentSqlExecuteRequest;
       check(captured.namedParams.keys.toSet()).deepEquals(<String>{
-        'dataVendaInicio',
-        'dataVendaFim',
         'searchPattern',
         'limit',
       });
-      check(captured.namedParams['dataVendaInicio']).equals('2026-04-01');
-      check(captured.namedParams['dataVendaFim']).equals('2026-04-30');
       check(captured.namedParams['searchPattern']).isNull();
       check(captured.namedParams['limit']).equals(20);
       check(captured.bridgeTimeoutMs).equals(120000);
