@@ -3175,14 +3175,20 @@ abstract class AppLocalizations {
   /// No description provided for @overviewLucratividadeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Profitability by branch'**
+  /// **'Profitability by agent'**
   String get overviewLucratividadeTitle;
 
   /// No description provided for @overviewLucratividadeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Revenue, cost and margin for the selected period, by branch.'**
+  /// **'Revenue, cost and margin for the selected period, per agent (all branches combined).'**
   String get overviewLucratividadeSubtitle;
+
+  /// No description provided for @overviewLucratividadeSwitchProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get overviewLucratividadeSwitchProfit;
 
   /// No description provided for @overviewLucratividadeSwitchRevenue.
   ///
@@ -3201,6 +3207,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Margin %'**
   String get overviewLucratividadeSwitchMargin;
+
+  /// No description provided for @overviewLucratividadeProfitSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get overviewLucratividadeProfitSeriesLabel;
 
   /// No description provided for @overviewLucratividadeRevenueSeriesLabel.
   ///
@@ -3229,7 +3241,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewLucratividadeMultiAgentHint.
   ///
   /// In en, this message translates to:
-  /// **'Select one or more agents to view profitability.'**
+  /// **'No approved agents are available to load profitability. Add or connect an agent first.'**
   String get overviewLucratividadeMultiAgentHint;
 
   /// No description provided for @overviewLoadingLucratividadeSemantics.
@@ -3262,6 +3274,12 @@ abstract class AppLocalizations {
   /// **'Select a single agent to view monthly profitability.'**
   String get overviewLucratividadeMensalMultiAgentHint;
 
+  /// No description provided for @overviewLucratividadeMensalSwitchProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get overviewLucratividadeMensalSwitchProfit;
+
   /// No description provided for @overviewLucratividadeMensalSwitchRevenue.
   ///
   /// In en, this message translates to:
@@ -3279,6 +3297,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Margin %'**
   String get overviewLucratividadeMensalSwitchMargin;
+
+  /// No description provided for @overviewLucratividadeMensalProfitSeriesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get overviewLucratividadeMensalProfitSeriesLabel;
 
   /// No description provided for @overviewLucratividadeMensalRevenueSeriesLabel.
   ///

@@ -145,7 +145,8 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           isVisible: showXAxisLabels && style.showXAxis,
           majorGridLines: const MajorGridLines(width: 0),
           labelStyle: style.axisLabelTextStyle,
-          labelIntersectAction: xLabelIntersectFor(slotWidth),
+          labelIntersectAction: style.categoryLabelIntersectAction ??
+              xLabelIntersectFor(slotWidth),
           maximumLabels: items.length,
           autoScrollingDelta: useCategoryAxisPan ? delta : null,
           autoScrollingMode: style.categoryAutoScrollingMode,

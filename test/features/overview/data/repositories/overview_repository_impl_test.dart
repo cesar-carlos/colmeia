@@ -154,7 +154,12 @@ void main() {
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot:
+            any(named: 'hubPresenceOnlineAgentIdsSnapshot'),
+        hubConnectedFromApprovedCatalogRow:
+            any(named: 'hubConnectedFromApprovedCatalogRow'),
       ),
     ).thenAnswer(
       (_) async =>

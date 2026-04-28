@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report_resumo_parcelas.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
@@ -42,6 +43,16 @@ import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:result_dart/result_dart.dart';
+
+class _LucratividadeLoadBundle {
+  const _LucratividadeLoadBundle({
+    required this.rows,
+    this.partialFailureAgentNames = const <String>[],
+  });
+
+  final List<ResumoProdutoVendaLucratividadeRow> rows;
+  final List<String> partialFailureAgentNames;
+}
 
 class OverviewRepositoryImpl implements OverviewRepository {
   OverviewRepositoryImpl({
@@ -117,6 +128,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }) async {
     final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
     final period = _buildPeriod(filter);
+    final selectedNorm = _normalizeSelectedAgentIds(filter.selectedAgentIds);
     final last12Range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
       filter,
       clock: _now,
@@ -147,13 +159,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
       last12Range: last12Range,
       filter: filter,
     );
-    // Period lucratividade query: runs for every selected agent (or all when
-    // none selected) and concatenates the results. Each agent returns one row
-    // per CodEmpresa/CodFilial for the KPI period date range.
-    final lucratividadeFuture = _resolveAllLucratividadeFutures(
-      userId: userId,
-      period: period,
-      filter: filter,
+    // Period lucratividade: one aggregated bar per agent. Targets and display
+    // names come from the payment resumo [report] once it returns (see below).
+    var lucratividadeFuture = Future<
+      AppResult<_LucratividadeLoadBundle>
+    >.value(
+      const Success<_LucratividadeLoadBundle, AppFailure>(
+        _LucratividadeLoadBundle(rows: <ResumoProdutoVendaLucratividadeRow>[]),
+      ),
     );
     final weekdaySalesFuture = _loadResumoParcelasDiaSemanaAcrossAgents(
       userId: userId,
@@ -249,11 +262,29 @@ class OverviewRepositoryImpl implements OverviewRepository {
             lucratividadeTrend: lvc.points,
             lucratividadeTrendLoadFailed: lvc.loadFailed,
             lucratividadeTrendLoadFailureMessage: lvc.loadFailureMessage,
+            lucratividadePartialFailureAgentNames:
+                lvc.lucratividadePartialFailureAgentNames,
           ),
         );
       }
 
       final sourceAgentIds = _resolveSourceAgentIds(report);
+      final lucTargets = _orderedLucratividadeTargets(
+        selectedNorm: selectedNorm,
+        plannedTargets: report.plannedTargets,
+      );
+      if (lucTargets.isNotEmpty) {
+        final hubPresenceForSql = report.plannedTargets
+            .map((t) => t.agentId)
+            .toSet();
+        lucratividadeFuture = _loadLucratividadeAggregatedByAgent(
+          userId: userId,
+          period: period,
+          targets: lucTargets,
+          agentDisplayNamesById: _resolveAgentDisplayNames(report),
+          hubPresenceOnlineAgentIdsSnapshot: hubPresenceForSql,
+        );
+      }
       if (report.missingClientTokenAgentIds.isNotEmpty) {
         AppLogger.warning(
           'Overview: agents skipped (no local client_token)',
@@ -315,6 +346,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
               lucratividadeTrend: lvc.points,
               lucratividadeTrendLoadFailed: lvc.loadFailed,
               lucratividadeTrendLoadFailureMessage: lvc.loadFailureMessage,
+              lucratividadePartialFailureAgentNames:
+                  lvc.lucratividadePartialFailureAgentNames,
             ),
           );
         }
@@ -380,6 +413,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         lucratividadeTrend: lvc.points,
         lucratividadeTrendLoadFailed: lvc.loadFailed,
         lucratividadeTrendLoadFailureMessage: lvc.loadFailureMessage,
+        lucratividadePartialFailureAgentNames:
+            lvc.lucratividadePartialFailureAgentNames,
         mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
       );
 
@@ -650,52 +685,123 @@ class OverviewRepositoryImpl implements OverviewRepository {
     );
   }
 
-  /// Dispatches the period lucratividade query for every agent in
-  /// selectedAgentIds (or all approved agents when null) in parallel
-  /// and concatenates the results. Each agent returns at most one row per
-  /// CodEmpresa/CodFilial, so the merged list is naturally deduplicated by
-  /// branch across agents.
-  Future<AppResult<List<ResumoProdutoVendaLucratividadeRow>>>
-  _resolveAllLucratividadeFutures({
-    required String userId,
-    required _OverviewPeriod period,
-    required OverviewFilter filter,
+  /// When [selectedNorm] is non-null, keeps that order and intersects with
+  /// [plannedTargets]. Otherwise uses [plannedTargets] as-is.
+  List<AgentQueryTarget> _orderedLucratividadeTargets({
+    required List<String>? selectedNorm,
+    required List<AgentQueryTarget> plannedTargets,
   }) {
-    final selectedIds = filter.selectedAgentIds;
-    if (selectedIds == null || selectedIds.isEmpty) {
-      // All-agents: the overview flow already executed the main resumo query
-      // which carries agent-level KPIs; here we skip to avoid duplicating
-      // heavy queries for agents that may not be approved. Returning empty is
-      // safe — the chart shows a placeholder until the user selects agents.
-      return Future.value(
-        const Success<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
-          <ResumoProdutoVendaLucratividadeRow>[],
-        ),
+    if (selectedNorm != null && selectedNorm.isNotEmpty) {
+      final byId = <String, AgentQueryTarget>{
+        for (final t in plannedTargets) t.agentId: t,
+      };
+      return <AgentQueryTarget>[
+        for (final id in selectedNorm)
+          if (byId.containsKey(id)) byId[id]!,
+      ];
+    }
+    return List<AgentQueryTarget>.from(plannedTargets);
+  }
+
+  ResumoProdutoVendaLucratividadeRow _aggregateLucratividadeBranchesForAgent({
+    required List<ResumoProdutoVendaLucratividadeRow> branches,
+    required String chartAxisLabel,
+  }) {
+    if (branches.isEmpty) {
+      return ResumoProdutoVendaLucratividadeRow(
+        codEmpresa: 0,
+        codFilial: 0,
+        qtdVendas: 0,
+        qtdItensVendido: 0,
+        valorTotalCustoMedio: 0,
+        custoReposicao: 0,
+        pontoEquilibrio: 0,
+        valorTotalItem: 0,
+        chartAxisLabel: chartAxisLabel,
       );
     }
+    var qtdVendas = 0;
+    var qtdItensVendido = 0.0;
+    var valorTotalCustoMedio = 0.0;
+    var custoReposicao = 0.0;
+    var pontoEquilibrio = 0.0;
+    var valorTotalItem = 0.0;
+    for (final r in branches) {
+      qtdVendas += r.qtdVendas;
+      qtdItensVendido += r.qtdItensVendido;
+      valorTotalCustoMedio += r.valorTotalCustoMedio;
+      custoReposicao += r.custoReposicao;
+      pontoEquilibrio += r.pontoEquilibrio;
+      valorTotalItem += r.valorTotalItem;
+    }
+    final head = branches.first;
+    return ResumoProdutoVendaLucratividadeRow(
+      codEmpresa: head.codEmpresa,
+      codFilial: head.codFilial,
+      qtdVendas: qtdVendas,
+      qtdItensVendido: qtdItensVendido,
+      valorTotalCustoMedio: valorTotalCustoMedio,
+      custoReposicao: custoReposicao,
+      pontoEquilibrio: pontoEquilibrio,
+      valorTotalItem: valorTotalItem,
+      chartAxisLabel: chartAxisLabel,
+    );
+  }
 
+  /// Runs the period lucratividade SQL once per agent and returns **one row
+  /// per agent** (all `CodEmpresa`/`CodFilial` buckets summed for that agent).
+  ///
+  /// Uses each [AgentQueryTarget]'s `client_token` and hub-presence hints —
+  /// same contract as the payment resumo wave — so the bridge does not treat
+  /// follow-up `sql.execute` calls as unauthenticated.
+  Future<AppResult<_LucratividadeLoadBundle>> _loadLucratividadeAggregatedByAgent({
+    required String userId,
+    required _OverviewPeriod period,
+    required List<AgentQueryTarget> targets,
+    required Map<String, String> agentDisplayNamesById,
+    required Set<String> hubPresenceOnlineAgentIdsSnapshot,
+  }) {
     final lvcFilter = ResumoProdutoVendaLucratividadeFilter(
       dataVendaInicio: period.start,
       dataVendaFim: period.end,
     );
 
-    final futures = selectedIds.map(
-      (agentId) => _loadResumoProdutoVendaLucratividade(
+    final futures = targets.map(
+      (target) => _loadResumoProdutoVendaLucratividade(
         userId: userId,
-        agentId: agentId,
+        agentId: target.agentId,
         filter: lvcFilter,
+        clientToken: target.clientToken,
         bridgeTimeoutMs: _overviewLucratividadeBridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow:
+            target.hubConnectedFromApprovedCatalogRow,
       ),
     );
 
     return Future.wait(futures).then((results) {
-      final merged = <ResumoProdutoVendaLucratividadeRow>[];
+      final aggregated = <ResumoProdutoVendaLucratividadeRow>[];
+      final partialFailures = <String>[];
       AppFailure? firstFailure;
-      for (final result in results) {
-        result.fold(
-          merged.addAll,
+      for (var i = 0; i < targets.length; i++) {
+        final target = targets[i];
+        final agentId = target.agentId;
+        final rawName = agentDisplayNamesById[agentId];
+        final label = (rawName != null && rawName.trim().isNotEmpty)
+            ? rawName.trim()
+            : agentId;
+        results[i].fold(
+          (rows) {
+            aggregated.add(
+              _aggregateLucratividadeBranchesForAgent(
+                branches: rows,
+                chartAxisLabel: label,
+              ),
+            );
+          },
           (failure) {
             firstFailure ??= failure;
+            partialFailures.add(label);
             AppLogger.warning(
               'Overview: lucratividade query failed for one agent',
               context: <String, Object?>{
@@ -707,13 +813,17 @@ class OverviewRepositoryImpl implements OverviewRepository {
           },
         );
       }
-      if (merged.isEmpty && firstFailure != null) {
-        return Failure<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
+      if (aggregated.isEmpty && firstFailure != null) {
+        return Failure<_LucratividadeLoadBundle, AppFailure>(
           firstFailure!,
         );
       }
-      return Success<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
-        merged,
+      partialFailures.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      return Success<_LucratividadeLoadBundle, AppFailure>(
+        _LucratividadeLoadBundle(
+          rows: aggregated,
+          partialFailureAgentNames: partialFailures,
+        ),
       );
     });
   }
@@ -723,17 +833,19 @@ class OverviewRepositoryImpl implements OverviewRepository {
       List<ResumoProdutoVendaLucratividadeRow> points,
       bool loadFailed,
       String? loadFailureMessage,
+      List<String> lucratividadePartialFailureAgentNames,
     })
   >
   _resolveLucratividadeTrend(
-    Future<AppResult<List<ResumoProdutoVendaLucratividadeRow>>> future,
+    Future<AppResult<_LucratividadeLoadBundle>> future,
   ) async {
     final result = await future;
     return result.fold(
-      (rows) => (
-        points: rows,
+      (bundle) => (
+        points: bundle.rows,
         loadFailed: false,
         loadFailureMessage: null,
+        lucratividadePartialFailureAgentNames: bundle.partialFailureAgentNames,
       ),
       (failure) {
         AppLogger.warning(
@@ -748,6 +860,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
           points: const <ResumoProdutoVendaLucratividadeRow>[],
           loadFailed: true,
           loadFailureMessage: failure.userMessage,
+          lucratividadePartialFailureAgentNames:
+              const <String>[],
         );
       },
     );
@@ -1203,6 +1317,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         const <ResumoProdutoVendaLucratividadeRow>[],
     bool lucratividadeTrendLoadFailed = false,
     String? lucratividadeTrendLoadFailureMessage,
+    List<String> lucratividadePartialFailureAgentNames =
+        const <String>[],
     bool mainResumoHadPlannedTargets = false,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
@@ -1319,6 +1435,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       lucratividadeTrend: lucratividadeTrend,
       lucratividadeTrendLoadFailed: lucratividadeTrendLoadFailed,
       lucratividadeTrendLoadFailureMessage: lucratividadeTrendLoadFailureMessage,
+      lucratividadePartialFailureAgentNames: lucratividadePartialFailureAgentNames,
       approvedAgentCount: approvedAgentCount,
       agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
       agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,

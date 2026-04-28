@@ -1910,11 +1910,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dateRangePickerSemanticsFallbackLabel => 'Period';
 
   @override
-  String get overviewLucratividadeTitle => 'Profitability by branch';
+  String get overviewLucratividadeTitle => 'Profitability by agent';
 
   @override
   String get overviewLucratividadeSubtitle =>
-      'Revenue, cost and margin for the selected period, by branch.';
+      'Revenue, cost and margin for the selected period, per agent (all branches combined).';
+
+  @override
+  String get overviewLucratividadeSwitchProfit => 'Profit';
 
   @override
   String get overviewLucratividadeSwitchRevenue => 'Revenue';
@@ -1924,6 +1927,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewLucratividadeSwitchMargin => 'Margin %';
+
+  @override
+  String get overviewLucratividadeProfitSeriesLabel => 'Profit';
 
   @override
   String get overviewLucratividadeRevenueSeriesLabel => 'Revenue';
@@ -1940,7 +1946,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMultiAgentHint =>
-      'Select one or more agents to view profitability.';
+      'No approved agents are available to load profitability. Add or connect an agent first.';
 
   @override
   String get overviewLoadingLucratividadeSemantics =>
@@ -1963,6 +1969,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select a single agent to view monthly profitability.';
 
   @override
+  String get overviewLucratividadeMensalSwitchProfit => 'Profit';
+
+  @override
   String get overviewLucratividadeMensalSwitchRevenue => 'Revenue';
 
   @override
@@ -1970,6 +1979,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMensalSwitchMargin => 'Margin %';
+
+  @override
+  String get overviewLucratividadeMensalProfitSeriesLabel => 'Profit';
 
   @override
   String get overviewLucratividadeMensalRevenueSeriesLabel => 'Revenue';

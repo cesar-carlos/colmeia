@@ -1,4 +1,8 @@
 # Declares tags referenced by tests (avoids "tag was not specified" warnings).
+#
+# E2E hits the real Agent SQL bridge; default parallel test workers overload
+# the API/SQL queue. Prefer: `flutter test test/integration/e2e --concurrency=1`
+# or `flutter test --tags=e2e --concurrency=1`.
 tags:
   e2e:
     description: >

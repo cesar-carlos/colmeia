@@ -122,7 +122,10 @@ class OverviewController extends ChangeNotifier {
       o.agentNamesMissingClientToken,
     );
     _partialFailureNamesNormalized = normalizeOverviewAgentNames(
-      o.agentNamesExcludedFromQueryFailure,
+      <String>[
+        ...o.agentNamesExcludedFromQueryFailure,
+        ...o.lucratividadePartialFailureAgentNames,
+      ],
     );
     _skippedDueToHubPresenceNamesNormalized = normalizeOverviewAgentNames(
       o.agentNamesSkippedDueToHubPresence,

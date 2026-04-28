@@ -7,10 +7,10 @@ they are rendered today, and the conventions every engine must follow.
 
 ### Currently rendered (production)
 
-The home dashboard mounts six charts via
+The home dashboard mounts charts via
 [`OverviewHomeStagedBelowKpis`](../../lib/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart),
 each wrapped by [`AppChartFadeIn`](../../lib/shared/widgets/charts/app_chart_fade_in.dart)
-and a `RepaintBoundary`:
+and a `RepaintBoundary` where applicable:
 
 | #   | Widget                                   | Underlying engine                                    |
 | --- | ---------------------------------------- | ---------------------------------------------------- |
@@ -20,6 +20,7 @@ and a `RepaintBoundary`:
 | 4   | `OverviewWeekdaySalesTrendChart`         | `AppComparisonBarChart`                              |
 | 5   | `OverviewWeekdayUserGroupedBarChart`     | direct `SfCartesianChart` (clustered columns)        |
 | 6   | `OverviewRankingsSection` (agent + user) | `AppComparisonBarChart` x2                           |
+| 7   | `OverviewLucratividadeChart`             | `AppComboChart` (one category per agent, branches summed) |
 
 ### Shared design-system catalog (24 widgets)
 

@@ -3,11 +3,19 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
+    show formatComparisonBarXAxisLabelTwoLines;
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-String _xLabel(ResumoProdutoVendaLucratividadeRow r) => r.filialLabel;
+String _xLabel(ResumoProdutoVendaLucratividadeRow r) =>
+    formatComparisonBarXAxisLabelTwoLines(
+      r.filialLabel,
+    );
+
+num _barByProfit(ResumoProdutoVendaLucratividadeRow r) => r.lucro;
+num _lineByProfit(ResumoProdutoVendaLucratividadeRow r) => r.valorTotalItem;
 
 num _barByRevenue(ResumoProdutoVendaLucratividadeRow r) => r.valorTotalItem;
 num _lineByRevenue(ResumoProdutoVendaLucratividadeRow r) => r.custoReposicao;
@@ -19,7 +27,10 @@ num _barByMargin(ResumoProdutoVendaLucratividadeRow r) => r.percentualLucro;
 num _lineByMargin(ResumoProdutoVendaLucratividadeRow r) => r.valorTotalItem;
 
 enum _LucratividadeDisplay {
-  /// Bars = revenue, line = replacement cost (default).
+  /// Bars = profit (lucro), line = revenue (receita).
+  profitRevenue,
+
+  /// Bars = revenue, line = replacement cost.
   revenueCost,
 
   /// Bars = replacement cost, line = revenue.
@@ -29,18 +40,18 @@ enum _LucratividadeDisplay {
   marginPercent,
 }
 
-/// Period product profitability chart, aggregated by `CodEmpresa/CodFilial`
-/// for the active overview filter date range.
+/// Period product profitability chart: **one category per agent** (all
+/// branches summed) for the active overview filter date range.
 ///
-/// Runs for each selected agent in parallel; when no agents are explicitly
-/// selected ([isSingleOrMultiAgentSelected] is false) an informational
-/// placeholder is shown instead.
+/// When [overviewApprovedAgentCount] is zero, the empty state suggests checking
+/// agent availability; otherwise an empty [points] list means no sales/cost
+/// data for the period.
 class OverviewLucratividadeChart extends StatefulWidget {
   const OverviewLucratividadeChart({
     required this.l10n,
     required this.points,
     required this.loadFailed,
-    required this.isSingleOrMultiAgentSelected,
+    required this.overviewApprovedAgentCount,
     this.loadFailureMessage,
     super.key,
   });
@@ -49,9 +60,9 @@ class OverviewLucratividadeChart extends StatefulWidget {
   final List<ResumoProdutoVendaLucratividadeRow> points;
   final bool loadFailed;
 
-  /// True when at least one agent is explicitly selected in the active filter.
-  /// When false (all-agents mode), a hint is shown instead of chart data.
-  final bool isSingleOrMultiAgentSelected;
+  /// Approved agents from the last overview load (pagination total). Used
+  /// only to choose empty-state copy when [points] is empty.
+  final int overviewApprovedAgentCount;
   final String? loadFailureMessage;
 
   @override
@@ -61,7 +72,7 @@ class OverviewLucratividadeChart extends StatefulWidget {
 
 class _OverviewLucratividadeChartState
     extends State<OverviewLucratividadeChart> {
-  _LucratividadeDisplay _display = _LucratividadeDisplay.revenueCost;
+  _LucratividadeDisplay _display = _LucratividadeDisplay.profitRevenue;
 
   String _formatsLocaleTag = '';
   late NumberFormat _compactCurrencyFormat;
@@ -107,14 +118,16 @@ class _OverviewLucratividadeChartState
       _initFormats(widget.l10n.localeName);
       _emptyMessageCache = null;
       _emptyPlaceholderCache = null;
-    } else if (!identical(widget.points, oldWidget.points)) {
+    } else if (!identical(widget.points, oldWidget.points) ||
+        widget.overviewApprovedAgentCount !=
+            oldWidget.overviewApprovedAgentCount) {
       _emptyMessageCache = null;
       _emptyPlaceholderCache = null;
     }
   }
 
   String _barLabelCurrency(ResumoProdutoVendaLucratividadeRow _, num v) =>
-      _compactCurrencyFormat.format(v);
+      AppBrFormatters.smartCompactCurrencyForLocale(v, _formatsLocaleTag);
 
   String _barLabelPercent(ResumoProdutoVendaLucratividadeRow _, num v) =>
       _percentFormat.format(v / 100);
@@ -126,7 +139,20 @@ class _OverviewLucratividadeChartState
     _emptyMessageCache = message;
     return _emptyPlaceholderCache = Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
-      child: Center(child: Text(message, textAlign: TextAlign.center)),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.bar_chart_rounded,
+              size: 48,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            SizedBox(height: tokens.gapMd),
+            Text(message, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
     );
   }
 
@@ -136,6 +162,20 @@ class _OverviewLucratividadeChartState
     final l10n = widget.l10n;
     final isMargin = _display == _LucratividadeDisplay.marginPercent;
     final isCost = _display == _LucratividadeDisplay.costRevenue;
+    final isProfit = _display == _LucratividadeDisplay.profitRevenue;
+
+    final Color barColor;
+    final Color lineColor;
+    if (isCost) {
+      barColor = tokens.warning;
+      lineColor = tokens.chartSeriesPrimary;
+    } else if (isProfit) {
+      barColor = tokens.chartSeriesPrimary;
+      lineColor = tokens.chartSeriesSecondary;
+    } else {
+      barColor = tokens.chartSeriesPrimary;
+      lineColor = tokens.warning;
+    }
 
     final style = AppComboChartStyle(
       height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
@@ -151,11 +191,13 @@ class _OverviewLucratividadeChartState
           l10n.overviewComparisonBarHorizontalScrollHint,
       stickyPrimaryYAxisWhileScrolling: false,
       loadingLabel: l10n.overviewComparisonChartLoading,
+      barColor: barColor,
+      lineColor: lineColor,
     );
 
     final emptyMessage = widget.loadFailed
         ? (widget.loadFailureMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
-        : widget.isSingleOrMultiAgentSelected
+        : widget.overviewApprovedAgentCount > 0
         ? l10n.overviewLucratividadeEmpty
         : l10n.overviewLucratividadeMultiAgentHint;
 
@@ -171,10 +213,25 @@ class _OverviewLucratividadeChartState
       barFn = _barByCost;
       lineFn = _lineByCost;
       labelFn = _barLabelCurrency;
+    } else if (isProfit) {
+      barFn = _barByProfit;
+      lineFn = _lineByProfit;
+      labelFn = _barLabelCurrency;
     } else {
       barFn = _barByRevenue;
       lineFn = _lineByRevenue;
       labelFn = _barLabelCurrency;
+    }
+
+    final sortedPoints = List<ResumoProdutoVendaLucratividadeRow>.of(widget.points);
+    if (isProfit) {
+      sortedPoints.sort((a, b) => b.lucro.compareTo(a.lucro));
+    } else if (isCost) {
+      sortedPoints.sort((a, b) => b.custoReposicao.compareTo(a.custoReposicao));
+    } else if (isMargin) {
+      sortedPoints.sort((a, b) => b.percentualLucro.compareTo(a.percentualLucro));
+    } else {
+      sortedPoints.sort((a, b) => b.valorTotalItem.compareTo(a.valorTotalItem));
     }
 
     return RepaintBoundary(
@@ -184,6 +241,10 @@ class _OverviewLucratividadeChartState
         subtitle: l10n.overviewLucratividadeSubtitle,
         belowSubtitle: AppSegmentedControl<_LucratividadeDisplay>(
           options: <AppSegmentedControlOption<_LucratividadeDisplay>>[
+            AppSegmentedControlOption<_LucratividadeDisplay>(
+              value: _LucratividadeDisplay.profitRevenue,
+              label: l10n.overviewLucratividadeSwitchProfit,
+            ),
             AppSegmentedControlOption<_LucratividadeDisplay>(
               value: _LucratividadeDisplay.revenueCost,
               label: l10n.overviewLucratividadeSwitchRevenue,
@@ -200,16 +261,18 @@ class _OverviewLucratividadeChartState
           value: _display,
           onChanged: (v) => setState(() => _display = v),
         ),
-        items: widget.points,
+        items: sortedPoints,
         xLabelBuilder: _xLabel,
         barValueBuilder: barFn,
         barSeriesLabel: isMargin
             ? l10n.overviewLucratividadeMarginSeriesLabel
             : isCost
             ? l10n.overviewLucratividadeCostSeriesLabel
+            : isProfit
+            ? l10n.overviewLucratividadeProfitSeriesLabel
             : l10n.overviewLucratividadeRevenueSeriesLabel,
         lineValueBuilder: lineFn,
-        lineSeriesLabel: isMargin || isCost
+        lineSeriesLabel: isMargin || isCost || isProfit
             ? l10n.overviewLucratividadeRevenueSeriesLabel
             : l10n.overviewLucratividadeCostSeriesLabel,
         barDataLabelBuilder: labelFn,

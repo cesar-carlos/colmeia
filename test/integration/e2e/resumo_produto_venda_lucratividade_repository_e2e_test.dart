@@ -1,6 +1,7 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produto_venda_lucratividade_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
@@ -35,9 +36,8 @@ void main() {
           addTearDown(e2eTeardownDependencies);
 
           final repository = getIt<ResumoProdutoVendaLucratividadeRepository>();
-          final today = DateTime.now();
-          final periodEnd = DateTime(today.year, today.month, today.day);
-          final periodStart = periodEnd.subtract(const Duration(days: 14));
+          final periodStart = DateTime(2026);
+          final periodEnd = DateTime(2026, 3, 31);
 
           final result = await repository.loadAll(
             userId: 'user-1',
@@ -75,6 +75,71 @@ void main() {
                 isTrue,
                 reason:
                     'Repository e2e should return rows, invalid_policy / '
+                    'missing_permission RPC, or transient bridge HTTP 5xx.',
+              );
+            },
+          );
+        },
+      );
+
+      test(
+        'use case executes the same lucratividade query (overview stack path)',
+        () async {
+          final missingKeys = missingE2eRepositoryKeys();
+          if (missingKeys.isNotEmpty) {
+            // E2E skip hint; `print` is intentional for local diagnostics.
+            // ignore: avoid_print
+            print(
+              'SKIP load_resumo_produto_venda_lucratividade use_case e2e: missing '
+              '${missingKeys.join(', ')}. '
+              'Set them in assets/env/local.env, process env, or --dart-define.',
+            );
+            return;
+          }
+
+          await e2eSetupDependencies();
+          addTearDown(e2eTeardownDependencies);
+
+          final useCase = getIt<LoadResumoProdutoVendaLucratividadeUseCase>();
+          final periodStart = DateTime(2026);
+          final periodEnd = DateTime(2026, 3, 31);
+
+          final result = await useCase(
+            userId: 'user-1',
+            agentId: AppEnvironment.e2eAgentId,
+            clientToken: AppEnvironment.e2eClientToken,
+            filter: ResumoProdutoVendaLucratividadeFilter(
+              dataVendaInicio: periodStart,
+              dataVendaFim: periodEnd,
+            ),
+          );
+
+          result.fold(
+            (rows) {
+              for (final row in rows) {
+                expect(row.codEmpresa, greaterThan(0));
+                expect(row.codFilial, greaterThanOrEqualTo(0));
+                expect(row.qtdVendas, greaterThanOrEqualTo(0));
+                expect(row.qtdItensVendido, isNonNegative);
+                expect(row.valorTotalItem, isNonNegative);
+                expect(row.custoReposicao, isNonNegative);
+                expect(row.percentualLucro, isNonNegative);
+                expect(row.filialLabel, matches(RegExp(r'^\d+-\d+$')));
+              }
+            },
+            (failure) {
+              expect(
+                failure,
+                isNot(isA<SessionFailure>()),
+                reason:
+                    'Unexpected HTTP 401 after client login '
+                    '— check E2E_* values.',
+              );
+              expect(
+                isAcceptableE2eAgentSqlRepositoryFailure(failure),
+                isTrue,
+                reason:
+                    'Use-case e2e should return rows, invalid_policy / '
                     'missing_permission RPC, or transient bridge HTTP 5xx.',
               );
             },

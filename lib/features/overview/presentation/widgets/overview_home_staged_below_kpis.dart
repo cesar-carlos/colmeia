@@ -25,7 +25,6 @@ class OverviewHomeStagedBelowKpis extends StatefulWidget {
     required this.l10n,
     required this.showSkeleton,
     required this.displayOverview,
-    required this.isSingleAgentSelected,
     super.key,
   });
 
@@ -33,11 +32,6 @@ class OverviewHomeStagedBelowKpis extends StatefulWidget {
   final AppLocalizations l10n;
   final bool showSkeleton;
   final Overview displayOverview;
-
-  /// True when exactly one agent is selected in the active filter.
-  /// The lucratividade mensal chart is only shown in single-agent context
-  /// because product cost aggregation across stores is not meaningful.
-  final bool isSingleAgentSelected;
 
   @override
   State<OverviewHomeStagedBelowKpis> createState() =>
@@ -264,7 +258,7 @@ class _OverviewHomeStagedBelowKpisState
               loadFailed: displayOverview.lucratividadeTrendLoadFailed,
               loadFailureMessage:
                   displayOverview.lucratividadeTrendLoadFailureMessage,
-              isSingleOrMultiAgentSelected: widget.isSingleAgentSelected,
+              overviewApprovedAgentCount: displayOverview.approvedAgentCount,
             ),
           ),
         ],
@@ -440,7 +434,7 @@ class _OverviewHomeStagedBelowKpisState
                               _StagedFadeIn(
                                 child: RepaintBoundary(
                                   key: const ValueKey<String>(
-                                    'overview-lucratividade-mensal',
+                                    'overview-lucratividade-period',
                                   ),
                                   child: OverviewLucratividadeChart(
                                     l10n: l10n,
@@ -449,8 +443,8 @@ class _OverviewHomeStagedBelowKpisState
                                         overview.lucratividadeTrendLoadFailed,
                                     loadFailureMessage: overview
                                         .lucratividadeTrendLoadFailureMessage,
-                                    isSingleOrMultiAgentSelected:
-                                        widget.isSingleAgentSelected,
+                                    overviewApprovedAgentCount:
+                                        overview.approvedAgentCount,
                                   ),
                                 ),
                               )

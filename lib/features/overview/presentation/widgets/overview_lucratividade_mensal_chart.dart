@@ -9,6 +9,9 @@ import 'package:intl/intl.dart';
 
 String _xLabel(ResumoProdutoVendaLucratividadeMensalRow r) => r.anoMes;
 
+num _barByProfit(ResumoProdutoVendaLucratividadeMensalRow r) => r.lucro;
+num _lineByProfit(ResumoProdutoVendaLucratividadeMensalRow r) => r.valorTotalItem;
+
 num _barByRevenue(ResumoProdutoVendaLucratividadeMensalRow r) =>
     r.valorTotalItem;
 num _lineByRevenue(ResumoProdutoVendaLucratividadeMensalRow r) =>
@@ -23,7 +26,10 @@ num _lineByMargin(ResumoProdutoVendaLucratividadeMensalRow r) =>
     r.valorTotalItem;
 
 enum _LucratividadeDisplay {
-  /// Bars = revenue, line = cost (default).
+  /// Bars = profit, line = revenue.
+  profitRevenue,
+
+  /// Bars = revenue, line = cost.
   revenueCost,
 
   /// Bars = cost, line = revenue.
@@ -66,7 +72,7 @@ class OverviewLucratividadeMensalChart extends StatefulWidget {
 
 class _OverviewLucratividadeMensalChartState
     extends State<OverviewLucratividadeMensalChart> {
-  _LucratividadeDisplay _display = _LucratividadeDisplay.revenueCost;
+  _LucratividadeDisplay _display = _LucratividadeDisplay.profitRevenue;
 
   String _formatsLocaleTag = '';
   late NumberFormat _compactCurrencyFormat;
@@ -131,7 +137,20 @@ class _OverviewLucratividadeMensalChartState
     _emptyMessageCache = message;
     return _emptyPlaceholderCache = Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
-      child: Center(child: Text(message, textAlign: TextAlign.center)),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.bar_chart_rounded,
+              size: 48,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            SizedBox(height: tokens.gapMd),
+            Text(message, textAlign: TextAlign.center),
+          ],
+        ),
+      ),
     );
   }
 
@@ -141,6 +160,20 @@ class _OverviewLucratividadeMensalChartState
     final l10n = widget.l10n;
     final isMargin = _display == _LucratividadeDisplay.marginPercent;
     final isCost = _display == _LucratividadeDisplay.costRevenue;
+    final isProfit = _display == _LucratividadeDisplay.profitRevenue;
+
+    final Color barColor;
+    final Color lineColor;
+    if (isCost) {
+      barColor = tokens.warning;
+      lineColor = tokens.chartSeriesPrimary;
+    } else if (isProfit) {
+      barColor = tokens.chartSeriesPrimary;
+      lineColor = tokens.chartSeriesSecondary;
+    } else {
+      barColor = tokens.chartSeriesPrimary;
+      lineColor = tokens.warning;
+    }
 
     final style = AppComboChartStyle(
       height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
@@ -156,6 +189,8 @@ class _OverviewLucratividadeMensalChartState
           l10n.overviewComparisonBarHorizontalScrollHint,
       stickyPrimaryYAxisWhileScrolling: false,
       loadingLabel: l10n.overviewComparisonChartLoading,
+      barColor: barColor,
+      lineColor: lineColor,
     );
 
     final emptyMessage = widget.loadFailed
@@ -176,6 +211,10 @@ class _OverviewLucratividadeMensalChartState
       barFn = _barByCost;
       lineFn = _lineByCost;
       labelFn = _barLabelCurrency;
+    } else if (isProfit) {
+      barFn = _barByProfit;
+      lineFn = _lineByProfit;
+      labelFn = _barLabelCurrency;
     } else {
       barFn = _barByRevenue;
       lineFn = _lineByRevenue;
@@ -189,6 +228,10 @@ class _OverviewLucratividadeMensalChartState
         subtitle: l10n.overviewLucratividadeMensalSubtitle,
         belowSubtitle: AppSegmentedControl<_LucratividadeDisplay>(
           options: <AppSegmentedControlOption<_LucratividadeDisplay>>[
+            AppSegmentedControlOption<_LucratividadeDisplay>(
+              value: _LucratividadeDisplay.profitRevenue,
+              label: l10n.overviewLucratividadeMensalSwitchProfit,
+            ),
             AppSegmentedControlOption<_LucratividadeDisplay>(
               value: _LucratividadeDisplay.revenueCost,
               label: l10n.overviewLucratividadeMensalSwitchRevenue,
@@ -212,9 +255,11 @@ class _OverviewLucratividadeMensalChartState
             ? l10n.overviewLucratividadeMensalMarginSeriesLabel
             : isCost
             ? l10n.overviewLucratividadeMensalCostSeriesLabel
+            : isProfit
+            ? l10n.overviewLucratividadeMensalProfitSeriesLabel
             : l10n.overviewLucratividadeMensalRevenueSeriesLabel,
         lineValueBuilder: lineFn,
-        lineSeriesLabel: isMargin || isCost
+        lineSeriesLabel: isMargin || isCost || isProfit
             ? l10n.overviewLucratividadeMensalRevenueSeriesLabel
             : l10n.overviewLucratividadeMensalCostSeriesLabel,
         barDataLabelBuilder: labelFn,

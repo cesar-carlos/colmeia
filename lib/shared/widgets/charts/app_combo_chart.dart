@@ -56,6 +56,7 @@ class AppComboChartStyle {
     this.categoryAutoScrollingMode = AutoScrollingMode.start,
     this.categoryViewportFootnote,
     this.categoryViewportPanSemanticsLabel,
+    this.categoryLabelIntersectAction,
   });
 
   final double? height;
@@ -146,6 +147,10 @@ class AppComboChartStyle {
 
   /// Screen reader label when category viewport pan is active.
   final String? categoryViewportPanSemanticsLabel;
+
+  /// When set, overrides the default slot-width-based X-axis label overlap
+  /// policy in the Syncfusion engine.
+  final AxisLabelIntersectAction? categoryLabelIntersectAction;
 }
 
 enum AppComboChartSeriesType {

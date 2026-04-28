@@ -47,4 +47,7 @@ class ResumoProdutoVendaLucratividadeMensalRow {
     }
     return 0;
   }
+
+  /// Absolute profit: `valorTotalItem - custoReposicao`.
+  double get lucro => valorTotalItem - custoReposicao;
 }

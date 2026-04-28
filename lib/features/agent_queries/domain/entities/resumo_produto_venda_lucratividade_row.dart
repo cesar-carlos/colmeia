@@ -15,6 +15,7 @@ class ResumoProdutoVendaLucratividadeRow {
     required this.custoReposicao,
     required this.pontoEquilibrio,
     required this.valorTotalItem,
+    this.chartAxisLabel,
   });
 
   final int codEmpresa;
@@ -28,6 +29,10 @@ class ResumoProdutoVendaLucratividadeRow {
   final double pontoEquilibrio;
   final double valorTotalItem;
 
+  /// When set (e.g. overview aggregates all branches for one agent), used as
+  /// the chart category label instead of [filialLabel].
+  final String? chartAxisLabel;
+
   /// Cost-to-revenue ratio in %: `(custoReposicao / valorTotalItem) × 100`.
   /// Computed from the raw aggregates returned by the query.
   double get percentualLucro {
@@ -37,6 +42,9 @@ class ResumoProdutoVendaLucratividadeRow {
     return 0;
   }
 
-  /// Short label for chart X-axis: `"<empresa>-<filial>"`.
-  String get filialLabel => '$codEmpresa-$codFilial';
+  /// Absolute profit: `valorTotalItem - custoReposicao`.
+  double get lucro => valorTotalItem - custoReposicao;
+
+  /// Short label for chart X-axis: `"<empresa>-<filial>"`, or [chartAxisLabel].
+  String get filialLabel => chartAxisLabel ?? '$codEmpresa-$codFilial';
 }

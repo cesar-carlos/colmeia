@@ -32,6 +32,7 @@ class Overview {
     this.lucratividadeTrend = const <ResumoProdutoVendaLucratividadeRow>[],
     this.lucratividadeTrendLoadFailed = false,
     this.lucratividadeTrendLoadFailureMessage,
+    this.lucratividadePartialFailureAgentNames = const <String>[],
     this.isStaleCache = false,
     this.approvedAgentCount = 0,
     this.agentIdsExcludedFromQueryFailure = const <String>[],
@@ -100,18 +101,21 @@ class Overview {
   /// lucratividade mensal chart.
   final String? lucratividadeMensalTrendLoadFailureMessage;
 
-  /// Period product profitability by branch (lucratividade): one row per
-  /// `CodEmpresa/CodFilial` for the overview filter date range. Runs in
-  /// parallel for each selected agent and results are concatenated.
-  /// Empty when not loaded or when the query fails.
+  /// Period product profitability (lucratividade): **one row per agent** for
+  /// the overview filter date range (all branches summed per agent). Empty
+  /// when not loaded or when the query fails.
   final List<ResumoProdutoVendaLucratividadeRow> lucratividadeTrend;
 
-  /// True when the lucratividade (period, by branch) query failed.
+  /// True when the lucratividade (period, by agent) query failed.
   final bool lucratividadeTrendLoadFailed;
 
   /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
   /// lucratividade chart.
   final String? lucratividadeTrendLoadFailureMessage;
+
+  /// Agents whose period lucratividade SQL failed while other agents still
+  /// contributed rows (partial chart). Empty when all succeeded or all failed.
+  final List<String> lucratividadePartialFailureAgentNames;
 
   /// True when recovered from local cache after a remote error.
   final bool isStaleCache;
@@ -154,6 +158,9 @@ class Overview {
 
   bool get hasPartialAgentQueryFailure =>
       agentIdsExcludedFromQueryFailure.isNotEmpty;
+
+  bool get hasLucratividadePartialFailure =>
+      lucratividadePartialFailureAgentNames.isNotEmpty;
 
   bool get hasMissingClientToken => agentIdsMissingClientToken.isNotEmpty;
 
@@ -209,6 +216,7 @@ class Overview {
     List<ResumoProdutoVendaLucratividadeRow>? lucratividadeTrend,
     bool? lucratividadeTrendLoadFailed,
     String? lucratividadeTrendLoadFailureMessage,
+    List<String>? lucratividadePartialFailureAgentNames,
     bool? mainResumoHadPlannedTargets,
   }) {
     return Overview(
@@ -252,6 +260,9 @@ class Overview {
       lucratividadeTrendLoadFailureMessage:
           lucratividadeTrendLoadFailureMessage ??
           this.lucratividadeTrendLoadFailureMessage,
+      lucratividadePartialFailureAgentNames:
+          lucratividadePartialFailureAgentNames ??
+          this.lucratividadePartialFailureAgentNames,
       isStaleCache: isStaleCache ?? this.isStaleCache,
       approvedAgentCount: approvedAgentCount ?? this.approvedAgentCount,
       agentIdsExcludedFromQueryFailure:

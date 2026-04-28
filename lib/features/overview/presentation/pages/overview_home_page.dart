@@ -160,8 +160,6 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                       selector: (_, c) => _MetricsSlice(
                         isLoadingInitial: c.isLoadingInitial,
                         overview: c.overview,
-                        isSingleAgentSelected:
-                            c.activeFilter.selectedAgentIds?.length == 1,
                       ),
                       builder: (context, slice, _) {
                         final overview = slice.overview;
@@ -195,8 +193,6 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                                 l10n: l10n,
                                 showSkeleton: showSkeleton,
                                 displayOverview: displayOverview,
-                                isSingleAgentSelected:
-                                    slice.isSingleAgentSelected,
                               ),
                             ],
                           ),
@@ -385,25 +381,18 @@ class _MetricsSlice {
   const _MetricsSlice({
     required this.isLoadingInitial,
     required this.overview,
-    required this.isSingleAgentSelected,
   });
 
   final bool isLoadingInitial;
   final Overview? overview;
-
-  /// True when exactly one agent is explicitly selected in the active filter.
-  /// Used to gate charts that are only meaningful for a single-agent context
-  /// (e.g. lucratividade mensal — per-agent cost data).
-  final bool isSingleAgentSelected;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is _MetricsSlice &&
           isLoadingInitial == other.isLoadingInitial &&
-          isSingleAgentSelected == other.isSingleAgentSelected &&
           identical(overview, other.overview));
 
   @override
-  int get hashCode => Object.hash(isLoadingInitial, isSingleAgentSelected, overview);
+  int get hashCode => Object.hash(isLoadingInitial, overview);
 }

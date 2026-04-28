@@ -1940,11 +1940,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
 
   @override
-  String get overviewLucratividadeTitle => 'Lucratividade por filial';
+  String get overviewLucratividadeTitle => 'Lucratividade por agente';
 
   @override
   String get overviewLucratividadeSubtitle =>
-      'Receita, custo e margem no periodo selecionado, por filial.';
+      'Receita, custo e margem no periodo selecionado, por agente (todas as filiais somadas).';
+
+  @override
+  String get overviewLucratividadeSwitchProfit => 'Lucro';
 
   @override
   String get overviewLucratividadeSwitchRevenue => 'Receita';
@@ -1954,6 +1957,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadeSwitchMargin => 'Margem %';
+
+  @override
+  String get overviewLucratividadeProfitSeriesLabel => 'Lucro';
 
   @override
   String get overviewLucratividadeRevenueSeriesLabel => 'Receita';
@@ -1970,7 +1976,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMultiAgentHint =>
-      'Selecione um ou mais agentes para visualizar a lucratividade.';
+      'Nenhum agente aprovado esta disponivel para carregar a lucratividade. Adicione ou conecte um agente primeiro.';
 
   @override
   String get overviewLoadingLucratividadeSemantics =>
@@ -1993,6 +1999,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Selecione um unico agente para visualizar a lucratividade mensal.';
 
   @override
+  String get overviewLucratividadeMensalSwitchProfit => 'Lucro';
+
+  @override
   String get overviewLucratividadeMensalSwitchRevenue => 'Receita';
 
   @override
@@ -2000,6 +2009,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMensalSwitchMargin => 'Margem %';
+
+  @override
+  String get overviewLucratividadeMensalProfitSeriesLabel => 'Lucro';
 
   @override
   String get overviewLucratividadeMensalRevenueSeriesLabel => 'Receita';
@@ -3951,11 +3963,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
 
   @override
-  String get overviewLucratividadeTitle => 'Lucratividade por filial';
+  String get overviewLucratividadeTitle => 'Lucratividade por agente';
 
   @override
   String get overviewLucratividadeSubtitle =>
-      'Receita, custo e margem no periodo selecionado, por filial.';
+      'Receita, custo e margem no periodo selecionado, por agente (todas as filiais somadas).';
 
   @override
   String get overviewLucratividadeSwitchRevenue => 'Receita';
@@ -3981,7 +3993,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadeMultiAgentHint =>
-      'Selecione um ou mais agentes para visualizar a lucratividade.';
+      'Nenhum agente aprovado esta disponivel para carregar a lucratividade. Adicione ou conecte um agente primeiro.';
 
   @override
   String get overviewLoadingLucratividadeSemantics =>
@@ -4004,6 +4016,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Selecione um unico agente para visualizar a lucratividade mensal.';
 
   @override
+  String get overviewLucratividadeMensalSwitchProfit => 'Lucro';
+
+  @override
   String get overviewLucratividadeMensalSwitchRevenue => 'Receita';
 
   @override
@@ -4011,6 +4026,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadeMensalSwitchMargin => 'Margem %';
+
+  @override
+  String get overviewLucratividadeMensalProfitSeriesLabel => 'Lucro';
 
   @override
   String get overviewLucratividadeMensalRevenueSeriesLabel => 'Receita';

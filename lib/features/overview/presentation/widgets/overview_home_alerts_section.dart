@@ -55,7 +55,9 @@ class OverviewHomeAlertsSection extends StatelessWidget {
     if (o.isStaleCache) return true;
     if (o.hasMissingClientToken && !o.requiresClientTokenSetup) return true;
     if (o.hasAgentsSkippedDueToHubPresence) return true;
-    if (o.hasPartialAgentQueryFailure) return true;
+    if (o.hasPartialAgentQueryFailure || o.hasLucratividadePartialFailure) {
+      return true;
+    }
     if (o.shouldShowMultiAgentAggregationNote) return true;
     return false;
   }
@@ -194,7 +196,8 @@ class OverviewHomeAlertsSection extends StatelessWidget {
       );
     }
 
-    if (o != null && o.hasPartialAgentQueryFailure) {
+    if (o != null &&
+        (o.hasPartialAgentQueryFailure || o.hasLucratividadePartialFailure)) {
       gapIfNeeded();
       children.add(
         AppInlineErrorPanel(

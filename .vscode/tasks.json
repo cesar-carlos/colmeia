@@ -31,9 +31,9 @@
     },
     {
       "label": "Colmeia: run e2e (agent SQL bridge)",
-      "detail": "Default test task: runs all direct repository e2e tests under test/integration/e2e/. Use Command Palette → Tasks: Run Test Task, or bind workbench.action.tasks.test to a key.",
+      "detail": "Runs all E2E tests under test/integration/e2e/ with --concurrency=1 so parallel workers do not overload the real bridge/SQL queue.",
       "type": "shell",
-      "command": "flutter test test/integration/e2e/ --reporter expanded",
+      "command": "flutter test test/integration/e2e/ --concurrency=1 --reporter expanded",
       "options": {
         "cwd": "${workspaceFolder}"
       },

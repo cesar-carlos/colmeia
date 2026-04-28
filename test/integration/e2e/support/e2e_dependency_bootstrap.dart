@@ -148,10 +148,17 @@ bool isTransientAgentSqlBridgeHttpFailure(AppFailure failure) {
     return false;
   }
   final statusCode = cause.response?.statusCode;
-  if (statusCode == null) {
-    return false;
+  if (statusCode != null) {
+    return statusCode >= 500 && statusCode < 600;
   }
-  return statusCode >= 500 && statusCode < 600;
+  return switch (cause.type) {
+    DioExceptionType.connectionTimeout ||
+    DioExceptionType.sendTimeout ||
+    DioExceptionType.receiveTimeout ||
+    DioExceptionType.connectionError =>
+      true,
+    _ => false,
+  };
 }
 
 String? _agentSqlOdbcReason(AppFailure failure) {
@@ -216,6 +223,35 @@ bool isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(AppFailure failure) {
   return false;
 }
 
+/// Bridge/agent queue saturated: request never reached workers (`retryable` is
+/// often false but the condition is still environmental for E2E smoke runs).
+bool isKnownE2eAgentSqlQueueSaturationFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  if (failure.reason != 'sql_execution_failed' ||
+      failure.category != 'sql') {
+    return false;
+  }
+  final odbc = _agentSqlOdbcReason(failure);
+  if (odbc == 'queue_wait_timeout') {
+    return true;
+  }
+  final tech = failure.technicalMessage?.toLowerCase() ?? '';
+  if (tech.contains('waiting in queue') ||
+      (tech.contains('queue') && tech.contains('timeout'))) {
+    return true;
+  }
+  final errorData = failure.context[AgentSqlRpcFailureUiKey.errorDataField];
+  if (errorData is Map) {
+    final detail = errorData['detail']?.toString().toLowerCase() ?? '';
+    if (detail.contains('waiting in queue')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /// Known policy rejection, missing table permission RPC, transient bridge
 /// HTTP 5xx, or HTTP 403 forbidden on agent SQL (environment / hub access).
 bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
@@ -223,7 +259,8 @@ bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
       isKnownAgentSqlMissingPermissionFailure(failure) ||
       isTransientAgentSqlBridgeHttpFailure(failure) ||
       isKnownE2eAgentSqlHttpForbiddenFailure(failure) ||
-      isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(failure);
+      isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(failure) ||
+      isKnownE2eAgentSqlQueueSaturationFailure(failure);
 }
 
 void primeE2eEnvironment() {
