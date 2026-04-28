@@ -1078,4 +1078,88 @@ void main() {
       expect(controller.actionFeedbackMessage, contains('approval'));
     },
   );
+
+  test(
+    'discardQueuedRequestAccess ignores removeAccess pending actions',
+    () async {
+      final removeQueued = PendingAgentAction(
+        id: 'removeAccess_x',
+        agentId: '33333333-3333-3333-8333-333333333333',
+        type: PendingAgentActionType.removeAccess,
+        state: PendingAgentActionState.queued,
+        createdAt: DateTime(2026, 4, 4),
+        attemptCount: 0,
+      );
+      when(
+        () => readPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => Success<List<PendingAgentAction>, AppFailure>(
+          <PendingAgentAction>[removeQueued],
+        ),
+      );
+
+      await controller.initialize();
+      await controller.discardQueuedRequestAccess(action: removeQueued);
+
+      verifyNever(
+        () => discardQueuedClientAgentRequestAccessUseCase(
+          userId: any(named: 'userId'),
+          agentIds: any(named: 'agentIds'),
+        ),
+      );
+      expect(controller.actionErrorMessage, isNotNull);
+    },
+  );
+
+  test(
+    'discardQueuedRequestAccess calls discard use case and clears local token',
+    () async {
+      var readIdx = 0;
+      final pendingSequence = <List<PendingAgentAction>>[
+        List<PendingAgentAction>.from(queuedPendingActions),
+        List<PendingAgentAction>.from(queuedPendingActions),
+        emptyPendingActions,
+      ];
+      when(
+        () => readPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer((_) async {
+        final idx = readIdx < pendingSequence.length
+            ? readIdx
+            : pendingSequence.length - 1;
+        readIdx++;
+        return Success<List<PendingAgentAction>, AppFailure>(
+          pendingSequence[idx],
+        );
+      });
+      when(
+        () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Failure<SyncPendingAgentActionsResult, AppFailure>(
+          UnknownFailure(message: 'sync failed for test'),
+        ),
+      );
+
+      await controller.initialize();
+      await Future<void>.delayed(Duration.zero);
+
+      await controller.discardQueuedRequestAccess(
+        action: queuedPendingActions.single,
+      );
+
+      verify(
+        () => discardQueuedClientAgentRequestAccessUseCase(
+          userId: session.userId,
+          agentIds: <String>{'33333333-3333-3333-8333-333333333333'},
+        ),
+      ).called(1);
+      verify(
+        () => clientTokenStore.delete(
+          userId: session.userId,
+          agentId: '33333333-3333-3333-8333-333333333333',
+        ),
+      ).called(1);
+      expect(controller.actionErrorMessage, isNull);
+      expect(controller.actionFeedbackMessage, contains('removed'));
+    },
+  );
 }

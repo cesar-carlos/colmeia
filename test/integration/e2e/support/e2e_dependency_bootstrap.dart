@@ -13,6 +13,7 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'e2e_refreshing_auth_interceptor.dart';
 import 'e2e_stub_client_agents_for_agent_queries.dart';
 
 /// Prints once per VM so skipped E2E tests still show which agent id is configured.
@@ -24,9 +25,10 @@ bool _e2eAnnouncedConfiguredAgentId = false;
 /// (plugins unavailable in `flutter test` without a device).
 ///
 /// When `AppEnvironment.hasE2eClientLoginCredentials` is true, performs
-/// `POST /client-auth/login` with a separate `Dio`, then attaches a lightweight
-/// Bearer interceptor on the shared `Dio` used for `sql.execute` (same pattern
-/// as production auth, without persistent session storage or refresh).
+/// `POST /client-auth/login` with a separate `Dio`, then attaches
+/// [E2eRefreshingAuthInterceptor] on the shared `Dio` used for `sql.execute`
+/// so access tokens are refreshed before expiry and on HTTP 401 (short-lived
+/// JWTs, e.g. ~15 minutes, matching production proactive refresh + 401 retry).
 Future<void> e2eSetupDependencies() async {
   primeE2eEnvironment();
   if (AppEnvironment.useFakeBackend) {
@@ -51,7 +53,14 @@ Future<void> e2eSetupDependencies() async {
       email: AppEnvironment.e2eClientEmail,
       password: AppEnvironment.e2eClientPassword,
     );
-    _addBearerInterceptor(dio, session.accessToken);
+    final sessionHolder = E2eAuthSessionHolder()..value = session;
+    dio.interceptors.add(
+      E2eRefreshingAuthInterceptor(
+        dio: dio,
+        refreshAuthApi: authRemote,
+        sessionHolder: sessionHolder,
+      ),
+    );
   }
 
   getIt
@@ -107,20 +116,6 @@ List<String> missingE2eRepositoryKeys() {
     );
   }
   return missing;
-}
-
-void _addBearerInterceptor(Dio dio, String accessToken) {
-  dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) {
-        const header = 'Authorization';
-        if (!options.headers.containsKey(header)) {
-          options.headers[header] = 'Bearer $accessToken';
-        }
-        handler.next(options);
-      },
-    ),
-  );
 }
 
 Future<void> e2eTeardownDependencies() async {

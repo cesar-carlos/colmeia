@@ -6,7 +6,7 @@
 > cancel token) + Fase 2 (PR-K PayloadFrame, PR-L relay primitives,
 > PR-L+ p1 selector, p2 streaming, p3 streaming datasource, p3.5
 > collector + adapter, PR-M p1/p2/p3 presença em 3 camadas) +
-> Fase 2.5 (3 smokes e2e contra hub real) +
+> Fase 2.5 (smokes e2e com `SELECT 1` removidos — política do banco; ver §0.2.1) +
 > auditoria de boot (B1 flash de login no cold start, B2 race do warm-up,
 > S1 `connection` nullable em REST-only, S2 sign-out gated por transport) +
 > auditoria de error handling (#1 mapeamento de `RelayDispatchException`,
@@ -84,7 +84,7 @@
 | **Presença em tempo real (Camadas 1+2)** — sealed `AgentPresenceEvent` (`CatalogUpdated`, `Hint`) + port `AgentPresenceStream` + `ObserveAgentPresenceUseCase` + adapters Socket (`ClientAgentProfileUpdatedListener` para `client:agent.profile.updated`, `AgentCommandPresenceHinter` para outcomes de `agents:command`) + composer `SocketAgentPresenceStream` (re-attach automático em reconnect)                                                                                                                                         | `lib/features/client_agents/{domain/events,domain/ports,application/usecases,data/socket}/` + auto-wire no `injector_client_agents.dart` (gated por `SOCKET_PRESENCE_LISTENER_ENABLED`)                                                                                                                                                                                          | PR-M p1             |
 | **Wire-up no `ClientAgentsController`** — subscription opcional via `ObserveAgentPresenceUseCase?` (default `null` mantém UX legada); dedup por `observedAt`; `AgentPresenceCatalogUpdated` ➜ `LoadClientAgentDetailUseCase` + `_upsertApprovedAgentsInMemory`; `AgentPresenceHint` ➜ `copyWith(connectionStatus)` in-memory + Timer debounced (`hintConfirmDelay`, default 5 s) que confirma via REST; `dispose()` cancela sub + timers e é idempotente                                                                                      | `lib/features/client_agents/presentation/controllers/client_agents_controller.dart` + auto-wire no `injector_presentation.dart` (passa `null` quando o use case não está registrado)                                                                                                                                                                                             | PR-M p2             |
 | **Camada 3 REST (`AgentPresencePoller`) + visibility gating** — `Timer.periodic` chama `loadOnlineAgentIds`, converte cada id em `AgentPresenceHint(online:true, source:'polling_rest')`. `ClientAgentsController.onScreenVisible/Hidden` (chamados pela page via `RouteAware`) + observação de `ConsumerSocketConnection.states()` reconciliam o gate: poller liga **só** quando tela visível **AND** socket NÃO conectado. Loop interno do poller re-tick caso `userId` mude mid-flight.                                                    | `lib/features/client_agents/application/services/agent_presence_poller.dart` + extensões em `client_agents_controller.dart` + `RouteAware.{didPush,didPopNext,didPushNext,didPop}` em `client_agents_page.dart` + auto-wire no `injector_client_agents.dart` (`AgentPresencePoller`) e `injector_presentation.dart` (passa `AgentPresencePoller?` + `ConsumerSocketConnection?`) | PR-M p3             |
-| **Smoke e2e** (opt-in via tag `e2e`) — `setupE2eSocketBundle({withRelay})` faz login REST + monta `ConsumerSocketConnection` + `SocketCommandDispatcher` (+ relay) sem depender de Hive/secure storage; 3 testes validam handshake + `agents:command` SELECT 1, `RelayCommandDispatcher.sendUnary`, e a Camada 2 de presença (hint após `agents:command_success`) contra o `plug_server` real                                                                                                                                                 | `test/integration/e2e/support/e2e_socket_bootstrap.dart` + `socket_consumer_smoke_e2e_test.dart` + `socket_relay_smoke_e2e_test.dart` + `socket_presence_smoke_e2e_test.dart`                                                                                                                                                                                                    | smoke e2e           |
+| **E2E SQL real** (opt-in, `test/integration/e2e/`) — repositórios chamam `executeSql` com queries permitidas pelo banco (não usar `SELECT 1` sem tabela quando a política ODBC bloqueia).                                                                                                                                                 | `agent_sql_bridge_e2e_test.dart`, `resumo_*_repository_e2e_test.dart`, etc. + `support/e2e_dependency_bootstrap.dart`                                                                                                                                                                                                    | e2e agent_queries   |
 
 ### 0.2 Cobertura de testes (`flutter test`)
 
@@ -93,9 +93,8 @@
 > PR-L+ p2 = +6, PR-L+ p3 = +6, PR-L+ p3.5 = +6, PR-M p1 = +20, PR-M p2 = +7,
 > PR-M p3 = +13, PR-J = +9).
 >
-> Além disso: **3 smokes e2e** opt-in (não contam no total porque ficam
-> atrás da tag `e2e`, excluída da pipeline padrão). Veja §0.2.1 para
-> rodar contra o `plug_server` real.
+> Além disso: E2E opt-in em `test/integration/e2e/` (excluídos da pipeline
+> padrão quando aplicável). Veja §0.2.1.
 
 Suites principais novas/atualizadas:
 
@@ -183,49 +182,25 @@ execution_id,...}}`); fallback de `row_count` quando `total_rows`
   `caller_cancelled` default); `dispose` usa `token_disposed` e
   bloqueia `register` subsequente.
 
-### 0.2.1 Como rodar os smokes e2e contra o hub real
+### 0.2.1 E2E contra hub real
 
-Os 3 smokes vivem em `test/integration/e2e/socket_*_smoke_e2e_test.dart`
-e estão atrás da tag `e2e` (excluída da pipeline padrão). Cada um faz
-**skip silencioso** quando os 5 envs `API_BASE_URL`, `E2E_CLIENT_EMAIL`,
-`E2E_CLIENT_PASSWORD`, `E2E_AGENT_ID`, `E2E_CLIENT_TOKEN` estão
-ausentes — segura pra deixar no repo.
+Os smokes que enviavam `agents:command` com **`SELECT 1`** foram
+**removidos**: em produção a política do agente / ODBC costuma exigir SQL
+contra tabelas reais; consultas “sem tabela” falham por autorização e não
+validam o transporte de forma útil.
 
-```bash
-# Com os envs em assets/env/local.env:
-flutter test test/integration/e2e/socket_consumer_smoke_e2e_test.dart \
-  test/integration/e2e/socket_relay_smoke_e2e_test.dart \
-  test/integration/e2e/socket_presence_smoke_e2e_test.dart \
-  --tags=e2e
+**O que usar:** E2E em `test/integration/e2e/` que executam SQL dos
+repositórios (ex.: `agent_sql_bridge_e2e_test.dart`,
+`resumo_*_repository_e2e_test.dart`), com os mesmos envs `E2E_*` em
+`assets/env/local.env` (via `primeE2eEnvironment`). Handshake `/consumers`,
+relay e presença seguem cobertos por testes unitários e por uso manual do
+app com `AGENT_BRIDGE_TRANSPORT=socket` após `SOCKET_CONSUMER_ROLES` no hub.
 
-# Ou via dart-define (preferido em CI sem secrets em assets):
-flutter test test/integration/e2e/socket_consumer_smoke_e2e_test.dart \
-  --tags=e2e \
-  --dart-define=API_BASE_URL=https://plug-server.example.com/api/v1 \
-  --dart-define=E2E_CLIENT_EMAIL=... \
-  --dart-define=E2E_CLIENT_PASSWORD=... \
-  --dart-define=E2E_AGENT_ID=... \
-  --dart-define=E2E_CLIENT_TOKEN=...
-```
+#### Resultado do primeiro run contra `plug_server` produção (histórico)
 
-Cobertura por arquivo:
-
-| Arquivo                               | Valida                                                                                                                                                                                     |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `socket_consumer_smoke_e2e_test.dart` | login REST → `ConsumerSocketConnection.connect()` (handshake `connection:ready`) → `SocketCommandDispatcher.sendAgentsCommand(SELECT 1)` → bridge envelope `response.item` sem `error`.    |
-| `socket_relay_smoke_e2e_test.dart`    | mesma cadeia + `RelayConversationManager.obtain()` (`relay:conversation.start/started`) + `RelayCommandDispatcher.sendUnary` (`relay:rpc.request` PayloadFrame → `accepted` → `response`). |
-| `socket_presence_smoke_e2e_test.dart` | monta `SocketAgentPresenceStream` + listener + hinter, dispara um `agents:command` real e espera `AgentPresenceHint(online: true, source: 'agents:command_success')` chegar no stream.     |
-
-> O smoke da presença valida só a **Camada 2** (hints derivados de
-> outcomes). A Camada 1 (`client:agent.profile.updated`) depende do
-> hub broadcast, que não pode ser coagido pelo cliente — checagem
-> manual ou mock-server fica fora do smoke.
-
-#### Resultado do primeiro run contra `plug_server` produção
-
-**Achado real (a corrigir do lado do hub, não do app):** rodando o
-`socket_consumer_smoke_e2e_test.dart` contra
-`https://plug-server.se7esistemassinop.com.br/api/v1` o login REST
+**Achado real (a corrigir do lado do hub, não do app):** no primeiro smoke
+(com `socket_consumer_smoke_e2e_test.dart`, arquivo desde então removido)
+contra `https://plug-server.se7esistemassinop.com.br/api/v1` o login REST
 funcionou, o handshake Socket.IO foi aceito, mas o middleware de
 namespace rejeitou a conexão com:
 
@@ -250,20 +225,19 @@ SOCKET_CONSUMER_ROLES=user,admin,client
 ```
 
 Isso libera o app Colmeia (que loga com role `client`) a abrir o
-namespace `/consumers`. **Sem mudança no Flutter.** O smoke passou na
-fase REST + handshake e parou exatamente onde deveria parar quando o
-gate fechou — confirma que toda a pilha do app (PR-A → PR-M)
-funciona até a borda do hub.
+namespace `/consumers`. **Sem mudança no Flutter.** Na época do smoke, a
+fase REST + handshake passou e a conexão parou quando o gate fechou —
+confirmação de que a pilha do app (PR-A → PR-M) chega até a borda do hub.
 
-Depois que o env for ajustado, rodar de novo os 3 smokes (§0.2.1)
-para validar o resto da cadeia (`agents:command`, relay, presença).
+Com o env ajustado, validar `agents:command`, relay e presença via app ou
+E2E com SQL real (§0.2.1), não via `SELECT 1`.
 
 ### 0.3 Em aberto (próximos PRs)
 
 - **Operacional: ajustar `SOCKET_CONSUMER_ROLES` no hub para incluir
-  `client`** + rodar os 3 smokes de novo (§0.2.1). O primeiro run já
-  validou login REST + handshake; agora precisamos validar
-  `agents:command` + relay + presença. Sem mudança de código.
+  `client`**. O primeiro run (histórico em §0.2.1) já validou login REST +
+  handshake; em seguida usar app ou E2E com queries reais. Sem mudança de
+  código obrigatória no Flutter.
 - **PR-L+ parte 4** — registrar
   `CollectingRelayStreamingAgentQueriesRemoteDataSource` no
   `injector_agent_queries.dart` (gated por
@@ -920,7 +894,7 @@ Entrega: SQL executado via Socket usando o mesmo body do REST.
       compartilhado entre REST e Socket (paridade byte-a-byte).
 - [x] `socket_agent_queries_remote_datasource.dart`.
 - [x] Switch em `injector_agent_queries.dart`.
-- [x] Testes unit (§13) + 1 e2e opt-in (3 smokes em §0.2.1).
+- [x] Testes unit (§13) + E2E opt-in com SQL real (§0.2.1).
 - [x] **App lifecycle hook**: `pause()`/`resume()` via
       `lib/app/socket_lifecycle_observer.dart` (`WidgetsBindingObserver`).
 
@@ -1035,18 +1009,16 @@ Entregas só após 1 ciclo com dados das métricas P0.
 - [ ] **P3** — Dedup pós-reconexão universal (review §5.10) reaproveitando
       `_lastObservedByAgentId` da presença.
 
-### Fase 2.5 — Validação operacional (smoke e2e)
+### Fase 2.5 — Validação operacional (E2E)
 
-- [x] Smoke e2e opt-in: `setupE2eSocketBundle({withRelay})` +
-      `socket_consumer_smoke_e2e_test.dart` +
-      `socket_relay_smoke_e2e_test.dart` +
-      `socket_presence_smoke_e2e_test.dart`. Documentação em §0.2.1.
+- [x] E2E opt-in com SQL real em `test/integration/e2e/` (ver §0.2.1).
+      Smokes com `SELECT 1` removidos (política do banco).
 - [x] **Achado real do primeiro run**: hub produção precisa de
       `SOCKET_CONSUMER_ROLES=user,admin,client`. Documentado em
       §0.2.1 ("Resultado do primeiro run").
 - [ ] **Operacional (servidor)**: aplicar
       `SOCKET_CONSUMER_ROLES=user,admin,client` no `plug_server` +
-      rerodar os 3 smokes para validar o resto da cadeia.
+      validar cadeia socket no app ou E2E com queries reais.
 
 ### Fase 3 — Hybrid + observabilidade avançada
 
@@ -1555,7 +1527,7 @@ Isso elimina a necessidade da Camada 3 (polling) para presença.
 | **PR-M p1 (entregue)**    | Pilha de presença em tempo real: sealed `AgentPresenceEvent`, port `AgentPresenceStream`, use case `ObserveAgentPresenceUseCase`, adapters Socket (`ClientAgentProfileUpdatedListener` + `AgentCommandPresenceHinter`), composer `SocketAgentPresenceStream` com re-attach automático. Auto-wire no `injector_client_agents` gated por `SOCKET_PRESENCE_LISTENER_ENABLED`. | 2       |
 | **PR-M p2 (entregue)**    | `ClientAgentsController` consome `ObserveAgentPresenceUseCase?` (opcional para preservar a UX legada). Dedup por `observedAt`. `AgentPresenceCatalogUpdated` ➜ `LoadClientAgentDetailUseCase` + upsert. `AgentPresenceHint` ➜ `copyWith(connectionStatus)` in-memory + Timer debounced que confirma via REST. `dispose()` cancela tudo e é idempotente.                    | 2       |
 | **PR-M p3 (entregue)**    | `AgentPresencePoller` (Camada 3 REST) + visibility gating no controller (`onScreenVisible/Hidden`) + observação de `ConsumerSocketConnection.states()` + `RouteAware` na page. Poller reagrupa hints `online` em loop interno, sobrevive a erros de rede e é idempotente.                                                                                                  | 2       |
-| **Smoke e2e (entregue)**  | `setupE2eSocketBundle({withRelay})` + 3 testes opt-in (`socket_consumer_smoke_e2e_test.dart`, `socket_relay_smoke_e2e_test.dart`, `socket_presence_smoke_e2e_test.dart`) que validam handshake + `agents:command` + relay `sendUnary` + presença Camada 2 contra o `plug_server` real. Skip silencioso quando `E2E_*` envs ausentes. Ver §0.2.1.                           | 2.5     |
+| **E2E SQL (entregue)**    | Testes em `test/integration/e2e/` com consultas reais dos repositórios (`agent_sql_bridge`, `resumo_*`, etc.). Smokes `SELECT 1` removidos — ver §0.2.1.                                                                                                                                                                                                                | 2.5     |
 | PR-N                      | Hybrid datasource (REST↔Socket fallback) — **só com métricas P0** confirmando ganho.                                                                                                                                                                                                                                                                                       | 3       |
 
 ### 20.3 QA / rollout

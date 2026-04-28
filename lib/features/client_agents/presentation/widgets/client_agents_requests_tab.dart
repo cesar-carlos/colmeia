@@ -5,6 +5,7 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent_acce
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_shared_widgets.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
 
@@ -19,6 +20,7 @@ class ClientAgentsRequestsTab extends StatelessWidget {
     super.key,
     this.hasActiveFilters = false,
     this.onRetryAccessRequest,
+    this.onDiscardQueuedRequestAccess,
   });
 
   final List<ClientAgentAccessRequest> requests;
@@ -30,6 +32,8 @@ class ClientAgentsRequestsTab extends StatelessWidget {
   final bool hasActiveFilters;
   final Future<void> Function(ClientAgentAccessRequest request)?
   onRetryAccessRequest;
+  final Future<void> Function(PendingAgentAction action)?
+  onDiscardQueuedRequestAccess;
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +82,27 @@ class ClientAgentsRequestsTab extends StatelessWidget {
               title: l10n.clientAgentsPendingSendTitle(action.agentId),
               subtitle:
                   '${_pendingActionDescription(l10n, action)}$errorSuffix',
-              trailing: ClientAgentsStatusChip(
-                label: _pendingActionChipLabel(l10n, action),
-                kind: _pendingActionChipKind(action),
+              trailing: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  ClientAgentsStatusChip(
+                    label: _pendingActionChipLabel(l10n, action),
+                    kind: _pendingActionChipKind(action),
+                  ),
+                  if (_canDiscardLocalQueuedRequest(action) &&
+                      onDiscardQueuedRequestAccess != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: AppSecondaryButton(
+                        label: l10n.clientAgentsDiscardQueuedRequestAction,
+                        onPressed: isMutating
+                            ? null
+                            : () => unawaited(
+                                onDiscardQueuedRequestAccess!(action),
+                              ),
+                      ),
+                    ),
+                ],
               ),
             );
           },
@@ -204,5 +226,11 @@ class ClientAgentsRequestsTab extends StatelessWidget {
     return request.requestId?.trim().isNotEmpty == true &&
         (request.status == AgentAccessRequestStatus.rejected ||
             request.status == AgentAccessRequestStatus.expired);
+  }
+
+  bool _canDiscardLocalQueuedRequest(PendingAgentAction action) {
+    return action.type == PendingAgentActionType.requestAccess &&
+        (action.state == PendingAgentActionState.queued ||
+            action.state == PendingAgentActionState.failed);
   }
 }

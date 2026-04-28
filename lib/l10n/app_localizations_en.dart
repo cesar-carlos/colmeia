@@ -1018,6 +1018,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'The request was retried. We will keep watching for approval updates.';
 
   @override
+  String get clientAgentsDiscardQueuedRequestAction => 'Remove from queue';
+
+  @override
+  String get clientAgentsDiscardQueuedRequestSuccess =>
+      'The pending submission was removed. You can request access again when you want.';
+
+  @override
+  String get clientAgentsDiscardQueuedRequestInvalidState =>
+      'This submission cannot be removed from the queue in its current state.';
+
+  @override
   String get clientAgentsOwnerActionFailedTitle =>
       'Could not complete the owner action';
 

@@ -1771,6 +1771,24 @@ abstract class AppLocalizations {
   /// **'The request was retried. We will keep watching for approval updates.'**
   String get clientAgentsRetrySuccess;
 
+  /// No description provided for @clientAgentsDiscardQueuedRequestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from queue'**
+  String get clientAgentsDiscardQueuedRequestAction;
+
+  /// No description provided for @clientAgentsDiscardQueuedRequestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'The pending submission was removed. You can request access again when you want.'**
+  String get clientAgentsDiscardQueuedRequestSuccess;
+
+  /// No description provided for @clientAgentsDiscardQueuedRequestInvalidState.
+  ///
+  /// In en, this message translates to:
+  /// **'This submission cannot be removed from the queue in its current state.'**
+  String get clientAgentsDiscardQueuedRequestInvalidState;
+
   /// No description provided for @clientAgentsOwnerActionFailedTitle.
   ///
   /// In en, this message translates to:

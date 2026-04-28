@@ -1016,6 +1016,81 @@ class ClientAgentsController extends ChangeNotifier {
     });
   }
 
+  /// Drops a **local** `requestAccess` action that is still `queued` or
+  /// `failed` (not yet successfully synced). Does not cancel a request that
+  /// already exists on the server with status pending; that would require a
+  /// dedicated hub route.
+  Future<void> discardQueuedRequestAccess({
+    required PendingAgentAction action,
+  }) async {
+    await _runPendingMutationSerialized(() async {
+      if (_isDisposed) {
+        return;
+      }
+      final userId = _authController.session?.userId;
+      if (userId == null || userId.isEmpty) {
+        _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
+        _notifyListenersIfAlive();
+        return;
+      }
+      final agentId = action.agentId.trim();
+      if (!_matchesDiscardableLocalRequestAccess(action, agentId)) {
+        _actionErrorMessage = _s.clientAgentsDiscardQueuedRequestInvalidState;
+        _notifyListenersIfAlive();
+        return;
+      }
+      final beforeCount = _pendingActions
+          .where((a) => _matchesDiscardableLocalRequestAccess(a, agentId))
+          .length;
+      if (beforeCount == 0) {
+        _actionErrorMessage = _s.clientAgentsDiscardQueuedRequestInvalidState;
+        _notifyListenersIfAlive();
+        return;
+      }
+
+      _isSyncing = true;
+      _actionErrorMessage = null;
+      _clearActionFeedback();
+      _notifyListenersIfAlive();
+
+      final discardResult = await _discardQueuedClientAgentRequestAccessUseCase(
+        userId: userId,
+        agentIds: <String>{agentId},
+      );
+      _actionErrorMessage = _consumeResult(
+        result: discardResult,
+        operation: 'discardQueuedClientAgentRequestAccess',
+      );
+      await _refreshAfterMutation(userId: userId);
+      if (_actionErrorMessage == null) {
+        final afterCount = _pendingActions
+            .where((a) => _matchesDiscardableLocalRequestAccess(a, agentId))
+            .length;
+        if (beforeCount > afterCount) {
+          await persistLocalClientTokenDraftLine(
+            agentIdRaw: agentId,
+            clientTokenRaw: '',
+          );
+          _setActionFeedback(
+            message: _s.clientAgentsDiscardQueuedRequestSuccess,
+            kind: ClientAgentsActionFeedbackKind.info,
+          );
+        }
+      }
+      _notifyListenersIfAlive();
+    });
+  }
+
+  bool _matchesDiscardableLocalRequestAccess(
+    PendingAgentAction action,
+    String trimmedAgentId,
+  ) {
+    return action.agentId.trim() == trimmedAgentId &&
+        action.type == PendingAgentActionType.requestAccess &&
+        (action.state == PendingAgentActionState.queued ||
+            action.state == PendingAgentActionState.failed);
+  }
+
   Future<void> syncPending({
     bool autoTriggered = false,
   }) async {

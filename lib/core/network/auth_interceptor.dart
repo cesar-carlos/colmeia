@@ -122,6 +122,11 @@ class AuthInterceptor extends QueuedInterceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    // Hub `credentialAuthRateLimit` applies to `/client-auth/login`. This
+    // interceptor never calls login on HTTP 401 — only
+    // `AuthRefreshCoordinator.refreshAccessToken()` → `/client-auth/refresh`.
+    // Repeated 429s attributed to "login" are usually separate `login()` calls
+    // (e.g. one per E2E process) or another client, not this path.
     final response = err.response;
     final request = err.requestOptions;
     if (response?.statusCode != 401 ||

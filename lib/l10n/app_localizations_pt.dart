@@ -1041,6 +1041,17 @@ class AppLocalizationsPt extends AppLocalizations {
       'A solicitacao foi reenviada. Vamos continuar acompanhando a aprovacao.';
 
   @override
+  String get clientAgentsDiscardQueuedRequestAction => 'Remover da fila';
+
+  @override
+  String get clientAgentsDiscardQueuedRequestSuccess =>
+      'O envio pendente foi removido. Voce pode solicitar acesso de novo quando quiser.';
+
+  @override
+  String get clientAgentsDiscardQueuedRequestInvalidState =>
+      'Este envio nao pode ser removido da fila no estado atual.';
+
+  @override
   String get clientAgentsOwnerActionFailedTitle =>
       'Nao foi possivel concluir a acao do responsavel';
 
@@ -3039,6 +3050,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsRetrySuccess =>
       'A solicitacao foi reenviada. Vamos continuar acompanhando a aprovacao.';
+
+  @override
+  String get clientAgentsDiscardQueuedRequestAction => 'Remover da fila';
+
+  @override
+  String get clientAgentsDiscardQueuedRequestSuccess =>
+      'O envio pendente foi removido. Voce pode solicitar acesso de novo quando quiser.';
+
+  @override
+  String get clientAgentsDiscardQueuedRequestInvalidState =>
+      'Este envio nao pode ser removido da fila no estado atual.';
 
   @override
   String get clientAgentsOwnerActionFailedTitle =>

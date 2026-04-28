@@ -269,6 +269,8 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                     controller.retryAccessRequest(
                       request: request,
                     ),
+                onDiscardQueuedRequestAccess: (action) =>
+                    controller.discardQueuedRequestAccess(action: action),
                 hasActiveFilters:
                     clientAgentsRequestsActiveFilterCount(
                       l10n,

@@ -84,6 +84,16 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
 
   final Dio _dio;
 
+  /// Never attach `Authorization` on the shared authenticated [Dio] for these
+  /// routes (defense in depth beside `ClientAuthApiRoutes.unauthenticated`).
+  /// Stale JWT on `/client-auth/refresh` would otherwise confuse debugging
+  /// (401 loops vs `credentialAuthRateLimit` on `/client-auth/login`).
+  static final Options _publicClientAuthOptions = Options(
+    extra: <String, Object?>{
+      AuthRequestOptions.skipAuth: true,
+    },
+  );
+
   @override
   Future<ClientRegistrationSubmission> register({
     required String ownerEmail,
@@ -105,6 +115,7 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
     final response = await _dio.post<Map<String, dynamic>>(
       ClientAuthApiRoutes.register,
       data: request.toJson(),
+      options: _publicClientAuthOptions,
     );
 
     return ClientRegisterResponseDto.fromJson(
@@ -121,6 +132,7 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
     final response = await _dio.post<Map<String, dynamic>>(
       ClientAuthApiRoutes.login,
       data: request.toJson(),
+      options: _publicClientAuthOptions,
     );
 
     final responseBody = response.data;
@@ -140,6 +152,7 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
       queryParameters: <String, Object?>{
         'token': token,
       },
+      options: _publicClientAuthOptions,
     );
 
     final responseBody = response.data;
@@ -159,6 +172,7 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
       data: <String, Object?>{
         'refreshToken': currentSession.refreshToken,
       },
+      options: _publicClientAuthOptions,
     );
     final responseBody = response.data;
     if (responseBody == null) {
@@ -183,6 +197,7 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
       data: <String, Object?>{
         'refreshToken': refreshToken,
       },
+      options: _publicClientAuthOptions,
     );
   }
 
@@ -269,6 +284,7 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
     final response = await _dio.post<Map<String, dynamic>>(
       ClientAuthApiRoutes.passwordRecoveryRequest,
       data: ClientPasswordRecoveryRequestDto(email: email).toJson(),
+      options: _publicClientAuthOptions,
     );
     final responseBody = response.data;
     if (responseBody == null) {
@@ -289,6 +305,7 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
       queryParameters: <String, Object?>{
         'token': token,
       },
+      options: _publicClientAuthOptions,
     );
     final responseBody = response.data;
     if (responseBody == null) {
@@ -311,6 +328,7 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
         token: token,
         newPassword: newPassword,
       ).toJson(),
+      options: _publicClientAuthOptions,
     );
   }
 }
