@@ -39,10 +39,7 @@ abstract final class ResumoVendasDiariasPorVendedorBairroOptionsSql {
         ) N
       ) R
       WHERE LEN(NomeBairro) > 3
-        AND (
-          :searchPattern IS NULL
-          OR NomeBairro LIKE :searchPattern
-        )
+        AND NomeBairro LIKE COALESCE(:searchPattern, '%')
       ORDER BY NomeBairro
     ''';
   }

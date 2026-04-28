@@ -31,10 +31,7 @@ abstract final class ResumoVendasDiariasPorVendedorMunicipioOptionsSql {
         ) N
       ) R
       WHERE LEN(NomeMunicipio) > 3
-        AND (
-          :searchPattern IS NULL
-          OR NomeMunicipio LIKE :searchPattern
-        )
+        AND NomeMunicipio LIKE COALESCE(:searchPattern, '%')
       ORDER BY NomeMunicipio
     ''';
   }

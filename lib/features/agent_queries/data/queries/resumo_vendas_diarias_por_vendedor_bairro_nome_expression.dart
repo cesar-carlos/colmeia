@@ -58,9 +58,11 @@ abstract final class ResumoVendasDiariasPorVendedorBairroNomeExpression {
   /// [sourceSql] must be a single scalar expression, e.g.
   /// `COALESCE(Bairro, '')` or `COALESCE(:bairro, '')`.
   static String nomeBairroSql(String sourceSql) {
+    // 13 REPLACE calls: 7 punctuation (. , - / * " ') + 6 double-space collapses.
+    // Sybase SQL Anywhere and SQL Server both require exactly 3 args per REPLACE.
     var inner =
         '''
-        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+        REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
         REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
         REPLACE(REPLACE(REPLACE(
           LTRIM(RTRIM($sourceSql)),

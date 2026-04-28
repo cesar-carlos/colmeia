@@ -26,8 +26,8 @@ abstract final class MunicipioListSql {
       FROM Municipio m
       LEFT JOIN Estado e ON
         e.SiglaEstado = m.UF
-      WHERE (:uf IS NULL OR m.UF = :uf)
-        AND (:searchPattern IS NULL OR m.Nome LIKE :searchPattern)
+      WHERE m.UF = COALESCE(:uf, m.UF)
+        AND m.Nome LIKE COALESCE(:searchPattern, '%')
     ),
     Tot AS (
       SELECT COUNT(*) AS TotalCount FROM Base

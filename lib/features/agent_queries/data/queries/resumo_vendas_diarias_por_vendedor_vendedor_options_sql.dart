@@ -20,15 +20,13 @@ abstract final class ResumoVendasDiariasPorVendedorVendedorOptionsSql {
           AND pv.Origem LIKE 'FrenteLoja'
           AND tos.GeraFinanceiro = 'S'
           AND pv.PreVenda = 'N'
-          AND (
-            :searchPattern IS NULL
-            OR COALESCE(
-              NULLIF(LTRIM(RTRIM(v.Nome)), ''),
-              'Vendedor nao informado'
-            ) LIKE :searchPattern
-          )
+          AND COALESCE(
+            NULLIF(LTRIM(RTRIM(v.Nome)), ''),
+            'Vendedor nao informado'
+          ) LIKE COALESCE(:searchPattern, '%')
       ) AS Opt
-      WHERE NomeVendedor IS NOT NULL
+      WHERE CodVendedor IS NOT NULL
+        AND NomeVendedor IS NOT NULL
         AND LTRIM(RTRIM(NomeVendedor)) <> ''
       ORDER BY NomeVendedor, CodVendedor
     ''';
