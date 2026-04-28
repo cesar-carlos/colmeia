@@ -18,26 +18,12 @@ class GatedAgentQueriesRepository implements AgentQueriesRepository {
   final AgentQueriesRepository _delegate;
   final AgentSqlExecutionEligibilityPort _eligibility;
 
-  static bool _loggedMissingRequestingUserId = false;
+  bool _loggedMissingRequestingUserId = false;
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
     AgentSqlExecuteRequest request,
   ) async {
-    final validationError = request.validationError();
-    if (validationError != null) {
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        ValidationFailure(
-          message: validationError,
-          userMessage: 'Os parametros da consulta do agente sao invalidos.',
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-          },
-        ),
-      );
-    }
-
     final userId = request.trimmedRequestingUserId;
     if (userId == null || userId.isEmpty) {
       if (!_loggedMissingRequestingUserId) {

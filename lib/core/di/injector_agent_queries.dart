@@ -1,5 +1,6 @@
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
@@ -39,9 +40,15 @@ import 'package:colmeia/features/agent_queries/data/datasources/hybrid_agent_que
 import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/adaptive_timeout_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/circuit_breaker_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository_impl.dart';
@@ -64,6 +71,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_d
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/retrying_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
@@ -118,10 +126,26 @@ void registerInjectorAgentQueries(GetIt getIt) {
           return FakeAgentQueriesRemoteDataSource();
         }
         final base = switch (AppEnvironment.agentBridgeTransport) {
-          AgentBridgeTransport.socket => SocketAgentQueriesRemoteDataSource(
-            sender: getIt<AgentCommandSender>(),
-            bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
-          ),
+          AgentBridgeTransport.socket => () {
+            final rest = ApiAgentQueriesRemoteDataSource(
+              dio: getIt<Dio>(),
+              bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+            );
+            return SocketWithRestFallbackAgentQueriesRemoteDataSource(
+              socketDelegate: SocketAgentQueriesRemoteDataSource(
+                sender: getIt<AgentCommandSender>(),
+                bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+              ),
+              restDelegate: rest,
+              onFallback: (trigger) => AppLogger.warning(
+                'AgentQueriesRemoteDataSource latched to REST fallback',
+                context: <String, Object?>{
+                  'triggerCode': trigger.code,
+                  'triggerMessage': trigger.message,
+                },
+              ),
+            );
+          }(),
           AgentBridgeTransport.rest => ApiAgentQueriesRemoteDataSource(
             dio: getIt<Dio>(),
             bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
@@ -138,6 +162,16 @@ void registerInjectorAgentQueries(GetIt getIt) {
                 baseDelegate: base,
                 relayDelegate: relay,
               );
+        AppLogger.info(
+          'AgentQueriesRemoteDataSource initialized',
+          context: <String, Object?>{
+            'transport': AppEnvironment.agentBridgeTransport.name,
+            'relayEnabled': relay != null,
+            'fallbackEnabled':
+                AppEnvironment.agentBridgeTransport ==
+                    AgentBridgeTransport.socket,
+          },
+        );
         return relayWrapped;
       },
     )
@@ -148,133 +182,199 @@ void registerInjectorAgentQueries(GetIt getIt) {
       ),
     )
     ..registerLazySingleton<AgentQueriesRepository>(
-      () => GatedAgentQueriesRepository(
-        delegate: AgentQueriesRepositoryImpl(
+      () {
+        // Decorator chain (outermost to innermost):
+        // 1. Gated: validates requestingUserId
+        // 2. CircuitBreaker: fail-fast during hub overload
+        // 3. Caching: returns from cache when possible
+        // 4. Coalescing: deduplicates identical in-flight requests
+        // 5. Metrics: records latency and success/failure stats
+        // 6. AdaptiveTimeout: adjusts timeouts based on history
+        // 7. Retrying: exponential backoff on transient failures
+        // 8. AgentQueriesRepositoryImpl: actual hub/bridge call
+
+        final base = AgentQueriesRepositoryImpl(
           getIt<AgentQueriesRemoteDataSource>(),
-        ),
-        eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
-      ),
-    )
-    ..registerLazySingleton<MunicipioListRepository>(
-      () => MunicipioListRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadMunicipiosPageUseCase>(
-      () => LoadMunicipiosPageUseCase(
-        getIt<MunicipioListRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoProdutoVendaRepository>(
-      () => ResumoProdutoVendaRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoProdutoVendaPageUseCase>(
-      () => LoadResumoProdutoVendaPageUseCase(
-        getIt<ResumoProdutoVendaRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoProdutoVendaLucratividadeMensalRepository>(
-      () => ResumoProdutoVendaLucratividadeMensalRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoProdutoVendaLucratividadeMensalUseCase>(
-      () => LoadResumoProdutoVendaLucratividadeMensalUseCase(
-        getIt<ResumoProdutoVendaLucratividadeMensalRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoProdutoVendaLucratividadeRepository>(
-      () => ResumoProdutoVendaLucratividadeRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoProdutoVendaLucratividadeUseCase>(
-      () => LoadResumoProdutoVendaLucratividadeUseCase(
-        getIt<ResumoProdutoVendaLucratividadeRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoParcelaFormaPagamentoRepository>(
-      () => ResumoParcelaFormaPagamentoRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoParcelaFormaPagamentoUseCase>(
-      () => LoadResumoParcelaFormaPagamentoUseCase(
-        getIt<ResumoParcelaFormaPagamentoRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoParcelaFormaPagamentoDiarioRepository>(
-      () => ResumoParcelaFormaPagamentoDiarioRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoParcelaFormaPagamentoDiarioUseCase>(
-      () => LoadResumoParcelaFormaPagamentoDiarioUseCase(
-        getIt<ResumoParcelaFormaPagamentoDiarioRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoParcelasDiaSemanaRepository>(
-      () => ResumoParcelasDiaSemanaRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoParcelasDiaSemanaUseCase>(
-      () => LoadResumoParcelasDiaSemanaUseCase(
-        getIt<ResumoParcelasDiaSemanaRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoParcelasDiaSemanaUsuarioRepository>(
-      () => ResumoParcelasDiaSemanaUsuarioRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoParcelasDiaSemanaUsuarioUseCase>(
-      () => LoadResumoParcelasDiaSemanaUsuarioUseCase(
-        getIt<ResumoParcelasDiaSemanaUsuarioRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoParcelasAnualRepository>(
-      () => ResumoParcelasAnualRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoParcelasAnualUseCase>(
-      () => LoadResumoParcelasAnualUseCase(
-        getIt<ResumoParcelasAnualRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoParcelasFormaPagamentoPorMesRepository>(
-      () => ResumoParcelasFormaPagamentoPorMesRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoParcelasFormaPagamentoPorMesUseCase>(
-      () => LoadResumoParcelasFormaPagamentoPorMesUseCase(
-        getIt<ResumoParcelasFormaPagamentoPorMesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoParcelasMensalRepository>(
-      () => ResumoParcelasMensalRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoParcelasMensalUseCase>(
-      () => LoadResumoParcelasMensalUseCase(
-        getIt<ResumoParcelasMensalRepository>(),
-      ),
-    )
-    ..registerLazySingleton<ResumoVendasDiariasPorVendedorRepository>(
-      () => ResumoVendasDiariasPorVendedorRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadResumoVendasDiariasPorVendedorUseCase>(
-      () => LoadResumoVendasDiariasPorVendedorUseCase(
-        getIt<ResumoVendasDiariasPorVendedorRepository>(),
-      ),
-    )
+        );
+
+        final retrying = RetryingAgentQueriesRepository(
+          delegate: base,
+        );
+
+        final adaptiveTimeout = AdaptiveTimeoutAgentQueriesRepository(
+          delegate: retrying,
+        );
+
+        final metrics = MetricsAgentQueriesRepository(
+          delegate: adaptiveTimeout,
+        );
+
+        final coalescing = CoalescingAgentQueriesRepository(
+          delegate: metrics,
+        );
+
+        final caching = CachingAgentQueriesRepository(
+          delegate: coalescing,
+        );
+
+        final circuitBreaker = CircuitBreakerAgentQueriesRepository(
+          delegate: caching,
+        );
+
+        final gated = GatedAgentQueriesRepository(
+          delegate: circuitBreaker,
+          eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
+        );
+
+        AppLogger.info(
+          'AgentQueriesRepository decorator chain initialized',
+          context: <String, Object?>{
+            'decorators': [
+              'GatedAgentQueriesRepository',
+              'CircuitBreakerAgentQueriesRepository',
+              'CachingAgentQueriesRepository',
+              'CoalescingAgentQueriesRepository',
+              'MetricsAgentQueriesRepository',
+              'AdaptiveTimeoutAgentQueriesRepository',
+              'RetryingAgentQueriesRepository',
+              'AgentQueriesRepositoryImpl',
+            ],
+          },
+        );
+
+        return gated;
+      },
+    );
+
+  _registerSingle<MunicipioListRepository, LoadMunicipiosPageUseCase>(
+    getIt,
+    repo: () => MunicipioListRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadMunicipiosPageUseCase(getIt<MunicipioListRepository>()),
+  );
+
+  _registerSingle<ResumoProdutoVendaRepository, LoadResumoProdutoVendaPageUseCase>(
+    getIt,
+    repo: () => ResumoProdutoVendaRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadResumoProdutoVendaPageUseCase(getIt<ResumoProdutoVendaRepository>()),
+  );
+
+  _registerSingle<
+    ResumoProdutoVendaLucratividadeMensalRepository,
+    LoadResumoProdutoVendaLucratividadeMensalUseCase
+  >(
+    getIt,
+    repo: () => ResumoProdutoVendaLucratividadeMensalRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoProdutoVendaLucratividadeMensalUseCase(
+      getIt<ResumoProdutoVendaLucratividadeMensalRepository>(),
+    ),
+  );
+
+  _registerSingle<
+    ResumoProdutoVendaLucratividadeRepository,
+    LoadResumoProdutoVendaLucratividadeUseCase
+  >(
+    getIt,
+    repo: () => ResumoProdutoVendaLucratividadeRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoProdutoVendaLucratividadeUseCase(
+      getIt<ResumoProdutoVendaLucratividadeRepository>(),
+    ),
+  );
+
+  _registerSingle<
+    ResumoParcelaFormaPagamentoRepository,
+    LoadResumoParcelaFormaPagamentoUseCase
+  >(
+    getIt,
+    repo: () => ResumoParcelaFormaPagamentoRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoParcelaFormaPagamentoUseCase(
+      getIt<ResumoParcelaFormaPagamentoRepository>(),
+    ),
+  );
+
+  _registerSingle<
+    ResumoParcelaFormaPagamentoDiarioRepository,
+    LoadResumoParcelaFormaPagamentoDiarioUseCase
+  >(
+    getIt,
+    repo: () => ResumoParcelaFormaPagamentoDiarioRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoParcelaFormaPagamentoDiarioUseCase(
+      getIt<ResumoParcelaFormaPagamentoDiarioRepository>(),
+    ),
+  );
+
+  _registerSingle<
+    ResumoParcelasDiaSemanaRepository,
+    LoadResumoParcelasDiaSemanaUseCase
+  >(
+    getIt,
+    repo: () => ResumoParcelasDiaSemanaRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoParcelasDiaSemanaUseCase(
+      getIt<ResumoParcelasDiaSemanaRepository>(),
+    ),
+  );
+
+  _registerSingle<
+    ResumoParcelasDiaSemanaUsuarioRepository,
+    LoadResumoParcelasDiaSemanaUsuarioUseCase
+  >(
+    getIt,
+    repo: () => ResumoParcelasDiaSemanaUsuarioRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoParcelasDiaSemanaUsuarioUseCase(
+      getIt<ResumoParcelasDiaSemanaUsuarioRepository>(),
+    ),
+  );
+
+  _registerSingle<ResumoParcelasAnualRepository, LoadResumoParcelasAnualUseCase>(
+    getIt,
+    repo: () => ResumoParcelasAnualRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadResumoParcelasAnualUseCase(getIt<ResumoParcelasAnualRepository>()    ),
+  );
+
+  _registerSingle<
+    ResumoParcelasFormaPagamentoPorMesRepository,
+    LoadResumoParcelasFormaPagamentoPorMesUseCase
+  >(
+    getIt,
+    repo: () => ResumoParcelasFormaPagamentoPorMesRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoParcelasFormaPagamentoPorMesUseCase(
+      getIt<ResumoParcelasFormaPagamentoPorMesRepository>(),
+    ),
+  );
+
+  _registerSingle<ResumoParcelasMensalRepository, LoadResumoParcelasMensalUseCase>(
+    getIt,
+    repo: () => ResumoParcelasMensalRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadResumoParcelasMensalUseCase(getIt<ResumoParcelasMensalRepository>()),
+  );
+
+  _registerSingle<
+    ResumoVendasDiariasPorVendedorRepository,
+    LoadResumoVendasDiariasPorVendedorUseCase
+  >(
+    getIt,
+    repo: () => ResumoVendasDiariasPorVendedorRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoVendasDiariasPorVendedorUseCase(
+      getIt<ResumoVendasDiariasPorVendedorRepository>(),
+    ),
+  );
+
+  getIt
     ..registerLazySingleton<AgentQueryTargetResolver>(
       () => AgentQueryTargetResolver(
         clientAgentsRepository: getIt(),
@@ -552,6 +652,17 @@ void registerInjectorAgentQueries(GetIt getIt) {
       ),
     );
   }
+}
+
+/// Helper to reduce boilerplate when registering a simple repository + use case pair.
+void _registerSingle<R extends Object, U extends Object>(
+  GetIt getIt, {
+  required R Function() repo,
+  required U Function() useCase,
+}) {
+  getIt
+    ..registerLazySingleton<R>(repo)
+    ..registerLazySingleton<U>(useCase);
 }
 
 /// Returns the relay-backed datasource when the relay layer is available.
