@@ -17,6 +17,7 @@ import 'package:colmeia/features/client_agents/application/usecases/probe_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
@@ -81,6 +82,9 @@ class _MockGetClientAgentTokenUseCase extends Mock
 class _MockSaveClientAgentTokenUseCase extends Mock
     implements SaveClientAgentTokenUseCase {}
 
+class _MockRetryClientAccessRequestUseCase extends Mock
+    implements RetryClientAccessRequestUseCase {}
+
 void main() {
   late _MockAuthController authController;
   late _MockLocalAgentClientTokenStore clientTokenStore;
@@ -92,11 +96,12 @@ void main() {
   late _MockQueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase;
   late _MockProbeClientApprovedAgentUseCase probeClientApprovedAgentUseCase;
   late _MockDiscardQueuedClientAgentRequestAccessUseCase
-      discardQueuedClientAgentRequestAccessUseCase;
+  discardQueuedClientAgentRequestAccessUseCase;
   late _MockReadPendingClientAgentActionsUseCase readPendingActionsUseCase;
   late _MockSyncPendingClientAgentActionsUseCase syncPendingActionsUseCase;
   late _MockGetClientAgentTokenUseCase getClientAgentTokenUseCase;
   late _MockSaveClientAgentTokenUseCase saveClientAgentTokenUseCase;
+  late _MockRetryClientAccessRequestUseCase retryClientAccessRequestUseCase;
   late ClientAgentsController controller;
 
   final approvedAgentsResult = PaginatedResult<ClientAgent>(
@@ -320,6 +325,7 @@ void main() {
       ),
     ).thenAnswer((_) async => <String, String>{});
     getClientAgentTokenUseCase = _MockGetClientAgentTokenUseCase();
+    retryClientAccessRequestUseCase = _MockRetryClientAccessRequestUseCase();
     when(
       () => getClientAgentTokenUseCase(
         userId: any(named: 'userId'),
@@ -331,6 +337,12 @@ void main() {
       ),
     );
     saveClientAgentTokenUseCase = _MockSaveClientAgentTokenUseCase();
+    when(
+      () => retryClientAccessRequestUseCase(
+        userId: any(named: 'userId'),
+        requestId: any(named: 'requestId'),
+      ),
+    ).thenAnswer((_) async => const Success<Unit, AppFailure>(unit));
     when(
       () => saveClientAgentTokenUseCase(
         userId: any(named: 'userId'),
@@ -358,6 +370,7 @@ void main() {
       syncPendingActionsUseCase: syncPendingActionsUseCase,
       getClientAgentTokenUseCase: getClientAgentTokenUseCase,
       saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
+      retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
     )..activeLocalizations = AppLocalizationsEn();
   });
 
@@ -694,8 +707,7 @@ void main() {
           agentId: agentId,
         ),
       ).thenAnswer(
-        (_) async =>
-            const Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
+        (_) async => const Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
           SessionFailure(message: 'Unauthorized'),
         ),
       );
@@ -732,8 +744,7 @@ void main() {
           agentId: failedProbeId,
         ),
       ).thenAnswer(
-        (_) async =>
-            const Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
+        (_) async => const Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
           NetworkFailure(message: 'offline'),
         ),
       );
@@ -1021,4 +1032,50 @@ void main() {
       },
     );
   });
+
+  test(
+    'retryAccessRequest replays request by requestId and exposes feedback',
+    () async {
+      const retriableRequest = ClientAgentAccessRequest(
+        agentId: '22222222-2222-2222-8222-222222222222',
+        agentName: 'Agente remoto pendente',
+        requestId: 'rq-1001',
+        status: AgentAccessRequestStatus.rejected,
+      );
+      when(
+        () => loadAccessRequestsUseCase(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Success<
+              PaginatedResult<ClientAgentAccessRequest>,
+              AppFailure
+            >(
+              PaginatedResult<ClientAgentAccessRequest>(
+                items: <ClientAgentAccessRequest>[retriableRequest],
+                count: 1,
+                total: 1,
+                page: 1,
+                pageSize: 50,
+              ),
+            ),
+      );
+
+      await controller.initialize();
+      await controller.retryAccessRequest(request: retriableRequest);
+
+      verify(
+        () => retryClientAccessRequestUseCase(
+          userId: session.userId,
+          requestId: 'rq-1001',
+        ),
+      ).called(1);
+      expect(controller.actionErrorMessage, isNull);
+      expect(controller.actionFeedbackMessage, contains('approval'));
+    },
+  );
 }

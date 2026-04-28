@@ -26,11 +26,36 @@ abstract final class ClientAgentApiRoutes {
 
   static String approvedAgentById(String agentId) => '$approvedAgents/$agentId';
 
+  static String retryAccessRequestById(String requestId) =>
+      '$accessRequests/$requestId/retry';
+
   /// Per-(client, agent) bearer token used by the SQL bridge as
   /// `params.client_token`. Returned only by the dedicated GET; list/detail
   /// endpoints expose `hasClientToken: boolean` instead.
   static String clientTokenForAgent(String agentId) =>
       '${approvedAgentById(agentId)}/client-token';
+}
+
+abstract final class UserAgentApiRoutes {
+  static const String managedAgents = '/me/agents';
+
+  static String managedAgentClients(String agentId) =>
+      '$managedAgents/$agentId/clients';
+
+  static String managedAgentClientById({
+    required String agentId,
+    required String clientId,
+  }) => '${managedAgentClients(agentId)}/$clientId';
+}
+
+abstract final class OwnerClientAccessApiRoutes {
+  static const String accessRequests = '/me/client-access-requests';
+
+  static String approveRequestById(String requestId) =>
+      '$accessRequests/$requestId/approve';
+
+  static String rejectRequestById(String requestId) =>
+      '$accessRequests/$requestId/reject';
 }
 
 abstract final class ClientAuthApiRoutes {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -13,8 +15,10 @@ class ClientAgentsRequestsTab extends StatelessWidget {
     required this.errorMessage,
     required this.pendingErrorMessage,
     required this.onRetry,
+    required this.isMutating,
     super.key,
     this.hasActiveFilters = false,
+    this.onRetryAccessRequest,
   });
 
   final List<ClientAgentAccessRequest> requests;
@@ -22,7 +26,10 @@ class ClientAgentsRequestsTab extends StatelessWidget {
   final String? errorMessage;
   final String? pendingErrorMessage;
   final VoidCallback onRetry;
+  final bool isMutating;
   final bool hasActiveFilters;
+  final Future<void> Function(ClientAgentAccessRequest request)?
+  onRetryAccessRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -84,9 +91,25 @@ class ClientAgentsRequestsTab extends StatelessWidget {
           (request) => ClientAgentsAgentTile(
             title: request.agentName,
             subtitle: _requestStatusDescription(l10n, request.status),
-            trailing: ClientAgentsStatusChip(
-              label: _requestStatusLabel(l10n, request.status),
-              kind: _requestStatusChipKind(request.status),
+            trailing: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                ClientAgentsStatusChip(
+                  label: _requestStatusLabel(l10n, request.status),
+                  kind: _requestStatusChipKind(request.status),
+                ),
+                if (_canRetryRequest(request) && onRetryAccessRequest != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: FilledButton.tonalIcon(
+                      onPressed: isMutating
+                          ? null
+                          : () => unawaited(onRetryAccessRequest!(request)),
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(l10n.clientAgentsRetryRequestAction),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -175,5 +198,11 @@ class ClientAgentsRequestsTab extends StatelessWidget {
       AgentAccessRequestStatus.expired => ClientAgentsStatusChipKind.neutral,
       AgentAccessRequestStatus.unknown => ClientAgentsStatusChipKind.neutral,
     };
+  }
+
+  bool _canRetryRequest(ClientAgentAccessRequest request) {
+    return request.requestId?.trim().isNotEmpty == true &&
+        (request.status == AgentAccessRequestStatus.rejected ||
+            request.status == AgentAccessRequestStatus.expired);
   }
 }

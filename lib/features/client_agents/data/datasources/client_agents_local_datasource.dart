@@ -8,6 +8,8 @@ import 'package:colmeia/features/client_agents/data/models/client_access_request
 import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/owner_access_requests_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/owner_approved_clients_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/pending_agent_action_dto.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
@@ -173,6 +175,62 @@ class ClientAgentsLocalDataSource {
     );
   }
 
+  Future<ClientApprovedAgentsResponseDto?> readManagedAgents({
+    required String userId,
+  }) async {
+    final json = await _readMap(_managedAgentsKey(userId));
+    if (json == null) {
+      return null;
+    }
+    return ClientApprovedAgentsResponseDto.fromJson(json);
+  }
+
+  Future<void> saveManagedAgents({
+    required String userId,
+    required ClientApprovedAgentsResponseDto payload,
+  }) {
+    return _writeMap(_managedAgentsKey(userId), payload.toJson());
+  }
+
+  Future<OwnerAccessRequestsResponseDto?> readOwnerAccessRequests({
+    required String userId,
+  }) async {
+    final json = await _readMap(_ownerAccessRequestsKey(userId));
+    if (json == null) {
+      return null;
+    }
+    return OwnerAccessRequestsResponseDto.fromJson(json);
+  }
+
+  Future<void> saveOwnerAccessRequests({
+    required String userId,
+    required OwnerAccessRequestsResponseDto payload,
+  }) {
+    return _writeMap(_ownerAccessRequestsKey(userId), payload.toJson());
+  }
+
+  Future<OwnerApprovedClientsResponseDto?> readOwnerApprovedClients({
+    required String userId,
+    required String agentId,
+  }) async {
+    final json = await _readMap(_ownerApprovedClientsKey(userId, agentId));
+    if (json == null) {
+      return null;
+    }
+    return OwnerApprovedClientsResponseDto.fromJson(json);
+  }
+
+  Future<void> saveOwnerApprovedClients({
+    required String userId,
+    required String agentId,
+    required OwnerApprovedClientsResponseDto payload,
+  }) {
+    return _writeMap(
+      _ownerApprovedClientsKey(userId, agentId),
+      payload.toJson(),
+    );
+  }
+
   Future<OnlineAgentsResponseDto?> readOnlineAgents({
     required String userId,
     Duration? maxAge,
@@ -324,6 +382,19 @@ class ClientAgentsLocalDataSource {
 
   String _onlineKey(String userId) {
     return '${AppKvCacheKeyPrefixes.clientAgentsOnline}$userId';
+  }
+
+  String _managedAgentsKey(String userId) {
+    return '${AppKvCacheKeyPrefixes.clientAgentsManaged}$userId';
+  }
+
+  String _ownerAccessRequestsKey(String userId) {
+    return '${AppKvCacheKeyPrefixes.clientAgentsOwnerRequests}$userId';
+  }
+
+  String _ownerApprovedClientsKey(String userId, String agentId) {
+    return '${AppKvCacheKeyPrefixes.clientAgentsOwnerApprovedClients}'
+        '${userId}_$agentId';
   }
 
   String _normalizeOptionalSegment(String? value) {

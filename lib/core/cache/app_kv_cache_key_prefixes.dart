@@ -10,4 +10,9 @@ abstract final class AppKvCacheKeyPrefixes {
   static const String clientAgentsDetail = 'client_agents_detail_';
   static const String clientAgentsPendingActions = 'client_agents_pending_';
   static const String clientAgentsOnline = 'client_agents_online_';
+  static const String clientAgentsManaged = 'client_agents_managed_';
+  static const String clientAgentsOwnerRequests =
+      'client_agents_owner_requests_';
+  static const String clientAgentsOwnerApprovedClients =
+      'client_agents_owner_approved_clients_';
 }

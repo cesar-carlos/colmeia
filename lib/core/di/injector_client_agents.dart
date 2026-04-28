@@ -3,6 +3,7 @@ import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
+import 'package:colmeia/features/client_agents/application/usecases/approve_owner_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_catalog_agent_by_id_use_case.dart';
@@ -10,12 +11,18 @@ import 'package:colmeia/features/client_agents/application/usecases/load_client_
 import 'package:colmeia/features/client_agents/application/usecases/load_client_access_status_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_managed_agents_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_owner_access_requests_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_owner_approved_clients_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/observe_agent_presence_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/probe_client_approved_agent_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/reject_owner_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/remove_client_agent_token_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/revoke_owner_client_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
@@ -73,8 +80,14 @@ void registerInjectorClientAgents(GetIt getIt) {
     ..registerLazySingleton<LoadClientApprovedAgentsUseCase>(
       () => LoadClientApprovedAgentsUseCase(getIt<ClientAgentsRepository>()),
     )
+    ..registerLazySingleton<LoadManagedAgentsUseCase>(
+      () => LoadManagedAgentsUseCase(getIt<ClientAgentsRepository>()),
+    )
     ..registerLazySingleton<LoadClientAccessRequestsUseCase>(
       () => LoadClientAccessRequestsUseCase(getIt<ClientAgentsRepository>()),
+    )
+    ..registerLazySingleton<LoadOwnerAccessRequestsUseCase>(
+      () => LoadOwnerAccessRequestsUseCase(getIt<ClientAgentsRepository>()),
     )
     ..registerLazySingleton<LoadClientAccessStatusUseCase>(
       () => LoadClientAccessStatusUseCase(getIt<ClientAgentsRepository>()),
@@ -98,6 +111,9 @@ void registerInjectorClientAgents(GetIt getIt) {
       () =>
           QueueClientAgentRequestAccessUseCase(getIt<ClientAgentsRepository>()),
     )
+    ..registerLazySingleton<RetryClientAccessRequestUseCase>(
+      () => RetryClientAccessRequestUseCase(getIt<ClientAgentsRepository>()),
+    )
     ..registerLazySingleton<ProbeClientApprovedAgentUseCase>(
       () => ProbeClientApprovedAgentUseCase(getIt<ClientAgentsRepository>()),
     )
@@ -117,6 +133,18 @@ void registerInjectorClientAgents(GetIt getIt) {
     ..registerLazySingleton<SyncPendingClientAgentActionsUseCase>(
       () =>
           SyncPendingClientAgentActionsUseCase(getIt<ClientAgentsRepository>()),
+    )
+    ..registerLazySingleton<ApproveOwnerAccessRequestUseCase>(
+      () => ApproveOwnerAccessRequestUseCase(getIt<ClientAgentsRepository>()),
+    )
+    ..registerLazySingleton<RejectOwnerAccessRequestUseCase>(
+      () => RejectOwnerAccessRequestUseCase(getIt<ClientAgentsRepository>()),
+    )
+    ..registerLazySingleton<LoadOwnerApprovedClientsUseCase>(
+      () => LoadOwnerApprovedClientsUseCase(getIt<ClientAgentsRepository>()),
+    )
+    ..registerLazySingleton<RevokeOwnerClientAccessUseCase>(
+      () => RevokeOwnerClientAccessUseCase(getIt<ClientAgentsRepository>()),
     );
 
   // PR-M: realtime presence (client:agent.profile.updated + agents:command

@@ -9,6 +9,8 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_catalog_item.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_approved_agent_probe_outcome.dart';
+import 'package:colmeia/features/client_agents/domain/entities/owner_approved_client.dart';
+import 'package:colmeia/features/client_agents/domain/entities/owner_client_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -127,6 +129,61 @@ final class E2eStubClientAgentsRepository implements ClientAgentsRepository {
     String? status,
   }) async {
     _notUsed('loadAccessRequests');
+  }
+
+  @override
+  Future<AppResult<Unit>> retryClientAccessRequest({
+    required String userId,
+    required String requestId,
+  }) async {
+    _notUsed('retryClientAccessRequest');
+  }
+
+  @override
+  Future<AppResult<List<ClientAgent>>> loadManagedAgents({
+    required String userId,
+  }) async {
+    _notUsed('loadManagedAgents');
+  }
+
+  @override
+  Future<AppResult<List<OwnerClientAccessRequest>>> loadOwnerAccessRequests({
+    required String userId,
+  }) async {
+    _notUsed('loadOwnerAccessRequests');
+  }
+
+  @override
+  Future<AppResult<Unit>> approveOwnerAccessRequest({
+    required String userId,
+    required String requestId,
+  }) async {
+    _notUsed('approveOwnerAccessRequest');
+  }
+
+  @override
+  Future<AppResult<Unit>> rejectOwnerAccessRequest({
+    required String userId,
+    required String requestId,
+  }) async {
+    _notUsed('rejectOwnerAccessRequest');
+  }
+
+  @override
+  Future<AppResult<List<OwnerApprovedClient>>> loadOwnerApprovedClients({
+    required String userId,
+    required String agentId,
+  }) async {
+    _notUsed('loadOwnerApprovedClients');
+  }
+
+  @override
+  Future<AppResult<Unit>> revokeOwnerClientAccess({
+    required String userId,
+    required String agentId,
+    required String clientId,
+  }) async {
+    _notUsed('revokeOwnerClientAccess');
   }
 
   @override

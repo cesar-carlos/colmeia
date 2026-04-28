@@ -14,6 +14,7 @@ import 'package:colmeia/features/client_agents/application/usecases/probe_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_token_request_dto.dart';
@@ -73,6 +74,9 @@ class _MockGetClientAgentTokenUseCase extends Mock
 class _MockSaveClientAgentTokenUseCase extends Mock
     implements SaveClientAgentTokenUseCase {}
 
+class _MockRetryClientAccessRequestUseCase extends Mock
+    implements RetryClientAccessRequestUseCase {}
+
 class _MockLocalAgentClientTokenStore extends Mock
     implements LocalAgentClientTokenStore {}
 
@@ -91,6 +95,7 @@ void main() {
   late _MockSyncPendingClientAgentActionsUseCase syncPendingActionsUseCase;
   late _MockGetClientAgentTokenUseCase getTokenUseCase;
   late _MockSaveClientAgentTokenUseCase saveTokenUseCase;
+  late _MockRetryClientAccessRequestUseCase retryClientAccessRequestUseCase;
   late ClientAgentsController controller;
 
   const userId = 'client-1';
@@ -135,6 +140,7 @@ void main() {
     syncPendingActionsUseCase = _MockSyncPendingClientAgentActionsUseCase();
     getTokenUseCase = _MockGetClientAgentTokenUseCase();
     saveTokenUseCase = _MockSaveClientAgentTokenUseCase();
+    retryClientAccessRequestUseCase = _MockRetryClientAccessRequestUseCase();
 
     when(() => authController.session).thenReturn(session);
     when(
@@ -232,6 +238,12 @@ void main() {
         ClientAgentTokenSnapshot.empty(),
       ),
     );
+    when(
+      () => retryClientAccessRequestUseCase(
+        userId: any(named: 'userId'),
+        requestId: any(named: 'requestId'),
+      ),
+    ).thenAnswer((_) async => const Success<Unit, AppFailure>(unit));
 
     controller = ClientAgentsController(
       authController: authController,
@@ -248,6 +260,7 @@ void main() {
       syncPendingActionsUseCase: syncPendingActionsUseCase,
       getClientAgentTokenUseCase: getTokenUseCase,
       saveClientAgentTokenUseCase: saveTokenUseCase,
+      retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
     )..activeLocalizations = AppLocalizationsEn();
   });
 

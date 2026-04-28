@@ -9,12 +9,19 @@ abstract final class ClientAgentsFailureUiKey {
   static const String loadAgentDetail = 'loadAgentDetail';
   static const String probeApprovedAgentLink = 'probeApprovedAgentLink';
   static const String loadAccessRequests = 'loadAccessRequests';
+  static const String retryClientAccessRequest = 'retryClientAccessRequest';
   static const String loadClientAccessStatus = 'loadClientAccessStatus';
   static const String readPendingActions = 'readPendingActions';
   static const String queueRequestAccess = 'queueRequestAccess';
   static const String queueRemoveAccess = 'queueRemoveAccess';
   static const String syncPendingAction = 'syncPendingAction';
   static const String syncPendingActions = 'syncPendingActions';
+  static const String loadManagedAgents = 'loadManagedAgents';
+  static const String loadOwnerAccessRequests = 'loadOwnerAccessRequests';
+  static const String approveOwnerAccessRequest = 'approveOwnerAccessRequest';
+  static const String rejectOwnerAccessRequest = 'rejectOwnerAccessRequest';
+  static const String loadOwnerApprovedClients = 'loadOwnerApprovedClients';
+  static const String revokeOwnerClientAccess = 'revokeOwnerClientAccess';
 
   static const String getClientAgentToken = 'getClientAgentToken';
   static const String saveClientAgentToken = 'saveClientAgentToken';

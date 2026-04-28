@@ -29,6 +29,7 @@ import 'package:colmeia/features/client_agents/application/usecases/probe_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
@@ -88,6 +89,9 @@ class _MockGetClientAgentTokenUseCase extends Mock
 class _MockSaveClientAgentTokenUseCase extends Mock
     implements SaveClientAgentTokenUseCase {}
 
+class _MockRetryClientAccessRequestUseCase extends Mock
+    implements RetryClientAccessRequestUseCase {}
+
 class _MockAgentPresencePoller extends Mock implements AgentPresencePoller {}
 
 class _MockConsumerSocketConnection extends Mock
@@ -99,7 +103,7 @@ class _MockConsumerSocketConnection extends Mock
 /// `null` the wire-up code paths are skipped entirely.
 class _FakePresenceStream implements AgentPresenceStream {
   _FakePresenceStream()
-      : _controller = StreamController<AgentPresenceEvent>.broadcast();
+    : _controller = StreamController<AgentPresenceEvent>.broadcast();
 
   final StreamController<AgentPresenceEvent> _controller;
   bool disposed = false;
@@ -151,11 +155,12 @@ void main() {
   late _MockQueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase;
   late _MockProbeClientApprovedAgentUseCase probeClientApprovedAgentUseCase;
   late _MockDiscardQueuedClientAgentRequestAccessUseCase
-      discardQueuedClientAgentRequestAccessUseCase;
+  discardQueuedClientAgentRequestAccessUseCase;
   late _MockReadPendingClientAgentActionsUseCase readPendingActionsUseCase;
   late _MockSyncPendingClientAgentActionsUseCase syncPendingActionsUseCase;
   late _MockGetClientAgentTokenUseCase getClientAgentTokenUseCase;
   late _MockSaveClientAgentTokenUseCase saveClientAgentTokenUseCase;
+  late _MockRetryClientAccessRequestUseCase retryClientAccessRequestUseCase;
   late _FakePresenceStream presenceStream;
   late ClientAgentsController controller;
 
@@ -189,6 +194,7 @@ void main() {
     syncPendingActionsUseCase = _MockSyncPendingClientAgentActionsUseCase();
     getClientAgentTokenUseCase = _MockGetClientAgentTokenUseCase();
     saveClientAgentTokenUseCase = _MockSaveClientAgentTokenUseCase();
+    retryClientAccessRequestUseCase = _MockRetryClientAccessRequestUseCase();
     when(
       () => getClientAgentTokenUseCase(
         userId: any(named: 'userId'),
@@ -210,6 +216,12 @@ void main() {
         ClientAgentTokenSnapshot.empty(),
       ),
     );
+    when(
+      () => retryClientAccessRequestUseCase(
+        userId: any(named: 'userId'),
+        requestId: any(named: 'requestId'),
+      ),
+    ).thenAnswer((_) async => const Success<Unit, AppFailure>(unit));
     presenceStream = _FakePresenceStream();
 
     when(() => authController.session).thenReturn(session);
@@ -233,16 +245,16 @@ void main() {
         query: any(named: 'query'),
       ),
     ).thenAnswer(
-      (_) async => const Success<PaginatedResult<ClientAgentAccessRequest>,
-          AppFailure>(
-        PaginatedResult<ClientAgentAccessRequest>(
-          items: <ClientAgentAccessRequest>[],
-          count: 0,
-          total: 0,
-          page: 1,
-          pageSize: 50,
-        ),
-      ),
+      (_) async =>
+          const Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
+            PaginatedResult<ClientAgentAccessRequest>(
+              items: <ClientAgentAccessRequest>[],
+              count: 0,
+              total: 0,
+              page: 1,
+              pageSize: 50,
+            ),
+          ),
     );
     when(
       () => readPendingActionsUseCase(userId: any(named: 'userId')),
@@ -268,6 +280,7 @@ void main() {
       syncPendingActionsUseCase: syncPendingActionsUseCase,
       getClientAgentTokenUseCase: getClientAgentTokenUseCase,
       saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
+      retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
       observeAgentPresenceUseCase: ObserveAgentPresenceUseCase(presenceStream),
       // Tight delay so the debounce path runs in the test budget.
       hintConfirmDelay: const Duration(milliseconds: 30),
@@ -301,49 +314,54 @@ void main() {
         );
         await Future<void>.delayed(Duration.zero);
 
-        final updated = controller.approvedAgents!.items
-            .firstWhere((a) => a.agentId == 'a2');
+        final updated = controller.approvedAgents!.items.firstWhere(
+          (a) => a.agentId == 'a2',
+        );
         check(updated.connectionStatus).equals(AgentConnectionStatus.online);
         // Confirm timer hasn't fired yet (delay is 30 ms).
-        verifyNever(() => loadClientAgentDetailUseCase(
-              userId: any(named: 'userId'),
-              agentId: any(named: 'agentId'),
-            ));
+        verifyNever(
+          () => loadClientAgentDetailUseCase(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        );
       },
     );
 
-    test('hint debounce calls LoadClientAgentDetailUseCase after the delay',
-        () async {
-      when(
-        () => loadClientAgentDetailUseCase(
-          userId: any(named: 'userId'),
-          agentId: any(named: 'agentId'),
-        ),
-      ).thenAnswer(
-        (_) async => Success<ClientAgent, AppFailure>(
-          _agent(id: 'a2', connectionStatus: AgentConnectionStatus.online),
-        ),
-      );
+    test(
+      'hint debounce calls LoadClientAgentDetailUseCase after the delay',
+      () async {
+        when(
+          () => loadClientAgentDetailUseCase(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        ).thenAnswer(
+          (_) async => Success<ClientAgent, AppFailure>(
+            _agent(id: 'a2', connectionStatus: AgentConnectionStatus.online),
+          ),
+        );
 
-      await controller.initialize();
-      presenceStream.emit(
-        AgentPresenceHint(
-          agentId: 'a2',
-          observedAt: DateTime.utc(2026, 4, 17, 12),
-          online: true,
-          source: 'agents:command_success',
-        ),
-      );
-      // Wait past the 30 ms hint confirm delay.
-      await Future<void>.delayed(const Duration(milliseconds: 80));
+        await controller.initialize();
+        presenceStream.emit(
+          AgentPresenceHint(
+            agentId: 'a2',
+            observedAt: DateTime.utc(2026, 4, 17, 12),
+            online: true,
+            source: 'agents:command_success',
+          ),
+        );
+        // Wait past the 30 ms hint confirm delay.
+        await Future<void>.delayed(const Duration(milliseconds: 80));
 
-      verify(
-        () => loadClientAgentDetailUseCase(
-          userId: 'client-1',
-          agentId: 'a2',
-        ),
-      ).called(1);
-    });
+        verify(
+          () => loadClientAgentDetailUseCase(
+            userId: 'client-1',
+            agentId: 'a2',
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'AgentPresenceCatalogUpdated triggers LoadClientAgentDetailUseCase '
@@ -385,11 +403,11 @@ void main() {
             agentId: 'a1',
           ),
         ).called(1);
-        final updated = controller.approvedAgents!.items
-            .firstWhere((a) => a.agentId == 'a1');
+        final updated = controller.approvedAgents!.items.firstWhere(
+          (a) => a.agentId == 'a1',
+        );
         check(updated.name).equals('Agent a1 — refreshed');
-        check(updated.connectionStatus)
-            .equals(AgentConnectionStatus.offline);
+        check(updated.connectionStatus).equals(AgentConnectionStatus.offline);
       },
     );
 
@@ -435,8 +453,9 @@ void main() {
       );
       await Future<void>.delayed(Duration.zero);
 
-      final updated = controller.approvedAgents!.items
-          .firstWhere((a) => a.agentId == 'a2');
+      final updated = controller.approvedAgents!.items.firstWhere(
+        (a) => a.agentId == 'a2',
+      );
       check(updated.connectionStatus).equals(AgentConnectionStatus.online);
     });
 
@@ -477,6 +496,7 @@ void main() {
           syncPendingActionsUseCase: syncPendingActionsUseCase,
           getClientAgentTokenUseCase: getClientAgentTokenUseCase,
           saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
+          retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
           // No `observeAgentPresenceUseCase` argument.
         );
         addTearDown(legacyController.dispose);
@@ -494,8 +514,9 @@ void main() {
         );
         await Future<void>.delayed(Duration.zero);
 
-        final agent = legacyController.approvedAgents!.items
-            .firstWhere((a) => a.agentId == 'a2');
+        final agent = legacyController.approvedAgents!.items.firstWhere(
+          (a) => a.agentId == 'a2',
+        );
         check(agent.connectionStatus).equals(AgentConnectionStatus.offline);
       },
     );
@@ -513,10 +534,10 @@ void main() {
             StreamController<ConsumerSocketConnectionState>.broadcast();
 
         when(() => connection.isConnected).thenReturn(false);
-        when(() => connection.states())
-            .thenAnswer((_) => stateController.stream);
-        when(() => poller.start(userId: any(named: 'userId')))
-            .thenReturn(null);
+        when(
+          () => connection.states(),
+        ).thenAnswer((_) => stateController.stream);
+        when(() => poller.start(userId: any(named: 'userId'))).thenReturn(null);
         when(poller.stop).thenReturn(null);
 
         gatedController = ClientAgentsController(
@@ -535,8 +556,10 @@ void main() {
           syncPendingActionsUseCase: syncPendingActionsUseCase,
           getClientAgentTokenUseCase: getClientAgentTokenUseCase,
           saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
-          observeAgentPresenceUseCase:
-              ObserveAgentPresenceUseCase(presenceStream),
+          retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
+          observeAgentPresenceUseCase: ObserveAgentPresenceUseCase(
+            presenceStream,
+          ),
           agentPresencePoller: poller,
           consumerSocketConnection: connection,
           hintConfirmDelay: const Duration(milliseconds: 30),
@@ -593,55 +616,59 @@ void main() {
         verify(poller.stop).called(1);
       });
 
-      test('dispose cancels the socket subscription and stops the poller',
-          () async {
-        await gatedController.initialize();
-        gatedController.onScreenVisible();
-        clearInteractions(poller);
-
-        gatedController.dispose();
-        verify(poller.stop).called(1);
-        // After dispose, future state events must not crash or call
-        // start again.
-        stateController.add(const ConsumerSocketDisconnected());
-        await Future<void>.delayed(Duration.zero);
-        verifyNever(() => poller.start(userId: any(named: 'userId')));
-      });
-    });
-
-    test('dispose cancels the presence subscription and the hint timers',
+      test(
+        'dispose cancels the socket subscription and stops the poller',
         () async {
-      when(
-        () => loadClientAgentDetailUseCase(
-          userId: any(named: 'userId'),
-          agentId: any(named: 'agentId'),
-        ),
-      ).thenAnswer(
-        (_) async => Success<ClientAgent, AppFailure>(
-          _agent(id: 'a2', connectionStatus: AgentConnectionStatus.online),
-        ),
-      );
-      await controller.initialize();
-      presenceStream.emit(
-        AgentPresenceHint(
-          agentId: 'a2',
-          observedAt: DateTime.utc(2026, 4, 17, 12),
-          online: true,
-          source: 'agents:command_success',
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
+          await gatedController.initialize();
+          gatedController.onScreenVisible();
+          clearInteractions(poller);
 
-      controller.dispose();
-      // Past the debounce window — confirm timer must NOT fire on a
-      // disposed controller.
-      await Future<void>.delayed(const Duration(milliseconds: 80));
-      verifyNever(
-        () => loadClientAgentDetailUseCase(
-          userId: any(named: 'userId'),
-          agentId: any(named: 'agentId'),
-        ),
+          gatedController.dispose();
+          verify(poller.stop).called(1);
+          // After dispose, future state events must not crash or call
+          // start again.
+          stateController.add(const ConsumerSocketDisconnected());
+          await Future<void>.delayed(Duration.zero);
+          verifyNever(() => poller.start(userId: any(named: 'userId')));
+        },
       );
     });
+
+    test(
+      'dispose cancels the presence subscription and the hint timers',
+      () async {
+        when(
+          () => loadClientAgentDetailUseCase(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        ).thenAnswer(
+          (_) async => Success<ClientAgent, AppFailure>(
+            _agent(id: 'a2', connectionStatus: AgentConnectionStatus.online),
+          ),
+        );
+        await controller.initialize();
+        presenceStream.emit(
+          AgentPresenceHint(
+            agentId: 'a2',
+            observedAt: DateTime.utc(2026, 4, 17, 12),
+            online: true,
+            source: 'agents:command_success',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        controller.dispose();
+        // Past the debounce window — confirm timer must NOT fire on a
+        // disposed controller.
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+        verifyNever(
+          () => loadClientAgentDetailUseCase(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        );
+      },
+    );
   });
 }

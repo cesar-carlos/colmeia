@@ -770,6 +770,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use the tabs to see approved agents, request new access, and follow your request history.';
 
   @override
+  String get clientAgentsMaintenanceSubtitleOwner =>
+      'Use the tabs to manage your approved agents, retry client requests, and review access for agents you own.';
+
+  @override
   String get clientAgentsTabMyAgents => 'My agents';
 
   @override
@@ -777,6 +781,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentsTabRequests => 'Requests';
+
+  @override
+  String get clientAgentsTabOwnerRequests => 'Review requests';
+
+  @override
+  String get clientAgentsTabOwnerClients => 'Approved clients';
 
   @override
   String get clientAgentsLoadApprovedErrorTitle => 'Could not load your agents';
@@ -946,6 +956,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'The status of this request is not available yet.';
 
   @override
+  String get clientAgentsRetryRequestAction => 'Retry request';
+
+  @override
   String get clientAgentsPendingDescQueued => 'Ready to send.';
 
   @override
@@ -995,6 +1008,89 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clientAgentsSessionUnavailableSync =>
       'Session unavailable to sync pending items.';
+
+  @override
+  String get clientAgentsRetryMissingRequestId =>
+      'This request cannot be retried because its identifier is unavailable.';
+
+  @override
+  String get clientAgentsRetrySuccess =>
+      'The request was retried. We will keep watching for approval updates.';
+
+  @override
+  String get clientAgentsOwnerActionFailedTitle =>
+      'Could not complete the owner action';
+
+  @override
+  String get clientAgentsOwnerRequestsLoadErrorTitle =>
+      'Could not load requests to review';
+
+  @override
+  String get clientAgentsOwnerRequestsEmpty =>
+      'No client requests need your review right now.';
+
+  @override
+  String get clientAgentsOwnerApproveAction => 'Approve';
+
+  @override
+  String get clientAgentsOwnerRejectAction => 'Reject';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusPending =>
+      'Awaiting your decision for this agent.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusApproved =>
+      'Approved and already available for the client.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusRejected =>
+      'Rejected during owner review.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusExpired =>
+      'Expired before a final review.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusUnknown =>
+      'The latest owner-review status is unavailable.';
+
+  @override
+  String get clientAgentsOwnerApproveSuccess =>
+      'The access request was approved.';
+
+  @override
+  String get clientAgentsOwnerRejectSuccess =>
+      'The access request was rejected.';
+
+  @override
+  String get clientAgentsOwnerClientsEmptyAgents =>
+      'No managed agents are available for this account yet.';
+
+  @override
+  String get clientAgentsOwnerClientsAgentSelectorLabel => 'Agent';
+
+  @override
+  String get clientAgentsOwnerClientsAgentSelectorHint =>
+      'Choose an owned agent';
+
+  @override
+  String get clientAgentsOwnerClientsLoadErrorTitle =>
+      'Could not load approved clients';
+
+  @override
+  String get clientAgentsOwnerClientsEmpty =>
+      'No approved clients are linked to this agent yet.';
+
+  @override
+  String get clientAgentsOwnerClientsApprovedSubtitle =>
+      'Approved for this agent.';
+
+  @override
+  String get clientAgentsOwnerRevokeAction => 'Revoke access';
+
+  @override
+  String get clientAgentsOwnerRevokeSuccess => 'The client access was revoked.';
 
   @override
   String get clientAgentDetailSessionUnavailable =>
@@ -1607,6 +1703,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not load request history.';
 
   @override
+  String get clientAgentsErrorRetryClientAccessRequest =>
+      'Could not retry this access request.';
+
+  @override
   String get clientAgentsErrorReadPending =>
       'Could not load pending submissions to sync.';
 
@@ -1625,6 +1725,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get clientAgentsErrorSyncPending =>
       'Could not sync pending agent actions.';
+
+  @override
+  String get clientAgentsErrorLoadManagedAgents =>
+      'Could not load managed agents.';
+
+  @override
+  String get clientAgentsErrorLoadOwnerAccessRequests =>
+      'Could not load client access requests for review.';
+
+  @override
+  String get clientAgentsErrorApproveOwnerAccessRequest =>
+      'Could not approve this access request.';
+
+  @override
+  String get clientAgentsErrorRejectOwnerAccessRequest =>
+      'Could not reject this access request.';
+
+  @override
+  String get clientAgentsErrorLoadOwnerApprovedClients =>
+      'Could not load approved clients for this agent.';
+
+  @override
+  String get clientAgentsErrorRevokeOwnerClientAccess =>
+      'Could not revoke this client access.';
 
   @override
   String get clientAgentsErrorGetClientAgentToken =>

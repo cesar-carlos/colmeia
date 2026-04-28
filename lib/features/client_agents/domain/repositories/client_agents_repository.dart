@@ -5,6 +5,8 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_catalog_item.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_approved_agent_probe_outcome.dart';
+import 'package:colmeia/features/client_agents/domain/entities/owner_approved_client.dart';
+import 'package:colmeia/features/client_agents/domain/entities/owner_client_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
@@ -62,6 +64,40 @@ abstract interface class ClientAgentsRepository {
     required PaginatedQuery query,
     String? search,
     String? status,
+  });
+
+  Future<AppResult<Unit>> retryClientAccessRequest({
+    required String userId,
+    required String requestId,
+  });
+
+  Future<AppResult<List<ClientAgent>>> loadManagedAgents({
+    required String userId,
+  });
+
+  Future<AppResult<List<OwnerClientAccessRequest>>> loadOwnerAccessRequests({
+    required String userId,
+  });
+
+  Future<AppResult<Unit>> approveOwnerAccessRequest({
+    required String userId,
+    required String requestId,
+  });
+
+  Future<AppResult<Unit>> rejectOwnerAccessRequest({
+    required String userId,
+    required String requestId,
+  });
+
+  Future<AppResult<List<OwnerApprovedClient>>> loadOwnerApprovedClients({
+    required String userId,
+    required String agentId,
+  });
+
+  Future<AppResult<Unit>> revokeOwnerClientAccess({
+    required String userId,
+    required String agentId,
+    required String clientId,
   });
 
   Future<AppResult<ClientAccessStatusSnapshot>> loadClientAccessStatus({

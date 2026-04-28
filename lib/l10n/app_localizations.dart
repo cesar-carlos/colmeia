@@ -1345,6 +1345,12 @@ abstract class AppLocalizations {
   /// **'Use the tabs to see approved agents, request new access, and follow your request history.'**
   String get clientAgentsMaintenanceSubtitle;
 
+  /// No description provided for @clientAgentsMaintenanceSubtitleOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the tabs to manage your approved agents, retry client requests, and review access for agents you own.'**
+  String get clientAgentsMaintenanceSubtitleOwner;
+
   /// No description provided for @clientAgentsTabMyAgents.
   ///
   /// In en, this message translates to:
@@ -1362,6 +1368,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Requests'**
   String get clientAgentsTabRequests;
+
+  /// No description provided for @clientAgentsTabOwnerRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Review requests'**
+  String get clientAgentsTabOwnerRequests;
+
+  /// No description provided for @clientAgentsTabOwnerClients.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved clients'**
+  String get clientAgentsTabOwnerClients;
 
   /// No description provided for @clientAgentsLoadApprovedErrorTitle.
   ///
@@ -1645,6 +1663,12 @@ abstract class AppLocalizations {
   /// **'The status of this request is not available yet.'**
   String get clientAgentsRequestDescUnknown;
 
+  /// No description provided for @clientAgentsRetryRequestAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry request'**
+  String get clientAgentsRetryRequestAction;
+
   /// No description provided for @clientAgentsPendingDescQueued.
   ///
   /// In en, this message translates to:
@@ -1734,6 +1758,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Session unavailable to sync pending items.'**
   String get clientAgentsSessionUnavailableSync;
+
+  /// No description provided for @clientAgentsRetryMissingRequestId.
+  ///
+  /// In en, this message translates to:
+  /// **'This request cannot be retried because its identifier is unavailable.'**
+  String get clientAgentsRetryMissingRequestId;
+
+  /// No description provided for @clientAgentsRetrySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'The request was retried. We will keep watching for approval updates.'**
+  String get clientAgentsRetrySuccess;
+
+  /// No description provided for @clientAgentsOwnerActionFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete the owner action'**
+  String get clientAgentsOwnerActionFailedTitle;
+
+  /// No description provided for @clientAgentsOwnerRequestsLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load requests to review'**
+  String get clientAgentsOwnerRequestsLoadErrorTitle;
+
+  /// No description provided for @clientAgentsOwnerRequestsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No client requests need your review right now.'**
+  String get clientAgentsOwnerRequestsEmpty;
+
+  /// No description provided for @clientAgentsOwnerApproveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get clientAgentsOwnerApproveAction;
+
+  /// No description provided for @clientAgentsOwnerRejectAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get clientAgentsOwnerRejectAction;
+
+  /// No description provided for @clientAgentsOwnerRequestsStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting your decision for this agent.'**
+  String get clientAgentsOwnerRequestsStatusPending;
+
+  /// No description provided for @clientAgentsOwnerRequestsStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved and already available for the client.'**
+  String get clientAgentsOwnerRequestsStatusApproved;
+
+  /// No description provided for @clientAgentsOwnerRequestsStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected during owner review.'**
+  String get clientAgentsOwnerRequestsStatusRejected;
+
+  /// No description provided for @clientAgentsOwnerRequestsStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired before a final review.'**
+  String get clientAgentsOwnerRequestsStatusExpired;
+
+  /// No description provided for @clientAgentsOwnerRequestsStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'The latest owner-review status is unavailable.'**
+  String get clientAgentsOwnerRequestsStatusUnknown;
+
+  /// No description provided for @clientAgentsOwnerApproveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'The access request was approved.'**
+  String get clientAgentsOwnerApproveSuccess;
+
+  /// No description provided for @clientAgentsOwnerRejectSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'The access request was rejected.'**
+  String get clientAgentsOwnerRejectSuccess;
+
+  /// No description provided for @clientAgentsOwnerClientsEmptyAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'No managed agents are available for this account yet.'**
+  String get clientAgentsOwnerClientsEmptyAgents;
+
+  /// No description provided for @clientAgentsOwnerClientsAgentSelectorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get clientAgentsOwnerClientsAgentSelectorLabel;
+
+  /// No description provided for @clientAgentsOwnerClientsAgentSelectorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an owned agent'**
+  String get clientAgentsOwnerClientsAgentSelectorHint;
+
+  /// No description provided for @clientAgentsOwnerClientsLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load approved clients'**
+  String get clientAgentsOwnerClientsLoadErrorTitle;
+
+  /// No description provided for @clientAgentsOwnerClientsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No approved clients are linked to this agent yet.'**
+  String get clientAgentsOwnerClientsEmpty;
+
+  /// No description provided for @clientAgentsOwnerClientsApprovedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved for this agent.'**
+  String get clientAgentsOwnerClientsApprovedSubtitle;
+
+  /// No description provided for @clientAgentsOwnerRevokeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke access'**
+  String get clientAgentsOwnerRevokeAction;
+
+  /// No description provided for @clientAgentsOwnerRevokeSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'The client access was revoked.'**
+  String get clientAgentsOwnerRevokeSuccess;
 
   /// No description provided for @clientAgentDetailSessionUnavailable.
   ///
@@ -2686,6 +2842,12 @@ abstract class AppLocalizations {
   /// **'Could not load request history.'**
   String get clientAgentsErrorLoadAccessRequests;
 
+  /// No description provided for @clientAgentsErrorRetryClientAccessRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not retry this access request.'**
+  String get clientAgentsErrorRetryClientAccessRequest;
+
   /// No description provided for @clientAgentsErrorReadPending.
   ///
   /// In en, this message translates to:
@@ -2715,6 +2877,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not sync pending agent actions.'**
   String get clientAgentsErrorSyncPending;
+
+  /// No description provided for @clientAgentsErrorLoadManagedAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load managed agents.'**
+  String get clientAgentsErrorLoadManagedAgents;
+
+  /// No description provided for @clientAgentsErrorLoadOwnerAccessRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load client access requests for review.'**
+  String get clientAgentsErrorLoadOwnerAccessRequests;
+
+  /// No description provided for @clientAgentsErrorApproveOwnerAccessRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not approve this access request.'**
+  String get clientAgentsErrorApproveOwnerAccessRequest;
+
+  /// No description provided for @clientAgentsErrorRejectOwnerAccessRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reject this access request.'**
+  String get clientAgentsErrorRejectOwnerAccessRequest;
+
+  /// No description provided for @clientAgentsErrorLoadOwnerApprovedClients.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load approved clients for this agent.'**
+  String get clientAgentsErrorLoadOwnerApprovedClients;
+
+  /// No description provided for @clientAgentsErrorRevokeOwnerClientAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not revoke this client access.'**
+  String get clientAgentsErrorRevokeOwnerClientAccess;
 
   /// No description provided for @clientAgentsErrorGetClientAgentToken.
   ///

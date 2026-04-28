@@ -6,11 +6,16 @@ import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
+import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_owner_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_tab.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_owner_clients_tab.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_owner_requests_tab.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_page_filters.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_request_access_tab.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_requests_tab.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_shared_widgets.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
+import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/presentation/localization/sync_app_localizations_mixin.dart';
@@ -37,19 +42,23 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
     with SyncAppLocalizationsMixin<ClientAgentsPage>, RouteAware {
   static const int _approvedAgentsTabIndex = 0;
   static const int _requestsTabIndex = 2;
-  static const int _maxTabIndex = _requestsTabIndex;
+  static const int _ownerClientsTabIndex = 4;
+  static const int _maxTabIndex = _ownerClientsTabIndex;
   static const Duration _draftPersistenceDebounce = Duration(milliseconds: 350);
   late final ClientAgentsController _controller;
+  late final ClientAgentsOwnerController _ownerController;
   late final SharedPreferences _prefs;
   late ClientAgentsPageSessionState _pageSession;
   Timer? _draftPersistenceTimer;
   bool _shellRouteObserverSubscribed = false;
+  bool _ownerInitialLoadScheduled = false;
 
   @override
   void initState() {
     super.initState();
     _prefs = getIt<SharedPreferences>();
     _controller = getIt<ClientAgentsController>();
+    _ownerController = getIt<ClientAgentsOwnerController>();
     _pageSession = ClientAgentsPageSessionState.restore(
       prefs: _prefs,
       fallbackTabIndex: _approvedAgentsTabIndex,
@@ -62,6 +71,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   @override
   void bindAppLocalizations(AppLocalizations l10n) {
     _controller.activeLocalizations = l10n;
+    _ownerController.activeLocalizations = l10n;
   }
 
   @override
@@ -77,6 +87,13 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
     if (!_initialLoadScheduled) {
       _initialLoadScheduled = true;
       unawaited(_controller.initialize());
+    }
+    if (!_ownerInitialLoadScheduled &&
+        context.read<CurrentUserContextController>().hasPermission(
+          UserPermission.manageAgents,
+        )) {
+      _ownerInitialLoadScheduled = true;
+      unawaited(_ownerController.initialize());
     }
   }
 
@@ -119,16 +136,28 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
       ),
     );
     _controller.dispose();
+    _ownerController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    return ChangeNotifierProvider<ClientAgentsController>.value(
-      value: _controller,
-      child: Consumer<ClientAgentsController>(
-        builder: (context, controller, _) {
+    final canManageOwnerAccess = context
+        .select<CurrentUserContextController, bool>(
+          (controller) => controller.hasPermission(UserPermission.manageAgents),
+        );
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ClientAgentsController>.value(
+          value: _controller,
+        ),
+        ChangeNotifierProvider<ClientAgentsOwnerController>.value(
+          value: _ownerController,
+        ),
+      ],
+      child: Consumer2<ClientAgentsController, ClientAgentsOwnerController>(
+        builder: (context, controller, ownerController, _) {
           final l10n = AppLocalizations.of(context);
           final pendingCount = controller.pendingActions.length;
           final rawRequests =
@@ -155,8 +184,145 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
             approvedAgents,
             _pageSession.approvedAgentFilters,
           );
+          final selectedTabIndex = _pageSession.selectedTabIndex.clamp(
+            0,
+            canManageOwnerAccess ? _ownerClientsTabIndex : _requestsTabIndex,
+          );
+
+          final items = <AppTabViewItem>[
+            AppTabViewItem(
+              label: l10n.clientAgentsTabMyAgents,
+              child: ClientAgentsApprovedAgentsTab(
+                agents: filteredApprovedAgents,
+                errorMessage: controller.approvedAgentsErrorMessage,
+                onQueueRemoveAccess: (agentIds) async {
+                  await controller.removeAccess(agentIds: agentIds);
+                },
+                onRetry: () => unawaited(controller.refreshAll()),
+                isMutating: controller.isSyncing,
+                hasActiveFilters:
+                    clientAgentsApprovedActiveFilterCount(
+                      l10n,
+                      _pageSession.approvedAgentFilters,
+                    ) >
+                    0,
+                requestAccessTabLabel: l10n.clientAgentsTabRequestAccess,
+              ),
+            ),
+            AppTabViewItem(
+              label: l10n.clientAgentsTabRequestAccess,
+              child: ClientAgentsRequestAccessTab(
+                initialAgentIdSlots:
+                    _pageSession.requestAccessDraftAgentIdSlots,
+                onDraftSlotsChanged: (slots) {
+                  if (!mounted) {
+                    return;
+                  }
+                  setState(() {
+                    _pageSession = _pageSession.copyWith(
+                      requestAccessDraftAgentIdSlots: slots,
+                    );
+                  });
+                  _scheduleDraftPersistence();
+                },
+                loadClientToken: controller.readLocalClientToken,
+                persistClientTokenDraftLine:
+                    controller.persistLocalClientTokenDraftLine,
+                onSubmitRows: (rows) async {
+                  final accepted = await controller
+                      .submitAccessRequestWithLocalTokens(rows);
+                  if (!mounted) {
+                    return accepted;
+                  }
+                  if (accepted) {
+                    _pageSession = _pageSession.copyWith(
+                      requestAccessDraftAgentIdSlots: const <String>[''],
+                    );
+                    _draftPersistenceTimer?.cancel();
+                    await _persistRequestAccessDraftSlots(const <String>['']);
+                  }
+                  return accepted;
+                },
+                onClearMessages: () {
+                  controller
+                    ..clearActionError()
+                    ..clearActionFeedback();
+                },
+                isMutating:
+                    controller.isSyncing ||
+                    controller.isRequestAccessOnCooldown,
+                retryAfterSeconds: controller.isRequestAccessOnCooldown
+                    ? (controller.requestAccessRetryAfter?.inSeconds ?? 0)
+                    : null,
+              ),
+            ),
+            AppTabViewItem(
+              label: l10n.clientAgentsTabRequests,
+              child: ClientAgentsRequestsTab(
+                requests: filteredRequests,
+                pendingActions: filteredPendingActions,
+                errorMessage: controller.accessRequestsErrorMessage,
+                pendingErrorMessage: controller.pendingActionsErrorMessage,
+                onRetry: () => unawaited(controller.refreshAll()),
+                isMutating: controller.isSyncing,
+                onRetryAccessRequest: (request) =>
+                    controller.retryAccessRequest(
+                      request: request,
+                    ),
+                hasActiveFilters:
+                    clientAgentsRequestsActiveFilterCount(
+                      l10n,
+                      _pageSession.requestsFilters,
+                    ) >
+                    0,
+              ),
+            ),
+            if (canManageOwnerAccess)
+              AppTabViewItem(
+                label: l10n.clientAgentsTabOwnerRequests,
+                child: ClientAgentsOwnerRequestsTab(
+                  requests: ownerController.ownerRequests,
+                  errorMessage: ownerController.ownerRequestsErrorMessage,
+                  onRetry: () => unawaited(ownerController.refreshAll()),
+                  onApprove: (request) => ownerController.approveRequest(
+                    requestId: request.requestId,
+                    agentId: request.agentId,
+                  ),
+                  onReject: (request) => ownerController.rejectRequest(
+                    requestId: request.requestId,
+                    agentId: request.agentId,
+                  ),
+                  isMutating: ownerController.isMutating,
+                ),
+              ),
+            if (canManageOwnerAccess)
+              AppTabViewItem(
+                label: l10n.clientAgentsTabOwnerClients,
+                child: ClientAgentsOwnerClientsTab(
+                  managedAgents: ownerController.managedAgents,
+                  selectedAgentId: ownerController.selectedManagedAgentId,
+                  approvedClients: ownerController.approvedClients,
+                  errorMessage: ownerController.approvedClientsErrorMessage,
+                  isMutating: ownerController.isMutating,
+                  onRetry: () => unawaited(ownerController.refreshAll()),
+                  onSelectAgent: (agentId) =>
+                      unawaited(ownerController.selectManagedAgent(agentId)),
+                  onRevokeClientAccess: (client) =>
+                      ownerController.revokeClientAccess(
+                        agentId: ownerController.selectedManagedAgentId ?? '',
+                        clientId: client.clientId,
+                      ),
+                ),
+              ),
+          ];
+
           return RefreshIndicator(
-            onRefresh: controller.refreshAll,
+            onRefresh: () async {
+              await controller.refreshAll();
+              if (canManageOwnerAccess) {
+                await ownerController.refreshAll();
+              }
+            },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: context.pageScrollPadding(tokens),
@@ -178,10 +344,18 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                       AppSecondaryButton(
                         label: l10n.clientAgentsRefresh,
                         icon: const Icon(Icons.refresh_rounded),
-                        onPressed: controller.isLoading
+                        onPressed:
+                            controller.isLoading || ownerController.isLoading
                             ? null
-                            : () => unawaited(controller.refreshAll()),
-                        isLoading: controller.isRefreshing,
+                            : () {
+                                unawaited(controller.refreshAll());
+                                if (canManageOwnerAccess) {
+                                  unawaited(ownerController.refreshAll());
+                                }
+                              },
+                        isLoading:
+                            controller.isRefreshing ||
+                            ownerController.isRefreshing,
                       ),
                       if (pendingCount > 0)
                         AppPrimaryButton(
@@ -191,7 +365,8 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                                 )
                               : l10n.clientAgentsSubmitRequests,
                           icon: const Icon(Icons.sync_rounded),
-                          onPressed: controller.isSyncing ||
+                          onPressed:
+                              controller.isSyncing ||
                                   controller.isSyncOnCooldown
                               ? null
                               : () => unawaited(controller.syncPending()),
@@ -208,6 +383,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                     message: message,
                   ),
                 ],
+                if (ownerController.actionErrorMessage
+                    case final String message) ...<Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  AppInlineErrorPanel(
+                    title: l10n.clientAgentsOwnerActionFailedTitle,
+                    message: message,
+                  ),
+                ],
                 if (controller.actionFeedbackMessage
                     case final String message) ...<Widget>[
                   SizedBox(height: tokens.gapMd),
@@ -216,72 +399,37 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                     kind: controller.actionFeedbackKind,
                   ),
                 ],
+                if (ownerController.actionFeedbackMessage
+                    case final String message) ...<Widget>[
+                  SizedBox(height: tokens.gapMd),
+                  ClientAgentsActionFeedbackBanner(
+                    message: message,
+                    kind: ClientAgentsActionFeedbackKind.success,
+                  ),
+                ],
                 SizedBox(height: tokens.sectionSpacing),
                 AppSectionCardWithHeading(
                   title: l10n.clientAgentsMaintenanceTitle,
-                  subtitle: l10n.clientAgentsMaintenanceSubtitle,
-                  headingTrailing:
-                      _pageSession.selectedTabIndex == _approvedAgentsTabIndex
-                      ? ClientAgentsFilterButton(
-                          activeCount: clientAgentsApprovedActiveFilterCount(
-                            l10n,
-                            _pageSession.approvedAgentFilters,
-                          ),
-                          l10n: l10n,
-                          onPressed: controller.isLoading
-                              ? null
-                              : () => unawaited(_showApprovedAgentFilters()),
-                        )
-                      : (_pageSession.selectedTabIndex == _requestsTabIndex
-                            ? ClientAgentsFilterButton(
-                                activeCount:
-                                    clientAgentsRequestsActiveFilterCount(
-                                      l10n,
-                                      _pageSession.requestsFilters,
-                                    ),
-                                l10n: l10n,
-                                onPressed: controller.isLoading
-                                    ? null
-                                    : () => unawaited(_showRequestsFilters()),
-                              )
-                            : null),
-                  headingBottom:
-                      _pageSession.selectedTabIndex ==
-                              _approvedAgentsTabIndex &&
-                          clientAgentsApprovedActiveFilterCount(
-                                l10n,
-                                _pageSession.approvedAgentFilters,
-                              ) >
-                              0
-                      ? Wrap(
-                          spacing: tokens.gapSm,
-                          runSpacing: tokens.gapSm,
-                          children: buildClientAgentsApprovedFilterSummaryChips(
-                            l10n: l10n,
-                            approvedAgentFilters:
-                                _pageSession.approvedAgentFilters,
-                          ),
-                        )
-                      : (_pageSession.selectedTabIndex == _requestsTabIndex &&
-                                clientAgentsRequestsActiveFilterCount(
-                                      l10n,
-                                      _pageSession.requestsFilters,
-                                    ) >
-                                    0
-                            ? Wrap(
-                                spacing: tokens.gapSm,
-                                runSpacing: tokens.gapSm,
-                                children:
-                                    buildClientAgentsRequestsFilterSummaryChips(
-                                      l10n: l10n,
-                                      requestsFilters:
-                                          _pageSession.requestsFilters,
-                                    ),
-                              )
-                            : null),
+                  subtitle: canManageOwnerAccess
+                      ? l10n.clientAgentsMaintenanceSubtitleOwner
+                      : l10n.clientAgentsMaintenanceSubtitle,
+                  headingTrailing: _buildFilterButton(
+                    l10n: l10n,
+                    controller: controller,
+                    selectedTabIndex: selectedTabIndex,
+                  ),
+                  headingBottom: _buildFilterSummary(
+                    l10n: l10n,
+                    selectedTabIndex: selectedTabIndex,
+                    tokens: tokens,
+                  ),
                   child: AppSkeleton(
-                    enabled: controller.isLoadingInitial,
+                    enabled:
+                        controller.isLoadingInitial ||
+                        (canManageOwnerAccess &&
+                            ownerController.isLoadingInitial),
                     child: AppTabView(
+                      initialIndex: selectedTabIndex,
                       onChanged: (index) {
                         if (_pageSession.selectedTabIndex == index) {
                           return;
@@ -295,103 +443,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                           persistClientAgentsSelectedTabIndex(_prefs, index),
                         );
                       },
-                      items: <AppTabViewItem>[
-                        AppTabViewItem(
-                          label: l10n.clientAgentsTabMyAgents,
-                          child: ClientAgentsApprovedAgentsTab(
-                            agents: filteredApprovedAgents,
-                            errorMessage: controller.approvedAgentsErrorMessage,
-                            onQueueRemoveAccess: (agentIds) async {
-                              await controller.removeAccess(
-                                agentIds: agentIds,
-                              );
-                            },
-                            onRetry: () => unawaited(controller.refreshAll()),
-                            isMutating: controller.isSyncing,
-                            hasActiveFilters:
-                                clientAgentsApprovedActiveFilterCount(
-                                  l10n,
-                                  _pageSession.approvedAgentFilters,
-                                ) >
-                                0,
-                            requestAccessTabLabel:
-                                l10n.clientAgentsTabRequestAccess,
-                          ),
-                        ),
-                        AppTabViewItem(
-                          label: l10n.clientAgentsTabRequestAccess,
-                          child: ClientAgentsRequestAccessTab(
-                            initialAgentIdSlots:
-                                _pageSession.requestAccessDraftAgentIdSlots,
-                            onDraftSlotsChanged: (slots) {
-                              if (!mounted) {
-                                return;
-                              }
-                              setState(() {
-                                _pageSession = _pageSession.copyWith(
-                                  requestAccessDraftAgentIdSlots: slots,
-                                );
-                              });
-                              _scheduleDraftPersistence();
-                            },
-                            loadClientToken: controller.readLocalClientToken,
-                            persistClientTokenDraftLine:
-                                controller.persistLocalClientTokenDraftLine,
-                            onSubmitRows: (rows) async {
-                              final accepted = await controller
-                                  .submitAccessRequestWithLocalTokens(rows);
-                              if (!mounted) {
-                                return accepted;
-                              }
-                              if (accepted) {
-                                _pageSession = _pageSession.copyWith(
-                                  requestAccessDraftAgentIdSlots:
-                                      const <String>[''],
-                                );
-                                _draftPersistenceTimer?.cancel();
-                                await _persistRequestAccessDraftSlots(
-                                  const <String>[''],
-                                );
-                              }
-                              return accepted;
-                            },
-                            onClearMessages: () {
-                              controller
-                                ..clearActionError()
-                                ..clearActionFeedback();
-                            },
-                            isMutating: controller.isSyncing ||
-                                controller.isRequestAccessOnCooldown,
-                            // Surface the server-armed cool-down so the
-                            // CTA can render the countdown — same UX as
-                            // the sync button above.
-                            retryAfterSeconds:
-                                controller.isRequestAccessOnCooldown
-                                    ? (controller
-                                              .requestAccessRetryAfter
-                                              ?.inSeconds ??
-                                          0)
-                                    : null,
-                          ),
-                        ),
-                        AppTabViewItem(
-                          label: l10n.clientAgentsTabRequests,
-                          child: ClientAgentsRequestsTab(
-                            requests: filteredRequests,
-                            pendingActions: filteredPendingActions,
-                            errorMessage: controller.accessRequestsErrorMessage,
-                            pendingErrorMessage:
-                                controller.pendingActionsErrorMessage,
-                            onRetry: () => unawaited(controller.refreshAll()),
-                            hasActiveFilters:
-                                clientAgentsRequestsActiveFilterCount(
-                                  l10n,
-                                  _pageSession.requestsFilters,
-                                ) >
-                                0,
-                          ),
-                        ),
-                      ],
+                      items: items,
                     ),
                   ),
                 ),
@@ -401,6 +453,76 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
         },
       ),
     );
+  }
+
+  Widget? _buildFilterButton({
+    required AppLocalizations l10n,
+    required ClientAgentsController controller,
+    required int selectedTabIndex,
+  }) {
+    if (selectedTabIndex == _approvedAgentsTabIndex) {
+      return ClientAgentsFilterButton(
+        activeCount: clientAgentsApprovedActiveFilterCount(
+          l10n,
+          _pageSession.approvedAgentFilters,
+        ),
+        l10n: l10n,
+        onPressed: controller.isLoading
+            ? null
+            : () => unawaited(_showApprovedAgentFilters()),
+      );
+    }
+    if (selectedTabIndex == _requestsTabIndex) {
+      return ClientAgentsFilterButton(
+        activeCount: clientAgentsRequestsActiveFilterCount(
+          l10n,
+          _pageSession.requestsFilters,
+        ),
+        l10n: l10n,
+        onPressed: controller.isLoading
+            ? null
+            : () => unawaited(_showRequestsFilters()),
+      );
+    }
+    return null;
+  }
+
+  Widget? _buildFilterSummary({
+    required AppLocalizations l10n,
+    required int selectedTabIndex,
+    required AppThemeTokens tokens,
+  }) {
+    if (selectedTabIndex == _approvedAgentsTabIndex &&
+        clientAgentsApprovedActiveFilterCount(
+              l10n,
+              _pageSession.approvedAgentFilters,
+            ) >
+            0) {
+      return Wrap(
+        spacing: tokens.gapSm,
+        runSpacing: tokens.gapSm,
+        children: buildClientAgentsApprovedFilterSummaryChips(
+          l10n: l10n,
+          approvedAgentFilters: _pageSession.approvedAgentFilters,
+        ),
+      );
+    }
+    if (selectedTabIndex == _requestsTabIndex &&
+        clientAgentsRequestsActiveFilterCount(
+              l10n,
+              _pageSession.requestsFilters,
+            ) >
+            0) {
+      return Wrap(
+        spacing: tokens.gapSm,
+        runSpacing: tokens.gapSm,
+        children: buildClientAgentsRequestsFilterSummaryChips(
+          l10n: l10n,
+          requestsFilters: _pageSession.requestsFilters,
+        ),
+      );
+    }
+    return null;
   }
 
   Future<void> _showApprovedAgentFilters() async {

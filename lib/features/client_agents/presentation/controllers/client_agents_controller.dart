@@ -20,6 +20,7 @@ import 'package:colmeia/features/client_agents/application/usecases/probe_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_token_request_dto.dart';
@@ -61,6 +62,7 @@ class ClientAgentsController extends ChangeNotifier {
     required SyncPendingClientAgentActionsUseCase syncPendingActionsUseCase,
     required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
     required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
+    required RetryClientAccessRequestUseCase retryClientAccessRequestUseCase,
     ObserveAgentPresenceUseCase? observeAgentPresenceUseCase,
     AgentPresencePoller? agentPresencePoller,
     ConsumerSocketConnection? consumerSocketConnection,
@@ -82,6 +84,7 @@ class ClientAgentsController extends ChangeNotifier {
        _syncPendingActionsUseCase = syncPendingActionsUseCase,
        _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
        _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase,
+       _retryClientAccessRequestUseCase = retryClientAccessRequestUseCase,
        _observeAgentPresenceUseCase = observeAgentPresenceUseCase,
        _agentPresencePoller = agentPresencePoller,
        _consumerSocketConnection = consumerSocketConnection,
@@ -118,6 +121,7 @@ class ClientAgentsController extends ChangeNotifier {
   final SyncPendingClientAgentActionsUseCase _syncPendingActionsUseCase;
   final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
   final SaveClientAgentTokenUseCase _saveClientAgentTokenUseCase;
+  final RetryClientAccessRequestUseCase _retryClientAccessRequestUseCase;
 
   /// PR-M part 2: optional dependency. When the build does not enable
   /// `SOCKET_PRESENCE_LISTENER_ENABLED`, the use case is `null` and the
@@ -962,6 +966,53 @@ class ClientAgentsController extends ChangeNotifier {
         );
       }
       await _reloadPendingAfterEnqueue(userId: userId);
+    });
+  }
+
+  Future<void> retryAccessRequest({
+    required ClientAgentAccessRequest request,
+  }) async {
+    final requestId = request.requestId?.trim();
+    if (requestId == null || requestId.isEmpty) {
+      _actionErrorMessage = _s.clientAgentsRetryMissingRequestId;
+      _notifyListenersIfAlive();
+      return;
+    }
+    final userId = _authController.session?.userId;
+    if (userId == null || userId.isEmpty) {
+      _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
+      _notifyListenersIfAlive();
+      return;
+    }
+
+    await _runPendingMutationSerialized(() async {
+      if (_isDisposed) {
+        return;
+      }
+      _isSyncing = true;
+      _actionErrorMessage = null;
+      _clearActionFeedback();
+      _notifyListenersIfAlive();
+      final retryResult = await _retryClientAccessRequestUseCase(
+        userId: userId,
+        requestId: requestId,
+      );
+      _actionErrorMessage = _consumeResult(
+        result: retryResult,
+        operation: 'retryClientAccessRequest',
+      );
+      await _refreshAfterMutation(userId: userId);
+      if (_actionErrorMessage == null) {
+        _setActionFeedback(
+          message: _s.clientAgentsRetrySuccess,
+          kind: ClientAgentsActionFeedbackKind.info,
+        );
+        _startApprovalPolling(
+          userId: userId,
+          agentIds: <String>{request.agentId},
+        );
+      }
+      _notifyListenersIfAlive();
     });
   }
 

@@ -234,8 +234,7 @@ void main() {
     });
   });
 
-  test('saveClientAgentToken without session does not call use case',
-      () async {
+  test('saveClientAgentToken without session does not call use case', () async {
     when(() => auth.session).thenReturn(null);
 
     await controller.saveClientAgentToken(agentId: agentId, rawToken: 'x');
@@ -302,8 +301,7 @@ void main() {
   });
 
   group('agent_meta integration', () {
-    test('agentSupportsRpcMethod is permissive when descriptor is empty',
-        () {
+    test('agentSupportsRpcMethod is permissive when descriptor is empty', () {
       // Default state: no descriptor loaded yet -> hide nothing.
       expect(controller.agentSupportsRpcMethod('agent.getProfile'), isTrue);
       expect(

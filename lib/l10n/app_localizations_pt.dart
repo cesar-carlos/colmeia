@@ -789,6 +789,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Use as abas para ver agentes aprovados, pedir novos acessos e acompanhar o historico das solicitacoes.';
 
   @override
+  String get clientAgentsMaintenanceSubtitleOwner =>
+      'Use as abas para gerir agentes aprovados, reenviar solicitacoes de clientes e revisar acessos dos agentes que voce administra.';
+
+  @override
   String get clientAgentsTabMyAgents => 'Meus agentes';
 
   @override
@@ -796,6 +800,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsTabRequests => 'Solicitacoes';
+
+  @override
+  String get clientAgentsTabOwnerRequests => 'Revisar solicitacoes';
+
+  @override
+  String get clientAgentsTabOwnerClients => 'Clientes aprovados';
 
   @override
   String get clientAgentsLoadApprovedErrorTitle =>
@@ -968,6 +978,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'O status dessa solicitacao ainda nao esta disponivel.';
 
   @override
+  String get clientAgentsRetryRequestAction => 'Tentar novamente';
+
+  @override
   String get clientAgentsPendingDescQueued => 'Pronto para envio.';
 
   @override
@@ -1018,6 +1031,90 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentsSessionUnavailableSync =>
       'Sessao indisponivel para sincronizar pendencias.';
+
+  @override
+  String get clientAgentsRetryMissingRequestId =>
+      'Esta solicitacao nao pode ser reenviada porque o identificador nao esta disponivel.';
+
+  @override
+  String get clientAgentsRetrySuccess =>
+      'A solicitacao foi reenviada. Vamos continuar acompanhando a aprovacao.';
+
+  @override
+  String get clientAgentsOwnerActionFailedTitle =>
+      'Nao foi possivel concluir a acao do responsavel';
+
+  @override
+  String get clientAgentsOwnerRequestsLoadErrorTitle =>
+      'Nao foi possivel carregar as solicitacoes para revisao';
+
+  @override
+  String get clientAgentsOwnerRequestsEmpty =>
+      'Nenhuma solicitacao de cliente precisa da sua revisao agora.';
+
+  @override
+  String get clientAgentsOwnerApproveAction => 'Aprovar';
+
+  @override
+  String get clientAgentsOwnerRejectAction => 'Rejeitar';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusPending =>
+      'Aguardando sua decisao para este agente.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusApproved =>
+      'Aprovada e ja disponivel para o cliente.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusRejected =>
+      'Rejeitada durante a revisao do responsavel.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusExpired =>
+      'Expirou antes da revisao final.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusUnknown =>
+      'O status mais recente da revisao nao esta disponivel.';
+
+  @override
+  String get clientAgentsOwnerApproveSuccess =>
+      'A solicitacao de acesso foi aprovada.';
+
+  @override
+  String get clientAgentsOwnerRejectSuccess =>
+      'A solicitacao de acesso foi rejeitada.';
+
+  @override
+  String get clientAgentsOwnerClientsEmptyAgents =>
+      'Nenhum agente administrado esta disponivel para esta conta ainda.';
+
+  @override
+  String get clientAgentsOwnerClientsAgentSelectorLabel => 'Agente';
+
+  @override
+  String get clientAgentsOwnerClientsAgentSelectorHint =>
+      'Escolha um agente administrado';
+
+  @override
+  String get clientAgentsOwnerClientsLoadErrorTitle =>
+      'Nao foi possivel carregar os clientes aprovados';
+
+  @override
+  String get clientAgentsOwnerClientsEmpty =>
+      'Nenhum cliente aprovado esta vinculado a este agente ainda.';
+
+  @override
+  String get clientAgentsOwnerClientsApprovedSubtitle =>
+      'Aprovado para este agente.';
+
+  @override
+  String get clientAgentsOwnerRevokeAction => 'Revogar acesso';
+
+  @override
+  String get clientAgentsOwnerRevokeSuccess =>
+      'O acesso do cliente foi revogado.';
 
   @override
   String get clientAgentDetailSessionUnavailable =>
@@ -1634,6 +1731,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nao foi possivel carregar o historico de solicitacoes.';
 
   @override
+  String get clientAgentsErrorRetryClientAccessRequest =>
+      'Nao foi possivel reenviar esta solicitacao de acesso.';
+
+  @override
   String get clientAgentsErrorReadPending =>
       'Nao foi possivel carregar as acoes pendentes de sincronizacao.';
 
@@ -1652,6 +1753,30 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentsErrorSyncPending =>
       'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+
+  @override
+  String get clientAgentsErrorLoadManagedAgents =>
+      'Nao foi possivel carregar os agentes administrados.';
+
+  @override
+  String get clientAgentsErrorLoadOwnerAccessRequests =>
+      'Nao foi possivel carregar as solicitacoes de acesso para revisao.';
+
+  @override
+  String get clientAgentsErrorApproveOwnerAccessRequest =>
+      'Nao foi possivel aprovar esta solicitacao de acesso.';
+
+  @override
+  String get clientAgentsErrorRejectOwnerAccessRequest =>
+      'Nao foi possivel rejeitar esta solicitacao de acesso.';
+
+  @override
+  String get clientAgentsErrorLoadOwnerApprovedClients =>
+      'Nao foi possivel carregar os clientes aprovados deste agente.';
+
+  @override
+  String get clientAgentsErrorRevokeOwnerClientAccess =>
+      'Nao foi possivel revogar este acesso de cliente.';
 
   @override
   String get clientAgentsErrorGetClientAgentToken =>
@@ -2664,6 +2789,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Use as abas para ver agentes aprovados, pedir novos acessos e acompanhar o historico das solicitacoes.';
 
   @override
+  String get clientAgentsMaintenanceSubtitleOwner =>
+      'Use as abas para gerir agentes aprovados, reenviar solicitacoes de clientes e revisar acessos dos agentes que voce administra.';
+
+  @override
   String get clientAgentsTabMyAgents => 'Meus agentes';
 
   @override
@@ -2671,6 +2800,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsTabRequests => 'Solicitacoes';
+
+  @override
+  String get clientAgentsTabOwnerRequests => 'Revisar solicitacoes';
+
+  @override
+  String get clientAgentsTabOwnerClients => 'Clientes aprovados';
 
   @override
   String get clientAgentsLoadApprovedErrorTitle =>
@@ -2843,6 +2978,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'O status dessa solicitacao ainda nao esta disponivel.';
 
   @override
+  String get clientAgentsRetryRequestAction => 'Tentar novamente';
+
+  @override
   String get clientAgentsPendingDescQueued => 'Pronto para envio.';
 
   @override
@@ -2893,6 +3031,90 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsSessionUnavailableSync =>
       'Sessao indisponivel para sincronizar pendencias.';
+
+  @override
+  String get clientAgentsRetryMissingRequestId =>
+      'Esta solicitacao nao pode ser reenviada porque o identificador nao esta disponivel.';
+
+  @override
+  String get clientAgentsRetrySuccess =>
+      'A solicitacao foi reenviada. Vamos continuar acompanhando a aprovacao.';
+
+  @override
+  String get clientAgentsOwnerActionFailedTitle =>
+      'Nao foi possivel concluir a acao do responsavel';
+
+  @override
+  String get clientAgentsOwnerRequestsLoadErrorTitle =>
+      'Nao foi possivel carregar as solicitacoes para revisao';
+
+  @override
+  String get clientAgentsOwnerRequestsEmpty =>
+      'Nenhuma solicitacao de cliente precisa da sua revisao agora.';
+
+  @override
+  String get clientAgentsOwnerApproveAction => 'Aprovar';
+
+  @override
+  String get clientAgentsOwnerRejectAction => 'Rejeitar';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusPending =>
+      'Aguardando sua decisao para este agente.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusApproved =>
+      'Aprovada e ja disponivel para o cliente.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusRejected =>
+      'Rejeitada durante a revisao do responsavel.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusExpired =>
+      'Expirou antes da revisao final.';
+
+  @override
+  String get clientAgentsOwnerRequestsStatusUnknown =>
+      'O status mais recente da revisao nao esta disponivel.';
+
+  @override
+  String get clientAgentsOwnerApproveSuccess =>
+      'A solicitacao de acesso foi aprovada.';
+
+  @override
+  String get clientAgentsOwnerRejectSuccess =>
+      'A solicitacao de acesso foi rejeitada.';
+
+  @override
+  String get clientAgentsOwnerClientsEmptyAgents =>
+      'Nenhum agente administrado esta disponivel para esta conta ainda.';
+
+  @override
+  String get clientAgentsOwnerClientsAgentSelectorLabel => 'Agente';
+
+  @override
+  String get clientAgentsOwnerClientsAgentSelectorHint =>
+      'Escolha um agente administrado';
+
+  @override
+  String get clientAgentsOwnerClientsLoadErrorTitle =>
+      'Nao foi possivel carregar os clientes aprovados';
+
+  @override
+  String get clientAgentsOwnerClientsEmpty =>
+      'Nenhum cliente aprovado esta vinculado a este agente ainda.';
+
+  @override
+  String get clientAgentsOwnerClientsApprovedSubtitle =>
+      'Aprovado para este agente.';
+
+  @override
+  String get clientAgentsOwnerRevokeAction => 'Revogar acesso';
+
+  @override
+  String get clientAgentsOwnerRevokeSuccess =>
+      'O acesso do cliente foi revogado.';
 
   @override
   String get clientAgentDetailSessionUnavailable =>
@@ -3509,6 +3731,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Nao foi possivel carregar o historico de solicitacoes.';
 
   @override
+  String get clientAgentsErrorRetryClientAccessRequest =>
+      'Nao foi possivel reenviar esta solicitacao de acesso.';
+
+  @override
   String get clientAgentsErrorReadPending =>
       'Nao foi possivel carregar as acoes pendentes de sincronizacao.';
 
@@ -3527,6 +3753,30 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsErrorSyncPending =>
       'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+
+  @override
+  String get clientAgentsErrorLoadManagedAgents =>
+      'Nao foi possivel carregar os agentes administrados.';
+
+  @override
+  String get clientAgentsErrorLoadOwnerAccessRequests =>
+      'Nao foi possivel carregar as solicitacoes de acesso para revisao.';
+
+  @override
+  String get clientAgentsErrorApproveOwnerAccessRequest =>
+      'Nao foi possivel aprovar esta solicitacao de acesso.';
+
+  @override
+  String get clientAgentsErrorRejectOwnerAccessRequest =>
+      'Nao foi possivel rejeitar esta solicitacao de acesso.';
+
+  @override
+  String get clientAgentsErrorLoadOwnerApprovedClients =>
+      'Nao foi possivel carregar os clientes aprovados deste agente.';
+
+  @override
+  String get clientAgentsErrorRevokeOwnerClientAccess =>
+      'Nao foi possivel revogar este acesso de cliente.';
 
   @override
   String get clientAgentsErrorGetClientAgentToken =>

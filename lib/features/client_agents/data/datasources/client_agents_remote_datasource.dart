@@ -14,6 +14,10 @@ import 'package:colmeia/features/client_agents/data/models/client_approved_agent
 import 'package:colmeia/features/client_agents/data/models/client_request_access_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/owner_access_requests_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/owner_approved_client_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/owner_approved_clients_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/owner_client_access_request_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:dio/dio.dart';
@@ -48,6 +52,25 @@ abstract interface class ClientAgentsRemoteDataSource {
     required PaginatedQuery query,
     String? search,
     String? status,
+  });
+
+  Future<ClientApprovedAgentsResponseDto> fetchManagedAgents();
+
+  Future<void> retryAccessRequest({required String requestId});
+
+  Future<OwnerAccessRequestsResponseDto> fetchOwnerAccessRequests();
+
+  Future<void> approveOwnerAccessRequest({required String requestId});
+
+  Future<void> rejectOwnerAccessRequest({required String requestId});
+
+  Future<OwnerApprovedClientsResponseDto> fetchApprovedClientsForManagedAgent({
+    required String agentId,
+  });
+
+  Future<void> revokeManagedAgentClientAccess({
+    required String agentId,
+    required String clientId,
   });
 
   Future<ClientRequestAccessResponseDto> requestAccess({
@@ -207,6 +230,72 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     );
     return ClientAccessRequestsResponseDto.fromJson(
       response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<ClientApprovedAgentsResponseDto> fetchManagedAgents() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      UserAgentApiRoutes.managedAgents,
+    );
+    return ClientApprovedAgentsResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<void> retryAccessRequest({required String requestId}) {
+    return _dio.post<void>(
+      ClientAgentApiRoutes.retryAccessRequestById(requestId),
+    );
+  }
+
+  @override
+  Future<OwnerAccessRequestsResponseDto> fetchOwnerAccessRequests() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      OwnerClientAccessApiRoutes.accessRequests,
+    );
+    return OwnerAccessRequestsResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<void> approveOwnerAccessRequest({required String requestId}) {
+    return _dio.post<void>(
+      OwnerClientAccessApiRoutes.approveRequestById(requestId),
+    );
+  }
+
+  @override
+  Future<void> rejectOwnerAccessRequest({required String requestId}) {
+    return _dio.post<void>(
+      OwnerClientAccessApiRoutes.rejectRequestById(requestId),
+    );
+  }
+
+  @override
+  Future<OwnerApprovedClientsResponseDto> fetchApprovedClientsForManagedAgent({
+    required String agentId,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      UserAgentApiRoutes.managedAgentClients(agentId),
+    );
+    return OwnerApprovedClientsResponseDto.fromJson(
+      response.data ?? const <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<void> revokeManagedAgentClientAccess({
+    required String agentId,
+    required String clientId,
+  }) {
+    return _dio.delete<void>(
+      UserAgentApiRoutes.managedAgentClientById(
+        agentId: agentId,
+        clientId: clientId,
+      ),
     );
   }
 
@@ -438,11 +527,34 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     '6ac362c2-72b5-4f2f-a071-96fe6f5f5080',
   };
 
+  final Set<String> _managedAgentIds = <String>{
+    '6ac362c2-72b5-4f2f-a071-96fe6f5f5080',
+    '67bcaf42-6ee2-4f8d-8e76-0c74a16de9bd',
+  };
+
+  final Map<String, List<Map<String, dynamic>>> _approvedClientsByAgentId =
+      <String, List<Map<String, dynamic>>>{
+        '6ac362c2-72b5-4f2f-a071-96fe6f5f5080': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'clientId': 'client-101',
+            'clientName': 'CASA DO MEL BARRA DO GARCAS LTDA',
+            'clientEmail': 'barra@example.com',
+            'status': 'active',
+            'approvedAt': DateTime.now()
+                .subtract(const Duration(days: 8))
+                .toIso8601String(),
+          },
+        ],
+      };
+
   final List<Map<String, dynamic>> _requests = <Map<String, dynamic>>[
     <String, dynamic>{
       'requestId': 'rq-1001',
       'agentId': '67bcaf42-6ee2-4f8d-8e76-0c74a16de9bd',
       'agentName': 'Plug Agente Sul',
+      'clientId': 'client-202',
+      'clientName': 'CASA DO MEL SORRISO LOJA 2',
+      'clientEmail': 'sorriso@example.com',
       'status': 'pending',
       'reviewToken': 'fake-review-token-sul',
       'requestedAt': DateTime.now()
@@ -577,6 +689,164 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
   }
 
   @override
+  Future<ClientApprovedAgentsResponseDto> fetchManagedAgents() async {
+    final managed = _catalog
+        .where((item) => _managedAgentIds.contains(item['agentId']))
+        .toList(growable: false);
+    return ClientApprovedAgentsResponseDto(
+      agents: managed
+          .map(_accessibleAgentDtoWithServerTokenFlag)
+          .toList(growable: false),
+      agentIds: managed.map((item) => item['agentId'] as String).toSet(),
+      count: managed.length,
+      total: managed.length,
+      page: 1,
+      pageSize: managed.length,
+    );
+  }
+
+  @override
+  Future<void> retryAccessRequest({required String requestId}) async {
+    final index = _requests.indexWhere(
+      (item) => item['requestId'] == requestId,
+    );
+    if (index < 0) {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: ClientAgentApiRoutes.retryAccessRequestById(requestId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: ClientAgentApiRoutes.retryAccessRequestById(requestId),
+          ),
+          statusCode: 404,
+          data: <String, dynamic>{'message': 'Request not found'},
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+    _requests[index] = <String, dynamic>{
+      ..._requests[index],
+      'status': 'pending',
+      'requestedAt': DateTime.now().toIso8601String(),
+      'reviewToken': 'retry-token-$requestId',
+      'reason': null,
+    };
+  }
+
+  @override
+  Future<OwnerAccessRequestsResponseDto> fetchOwnerAccessRequests() async {
+    return OwnerAccessRequestsResponseDto(
+      requests: _requests
+          .map(OwnerClientAccessRequestDto.fromJson)
+          .toList(growable: false),
+      count: _requests.length,
+      total: _requests.length,
+    );
+  }
+
+  @override
+  Future<void> approveOwnerAccessRequest({required String requestId}) async {
+    final index = _requests.indexWhere(
+      (item) => item['requestId'] == requestId,
+    );
+    if (index < 0) {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: OwnerClientAccessApiRoutes.approveRequestById(requestId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: OwnerClientAccessApiRoutes.approveRequestById(requestId),
+          ),
+          statusCode: 404,
+          data: <String, dynamic>{'message': 'Request not found'},
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+    final request = _requests[index];
+    _requests[index] = <String, dynamic>{
+      ...request,
+      'status': 'approved',
+      'reviewedAt': DateTime.now().toIso8601String(),
+      'reason': null,
+    };
+    final agentId = request['agentId'] as String? ?? '';
+    if (agentId.isNotEmpty) {
+      _approvedClientsByAgentId.putIfAbsent(
+        agentId,
+        () => <Map<String, dynamic>>[],
+      );
+      final clientId = request['clientId'] as String? ?? '';
+      _approvedClientsByAgentId[agentId]!
+        ..removeWhere((item) => item['clientId'] == clientId)
+        ..add(<String, dynamic>{
+          'clientId': clientId,
+          'clientName': request['clientName'],
+          'clientEmail': request['clientEmail'],
+          'status': 'active',
+          'approvedAt': DateTime.now().toIso8601String(),
+        });
+    }
+  }
+
+  @override
+  Future<void> rejectOwnerAccessRequest({required String requestId}) async {
+    final index = _requests.indexWhere(
+      (item) => item['requestId'] == requestId,
+    );
+    if (index < 0) {
+      throw DioException(
+        requestOptions: RequestOptions(
+          path: OwnerClientAccessApiRoutes.rejectRequestById(requestId),
+        ),
+        response: Response<dynamic>(
+          requestOptions: RequestOptions(
+            path: OwnerClientAccessApiRoutes.rejectRequestById(requestId),
+          ),
+          statusCode: 404,
+          data: <String, dynamic>{'message': 'Request not found'},
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+    _requests[index] = <String, dynamic>{
+      ..._requests[index],
+      'status': 'rejected',
+      'reviewedAt': DateTime.now().toIso8601String(),
+      'reason': 'Rejected by owner review',
+    };
+  }
+
+  @override
+  Future<OwnerApprovedClientsResponseDto> fetchApprovedClientsForManagedAgent({
+    required String agentId,
+  }) async {
+    final clients =
+        _approvedClientsByAgentId[agentId] ?? const <Map<String, dynamic>>[];
+    return OwnerApprovedClientsResponseDto(
+      clients: clients
+          .map(OwnerApprovedClientDto.fromJson)
+          .toList(growable: false),
+      count: clients.length,
+      total: clients.length,
+    );
+  }
+
+  @override
+  Future<void> revokeManagedAgentClientAccess({
+    required String agentId,
+    required String clientId,
+  }) async {
+    final clients = _approvedClientsByAgentId[agentId];
+    if (clients == null) {
+      return;
+    }
+    clients.removeWhere((item) => item['clientId'] == clientId);
+  }
+
+  @override
   Future<ClientRequestAccessResponseDto> requestAccess({
     required Set<String> agentIds,
   }) async {
@@ -595,6 +865,9 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
         'requestId': 'rq-${DateTime.now().microsecondsSinceEpoch}',
         'agentId': agentId,
         'agentName': agent['name'] as String? ?? 'Agente $agentId',
+        'clientId': 'client-${DateTime.now().millisecondsSinceEpoch}',
+        'clientName': 'Cliente Demo',
+        'clientEmail': 'cliente.demo@example.com',
         'status': 'pending',
         'requestedAt': DateTime.now().toIso8601String(),
       });
@@ -778,8 +1051,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
           statusCode: 403,
           data: <String, dynamic>{
             'code': 'CLIENT_AGENT_ACCESS_REQUIRED',
-            'message':
-                'Client does not have approved access to this agent',
+            'message': 'Client does not have approved access to this agent',
           },
         ),
         type: DioExceptionType.badResponse,
@@ -808,8 +1080,7 @@ class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
           statusCode: 403,
           data: <String, dynamic>{
             'code': 'CLIENT_AGENT_ACCESS_REQUIRED',
-            'message':
-                'Client does not have approved access to this agent',
+            'message': 'Client does not have approved access to this agent',
           },
         ),
         type: DioExceptionType.badResponse,

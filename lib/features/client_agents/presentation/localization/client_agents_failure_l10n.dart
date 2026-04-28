@@ -31,6 +31,8 @@ String clientAgentsFailureUserMessage(
       l10n.clientAgentsErrorProbeApproved,
     ClientAgentsFailureUiKey.loadAccessRequests =>
       l10n.clientAgentsErrorLoadAccessRequests,
+    ClientAgentsFailureUiKey.retryClientAccessRequest =>
+      l10n.clientAgentsErrorRetryClientAccessRequest,
     ClientAgentsFailureUiKey.loadClientAccessStatus =>
       l10n.clientAgentsErrorLoadClientAccessStatus,
     ClientAgentsFailureUiKey.readPendingActions =>
@@ -43,6 +45,18 @@ String clientAgentsFailureUserMessage(
       l10n.clientAgentsErrorSyncAction,
     ClientAgentsFailureUiKey.syncPendingActions =>
       l10n.clientAgentsErrorSyncPending,
+    ClientAgentsFailureUiKey.loadManagedAgents =>
+      l10n.clientAgentsErrorLoadManagedAgents,
+    ClientAgentsFailureUiKey.loadOwnerAccessRequests =>
+      l10n.clientAgentsErrorLoadOwnerAccessRequests,
+    ClientAgentsFailureUiKey.approveOwnerAccessRequest =>
+      l10n.clientAgentsErrorApproveOwnerAccessRequest,
+    ClientAgentsFailureUiKey.rejectOwnerAccessRequest =>
+      l10n.clientAgentsErrorRejectOwnerAccessRequest,
+    ClientAgentsFailureUiKey.loadOwnerApprovedClients =>
+      l10n.clientAgentsErrorLoadOwnerApprovedClients,
+    ClientAgentsFailureUiKey.revokeOwnerClientAccess =>
+      l10n.clientAgentsErrorRevokeOwnerClientAccess,
     ClientAgentsFailureUiKey.getClientAgentToken =>
       l10n.clientAgentsErrorGetClientAgentToken,
     ClientAgentsFailureUiKey.saveClientAgentToken =>
