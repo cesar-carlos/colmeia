@@ -11,7 +11,6 @@ class ResumoProdutoVendaRow {
     required this.custoReposicao,
     required this.pontoEquilibrio,
     required this.valorTotalItem,
-    required this.percentualLucro,
     this.codGrupoProduto,
     this.nomeGrupoProduto,
     this.codMarca,
@@ -33,9 +32,16 @@ class ResumoProdutoVendaRow {
   final double pontoEquilibrio;
   final double valorTotalItem;
 
-  /// Razão custo/receita em %: `(Σ qty×custo reposição) / (Σ qty×valor líquido)) × 100`
-  /// quando ambos os totais são positivos; caso contrário `0` (alinhado ao SQL legado).
-  final double percentualLucro;
+  /// Cost-to-revenue ratio in %: `(custoReposicao / valorTotalItem) × 100`.
+  /// Computed from raw aggregates — removed from SQL to avoid Sybase SQL Anywhere
+  /// SQLCODE -156 (invalid expression near 'SUM' inside CASE WHEN).
+  double get percentualLucro {
+    if (custoReposicao > 0 && valorTotalItem > 0) {
+      return (custoReposicao / valorTotalItem) * 100;
+    }
+    return 0;
+  }
+
   final int? codGrupoProduto;
   final String? nomeGrupoProduto;
   final int? codMarca;

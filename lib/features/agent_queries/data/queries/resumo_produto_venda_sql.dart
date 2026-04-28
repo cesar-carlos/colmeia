@@ -190,16 +190,7 @@ abstract final class ResumoProdutoVendaSql {
         SUM(Quantidade * CustoMedio) AS ValorTotalCustoMedio,
         SUM(Quantidade * CustoReposicao) AS CustoReposicao,
         SUM(Quantidade * PontoEquilibrio) AS PontoEquilibrio,
-        SUM(Quantidade * ValorUnitarioLiquido) AS ValorTotalItem,
-        CASE
-          WHEN SUM(Quantidade * CustoReposicao) > 0.00
-            AND SUM(Quantidade * ValorUnitarioLiquido) > 0.00 THEN
-            (
-              SUM(Quantidade * CustoReposicao) /
-              SUM(Quantidade * ValorUnitarioLiquido)
-            ) * 100
-          ELSE 0.00
-        END AS PercentualLucro
+        SUM(Quantidade * ValorUnitarioLiquido) AS ValorTotalItem
       FROM DetalheProdutoVenda
       GROUP BY
         CodEmpresa,
@@ -243,7 +234,6 @@ abstract final class ResumoProdutoVendaSql {
       N.CustoReposicao,
       N.PontoEquilibrio,
       N.ValorTotalItem,
-      N.PercentualLucro,
       N.Rn
     FROM Tot
     LEFT JOIN Numbered N ON N.Rn BETWEEN :startRow AND :endRow

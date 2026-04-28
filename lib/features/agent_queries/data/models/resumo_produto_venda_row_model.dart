@@ -13,7 +13,6 @@ class ResumoProdutoVendaRowModel {
     required this.custoReposicao,
     required this.pontoEquilibrio,
     required this.valorTotalItem,
-    required this.percentualLucro,
     this.codGrupoProduto,
     this.nomeGrupoProduto,
     this.codMarca,
@@ -64,10 +63,6 @@ class ResumoProdutoVendaRowModel {
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('ValorTotalItem'),
       ),
-      percentualLucro: AgentQueriesSqlRowMapReader.readRequiredDouble(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('PercentualLucro'),
-      ),
       codGrupoProduto: AgentQueriesSqlRowMapReader.readOptionalIntStrict(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodGrupoProduto'),
@@ -109,7 +104,6 @@ class ResumoProdutoVendaRowModel {
   final double custoReposicao;
   final double pontoEquilibrio;
   final double valorTotalItem;
-  final double percentualLucro;
   final int? codGrupoProduto;
   final String? nomeGrupoProduto;
   final int? codMarca;
@@ -129,7 +123,6 @@ class ResumoProdutoVendaRowModel {
       custoReposicao: custoReposicao,
       pontoEquilibrio: pontoEquilibrio,
       valorTotalItem: valorTotalItem,
-      percentualLucro: percentualLucro,
       codGrupoProduto: codGrupoProduto,
       nomeGrupoProduto: nomeGrupoProduto,
       codMarca: codMarca,

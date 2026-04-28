@@ -17,6 +17,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
@@ -96,6 +97,12 @@ void main() {
       ResumoProdutoVendaLucratividadeMensalFilter(
         dataVendaInicio: DateTime(2025, 5),
         dataVendaFim: DateTime(2026, 4, 30),
+      ),
+    );
+    registerFallbackValue(
+      ResumoProdutoVendaLucratividadeFilter(
+        dataVendaInicio: DateTime(2026, 3, 10),
+        dataVendaFim: DateTime(2026, 4, 8),
       ),
     );
     registerFallbackValue(

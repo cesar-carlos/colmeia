@@ -20,6 +20,7 @@
 //   --tags=e2e
 // ```
 
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
@@ -68,10 +69,10 @@ void main() {
 
           const bodyMapper = AgentSqlExecuteRequestToBridgeBody();
           final clientRequestId = const Uuid().v4();
-          const agentId = String.fromEnvironment('E2E_AGENT_ID');
-          const clientToken = String.fromEnvironment('E2E_CLIENT_TOKEN');
+          final agentId = AppEnvironment.e2eAgentId;
+          final clientToken = AppEnvironment.e2eClientToken;
           final body = bodyMapper.build(
-            request: const AgentSqlExecuteRequest(
+            request: AgentSqlExecuteRequest(
               agentId: agentId,
               clientToken: clientToken,
               sql: 'SELECT 1',
