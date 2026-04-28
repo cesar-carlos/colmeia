@@ -35,7 +35,67 @@ Esta rule cobre apenas consultas SQL enviadas ao backend via `sql.execute`.
 - Garanta explicitamente que uma SQL multiline de entrada sai normalizada para
   linha unica no body enviado
 
-## Exemplo
+## Teste E2E obrigatorio para repositorios SQL
+
+- **Todo `*RepositoryImpl` que chama `_agentQueriesRepository.executeSql`
+  deve ter um arquivo E2E correspondente** em
+  `test/integration/e2e/*_repository_e2e_test.dart`
+- Crie o arquivo E2E no mesmo PR ou commit que adicionar o repositorio; nao
+  deixe para depois
+- Siga o padrao dos testes existentes:
+  - Use `missingE2eRepositoryKeys()` para skip automatico quando as credenciais
+    estiverem ausentes (CI sem secrets, dev sem `local.env`)
+  - Chame `e2eSetupDependencies()` / `addTearDown(e2eTeardownDependencies)`
+  - Resolva o repositorio via `getIt<MinhaRepository>()`
+  - Leia `AppEnvironment.e2eAgentId` e `AppEnvironment.e2eClientToken` para
+    credenciais; nunca use `String.fromEnvironment` nesses campos
+  - No `fold` de sucesso, valide invariantes minimas das linhas retornadas
+    (campos obrigatorios nao vazios, ranges validos)
+  - No `fold` de falha, aceite apenas `isAcceptableE2eAgentSqlRepositoryFailure`
+    e rejeite `SessionFailure` com mensagem explicita
+  - Marque o grupo com `tags: <String>['e2e']`
+
+```dart
+group('MinhaRepository (e2e)', () {
+  test('load executes the real query through the repository', () async {
+    final missingKeys = missingE2eRepositoryKeys();
+    if (missingKeys.isNotEmpty) {
+      // E2E skip hint; `print` is intentional for local diagnostics.
+      // ignore: avoid_print
+      print('SKIP minha_repository_e2e: missing ${missingKeys.join(', ')}. '
+          'Set them in assets/env/local.env, process env, or --dart-define.');
+      return;
+    }
+
+    await e2eSetupDependencies();
+    addTearDown(e2eTeardownDependencies);
+
+    final repository = getIt<MinhaRepository>();
+    final result = await repository.load(
+      userId: 'user-1',
+      agentId: AppEnvironment.e2eAgentId,
+      clientToken: AppEnvironment.e2eClientToken,
+      filter: MinhaFilter(...),
+    );
+
+    result.fold(
+      (rows) {
+        for (final row in rows) {
+          expect(row.campoObrigatorio, isNotEmpty);
+        }
+      },
+      (failure) {
+        expect(failure, isNot(isA<SessionFailure>()));
+        expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue,
+            reason: 'Repository e2e should return rows, invalid_policy / '
+                'missing_permission RPC, or transient bridge HTTP 5xx.');
+      },
+    );
+  });
+}, tags: <String>['e2e']);
+```
+
+## Exemplo de normalizacao SQL
 
 ```dart
 final payloadSql = sql.replaceAll(RegExp(r'\s*\r?\n\s*'), ' ').trim();

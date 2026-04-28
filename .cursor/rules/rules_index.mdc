@@ -60,8 +60,9 @@ Use estas rules apenas quando o codebase for Dart/Flutter.
   preferenciais e dependencias fora de escopo
 - **`project_data_domain.mdc`**: REST, cache, auth, dashboards, relatorios e
   value objects; aponta para `docs/plug_server_docs_index_for_colmeia.md`
-- **`project_agent_sql.mdc`**: payloads `sql.execute`, normalizacao de SQL e
-  testes do bridge; aponta para `docs/bridge_agent_sql_api_options.md`
+- **`project_agent_sql.mdc`**: payloads `sql.execute`, normalizacao de SQL,
+  testes do bridge e **obrigatoriedade de teste E2E para todo repositorio SQL**;
+  aponta para `docs/bridge_agent_sql_api_options.md`
 - **`project_shared_components.mdc`**: criacao, promocao, especializacao e
   evolucao segura de componentes compartilhados de UI
 - **`project_conventions.mdc`**: formularios, strings, design system
@@ -87,7 +88,8 @@ Use estas rules apenas quando o codebase for Dart/Flutter.
 - Arquitetura e DI no Colmeia: `project_architecture.mdc`
 - Plataforma e pacotes no Colmeia: `project_platform_dependencies.mdc`
 - Fluxos de dados e dominio no Colmeia: `project_data_domain.mdc`
-- SQL do agente e payloads RPC no Colmeia: `project_agent_sql.mdc`
+- SQL do agente, payloads RPC e E2E obrigatorio por repositorio SQL no Colmeia:
+  `project_agent_sql.mdc`
 - Ciclo de vida de componentes compartilhados no Colmeia:
   `project_shared_components.mdc`
 - Convencoes de implementacao no Colmeia: `project_conventions.mdc`
