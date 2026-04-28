@@ -46,14 +46,16 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(() => secure.delete(key: any(named: 'key'))).thenAnswer((_) async {});
-    when(() => secure.read(key: any(named: 'key')))
-        .thenAnswer((_) async => null);
+    when(
+      () => secure.read(key: any(named: 'key')),
+    ).thenAnswer((_) async => null);
   });
 
   group('getToken', () {
     test('returns server token and writes to local cache', () async {
-      when(() => remote.fetchClientAgentToken(agentId: any(named: 'agentId')))
-          .thenAnswer(
+      when(
+        () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
+      ).thenAnswer(
         (_) async => const ClientAgentTokenResponseDto(
           agentId: agentId,
           clientToken: 'tok',
@@ -76,8 +78,9 @@ void main() {
     });
 
     test('clears local cache when server returns null token', () async {
-      when(() => remote.fetchClientAgentToken(agentId: any(named: 'agentId')))
-          .thenAnswer(
+      when(
+        () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
+      ).thenAnswer(
         (_) async => const ClientAgentTokenResponseDto(
           agentId: agentId,
           clientToken: null,
@@ -92,43 +95,50 @@ void main() {
       check(result.getOrNull()?.token).isNull();
       check(result.getOrNull()?.hasToken).equals(false);
       verify(
-        () => secure.delete(key: any(named: 'key', that: contains(agentId))),
+        () => secure.delete(
+          key: any(named: 'key', that: contains(agentId)),
+        ),
       ).called(1);
     });
 
-    test('returns AuthorizationFailure on 403 (no fallback to cache)',
-        () async {
-      when(() => remote.fetchClientAgentToken(agentId: any(named: 'agentId')))
-          .thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: '/x'),
-          response: Response<dynamic>(
+    test(
+      'returns AuthorizationFailure on 403 (no fallback to cache)',
+      () async {
+        when(
+          () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
+        ).thenThrow(
+          DioException(
             requestOptions: RequestOptions(path: '/x'),
-            statusCode: 403,
+            response: Response<dynamic>(
+              requestOptions: RequestOptions(path: '/x'),
+              statusCode: 403,
+            ),
+            type: DioExceptionType.badResponse,
           ),
-          type: DioExceptionType.badResponse,
-        ),
-      );
+        );
 
-      final result = await repository.getToken(
-        userId: userId,
-        agentId: agentId,
-      );
+        final result = await repository.getToken(
+          userId: userId,
+          agentId: agentId,
+        );
 
-      check(result.exceptionOrNull()).isA<AuthorizationFailure>();
-      verifyNever(() => secure.read(key: any(named: 'key')));
-    });
+        check(result.exceptionOrNull()).isA<AuthorizationFailure>();
+        verifyNever(() => secure.read(key: any(named: 'key')));
+      },
+    );
 
     test('falls back to local cache on transient network failure', () async {
-      when(() => remote.fetchClientAgentToken(agentId: any(named: 'agentId')))
-          .thenThrow(
+      when(
+        () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
+      ).thenThrow(
         DioException(
           requestOptions: RequestOptions(path: '/x'),
           type: DioExceptionType.connectionTimeout,
         ),
       );
-      when(() => secure.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'cached-tok');
+      when(
+        () => secure.read(key: any(named: 'key')),
+      ).thenAnswer((_) async => 'cached-tok');
 
       final result = await repository.getToken(
         userId: userId,
@@ -139,25 +149,28 @@ void main() {
       check(result.getOrNull()?.token).equals('cached-tok');
     });
 
-    test('returns empty snapshot when network fails and cache is empty',
-        () async {
-      when(() => remote.fetchClientAgentToken(agentId: any(named: 'agentId')))
-          .thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: '/x'),
-          type: DioExceptionType.connectionError,
-        ),
-      );
+    test(
+      'returns empty snapshot when network fails and cache is empty',
+      () async {
+        when(
+          () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/x'),
+            type: DioExceptionType.connectionError,
+          ),
+        );
 
-      final result = await repository.getToken(
-        userId: userId,
-        agentId: agentId,
-      );
+        final result = await repository.getToken(
+          userId: userId,
+          agentId: agentId,
+        );
 
-      check(result.isSuccess()).isTrue();
-      check(result.getOrNull()?.token).isNull();
-      check(result.getOrNull()?.hasToken).equals(false);
-    });
+        check(result.isSuccess()).isTrue();
+        check(result.getOrNull()?.token).isNull();
+        check(result.getOrNull()?.hasToken).equals(false);
+      },
+    );
 
     test('rejects empty agentId locally', () async {
       final result = await repository.getToken(userId: userId, agentId: '   ');
@@ -274,7 +287,9 @@ void main() {
 
       check(result.isSuccess()).isTrue();
       verify(
-        () => secure.delete(key: any(named: 'key', that: contains(agentId))),
+        () => secure.delete(
+          key: any(named: 'key', that: contains(agentId)),
+        ),
       ).called(1);
     });
 
@@ -302,20 +317,103 @@ void main() {
   });
 
   group('readMany (AgentClientTokenReader bridge)', () {
-    test('delegates to local store', () async {
-      when(() => secure.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'tok');
+    test(
+      'returns local tokens without remote hydration when cache is warm',
+      () async {
+        when(
+          () => secure.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => 'tok');
 
-      final map = await repository.readMany(
-        userId: userId,
-        agentIds: <String>[agentId],
-      );
+        final map = await repository.readMany(
+          userId: userId,
+          agentIds: <String>[agentId],
+        );
 
-      check(map.length).equals(1);
-      check(map[agentId]).equals('tok');
-      verifyNever(
-        () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
-      );
-    });
+        check(map.length).equals(1);
+        check(map[agentId]).equals('tok');
+        verifyNever(
+          () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
+        );
+      },
+    );
+
+    test(
+      'hydrates missing local tokens from server and mirrors cache',
+      () async {
+        const secondAgentId = '22222222-2222-2222-8222-222222222222';
+        when(
+          () => secure.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(
+          () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
+        ).thenAnswer((invocation) async {
+          final id = invocation.namedArguments[#agentId] as String;
+          return ClientAgentTokenResponseDto(
+            agentId: id,
+            clientToken: 'tok-$id',
+          );
+        });
+
+        final map = await repository.readMany(
+          userId: userId,
+          agentIds: const <String>[agentId, secondAgentId],
+        );
+
+        check(map.length).equals(2);
+        check(map[agentId]).equals('tok-$agentId');
+        check(map[secondAgentId]).equals('tok-$secondAgentId');
+        verify(
+          () => remote.fetchClientAgentToken(agentId: agentId),
+        ).called(1);
+        verify(
+          () => remote.fetchClientAgentToken(agentId: secondAgentId),
+        ).called(1);
+        verify(
+          () => secure.write(
+            key: any(named: 'key', that: contains(agentId)),
+            value: 'tok-$agentId',
+          ),
+        ).called(1);
+        verify(
+          () => secure.write(
+            key: any(named: 'key', that: contains(secondAgentId)),
+            value: 'tok-$secondAgentId',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'keeps readMany resilient when hydration fails for one agent',
+      () async {
+        const secondAgentId = '22222222-2222-2222-8222-222222222222';
+        when(
+          () => secure.read(key: any(named: 'key')),
+        ).thenAnswer((_) async => null);
+        when(() => remote.fetchClientAgentToken(agentId: agentId)).thenAnswer(
+          (_) async => const ClientAgentTokenResponseDto(
+            agentId: agentId,
+            clientToken: 'tok',
+          ),
+        );
+        when(
+          () => remote.fetchClientAgentToken(agentId: secondAgentId),
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/x'),
+            type: DioExceptionType.connectionError,
+          ),
+        );
+
+        final map = await repository.readMany(
+          userId: userId,
+          agentIds: const <String>[agentId, secondAgentId],
+        );
+
+        check(map.length).equals(1);
+        check(map[agentId]).equals('tok');
+        check(map.containsKey(secondAgentId)).isFalse();
+      },
+    );
   });
 }

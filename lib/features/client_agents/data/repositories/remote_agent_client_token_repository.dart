@@ -25,6 +25,8 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
   }) : _remoteDataSource = remoteDataSource,
        _localStore = localStore;
 
+  static const int _readManyHydrationConcurrency = 6;
+
   final ClientAgentsRemoteDataSource _remoteDataSource;
   final LocalAgentClientTokenStore _localStore;
 
@@ -267,13 +269,119 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
   Future<Map<String, String>> readMany({
     required String userId,
     required Iterable<String> agentIds,
-  }) {
-    // The agent_queries SQL pipeline reads tokens for all approved agents on
-    // every dashboard build. Going through the server here would multiply
-    // round trips; we serve from the local cache (kept hot by saveToken /
-    // getToken). The detail page is responsible for refreshing the cache when
-    // it fetches a single agent's token.
-    return _localStore.readMany(userId: userId, agentIds: agentIds);
+  }) async {
+    final normalizedAgentIds = <String>{
+      for (final raw in agentIds)
+        if (raw.trim().isNotEmpty) raw.trim(),
+    };
+    if (normalizedAgentIds.isEmpty) {
+      return <String, String>{};
+    }
+
+    final localTokens = await _localStore.readMany(
+      userId: userId,
+      agentIds: normalizedAgentIds,
+    );
+    final missingIds = normalizedAgentIds
+        .where((agentId) => !localTokens.containsKey(agentId))
+        .toList(growable: false);
+    if (missingIds.isEmpty) {
+      return localTokens;
+    }
+
+    final merged = <String, String>{...localTokens};
+    for (var i = 0; i < missingIds.length; i += _readManyHydrationConcurrency) {
+      final end = i + _readManyHydrationConcurrency > missingIds.length
+          ? missingIds.length
+          : i + _readManyHydrationConcurrency;
+      final chunk = missingIds.sublist(i, end);
+      final hydratedEntries = await Future.wait(
+        chunk.map(
+          (agentId) => _fetchTokenForReadManyHydration(
+            userId: userId,
+            agentId: agentId,
+          ),
+        ),
+      );
+      for (final entry in hydratedEntries) {
+        if (entry != null) {
+          merged[entry.key] = entry.value;
+        }
+      }
+    }
+
+    return merged;
+  }
+
+  Future<MapEntry<String, String>?> _fetchTokenForReadManyHydration({
+    required String userId,
+    required String agentId,
+  }) async {
+    try {
+      final response = await _remoteDataSource.fetchClientAgentToken(
+        agentId: agentId,
+      );
+      final normalized = _normalize(response.clientToken);
+      try {
+        await _syncLocalCache(
+          userId: userId,
+          agentId: agentId,
+          token: normalized,
+        );
+      } on Object catch (error, stackTrace) {
+        AppLogger.warning(
+          'Client token readMany hydration cache sync failed',
+          context: <String, Object?>{
+            'operation': 'readManyClientAgentTokens',
+            'userId': userId,
+            'agentId': agentId,
+          },
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+      if (normalized == null) {
+        return null;
+      }
+      return MapEntry<String, String>(agentId, normalized);
+    } on DioException catch (error, stackTrace) {
+      final level = isDioUnauthorizedOrForbidden(error) ? 'debug' : 'warning';
+      final message = isDioUnauthorizedOrForbidden(error)
+          ? 'Client token readMany hydration skipped (auth denied)'
+          : 'Client token readMany hydration failed';
+      final context = <String, Object?>{
+        'operation': 'readManyClientAgentTokens',
+        'userId': userId,
+        'agentId': agentId,
+        'level': level,
+      };
+      if (isDioUnauthorizedOrForbidden(error)) {
+        AppLogger.debug(
+          message,
+          context: context,
+        );
+      } else {
+        AppLogger.warning(
+          message,
+          context: context,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+      return null;
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Client token readMany hydration failed',
+        context: <String, Object?>{
+          'operation': 'readManyClientAgentTokens',
+          'userId': userId,
+          'agentId': agentId,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   Future<String?> _readLocal({
