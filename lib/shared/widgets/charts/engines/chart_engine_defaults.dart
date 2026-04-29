@@ -58,6 +58,8 @@ TooltipBehavior buildChartTooltipBehavior(
   bool shared = false,
   ActivationMode activationMode = ActivationMode.singleTap,
   int durationMs = 2400,
+  bool canShowMarker = true,
+  ChartWidgetBuilder<dynamic, dynamic>? builder,
 }) {
   final colorScheme = Theme.of(context).colorScheme;
   return TooltipBehavior(
@@ -72,6 +74,8 @@ TooltipBehavior buildChartTooltipBehavior(
       fontWeight: FontWeight.w600,
     ),
     borderWidth: 0,
+    canShowMarker: canShowMarker,
+    builder: builder,
   );
 }
 

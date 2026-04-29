@@ -225,7 +225,6 @@ class AppComboChart<T> extends StatelessWidget {
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
     this.emptyPlaceholder,
-    this.accessibilitySummary,
   });
 
   /// Same idea as `AppComparisonBarChart.loadingBlockHeight` / the donut
@@ -283,10 +282,6 @@ class AppComboChart<T> extends StatelessWidget {
   final bool isLoading;
   final Widget? emptyPlaceholder;
 
-  /// Screen reader summary when category labels are truncated (full names +
-  /// values).
-  final String? accessibilitySummary;
-
   @override
   Widget build(BuildContext context) {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
@@ -319,7 +314,7 @@ class AppComboChart<T> extends StatelessWidget {
       );
     }
 
-    Widget chart = SyncfusionComboChart<T>(
+    final innerChart = SyncfusionComboChart<T>(
       items: items,
       xLabelBuilder: xLabelBuilder,
       barValueBuilder: barValueBuilder,
@@ -341,17 +336,8 @@ class AppComboChart<T> extends StatelessWidget {
       resolvedEmptyMessage: resolvedEmptyMessage,
     );
 
-    final a11y = accessibilitySummary?.trim();
-    if (a11y != null && a11y.isNotEmpty) {
-      chart = Semantics(
-        label: a11y,
-        excludeSemantics: true,
-        child: chart,
-      );
-    }
-
     if (title == null) {
-      return chart;
+      return innerChart;
     }
 
     return AppChartShell(
@@ -359,7 +345,7 @@ class AppComboChart<T> extends StatelessWidget {
       subtitle: subtitle,
       titleTrailing: titleTrailing,
       belowSubtitle: belowSubtitle,
-      child: chart,
+      child: innerChart,
     );
   }
 }

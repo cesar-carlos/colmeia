@@ -123,6 +123,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           enableInteraction &&
           delta != null &&
           delta > 0;
+      final tooltipLabelList = tooltipLabels;
       return SfCartesianChart(
         margin: resolveComparisonBarChartMargin(
           chartContext,
@@ -145,6 +146,20 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 final pointIndex = args.pointIndex;
                 if (pointIndex < 0) {
                   return;
+                }
+
+                if (dataLabels != null &&
+                    pointIndex < dataLabels!.length) {
+                  final expected = dataLabels![pointIndex];
+                  final text = args.text;
+                  if (expected != null &&
+                      expected.isNotEmpty &&
+                      text != null &&
+                      text.isNotEmpty &&
+                      text != expected) {
+                    args.text = '';
+                    return;
+                  }
                 }
 
                 final baseStyle = style.dataLabelTextStyle;
@@ -173,22 +188,49 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             : null,
         onTooltipRender: enableInteraction
             ? buildSanitizingTooltipRenderer(
-                bodyResolver: tooltipLabels == null
+                bodyResolver: tooltipLabelList == null
                     ? null
                     : (args) {
                         final index = args.pointIndex?.toInt();
                         if (index == null ||
                             index < 0 ||
-                            index >= tooltipLabels!.length) {
+                            index >= tooltipLabelList.length) {
                           return null;
                         }
-                        return tooltipLabels![index];
+                        return tooltipLabelList[index];
                       },
               )
             : null,
         tooltipBehavior: buildChartTooltipBehavior(
           context,
           enable: enableInteraction && style.showTooltip,
+          canShowMarker: tooltipLabelList == null,
+          builder: tooltipLabelList == null
+              ? null
+              : (data, point, series, pointIndex, seriesIndex) {
+                  final labels = tooltipLabelList;
+                  if (pointIndex < 0 || pointIndex >= labels.length) {
+                    return const SizedBox.shrink();
+                  }
+                  final text = labels[pointIndex];
+                  if (text == null || text.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  final colorScheme = Theme.of(chartContext).colorScheme;
+                  return Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        color: colorScheme.onInverseSurface,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      softWrap: true,
+                      textAlign: TextAlign.start,
+                    ),
+                  );
+                },
         ),
         primaryXAxis: CategoryAxis(
           isVisible: style.showXAxis && xAxisLabelsVisible,
