@@ -12,6 +12,11 @@ import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+/// Value labels on comparison column charts are always placed above the bar
+/// ([ChartDataLabelAlignment.outer]), never inside the bar fill.
+const ChartDataLabelAlignment _kComparisonBarValueLabelAlignment =
+    ChartDataLabelAlignment.outer;
+
 class SyncfusionComparisonBarChart extends StatelessWidget {
   const SyncfusionComparisonBarChart({
     required this.points,
@@ -128,7 +133,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         margin: resolveComparisonBarChartMargin(
           chartContext,
           showDataLabels: style.showDataLabels,
-          dataLabelAlignment: style.dataLabelAlignment,
+          dataLabelAlignment: _kComparisonBarValueLabelAlignment,
           dataLabelOffset: style.dataLabelOffset,
           chartPadding: style.chartPadding,
           outerDataLabelTopReserve: style.outerDataLabelTopReserve,
@@ -141,25 +146,13 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 zoomMode: ZoomMode.x,
               )
             : null,
-        onDataLabelRender: style.showDataLabels && enableInteraction
+        onDataLabelRender: style.showDataLabels &&
+                enableInteraction &&
+                dataLabels == null
             ? (args) {
                 final pointIndex = args.pointIndex;
                 if (pointIndex < 0) {
                   return;
-                }
-
-                if (dataLabels != null &&
-                    pointIndex < dataLabels!.length) {
-                  final expected = dataLabels![pointIndex];
-                  final text = args.text;
-                  if (expected != null &&
-                      expected.isNotEmpty &&
-                      text != null &&
-                      text.isNotEmpty &&
-                      text != expected) {
-                    args.text = '';
-                    return;
-                  }
                 }
 
                 final baseStyle = style.dataLabelTextStyle;
@@ -167,22 +160,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                   return;
                 }
 
-                final isInsideBarLabel = switch (style.dataLabelAlignment) {
-                  ChartDataLabelAlignment.middle ||
-                  ChartDataLabelAlignment.top ||
-                  ChartDataLabelAlignment.bottom => true,
-                  ChartDataLabelAlignment.auto ||
-                  ChartDataLabelAlignment.outer => false,
-                };
-                final pointColor =
-                    pointColors != null && pointIndex < pointColors!.length
-                    ? pointColors![pointIndex]
-                    : resolvedBarColor;
-                final textColor = isInsideBarLabel
-                    ? _dataLabelTextColorForBar(pointColor ?? resolvedBarColor)
-                    : colorScheme.onSurface;
                 args.textStyle = (baseStyle ?? const TextStyle()).copyWith(
-                  color: textColor,
+                  color: colorScheme.onSurface,
                 );
               }
             : null,
@@ -250,7 +229,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           rangePadding: style.yAxisRangePadding ??
               (comparisonBarChartNeedsOuterDataLabelHeadroom(
                 showDataLabels: style.showDataLabels,
-                dataLabelAlignment: style.dataLabelAlignment,
+                dataLabelAlignment: _kComparisonBarValueLabelAlignment,
               )
               // additionalEnd stacks with chart margin top; normal keeps labels
               // readable without a second tall empty band inside the plot.
@@ -290,11 +269,6 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             dataSource: points,
             xValueMapper: (point, _) => point.label,
             yValueMapper: (point, _) => point.plottedValue ?? point.value,
-            dataLabelMapper: dataLabels == null
-                ? null
-                : (point, index) => index >= 0 && index < dataLabels!.length
-                      ? dataLabels![index]
-                      : null,
             color: enableInteraction
                 ? (pointColors == null ? resolvedBarColor : null)
                 : resolvedBarColor.withValues(alpha: 0),
@@ -323,12 +297,53 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             dataLabelSettings: DataLabelSettings(
               isVisible: style.showDataLabels && enableInteraction,
               textStyle: style.dataLabelTextStyle,
-              labelAlignment: style.dataLabelAlignment,
+              labelAlignment: _kComparisonBarValueLabelAlignment,
+              labelIntersectAction: LabelIntersectAction.none,
               offset: style.dataLabelOffset ?? Offset.zero,
               color: style.dataLabelBackgroundColor,
               margin: style.dataLabelBackgroundColor != null
                   ? const EdgeInsets.symmetric(horizontal: 6, vertical: 8)
                   : const EdgeInsets.all(5),
+              builder:
+                  dataLabels != null &&
+                      style.showDataLabels &&
+                      enableInteraction
+                  ? (data, point, series, pointIndex, seriesIndex) {
+                      final labels = dataLabels;
+                      if (labels == null ||
+                          pointIndex < 0 ||
+                          pointIndex >= labels.length) {
+                        return const SizedBox.shrink();
+                      }
+                      final text = labels[pointIndex];
+                      if (text == null || text.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      final explicitColor = style.dataLabelTextStyle?.color;
+                      final textColor =
+                          explicitColor ?? colorScheme.onSurface;
+                      final baseStyle =
+                          style.dataLabelTextStyle ?? const TextStyle();
+                      final resolvedTextStyle =
+                          baseStyle.copyWith(color: textColor);
+                      Widget label = Text(text, style: resolvedTextStyle);
+                      final bg = style.dataLabelBackgroundColor;
+                      if (bg != null) {
+                        label = Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: bg,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: label,
+                        );
+                      }
+                      return label;
+                    }
+                  : null,
             ),
             onPointTap: onPointTap == null || !enableInteraction
                 ? null
@@ -534,13 +549,6 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         },
       ),
     );
-  }
-
-  Color _dataLabelTextColorForBar(Color backgroundColor) {
-    final brightness = ThemeData.estimateBrightnessForColor(backgroundColor);
-    return brightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.92)
-        : Colors.black.withValues(alpha: 0.88);
   }
 }
 
