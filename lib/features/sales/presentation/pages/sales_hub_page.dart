@@ -110,7 +110,8 @@ class _SalesHubPageState extends State<SalesHubPage> {
                 runSpacing: gap,
                 children: allSalesCards.map((card) {
                   final width =
-                      (constraints.maxWidth - (gap * (cols - 1))) / cols;
+                      ((constraints.maxWidth - (gap * (cols - 1))) / cols)
+                          .floorToDouble();
                   return SizedBox(
                     width: width,
                     child: SalesHubCard(

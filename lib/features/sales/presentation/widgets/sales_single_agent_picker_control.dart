@@ -158,9 +158,20 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
                         ),
                       ),
                     ),
-                    TextButton(
-                      onPressed: enabled ? () => _openSheet(context) : null,
-                      child: Text(l10n.overviewAgentFilterEditAction),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        l10n.overviewAgentFilterEditAction,
+                        style: typography.body.copyWith(
+                          color: enabled
+                              ? scheme.primary
+                              : colors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
