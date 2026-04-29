@@ -100,6 +100,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       required bool primaryYAxisGrid,
       required bool enableCategoryViewportPan,
     }) {
+      final showLine = style.showLineSeries;
       final primaryGridW = primaryYAxisGrid && style.showYGridLines ? 1.0 : 0.0;
       final barLabelsVisible =
           style.showDataLabels && layout != _ComboLayout.yAxisStrip;
@@ -128,12 +129,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             : null,
         onTooltipRender:
             enableTooltip ? buildSanitizingTooltipRenderer() : null,
-        // One tooltip for bar + line so the line stays readable when the
-        // right Y-axis ticks are hidden ([AppComboChartStyle.showRightYAxis]).
+        // Shared tooltip when both series exist; single-series charts still work.
         tooltipBehavior: buildChartTooltipBehavior(
           context,
           enable: enableTooltip && style.showTooltip,
-          shared: true,
+          shared: showLine,
         ),
         legend: Legend(
           isVisible: showLegendInChart && style.showLegend,
@@ -175,24 +175,26 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                   details.textStyle,
                 ),
         ),
-        axes: <ChartAxis>[
-          NumericAxis(
-            name: 'rightAxis',
-            isVisible:
-                layout != _ComboLayout.yAxisStrip && style.showRightYAxis,
-            opposedPosition: true,
-            axisLine: const AxisLine(width: 0),
-            majorGridLines: const MajorGridLines(width: 0),
-            labelStyle: style.axisLabelTextStyle,
-            numberFormat: style.rightAxisFormat,
-            axisLabelFormatter: style.rightAxisFormat == null
-                ? null
-                : (details) => ChartAxisLabel(
-                    style.rightAxisFormat!.format(details.value),
-                    details.textStyle,
-                  ),
-          ),
-        ],
+        axes: showLine
+            ? <ChartAxis>[
+                NumericAxis(
+                  name: 'rightAxis',
+                  isVisible:
+                      layout != _ComboLayout.yAxisStrip && style.showRightYAxis,
+                  opposedPosition: true,
+                  axisLine: const AxisLine(width: 0),
+                  majorGridLines: const MajorGridLines(width: 0),
+                  labelStyle: style.axisLabelTextStyle,
+                  numberFormat: style.rightAxisFormat,
+                  axisLabelFormatter: style.rightAxisFormat == null
+                      ? null
+                      : (details) => ChartAxisLabel(
+                          style.rightAxisFormat!.format(details.value),
+                          details.textStyle,
+                        ),
+                ),
+              ]
+            : <ChartAxis>[],
         series: <CartesianSeries<T, String>>[
           ColumnSeries<T, String>(
             dataSource: items,
@@ -231,37 +233,39 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                     }
                   },
           ),
-          LineSeries<T, String>(
-            dataSource: items,
-            xValueMapper: (item, _) => xLabelBuilder(item),
-            yValueMapper: (item, _) => lineValueBuilder(item),
-            name: lineSeriesLabel,
-            yAxisName: 'rightAxis',
-            color: layout == _ComboLayout.yAxisStrip
-                ? resolvedLineColor.withValues(alpha: 0)
-                : resolvedLineColor,
-            width: style.lineWidth ?? 2.5,
-            animationDuration: resolveChartAnimationDurationMs(
-              context: context,
-              styleDuration: style.animationDuration,
-              defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+          if (showLine)
+            LineSeries<T, String>(
+              dataSource: items,
+              xValueMapper: (item, _) => xLabelBuilder(item),
+              yValueMapper: (item, _) => lineValueBuilder(item),
+              name: lineSeriesLabel,
+              yAxisName: 'rightAxis',
+              color: layout == _ComboLayout.yAxisStrip
+                  ? resolvedLineColor.withValues(alpha: 0)
+                  : resolvedLineColor,
+              width: style.lineWidth ?? 2.5,
+              animationDuration: resolveChartAnimationDurationMs(
+                context: context,
+                styleDuration: style.animationDuration,
+                defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
+              ),
+              markerSettings: MarkerSettings(
+                isVisible:
+                    style.showMarkers && layout != _ComboLayout.yAxisStrip,
+                height: 6,
+                width: 6,
+                color: resolvedLineColor,
+                borderColor: colors.surface,
+              ),
+              onPointTap: onLineTap == null || layout == _ComboLayout.yAxisStrip
+                  ? null
+                  : (details) {
+                      final idx = details.pointIndex;
+                      if (idx != null && idx >= 0 && idx < items.length) {
+                        onLineTap!(items[idx], idx);
+                      }
+                    },
             ),
-            markerSettings: MarkerSettings(
-              isVisible: style.showMarkers && layout != _ComboLayout.yAxisStrip,
-              height: 6,
-              width: 6,
-              color: resolvedLineColor,
-              borderColor: colors.surface,
-            ),
-            onPointTap: onLineTap == null || layout == _ComboLayout.yAxisStrip
-                ? null
-                : (details) {
-                    final idx = details.pointIndex;
-                    if (idx != null && idx >= 0 && idx < items.length) {
-                      onLineTap!(items[idx], idx);
-                    }
-                  },
-          ),
         ],
       );
     }
@@ -499,6 +503,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                   barLabel: barSeriesLabel,
                   lineLabel: lineSeriesLabel,
                   textStyle: style.legendTextStyle,
+                  showLine: style.showLineSeries,
                 ),
               ),
             ],
@@ -515,6 +520,7 @@ class _ComboExternalLegend extends StatelessWidget {
     required this.lineColor,
     required this.barLabel,
     required this.lineLabel,
+    required this.showLine,
     this.textStyle,
   });
 
@@ -522,6 +528,7 @@ class _ComboExternalLegend extends StatelessWidget {
   final Color lineColor;
   final String barLabel;
   final String lineLabel;
+  final bool showLine;
   final TextStyle? textStyle;
 
   @override
@@ -529,24 +536,27 @@ class _ComboExternalLegend extends StatelessWidget {
     final resolvedStyle =
         textStyle ?? Theme.of(context).textTheme.bodySmall ?? const TextStyle();
 
+    final bar = _LegendSwatch(
+      color: barColor,
+      label: barLabel,
+      textStyle: resolvedStyle,
+      isLine: false,
+    );
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          _LegendSwatch(
-            color: barColor,
-            label: barLabel,
-            textStyle: resolvedStyle,
-            isLine: false,
-          ),
-          const SizedBox(width: 20),
-          _LegendSwatch(
-            color: lineColor,
-            label: lineLabel,
-            textStyle: resolvedStyle,
-            isLine: true,
-          ),
+          bar,
+          if (showLine) ...<Widget>[
+            const SizedBox(width: 20),
+            _LegendSwatch(
+              color: lineColor,
+              label: lineLabel,
+              textStyle: resolvedStyle,
+              isLine: true,
+            ),
+          ],
         ],
       ),
     );

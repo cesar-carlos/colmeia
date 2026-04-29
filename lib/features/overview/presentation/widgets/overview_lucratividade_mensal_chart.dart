@@ -162,18 +162,9 @@ class _OverviewLucratividadeMensalChartState
     final isCost = _display == _LucratividadeDisplay.costRevenue;
     final isProfit = _display == _LucratividadeDisplay.profitRevenue;
 
-    final Color barColor;
-    final Color lineColor;
-    if (isCost) {
-      barColor = tokens.warning;
-      lineColor = tokens.chartSeriesPrimary;
-    } else if (isProfit) {
-      barColor = tokens.chartSeriesPrimary;
-      lineColor = tokens.chartSeriesSecondary;
-    } else {
-      barColor = tokens.chartSeriesPrimary;
-      lineColor = tokens.warning;
-    }
+    final barColor = isCost
+        ? tokens.warning
+        : tokens.chartSeriesPrimary;
 
     final style = AppComboChartStyle(
       height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
@@ -182,6 +173,7 @@ class _OverviewLucratividadeMensalChartState
       rightAxisFormat: _compactCurrencyFormat,
       chartPadding: EdgeInsets.zero,
       showRightYAxis: false,
+      showLineSeries: false,
       showDataLabels: true,
       barDataLabelOffset: Offset(0, tokens.gapSm),
       minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
@@ -190,7 +182,6 @@ class _OverviewLucratividadeMensalChartState
       stickyPrimaryYAxisWhileScrolling: false,
       loadingLabel: l10n.overviewComparisonChartLoading,
       barColor: barColor,
-      lineColor: lineColor,
     );
 
     final emptyMessage = widget.loadFailed

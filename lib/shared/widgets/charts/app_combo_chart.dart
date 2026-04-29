@@ -32,6 +32,7 @@ class AppComboChartStyle {
     this.showYGridLines = true,
     this.showXAxis = true,
     this.showRightYAxis = true,
+    this.showLineSeries = true,
     this.showLegend = true,
     this.showMarkers = true,
     this.axisLabelTextStyle,
@@ -80,6 +81,11 @@ class AppComboChartStyle {
   /// line still uses that axis for scaling; the chart tooltip lists both
   /// series so the line value stays readable without secondary ticks.
   final bool showRightYAxis;
+
+  /// When false, only the column series is drawn (no line, markers, or line
+  /// legend entry). `AppComboChart` still requires line builder and label
+  /// parameters; the engine ignores them when this is false.
+  final bool showLineSeries;
 
   final bool showLegend;
 
