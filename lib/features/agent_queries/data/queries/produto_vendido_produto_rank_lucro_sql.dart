@@ -22,8 +22,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 ///
 /// Named params: `:dataVendaInicio`, `:dataVendaFim`, `:origem` (three binds).
 ///
-/// **Ordering:** outer `Resultado` — primary column from [ProdutoVendidoProdutoRankLucroSortBy];
-/// stable tie-breakers: `CodEmpresa ASC`, `CodFilial ASC`, `CodProduto ASC`.
+/// **Ordering:** outer `Resultado` — primary column from
+/// [ProdutoVendidoProdutoRankLucroSortBy]; stable tie-breakers:
+/// `CodEmpresa ASC`, `CodFilial ASC`, `CodProduto ASC`.
 ///
 /// Result capped at 15 rows (`TOP 15`).
 

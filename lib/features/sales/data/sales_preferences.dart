@@ -1,7 +1,6 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SalesPreferences {
@@ -37,30 +36,7 @@ class SalesPreferences {
     return store.restoreJsonMap(suffix: 'filters');
   }
 
-  Future<void> persistCardFilters(
-    String cardId,
-    Map<String, Object?> filters,
-  ) async {
-    final sanitized = _sanitizeFilters(filters);
-    final store = PersistedPageSessionStore(
-      prefs: _prefs,
-      namespace: 'colmeia_sales_card.$cardId',
-    );
-    await store.persistJsonMap(
-      suffix: 'filters',
-      value: sanitized,
-    );
-  }
-
-  Map<String, Object?> _sanitizeFilters(Map<String, Object?> source) {
-    return PersistedFilterMapCodec.sanitize((draft) {
-      for (final key in source.keys) {
-        draft.trimmedString(key: key, rawValue: source[key]);
-      }
-    });
-  }
-
-  /// [produto_rank_lucro] card: date range encoded as epochs + metric key.
+  /// produto_rank_lucro card: date range encoded as epochs + metric key.
   static const Set<String> produtoRankLucroSortByAllowedValues = <String>{
     'qtdItensVendido',
     'totalValorLucro',
@@ -72,31 +48,33 @@ class SalesPreferences {
   Map<String, Object?> restoreProdutoRankLucroFilters() {
     final raw = restoreCardFilters(produtoRankLucroCardId);
     return PersistedFilterMapCodec.sanitize((draft) {
-      draft.dateRangeFromEpoch(
-        targetKey: 'periodo',
-        startEpochMs: raw['periodo_start_ms'],
-        endEpochMs: raw['periodo_end_ms'],
-      );
-      draft.stringIfAllowed(
-        key: 'sortBy',
-        rawValue: raw['sortBy'],
-        allowedValues: produtoRankLucroSortByAllowedValues,
-      );
+      draft
+        ..dateRangeFromEpoch(
+          targetKey: 'periodo',
+          startEpochMs: raw['periodo_start_ms'],
+          endEpochMs: raw['periodo_end_ms'],
+        )
+        ..stringIfAllowed(
+          key: 'sortBy',
+          rawValue: raw['sortBy'],
+          allowedValues: produtoRankLucroSortByAllowedValues,
+        );
     });
   }
 
   Future<void> persistProdutoRankLucroFilters(Map<String, Object?> filters) async {
     final encoded = PersistedFilterMapCodec.sanitize((draft) {
-      draft.dateRangeToEpoch(
-        startEpochKey: 'periodo_start_ms',
-        endEpochKey: 'periodo_end_ms',
-        rawValue: filters['periodo'],
-      );
-      draft.stringIfAllowed(
-        key: 'sortBy',
-        rawValue: filters['sortBy'],
-        allowedValues: produtoRankLucroSortByAllowedValues,
-      );
+      draft
+        ..dateRangeToEpoch(
+          startEpochKey: 'periodo_start_ms',
+          endEpochKey: 'periodo_end_ms',
+          rawValue: filters['periodo'],
+        )
+        ..stringIfAllowed(
+          key: 'sortBy',
+          rawValue: filters['sortBy'],
+          allowedValues: produtoRankLucroSortByAllowedValues,
+        );
     });
     final store = PersistedPageSessionStore(
       prefs: _prefs,

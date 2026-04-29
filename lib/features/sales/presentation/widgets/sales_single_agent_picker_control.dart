@@ -8,7 +8,13 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:flutter/material.dart';
+
+/// Figma-style agent filter trigger: circular peach background + dark icon.
+const double _kAgentFilterCircleSize = 44;
+const Color _kAgentFilterCircleFill = Color(0xFFFFE5D9);
+const Color _kAgentFilterCircleIcon = Color(0xFF5D4037);
 
 OverviewAgentOption? _salesFindAgent(
   List<OverviewAgentOption> agents,
@@ -73,7 +79,6 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
     final typography = theme.appTypography;
     final colors = theme.appColors;
     final scheme = theme.colorScheme;
-    final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
     final labelToFieldGap = tokens.gapXs;
 
     if (availableAgents.isEmpty) {
@@ -101,54 +106,45 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
     final selectedAgent = _salesFindAgent(availableAgents, selectedAgentId);
     final hasSelection = selectedAgent != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
-          style: typography.utilityOverline.copyWith(
-            color: colors.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: labelToFieldGap),
-        Semantics(
-          container: true,
-          label: hasSelection
-              ? '${l10n.dashboardHomeFiltersAgentsLabel}: ${selectedAgent.name}'
-              : l10n.salesAgentPickerEmpty,
-          child: Material(
-            color: scheme.surfaceContainerLowest,
-            borderRadius: borderRadius,
-            child: InkWell(
-              onTap: enabled ? () => _openSheet(context) : null,
-              borderRadius: borderRadius,
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: borderRadius,
-                  border: Border.all(
-                    color: scheme.outlineVariant.withValues(alpha: 0.54),
+    void openSheet() => _openSheet(context);
+
+    return AppSectionCard(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsetsDirectional.only(
+              end: _kAgentFilterCircleSize + tokens.gapSm,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+                  style: typography.utilityOverline.copyWith(
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.formFieldPaddingHorizontal,
-                  vertical: tokens.gapSm,
-                ),
-                child: Row(
-                  children: <Widget>[
-                    Icon(
-                      Icons.filter_alt_outlined,
-                      size: 22,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    SizedBox(width: tokens.gapSm),
-                    Expanded(
+                SizedBox(height: labelToFieldGap),
+                Semantics(
+                  button: true,
+                  label: hasSelection
+                      ? '${l10n.dashboardHomeFiltersAgentsLabel}: ${selectedAgent.name}'
+                      : l10n.salesAgentPickerEmpty,
+                  child: InkWell(
+                    onTap: enabled ? openSheet : null,
+                    borderRadius:
+                        BorderRadius.circular(tokens.formFieldRadius),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: tokens.gapXs,
+                      ),
                       child: Text(
                         hasSelection
                             ? selectedAgent.name
                             : l10n.salesAgentPickerEmpty,
-                        maxLines: 2,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: typography.body.copyWith(
                           fontWeight: FontWeight.w600,
@@ -158,28 +154,41 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        l10n.overviewAgentFilterEditAction,
-                        style: typography.body.copyWith(
-                          color: enabled
-                              ? scheme.primary
-                              : colors.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PositionedDirectional(
+            top: 0,
+            end: 0,
+            child: Semantics(
+              button: true,
+              label: l10n.overviewAgentFilterEditAction,
+              child: Material(
+                color: _kAgentFilterCircleFill,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: enabled ? openSheet : null,
+                  child: SizedBox(
+                    width: _kAgentFilterCircleSize,
+                    height: _kAgentFilterCircleSize,
+                    child: Icon(
+                      Icons.filter_list_rounded,
+                      size: 22,
+                      color: enabled
+                          ? _kAgentFilterCircleIcon
+                          : scheme.onSurfaceVariant,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

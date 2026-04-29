@@ -1,6 +1,4 @@
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/features/sales/domain/sales_card_descriptor.dart';
-import 'package:colmeia/features/sales/presentation/pages/sales_card_placeholder_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_rank_lucro_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -19,16 +17,8 @@ List<RouteBase> buildSalesRoutes() {
       path: AppRoute.salesCard.path,
       builder: (context, state) {
         final cardId = state.pathParameters['cardId'];
+        final l10n = AppLocalizations.of(context);
         if (cardId == null) {
-          final l10n = AppLocalizations.of(context);
-          return AppShellUnderConstructionPage(
-            sectionTitle: l10n.shellNavSalesLabel,
-          );
-        }
-
-        final descriptor = findSalesCardById(cardId);
-        if (descriptor == null) {
-          final l10n = AppLocalizations.of(context);
           return AppShellUnderConstructionPage(
             sectionTitle: l10n.shellNavSalesLabel,
           );
@@ -38,7 +28,9 @@ List<RouteBase> buildSalesRoutes() {
           return const SalesProdutoRankLucroPage();
         }
 
-        return SalesCardPlaceholderPage(cardDescriptor: descriptor);
+        return AppShellUnderConstructionPage(
+          sectionTitle: l10n.shellNavSalesLabel,
+        );
       },
     ),
   ];

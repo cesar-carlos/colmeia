@@ -137,6 +137,14 @@ void main() {
       );
       check(captured.useRelay).isTrue();
       check(captured.sql).contains('Resultado.QtdItensVendido DESC');
+      final sql = captured.sql;
+      final iEmp = sql.indexOf('Resultado.CodEmpresa ASC');
+      final iFilial = sql.indexOf('Resultado.CodFilial ASC');
+      final iQty = sql.indexOf('Resultado.QtdItensVendido DESC');
+      final iProd = sql.indexOf('Resultado.CodProduto ASC');
+      check(iQty).isLessThan(iEmp);
+      check(iEmp).isLessThan(iFilial);
+      check(iQty).isLessThan(iProd);
     },
   );
 
@@ -175,6 +183,16 @@ void main() {
         ),
       );
       check(captured.sql).contains('Resultado.TotalValorLucro ASC');
+      final sql = captured.sql;
+      check(sql.indexOf('Resultado.TotalValorLucro ASC')).isLessThan(
+        sql.indexOf('Resultado.CodEmpresa ASC'),
+      );
+      check(sql.indexOf('Resultado.CodEmpresa ASC')).isLessThan(
+        sql.indexOf('Resultado.CodFilial ASC'),
+      );
+      check(sql.indexOf('Resultado.CodFilial ASC')).isLessThan(
+        sql.indexOf('Resultado.CodProduto ASC'),
+      );
     },
   );
 

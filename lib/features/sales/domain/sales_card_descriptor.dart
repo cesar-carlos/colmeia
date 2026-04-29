@@ -16,37 +16,8 @@ class SalesCardDescriptor {
 
 const List<SalesCardDescriptor> allSalesCards = <SalesCardDescriptor>[
   SalesCardDescriptor(
-    id: 'open_accounts',
-    icon: Icons.receipt_long_outlined,
-    l10nTitleKey: 'salesCardOpenAccountsTitle',
-  ),
-  SalesCardDescriptor(
-    id: 'paid_accounts',
-    icon: Icons.check_circle_outline,
-    l10nTitleKey: 'salesCardPaidAccountsTitle',
-  ),
-  SalesCardDescriptor(
-    id: 'payment_history',
-    icon: Icons.history,
-    l10nTitleKey: 'salesCardPaymentHistoryTitle',
-  ),
-  SalesCardDescriptor(
-    id: 'new_payment',
-    icon: Icons.add_circle_outline,
-    l10nTitleKey: 'salesCardNewPaymentTitle',
-  ),
-  SalesCardDescriptor(
     id: 'produto_rank_lucro',
     icon: Icons.leaderboard_outlined,
     l10nTitleKey: 'salesCardProdutoRankLucroTitle',
   ),
 ];
-
-SalesCardDescriptor? findSalesCardById(String id) {
-  for (final c in allSalesCards) {
-    if (c.id == id) {
-      return c;
-    }
-  }
-  return null;
-}

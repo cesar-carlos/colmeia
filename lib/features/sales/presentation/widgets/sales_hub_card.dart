@@ -24,7 +24,7 @@ class SalesHubCard extends StatelessWidget {
     final typography = theme.appTypography;
 
     return AspectRatio(
-      aspectRatio: 1,
+      aspectRatio: 1.15,
       child: AppSectionCard(
         child: Material(
           type: MaterialType.transparency,
@@ -32,43 +32,37 @@ class SalesHubCard extends StatelessWidget {
             onTap: onTap,
             borderRadius: BorderRadius.circular(tokens.cardRadius),
             child: Padding(
-              padding: EdgeInsets.all(tokens.contentSpacing),
+              padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   DecoratedBox(
                     decoration: BoxDecoration(
-                      color: colors.primaryContainer.withValues(alpha: 0.75),
+                      color: colors.primary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
                     child: SizedBox(
-                      width: 56,
-                      height: 56,
+                      width: 48,
+                      height: 48,
                       child: Center(
                         child: Icon(
                           icon,
-                          size: 28,
+                          size: 24,
                           color: colors.primary,
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(height: tokens.gapSm),
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          label,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: typography.body.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
+                  SizedBox(height: tokens.gapMd),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: typography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface,
+                      height: 1.2,
                     ),
                   ),
                 ],
