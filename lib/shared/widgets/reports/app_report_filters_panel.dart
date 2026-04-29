@@ -146,66 +146,77 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                   ),
                 ),
                 if (hasFilters)
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_up_rounded
-                        : Icons.keyboard_arrow_down_rounded,
-                    color: theme.colorScheme.onSurfaceVariant,
+                  AnimatedRotation(
+                    turns: _expanded ? -0.5 : 0.0,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
           ),
-          if (_expanded && hasFilters) ...<Widget>[
-            SizedBox(height: tokens.contentSpacing),
-            FormBuilder(
-              key: _formKey,
-              child: Column(
-                children: <Widget>[
-                  ...widget.filters.asMap().entries.map((entry) {
-                    final isLast = entry.key == widget.filters.length - 1;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: isLast ? tokens.gapMd : tokens.contentSpacing,
-                      ),
-                      child: _FilterField(
-                        descriptor: entry.value,
-                        initialValues: widget.initialValues,
-                      ),
-                    );
-                  }),
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: AppSecondaryButton(
-                          onPressed: () {
-                            _formKey.currentState?.reset();
-                            widget.onClear?.call();
-                          },
-                          label: l10n.reportFiltersClearAction,
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 250),
+            sizeCurve: Curves.easeOutCubic,
+            crossFadeState: _expanded && hasFilters
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            secondChild: const SizedBox(width: double.infinity),
+            firstChild: Padding(
+              padding: EdgeInsets.only(top: tokens.contentSpacing),
+              child: FormBuilder(
+                key: _formKey,
+                child: Column(
+                  children: <Widget>[
+                    ...widget.filters.asMap().entries.map((entry) {
+                      final isLast = entry.key == widget.filters.length - 1;
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: isLast ? tokens.gapMd : tokens.contentSpacing,
                         ),
-                      ),
-                      SizedBox(width: tokens.gapMd),
-                      Expanded(
-                        child: AppPrimaryButton(
-                          onPressed: () {
-                            final valid =
-                                _formKey.currentState?.saveAndValidate() ??
-                                false;
-                            if (!valid) return;
-                            widget.onApply(
-                              _formKey.currentState?.value ??
-                                  <String, Object?>{},
-                            );
-                          },
-                          label: l10n.reportFiltersApplyAction,
+                        child: _FilterField(
+                          descriptor: entry.value,
+                          initialValues: widget.initialValues,
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      );
+                    }),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: AppSecondaryButton(
+                            onPressed: () {
+                              _formKey.currentState?.reset();
+                              widget.onClear?.call();
+                            },
+                            label: l10n.reportFiltersClearAction,
+                          ),
+                        ),
+                        SizedBox(width: tokens.gapMd),
+                        Expanded(
+                          child: AppPrimaryButton(
+                            onPressed: () {
+                              final valid =
+                                  _formKey.currentState?.saveAndValidate() ??
+                                  false;
+                              if (!valid) return;
+                              widget.onApply(
+                                _formKey.currentState?.value ??
+                                    <String, Object?>{},
+                              );
+                            },
+                            label: l10n.reportFiltersApplyAction,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );

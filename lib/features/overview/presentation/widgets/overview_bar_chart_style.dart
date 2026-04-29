@@ -46,9 +46,9 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     loadingLabel: l10n.overviewComparisonChartLoading,
     showDataLabels: showDataLabels,
     autoRotateXLabels: false,
-    wrapXAxisLabelsInTwoLines: true,
-    wrapXAxisCharsPerLine: isRanking ? 14 : (isWeekday ? 10 : 12),
-    xLabelMaxChars: isRanking ? 22 : null,
+    wrapXAxisLabelsInTwoLines: !isRanking,
+    wrapXAxisCharsPerLine: isWeekday ? 10 : 12,
+    xLabelMaxChars: isRanking ? 12 : null,
     dataLabelOffset: Offset(
       0,
       weekdayRevenue
@@ -66,7 +66,7 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
         : (isWeekday ? 0.06 : 0.045),
     minBarWidth: isRanking ? 104 : (isWeekday ? 92 : 82),
     height: isRanking
-        ? tokens.chartStandardHeight + tokens.contentSpacing * 3
+        ? tokens.chartStandardHeight + tokens.contentSpacing * 2
         : (isPayment
               ? tokens.chartStandardHeight + tokens.contentSpacing * 2
               : (isWeekday

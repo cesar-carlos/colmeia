@@ -314,8 +314,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
       return null;
     }
     final hasFiltersUi =
-        widget.style.showFiltersPanel &&
-        (widget.filters?.isNotEmpty ?? false);
+        widget.style.showFiltersPanel && (widget.filters?.isNotEmpty ?? false);
     if (!hasFiltersUi) {
       return null;
     }

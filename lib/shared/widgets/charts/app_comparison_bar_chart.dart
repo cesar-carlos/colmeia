@@ -496,8 +496,10 @@ class AppComparisonBarChart<T> extends StatelessWidget {
         );
       }
       final maxChars = style.xLabelMaxChars;
-      if (maxChars == null || raw.length <= maxChars) return raw;
-      return '${raw.substring(0, maxChars)}\u2026';
+      if (maxChars == null) {
+        return raw;
+      }
+      return formatComparisonBarXAxisLabelCollapsed(raw, maxChars: maxChars);
     }
 
     final rawPoints = <AppChartPoint>[];
@@ -662,6 +664,23 @@ String? _truncateComparisonTooltipLabel(String? raw, int? maxChars) {
   }
   final cap = math.max(4, max);
   return '${trimmed.substring(0, cap)}\u2026';
+}
+
+/// Single-line category label: trims and collapses with U+2026 when longer
+/// than [maxChars]. Tooltips should keep the full raw string elsewhere.
+String formatComparisonBarXAxisLabelCollapsed(
+  String raw, {
+  required int maxChars,
+}) {
+  final s = raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (s.isEmpty) {
+    return s;
+  }
+  final limit = math.max(4, maxChars);
+  if (s.length <= limit) {
+    return s;
+  }
+  return '${s.substring(0, limit)}\u2026';
 }
 
 /// Formats a category label for [AppComparisonBarChart] using at most two

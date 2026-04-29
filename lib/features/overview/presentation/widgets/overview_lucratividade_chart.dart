@@ -4,16 +4,15 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
-    show formatComparisonBarXAxisLabelTwoLines;
+    show formatComparisonBarXAxisLabelCollapsed;
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
 
 String _xLabel(ResumoProdutoVendaLucratividadeRow r) =>
-    formatComparisonBarXAxisLabelTwoLines(
+    formatComparisonBarXAxisLabelCollapsed(
       r.filialLabel,
-      maxCharsPerLine: 12,
+      maxChars: 12,
     );
 
 num _barByProfit(ResumoProdutoVendaLucratividadeRow r) => r.lucro;
@@ -169,20 +168,16 @@ class _OverviewLucratividadeChartState
     final barColor = isCost ? tokens.warning : tokens.chartSeriesPrimary;
 
     final style = AppComboChartStyle(
-      height: tokens.chartStandardHeight +
-          tokens.contentSpacing * 2 +
-          tokens.gapMd * 2 +
-          tokens.gapSm,
+      height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
       animationDuration: const Duration(milliseconds: 350),
       leftAxisFormat: isMargin ? _percentFormat : _compactCurrencyFormat,
       rightAxisFormat: _compactCurrencyFormat,
-      chartPadding: EdgeInsets.only(bottom: tokens.gapSm),
+      chartPadding: EdgeInsets.zero,
       showRightYAxis: false,
       showLineSeries: false,
       showDataLabels: true,
       barDataLabelOffset: Offset(0, tokens.gapSm),
       minCategorySlotWidth: 96,
-      categoryLabelIntersectAction: AxisLabelIntersectAction.rotate45,
       horizontalScrollSemanticsHint:
           l10n.overviewComparisonBarHorizontalScrollHint,
       stickyPrimaryYAxisWhileScrolling: false,

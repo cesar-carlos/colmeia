@@ -240,41 +240,26 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
     List<AppReportFilterDescriptor> filters,
     bool hasAdvancedFilters,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.end,
+      spacing: tokens.gapMd,
+      runSpacing: tokens.gapMd,
       children: <Widget>[
-        Wrap(
-          spacing: tokens.gapMd,
-          runSpacing: tokens.gapMd,
-          children: filters
-              .map(
-                (f) => _InlineFilterField(
-                  descriptor: f,
-                  currentValues: _currentValues,
-                  textController: _textControllers[f.name],
-                  isLoading: widget.isLoading,
-                  onChanged: _emit,
-                  onTextChanged: (text) => _emitTextChange(f.name, text),
-                ),
-              )
-              .toList(growable: false),
+        ...filters.map(
+          (f) => _InlineFilterField(
+            descriptor: f,
+            currentValues: _currentValues,
+            textController: _textControllers[f.name],
+            isLoading: widget.isLoading,
+            onChanged: _emit,
+            onTextChanged: (text) => _emitTextChange(f.name, text),
+          ),
         ),
-        if (_hasActiveFilters) ...<Widget>[
-          SizedBox(height: tokens.gapSm),
-          Align(
-            alignment: Alignment.centerRight,
-            child: _ClearButton(onClear: _clearAll),
+        if (_hasActiveFilters) _ClearButton(onClear: _clearAll),
+        if (hasAdvancedFilters)
+          _AdvancedFiltersButton(
+            onPressed: widget.onOpenAdvancedFilters,
           ),
-        ],
-        if (hasAdvancedFilters) ...<Widget>[
-          SizedBox(height: tokens.gapSm),
-          Align(
-            alignment: Alignment.centerRight,
-            child: _AdvancedFiltersButton(
-              onPressed: widget.onOpenAdvancedFilters,
-            ),
-          ),
-        ],
       ],
     );
   }
