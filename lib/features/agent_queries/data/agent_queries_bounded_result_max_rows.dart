@@ -45,4 +45,7 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Period product profitability: one row per `CodEmpresa/CodFilial`.
   /// Bounded by the number of active branches; 200 is a generous safety cap.
   static const int resumoProdutoVendaLucratividade = 200;
+
+  /// `TOP 15` product ranking rows — margin above the nominal cap as a safety net.
+  static const int produtoVendidoProdutoRankLucro = 32;
 }

@@ -71,7 +71,7 @@ class AppTablePaginationFooter extends StatelessWidget {
     super.key,
     this.pageSizeOptions,
     this.onPageSizeChanged,
-    this.itemsPerPageLabel = 'Itens por pagina:',
+    this.itemsPerPageLabel = 'Itens por página:',
     this.showingLabelPrefix = 'Mostrando ',
     this.showingLabelMiddle = ' de ',
     this.style = const AppTablePaginationFooterStyle(),
@@ -410,7 +410,7 @@ class _PaginationControls extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         _PaginationIconButton(
-          tooltip: 'Pagina anterior',
+          tooltip: 'Página anterior',
           icon: Icons.chevron_left_rounded,
           onPressed: canPrev ? onPrevious : null,
           size: style.iconButtonSize,
@@ -420,7 +420,7 @@ class _PaginationControls extends StatelessWidget {
         SizedBox(width: tokens.gapXs),
         ...pageChunks,
         _PaginationIconButton(
-          tooltip: 'Proxima pagina',
+          tooltip: 'Próxima página',
           icon: Icons.chevron_right_rounded,
           onPressed: canNext ? onNext : null,
           size: style.iconButtonSize,
@@ -527,7 +527,7 @@ class _PageNumberCell extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Pagina $page',
+      label: 'Página $page',
       child: Material(
         color: selected
             ? scheme.primaryContainer

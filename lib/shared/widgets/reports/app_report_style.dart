@@ -238,7 +238,7 @@ class AppReportViewerStyle {
   final String entityLabel;
 
   /// Label for the page-size selector. When null, the pagination bar uses its
-  /// own default ('Linhas por pagina:').
+  /// own default ('Linhas por página:').
   final String? itemsPerPageLabel;
 
   final String showingLabelPrefix;

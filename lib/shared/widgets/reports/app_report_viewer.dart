@@ -589,6 +589,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
             child: AppSectionCard(
               color: reportCardColor,
               borderSide: reportCardBorder,
+              padding: EdgeInsets.symmetric(
+                horizontal: isMinimal ? tokens.gapMd : tokens.contentSpacing,
+              ),
               child: AppReportPaginationBar(
                 pageInfo: widget.pageInfo!,
                 onPageChanged: (page) {
