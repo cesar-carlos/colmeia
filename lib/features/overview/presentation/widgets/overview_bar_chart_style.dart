@@ -64,7 +64,7 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     minPlottedValueShareOfMax: isRanking
         ? 0.03
         : (isWeekday ? 0.06 : 0.045),
-    minBarWidth: isRanking ? 88 : (isWeekday ? 92 : 82),
+    minBarWidth: isRanking ? 104 : (isWeekday ? 92 : 82),
     height: isRanking
         ? tokens.chartStandardHeight + tokens.contentSpacing * 3
         : (isPayment

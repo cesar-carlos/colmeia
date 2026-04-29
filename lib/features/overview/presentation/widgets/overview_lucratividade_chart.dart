@@ -8,6 +8,7 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 String _xLabel(ResumoProdutoVendaLucratividadeRow r) =>
     formatComparisonBarXAxisLabelTwoLines(
@@ -164,9 +165,7 @@ class _OverviewLucratividadeChartState
     final isCost = _display == _LucratividadeDisplay.costRevenue;
     final isProfit = _display == _LucratividadeDisplay.profitRevenue;
 
-    final barColor = isCost
-        ? tokens.warning
-        : tokens.chartSeriesPrimary;
+    final barColor = isCost ? tokens.warning : tokens.chartSeriesPrimary;
 
     final style = AppComboChartStyle(
       height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
@@ -178,7 +177,9 @@ class _OverviewLucratividadeChartState
       showLineSeries: false,
       showDataLabels: true,
       barDataLabelOffset: Offset(0, tokens.gapSm),
-      minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
+      minCategorySlotWidth:
+          104, // Increased slot width to prevent label overlap
+      categoryLabelIntersectAction: AxisLabelIntersectAction.none,
       horizontalScrollSemanticsHint:
           l10n.overviewComparisonBarHorizontalScrollHint,
       stickyPrimaryYAxisWhileScrolling: false,
@@ -214,13 +215,17 @@ class _OverviewLucratividadeChartState
       labelFn = _barLabelCurrency;
     }
 
-    final sortedPoints = List<ResumoProdutoVendaLucratividadeRow>.of(widget.points);
+    final sortedPoints = List<ResumoProdutoVendaLucratividadeRow>.of(
+      widget.points,
+    );
     if (isProfit) {
       sortedPoints.sort((a, b) => b.lucro.compareTo(a.lucro));
     } else if (isCost) {
       sortedPoints.sort((a, b) => b.custoReposicao.compareTo(a.custoReposicao));
     } else if (isMargin) {
-      sortedPoints.sort((a, b) => b.percentualLucro.compareTo(a.percentualLucro));
+      sortedPoints.sort(
+        (a, b) => b.percentualLucro.compareTo(a.percentualLucro),
+      );
     } else {
       sortedPoints.sort((a, b) => b.valorTotalItem.compareTo(a.valorTotalItem));
     }

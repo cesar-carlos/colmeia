@@ -7,15 +7,17 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class OverviewFilterBar extends StatelessWidget {
+class OverviewFilterBar extends StatefulWidget {
   const OverviewFilterBar({
     required this.l10n,
     required this.filter,
     required this.availableAgents,
+    this.isLoading = false,
     this.onFilterChanged,
     super.key,
   });
@@ -23,9 +25,39 @@ class OverviewFilterBar extends StatelessWidget {
   final AppLocalizations l10n;
   final OverviewFilter filter;
   final List<OverviewAgentOption> availableAgents;
+  final bool isLoading;
   final ValueChanged<OverviewFilter>? onFilterChanged;
 
-  /// Months strictly before [OverviewYearMonth.fromDate] (no current month).
+  @override
+  State<OverviewFilterBar> createState() => _OverviewFilterBarState();
+}
+
+enum _DateFilterMode { month, customRange }
+
+class _OverviewFilterBarState extends State<OverviewFilterBar> {
+  late _DateFilterMode _mode;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.filter.referenceRange != null
+        ? _DateFilterMode.customRange
+        : _DateFilterMode.month;
+  }
+
+  @override
+  void didUpdateWidget(covariant OverviewFilterBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.filter.referenceRange != null && _mode == _DateFilterMode.month) {
+      _mode = _DateFilterMode.customRange;
+    } else if (widget.filter.referenceRange == null &&
+        oldWidget.filter.referenceRange != null &&
+        _mode == _DateFilterMode.customRange) {
+      // If the filter was cleared externally, reset to month mode
+      _mode = _DateFilterMode.month;
+    }
+  }
+
   static List<OverviewYearMonth> _buildPastMonthOptions({int monthsBack = 12}) {
     final now = DateTime.now();
     return List<OverviewYearMonth>.generate(monthsBack, (i) {
@@ -54,25 +86,18 @@ class OverviewFilterBar extends StatelessWidget {
     final colors = theme.appColors;
     final currentYm = OverviewYearMonth.fromDate(DateTime.now());
     final pastMonthOptions = _buildPastMonthOptions();
-    final isDisabled = onFilterChanged == null;
-    final hasActiveFilter = !filter.isDefault;
-    final hasAgentFilter = filter.selectedAgentIds != null;
+    final isDisabled = widget.onFilterChanged == null || widget.isLoading;
+    final hasActiveFilter = !widget.filter.isDefault;
+    final hasAgentFilter = widget.filter.selectedAgentIds != null;
 
-    final actionStyle = typography.caption.copyWith(
-      color: cs.primary,
-      decoration: TextDecoration.underline,
-      decorationColor: cs.primary,
-      fontSize: 11,
-    );
-
-    final selectedYm = filter.yearMonth ?? currentYm;
+    final selectedYm = widget.filter.yearMonth ?? currentYm;
     final now = DateTime.now();
     final rangePickerLastDate = DateTime(now.year, now.month, now.day);
     final rangePickerFirstDate = DateTime(now.year - 10);
     var monthDropdownOptions = <AppDropdownOption<OverviewYearMonth>>[
       AppDropdownOption<OverviewYearMonth>(
         value: currentYm,
-        label: l10n.dashboardHomeFiltersCurrentMonth,
+        label: widget.l10n.dashboardHomeFiltersCurrentMonth,
       ),
       for (final ym in pastMonthOptions)
         AppDropdownOption<OverviewYearMonth>(
@@ -107,36 +132,43 @@ class OverviewFilterBar extends StatelessWidget {
                 color: hasActiveFilter ? cs.primary : colors.onSurfaceVariant,
               ),
               SizedBox(width: tokens.gapXs),
-              Text(
-                l10n.reportFiltersTitle,
-                style: typography.utilityOverline.copyWith(
-                  color: hasActiveFilter ? cs.primary : colors.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  widget.l10n.reportFiltersTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: typography.utilityOverline.copyWith(
+                    color: hasActiveFilter ? cs.primary : colors.onSurfaceVariant,
+                  ),
                 ),
               ),
-              const Spacer(),
               if (hasAgentFilter) ...<Widget>[
-                GestureDetector(
-                  onTap: isDisabled
+                TextButton(
+                  onPressed: isDisabled
                       ? null
-                      : () => onFilterChanged!(
-                            filter.copyWith(selectedAgentIds: null),
+                      : () => widget.onFilterChanged!(
+                            widget.filter.copyWith(selectedAgentIds: null),
                           ),
-                  child: Text(
-                    l10n.reportInlineFiltersAllOption,
-                    style: actionStyle,
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    textStyle: const TextStyle(decoration: TextDecoration.underline),
                   ),
+                  child: Text(widget.l10n.reportInlineFiltersAllOption),
                 ),
-                SizedBox(width: tokens.gapSm),
+                SizedBox(width: tokens.gapXs),
               ],
               if (hasActiveFilter)
-                GestureDetector(
-                  onTap: isDisabled
+                TextButton(
+                  onPressed: isDisabled
                       ? null
-                      : () => onFilterChanged!(OverviewFilter.initial()),
-                  child: Text(
-                    l10n.reportFiltersClearAction,
-                    style: actionStyle,
+                      : () => widget.onFilterChanged!(OverviewFilter.initial()),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    textStyle: const TextStyle(decoration: TextDecoration.underline),
                   ),
+                  child: Text(widget.l10n.reportFiltersClearAction),
                 ),
             ],
           ),
@@ -144,20 +176,20 @@ class OverviewFilterBar extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              if (availableAgents.isEmpty)
+              if (widget.availableAgents.isEmpty)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
-                      l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+                      widget.l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
                       style: typography.utilityOverline.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
                     ),
                     SizedBox(height: tokens.gapXs),
                     Text(
-                      l10n.dashboardHomeFiltersAgentsEmptyHint,
+                      widget.l10n.dashboardHomeFiltersAgentsEmptyHint,
                       style: typography.caption.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -166,115 +198,123 @@ class OverviewFilterBar extends StatelessWidget {
                 )
               else
                 OverviewHomeAgentFilterControl(
-                  l10n: l10n,
-                  availableAgents: availableAgents,
-                  selectedAgentIds: filter.selectedAgentIds,
+                  l10n: widget.l10n,
+                  availableAgents: widget.availableAgents,
+                  selectedAgentIds: widget.filter.selectedAgentIds,
                   enabled: !isDisabled,
                   onSelectionChanged: (ids) {
                     if (ids == null) {
-                      onFilterChanged?.call(
-                        filter.copyWith(selectedAgentIds: null),
+                      widget.onFilterChanged?.call(
+                        widget.filter.copyWith(selectedAgentIds: null),
                       );
                       return;
                     }
-                    onFilterChanged?.call(
-                      filter.copyWith(selectedAgentIds: ids),
+                    widget.onFilterChanged?.call(
+                      widget.filter.copyWith(selectedAgentIds: ids),
                     );
                   },
                 ),
               SizedBox(height: tokens.gapMd),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    l10n.dashboardHomeFiltersReferenceRangeLabel.toUpperCase(),
-                    style: typography.utilityOverline.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
+              AppSegmentedControl<_DateFilterMode>(
+                expandToFill: true,
+                value: _mode,
+                options: [
+                  AppSegmentedControlOption(
+                    value: _DateFilterMode.month,
+                    label: widget.l10n.dashboardHomeFiltersYearMonthLabel,
                   ),
-                  SizedBox(height: tokens.gapSm),
-                  AppDateRangePickerField(
-                    helperText: l10n.dashboardHomeFiltersReferenceRangeHelper(
-                      kOverviewCustomReferenceRangeMaxInclusiveDays,
-                    ),
-                    pickerTitle:
-                        l10n.dashboardHomeFiltersReferenceRangePickerTitle,
-                    value: filter.referenceRange == null
-                        ? null
-                        : DateTimeRange(
-                            start: filter.referenceRange!.startInclusive,
-                            end: filter.referenceRange!.endInclusive,
-                          ),
-                    firstDate: rangePickerFirstDate,
-                    lastDate: rangePickerLastDate,
-                    enabled: !isDisabled,
-                    density: AppTextFieldDensity.compact,
-                    onChanged: (picked) {
-                      if (picked == null) {
-                        onFilterChanged!(
-                          filter.copyWith(referenceRange: null),
-                        );
-                        return;
-                      }
-                      final range = OverviewDateRange.fromOrderedEndpoints(
-                        picked.start,
-                        picked.end,
+                  AppSegmentedControlOption(
+                    value: _DateFilterMode.customRange,
+                    label: widget.l10n.dashboardHomeFiltersReferenceRangeLabel,
+                  ),
+                ],
+                onChanged: isDisabled ? null : (mode) {
+                  setState(() => _mode = mode);
+                  if (mode == _DateFilterMode.month) {
+                    widget.onFilterChanged!(
+                      widget.filter.copyWith(
+                        referenceRange: null,
+                        yearMonth: selectedYm,
+                      ),
+                    );
+                  }
+                },
+              ),
+              SizedBox(height: tokens.gapMd),
+              if (_mode == _DateFilterMode.customRange)
+                AppDateRangePickerField(
+                  label: widget.l10n.dashboardHomeFiltersReferenceRangeLabel,
+                  helperText: widget.l10n.dashboardHomeFiltersReferenceRangeHelper(
+                    kOverviewCustomReferenceRangeMaxInclusiveDays,
+                  ),
+                  pickerTitle:
+                      widget.l10n.dashboardHomeFiltersReferenceRangePickerTitle,
+                  value: widget.filter.referenceRange == null
+                      ? null
+                      : DateTimeRange(
+                          start: widget.filter.referenceRange!.startInclusive,
+                          end: widget.filter.referenceRange!.endInclusive,
+                        ),
+                  firstDate: rangePickerFirstDate,
+                  lastDate: rangePickerLastDate,
+                  enabled: !isDisabled,
+                  density: AppTextFieldDensity.compact,
+                  onChanged: (picked) {
+                    if (picked == null) {
+                      widget.onFilterChanged!(
+                        widget.filter.copyWith(referenceRange: null),
                       );
-                      if (!range.withinHomeDashboardMaxInclusiveDays) {
-                        if (!context.mounted) {
-                          return;
-                        }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            behavior: SnackBarBehavior.floating,
-                            content: Text(
-                              l10n.dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(
-                                kOverviewCustomReferenceRangeMaxInclusiveDays,
-                              ),
-                            ),
-                          ),
-                        );
+                      return;
+                    }
+                    final range = OverviewDateRange.fromOrderedEndpoints(
+                      picked.start,
+                      picked.end,
+                    );
+                    if (!range.withinHomeDashboardMaxInclusiveDays) {
+                      if (!context.mounted) {
                         return;
                       }
-                      onFilterChanged!(
-                        filter.copyWith(
-                          referenceRange: range,
-                          yearMonth: OverviewYearMonth.fromDate(
-                            range.endInclusive,
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text(
+                            widget.l10n.dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(
+                              kOverviewCustomReferenceRangeMaxInclusiveDays,
+                            ),
                           ),
                         ),
                       );
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: tokens.gapMd),
-              AppDropdownField<OverviewYearMonth>(
-                label: l10n.dashboardHomeFiltersYearMonthLabel,
-                value: selectedYm,
-                options: monthDropdownOptions,
-                selectedDisplayLabel: filter.referenceRange != null
-                    ? l10n.dashboardHomeFiltersYearMonthCustomDisplay
-                    : null,
-                semanticsLabel: filter.referenceRange != null
-                    ? '${l10n.dashboardHomeFiltersYearMonthLabel}. '
-                        '${l10n.dashboardHomeFiltersYearMonthCustomDisplay}. '
-                        '${_monthLabel(context, selectedYm)}.'
-                    : null,
-                enabled: !isDisabled,
-                density: AppTextFieldDensity.compact,
-                onChanged: (v) {
-                  if (v == null) {
-                    return;
-                  }
-                  onFilterChanged!(
-                    filter.copyWith(
-                      yearMonth: v,
-                      referenceRange: null,
-                    ),
-                  );
-                },
-              ),
+                      return;
+                    }
+                    widget.onFilterChanged!(
+                      widget.filter.copyWith(
+                        referenceRange: range,
+                        yearMonth: OverviewYearMonth.fromDate(
+                          range.endInclusive,
+                        ),
+                      ),
+                    );
+                  },
+                )
+              else
+                AppDropdownField<OverviewYearMonth>(
+                  label: widget.l10n.dashboardHomeFiltersYearMonthLabel,
+                  value: selectedYm,
+                  options: monthDropdownOptions,
+                  enabled: !isDisabled,
+                  density: AppTextFieldDensity.compact,
+                  onChanged: (v) {
+                    if (v == null) {
+                      return;
+                    }
+                    widget.onFilterChanged!(
+                      widget.filter.copyWith(
+                        yearMonth: v,
+                        referenceRange: null,
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
         ],

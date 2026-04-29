@@ -6,6 +6,7 @@ import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 String _monthlyXLabel(OverviewMonthlyParcelPoint p) => p.anoMes;
 
@@ -162,6 +163,7 @@ class _OverviewMonthlyParcelsComboChartState
         showDataLabels: true,
         barDataLabelOffset: Offset(0, tokens.gapSm),
         minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
+        categoryLabelIntersectAction: AxisLabelIntersectAction.none,
         horizontalScrollSemanticsHint:
             l10n.overviewComparisonBarHorizontalScrollHint,
         // Use horizontal scroll (default) instead of category-axis pan: pan
@@ -221,8 +223,7 @@ class _OverviewMonthlyParcelsComboChartState
         ? (widget.loadFailureMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
         : l10n.overviewMonthlyParcelsEmpty;
 
-    final activeStyle =
-        valuePrimary ? _cachedStyleValue! : _cachedStyleSales!;
+    final activeStyle = valuePrimary ? _cachedStyleValue! : _cachedStyleSales!;
 
     return Semantics(
       label: valuePrimary
@@ -255,13 +256,15 @@ class _OverviewMonthlyParcelsComboChartState
           ),
           items: widget.points,
           xLabelBuilder: _monthlyXLabel,
-          barValueBuilder:
-              valuePrimary ? _monthlyBarByValue : _monthlyBarBySales,
+          barValueBuilder: valuePrimary
+              ? _monthlyBarByValue
+              : _monthlyBarBySales,
           barSeriesLabel: valuePrimary
               ? l10n.overviewMonthlyParcelsAmountSeriesLabel
               : l10n.overviewMonthlyParcelsSalesSeriesLabel,
-          lineValueBuilder:
-              valuePrimary ? _monthlyLineByValue : _monthlyLineBySales,
+          lineValueBuilder: valuePrimary
+              ? _monthlyLineByValue
+              : _monthlyLineBySales,
           lineSeriesLabel: valuePrimary
               ? l10n.overviewMonthlyParcelsSalesSeriesLabel
               : l10n.overviewMonthlyParcelsAmountSeriesLabel,

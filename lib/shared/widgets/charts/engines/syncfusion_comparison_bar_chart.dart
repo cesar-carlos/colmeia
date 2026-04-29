@@ -195,6 +195,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           majorGridLines: const MajorGridLines(width: 0),
           labelRotation: resolvedRotation.round(),
           labelStyle: style.axisLabelTextStyle,
+          labelIntersectAction: AxisLabelIntersectAction.none,
           title: AxisTitle(
             text: xAxisLabelsVisible ? (style.xAxisTitle ?? '') : '',
             textStyle: style.axisLabelTextStyle,

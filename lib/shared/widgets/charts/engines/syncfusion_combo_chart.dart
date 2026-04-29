@@ -83,12 +83,6 @@ class SyncfusionComboChart<T> extends StatelessWidget {
 
     final minSlotWidth = style.minCategorySlotWidth;
 
-    AxisLabelIntersectAction xLabelIntersectFor(double slotWidth) {
-      return slotWidth >= 48
-          ? AxisLabelIntersectAction.none
-          : AxisLabelIntersectAction.rotate45;
-    }
-
     Widget buildCartesian(
       BuildContext chartContext, {
       required _ComboLayout layout,
@@ -146,7 +140,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           majorGridLines: const MajorGridLines(width: 0),
           labelStyle: style.axisLabelTextStyle,
           labelIntersectAction: style.categoryLabelIntersectAction ??
-              xLabelIntersectFor(slotWidth),
+              AxisLabelIntersectAction.none,
           maximumLabels: items.length,
           autoScrollingDelta: useCategoryAxisPan ? delta : null,
           autoScrollingMode: style.categoryAutoScrollingMode,

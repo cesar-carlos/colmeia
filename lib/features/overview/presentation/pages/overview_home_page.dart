@@ -97,12 +97,17 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                     SizedBox(height: tokens.gapMd),
                     Selector<OverviewController, _FilterSlice>(
                       selector: (_, c) =>
-                          _FilterSlice(c.activeFilter, c.availableAgents),
+                          _FilterSlice(
+                            filter: c.activeFilter,
+                            agents: c.availableAgents,
+                            isLoading: c.isLoading,
+                          ),
                       builder: (context, slice, _) {
                         return OverviewFilterBar(
                           l10n: l10n,
                           filter: slice.filter,
                           availableAgents: slice.agents,
+                          isLoading: slice.isLoading,
                           onFilterChanged: sessionUserId == null
                               ? null
                               : (f) => unawaited(
@@ -310,21 +315,27 @@ class _PeriodTagSlice {
 
 @immutable
 class _FilterSlice {
-  const _FilterSlice(this.filter, this.agents);
+  const _FilterSlice({
+    required this.filter,
+    required this.agents,
+    required this.isLoading,
+  });
 
   final OverviewFilter filter;
   final List<OverviewAgentOption> agents;
+  final bool isLoading;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is _FilterSlice &&
         filter == other.filter &&
+        isLoading == other.isLoading &&
         listEquals(agents, other.agents);
   }
 
   @override
-  int get hashCode => Object.hash(filter, Object.hashAll(agents));
+  int get hashCode => Object.hash(filter, isLoading, Object.hashAll(agents));
 }
 
 @immutable

@@ -27,35 +27,30 @@ class AppReportSummaryBar extends StatelessWidget {
   static List<Widget> _summaryGridRows({
     required List<AppReportSummaryItem> items,
     required double gap,
+    required int crossAxisCount,
   }) {
     final rows = <Widget>[];
-    for (var i = 0; i < items.length; i += 2) {
+    for (var i = 0; i < items.length; i += crossAxisCount) {
       if (i > 0) {
         rows.add(SizedBox(height: gap));
       }
-      final left = items[i];
-      if (i + 1 < items.length) {
-        final right = items[i + 1];
-        rows.add(
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(child: _SummaryTile(item: left)),
-              SizedBox(width: gap),
-              Expanded(child: _SummaryTile(item: right)),
-            ],
-          ),
-        );
-      } else {
-        rows.add(
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(child: _SummaryTile(item: left)),
-            ],
-          ),
-        );
+      final rowChildren = <Widget>[];
+      for (var j = 0; j < crossAxisCount; j++) {
+        if (j > 0) {
+          rowChildren.add(SizedBox(width: gap));
+        }
+        if (i + j < items.length) {
+          rowChildren.add(Expanded(child: _SummaryTile(item: items[i + j])));
+        } else {
+          rowChildren.add(const Expanded(child: SizedBox.shrink()));
+        }
       }
+      rows.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: rowChildren,
+        ),
+      );
     }
     return rows;
   }
@@ -75,9 +70,18 @@ class AppReportSummaryBar extends StatelessWidget {
         horizontal: tokens.contentSpacing,
         vertical: tokens.gapMd,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: _summaryGridRows(items: items, gap: gap),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final crossAxisCount = constraints.maxWidth >= 600 ? 4 : 2;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: _summaryGridRows(
+              items: items,
+              gap: gap,
+              crossAxisCount: crossAxisCount,
+            ),
+          );
+        },
       ),
     );
   }

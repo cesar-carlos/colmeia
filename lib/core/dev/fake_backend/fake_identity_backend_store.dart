@@ -51,7 +51,9 @@ final class FakeIdentityBackendStore {
         .toList();
 
     final afterGrants = users.map(_migrateLegacyEmptyGrants).toList();
-    final migratedUsers = afterGrants.map(_migrateShellModulePermissions).toList();
+    final migratedUsers = afterGrants
+        .map(_migrateShellModulePermissions)
+        .toList();
     if (users.any(_needsGrantMigration) ||
         afterGrants.any(_needsShellModuleMigration)) {
       await _saveUsers(migratedUsers);
@@ -74,7 +76,8 @@ final class FakeIdentityBackendStore {
   }
 
   bool _needsShellModuleMigration(FakeIdentityUserRecord user) {
-    final canBundle = user.permissions.contains(UserPermission.viewDashboard) ||
+    final canBundle =
+        user.permissions.contains(UserPermission.viewDashboard) ||
         user.permissions.contains(UserPermission.manageAgents);
     if (!canBundle) {
       return false;

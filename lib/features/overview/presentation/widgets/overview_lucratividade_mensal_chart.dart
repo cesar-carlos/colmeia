@@ -6,6 +6,7 @@ import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 String _xLabel(ResumoProdutoVendaLucratividadeMensalRow r) => r.anoMes;
 
@@ -177,6 +178,7 @@ class _OverviewLucratividadeMensalChartState
       showDataLabels: true,
       barDataLabelOffset: Offset(0, tokens.gapSm),
       minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
+      categoryLabelIntersectAction: AxisLabelIntersectAction.none,
       horizontalScrollSemanticsHint:
           l10n.overviewComparisonBarHorizontalScrollHint,
       stickyPrimaryYAxisWhileScrolling: false,

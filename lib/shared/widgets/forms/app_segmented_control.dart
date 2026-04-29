@@ -17,14 +17,14 @@ class AppSegmentedControl<T> extends StatelessWidget {
   const AppSegmentedControl({
     required this.options,
     required this.value,
-    required this.onChanged,
+    this.onChanged,
     super.key,
     this.expandToFill = false,
   });
 
   final List<AppSegmentedControlOption<T>> options;
   final T value;
-  final ValueChanged<T> onChanged;
+  final ValueChanged<T>? onChanged;
   final bool expandToFill;
 
   @override
@@ -45,7 +45,7 @@ class AppSegmentedControl<T> extends StatelessWidget {
           .toList(growable: false),
       selected: <T>{value},
       showSelectedIcon: false,
-      onSelectionChanged: (selection) => onChanged(selection.first),
+      onSelectionChanged: onChanged == null ? null : (selection) => onChanged!(selection.first),
     );
 
     if (expandToFill) {

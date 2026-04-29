@@ -682,24 +682,27 @@ class _OverviewAgentSelectionSheetState
                             },
                           ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.all(tokens.contentSpacing),
-                    child: Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text(widget.l10n.overviewAgentFilterCancel),
+                  SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: EdgeInsets.all(tokens.contentSpacing),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text(widget.l10n.overviewAgentFilterCancel),
+                            ),
                           ),
-                        ),
-                        SizedBox(width: tokens.gapMd),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: _apply,
-                            child: Text(widget.l10n.overviewAgentFilterApply),
+                          SizedBox(width: tokens.gapMd),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: _apply,
+                              child: Text(widget.l10n.overviewAgentFilterApply),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
