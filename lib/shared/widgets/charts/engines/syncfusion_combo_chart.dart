@@ -111,8 +111,23 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           enableTooltip &&
           delta != null &&
           delta > 0;
+      final colorScheme = Theme.of(chartContext).colorScheme;
+      final useAnnotationBarLabels = barLabelsVisible &&
+          (style.barDataLabelAlignment == ChartDataLabelAlignment.outer ||
+              style.barDataLabelAlignment == ChartDataLabelAlignment.auto);
+      final barValueAnnotations = useAnnotationBarLabels
+          ? _comboBarValueLabelAnnotations<T>(
+              items: items,
+              xLabelBuilder: xLabelBuilder,
+              barValueBuilder: barValueBuilder,
+              barDataLabelBuilder: barDataLabelBuilder,
+              style: style,
+              colorScheme: colorScheme,
+            )
+          : null;
 
       return SfCartesianChart(
+        annotations: barValueAnnotations,
         margin: chartMargin,
         plotAreaBorderWidth: 0,
         zoomPanBehavior: useCategoryAxisPan
@@ -207,15 +222,16 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               styleDuration: style.animationDuration,
               defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
             ),
-            dataLabelMapper: barLabelsVisible
+            dataLabelMapper: barLabelsVisible && !useAnnotationBarLabels
                 ? (data, _) =>
                       barDataLabelBuilder?.call(data, barValueBuilder(data)) ??
                       barValueBuilder(data).toString()
                 : null,
             dataLabelSettings: DataLabelSettings(
-              isVisible: barLabelsVisible,
+              isVisible: barLabelsVisible && !useAnnotationBarLabels,
               textStyle: style.dataLabelTextStyle,
               labelAlignment: style.barDataLabelAlignment,
+              labelIntersectAction: LabelIntersectAction.none,
               offset: style.barDataLabelOffset ?? Offset.zero,
             ),
             onPointTap: onBarTap == null || layout == _ComboLayout.yAxisStrip
@@ -506,6 +522,53 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Bar value labels for [SyncfusionComboChart] with outer/auto alignment are
+/// drawn as chart annotations above the column top. Syncfusion otherwise can
+/// paint a second label inside the bar when using [ColumnSeries.dataLabelMapper].
+List<CartesianChartAnnotation>? _comboBarValueLabelAnnotations<T>({
+  required List<T> items,
+  required String Function(T item) xLabelBuilder,
+  required num Function(T item) barValueBuilder,
+  required String? Function(T item, num barValue)? barDataLabelBuilder,
+  required AppComboChartStyle style,
+  required ColorScheme colorScheme,
+}) {
+  final annotations = <CartesianChartAnnotation>[];
+  final offset = style.barDataLabelOffset ?? Offset.zero;
+  const outerMargin = EdgeInsets.all(5);
+  for (var i = 0; i < items.length; i++) {
+    final item = items[i];
+    final v = barValueBuilder(item);
+    final mapped = barDataLabelBuilder?.call(item, v);
+    final text = mapped ?? v.toString();
+    if (text.isEmpty) {
+      continue;
+    }
+    final explicitColor = style.dataLabelTextStyle?.color;
+    final textColor = explicitColor ?? colorScheme.onSurface;
+    final baseStyle = style.dataLabelTextStyle ?? const TextStyle();
+    final resolvedTextStyle = baseStyle.copyWith(color: textColor);
+    Widget label = Padding(
+      padding: outerMargin,
+      child: Text(text, style: resolvedTextStyle),
+    );
+    label = Transform.translate(
+      offset: Offset(offset.dx, -offset.dy),
+      child: label,
+    );
+    annotations.add(
+      CartesianChartAnnotation(
+        coordinateUnit: CoordinateUnit.point,
+        x: xLabelBuilder(item),
+        y: v,
+        verticalAlignment: ChartAlignment.far,
+        widget: label,
+      ),
+    );
+  }
+  return annotations.isEmpty ? null : annotations;
 }
 
 class _ComboExternalLegend extends StatelessWidget {

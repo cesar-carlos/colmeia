@@ -129,7 +129,18 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           delta != null &&
           delta > 0;
       final tooltipLabelList = tooltipLabels;
+      final useAnnotationValueLabels = dataLabels != null &&
+          style.showDataLabels &&
+          enableInteraction;
       return SfCartesianChart(
+        annotations: useAnnotationValueLabels
+            ? _comparisonBarValueLabelAnnotations(
+                points: points,
+                dataLabels: dataLabels!,
+                style: style,
+                colorScheme: colorScheme,
+              )
+            : null,
         margin: resolveComparisonBarChartMargin(
           chartContext,
           showDataLabels: style.showDataLabels,
@@ -295,7 +306,9 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                   )
                 : null,
             dataLabelSettings: DataLabelSettings(
-              isVisible: style.showDataLabels && enableInteraction,
+              isVisible: style.showDataLabels &&
+                  enableInteraction &&
+                  !useAnnotationValueLabels,
               textStyle: style.dataLabelTextStyle,
               labelAlignment: _kComparisonBarValueLabelAlignment,
               labelIntersectAction: LabelIntersectAction.none,
@@ -304,10 +317,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
               margin: style.dataLabelBackgroundColor != null
                   ? const EdgeInsets.symmetric(horizontal: 6, vertical: 8)
                   : const EdgeInsets.all(5),
-              builder:
-                  dataLabels != null &&
+              builder: dataLabels != null &&
                       style.showDataLabels &&
-                      enableInteraction
+                      enableInteraction &&
+                      !useAnnotationValueLabels
                   ? (data, point, series, pointIndex, seriesIndex) {
                       final labels = dataLabels;
                       if (labels == null ||
@@ -550,6 +563,66 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Value labels when [AppComparisonBarChart] supplies [dataLabels] are drawn as
+/// chart annotations (above the bar top) instead of [ColumnSeries] data labels.
+/// Syncfusion can still emit a second label tied to plotted geometry; this path
+/// keeps exactly one custom string per point.
+List<CartesianChartAnnotation> _comparisonBarValueLabelAnnotations({
+  required List<AppChartPoint> points,
+  required List<String?> dataLabels,
+  required AppComparisonBarChartStyle style,
+  required ColorScheme colorScheme,
+}) {
+  final n = math.min(points.length, dataLabels.length);
+  final annotations = <CartesianChartAnnotation>[];
+  final offset = style.dataLabelOffset ?? Offset.zero;
+  for (var i = 0; i < n; i++) {
+    final text = dataLabels[i];
+    if (text == null || text.isEmpty) {
+      continue;
+    }
+    final point = points[i];
+    final y = point.plottedValue ?? point.value;
+    final explicitColor = style.dataLabelTextStyle?.color;
+    final textColor = explicitColor ?? colorScheme.onSurface;
+    final baseStyle = style.dataLabelTextStyle ?? const TextStyle();
+    final resolvedTextStyle = baseStyle.copyWith(color: textColor);
+    Widget label = Text(text, style: resolvedTextStyle);
+    final bg = style.dataLabelBackgroundColor;
+    if (bg != null) {
+      label = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: label,
+      );
+    }
+    final outerMargin = style.dataLabelBackgroundColor != null
+        ? const EdgeInsets.symmetric(horizontal: 6, vertical: 8)
+        : const EdgeInsets.all(5);
+    label = Padding(
+      padding: outerMargin,
+      child: label,
+    );
+    label = Transform.translate(
+      offset: Offset(offset.dx, -offset.dy),
+      child: label,
+    );
+    annotations.add(
+      CartesianChartAnnotation(
+        coordinateUnit: CoordinateUnit.point,
+        x: point.label,
+        y: y,
+        verticalAlignment: ChartAlignment.far,
+        widget: label,
+      ),
+    );
+  }
+  return annotations;
 }
 
 // Minimum pixel width reserved per bar slot (bar + gap).
