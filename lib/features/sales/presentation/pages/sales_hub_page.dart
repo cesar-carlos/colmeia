@@ -135,6 +135,7 @@ class _SalesHubPageState extends State<SalesHubPage> {
       'salesCardPaidAccountsTitle' => l10n.salesCardPaidAccountsTitle,
       'salesCardPaymentHistoryTitle' => l10n.salesCardPaymentHistoryTitle,
       'salesCardNewPaymentTitle' => l10n.salesCardNewPaymentTitle,
+      'salesCardProdutoRankLucroTitle' => l10n.salesCardProdutoRankLucroTitle,
       _ => key,
     };
   }

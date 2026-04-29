@@ -118,7 +118,6 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       final barValueAnnotations = useAnnotationBarLabels
           ? _comboBarValueLabelAnnotations<T>(
               items: items,
-              xLabelBuilder: xLabelBuilder,
               barValueBuilder: barValueBuilder,
               barDataLabelBuilder: barDataLabelBuilder,
               style: style,
@@ -151,6 +150,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           overflowMode: LegendItemOverflowMode.wrap,
         ),
         primaryXAxis: CategoryAxis(
+          arrangeByIndex: true,
           isVisible: showXAxisLabels && style.showXAxis,
           majorGridLines: const MajorGridLines(width: 0),
           labelStyle: style.axisLabelTextStyle,
@@ -529,7 +529,6 @@ class SyncfusionComboChart<T> extends StatelessWidget {
 /// paint a second label inside the bar when using [ColumnSeries.dataLabelMapper].
 List<CartesianChartAnnotation>? _comboBarValueLabelAnnotations<T>({
   required List<T> items,
-  required String Function(T item) xLabelBuilder,
   required num Function(T item) barValueBuilder,
   required String? Function(T item, num barValue)? barDataLabelBuilder,
   required AppComboChartStyle style,
@@ -558,10 +557,13 @@ List<CartesianChartAnnotation>? _comboBarValueLabelAnnotations<T>({
       offset: Offset(offset.dx, -offset.dy),
       child: label,
     );
+    // Same as comparison bars: [x] must be the category index when
+    // [CategoryAxis.arrangeByIndex] is true; string labels can collapse via
+    // [indexOf] and stack every value on one bar.
     annotations.add(
       CartesianChartAnnotation(
         coordinateUnit: CoordinateUnit.point,
-        x: xLabelBuilder(item),
+        x: i,
         y: v,
         verticalAlignment: ChartAlignment.far,
         widget: label,

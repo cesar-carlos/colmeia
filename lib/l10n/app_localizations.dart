@@ -3394,6 +3394,42 @@ abstract class AppLocalizations {
   /// **'New Payment'**
   String get salesCardNewPaymentTitle;
 
+  /// No description provided for @salesCardProdutoRankLucroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product ranking'**
+  String get salesCardProdutoRankLucroTitle;
+
+  /// No description provided for @salesProdutoRankLucroChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top products'**
+  String get salesProdutoRankLucroChartTitle;
+
+  /// No description provided for @salesProdutoRankLucroFilterPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get salesProdutoRankLucroFilterPeriod;
+
+  /// No description provided for @salesProdutoRankLucroFilterSortBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get salesProdutoRankLucroFilterSortBy;
+
+  /// No description provided for @salesProdutoRankLucroSortQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity sold'**
+  String get salesProdutoRankLucroSortQuantity;
+
+  /// No description provided for @salesProdutoRankLucroSortProfit.
+  ///
+  /// In en, this message translates to:
+  /// **'Total profit'**
+  String get salesProdutoRankLucroSortProfit;
+
   /// No description provided for @agentStatusPending.
   ///
   /// In en, this message translates to:

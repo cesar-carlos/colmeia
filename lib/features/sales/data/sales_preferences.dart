@@ -1,6 +1,7 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SalesPreferences {
@@ -57,5 +58,53 @@ class SalesPreferences {
         draft.trimmedString(key: key, rawValue: source[key]);
       }
     });
+  }
+
+  /// [produto_rank_lucro] card: date range encoded as epochs + metric key.
+  static const Set<String> produtoRankLucroSortByAllowedValues = <String>{
+    'qtdItensVendido',
+    'totalValorLucro',
+  };
+
+  static const String produtoRankLucroCardId = 'produto_rank_lucro';
+
+  /// Converts stored epochs into `'periodo': DateTimeRange` and sort key.
+  Map<String, Object?> restoreProdutoRankLucroFilters() {
+    final raw = restoreCardFilters(produtoRankLucroCardId);
+    return PersistedFilterMapCodec.sanitize((draft) {
+      draft.dateRangeFromEpoch(
+        targetKey: 'periodo',
+        startEpochMs: raw['periodo_start_ms'],
+        endEpochMs: raw['periodo_end_ms'],
+      );
+      draft.stringIfAllowed(
+        key: 'sortBy',
+        rawValue: raw['sortBy'],
+        allowedValues: produtoRankLucroSortByAllowedValues,
+      );
+    });
+  }
+
+  Future<void> persistProdutoRankLucroFilters(Map<String, Object?> filters) async {
+    final encoded = PersistedFilterMapCodec.sanitize((draft) {
+      draft.dateRangeToEpoch(
+        startEpochKey: 'periodo_start_ms',
+        endEpochKey: 'periodo_end_ms',
+        rawValue: filters['periodo'],
+      );
+      draft.stringIfAllowed(
+        key: 'sortBy',
+        rawValue: filters['sortBy'],
+        allowedValues: produtoRankLucroSortByAllowedValues,
+      );
+    });
+    final store = PersistedPageSessionStore(
+      prefs: _prefs,
+      namespace: 'colmeia_sales_card.$produtoRankLucroCardId',
+    );
+    await store.persistJsonMap(
+      suffix: 'filters',
+      value: encoded,
+    );
   }
 }

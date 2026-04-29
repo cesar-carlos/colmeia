@@ -223,6 +223,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 },
         ),
         primaryXAxis: CategoryAxis(
+          arrangeByIndex: true,
           isVisible: style.showXAxis && xAxisLabelsVisible,
           majorGridLines: const MajorGridLines(width: 0),
           labelRotation: resolvedRotation.round(),
@@ -612,10 +613,13 @@ List<CartesianChartAnnotation> _comparisonBarValueLabelAnnotations({
       offset: Offset(offset.dx, -offset.dy),
       child: label,
     );
+    // Use category index, not [point.label]. Duplicate or truncated X labels
+    // resolve to the same string; [CategoryAxis.labels.indexOf] would place
+    // every annotation on the first slot (stacked "ghost" labels).
     annotations.add(
       CartesianChartAnnotation(
         coordinateUnit: CoordinateUnit.point,
-        x: point.label,
+        x: i,
         y: y,
         verticalAlignment: ChartAlignment.far,
         widget: label,

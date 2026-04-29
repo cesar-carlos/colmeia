@@ -2032,6 +2032,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesCardNewPaymentTitle => 'New Payment';
 
   @override
+  String get salesCardProdutoRankLucroTitle => 'Product ranking';
+
+  @override
+  String get salesProdutoRankLucroChartTitle => 'Top products';
+
+  @override
+  String get salesProdutoRankLucroFilterPeriod => 'Period';
+
+  @override
+  String get salesProdutoRankLucroFilterSortBy => 'Metric';
+
+  @override
+  String get salesProdutoRankLucroSortQuantity => 'Quantity sold';
+
+  @override
+  String get salesProdutoRankLucroSortProfit => 'Total profit';
+
+  @override
   String get agentStatusPending => 'Pending';
 
   @override
