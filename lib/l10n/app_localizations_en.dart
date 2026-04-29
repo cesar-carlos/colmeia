@@ -310,6 +310,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Revenue by operator in the period.';
 
   @override
+  String get overviewRankingBreakdownTooltip => 'View full names and values';
+
+  @override
+  String get overviewRankingAgentBreakdownTitle => 'Revenue by agent';
+
+  @override
+  String get overviewRankingUserBreakdownTitle => 'Revenue by operator';
+
+  @override
+  String get overviewLucratividadeAccessibilitySummaryIntro =>
+      'Profitability by agent for the selected view';
+
+  @override
   String get overviewAgentRankingEmpty => 'No agent revenue in this period.';
 
   @override

@@ -316,6 +316,19 @@ class AppLocalizationsPt extends AppLocalizations {
       'Faturamento por operador no periodo.';
 
   @override
+  String get overviewRankingBreakdownTooltip => 'Ver nomes completos e valores';
+
+  @override
+  String get overviewRankingAgentBreakdownTitle => 'Faturamento por agente';
+
+  @override
+  String get overviewRankingUserBreakdownTitle => 'Faturamento por operador';
+
+  @override
+  String get overviewLucratividadeAccessibilitySummaryIntro =>
+      'Lucratividade por agente na visão selecionada';
+
+  @override
   String get overviewAgentRankingEmpty =>
       'Sem faturamento por agente neste período.';
 
@@ -2384,6 +2397,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get dashboardUserRankingSubtitle =>
       'Faturamento por operador no periodo.';
+
+  @override
+  String get overviewRankingBreakdownTooltip => 'Ver nomes completos e valores';
+
+  @override
+  String get overviewRankingAgentBreakdownTitle => 'Faturamento por agente';
+
+  @override
+  String get overviewRankingUserBreakdownTitle => 'Faturamento por operador';
+
+  @override
+  String get overviewLucratividadeAccessibilitySummaryIntro =>
+      'Lucratividade por agente na visão selecionada';
 
   @override
   String get overviewAgentRankingEmpty =>

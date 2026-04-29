@@ -633,6 +633,30 @@ abstract class AppLocalizations {
   /// **'Revenue by operator in the period.'**
   String get dashboardUserRankingSubtitle;
 
+  /// No description provided for @overviewRankingBreakdownTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'View full names and values'**
+  String get overviewRankingBreakdownTooltip;
+
+  /// No description provided for @overviewRankingAgentBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue by agent'**
+  String get overviewRankingAgentBreakdownTitle;
+
+  /// No description provided for @overviewRankingUserBreakdownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue by operator'**
+  String get overviewRankingUserBreakdownTitle;
+
+  /// No description provided for @overviewLucratividadeAccessibilitySummaryIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Profitability by agent for the selected view'**
+  String get overviewLucratividadeAccessibilitySummaryIntro;
+
   /// No description provided for @overviewAgentRankingEmpty.
   ///
   /// In en, this message translates to:

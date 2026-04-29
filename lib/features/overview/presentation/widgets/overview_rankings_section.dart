@@ -2,6 +2,8 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_bar_chart_style.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_home_chart_axis.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_ranking_breakdown_sheet.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
@@ -111,6 +113,47 @@ class OverviewAgentRankingCard extends StatelessWidget {
       tooltipLabelBuilder: (a, v) =>
           '${a.displayName}: ${AppBrFormatters.currency(v)}',
       dataLabelBuilder: (a, v) => AppBrFormatters.compactCurrency(v),
+      resolveXLabelMaxChars: ({
+        required layoutWidth,
+        required categoryCount,
+        required textScaler,
+      }) =>
+          resolveOverviewAdaptiveXLabelMaxChars(
+            layoutWidth: layoutWidth,
+            categoryCount: categoryCount,
+            textScaler: textScaler,
+            minChars: kOverviewChartXLabelCharsMin,
+            maxChars: kOverviewAgentRankingXLabelCharsMax,
+          ),
+      accessibilityDataSummary: showEmpty
+          ? null
+          : agentRankings
+                .map(
+                  (a) =>
+                      '${a.displayName}: ${AppBrFormatters.currency(a.totalAmount)}',
+                )
+                .join('; '),
+      titleTrailing: IconButton(
+        tooltip: l10n.overviewRankingBreakdownTooltip,
+        onPressed: showEmpty
+            ? null
+            : () {
+                showOverviewRankingBreakdownSheet(
+                  context: context,
+                  tokens: tokens,
+                  title: l10n.overviewRankingAgentBreakdownTitle,
+                  rows: <({String name, String value})>[
+                    for (final a in agentRankings)
+                      (
+                        name: a.displayName,
+                        value: AppBrFormatters.currency(a.totalAmount),
+                      ),
+                  ],
+                );
+              },
+        icon: const Icon(Icons.view_list_outlined),
+        visualDensity: VisualDensity.compact,
+      ),
       style: overviewHomeComparisonBarChartStyle(
         tokens: tokens,
         kind: OverviewHomeBarChartKind.ranking,
@@ -158,6 +201,47 @@ class OverviewUserRankingCard extends StatelessWidget {
       tooltipLabelBuilder: (u, v) =>
           '${u.userName}: ${AppBrFormatters.currency(v)}',
       dataLabelBuilder: (u, v) => AppBrFormatters.compactCurrency(v),
+      resolveXLabelMaxChars: ({
+        required layoutWidth,
+        required categoryCount,
+        required textScaler,
+      }) =>
+          resolveOverviewAdaptiveXLabelMaxChars(
+            layoutWidth: layoutWidth,
+            categoryCount: categoryCount,
+            textScaler: textScaler,
+            minChars: kOverviewChartXLabelCharsMin,
+            maxChars: kOverviewUserRankingXLabelCharsMax,
+          ),
+      accessibilityDataSummary: showEmpty
+          ? null
+          : userRankings
+                .map(
+                  (u) =>
+                      '${u.userName}: ${AppBrFormatters.currency(u.totalAmount)}',
+                )
+                .join('; '),
+      titleTrailing: IconButton(
+        tooltip: l10n.overviewRankingBreakdownTooltip,
+        onPressed: showEmpty
+            ? null
+            : () {
+                showOverviewRankingBreakdownSheet(
+                  context: context,
+                  tokens: tokens,
+                  title: l10n.overviewRankingUserBreakdownTitle,
+                  rows: <({String name, String value})>[
+                    for (final u in userRankings)
+                      (
+                        name: u.userName,
+                        value: AppBrFormatters.currency(u.totalAmount),
+                      ),
+                  ],
+                );
+              },
+        icon: const Icon(Icons.view_list_outlined),
+        visualDensity: VisualDensity.compact,
+      ),
       style: overviewHomeComparisonBarChartStyle(
         tokens: tokens,
         kind: OverviewHomeBarChartKind.ranking,

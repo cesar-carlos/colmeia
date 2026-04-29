@@ -48,7 +48,6 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     autoRotateXLabels: false,
     wrapXAxisLabelsInTwoLines: !isRanking,
     wrapXAxisCharsPerLine: isWeekday ? 10 : 12,
-    xLabelMaxChars: isRanking ? 12 : null,
     dataLabelOffset: Offset(
       0,
       weekdayRevenue

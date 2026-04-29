@@ -1,5 +1,6 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_home_chart_axis.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
@@ -8,12 +9,6 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-String _xLabel(ResumoProdutoVendaLucratividadeRow r) =>
-    formatComparisonBarXAxisLabelCollapsed(
-      r.filialLabel,
-      maxChars: 12,
-    );
 
 num _barByProfit(ResumoProdutoVendaLucratividadeRow r) => r.lucro;
 num _lineByProfit(ResumoProdutoVendaLucratividadeRow r) => r.valorTotalItem;
@@ -228,55 +223,79 @@ class _OverviewLucratividadeChartState
       sortedPoints.sort((a, b) => b.valorTotalItem.compareTo(a.valorTotalItem));
     }
 
+    final accessibilitySummary = sortedPoints.isEmpty
+        ? null
+        : '${l10n.overviewLucratividadeAccessibilitySummaryIntro}. ${sortedPoints.map((r) {
+            final v = barFn(r);
+            return '${r.filialLabel}: ${labelFn(r, v)}';
+          }).join('; ')}';
+
     return RepaintBoundary(
-      child: AppComboChart<ResumoProdutoVendaLucratividadeRow>(
-        key: ValueKey<int>(identityHashCode(widget.points)),
-        title: l10n.overviewLucratividadeTitle,
-        subtitle: l10n.overviewLucratividadeSubtitle,
-        belowSubtitle: AppSegmentedControl<_LucratividadeDisplay>(
-          options: <AppSegmentedControlOption<_LucratividadeDisplay>>[
-            AppSegmentedControlOption<_LucratividadeDisplay>(
-              value: _LucratividadeDisplay.profitRevenue,
-              label: l10n.overviewLucratividadeSwitchProfit,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final categoryCount =
+              sortedPoints.isEmpty ? 1 : sortedPoints.length;
+          final xMax = resolveOverviewAdaptiveXLabelMaxChars(
+            layoutWidth: constraints.maxWidth,
+            categoryCount: categoryCount,
+            textScaler: MediaQuery.textScalerOf(context),
+            minChars: kOverviewChartXLabelCharsMin,
+            maxChars: kOverviewLucratividadeXLabelCharsMax,
+          );
+          return AppComboChart<ResumoProdutoVendaLucratividadeRow>(
+            key: ValueKey<int>(identityHashCode(widget.points)),
+            title: l10n.overviewLucratividadeTitle,
+            subtitle: l10n.overviewLucratividadeSubtitle,
+            belowSubtitle: AppSegmentedControl<_LucratividadeDisplay>(
+              options: <AppSegmentedControlOption<_LucratividadeDisplay>>[
+                AppSegmentedControlOption<_LucratividadeDisplay>(
+                  value: _LucratividadeDisplay.profitRevenue,
+                  label: l10n.overviewLucratividadeSwitchProfit,
+                ),
+                AppSegmentedControlOption<_LucratividadeDisplay>(
+                  value: _LucratividadeDisplay.revenueCost,
+                  label: l10n.overviewLucratividadeSwitchRevenue,
+                ),
+                AppSegmentedControlOption<_LucratividadeDisplay>(
+                  value: _LucratividadeDisplay.costRevenue,
+                  label: l10n.overviewLucratividadeSwitchCost,
+                ),
+                AppSegmentedControlOption<_LucratividadeDisplay>(
+                  value: _LucratividadeDisplay.marginPercent,
+                  label: l10n.overviewLucratividadeSwitchMargin,
+                ),
+              ],
+              value: _display,
+              onChanged: (v) => setState(() => _display = v),
             ),
-            AppSegmentedControlOption<_LucratividadeDisplay>(
-              value: _LucratividadeDisplay.revenueCost,
-              label: l10n.overviewLucratividadeSwitchRevenue,
+            items: sortedPoints,
+            xLabelBuilder: (r) => formatComparisonBarXAxisLabelCollapsed(
+              r.filialLabel,
+              maxChars: xMax,
             ),
-            AppSegmentedControlOption<_LucratividadeDisplay>(
-              value: _LucratividadeDisplay.costRevenue,
-              label: l10n.overviewLucratividadeSwitchCost,
-            ),
-            AppSegmentedControlOption<_LucratividadeDisplay>(
-              value: _LucratividadeDisplay.marginPercent,
-              label: l10n.overviewLucratividadeSwitchMargin,
-            ),
-          ],
-          value: _display,
-          onChanged: (v) => setState(() => _display = v),
-        ),
-        items: sortedPoints,
-        xLabelBuilder: _xLabel,
-        barValueBuilder: barFn,
-        barSeriesLabel: isMargin
-            ? l10n.overviewLucratividadeMarginSeriesLabel
-            : isCost
-            ? l10n.overviewLucratividadeCostSeriesLabel
-            : isProfit
-            ? l10n.overviewLucratividadeProfitSeriesLabel
-            : l10n.overviewLucratividadeRevenueSeriesLabel,
-        lineValueBuilder: lineFn,
-        lineSeriesLabel: isMargin || isCost || isProfit
-            ? l10n.overviewLucratividadeRevenueSeriesLabel
-            : l10n.overviewLucratividadeCostSeriesLabel,
-        barDataLabelBuilder: labelFn,
-        style: style,
-        emptyPlaceholder: widget.points.isEmpty
-            ? DefaultTextStyle.merge(
-                style: Theme.of(context).textTheme.bodyMedium,
-                child: _emptyPlaceholder(tokens, emptyMessage),
-              )
-            : null,
+            barValueBuilder: barFn,
+            barSeriesLabel: isMargin
+                ? l10n.overviewLucratividadeMarginSeriesLabel
+                : isCost
+                ? l10n.overviewLucratividadeCostSeriesLabel
+                : isProfit
+                ? l10n.overviewLucratividadeProfitSeriesLabel
+                : l10n.overviewLucratividadeRevenueSeriesLabel,
+            lineValueBuilder: lineFn,
+            lineSeriesLabel: isMargin || isCost || isProfit
+                ? l10n.overviewLucratividadeRevenueSeriesLabel
+                : l10n.overviewLucratividadeCostSeriesLabel,
+            barDataLabelBuilder: labelFn,
+            style: style,
+            accessibilitySummary: accessibilitySummary,
+            emptyPlaceholder: widget.points.isEmpty
+                ? DefaultTextStyle.merge(
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    child: _emptyPlaceholder(tokens, emptyMessage),
+                  )
+                : null,
+          );
+        },
       ),
     );
   }

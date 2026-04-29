@@ -11,6 +11,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+/// Resolves a per-layout cap for collapsed X-axis labels. When provided,
+/// overrides [AppComparisonBarChartStyle.xLabelMaxChars] unless the resolver
+/// returns null (then the style value is used).
+typedef ComparisonChartXLabelMaxCharsResolver = int? Function({
+  required double layoutWidth,
+  required int categoryCount,
+  required TextScaler textScaler,
+});
+
 /// Visual customization for [AppComparisonBarChart].
 ///
 /// **Horizontal overflow:** use at most one of these for a given chart:
@@ -383,12 +392,14 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     this.tooltipLabelBuilder,
     this.onPointTap,
     this.onPointTapEvent,
+    this.resolveXLabelMaxChars,
     this.style = const AppComparisonBarChartStyle(),
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
     this.emptyPlaceholder,
     this.plotFloorAccessibilityNotice,
     this.extremeSpreadAccessibilityNotice,
+    this.accessibilityDataSummary,
   });
 
   /// Height the engine will reserve for the chart body when `style.height` is
@@ -479,6 +490,13 @@ class AppComparisonBarChart<T> extends StatelessWidget {
   /// orders of magnitude); use for screen-reader context about possible unit mix-ups.
   final String? extremeSpreadAccessibilityNotice;
 
+  /// Optional per-layout override for collapsed X-axis label length.
+  final ComparisonChartXLabelMaxCharsResolver? resolveXLabelMaxChars;
+
+  /// Short description of plotted rows for screen readers (e.g. full names
+  /// and values) when axis labels are truncated visually.
+  final String? accessibilityDataSummary;
+
   @override
   Widget build(BuildContext context) {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
@@ -486,149 +504,167 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     final values = List<num>.generate(n, (i) => valueBuilder(items[i]));
     debugLogSuspiciousComparisonBarSpread(values);
 
-    // X-axis label shaping: optional two-line wrap, else optional single-line
-    // truncation. Tooltips still use [tooltipLabelBuilder] with full context.
-    String formatXLabel(String raw) {
-      if (style.wrapXAxisLabelsInTwoLines) {
-        return formatComparisonBarXAxisLabelTwoLines(
-          raw,
-          maxCharsPerLine: style.wrapXAxisCharsPerLine,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScaler = MediaQuery.textScalerOf(context);
+        final resolvedXLabelMaxChars = resolveXLabelMaxChars?.call(
+              layoutWidth: constraints.maxWidth,
+              categoryCount: n < 1 ? 1 : n,
+              textScaler: textScaler,
+            ) ??
+            style.xLabelMaxChars;
+
+        // X-axis label shaping: optional two-line wrap, else optional single-line
+        // truncation. Tooltips still use [tooltipLabelBuilder] with full context.
+        String formatXLabel(String raw) {
+          if (style.wrapXAxisLabelsInTwoLines) {
+            return formatComparisonBarXAxisLabelTwoLines(
+              raw,
+              maxCharsPerLine: style.wrapXAxisCharsPerLine,
+            );
+          }
+          final maxChars = resolvedXLabelMaxChars;
+          if (maxChars == null) {
+            return raw;
+          }
+          return formatComparisonBarXAxisLabelCollapsed(raw, maxChars: maxChars);
+        }
+
+        final rawPoints = <AppChartPoint>[];
+        List<Color?>? pointColorsOut;
+        List<String?>? dataLabelsOut;
+        List<String?>? tooltipLabelsOut;
+        if (colorBuilder != null) {
+          pointColorsOut = <Color?>[];
+        }
+        if (style.showDataLabels) {
+          dataLabelsOut = <String?>[];
+        }
+        if (tooltipLabelBuilder != null) {
+          tooltipLabelsOut = <String?>[];
+        }
+        for (var i = 0; i < n; i++) {
+          final item = items[i];
+          final v = values[i];
+          rawPoints.add(
+            AppChartPoint(
+              label: formatXLabel(labelBuilder(item)),
+              value: v,
+            ),
+          );
+          pointColorsOut?.add(colorBuilder!(item));
+          dataLabelsOut?.add(
+            dataLabelBuilder?.call(item, v) ?? v.toString(),
+          );
+          tooltipLabelsOut?.add(
+            _truncateComparisonTooltipLabel(
+              tooltipLabelBuilder!.call(item, v),
+              style.tooltipLabelMaxChars,
+            ),
+          );
+        }
+        final points = applyComparisonBarPlotHeightFloor(
+          rawPoints,
+          style.minPlottedValueShareOfMax,
+          strictLinearBarHeights: style.strictLinearBarHeights,
         );
-      }
-      final maxChars = style.xLabelMaxChars;
-      if (maxChars == null) {
-        return raw;
-      }
-      return formatComparisonBarXAxisLabelCollapsed(raw, maxChars: maxChars);
-    }
+        final hasPlotFloor = points.any((p) => p.plottedValue != null);
+        final hasExtremeSpread = comparisonBarValuesHaveExtremeSpread(values);
 
-    final rawPoints = <AppChartPoint>[];
-    List<Color?>? pointColorsOut;
-    List<String?>? dataLabelsOut;
-    List<String?>? tooltipLabelsOut;
-    if (colorBuilder != null) {
-      pointColorsOut = <Color?>[];
-    }
-    if (style.showDataLabels) {
-      dataLabelsOut = <String?>[];
-    }
-    if (tooltipLabelBuilder != null) {
-      tooltipLabelsOut = <String?>[];
-    }
-    for (var i = 0; i < n; i++) {
-      final item = items[i];
-      final v = values[i];
-      rawPoints.add(
-        AppChartPoint(
-          label: formatXLabel(labelBuilder(item)),
-          value: v,
-        ),
-      );
-      pointColorsOut?.add(colorBuilder!(item));
-      dataLabelsOut?.add(
-        dataLabelBuilder?.call(item, v) ?? v.toString(),
-      );
-      tooltipLabelsOut?.add(
-        _truncateComparisonTooltipLabel(
-          tooltipLabelBuilder!.call(item, v),
-          style.tooltipLabelMaxChars,
-        ),
-      );
-    }
-    final points = applyComparisonBarPlotHeightFloor(
-      rawPoints,
-      style.minPlottedValueShareOfMax,
-      strictLinearBarHeights: style.strictLinearBarHeights,
-    );
-    final hasPlotFloor = points.any((p) => p.plottedValue != null);
-    final hasExtremeSpread = comparisonBarValuesHaveExtremeSpread(values);
+        final semanticsParts = <String>[];
+        final floorNotice = plotFloorAccessibilityNotice?.trim();
+        if (hasPlotFloor && floorNotice != null && floorNotice.isNotEmpty) {
+          semanticsParts.add(floorNotice);
+        }
+        final spreadNotice = extremeSpreadAccessibilityNotice?.trim();
+        if (hasExtremeSpread &&
+            spreadNotice != null &&
+            spreadNotice.isNotEmpty) {
+          semanticsParts.add(spreadNotice);
+        }
+        final dataSummary = accessibilityDataSummary?.trim();
+        if (dataSummary != null && dataSummary.isNotEmpty) {
+          semanticsParts.add(dataSummary);
+        }
+        final semanticsCoordinatorLabel = semanticsParts.isEmpty
+            ? null
+            : semanticsParts.join(' ');
 
-    final semanticsParts = <String>[];
-    final floorNotice = plotFloorAccessibilityNotice?.trim();
-    if (hasPlotFloor && floorNotice != null && floorNotice.isNotEmpty) {
-      semanticsParts.add(floorNotice);
-    }
-    final spreadNotice = extremeSpreadAccessibilityNotice?.trim();
-    if (hasExtremeSpread && spreadNotice != null && spreadNotice.isNotEmpty) {
-      semanticsParts.add(spreadNotice);
-    }
-    final semanticsCoordinatorLabel = semanticsParts.isEmpty
-        ? null
-        : semanticsParts.join(' ');
+        Widget? floorNoticeTrailing;
+        if (hasPlotFloor && floorNotice != null && floorNotice.isNotEmpty) {
+          floorNoticeTrailing = Tooltip(
+            message: floorNotice,
+            child: Icon(
+              Icons.info_outline,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          );
+        }
+        final mergedTitleTrailing = _mergeComparisonTitleTrailing(
+          titleTrailing,
+          floorNoticeTrailing,
+        );
 
-    Widget? floorNoticeTrailing;
-    if (hasPlotFloor && floorNotice != null && floorNotice.isNotEmpty) {
-      floorNoticeTrailing = Tooltip(
-        message: floorNotice,
-        child: Icon(
-          Icons.info_outline,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      );
-    }
-    final mergedTitleTrailing = _mergeComparisonTitleTrailing(
-      titleTrailing,
-      floorNoticeTrailing,
-    );
+        final resolvedLoadingLabel =
+            style.loadingLabel ?? l10n?.chartComparisonLoadingDefault;
+        final resolvedEmptyMessage =
+            style.emptyMessage ?? l10n?.chartComparisonEmptyDefault;
 
-    final resolvedLoadingLabel =
-        style.loadingLabel ?? l10n?.chartComparisonLoadingDefault;
-    final resolvedEmptyMessage =
-        style.emptyMessage ?? l10n?.chartComparisonEmptyDefault;
+        void handlePointTap(int index) {
+          if (index < 0 || index >= items.length || index >= points.length) {
+            return;
+          }
 
-    void handlePointTap(int index) {
-      if (index < 0 || index >= items.length || index >= points.length) {
-        return;
-      }
+          final item = items[index];
+          final event = AppComparisonBarPointTapEvent<T>(
+            item: item,
+            index: index,
+            label: points[index].label,
+            value: points[index].value,
+          );
+          onPointTap?.call(item, index);
+          onPointTapEvent?.call(event);
+        }
 
-      final item = items[index];
-      final event = AppComparisonBarPointTapEvent<T>(
-        item: item,
-        index: index,
-        label: points[index].label,
-        value: points[index].value,
-      );
-      onPointTap?.call(item, index);
-      onPointTapEvent?.call(event);
-    }
+        Widget innerChart = SyncfusionComparisonBarChart(
+          points: points,
+          preset: preset,
+          style: style,
+          pointColors: pointColorsOut,
+          dataLabels: dataLabelsOut,
+          tooltipLabels: tooltipLabelsOut,
+          onPointTap: (onPointTap == null && onPointTapEvent == null)
+              ? null
+              : handlePointTap,
+          isLoading: isLoading,
+          emptyPlaceholder: emptyPlaceholder,
+          resolvedLoadingLabel: resolvedLoadingLabel,
+          resolvedEmptyMessage: resolvedEmptyMessage,
+        );
 
-    Widget innerChart = SyncfusionComparisonBarChart(
-      points: points,
-      preset: preset,
-      style: style,
-      pointColors: pointColorsOut,
-      dataLabels: dataLabelsOut,
-      tooltipLabels: tooltipLabelsOut,
-      onPointTap: (onPointTap == null && onPointTapEvent == null)
-          ? null
-          : handlePointTap,
-      isLoading: isLoading,
-      emptyPlaceholder: emptyPlaceholder,
-      resolvedLoadingLabel: resolvedLoadingLabel,
-      resolvedEmptyMessage: resolvedEmptyMessage,
-    );
+        if (semanticsCoordinatorLabel != null &&
+            semanticsCoordinatorLabel.isNotEmpty) {
+          innerChart = Semantics(
+            label: semanticsCoordinatorLabel,
+            excludeSemantics: true,
+            child: innerChart,
+          );
+        }
 
-    if (semanticsCoordinatorLabel != null &&
-        semanticsCoordinatorLabel.isNotEmpty) {
-      innerChart = Semantics(
-        label: semanticsCoordinatorLabel,
-        excludeSemantics: true,
-        child: innerChart,
-      );
-    }
+        if (title == null && titleWidget == null) {
+          return innerChart;
+        }
 
-    if (title == null && titleWidget == null) {
-      return innerChart;
-    }
-
-    return AppChartShell(
-      title: title ?? '',
-      titleWidget: titleWidget,
-      subtitle: subtitle,
-      titleTrailing: mergedTitleTrailing,
-      belowSubtitle: belowSubtitle,
-      child: innerChart,
+        return AppChartShell(
+          title: title ?? '',
+          titleWidget: titleWidget,
+          subtitle: subtitle,
+          titleTrailing: mergedTitleTrailing,
+          belowSubtitle: belowSubtitle,
+          child: innerChart,
+        );
+      },
     );
   }
 }
