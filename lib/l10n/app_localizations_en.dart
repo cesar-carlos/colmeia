@@ -1995,4 +1995,51 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overviewLoadingLucratividadeMensalSemantics =>
       'Loading monthly product profitability chart…';
+
+  @override
+  String get salesHubTitle => 'Sales';
+
+  @override
+  String get salesHubSubtitle =>
+      'Access and manage commercial information by category.';
+
+  @override
+  String get salesAgentPickerLabel => 'Agent';
+
+  @override
+  String get salesAgentPickerEmpty => 'Select an agent';
+
+  @override
+  String get salesAgentPickerSheetTitle => 'Select an agent';
+
+  @override
+  String get salesAgentRequiredTitle => 'Agent selection required';
+
+  @override
+  String get salesAgentRequiredMessage =>
+      'Select an agent to view this information.';
+
+  @override
+  String get salesCardOpenAccountsTitle => 'Open Accounts';
+
+  @override
+  String get salesCardPaidAccountsTitle => 'Paid Accounts';
+
+  @override
+  String get salesCardPaymentHistoryTitle => 'Payment History';
+
+  @override
+  String get salesCardNewPaymentTitle => 'New Payment';
+
+  @override
+  String get agentStatusPending => 'Pending';
+
+  @override
+  String get agentStatusRejected => 'Rejected';
+
+  @override
+  String get agentStatusUnknown => 'Unknown';
+
+  @override
+  String get reportFiltersApplyButton => 'Apply';
 }

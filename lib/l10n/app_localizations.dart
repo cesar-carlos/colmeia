@@ -3327,6 +3327,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading monthly product profitability chart…'**
   String get overviewLoadingLucratividadeMensalSemantics;
+
+  /// No description provided for @salesHubTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get salesHubTitle;
+
+  /// No description provided for @salesHubSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Access and manage commercial information by category.'**
+  String get salesHubSubtitle;
+
+  /// No description provided for @salesAgentPickerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get salesAgentPickerLabel;
+
+  /// No description provided for @salesAgentPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an agent'**
+  String get salesAgentPickerEmpty;
+
+  /// No description provided for @salesAgentPickerSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an agent'**
+  String get salesAgentPickerSheetTitle;
+
+  /// No description provided for @salesAgentRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent selection required'**
+  String get salesAgentRequiredTitle;
+
+  /// No description provided for @salesAgentRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an agent to view this information.'**
+  String get salesAgentRequiredMessage;
+
+  /// No description provided for @salesCardOpenAccountsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Accounts'**
+  String get salesCardOpenAccountsTitle;
+
+  /// No description provided for @salesCardPaidAccountsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid Accounts'**
+  String get salesCardPaidAccountsTitle;
+
+  /// No description provided for @salesCardPaymentHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment History'**
+  String get salesCardPaymentHistoryTitle;
+
+  /// No description provided for @salesCardNewPaymentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New Payment'**
+  String get salesCardNewPaymentTitle;
+
+  /// No description provided for @agentStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get agentStatusPending;
+
+  /// No description provided for @agentStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get agentStatusRejected;
+
+  /// No description provided for @agentStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get agentStatusUnknown;
+
+  /// No description provided for @reportFiltersApplyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get reportFiltersApplyButton;
 }
 
 class _AppLocalizationsDelegate

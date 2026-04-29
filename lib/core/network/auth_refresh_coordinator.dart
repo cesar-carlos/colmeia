@@ -5,6 +5,7 @@ import 'package:colmeia/core/network/auth_request_options.dart';
 import 'package:colmeia/core/network/auth_session_accessor.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/features/auth/data/models/client_refresh_response_dto.dart';
+
 import 'package:dio/dio.dart';
 
 class AuthRefreshCoordinator {
@@ -19,11 +20,7 @@ class AuthRefreshCoordinator {
   final Dio _refreshDio;
   final AuthSessionAccessor _sessionAccessor;
   final AuthSessionEvents _sessionEvents;
-  static const Set<int> _sessionInvalidationStatusCodes = <int>{
-    400,
-    401,
-    403,
-  };
+  static const Set<int> _sessionInvalidationStatusCodes = <int>{400, 401, 403};
 
   Future<String?>? _inFlightRefresh;
 

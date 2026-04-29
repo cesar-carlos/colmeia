@@ -737,5 +737,20 @@
   "overviewLucratividadeMensalRevenueSeriesLabel": "Receita",
   "overviewLucratividadeMensalCostSeriesLabel": "Custo reposicao",
   "overviewLucratividadeMensalMarginSeriesLabel": "Margem %",
-  "overviewLoadingLucratividadeMensalSemantics": "Carregando grafico de lucratividade mensal do produto…"
+  "overviewLoadingLucratividadeMensalSemantics": "Carregando grafico de lucratividade mensal do produto…",
+  "salesHubTitle": "Vendas",
+  "salesHubSubtitle": "Acesse e gerencie informacoes comerciais por categoria.",
+  "salesAgentPickerLabel": "Agente",
+  "salesAgentPickerEmpty": "Selecione um agente",
+  "salesAgentPickerSheetTitle": "Selecione um agente",
+  "salesAgentRequiredTitle": "Selecao de agente obrigatoria",
+  "salesAgentRequiredMessage": "Selecione um agente para visualizar essas informacoes.",
+  "salesCardOpenAccountsTitle": "Contas em Aberto",
+  "salesCardPaidAccountsTitle": "Contas Pagas",
+  "salesCardPaymentHistoryTitle": "Historico de Pagamentos",
+  "salesCardNewPaymentTitle": "Novo Pagamento",
+  "agentStatusPending": "Pendente",
+  "agentStatusRejected": "Rejeitado",
+  "agentStatusUnknown": "Desconhecido",
+  "reportFiltersApplyButton": "Aplicar"
 }

@@ -38,6 +38,10 @@ enum AppRoute {
     path: '/sales',
     title: 'Vendas',
   ),
+  salesCard(
+    path: '/sales/:cardId',
+    title: 'Vendas',
+  ),
   returns(
     path: '/returns',
     title: 'Devolucoes',
@@ -101,6 +105,9 @@ enum AppRoute {
     if (this == AppRoute.dashboardStore) {
       return shellRoutes.indexOf(AppRoute.dashboard);
     }
+    if (this == AppRoute.salesCard) {
+      return shellRoutes.indexOf(AppRoute.sales);
+    }
     final index = shellRoutes.indexOf(this);
     return index >= 0 ? index : null;
   }
@@ -113,6 +120,7 @@ enum AppRoute {
       case AppRoute.dashboardStore:
         return Icons.space_dashboard_rounded;
       case AppRoute.sales:
+      case AppRoute.salesCard:
         return Icons.point_of_sale_rounded;
       case AppRoute.returns:
         return Icons.assignment_return_rounded;
@@ -145,6 +153,7 @@ enum AppRoute {
       case AppRoute.dashboardStore:
         return Icons.space_dashboard_outlined;
       case AppRoute.sales:
+      case AppRoute.salesCard:
         return Icons.point_of_sale_outlined;
       case AppRoute.returns:
         return Icons.assignment_return_outlined;
@@ -176,6 +185,8 @@ enum AppRoute {
     switch (this) {
       case AppRoute.agentsDetail:
         return AppRoute.agents.shellIndex;
+      case AppRoute.salesCard:
+        return AppRoute.sales.shellIndex;
       case AppRoute.unmatched:
       case AppRoute.login:
       case AppRoute.register:
@@ -202,6 +213,7 @@ enum AppRoute {
       case AppRoute.dashboardStore:
         return UserPermission.viewDashboard;
       case AppRoute.sales:
+      case AppRoute.salesCard:
         return UserPermission.viewSales;
       case AppRoute.returns:
         return UserPermission.viewReturns;

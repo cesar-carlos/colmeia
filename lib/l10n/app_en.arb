@@ -959,5 +959,20 @@
   "overviewLucratividadeMensalRevenueSeriesLabel": "Revenue",
   "overviewLucratividadeMensalCostSeriesLabel": "Replacement cost",
   "overviewLucratividadeMensalMarginSeriesLabel": "Margin %",
-  "overviewLoadingLucratividadeMensalSemantics": "Loading monthly product profitability chart…"
+  "overviewLoadingLucratividadeMensalSemantics": "Loading monthly product profitability chart…",
+  "salesHubTitle": "Sales",
+  "salesHubSubtitle": "Access and manage commercial information by category.",
+  "salesAgentPickerLabel": "Agent",
+  "salesAgentPickerEmpty": "Select an agent",
+  "salesAgentPickerSheetTitle": "Select an agent",
+  "salesAgentRequiredTitle": "Agent selection required",
+  "salesAgentRequiredMessage": "Select an agent to view this information.",
+  "salesCardOpenAccountsTitle": "Open Accounts",
+  "salesCardPaidAccountsTitle": "Paid Accounts",
+  "salesCardPaymentHistoryTitle": "Payment History",
+  "salesCardNewPaymentTitle": "New Payment",
+  "agentStatusPending": "Pending",
+  "agentStatusRejected": "Rejected",
+  "agentStatusUnknown": "Unknown",
+  "reportFiltersApplyButton": "Apply"
 }

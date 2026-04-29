@@ -7,7 +7,6 @@ typedef _ShellPlaceholderSpec = (AppRoute route, String Function(AppLocalization
 
 List<RouteBase> buildShellPlaceholderRoutes() {
   final specs = <_ShellPlaceholderSpec>[
-    (AppRoute.sales, _salesTitle),
     (AppRoute.inventory, _inventoryTitle),
   ];
 
@@ -26,7 +25,5 @@ List<RouteBase> buildShellPlaceholderRoutes() {
       )
       .toList(growable: false);
 }
-
-String _salesTitle(AppLocalizations l10n) => l10n.shellNavSalesLabel;
 
 String _inventoryTitle(AppLocalizations l10n) => l10n.shellNavInventoryLabel;

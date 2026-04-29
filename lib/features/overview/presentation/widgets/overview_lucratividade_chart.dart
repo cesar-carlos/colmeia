@@ -13,6 +13,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 String _xLabel(ResumoProdutoVendaLucratividadeRow r) =>
     formatComparisonBarXAxisLabelTwoLines(
       r.filialLabel,
+      maxCharsPerLine: 12,
     );
 
 num _barByProfit(ResumoProdutoVendaLucratividadeRow r) => r.lucro;
@@ -168,18 +169,20 @@ class _OverviewLucratividadeChartState
     final barColor = isCost ? tokens.warning : tokens.chartSeriesPrimary;
 
     final style = AppComboChartStyle(
-      height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
+      height: tokens.chartStandardHeight +
+          tokens.contentSpacing * 2 +
+          tokens.gapMd * 2 +
+          tokens.gapSm,
       animationDuration: const Duration(milliseconds: 350),
       leftAxisFormat: isMargin ? _percentFormat : _compactCurrencyFormat,
       rightAxisFormat: _compactCurrencyFormat,
-      chartPadding: EdgeInsets.zero,
+      chartPadding: EdgeInsets.only(bottom: tokens.gapSm),
       showRightYAxis: false,
       showLineSeries: false,
       showDataLabels: true,
       barDataLabelOffset: Offset(0, tokens.gapSm),
-      minCategorySlotWidth:
-          104, // Increased slot width to prevent label overlap
-      categoryLabelIntersectAction: AxisLabelIntersectAction.none,
+      minCategorySlotWidth: 96,
+      categoryLabelIntersectAction: AxisLabelIntersectAction.rotate45,
       horizontalScrollSemanticsHint:
           l10n.overviewComparisonBarHorizontalScrollHint,
       stickyPrimaryYAxisWhileScrolling: false,

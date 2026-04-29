@@ -2025,6 +2025,53 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get overviewLoadingLucratividadeMensalSemantics =>
       'Carregando grafico de lucratividade mensal do produto…';
+
+  @override
+  String get salesHubTitle => 'Vendas';
+
+  @override
+  String get salesHubSubtitle =>
+      'Acesse e gerencie informacoes comerciais por categoria.';
+
+  @override
+  String get salesAgentPickerLabel => 'Agente';
+
+  @override
+  String get salesAgentPickerEmpty => 'Selecione um agente';
+
+  @override
+  String get salesAgentPickerSheetTitle => 'Selecione um agente';
+
+  @override
+  String get salesAgentRequiredTitle => 'Selecao de agente obrigatoria';
+
+  @override
+  String get salesAgentRequiredMessage =>
+      'Selecione um agente para visualizar essas informacoes.';
+
+  @override
+  String get salesCardOpenAccountsTitle => 'Contas em Aberto';
+
+  @override
+  String get salesCardPaidAccountsTitle => 'Contas Pagas';
+
+  @override
+  String get salesCardPaymentHistoryTitle => 'Historico de Pagamentos';
+
+  @override
+  String get salesCardNewPaymentTitle => 'Novo Pagamento';
+
+  @override
+  String get agentStatusPending => 'Pendente';
+
+  @override
+  String get agentStatusRejected => 'Rejeitado';
+
+  @override
+  String get agentStatusUnknown => 'Desconhecido';
+
+  @override
+  String get reportFiltersApplyButton => 'Aplicar';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).

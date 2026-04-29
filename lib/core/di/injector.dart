@@ -5,6 +5,7 @@ import 'package:colmeia/core/di/injector_client_agents.dart';
 import 'package:colmeia/core/di/injector_core.dart';
 import 'package:colmeia/core/di/injector_overview.dart';
 import 'package:colmeia/core/di/injector_presentation.dart';
+import 'package:colmeia/core/di/injector_sales.dart';
 import 'package:colmeia/core/di/injector_socket.dart';
 import 'package:colmeia/core/di/injector_user_context.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
@@ -26,6 +27,7 @@ Future<void> setupDependencies() async {
   registerInjectorAgentMeta(getIt);
   registerInjectorAgentQueries(getIt);
   registerInjectorOverview(getIt);
+  registerInjectorSales(getIt);
   registerInjectorPresentation(getIt);
 }
 
