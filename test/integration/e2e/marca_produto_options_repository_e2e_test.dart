@@ -1,0 +1,121 @@
+import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
+import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
+import 'package:flutter_test/flutter_test.dart' hide group;
+import 'package:test_api/scaffolding.dart' show group;
+
+import 'support/e2e_dependency_bootstrap.dart';
+
+void main() {
+  group(
+    'MarcaProdutoOptionsRepository (e2e)',
+    () {
+      test(
+        'loadAll executes the real Marca options query',
+        () async {
+          final missingKeys = missingE2eRepositoryKeys();
+          if (missingKeys.isNotEmpty) {
+            // E2E skip hint; `print` is intentional for local diagnostics.
+            // ignore: avoid_print
+            print(
+              'SKIP marca_produto_options_repository_e2e: missing '
+              '${missingKeys.join(', ')}. '
+              'Set them in assets/env/local.env, process env, or --dart-define.',
+            );
+            return;
+          }
+
+          await e2eSetupDependencies();
+          addTearDown(e2eTeardownDependencies);
+
+          final repository = getIt<MarcaProdutoOptionsRepository>();
+
+          final result = await repository.loadAll(
+            userId: 'user-1',
+            agentId: AppEnvironment.e2eAgentId,
+            clientToken: AppEnvironment.e2eClientToken,
+          );
+
+          result.fold(
+            (rows) {
+              for (final row in rows) {
+                expect(row.codMarca, greaterThan(0));
+                expect(row.nomeMarca, isNotEmpty);
+              }
+            },
+            (failure) {
+              expect(
+                failure,
+                isNot(isA<SessionFailure>()),
+                reason:
+                    'Unexpected HTTP 401 after client login '
+                    '— check E2E_* values.',
+              );
+              expect(
+                isAcceptableE2eAgentSqlRepositoryFailure(failure),
+                isTrue,
+                reason:
+                    'Repository e2e should return rows, invalid_policy / '
+                    'missing_permission RPC, or transient bridge HTTP 5xx.',
+              );
+            },
+          );
+        },
+      );
+
+      test(
+        'use case executes the same Marca options query',
+        () async {
+          final missingKeys = missingE2eRepositoryKeys();
+          if (missingKeys.isNotEmpty) {
+            // E2E skip hint; `print` is intentional for local diagnostics.
+            // ignore: avoid_print
+            print(
+              'SKIP load_marca_produto_options use_case e2e: missing '
+              '${missingKeys.join(', ')}. '
+              'Set them in assets/env/local.env, process env, or --dart-define.',
+            );
+            return;
+          }
+
+          await e2eSetupDependencies();
+          addTearDown(e2eTeardownDependencies);
+
+          final useCase = getIt<LoadMarcaProdutoOptionsUseCase>();
+          final result = await useCase(
+            userId: 'user-1',
+            agentId: AppEnvironment.e2eAgentId,
+            clientToken: AppEnvironment.e2eClientToken,
+          );
+
+          result.fold(
+            (rows) {
+              for (final row in rows) {
+                expect(row.codMarca, greaterThan(0));
+              }
+            },
+            (failure) {
+              expect(
+                failure,
+                isNot(isA<SessionFailure>()),
+                reason:
+                    'Unexpected HTTP 401 after client login '
+                    '— check E2E_* values.',
+              );
+              expect(
+                isAcceptableE2eAgentSqlRepositoryFailure(failure),
+                isTrue,
+                reason:
+                    'Use-case e2e should return rows, invalid_policy / '
+                    'missing_permission RPC, or transient bridge HTTP 5xx.',
+              );
+            },
+          );
+        },
+      );
+    },
+    tags: <String>['e2e'],
+  );
+}
