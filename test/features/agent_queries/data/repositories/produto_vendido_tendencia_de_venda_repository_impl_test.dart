@@ -18,9 +18,9 @@ void main() {
   late _MockAgentQueriesRepository agentQueriesRepository;
   late ProdutoVendidoTendenciaDeVendaRepositoryImpl repository;
 
-  final atualInicio = DateTime(2026, 3, 1);
+  final atualInicio = DateTime(2026, 3);
   final atualFim = DateTime(2026, 3, 31);
-  final anteriorInicio = DateTime(2026, 2, 1);
+  final anteriorInicio = DateTime(2026, 2);
   final anteriorFim = DateTime(2026, 2, 28);
 
   setUpAll(() {
@@ -70,7 +70,7 @@ void main() {
       userId: 'user-1',
       agentId: 'agent-1',
       filter: ProdutoVendidoTendenciaDeVendaFilter(
-        periodoAtualInicio: DateTime(2026, 3, 1),
+        periodoAtualInicio: DateTime(2026, 3),
         periodoAtualFim: DateTime(2026, 3, 31),
         periodoAnteriorInicio: DateTime(2026, 3, 15),
         periodoAnteriorFim: DateTime(2026, 4, 15),
@@ -204,7 +204,6 @@ void main() {
         periodoAnteriorInicio: anteriorInicio,
         periodoAnteriorFim: anteriorFim,
         page: 3,
-        pageSize: 20,
       ),
     );
 
@@ -264,10 +263,10 @@ void main() {
     check(row.codEmpresa).equals(1);
     check(row.codFilial).equals(1);
     check(row.codProduto).equals(4051);
-    check(row.qtdAnterior).equals(1.0);
-    check(row.qtdAtual).equals(20.0);
-    check(row.diferenca).equals(19.0);
-    check(row.percentualTendencia).equals(1900.0);
+    check(row.qtdAnterior).equals(1);
+    check(row.qtdAtual).equals(20);
+    check(row.diferenca).equals(19);
+    check(row.percentualTendencia).equals(1900);
     check(row.classificacao).equals('CRESCENDO');
   });
 }

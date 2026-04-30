@@ -28,10 +28,10 @@ void main() {
       check(model.codFilial).equals(2);
       check(model.codProduto).equals(4051);
       check(model.codUnidadeMedida).equals('PT');
-      check(model.qtdAnterior).equals(1.0);
-      check(model.qtdAtual).equals(20.0);
-      check(model.diferenca).equals(19.0);
-      check(model.percentualTendencia).equals(1900.0);
+      check(model.qtdAnterior).equals(1);
+      check(model.qtdAtual).equals(20);
+      check(model.diferenca).equals(19);
+      check(model.percentualTendencia).equals(1900);
       check(model.classificacao).equals('CRESCENDO');
     });
 
@@ -59,7 +59,7 @@ void main() {
       check(model.nomeGrupoProduto).isNull();
       check(model.codMarca).isNull();
       check(model.nomeMarca).isNull();
-      check(model.toEntity().percentualTendencia).equals(6100.0);
+      check(model.toEntity().percentualTendencia).equals(6100);
     });
 
     test('fromMap parses decimal values with comma', () {
@@ -81,7 +81,7 @@ void main() {
       check(model.qtdAnterior).equals(12.5);
       check(model.qtdAtual).equals(14.25);
       check(model.diferenca).equals(1.75);
-      check(model.percentualTendencia).equals(14.0);
+      check(model.percentualTendencia).equals(14);
     });
 
     test('fromMap throws FormatException when CodProduto is missing', () {

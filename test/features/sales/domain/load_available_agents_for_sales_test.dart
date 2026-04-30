@@ -102,7 +102,7 @@ ClientAgent _agent({
   required String agentId,
   required String name,
 }) {
-  final timestamp = DateTime.utc(2026, 1, 1);
+  final timestamp = DateTime.utc(2026);
   return ClientAgent(
     agentId: agentId,
     name: name,

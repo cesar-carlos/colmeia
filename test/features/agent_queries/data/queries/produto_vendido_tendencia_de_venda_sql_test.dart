@@ -55,17 +55,15 @@ void main() {
   });
 
   test(
-    'row_number ordering uses percentual tendencia then stable tie-breakers',
+    'row_number ordering uses empresa, filial, percentual tendencia DESC',
     () {
       final rowNumberBlock = sql.split('ROW_NUMBER() OVER').last;
-      final tendencia = rowNumberBlock.indexOf('PercentualTendencia DESC');
       final empresa = rowNumberBlock.indexOf('CodEmpresa ASC');
       final filial = rowNumberBlock.indexOf('CodFilial ASC');
-      final produto = rowNumberBlock.indexOf('CodProduto ASC');
-      check(tendencia).isGreaterThan(-1);
-      check(tendencia).isLessThan(empresa);
+      final tendencia = rowNumberBlock.indexOf('PercentualTendencia DESC');
+      check(empresa).isGreaterThan(-1);
       check(empresa).isLessThan(filial);
-      check(filial).isLessThan(produto);
+      check(filial).isLessThan(tendencia);
     },
   );
 

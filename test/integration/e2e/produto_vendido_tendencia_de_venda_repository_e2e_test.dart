@@ -38,9 +38,9 @@ void main() {
             agentId: AppEnvironment.e2eAgentId,
             clientToken: AppEnvironment.e2eClientToken,
             filter: ProdutoVendidoTendenciaDeVendaFilter(
-              periodoAtualInicio: DateTime(2026, 3, 1),
+              periodoAtualInicio: DateTime(2026, 3),
               periodoAtualFim: DateTime(2026, 3, 31),
-              periodoAnteriorInicio: DateTime(2026, 2, 1),
+              periodoAnteriorInicio: DateTime(2026, 2),
               periodoAnteriorFim: DateTime(2026, 2, 28),
             ),
           );
@@ -104,9 +104,9 @@ void main() {
             agentId: AppEnvironment.e2eAgentId,
             clientToken: AppEnvironment.e2eClientToken,
             filter: ProdutoVendidoTendenciaDeVendaFilter(
-              periodoAtualInicio: DateTime(2026, 3, 1),
+              periodoAtualInicio: DateTime(2026, 3),
               periodoAtualFim: DateTime(2026, 3, 31),
-              periodoAnteriorInicio: DateTime(2026, 2, 1),
+              periodoAnteriorInicio: DateTime(2026, 2),
               periodoAnteriorFim: DateTime(2026, 2, 28),
             ),
           );
