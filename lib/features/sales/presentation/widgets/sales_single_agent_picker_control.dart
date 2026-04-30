@@ -41,6 +41,7 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
     required this.onSelectionChanged,
     super.key,
     this.enabled = true,
+    this.showTrailingFilterButton = true,
   });
 
   final AppLocalizations l10n;
@@ -48,6 +49,7 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
   final String? selectedAgentId;
   final ValueChanged<String> onSelectionChanged;
   final bool enabled;
+  final bool showTrailingFilterButton;
 
   Future<void> _openSheet(BuildContext context) async {
     if (!enabled || availableAgents.isEmpty) {
@@ -108,6 +110,52 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
 
     void openSheet() => _openSheet(context);
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+          style: typography.utilityOverline.copyWith(
+            color: colors.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: labelToFieldGap),
+        Semantics(
+          button: true,
+          label: hasSelection
+              ? '${l10n.dashboardHomeFiltersAgentsLabel}: ${selectedAgent.name}'
+              : l10n.salesAgentPickerEmpty,
+          child: InkWell(
+            onTap: enabled ? openSheet : null,
+            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: tokens.gapXs,
+              ),
+              child: Text(
+                hasSelection
+                    ? selectedAgent.name
+                    : l10n.salesAgentPickerEmpty,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: typography.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: hasSelection
+                      ? scheme.onSurface
+                      : colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (!showTrailingFilterButton) {
+      return AppSectionCard(child: content);
+    }
+
     return AppSectionCard(
       child: Stack(
         clipBehavior: Clip.none,
@@ -116,48 +164,7 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
             padding: EdgeInsetsDirectional.only(
               end: _kAgentFilterCircleSize + tokens.gapSm,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
-                  style: typography.utilityOverline.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-                SizedBox(height: labelToFieldGap),
-                Semantics(
-                  button: true,
-                  label: hasSelection
-                      ? '${l10n.dashboardHomeFiltersAgentsLabel}: ${selectedAgent.name}'
-                      : l10n.salesAgentPickerEmpty,
-                  child: InkWell(
-                    onTap: enabled ? openSheet : null,
-                    borderRadius:
-                        BorderRadius.circular(tokens.formFieldRadius),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: tokens.gapXs,
-                      ),
-                      child: Text(
-                        hasSelection
-                            ? selectedAgent.name
-                            : l10n.salesAgentPickerEmpty,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: typography.body.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: hasSelection
-                              ? scheme.onSurface
-                              : colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: content,
           ),
           PositionedDirectional(
             top: 0,

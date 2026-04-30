@@ -685,7 +685,12 @@ class _OverviewAgentSelectionSheetState
                   SafeArea(
                     top: false,
                     child: Padding(
-                      padding: EdgeInsets.all(tokens.contentSpacing),
+                      padding: EdgeInsets.fromLTRB(
+                        tokens.contentSpacing,
+                        tokens.gapMd,
+                        tokens.contentSpacing,
+                        tokens.contentSpacing,
+                      ),
                       child: Row(
                         children: <Widget>[
                           Expanded(

@@ -10,8 +10,13 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_p
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_sort_by.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_agent_required_gate.dart';
+import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -19,9 +24,10 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart';
+import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:colmeia/shared/widgets/reports/app_report_filters_panel.dart';
-import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -34,16 +40,14 @@ class SalesProdutoRankLucroPage extends StatefulWidget {
       _SalesProdutoRankLucroPageState();
 }
 
-const double _kProdutoRankFilterCircleSize = 44;
-const Color _kProdutoRankFilterCircleFill = Color(0xFFFFE5D9);
-const Color _kProdutoRankFilterCircleIcon = Color(0xFF5D4037);
-
 class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
   late final SalesPreferences _prefs;
   late final AgentClientTokenReader _clientTokenReader;
+  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadProdutoVendidoProdutoRankLucroUseCase _loadRanking;
 
   String? _selectedAgentId;
+  List<OverviewAgentOption> _availableAgents = <OverviewAgentOption>[];
   String? _cachedClientTokenUserId;
   String? _cachedClientTokenAgentId;
   String? _cachedClientToken;
@@ -76,8 +80,9 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
     final resolved = tokenByAgent[agentId]?.trim();
     _cachedClientTokenUserId = userId;
     _cachedClientTokenAgentId = agentId;
-    return _cachedClientToken =
-        resolved == null || resolved.isEmpty ? null : resolved;
+    return _cachedClientToken = resolved == null || resolved.isEmpty
+        ? null
+        : resolved;
   }
 
   @override
@@ -85,6 +90,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
     super.initState();
     _prefs = getIt<SalesPreferences>();
     _clientTokenReader = getIt<AgentClientTokenReader>();
+    _loadAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
     _loadRanking = getIt<LoadProdutoVendidoProdutoRankLucroUseCase>();
     _selectedAgentId = _prefs.selectedAgentId;
     final restored = _prefs.restoreProdutoRankLucroFilters();
@@ -106,8 +112,39 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
       'sortBy': sortBy,
     };
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_reload());
+      unawaited(_loadAgents());
     });
+  }
+
+  Future<void> _loadAgents() async {
+    final auth = context.read<AuthController>();
+    final userId = auth.session?.userId;
+    if (userId == null) {
+      return;
+    }
+
+    final agents = await _loadAgentsUseCase(userId);
+    if (!mounted) {
+      return;
+    }
+
+    final authAfter = context.read<AuthController>();
+    if (authAfter.session?.userId != userId) {
+      return;
+    }
+
+    final nextSelection = reconcileSelectedSalesAgentId(
+      agents: agents,
+      previousSelectedId: _selectedAgentId,
+    );
+    setState(() {
+      _availableAgents = agents;
+      _selectedAgentId = nextSelection;
+    });
+    if (nextSelection != _prefs.selectedAgentId) {
+      unawaited(_prefs.setSelectedAgentId(nextSelection));
+    }
+    unawaited(_reload());
   }
 
   Future<void> _reload() async {
@@ -197,14 +234,21 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
   }
 
   void _onFiltersChanged(Map<String, Object?> next) {
-    setState(() => _filters = next);
-    unawaited(_prefs.persistProdutoRankLucroFilters(next));
+    final nextAgentId = (next['agentId'] as String?)?.trim();
+    final normalizedAgentId = nextAgentId == null || nextAgentId.isEmpty
+        ? null
+        : nextAgentId;
+    final nextFilters = Map<String, Object?>.from(next)..remove('agentId');
+    setState(() {
+      _selectedAgentId = normalizedAgentId;
+      _filters = nextFilters;
+    });
+    unawaited(_prefs.setSelectedAgentId(normalizedAgentId));
+    unawaited(_prefs.persistProdutoRankLucroFilters(nextFilters));
     unawaited(_reload());
   }
 
-  Future<void> _openFiltersSheet(
-    List<AppReportFilterDescriptor> filterDescriptors,
-  ) async {
+  Future<void> _openFiltersSheet() async {
     if (!mounted) {
       return;
     }
@@ -214,33 +258,13 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
       useSafeArea: true,
       showDragHandle: true,
       builder: (context) {
-        final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-        final sheetL10n = AppLocalizations.of(context);
-        final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            tokens.contentSpacing,
-            tokens.gapMd,
-            tokens.contentSpacing,
-            tokens.contentSpacing + bottomInset,
-          ),
-          child: SingleChildScrollView(
-            child: AppReportFiltersPanel(
-              title: sheetL10n.reportFiltersTitleWithContext(
-                sheetL10n.salesCardProdutoRankLucroTitle,
-              ),
-              filters: filterDescriptors,
-              initialValues: _filters,
-              onApply: (values) {
-                _onFiltersChanged(values);
-                Navigator.of(context).pop();
-              },
-              onClear: () {
-                _onFiltersChanged(const <String, Object?>{});
-                Navigator.of(context).pop();
-              },
-            ),
-          ),
+        return _SalesProdutoRankLucroFiltersSheet(
+          l10n: AppLocalizations.of(context),
+          availableAgents: _availableAgents,
+          initialSelectedAgentId: _selectedAgentId,
+          initialPeriod: _filters['periodo'] as DateTimeRange?,
+          initialSortKey: _filters['sortBy'] as String?,
+          onApply: _onFiltersChanged,
         );
       },
     );
@@ -284,28 +308,13 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
         ? AppBrFormatters.compactCurrencyFormat
         : NumberFormat.decimalPattern('pt_BR');
 
-    final filterDescriptors = <AppReportFilterDescriptor>[
-      AppReportFilterDescriptor(
-        name: 'periodo',
-        label: l10n.salesProdutoRankLucroFilterPeriod,
-        type: AppReportFilterType.dateRange,
-      ),
-      AppReportFilterDescriptor(
-        name: 'sortBy',
-        label: l10n.salesProdutoRankLucroFilterSortBy,
-        type: AppReportFilterType.singleSelect,
-        options: <AppReportFilterOption>[
-          AppReportFilterOption(
-            value: 'qtdItensVendido',
-            label: l10n.salesProdutoRankLucroSortQuantity,
-          ),
-          AppReportFilterOption(
-            value: 'totalValorLucro',
-            label: l10n.salesProdutoRankLucroSortProfit,
-          ),
-        ],
-      ),
-    ];
+    final selectedAgent = _availableAgents
+        .cast<OverviewAgentOption?>()
+        .firstWhere(
+          (agent) => agent?.agentId == _selectedAgentId,
+          orElse: () => null,
+        );
+    final selectedAgentName = selectedAgent?.name ?? l10n.salesAgentPickerEmpty;
     final metricLabel = metricProfit
         ? l10n.salesProdutoRankLucroSortProfit
         : l10n.salesProdutoRankLucroSortQuantity;
@@ -314,9 +323,9 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
     final maxValue = _rows.isEmpty
         ? 0.0
         : _rows
-            .map((r) => _chartValueFor(r, sortKey))
-            .reduce((a, b) => a > b ? a : b)
-            .toDouble();
+              .map((r) => _chartValueFor(r, sortKey))
+              .reduce((a, b) => a > b ? a : b)
+              .toDouble();
 
     final chartStyles = AppHorizontalProgressChartStyle(
       barColor: theme.appColors.primary,
@@ -341,231 +350,275 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
             subtitle: l10n.salesHubSubtitle,
           ),
           SizedBox(height: tokens.sectionSpacing),
-          SalesAgentRequiredGate(
-            selectedAgentId: _selectedAgentId,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                _ProdutoRankLucroFilterTrigger(
-                  l10n: l10n,
-                  periodLabel: periodSubtitle,
-                  metricLabel: metricLabel,
-                  isLoading: _loading,
-                  onOpenFilters: () => unawaited(
-                    _openFiltersSheet(filterDescriptors),
-                  ),
-                ),
-                SizedBox(height: tokens.sectionSpacing),
-                if (_error != null && _error!.trim().isNotEmpty)
-                  AppInlineErrorPanel(
-                    message: _error!,
-                    onRetry: () => unawaited(_reload()),
-                  )
-                else
-                  AppSectionCard(
-                    child: Padding(
-                      padding: EdgeInsets.all(tokens.contentSpacing),
-                      child:
-                          AppHorizontalProgressChart<
-                            ProdutoVendidoProdutoRankLucroRow
-                          >(
-                            titleWidget: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  l10n.salesProdutoRankLucroChartTitle,
-                                  style: theme.appTypography.sectionHeaderH2
-                                      .copyWith(fontWeight: FontWeight.w700),
-                                ),
-                                SizedBox(height: tokens.gapXs),
-                                Text(
-                                  periodSubtitle,
-                                  style: theme.appTypography.caption.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                SizedBox(height: tokens.gapXs / 2),
-                                Text(
-                                  metricSubtitle,
-                                  style: theme.appTypography.utilityOverline
-                                      .copyWith(
-                                        color: theme.appColors.onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
-                            ),
-                            items: _rows,
-                            labelBuilder: (r) => r.nomeProduto.trim(),
-                            valueBuilder: (r) => _chartValueFor(r, sortKey).toDouble(),
-                            maxValue: maxValue,
-                            isLoading: _loading && _error == null,
-                            rowLeadingBuilder: (context, row) => _RankBadge(
-                              rank: _rowRankOf(row),
-                            ),
-                            rowTooltipBuilder: (r, value, _) {
-                              final name = r.nomeProduto.trim();
-                              final text = metricProfit
-                                  ? AppBrFormatters.smartCompactCurrency(value)
-                                  : axisFormat.format(value);
-                              return '$name • $text';
-                            },
-                            valueLabelBuilder:
-                                (r, value, _) => metricProfit
-                                    ? AppBrFormatters.smartCompactCurrency(
-                                        value,
-                                      )
-                                    : axisFormat.format(value),
-                            showDividers: true,
-                            style: chartStyles,
-                            wrapInCard: false,
-                            emptyPlaceholder: Center(
-                              child: Text(
-                                l10n.chartComparisonEmptyDefault,
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
+          SalesCardFilterTrigger(
+            onTap: () => unawaited(_openFiltersSheet()),
+            buttonSemanticsLabel: l10n.reportFiltersButton,
+            summaryItems: <SalesCardFilterSummaryItem>[
+              SalesCardFilterSummaryItem(
+                label: l10n.dashboardHomeFiltersAgentsLabel,
+                value: selectedAgentName,
+              ),
+              SalesCardFilterSummaryItem(
+                label: l10n.salesProdutoRankLucroFilterPeriod,
+                value: periodSubtitle,
+              ),
+              SalesCardFilterSummaryItem(
+                label: l10n.salesProdutoRankLucroFilterSortBy,
+                value: metricLabel,
+              ),
+            ],
+            enabled: !_loading,
+          ),
+          SizedBox(height: tokens.sectionSpacing),
+          if (_selectedAgentId == null)
+            AppInlineErrorPanel(
+              tone: AppInlinePanelTone.informational,
+              title: l10n.salesAgentRequiredTitle,
+              message: l10n.salesAgentRequiredMessage,
+            )
+          else if (_error != null && _error!.trim().isNotEmpty)
+            AppInlineErrorPanel(
+              message: _error!,
+              onRetry: () => unawaited(_reload()),
+            )
+          else
+            AppSectionCard(
+              child: Padding(
+                padding: EdgeInsets.all(tokens.contentSpacing),
+                child:
+                    AppHorizontalProgressChart<
+                      ProdutoVendidoProdutoRankLucroRow
+                    >(
+                      titleWidget: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            l10n.salesProdutoRankLucroChartTitle,
+                            style: theme.appTypography.sectionHeaderH2.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
+                          SizedBox(height: tokens.gapXs),
+                          Text(
+                            periodSubtitle,
+                            style: theme.appTypography.caption.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          SizedBox(height: tokens.gapXs / 2),
+                          Text(
+                            metricSubtitle,
+                            style: theme.appTypography.utilityOverline.copyWith(
+                              color: theme.appColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      items: _rows,
+                      labelBuilder: (r) => r.nomeProduto.trim(),
+                      valueBuilder: (r) =>
+                          _chartValueFor(r, sortKey).toDouble(),
+                      maxValue: maxValue,
+                      isLoading: _loading && _error == null,
+                      rowLeadingBuilder: (context, row) =>
+                          _RankBadge(rank: _rowRankOf(row)),
+                      rowTooltipBuilder: (r, value, _) {
+                        final name = r.nomeProduto.trim();
+                        final text = metricProfit
+                            ? AppBrFormatters.smartCompactCurrency(value)
+                            : axisFormat.format(value);
+                        return '$name • $text';
+                      },
+                      valueLabelBuilder: (r, value, _) => metricProfit
+                          ? AppBrFormatters.smartCompactCurrency(value)
+                          : axisFormat.format(value),
+                      showDividers: true,
+                      style: chartStyles,
+                      wrapInCard: false,
+                      emptyPlaceholder: Center(
+                        child: Text(
+                          l10n.chartComparisonEmptyDefault,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _ProdutoRankLucroFilterTrigger extends StatelessWidget {
-  const _ProdutoRankLucroFilterTrigger({
+class _SalesProdutoRankLucroFiltersSheet extends StatefulWidget {
+  const _SalesProdutoRankLucroFiltersSheet({
     required this.l10n,
-    required this.periodLabel,
-    required this.metricLabel,
-    required this.onOpenFilters,
-    this.isLoading = false,
+    required this.availableAgents,
+    required this.initialSelectedAgentId,
+    required this.initialPeriod,
+    required this.initialSortKey,
+    required this.onApply,
   });
 
   final AppLocalizations l10n;
-  final String periodLabel;
-  final String metricLabel;
-  final VoidCallback onOpenFilters;
-  final bool isLoading;
+  final List<OverviewAgentOption> availableAgents;
+  final String? initialSelectedAgentId;
+  final DateTimeRange? initialPeriod;
+  final String? initialSortKey;
+  final ValueChanged<Map<String, Object?>> onApply;
+
+  @override
+  State<_SalesProdutoRankLucroFiltersSheet> createState() =>
+      _SalesProdutoRankLucroFiltersSheetState();
+}
+
+class _SalesProdutoRankLucroFiltersSheetState
+    extends State<_SalesProdutoRankLucroFiltersSheet> {
+  String? _selectedAgentId;
+  DateTimeRange? _period;
+  String? _sortKey;
+
+  DateTimeRange get _defaultPeriod {
+    final now = DateTime.now();
+    return DateTimeRange(
+      start: DateTime(now.year, now.month),
+      end: DateTime(now.year, now.month + 1, 0),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedAgentId = widget.initialSelectedAgentId;
+    _period = widget.initialPeriod;
+    _sortKey = widget.initialSortKey ?? 'qtdItensVendido';
+  }
+
+  void _apply() {
+    final selectedAgentId = _selectedAgentId;
+    if (selectedAgentId == null || selectedAgentId.trim().isEmpty) {
+      return;
+    }
+    widget.onApply(<String, Object?>{
+      'agentId': selectedAgentId,
+      'periodo': _period,
+      'sortBy': _sortKey,
+    });
+    Navigator.of(context).pop();
+  }
+
+  void _clear() {
+    setState(() {
+      _period = _defaultPeriod;
+      _sortKey = 'qtdItensVendido';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final typography = theme.appTypography;
-    final colors = theme.appColors;
-    final scheme = theme.colorScheme;
-    final enabled = !isLoading;
+    final selectedAgentMissingToken =
+        _selectedAgentId != null &&
+        widget.availableAgents.any(
+          (agent) =>
+              agent.agentId == _selectedAgentId &&
+              agent.missingLocalClientToken,
+        );
 
-    void open() {
-      if (!enabled) {
-        return;
-      }
-      onOpenFilters();
-    }
-
-    Widget summaryBlock({
-      required String overline,
-      required String value,
-    }) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            overline.toUpperCase(),
-            style: typography.utilityOverline.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: tokens.gapXs),
-          Semantics(
-            button: true,
-            label: '$overline: $value',
-            child: InkWell(
-              onTap: enabled ? open : null,
-              borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
-                child: Text(
-                  value,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: typography.body.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return AppSectionCard(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              end: _kProdutoRankFilterCircleSize + tokens.gapSm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                summaryBlock(
-                  overline: l10n.salesProdutoRankLucroFilterPeriod,
-                  value: periodLabel,
-                ),
-                SizedBox(height: tokens.gapSm),
-                summaryBlock(
-                  overline: l10n.salesProdutoRankLucroFilterSortBy,
-                  value: metricLabel,
-                ),
-              ],
-            ),
-          ),
-          PositionedDirectional(
-            end: 0,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: Semantics(
-                button: true,
-                label: l10n.reportFiltersButton,
-                child: Material(
-                  color: _kProdutoRankFilterCircleFill,
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: enabled ? open : null,
-                    child: SizedBox(
-                      width: _kProdutoRankFilterCircleSize,
-                      height: _kProdutoRankFilterCircleSize,
-                      child: Icon(
-                        Icons.filter_list_rounded,
-                        size: 22,
-                        color: enabled
-                            ? _kProdutoRankFilterCircleIcon
-                            : scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+    return SalesFiltersSheetScaffold(
+      title: widget.l10n.reportFiltersTitleWithContext(
+        widget.l10n.salesCardProdutoRankLucroTitle,
       ),
+      description: widget.l10n.reportFiltersDescription,
+      primaryActionLabel: widget.l10n.reportFiltersApplyAction,
+      secondaryActionLabel: widget.l10n.reportFiltersClearAction,
+      onPrimaryAction: _apply,
+      onSecondaryAction: _clear,
+      canPrimaryAction: _selectedAgentId != null,
+      bodyBuilder: (scrollController) {
+        return ListView(
+          controller: scrollController,
+          padding: EdgeInsets.fromLTRB(
+            tokens.contentSpacing,
+            0,
+            tokens.contentSpacing,
+            tokens.contentSpacing,
+          ),
+          children: <Widget>[
+            SalesFiltersSectionHeader(
+              title: widget.l10n.dashboardHomeFiltersAgentsLabel,
+              subtitle: widget.l10n.salesAgentRequiredMessage,
+              requiredBadgeLabel: widget.l10n.reportFiltersRequiredCount(1),
+            ),
+            SizedBox(height: tokens.gapSm),
+            SalesSingleAgentPickerControl(
+              l10n: widget.l10n,
+              availableAgents: widget.availableAgents,
+              selectedAgentId: _selectedAgentId,
+              showTrailingFilterButton: false,
+              onSelectionChanged: (agentId) {
+                setState(() => _selectedAgentId = agentId);
+              },
+            ),
+            if (selectedAgentMissingToken) ...<Widget>[
+              SizedBox(height: tokens.gapMd),
+              AppInlineErrorPanel(
+                tone: AppInlinePanelTone.informational,
+                message:
+                    widget.l10n.overviewAgentFilterMissingClientTokenBanner,
+              ),
+            ],
+            SizedBox(height: tokens.sectionSpacing),
+            SalesFiltersSectionHeader(
+              title: widget.l10n.reportFiltersTitle,
+              subtitle: widget.l10n.reportFiltersDescription,
+            ),
+            SizedBox(height: tokens.gapSm),
+            AppSectionCard(
+              color: theme.colorScheme.surfaceContainerLow,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  AppDateRangePickerField(
+                    label: widget.l10n.salesProdutoRankLucroFilterPeriod,
+                    pickerTitle: widget.l10n.salesProdutoRankLucroFilterPeriod,
+                    value: _period,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime.now(),
+                    density: AppTextFieldDensity.compact,
+                    onChanged: (value) {
+                      setState(() => _period = value);
+                    },
+                  ),
+                  SizedBox(height: tokens.contentSpacing),
+                  AppDropdownField<String>(
+                    label: widget.l10n.salesProdutoRankLucroFilterSortBy,
+                    value: _sortKey ?? 'qtdItensVendido',
+                    density: AppTextFieldDensity.compact,
+                    options: <AppDropdownOption<String>>[
+                      AppDropdownOption<String>(
+                        value: 'qtdItensVendido',
+                        label: widget.l10n.salesProdutoRankLucroSortQuantity,
+                      ),
+                      AppDropdownOption<String>(
+                        value: 'totalValorLucro',
+                        label: widget.l10n.salesProdutoRankLucroSortProfit,
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() => _sortKey = value);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
