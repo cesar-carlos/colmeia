@@ -453,6 +453,7 @@ class _OverviewAgentSelectionSheetState
     final scheme = theme.colorScheme;
     final tokens = theme.extension<AppThemeTokens>()!;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final viewportHeight = MediaQuery.sizeOf(context).height;
     final filtered = _filtered;
     final matchingNotAllSelected =
         _query.isNotEmpty &&
@@ -465,12 +466,20 @@ class _OverviewAgentSelectionSheetState
       (id) => byIdForBanner[id]?.missingLocalClientToken ?? false,
     );
 
+    final minChromePx =
+        236.0 +
+        (matchingNotAllSelected ? 44.0 : 0.0) +
+        (showMissingTokenBanner ? 88.0 : 0.0);
+
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.78,
-        minChildSize: 0.45,
+        minChildSize: draggableSheetMinChildFractionForChrome(
+          viewportHeight: viewportHeight,
+          minChromePixels: minChromePx,
+        ),
         maxChildSize: 0.94,
         builder: (context, scrollController) {
           return Align(

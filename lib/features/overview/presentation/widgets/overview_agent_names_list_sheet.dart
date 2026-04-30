@@ -29,7 +29,6 @@ List<String> normalizeOverviewAgentNames(List<String> names) {
 abstract final class _OverviewAgentNamesListSheetLayout {
   static const double maxWidth = 560;
   static const double initialChildSize = 0.55;
-  static const double minChildSize = 0.35;
   static const double maxChildSize = 0.94;
 }
 
@@ -110,7 +109,11 @@ class _OverviewAgentNamesListSheetState
       child: DraggableScrollableSheet(
         expand: false,
         initialChildSize: _OverviewAgentNamesListSheetLayout.initialChildSize,
-        minChildSize: _OverviewAgentNamesListSheetLayout.minChildSize,
+        minChildSize: draggableSheetMinChildFractionForChrome(
+          viewportHeight: MediaQuery.sizeOf(context).height,
+          minChromePixels: 168,
+          minClamp: 0.38,
+        ),
         maxChildSize: _OverviewAgentNamesListSheetLayout.maxChildSize,
         builder: (context, scrollController) {
           return Align(

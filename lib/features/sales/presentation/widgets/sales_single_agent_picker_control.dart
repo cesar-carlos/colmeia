@@ -336,18 +336,24 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
     final scheme = theme.colorScheme;
     final tokens = theme.extension<AppThemeTokens>()!;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final viewportHeight = MediaQuery.sizeOf(context).height;
     final filtered = _getFilteredAgents();
 
     final selectedAgentMissingToken =
         _selectedAgentId != null &&
         (_agentById[_selectedAgentId]?.missingLocalClientToken ?? false);
 
+    final minChromePx = 232.0 + (selectedAgentMissingToken ? 88.0 : 0.0);
+
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.78,
-        minChildSize: 0.45,
+        minChildSize: draggableSheetMinChildFractionForChrome(
+          viewportHeight: viewportHeight,
+          minChromePixels: minChromePx,
+        ),
         maxChildSize: 0.94,
         builder: (context, scrollController) {
           return Align(
