@@ -48,4 +48,8 @@ abstract final class AgentQueriesBoundedResultMaxRows {
 
   /// `TOP 15` product ranking rows — margin above the nominal cap as a safety net.
   static const int produtoVendidoProdutoRankLucro = 32;
+
+  /// Trend rows by product between two periods; can be high cardinality for
+  /// catalogs with many active SKUs.
+  static const int produtoVendidoTendenciaDeVenda = 10000;
 }

@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/application/orchestration/agent_q
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_use_case.dart';
@@ -52,6 +53,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_que
 import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_produto_rank_lucro_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_repository_impl.dart';
@@ -89,6 +91,7 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/municipio_list_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_produto_rank_lucro_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_repository.dart';
@@ -172,7 +175,7 @@ void registerInjectorAgentQueries(GetIt getIt) {
             'relayEnabled': relay != null,
             'fallbackEnabled':
                 AppEnvironment.agentBridgeTransport ==
-                    AgentBridgeTransport.socket,
+                AgentBridgeTransport.socket,
           },
         );
         return relayWrapped;
@@ -255,10 +258,16 @@ void registerInjectorAgentQueries(GetIt getIt) {
     useCase: () => LoadMunicipiosPageUseCase(getIt<MunicipioListRepository>()),
   );
 
-  _registerSingle<ResumoProdutoVendaRepository, LoadResumoProdutoVendaPageUseCase>(
+  _registerSingle<
+    ResumoProdutoVendaRepository,
+    LoadResumoProdutoVendaPageUseCase
+  >(
     getIt,
-    repo: () => ResumoProdutoVendaRepositoryImpl(getIt<AgentQueriesRepository>()),
-    useCase: () => LoadResumoProdutoVendaPageUseCase(getIt<ResumoProdutoVendaRepository>()),
+    repo: () =>
+        ResumoProdutoVendaRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadResumoProdutoVendaPageUseCase(
+      getIt<ResumoProdutoVendaRepository>(),
+    ),
   );
 
   _registerSingle<
@@ -297,6 +306,19 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ),
     useCase: () => LoadProdutoVendidoProdutoRankLucroUseCase(
       getIt<ProdutoVendidoProdutoRankLucroRepository>(),
+    ),
+  );
+
+  _registerSingle<
+    ProdutoVendidoTendenciaDeVendaRepository,
+    LoadProdutoVendidoTendenciaDeVendaUseCase
+  >(
+    getIt,
+    repo: () => ProdutoVendidoTendenciaDeVendaRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadProdutoVendidoTendenciaDeVendaUseCase(
+      getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
     ),
   );
 
@@ -352,10 +374,15 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ),
   );
 
-  _registerSingle<ResumoParcelasAnualRepository, LoadResumoParcelasAnualUseCase>(
+  _registerSingle<
+    ResumoParcelasAnualRepository,
+    LoadResumoParcelasAnualUseCase
+  >(
     getIt,
-    repo: () => ResumoParcelasAnualRepositoryImpl(getIt<AgentQueriesRepository>()),
-    useCase: () => LoadResumoParcelasAnualUseCase(getIt<ResumoParcelasAnualRepository>()    ),
+    repo: () =>
+        ResumoParcelasAnualRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () =>
+        LoadResumoParcelasAnualUseCase(getIt<ResumoParcelasAnualRepository>()),
   );
 
   _registerSingle<
@@ -371,10 +398,16 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ),
   );
 
-  _registerSingle<ResumoParcelasMensalRepository, LoadResumoParcelasMensalUseCase>(
+  _registerSingle<
+    ResumoParcelasMensalRepository,
+    LoadResumoParcelasMensalUseCase
+  >(
     getIt,
-    repo: () => ResumoParcelasMensalRepositoryImpl(getIt<AgentQueriesRepository>()),
-    useCase: () => LoadResumoParcelasMensalUseCase(getIt<ResumoParcelasMensalRepository>()),
+    repo: () =>
+        ResumoParcelasMensalRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadResumoParcelasMensalUseCase(
+      getIt<ResumoParcelasMensalRepository>(),
+    ),
   );
 
   _registerSingle<
