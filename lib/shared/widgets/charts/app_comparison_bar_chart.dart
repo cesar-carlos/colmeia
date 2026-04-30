@@ -6,6 +6,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_comparison_bar_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -65,6 +66,7 @@ class AppComparisonBarChartStyle {
     this.xLabelMaxChars,
     this.wrapXAxisLabelsInTwoLines = false,
     this.wrapXAxisCharsPerLine = 14,
+    this.wrapXAxisMaxLines = 2,
     this.loadingLabel,
     this.emptyMessage,
     this.enableAutoScroll = true,
@@ -97,14 +99,17 @@ class AppComparisonBarChartStyle {
   final double? height;
 
   /// Relative width of each bar as a fraction of the bar slot, between
-  /// `0.0` (invisible) and `1.0` (fills the slot). Defaults to `0.7`.
+  /// `0.0` (invisible) and `1.0` (fills the slot). When null, the engine uses
+  /// [AppChartEngineCartesianBarGeometryDefaults.columnWidthRatio].
   ///
   /// See also [barGap] for an absolute pixel alternative that is often more
   /// intuitive when you know the visual result you want.
   final double? barWidth;
 
   /// Relative spacing between adjacent bars as a fraction of the bar slot,
-  /// between `0.0` (bars touch) and `1.0` (bars invisible). Defaults to `0.2`.
+  /// between `0.0` (bars touch) and `1.0` (bars invisible). When null and
+  /// [barGap] is also null, the engine uses
+  /// [AppChartEngineCartesianBarGeometryDefaults.columnSpacingRatio].
   ///
   /// Prefer [barGap] when you want to express the gap in logical pixels.
   /// Setting both [spacing] and [barGap] is not recommended — [barGap] takes
@@ -227,16 +232,20 @@ class AppComparisonBarChartStyle {
   /// Ignored when [wrapXAxisLabelsInTwoLines] is `true` (wrap handles length).
   final int? xLabelMaxChars;
 
-  /// When `true`, X-axis labels are split onto up to two horizontal lines using
-  /// `\n` between lines, and overflow on the second line ends with an ellipsis
-  /// (`…`). This avoids tilted labels; pair with `autoRotateXLabels: false`.
+  /// When `true`, X-axis labels use word-aware wrapping into up to
+  /// [wrapXAxisMaxLines] lines (`\n` between lines); overflow ends with `…`.
+  /// Avoids tilted labels; pair with `autoRotateXLabels: false`.
   ///
-  /// Line length is guided by [wrapXAxisCharsPerLine]. Tooltips are unchanged.
+  /// Line width is guided by [wrapXAxisCharsPerLine]. Tooltips are unchanged.
   final bool wrapXAxisLabelsInTwoLines;
 
   /// Soft maximum characters per line when [wrapXAxisLabelsInTwoLines] is
   /// `true`. Defaults to `14`.
   final int wrapXAxisCharsPerLine;
+
+  /// Maximum number of lines when [wrapXAxisLabelsInTwoLines] is `true`.
+  /// Overflow on the last line ends with an ellipsis (`…`). Defaults to `2`.
+  final int wrapXAxisMaxLines;
 
   /// Override label for the loading indicator.
   ///
@@ -260,8 +269,7 @@ class AppComparisonBarChartStyle {
   /// Minimum logical-pixel width reserved for each bar slot (bar + gap) when
   /// [enableAutoScroll] is `true`.
   ///
-  /// When `null` the engine falls back to a built-in default (72 px), which
-  /// keeps X-axis labels readable at standard font sizes.
+  /// When null the engine uses [AppChartEngineCartesianBarGeometryDefaults.minCategorySlotWidth].
   final double? minBarWidth;
 
   /// Whether to show a subtle fade gradient on the trailing edge of the chart
@@ -490,9 +498,10 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     // truncation. Tooltips still use [tooltipLabelBuilder] with full context.
     String formatXLabel(String raw) {
       if (style.wrapXAxisLabelsInTwoLines) {
-        return formatComparisonBarXAxisLabelTwoLines(
+        return formatComparisonBarXAxisLabelWrapped(
           raw,
           maxCharsPerLine: style.wrapXAxisCharsPerLine,
+          maxLines: style.wrapXAxisMaxLines,
         );
       }
       final maxChars = style.xLabelMaxChars;
@@ -683,53 +692,92 @@ String formatComparisonBarXAxisLabelCollapsed(
   return '${s.substring(0, limit)}\u2026';
 }
 
-/// Formats a category label for [AppComparisonBarChart] using at most two
-/// horizontal lines (`\n` separator). If the remainder still does not fit on
-/// the second line, it is truncated and an ellipsis (U+2026) is appended.
+/// Formats a category label for [AppComparisonBarChart] with word-aware line
+/// breaks (`\n`). [maxLines] caps height; overflow on the last line uses U+2026.
 ///
 /// Syncfusion renders `\n` in category axis labels as line breaks.
-String formatComparisonBarXAxisLabelTwoLines(
+String formatComparisonBarXAxisLabelWrapped(
   String raw, {
   int maxCharsPerLine = 14,
+  int maxLines = 2,
 }) {
   final s = raw.trim().replaceAll(RegExp(r'\s+'), ' ');
   if (s.isEmpty) {
     return s;
   }
   final limit = math.max(4, maxCharsPerLine);
+  final capLines = math.max(1, maxLines);
 
-  if (s.length <= limit) {
-    return s;
-  }
+  final lines = <String>[];
+  var remainder = s;
 
-  var breakIdx = -1;
-  final scanEnd = math.min(limit, s.length);
-  for (var i = scanEnd - 1; i > 0; i--) {
-    if (s[i] == ' ') {
-      breakIdx = i;
+  while (remainder.isNotEmpty && lines.length < capLines) {
+    if (remainder.length <= limit) {
+      lines.add(remainder);
+      remainder = '';
       break;
     }
+
+    var breakIdx = -1;
+    final scanEnd = math.min(limit, remainder.length);
+    for (var i = scanEnd - 1; i > 0; i--) {
+      if (remainder[i] == ' ') {
+        breakIdx = i;
+        break;
+      }
+    }
+
+    late final String line;
+    if (breakIdx > 0) {
+      line = remainder.substring(0, breakIdx).trimRight();
+      remainder = remainder.substring(breakIdx + 1).trimLeft();
+    } else {
+      line = remainder.substring(0, limit);
+      remainder = remainder.substring(limit).trimLeft();
+    }
+
+    if (line.isEmpty) {
+      lines.add(remainder.substring(0, limit));
+      remainder =
+          remainder.length > limit ? remainder.substring(limit).trimLeft() : '';
+      continue;
+    }
+    lines.add(line);
   }
 
-  late final String line1;
-  late final String rest;
-  if (breakIdx > 0) {
-    line1 = s.substring(0, breakIdx).trimRight();
-    rest = s.substring(breakIdx + 1).trimLeft();
-  } else {
-    line1 = s.substring(0, limit);
-    rest = s.substring(limit);
+  if (remainder.isEmpty) {
+    return lines.join('\n');
   }
 
-  if (rest.isEmpty) {
-    return line1;
-  }
-
-  if (rest.length <= limit) {
-    return '$line1\n$rest';
+  final lastIdx = lines.length - 1;
+  final last = lines[lastIdx];
+  final candidate = '$last $remainder'.trim();
+  if (candidate.length <= limit) {
+    lines[lastIdx] = candidate;
+    return lines.join('\n');
   }
 
   final cap = limit - 1;
-  final truncated = rest.substring(0, cap).trimRight();
-  return '$line1\n$truncated\u2026';
+  if (last.length >= cap) {
+    lines[lastIdx] = '${last.substring(0, cap)}\u2026';
+    return lines.join('\n');
+  }
+  final room = limit - last.length - 1;
+  final take = math.max(0, math.min(room, remainder.length));
+  final frag = remainder.substring(0, take).trimRight();
+  lines[lastIdx] = frag.isEmpty
+      ? '${last.substring(0, math.min(cap, last.length))}\u2026'
+      : '$last $frag\u2026';
+  return lines.join('\n');
+}
+
+/// Prefer [formatComparisonBarXAxisLabelWrapped] with `maxLines: 2`.
+String formatComparisonBarXAxisLabelTwoLines(
+  String raw, {
+  int maxCharsPerLine = 14,
+}) {
+  return formatComparisonBarXAxisLabelWrapped(
+    raw,
+    maxCharsPerLine: maxCharsPerLine,
+  );
 }

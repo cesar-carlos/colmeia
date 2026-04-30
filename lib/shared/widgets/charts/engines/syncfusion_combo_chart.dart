@@ -214,8 +214,10 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             color: layout == _ComboLayout.yAxisStrip
                 ? resolvedBarColor.withValues(alpha: 0)
                 : resolvedBarColor,
-            width: style.barWidth ?? 0.6,
-            spacing: style.barSpacing ?? 0.2,
+            width: style.barWidth ??
+                AppChartEngineCartesianBarGeometryDefaults.columnWidthRatio,
+            spacing: style.barSpacing ??
+                AppChartEngineCartesianBarGeometryDefaults.columnSpacingRatio,
             borderRadius: style.barBorderRadius,
             animationDuration: resolveChartAnimationDurationMs(
               context: context,

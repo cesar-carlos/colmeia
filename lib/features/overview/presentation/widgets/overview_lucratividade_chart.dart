@@ -4,15 +4,17 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
-    show formatComparisonBarXAxisLabelCollapsed;
+    show formatComparisonBarXAxisLabelWrapped;
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+/// Matches overview home ranking bar chart: multi-line agent names + horizontal scroll.
 String _xLabel(ResumoProdutoVendaLucratividadeRow r) =>
-    formatComparisonBarXAxisLabelCollapsed(
+    formatComparisonBarXAxisLabelWrapped(
       r.filialLabel,
-      maxChars: 12,
+      maxCharsPerLine: 11,
+      maxLines: 3,
     );
 
 num _barByProfit(ResumoProdutoVendaLucratividadeRow r) => r.lucro;
@@ -172,12 +174,11 @@ class _OverviewLucratividadeChartState
       animationDuration: const Duration(milliseconds: 350),
       leftAxisFormat: isMargin ? _percentFormat : _compactCurrencyFormat,
       rightAxisFormat: _compactCurrencyFormat,
-      chartPadding: EdgeInsets.zero,
+      chartPadding: EdgeInsets.only(bottom: tokens.gapSm),
       showRightYAxis: false,
       showLineSeries: false,
       showDataLabels: true,
       barDataLabelOffset: Offset(0, tokens.gapSm),
-      minCategorySlotWidth: 96,
       horizontalScrollSemanticsHint:
           l10n.overviewComparisonBarHorizontalScrollHint,
       stickyPrimaryYAxisWhileScrolling: false,

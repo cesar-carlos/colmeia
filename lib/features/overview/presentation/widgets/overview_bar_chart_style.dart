@@ -46,9 +46,12 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     loadingLabel: l10n.overviewComparisonChartLoading,
     showDataLabels: showDataLabels,
     autoRotateXLabels: false,
-    wrapXAxisLabelsInTwoLines: !isRanking,
-    wrapXAxisCharsPerLine: isWeekday ? 10 : 12,
-    xLabelMaxChars: isRanking ? 12 : null,
+    wrapXAxisLabelsInTwoLines: true,
+    wrapXAxisCharsPerLine: isRanking || isWeekday || isPayment ? 11 : 12,
+    wrapXAxisMaxLines: isRanking || isWeekday || isPayment ? 3 : 2,
+    chartPadding: isRanking || isWeekday || isPayment
+        ? EdgeInsets.only(bottom: tokens.gapSm)
+        : null,
     dataLabelOffset: Offset(
       0,
       weekdayRevenue
@@ -56,15 +59,12 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
           : ((isRanking || isPayment) ? tokens.gapSm : tokens.gapMd),
     ),
     outerDataLabelTopReserve: weekdayRevenue ? tokens.contentSpacing : 0,
-    yAxisRangePadding:
-        weekdayRevenue ? ChartRangePadding.additionalEnd : null,
-    dataLabelBackgroundColor:
-        weekdayRevenue ? weekdayRevenueDataLabelBackground : null,
+    yAxisRangePadding: weekdayRevenue ? ChartRangePadding.additionalEnd : null,
+    dataLabelBackgroundColor: weekdayRevenue
+        ? weekdayRevenueDataLabelBackground
+        : null,
     tooltipLabelMaxChars: 56,
-    minPlottedValueShareOfMax: isRanking
-        ? 0.03
-        : (isWeekday ? 0.06 : 0.045),
-    minBarWidth: isRanking ? 104 : (isWeekday ? 92 : 82),
+    minPlottedValueShareOfMax: isRanking ? 0.03 : (isWeekday ? 0.06 : 0.045),
     height: isRanking
         ? tokens.chartStandardHeight + tokens.contentSpacing * 2
         : (isPayment

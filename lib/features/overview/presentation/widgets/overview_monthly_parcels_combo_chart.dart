@@ -3,12 +3,20 @@ import 'package:colmeia/features/overview/domain/entities/overview_monthly_parce
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
+    show formatComparisonBarXAxisLabelWrapped;
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-String _monthlyXLabel(OverviewMonthlyParcelPoint p) => p.anoMes;
+String _monthlyXLabel(OverviewMonthlyParcelPoint p) =>
+    formatComparisonBarXAxisLabelWrapped(
+      p.anoMes,
+      maxCharsPerLine: 11,
+      maxLines: 3,
+    );
 
 num _monthlyBarBySales(OverviewMonthlyParcelPoint p) => p.qtdVendas;
 
@@ -131,7 +139,7 @@ class _OverviewMonthlyParcelsComboChartState
   String _styleCacheKeyFor(AppThemeTokens tokens, int pointCount) =>
       '$_formatsLocaleTag|${tokens.gapSm}|${tokens.contentSpacing}|'
       '${tokens.chartStandardHeight}|'
-      '${tokens.chartOverviewMonthlyCategoryMinSlotWidth}|$pointCount';
+      '${AppChartEngineCartesianBarGeometryDefaults.minCategorySlotWidth}|$pointCount';
 
   void _ensureComboStyles({
     required AppThemeTokens tokens,
@@ -158,11 +166,10 @@ class _OverviewMonthlyParcelsComboChartState
         animationDuration: const Duration(milliseconds: 350),
         leftAxisFormat: leftAxis,
         rightAxisFormat: rightAxis,
-        chartPadding: EdgeInsets.zero,
+        chartPadding: EdgeInsets.only(bottom: tokens.gapSm),
         showRightYAxis: false,
         showDataLabels: true,
         barDataLabelOffset: Offset(0, tokens.gapSm),
-        minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
         categoryLabelIntersectAction: AxisLabelIntersectAction.none,
         horizontalScrollSemanticsHint:
             l10n.overviewComparisonBarHorizontalScrollHint,

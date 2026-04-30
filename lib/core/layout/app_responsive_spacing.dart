@@ -16,11 +16,19 @@ extension AppResponsivePagePadding on BuildContext {
   }
 
   /// Vertical padding for primary page scroll bodies (uses contentSpacing).
-  EdgeInsets pageScrollPadding(AppThemeTokens tokens) {
+  ///
+  /// [horizontalAdjustment] is added to the breakpoint-based horizontal inset
+  /// (negative values widen content toward the screen edges). Clamped to a
+  /// reasonable range so padding never inverts or becomes excessive.
+  EdgeInsets pageScrollPadding(
+    AppThemeTokens tokens, {
+    double horizontalAdjustment = 0,
+  }) {
+    final h = (pageHorizontalPadding + horizontalAdjustment).clamp(8.0, 56.0);
     return EdgeInsets.fromLTRB(
-      pageHorizontalPadding,
+      h,
       tokens.contentSpacing,
-      pageHorizontalPadding,
+      h,
       tokens.contentSpacing,
     );
   }

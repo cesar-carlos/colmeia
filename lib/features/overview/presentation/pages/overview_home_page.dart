@@ -91,7 +91,10 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                 },
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: context.pageScrollPadding(tokens),
+                  padding: context.pageScrollPadding(
+                    tokens,
+                    horizontalAdjustment: -6,
+                  ),
                   children: <Widget>[
                     _OverviewHomeIntro(l10n: l10n),
                     SizedBox(height: tokens.gapMd),

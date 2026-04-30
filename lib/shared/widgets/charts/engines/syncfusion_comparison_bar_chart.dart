@@ -82,12 +82,14 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
 
     // --- bar gap / spacing resolution ------------------------------------
     // barGap (absolute px) takes precedence over the relative spacing ratio.
-    final resolvedBarWidth = style.barWidth ?? _kDefaultBarWidthRatio;
+    final resolvedBarWidth =
+        style.barWidth ?? AppChartEngineCartesianBarGeometryDefaults.columnWidthRatio;
 
     double spacingForSlotWidth(double slotWidth) {
       final gap = style.barGap;
       if (gap == null) {
-        return style.spacing ?? _kDefaultSpacingRatio;
+        return style.spacing ??
+            AppChartEngineCartesianBarGeometryDefaults.columnSpacingRatio;
       }
       final ratio = gap / math.max(slotWidth, 1);
       return ratio.clamp(0.0, 1.0 - resolvedBarWidth);
@@ -372,7 +374,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
       );
     }
 
-    final minBarWidth = style.minBarWidth ?? _kDefaultMinBarWidth;
+    final minBarWidth =
+        style.minBarWidth ?? AppChartEngineCartesianBarGeometryDefaults.minCategorySlotWidth;
 
     return SizedBox(
       height: resolvedHeight,
@@ -628,12 +631,3 @@ List<CartesianChartAnnotation> _comparisonBarValueLabelAnnotations({
   }
   return annotations;
 }
-
-// Minimum pixel width reserved per bar slot (bar + gap).
-const double _kDefaultMinBarWidth = 72;
-
-// Default bar width ratio (fraction of bar slot occupied by the bar itself).
-const double _kDefaultBarWidthRatio = 0.7;
-
-// Default spacing ratio between bars when barGap is not specified.
-const double _kDefaultSpacingRatio = 0.2;

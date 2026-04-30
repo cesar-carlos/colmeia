@@ -2,6 +2,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_combo_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -10,9 +11,9 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 /// Visual customization for [AppComboChart].
 ///
 /// **Horizontal overflow:** prefer a single strategy per chart instance:
-/// - `enableAutoScroll` true — widens the plot to [minCategorySlotWidth] per
-///   category and wraps it in a horizontal scroll view (can be heavy on many
-///   points; overview keeps this off for ANR safety).
+/// - `enableAutoScroll` true — widens the plot to at least the default minimum
+///   category slot width per category and wraps it in a horizontal scroll view
+///   (can be heavy on many points; overview keeps this off for ANR safety).
 /// - `categoryAutoScrollingDelta` with `enableAutoScroll` false — keeps layout
 ///   width and uses Syncfusion category-axis viewport pan when categories
 ///   would be narrower than [minCategorySlotWidth].
@@ -45,8 +46,8 @@ class AppComboChartStyle {
     this.barDataLabelAlignment = ChartDataLabelAlignment.outer,
     this.barDataLabelOffset,
     this.enableAutoScroll = true,
-    // Default matches AppThemeTokens.chartComboDefaultCategoryMinSlotWidth.
-    this.minCategorySlotWidth = 80,
+    this.minCategorySlotWidth =
+        AppChartEngineCartesianBarGeometryDefaults.minCategorySlotWidth,
     this.showScrollFade = true,
     this.horizontalScrollSemanticsHint,
     this.stickyPrimaryYAxisWhileScrolling = true,
@@ -119,8 +120,10 @@ class AppComboChartStyle {
   final bool enableAutoScroll;
 
   /// Minimum logical width per category (bar slot) when [enableAutoScroll] is
-  /// true. Higher values trigger horizontal scroll sooner on narrow layouts.
-  /// Also used with [categoryAutoScrollingDelta] to detect a crowded X-axis.
+  /// true. Defaults to the shared cartesian column default minimum slot width
+  /// (see `chart_engine_defaults.dart`). Higher values trigger horizontal scroll
+  /// sooner on narrow layouts. Also used with [categoryAutoScrollingDelta] to
+  /// detect a crowded X-axis.
   final double minCategorySlotWidth;
 
   /// Trailing edge fade when horizontal scroll is active.

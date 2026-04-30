@@ -23,6 +23,25 @@ class AppChartEngineAnimationDefaults {
   static const double gaugeMs = 600;
 }
 
+/// Default Syncfusion column geometry when chart styles omit explicit bar width,
+/// spacing / gap, or minimum category slot width.
+///
+/// Keeps `columnWidthRatio + columnSpacingRatio` ≤ 1; tuned for overview home
+/// charts (readable labels + horizontal scroll on narrow layouts).
+class AppChartEngineCartesianBarGeometryDefaults {
+  const AppChartEngineCartesianBarGeometryDefaults._();
+
+  /// Fraction of category slot filled by the column (Syncfusion column width).
+  static const double columnWidthRatio = 0.66;
+
+  /// Gap fraction between columns when comparison/combo styles omit pixel gap
+  /// or relative spacing fields.
+  static const double columnSpacingRatio = 0.32;
+
+  /// Minimum logical px per category slot when horizontal scroll widens the plot.
+  static const double minCategorySlotWidth = 128;
+}
+
 /// Resolves the actual animation duration the engine should pass to a
 /// Syncfusion series.
 ///
