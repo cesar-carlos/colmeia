@@ -178,69 +178,62 @@ class _OverviewWeekdayUserSalesTrendChartState
                 builder: (context, setFullscreenState) {
                   final fullscreenIsSalesCount =
                       fullscreenMetric == _OverviewWeekdayUserMetric.salesCount;
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (showEmptyPlaceholder) {
-                        return Center(
-                          child: Text(
-                            emptyMessage,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium,
+                  if (showEmptyPlaceholder) {
+                    return Center(
+                      child: Text(
+                        emptyMessage,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      AppSegmentedControl<_OverviewWeekdayUserMetric>(
+                        options: <AppSegmentedControlOption<_OverviewWeekdayUserMetric>>[
+                          AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
+                            value: _OverviewWeekdayUserMetric.salesCount,
+                            label: fullscreenL10n
+                                .overviewWeekdayMetricSalesCountLabel,
                           ),
-                        );
-                      }
-                      final availableChartHeight =
-                          (constraints.maxHeight -
-                                  fullscreenTokens.contentSpacing -
-                                  48)
-                              .clamp(220.0, constraints.maxHeight);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          AppSegmentedControl<_OverviewWeekdayUserMetric>(
-                            options: <AppSegmentedControlOption<_OverviewWeekdayUserMetric>>[
-                              AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
-                                value: _OverviewWeekdayUserMetric.salesCount,
-                                label: fullscreenL10n
-                                    .overviewWeekdayMetricSalesCountLabel,
-                              ),
-                              AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
-                                value: _OverviewWeekdayUserMetric.salesAmount,
-                                label: fullscreenL10n
-                                    .overviewWeekdayMetricSalesAmountLabel,
-                              ),
-                            ],
-                            value: fullscreenMetric,
-                            onChanged: (value) => setFullscreenState(
-                              () => fullscreenMetric = value,
-                            ),
-                          ),
-                          SizedBox(height: fullscreenTokens.contentSpacing),
-                          OverviewWeekdayUserGroupedBarChart(
-                            l10n: fullscreenL10n,
-                            model: buildWeekdayUserGroupedChartModel(
-                              points: chartPointsSnapshot,
-                              l10n: fullscreenL10n,
-                              useSalesCount: fullscreenIsSalesCount,
-                            ),
-                            isSalesCount: fullscreenIsSalesCount,
-                            title: fullscreenIsSalesCount
-                                ? fullscreenL10n.overviewWeekdayUserSalesTitle
-                                : fullscreenL10n.overviewWeekdayUserRevenueTitle,
-                            subtitle: fullscreenL10n.overviewWeekdayUserSalesSubtitle,
-                            belowSubtitle: const SizedBox.shrink(),
-                            plotFloorAccessibilityNotice:
-                                fullscreenL10n.chartComparisonPlotFloorNotice,
-                            extremeSpreadAccessibilityNotice:
-                                fullscreenL10n
-                                    .chartComparisonExtremeValueSpreadNotice,
-                            tokens: fullscreenTokens,
-                            useChartShell: false,
-                            chartHeightOverride: availableChartHeight,
+                          AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
+                            value: _OverviewWeekdayUserMetric.salesAmount,
+                            label: fullscreenL10n
+                                .overviewWeekdayMetricSalesAmountLabel,
                           ),
                         ],
-                      );
-                    },
+                        value: fullscreenMetric,
+                        onChanged: (value) => setFullscreenState(
+                          () => fullscreenMetric = value,
+                        ),
+                      ),
+                      SizedBox(height: fullscreenTokens.contentSpacing),
+                      Expanded(
+                        child: OverviewWeekdayUserGroupedBarChart(
+                          l10n: fullscreenL10n,
+                          model: buildWeekdayUserGroupedChartModel(
+                            points: chartPointsSnapshot,
+                            l10n: fullscreenL10n,
+                            useSalesCount: fullscreenIsSalesCount,
+                          ),
+                          isSalesCount: fullscreenIsSalesCount,
+                          title: fullscreenIsSalesCount
+                              ? fullscreenL10n.overviewWeekdayUserSalesTitle
+                              : fullscreenL10n.overviewWeekdayUserRevenueTitle,
+                          subtitle: fullscreenL10n.overviewWeekdayUserSalesSubtitle,
+                          belowSubtitle: const SizedBox.shrink(),
+                          plotFloorAccessibilityNotice:
+                              fullscreenL10n.chartComparisonPlotFloorNotice,
+                          extremeSpreadAccessibilityNotice:
+                              fullscreenL10n
+                                  .chartComparisonExtremeValueSpreadNotice,
+                          tokens: fullscreenTokens,
+                          useChartShell: false,
+                          expandPlotVertically: true,
+                        ),
+                      ),
+                    ],
                   );
                 },
               );

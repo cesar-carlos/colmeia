@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
@@ -83,6 +85,43 @@ class AppCategoryDonutCardStyle {
   final int? doughnutAnimationDurationMs;
 
   final double? legendMaxHeight;
+
+  AppCategoryDonutCardStyle copyWith({
+    double? chartSize,
+    double? chartMinHeight,
+    double? legendMinWidth,
+    String? innerRadius,
+    String? outerRadius,
+    double? rowSpacing,
+    EdgeInsetsGeometry? legendItemPadding,
+    BorderRadius? selectedRowBorderRadius,
+    Color? chartBackgroundColor,
+    double? titleAccentWidth,
+    double? titleAccentHeight,
+    double? compactBreakpointWidth,
+    int? doughnutAnimationDurationMs,
+    double? legendMaxHeight,
+  }) {
+    return AppCategoryDonutCardStyle(
+      chartSize: chartSize ?? this.chartSize,
+      chartMinHeight: chartMinHeight ?? this.chartMinHeight,
+      legendMinWidth: legendMinWidth ?? this.legendMinWidth,
+      innerRadius: innerRadius ?? this.innerRadius,
+      outerRadius: outerRadius ?? this.outerRadius,
+      rowSpacing: rowSpacing ?? this.rowSpacing,
+      legendItemPadding: legendItemPadding ?? this.legendItemPadding,
+      selectedRowBorderRadius:
+          selectedRowBorderRadius ?? this.selectedRowBorderRadius,
+      chartBackgroundColor: chartBackgroundColor ?? this.chartBackgroundColor,
+      titleAccentWidth: titleAccentWidth ?? this.titleAccentWidth,
+      titleAccentHeight: titleAccentHeight ?? this.titleAccentHeight,
+      compactBreakpointWidth:
+          compactBreakpointWidth ?? this.compactBreakpointWidth,
+      doughnutAnimationDurationMs:
+          doughnutAnimationDurationMs ?? this.doughnutAnimationDurationMs,
+      legendMaxHeight: legendMaxHeight ?? this.legendMaxHeight,
+    );
+  }
 }
 
 /// Donut chart + category legend in a dashboard card (design-system aligned).
@@ -272,66 +311,6 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
     final breakpoint =
         widget.style.compactBreakpointWidth ?? AppBreakpoints.mobile;
 
-    final child = LayoutBuilder(
-      builder: (context, constraints) {
-        final useStacked = constraints.maxWidth < breakpoint;
-        final chartSection = _DonutSection(
-          segments: widget.segments,
-          chartTheme: chartTheme,
-          style: widget.style,
-          centerPrimary: widget.centerPrimaryLabel,
-          centerSecondary: widget.centerSecondaryLabel,
-          selectedIndex: _effectiveSelectedIndex,
-          onSliceSelected: _setSelected,
-        );
-
-        final legend = _LegendSection(
-          segments: widget.segments,
-          chartTheme: chartTheme,
-          selectedIndex: _effectiveSelectedIndex,
-          onSelect: _setSelected,
-          style: widget.style,
-        );
-
-        if (useStacked) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              SizedBox(
-                height: widget.style.chartMinHeight ?? chartTheme.height * 0.92,
-                child: chartSection,
-              ),
-              SizedBox(height: tokens.gapMd),
-              legend,
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Expanded(
-              flex: 5,
-              child: SizedBox(
-                height: widget.style.chartSize ?? chartTheme.height,
-                child: chartSection,
-              ),
-            ),
-            SizedBox(width: tokens.gapMd),
-            Expanded(
-              flex: 4,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: widget.style.legendMinWidth ?? 140,
-                ),
-                child: legend,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
     final header = _CategoryDonutCardHeader(
       title: widget.title,
       subtitle: widget.subtitle,
@@ -340,29 +319,168 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
       style: widget.style,
     );
 
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        header,
-        SizedBox(height: tokens.contentSpacing),
-        if (widget.isLoading)
-          _LoadingBlock(
-            tokens: tokens,
+    Widget buildChartRegion() {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final useStacked = constraints.maxWidth < breakpoint;
+          final maxH = constraints.maxHeight;
+
+          AppCategoryDonutCardStyle styleForLayout(AppCategoryDonutCardStyle s) {
+            if (!maxH.isFinite) {
+              return s;
+            }
+            if (useStacked) {
+              final gap = tokens.gapMd;
+              final chartPreferred =
+                  s.chartMinHeight ?? chartTheme.height * 0.92;
+              var chartH = math.min(
+                chartPreferred,
+                math.max(120, (maxH - gap) * 0.48),
+              ).toDouble();
+              const minLegend = 80;
+              if (chartH + gap + minLegend > maxH) {
+                chartH = math.max(120, maxH - gap - minLegend).toDouble();
+              }
+              final legendSlot =
+                  math.max(minLegend, maxH - chartH - gap).toDouble();
+              final cappedLegend = s.legendMaxHeight != null
+                  ? math.min(s.legendMaxHeight!, legendSlot)
+                  : legendSlot;
+              return s.copyWith(
+                chartMinHeight: chartH,
+                legendMaxHeight: cappedLegend,
+              );
+            }
+
+            final legendCap = s.legendMaxHeight != null
+                ? math.min(s.legendMaxHeight!, maxH)
+                : maxH;
+            return s.copyWith(legendMaxHeight: legendCap);
+          }
+
+          final effectiveStyle = styleForLayout(widget.style);
+
+          final chartSection = _DonutSection(
+            segments: widget.segments,
             chartTheme: chartTheme,
-          )
-        else if (widget.segments.isEmpty)
-          _EmptyBlock(
-            placeholder: widget.emptyPlaceholder,
-            tokens: tokens,
-            theme: theme,
-          )
-        else
-          child,
-      ],
-    );
+            style: effectiveStyle,
+            centerPrimary: widget.centerPrimaryLabel,
+            centerSecondary: widget.centerSecondaryLabel,
+            selectedIndex: _effectiveSelectedIndex,
+            onSliceSelected: _setSelected,
+          );
+
+          final legend = _LegendSection(
+            segments: widget.segments,
+            chartTheme: chartTheme,
+            selectedIndex: _effectiveSelectedIndex,
+            onSelect: _setSelected,
+            style: effectiveStyle,
+          );
+
+          if (useStacked) {
+            final chartH =
+                effectiveStyle.chartMinHeight ?? chartTheme.height * 0.92;
+            if (!maxH.isFinite) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  SizedBox(
+                    height: chartH,
+                    child: chartSection,
+                  ),
+                  SizedBox(height: tokens.gapMd),
+                  legend,
+                ],
+              );
+            }
+            final gap = tokens.gapMd;
+            final legendSlot =
+                math.max(80, maxH - chartH - gap).toDouble();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SizedBox(
+                  height: chartH,
+                  child: chartSection,
+                ),
+                SizedBox(height: gap),
+                SizedBox(
+                  height: legendSlot,
+                  child: legend,
+                ),
+              ],
+            );
+          }
+
+          final rowChartH = maxH.isFinite
+              ? math.min(
+                  effectiveStyle.chartSize ?? chartTheme.height,
+                  maxH,
+                )
+              : (effectiveStyle.chartSize ?? chartTheme.height);
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                flex: 5,
+                child: SizedBox(
+                  height: rowChartH,
+                  child: chartSection,
+                ),
+              ),
+              SizedBox(width: tokens.gapMd),
+              Expanded(
+                flex: 4,
+                child: ConstrainedBox(
+                  constraints: maxH.isFinite
+                      ? BoxConstraints(
+                          minWidth: effectiveStyle.legendMinWidth ?? 140,
+                          maxHeight: maxH,
+                        )
+                      : BoxConstraints(
+                          minWidth: effectiveStyle.legendMinWidth ?? 140,
+                        ),
+                  child: legend,
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }
 
     final card = AppSectionCard(
-      child: body,
+      child: LayoutBuilder(
+        builder: (context, cardConstraints) {
+          final heightBound = cardConstraints.hasBoundedHeight &&
+              cardConstraints.maxHeight.isFinite;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              header,
+              SizedBox(height: tokens.contentSpacing),
+              if (widget.isLoading)
+                _LoadingBlock(
+                  tokens: tokens,
+                  chartTheme: chartTheme,
+                )
+              else if (widget.segments.isEmpty)
+                _EmptyBlock(
+                  placeholder: widget.emptyPlaceholder,
+                  tokens: tokens,
+                  theme: theme,
+                )
+              else if (heightBound)
+                Expanded(child: buildChartRegion())
+              else
+                buildChartRegion(),
+            ],
+          );
+        },
+      ),
     );
 
     return Semantics(

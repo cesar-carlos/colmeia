@@ -38,6 +38,7 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     this.onOpenFullscreen,
     this.useChartShell = true,
     this.chartHeightOverride,
+    this.expandPlotVertically = false,
   });
 
   final AppLocalizations l10n;
@@ -52,6 +53,11 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
   final VoidCallback? onOpenFullscreen;
   final bool useChartShell;
   final double? chartHeightOverride;
+
+  /// When true (typically fullscreen with [useChartShell] false), the plot
+  /// fills remaining vertical space below the external legend instead of using
+  /// a fixed [chartHeightOverride] that would ignore legend / pan-hint height.
+  final bool expandPlotVertically;
 
   static const double _kGroupedChartAnimationMs = 350;
 
@@ -118,12 +124,20 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
       }
     }
 
+    assert(
+      !expandPlotVertically || !useChartShell,
+      'expandPlotVertically is only supported when useChartShell is false.',
+    );
+
     final seriesCount = math.max(1, model.userNames.length);
     final categoryCount = math.max(1, model.weekdayCategoryLabels.length);
 
-    final plotHeight =
-        chartHeightOverride ??
-        (tokens.chartStandardHeight + tokens.contentSpacing * 2 + tokens.gapMd);
+    final plotHeight = expandPlotVertically
+        ? 0.0
+        : (chartHeightOverride ??
+              (tokens.chartStandardHeight +
+                  tokens.contentSpacing * 2 +
+                  tokens.gapMd));
 
     final yFormat = isSalesCount
         ? NumberFormat.decimalPattern(localeName)
@@ -211,38 +225,6 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
       seriesCount * _kPerBarSlot,
     );
 
-    final chart = LayoutBuilder(
-      builder: (context, constraints) {
-        var layoutW =
-            constraints.hasBoundedWidth &&
-                constraints.maxWidth.isFinite &&
-                constraints.maxWidth > 0
-            ? constraints.maxWidth
-            : MediaQuery.sizeOf(context).width;
-        if (!layoutW.isFinite || layoutW <= 0) {
-          layoutW = minCategoryWidth * categoryCount;
-        }
-        final requiredW = math.max(layoutW, minCategoryWidth * categoryCount);
-        final needsScroll = requiredW > layoutW + 0.5;
-        final scrollSlot = chartHorizontalScrollBottomTrackSlotHeight(context);
-        final chartBodyH = needsScroll ? plotHeight - scrollSlot : plotHeight;
-
-        var body = buildCartesian(
-          needsScroll ? requiredW : layoutW,
-          chartBodyH,
-        );
-        if (needsScroll) {
-          body = ChartHorizontalScrollShell(
-            body,
-            bottomTrackSlot: scrollSlot,
-            semanticsHint: l10n.overviewComparisonBarHorizontalScrollHint,
-          );
-        }
-
-        return SizedBox(height: plotHeight, child: body);
-      },
-    );
-
     final showsLegend = model.userNames.isNotEmpty;
     final externalLegend = showsLegend
         ? Padding(
@@ -260,60 +242,166 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
         mediaPlatform == TargetPlatform.iOS ||
         mediaPlatform == TargetPlatform.fuchsia;
 
-    final children = <Widget>[
-      externalLegend,
-      LayoutBuilder(
-        builder: (context, constraints) {
-          final layoutW = constraints.hasBoundedWidth
-              ? constraints.maxWidth
-              : MediaQuery.sizeOf(context).width;
-          final wouldScroll =
-              (minCategoryWidth * categoryCount) > layoutW + 0.5;
-          if (!wouldScroll || !isMobilePlatform) {
-            return chart;
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              chart,
-              Padding(
-                padding: EdgeInsets.only(top: tokens.gapSm),
-                child: Text(
-                  l10n.chartComparisonPanGestureHint,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    ];
+    Widget buildPlotSizedCore({
+      required double layoutW,
+      required double plotH,
+    }) {
+      var w = layoutW;
+      if (!w.isFinite || w <= 0) {
+        w = minCategoryWidth * categoryCount;
+      }
+      final requiredW = math.max(w, minCategoryWidth * categoryCount);
+      final needsScroll = requiredW > w + 0.5;
+      final scrollSlot = chartHorizontalScrollBottomTrackSlotHeight(context);
+      final chartBodyH = needsScroll ? plotH - scrollSlot : plotH;
 
-    if (model.combinedRemainingUsers) {
-      children.add(
-        Padding(
-          padding: EdgeInsets.only(top: tokens.gapSm),
-          child: Text(
-            l10n.overviewWeekdayUserGroupedTruncationFootnote(
-              kWeekdayUserGroupedMaxSeries - 1,
-              l10n.overviewWeekdayUserGroupedOthersLabel,
-            ),
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+      var body = buildCartesian(
+        needsScroll ? requiredW : w,
+        chartBodyH,
+      );
+      if (needsScroll) {
+        body = ChartHorizontalScrollShell(
+          body,
+          bottomTrackSlot: scrollSlot,
+          semanticsHint: l10n.overviewComparisonBarHorizontalScrollHint,
+        );
+      }
+
+      return SizedBox(height: plotH, child: body);
+    }
+
+    Widget wrapWithPanHintIfNeeded({
+      required double layoutW,
+      required Widget plotSlot,
+    }) {
+      final wouldScroll =
+          (minCategoryWidth * categoryCount) > layoutW + 0.5;
+      if (!wouldScroll || !isMobilePlatform) {
+        return plotSlot;
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          plotSlot,
+          Padding(
+            padding: EdgeInsets.only(top: tokens.gapSm),
+            child: Text(
+              l10n.chartComparisonPanGestureHint,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
+        ],
       );
     }
 
-    Widget shellChild = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: children,
-    );
+    final truncationFootnote = model.combinedRemainingUsers
+        ? Padding(
+            padding: EdgeInsets.only(top: tokens.gapSm),
+            child: Text(
+              l10n.overviewWeekdayUserGroupedTruncationFootnote(
+                kWeekdayUserGroupedMaxSeries - 1,
+                l10n.overviewWeekdayUserGroupedOthersLabel,
+              ),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          )
+        : null;
+
+    Widget shellChild;
+    if (expandPlotVertically) {
+      final flexChildren = <Widget>[
+        externalLegend,
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, expandedConstraints) {
+              final layoutW =
+                  expandedConstraints.hasBoundedWidth &&
+                      expandedConstraints.maxWidth.isFinite &&
+                      expandedConstraints.maxWidth > 0
+                  ? expandedConstraints.maxWidth
+                  : MediaQuery.sizeOf(context).width;
+              final wouldScroll =
+                  (minCategoryWidth * categoryCount) > layoutW + 0.5;
+              final wantsPanHint = wouldScroll && isMobilePlatform;
+              final panHintBlock = wantsPanHint &&
+                      expandedConstraints.maxHeight >= 140
+                  ? tokens.gapSm + 40.0
+                  : 0.0;
+              final plotH = expandedConstraints.maxHeight - panHintBlock < 1
+                  ? 1.0
+                  : expandedConstraints.maxHeight - panHintBlock;
+              final core = buildPlotSizedCore(layoutW: layoutW, plotH: plotH);
+              if (panHintBlock <= 0) {
+                return core;
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  core,
+                  Padding(
+                    padding: EdgeInsets.only(top: tokens.gapSm),
+                    child: Text(
+                      l10n.chartComparisonPanGestureHint,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ];
+      if (truncationFootnote != null) {
+        flexChildren.add(truncationFootnote);
+      }
+      shellChild = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: flexChildren,
+      );
+    } else {
+      final chart = LayoutBuilder(
+        builder: (context, constraints) {
+          final layoutW =
+              constraints.hasBoundedWidth &&
+                  constraints.maxWidth.isFinite &&
+                  constraints.maxWidth > 0
+              ? constraints.maxWidth
+              : MediaQuery.sizeOf(context).width;
+          return buildPlotSizedCore(layoutW: layoutW, plotH: plotHeight);
+        },
+      );
+
+      final children = <Widget>[
+        externalLegend,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final layoutW = constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width;
+            return wrapWithPanHintIfNeeded(
+              layoutW: layoutW,
+              plotSlot: chart,
+            );
+          },
+        ),
+      ];
+      if (truncationFootnote != null) {
+        children.add(truncationFootnote);
+      }
+      shellChild = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      );
+    }
 
     if (semanticsCoordinatorLabel != null &&
         semanticsCoordinatorLabel.isNotEmpty) {
