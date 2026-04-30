@@ -34,6 +34,9 @@ class AppTimeSeriesChart extends StatelessWidget {
     this.title,
     this.subtitle,
     this.titleTrailing,
+    this.onOpenFullscreen,
+    this.openFullscreenTooltip,
+    this.openFullscreenSemanticLabel,
     this.belowSubtitle,
     this.preset = AppChartPreset.explorable,
     this.style = const AppTimeSeriesChartStyle(),
@@ -47,6 +50,9 @@ class AppTimeSeriesChart extends StatelessWidget {
   final String? title;
   final String? subtitle;
   final Widget? titleTrailing;
+  final VoidCallback? onOpenFullscreen;
+  final String? openFullscreenTooltip;
+  final String? openFullscreenSemanticLabel;
   final Widget? belowSubtitle;
   final AppChartPreset preset;
   final AppTimeSeriesChartStyle style;
@@ -90,6 +96,9 @@ class AppTimeSeriesChart extends StatelessWidget {
       title: title!,
       subtitle: subtitle,
       titleTrailing: titleTrailing,
+      onOpenFullscreen: onOpenFullscreen,
+      openFullscreenTooltip: openFullscreenTooltip,
+      openFullscreenSemanticLabel: openFullscreenSemanticLabel,
       belowSubtitle: belowSubtitle,
       child: innerChart,
     );

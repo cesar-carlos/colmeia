@@ -1249,6 +1249,30 @@ abstract class AppLocalizations {
   /// **'No combined data for this view.'**
   String get chartComboEmptyDefault;
 
+  /// Tooltip and semantics label for the chart fullscreen action button.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chart in fullscreen'**
+  String get chartOpenFullscreenTooltip;
+
+  /// Tooltip for the close action in the fullscreen chart scaffold.
+  ///
+  /// In en, this message translates to:
+  /// **'Close fullscreen chart'**
+  String get chartCloseFullscreenTooltip;
+
+  /// Title shown when the fullscreen chart route is opened without a valid payload.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart unavailable'**
+  String get chartFullscreenUnavailableTitle;
+
+  /// Body shown when the fullscreen chart route is opened without a valid payload.
+  ///
+  /// In en, this message translates to:
+  /// **'This chart could not be opened in fullscreen. Go back and try again.'**
+  String get chartFullscreenUnavailableMessage;
+
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///
   /// In en, this message translates to:

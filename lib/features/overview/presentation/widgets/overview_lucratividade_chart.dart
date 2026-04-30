@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -159,18 +162,17 @@ class _OverviewLucratividadeChartState
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final l10n = widget.l10n;
-    final isMargin = _display == _LucratividadeDisplay.marginPercent;
-    final isCost = _display == _LucratividadeDisplay.costRevenue;
-    final isProfit = _display == _LucratividadeDisplay.profitRevenue;
-
-    final barColor = isCost ? tokens.warning : tokens.chartSeriesPrimary;
-
-    final style = AppComboChartStyle(
-      height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
+  AppComboChartStyle _buildStyle(
+    AppThemeTokens tokens, {
+    required AppLocalizations l10n,
+    required bool isMargin,
+    required Color barColor,
+    double? heightOverride,
+  }) {
+    return AppComboChartStyle(
+      height:
+          heightOverride ??
+          (tokens.chartStandardHeight + tokens.contentSpacing * 2),
       animationDuration: const Duration(milliseconds: 350),
       leftAxisFormat: isMargin ? _percentFormat : _compactCurrencyFormat,
       rightAxisFormat: _compactCurrencyFormat,
@@ -183,6 +185,24 @@ class _OverviewLucratividadeChartState
           l10n.overviewComparisonBarHorizontalScrollHint,
       stickyPrimaryYAxisWhileScrolling: false,
       loadingLabel: l10n.overviewComparisonChartLoading,
+      barColor: barColor,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final l10n = widget.l10n;
+    final isMargin = _display == _LucratividadeDisplay.marginPercent;
+    final isCost = _display == _LucratividadeDisplay.costRevenue;
+    final isProfit = _display == _LucratividadeDisplay.profitRevenue;
+
+    final barColor = isCost ? tokens.warning : tokens.chartSeriesPrimary;
+
+    final style = _buildStyle(
+      tokens,
+      l10n: l10n,
+      isMargin: isMargin,
       barColor: barColor,
     );
 
@@ -229,10 +249,141 @@ class _OverviewLucratividadeChartState
       sortedPoints.sort((a, b) => b.valorTotalItem.compareTo(a.valorTotalItem));
     }
 
+    void openFullscreen() {
+      final sortedPointsSnapshot = List<ResumoProdutoVendaLucratividadeRow>.of(
+        sortedPoints,
+        growable: false,
+      );
+      unawaited(
+        context.pushChartFullscreen<void>(
+          extra: AppChartFullscreenRouteExtra(
+            title: l10n.overviewLucratividadeTitle,
+            subtitle: l10n.overviewLucratividadeSubtitle,
+            chartSemanticsLabel: l10n.overviewLucratividadeTitle,
+            chartBuilder: (fullscreenContext) {
+              final fullscreenTokens = Theme.of(
+                fullscreenContext,
+              ).extension<AppThemeTokens>()!;
+              var fullscreenDisplay = _display;
+              return StatefulBuilder(
+                builder: (context, setFullscreenState) {
+                  final fullscreenIsMargin =
+                      fullscreenDisplay == _LucratividadeDisplay.marginPercent;
+                  final fullscreenIsCost =
+                      fullscreenDisplay == _LucratividadeDisplay.costRevenue;
+                  final fullscreenIsProfit =
+                      fullscreenDisplay == _LucratividadeDisplay.profitRevenue;
+                  final fullscreenBarFn = switch (fullscreenDisplay) {
+                    _LucratividadeDisplay.marginPercent => _barByMargin,
+                    _LucratividadeDisplay.costRevenue => _barByCost,
+                    _LucratividadeDisplay.profitRevenue => _barByProfit,
+                    _LucratividadeDisplay.revenueCost => _barByRevenue,
+                  };
+                  final fullscreenLineFn = switch (fullscreenDisplay) {
+                    _LucratividadeDisplay.marginPercent => _lineByMargin,
+                    _LucratividadeDisplay.costRevenue => _lineByCost,
+                    _LucratividadeDisplay.profitRevenue => _lineByProfit,
+                    _LucratividadeDisplay.revenueCost => _lineByRevenue,
+                  };
+                  final fullscreenLabelFn = switch (fullscreenDisplay) {
+                    _LucratividadeDisplay.marginPercent => _barLabelPercent,
+                    _ => _barLabelCurrency,
+                  };
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final availableChartHeight =
+                          (constraints.maxHeight -
+                                  fullscreenTokens.contentSpacing -
+                                  48)
+                              .clamp(220.0, constraints.maxHeight);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          AppSegmentedControl<_LucratividadeDisplay>(
+                            options: <AppSegmentedControlOption<_LucratividadeDisplay>>[
+                              AppSegmentedControlOption<_LucratividadeDisplay>(
+                                value: _LucratividadeDisplay.profitRevenue,
+                                label: l10n.overviewLucratividadeSwitchProfit,
+                              ),
+                              AppSegmentedControlOption<_LucratividadeDisplay>(
+                                value: _LucratividadeDisplay.revenueCost,
+                                label: l10n.overviewLucratividadeSwitchRevenue,
+                              ),
+                              AppSegmentedControlOption<_LucratividadeDisplay>(
+                                value: _LucratividadeDisplay.costRevenue,
+                                label: l10n.overviewLucratividadeSwitchCost,
+                              ),
+                              AppSegmentedControlOption<_LucratividadeDisplay>(
+                                value: _LucratividadeDisplay.marginPercent,
+                                label: l10n.overviewLucratividadeSwitchMargin,
+                              ),
+                            ],
+                            value: fullscreenDisplay,
+                            onChanged: (v) =>
+                                setFullscreenState(() => fullscreenDisplay = v),
+                          ),
+                          SizedBox(height: fullscreenTokens.contentSpacing),
+                          SizedBox(
+                            height: availableChartHeight,
+                            child: AppComboChart<ResumoProdutoVendaLucratividadeRow>(
+                              key: ValueKey<int>(
+                                identityHashCode(sortedPointsSnapshot),
+                              ),
+                              items: sortedPointsSnapshot,
+                              xLabelBuilder: _xLabel,
+                              barValueBuilder: fullscreenBarFn,
+                              barSeriesLabel: fullscreenIsMargin
+                                  ? l10n.overviewLucratividadeMarginSeriesLabel
+                                  : fullscreenIsCost
+                                  ? l10n.overviewLucratividadeCostSeriesLabel
+                                  : fullscreenIsProfit
+                                  ? l10n.overviewLucratividadeProfitSeriesLabel
+                                  : l10n.overviewLucratividadeRevenueSeriesLabel,
+                              lineValueBuilder: fullscreenLineFn,
+                              lineSeriesLabel:
+                                  fullscreenIsMargin ||
+                                      fullscreenIsCost ||
+                                      fullscreenIsProfit
+                                  ? l10n.overviewLucratividadeRevenueSeriesLabel
+                                  : l10n.overviewLucratividadeCostSeriesLabel,
+                              barDataLabelBuilder: fullscreenLabelFn,
+                              style: _buildStyle(
+                                fullscreenTokens,
+                                l10n: l10n,
+                                isMargin: fullscreenIsMargin,
+                                barColor: fullscreenIsCost
+                                    ? fullscreenTokens.warning
+                                    : fullscreenTokens.chartSeriesPrimary,
+                                heightOverride: availableChartHeight,
+                              ),
+                              emptyPlaceholder: sortedPointsSnapshot.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        emptyMessage,
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     return RepaintBoundary(
       child: AppComboChart<ResumoProdutoVendaLucratividadeRow>(
         key: ValueKey<int>(identityHashCode(widget.points)),
         title: l10n.overviewLucratividadeTitle,
+        onOpenFullscreen: openFullscreen,
         subtitle: l10n.overviewLucratividadeSubtitle,
         belowSubtitle: AppSegmentedControl<_LucratividadeDisplay>(
           options: <AppSegmentedControlOption<_LucratividadeDisplay>>[

@@ -42,6 +42,10 @@ enum AppRoute {
     path: '/sales/:cardId',
     title: 'Vendas',
   ),
+  chartFullscreen(
+    path: '/charts/fullscreen',
+    title: 'Grafico',
+  ),
   returns(
     path: '/returns',
     title: 'Devolucoes',
@@ -95,6 +99,7 @@ enum AppRoute {
   int? get shellIndex {
     if (this == AppRoute.unmatched ||
         this == AppRoute.agentsDetail ||
+        this == AppRoute.chartFullscreen ||
         this == AppRoute.login ||
         this == AppRoute.register ||
         this == AppRoute.registrationStatus ||
@@ -122,6 +127,8 @@ enum AppRoute {
       case AppRoute.sales:
       case AppRoute.salesCard:
         return Icons.point_of_sale_rounded;
+      case AppRoute.chartFullscreen:
+        return Icons.open_in_full_rounded;
       case AppRoute.returns:
         return Icons.assignment_return_rounded;
       case AppRoute.finance:
@@ -155,6 +162,8 @@ enum AppRoute {
       case AppRoute.sales:
       case AppRoute.salesCard:
         return Icons.point_of_sale_outlined;
+      case AppRoute.chartFullscreen:
+        return Icons.open_in_full_outlined;
       case AppRoute.returns:
         return Icons.assignment_return_outlined;
       case AppRoute.finance:
@@ -188,6 +197,7 @@ enum AppRoute {
       case AppRoute.salesCard:
         return AppRoute.sales.shellIndex;
       case AppRoute.unmatched:
+      case AppRoute.chartFullscreen:
       case AppRoute.login:
       case AppRoute.register:
       case AppRoute.registrationStatus:
@@ -232,6 +242,7 @@ enum AppRoute {
       case AppRoute.settings:
       case AppRoute.agents:
       case AppRoute.agentsDetail:
+      case AppRoute.chartFullscreen:
         return null;
     }
   }

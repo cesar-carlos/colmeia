@@ -35,6 +35,9 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     required this.extremeSpreadAccessibilityNotice,
     required this.tokens,
     super.key,
+    this.onOpenFullscreen,
+    this.useChartShell = true,
+    this.chartHeightOverride,
   });
 
   final AppLocalizations l10n;
@@ -46,6 +49,9 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
   final String plotFloorAccessibilityNotice;
   final String extremeSpreadAccessibilityNotice;
   final AppThemeTokens tokens;
+  final VoidCallback? onOpenFullscreen;
+  final bool useChartShell;
+  final double? chartHeightOverride;
 
   static const double _kGroupedChartAnimationMs = 350;
 
@@ -116,7 +122,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     final categoryCount = math.max(1, model.weekdayCategoryLabels.length);
 
     final plotHeight =
-        tokens.chartStandardHeight + tokens.contentSpacing * 2 + tokens.gapMd;
+        chartHeightOverride ??
+        (tokens.chartStandardHeight + tokens.contentSpacing * 2 + tokens.gapMd);
 
     final yFormat = isSalesCount
         ? NumberFormat.decimalPattern(localeName)
@@ -317,11 +324,16 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
       );
     }
 
+    if (!useChartShell) {
+      return shellChild;
+    }
+
     return AppChartShell(
       title: title,
       subtitle: subtitle,
       belowSubtitle: belowSubtitle,
       titleTrailing: floorTrailing,
+      onOpenFullscreen: onOpenFullscreen,
       child: shellChild,
     );
   }

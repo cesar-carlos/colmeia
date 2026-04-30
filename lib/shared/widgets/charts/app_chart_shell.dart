@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
@@ -11,6 +12,9 @@ class AppChartShell extends StatelessWidget {
     this.titleWidget,
     this.subtitle,
     this.titleTrailing,
+    this.onOpenFullscreen,
+    this.openFullscreenTooltip,
+    this.openFullscreenSemanticLabel,
     this.belowSubtitle,
     this.cardPadding,
   });
@@ -31,6 +35,18 @@ class AppChartShell extends StatelessWidget {
 
   /// e.g. link action aligned with the title block.
   final Widget? titleTrailing;
+
+  /// Optional callback that shows an "expand to fullscreen" action in header.
+  ///
+  /// This keeps fullscreen affordance consistent across chart cards while
+  /// preserving any custom [titleTrailing] already provided by call sites.
+  final VoidCallback? onOpenFullscreen;
+
+  /// Optional tooltip for the fullscreen action button.
+  final String? openFullscreenTooltip;
+
+  /// Optional semantics label for the fullscreen action button.
+  final String? openFullscreenSemanticLabel;
 
   /// e.g. period [SegmentedButton] between subtitle and chart.
   final Widget? belowSubtitle;
@@ -80,7 +96,7 @@ class AppChartShell extends StatelessWidget {
                 ],
               );
 
-              final trailing = titleTrailing;
+              final trailing = _resolveTrailing(context, tokens);
               if (trailing == null) {
                 return headerText;
               }
@@ -121,6 +137,46 @@ class AppChartShell extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+
+  Widget? _resolveTrailing(BuildContext context, AppThemeTokens tokens) {
+    final onExpand = onOpenFullscreen;
+    if (onExpand == null) {
+      return titleTrailing;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    final tooltip = openFullscreenTooltip ?? l10n.chartOpenFullscreenTooltip;
+    final semanticsLabel =
+        openFullscreenSemanticLabel ?? l10n.chartOpenFullscreenTooltip;
+
+    Widget expandAction = IconButton(
+      onPressed: onExpand,
+      tooltip: tooltip,
+      icon: const Icon(Icons.open_in_full),
+    );
+    final trimmedSemanticsLabel = semanticsLabel.trim();
+    if (trimmedSemanticsLabel.isNotEmpty) {
+      expandAction = Semantics(
+        button: true,
+        label: trimmedSemanticsLabel,
+        child: expandAction,
+      );
+    }
+
+    final trailing = titleTrailing;
+    if (trailing == null) {
+      return expandAction;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        trailing,
+        SizedBox(width: tokens.gapXs),
+        expandAction,
+      ],
     );
   }
 }

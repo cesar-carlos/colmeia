@@ -22,6 +22,7 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
   required AppThemeTokens tokens,
   required OverviewHomeBarChartKind kind,
   required AppLocalizations l10n,
+  double? heightOverride,
   bool showDataLabels = true,
   bool weekdayUsesCurrencyAxis = false,
   Color? weekdayRevenueDataLabelBackground,
@@ -65,12 +66,14 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
         : null,
     tooltipLabelMaxChars: 56,
     minPlottedValueShareOfMax: isRanking ? 0.03 : (isWeekday ? 0.06 : 0.045),
-    height: isRanking
-        ? tokens.chartStandardHeight + tokens.contentSpacing * 2
-        : (isPayment
-              ? tokens.chartStandardHeight + tokens.contentSpacing * 2
-              : (isWeekday
-                    ? tokens.chartStandardHeight + tokens.contentSpacing * 2
-                    : null)),
+    height:
+        heightOverride ??
+        (isRanking
+            ? tokens.chartStandardHeight + tokens.contentSpacing * 2
+            : (isPayment
+                  ? tokens.chartStandardHeight + tokens.contentSpacing * 2
+                  : (isWeekday
+                        ? tokens.chartStandardHeight + tokens.contentSpacing * 2
+                        : null))),
   );
 }

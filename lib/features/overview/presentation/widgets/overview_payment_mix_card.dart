@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -67,9 +70,55 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
+    void openFullscreen() {
+      final segmentsSnapshot = List<AppCategoryDonutSegment>.of(
+        _segments,
+        growable: false,
+      );
+      final centerPrimarySnapshot = _centerPrimary;
+      unawaited(
+        context.pushChartFullscreen<void>(
+          extra: AppChartFullscreenRouteExtra(
+            title: l10n.overviewPaymentMixTitle,
+            subtitle: l10n.overviewPaymentMixSubtitle,
+            chartSemanticsLabel: l10n.overviewPaymentMixTitle,
+            chartBuilder: (fullscreenContext) {
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final chartSize =
+                      (constraints.biggest.shortestSide * 0.48)
+                          .clamp(260.0, 420.0);
+                  final legendMaxHeight =
+                      (constraints.maxHeight * 0.72)
+                          .clamp(220.0, 520.0);
+                  return AppCategoryDonutCard(
+                    title: l10n.overviewPaymentMixTitle,
+                    subtitle: l10n.overviewPaymentMixSubtitle,
+                    style: AppCategoryDonutCardStyle(
+                      chartSize: chartSize,
+                      chartMinHeight: chartSize,
+                      legendMaxHeight: legendMaxHeight,
+                    ),
+                    segments: segmentsSnapshot,
+                    centerPrimaryLabel: centerPrimarySnapshot,
+                    centerSecondaryLabel: l10n.overviewPaymentMixDonutTotalLabel,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     return AppCategoryDonutCard(
       title: l10n.overviewPaymentMixTitle,
       subtitle: l10n.overviewPaymentMixSubtitle,
+      titleTrailing: IconButton(
+        onPressed: openFullscreen,
+        tooltip: l10n.chartOpenFullscreenTooltip,
+        icon: const Icon(Icons.open_in_full),
+      ),
       style: const AppCategoryDonutCardStyle(
         legendMaxHeight: 280,
       ),

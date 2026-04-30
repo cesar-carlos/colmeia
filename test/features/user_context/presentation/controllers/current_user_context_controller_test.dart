@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:checks/checks.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
@@ -84,6 +85,12 @@ void main() {
 
       check(result.isSuccess()).isTrue();
       check(controller.activeStore.id).equals('08');
+    });
+
+    test('should allow fullscreen chart route for authenticated context', () {
+      final controller = CurrentUserContextController.seeded();
+
+      check(controller.canAccessRoute(AppRoute.chartFullscreen)).isTrue();
     });
 
     test('should preserve scope while reloading user context', () async {

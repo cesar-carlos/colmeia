@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_weekday_sales_trend_l10n.dart';
@@ -127,6 +130,12 @@ class _OverviewWeekdayUserSalesTrendChartState
     final chartPoints = _chartPointsForBuild();
     final showEmptyPlaceholder =
         widget.points.isEmpty || chartPoints.isEmpty;
+    final chartTitle = isSalesCount
+        ? l10n.overviewWeekdayUserSalesTitle
+        : l10n.overviewWeekdayUserRevenueTitle;
+    final chartSemantics = isSalesCount
+        ? l10n.overviewWeekdayUserSalesChartSemantics
+        : l10n.overviewWeekdayUserRevenueChartSemantics;
 
     final segmented = AppSegmentedControl<_OverviewWeekdayUserMetric>(
       options: <AppSegmentedControlOption<_OverviewWeekdayUserMetric>>[
@@ -148,12 +157,104 @@ class _OverviewWeekdayUserSalesTrendChartState
       }),
     );
 
+    void openFullscreen() {
+      final chartPointsSnapshot = List<OverviewWeekdayUserSalesTrendPoint>.of(
+        chartPoints,
+        growable: false,
+      );
+      unawaited(
+        context.pushChartFullscreen<void>(
+          extra: AppChartFullscreenRouteExtra(
+            title: chartTitle,
+            subtitle: l10n.overviewWeekdayUserSalesSubtitle,
+            chartSemanticsLabel: chartSemantics,
+            chartBuilder: (fullscreenContext) {
+              final fullscreenTokens = Theme.of(
+                fullscreenContext,
+              ).extension<AppThemeTokens>()!;
+              final fullscreenL10n = AppLocalizations.of(fullscreenContext);
+              var fullscreenMetric = _metric;
+              return StatefulBuilder(
+                builder: (context, setFullscreenState) {
+                  final fullscreenIsSalesCount =
+                      fullscreenMetric == _OverviewWeekdayUserMetric.salesCount;
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (showEmptyPlaceholder) {
+                        return Center(
+                          child: Text(
+                            emptyMessage,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        );
+                      }
+                      final availableChartHeight =
+                          (constraints.maxHeight -
+                                  fullscreenTokens.contentSpacing -
+                                  48)
+                              .clamp(220.0, constraints.maxHeight);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          AppSegmentedControl<_OverviewWeekdayUserMetric>(
+                            options: <AppSegmentedControlOption<_OverviewWeekdayUserMetric>>[
+                              AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
+                                value: _OverviewWeekdayUserMetric.salesCount,
+                                label: fullscreenL10n
+                                    .overviewWeekdayMetricSalesCountLabel,
+                              ),
+                              AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
+                                value: _OverviewWeekdayUserMetric.salesAmount,
+                                label: fullscreenL10n
+                                    .overviewWeekdayMetricSalesAmountLabel,
+                              ),
+                            ],
+                            value: fullscreenMetric,
+                            onChanged: (value) => setFullscreenState(
+                              () => fullscreenMetric = value,
+                            ),
+                          ),
+                          SizedBox(height: fullscreenTokens.contentSpacing),
+                          OverviewWeekdayUserGroupedBarChart(
+                            l10n: fullscreenL10n,
+                            model: buildWeekdayUserGroupedChartModel(
+                              points: chartPointsSnapshot,
+                              l10n: fullscreenL10n,
+                              useSalesCount: fullscreenIsSalesCount,
+                            ),
+                            isSalesCount: fullscreenIsSalesCount,
+                            title: fullscreenIsSalesCount
+                                ? fullscreenL10n.overviewWeekdayUserSalesTitle
+                                : fullscreenL10n.overviewWeekdayUserRevenueTitle,
+                            subtitle: fullscreenL10n.overviewWeekdayUserSalesSubtitle,
+                            belowSubtitle: const SizedBox.shrink(),
+                            plotFloorAccessibilityNotice:
+                                fullscreenL10n.chartComparisonPlotFloorNotice,
+                            extremeSpreadAccessibilityNotice:
+                                fullscreenL10n
+                                    .chartComparisonExtremeValueSpreadNotice,
+                            tokens: fullscreenTokens,
+                            useChartShell: false,
+                            chartHeightOverride: availableChartHeight,
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     final chartBody = showEmptyPlaceholder
         ? AppChartShell(
-            title: isSalesCount
-                ? l10n.overviewWeekdayUserSalesTitle
-                : l10n.overviewWeekdayUserRevenueTitle,
+            title: chartTitle,
             subtitle: l10n.overviewWeekdayUserSalesSubtitle,
+            onOpenFullscreen: openFullscreen,
             belowSubtitle: segmented,
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
@@ -174,21 +275,18 @@ class _OverviewWeekdayUserSalesTrendChartState
               useSalesCount: isSalesCount,
             ),
             isSalesCount: isSalesCount,
-            title: isSalesCount
-                ? l10n.overviewWeekdayUserSalesTitle
-                : l10n.overviewWeekdayUserRevenueTitle,
+            title: chartTitle,
             subtitle: l10n.overviewWeekdayUserSalesSubtitle,
             belowSubtitle: segmented,
             plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
             extremeSpreadAccessibilityNotice:
                 l10n.chartComparisonExtremeValueSpreadNotice,
             tokens: tokens,
+            onOpenFullscreen: openFullscreen,
           );
 
     return Semantics(
-      label: isSalesCount
-          ? l10n.overviewWeekdayUserSalesChartSemantics
-          : l10n.overviewWeekdayUserRevenueChartSemantics,
+      label: chartSemantics,
       hint: l10n.overviewWeekdayUserChartScopeHint,
       value: summary,
       child: chartBody,

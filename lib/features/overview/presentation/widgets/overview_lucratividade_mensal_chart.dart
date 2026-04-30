@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -167,25 +170,6 @@ class _OverviewLucratividadeMensalChartState
         ? tokens.warning
         : tokens.chartSeriesPrimary;
 
-    final style = AppComboChartStyle(
-      height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
-      animationDuration: const Duration(milliseconds: 350),
-      leftAxisFormat: isMargin ? _percentFormat : _compactCurrencyFormat,
-      rightAxisFormat: _compactCurrencyFormat,
-      chartPadding: EdgeInsets.zero,
-      showRightYAxis: false,
-      showLineSeries: false,
-      showDataLabels: true,
-      barDataLabelOffset: Offset(0, tokens.gapSm),
-      minCategorySlotWidth: tokens.chartOverviewMonthlyCategoryMinSlotWidth,
-      categoryLabelIntersectAction: AxisLabelIntersectAction.none,
-      horizontalScrollSemanticsHint:
-          l10n.overviewComparisonBarHorizontalScrollHint,
-      stickyPrimaryYAxisWhileScrolling: false,
-      loadingLabel: l10n.overviewComparisonChartLoading,
-      barColor: barColor,
-    );
-
     final emptyMessage = widget.loadFailed
         ? (widget.loadFailureMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
         : widget.isSingleAgentSelected
@@ -214,11 +198,158 @@ class _OverviewLucratividadeMensalChartState
       labelFn = _barLabelCurrency;
     }
 
+    AppComboChartStyle buildStyle(
+      AppThemeTokens themeTokens, {
+      double? heightOverride,
+    }) {
+      return AppComboChartStyle(
+        height:
+            heightOverride ??
+            (themeTokens.chartStandardHeight + themeTokens.contentSpacing * 2),
+        animationDuration: const Duration(milliseconds: 350),
+        leftAxisFormat: isMargin ? _percentFormat : _compactCurrencyFormat,
+        rightAxisFormat: _compactCurrencyFormat,
+        chartPadding: EdgeInsets.zero,
+        showRightYAxis: false,
+        showLineSeries: false,
+        showDataLabels: true,
+        barDataLabelOffset: Offset(0, themeTokens.gapSm),
+        minCategorySlotWidth: themeTokens.chartOverviewMonthlyCategoryMinSlotWidth,
+        categoryLabelIntersectAction: AxisLabelIntersectAction.none,
+        horizontalScrollSemanticsHint:
+            l10n.overviewComparisonBarHorizontalScrollHint,
+        stickyPrimaryYAxisWhileScrolling: false,
+        loadingLabel: l10n.overviewComparisonChartLoading,
+        barColor: barColor,
+      );
+    }
+
+    void openFullscreen() {
+      unawaited(
+        context.pushChartFullscreen<void>(
+          extra: AppChartFullscreenRouteExtra(
+            title: l10n.overviewLucratividadeMensalTitle,
+            subtitle: l10n.overviewLucratividadeMensalSubtitle,
+            chartSemanticsLabel: l10n.overviewLucratividadeMensalTitle,
+            chartBuilder: (fullscreenContext) {
+              final fullscreenTokens = Theme.of(
+                fullscreenContext,
+              ).extension<AppThemeTokens>()!;
+              var fullscreenDisplay = _display;
+              return StatefulBuilder(
+                builder: (context, setFullscreenState) {
+                  final fullscreenIsMargin =
+                      fullscreenDisplay == _LucratividadeDisplay.marginPercent;
+                  final fullscreenIsCost =
+                      fullscreenDisplay == _LucratividadeDisplay.costRevenue;
+                  final fullscreenIsProfit =
+                      fullscreenDisplay == _LucratividadeDisplay.profitRevenue;
+                  final fullscreenBarFn = switch (fullscreenDisplay) {
+                    _LucratividadeDisplay.marginPercent => _barByMargin,
+                    _LucratividadeDisplay.costRevenue => _barByCost,
+                    _LucratividadeDisplay.profitRevenue => _barByProfit,
+                    _LucratividadeDisplay.revenueCost => _barByRevenue,
+                  };
+                  final fullscreenLineFn = switch (fullscreenDisplay) {
+                    _LucratividadeDisplay.marginPercent => _lineByMargin,
+                    _LucratividadeDisplay.costRevenue => _lineByCost,
+                    _LucratividadeDisplay.profitRevenue => _lineByProfit,
+                    _LucratividadeDisplay.revenueCost => _lineByRevenue,
+                  };
+                  final fullscreenLabelFn = switch (fullscreenDisplay) {
+                    _LucratividadeDisplay.marginPercent => _barLabelPercent,
+                    _ => _barLabelCurrency,
+                  };
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final availableChartHeight =
+                          (constraints.maxHeight -
+                                  fullscreenTokens.contentSpacing -
+                                  48)
+                              .clamp(220.0, constraints.maxHeight);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          AppSegmentedControl<_LucratividadeDisplay>(
+                            options: <AppSegmentedControlOption<_LucratividadeDisplay>>[
+                              AppSegmentedControlOption<_LucratividadeDisplay>(
+                                value: _LucratividadeDisplay.profitRevenue,
+                                label: l10n.overviewLucratividadeMensalSwitchProfit,
+                              ),
+                              AppSegmentedControlOption<_LucratividadeDisplay>(
+                                value: _LucratividadeDisplay.revenueCost,
+                                label: l10n.overviewLucratividadeMensalSwitchRevenue,
+                              ),
+                              AppSegmentedControlOption<_LucratividadeDisplay>(
+                                value: _LucratividadeDisplay.costRevenue,
+                                label: l10n.overviewLucratividadeMensalSwitchCost,
+                              ),
+                              AppSegmentedControlOption<_LucratividadeDisplay>(
+                                value: _LucratividadeDisplay.marginPercent,
+                                label: l10n.overviewLucratividadeMensalSwitchMargin,
+                              ),
+                            ],
+                            value: fullscreenDisplay,
+                            onChanged: (v) => setFullscreenState(
+                              () => fullscreenDisplay = v,
+                            ),
+                          ),
+                          SizedBox(height: fullscreenTokens.contentSpacing),
+                          SizedBox(
+                            height: availableChartHeight,
+                            child: AppComboChart<ResumoProdutoVendaLucratividadeMensalRow>(
+                              key: ValueKey<int>(identityHashCode(widget.points)),
+                              items: widget.points,
+                              xLabelBuilder: _xLabel,
+                              barValueBuilder: fullscreenBarFn,
+                              barSeriesLabel: fullscreenIsMargin
+                                  ? l10n.overviewLucratividadeMensalMarginSeriesLabel
+                                  : fullscreenIsCost
+                                  ? l10n.overviewLucratividadeMensalCostSeriesLabel
+                                  : fullscreenIsProfit
+                                  ? l10n.overviewLucratividadeMensalProfitSeriesLabel
+                                  : l10n.overviewLucratividadeMensalRevenueSeriesLabel,
+                              lineValueBuilder: fullscreenLineFn,
+                              lineSeriesLabel:
+                                  fullscreenIsMargin ||
+                                      fullscreenIsCost ||
+                                      fullscreenIsProfit
+                                  ? l10n.overviewLucratividadeMensalRevenueSeriesLabel
+                                  : l10n.overviewLucratividadeMensalCostSeriesLabel,
+                              barDataLabelBuilder: fullscreenLabelFn,
+                              style: buildStyle(
+                                fullscreenTokens,
+                                heightOverride: availableChartHeight,
+                              ),
+                              emptyPlaceholder: widget.points.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        emptyMessage,
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     return RepaintBoundary(
       child: AppComboChart<ResumoProdutoVendaLucratividadeMensalRow>(
         key: ValueKey<int>(identityHashCode(widget.points)),
         title: l10n.overviewLucratividadeMensalTitle,
         subtitle: l10n.overviewLucratividadeMensalSubtitle,
+        onOpenFullscreen: openFullscreen,
         belowSubtitle: AppSegmentedControl<_LucratividadeDisplay>(
           options: <AppSegmentedControlOption<_LucratividadeDisplay>>[
             AppSegmentedControlOption<_LucratividadeDisplay>(
@@ -256,7 +387,7 @@ class _OverviewLucratividadeMensalChartState
             ? l10n.overviewLucratividadeMensalRevenueSeriesLabel
             : l10n.overviewLucratividadeMensalCostSeriesLabel,
         barDataLabelBuilder: labelFn,
-        style: style,
+        style: buildStyle(tokens),
         emptyPlaceholder: widget.points.isEmpty
             ? DefaultTextStyle.merge(
                 style: Theme.of(context).textTheme.bodyMedium,

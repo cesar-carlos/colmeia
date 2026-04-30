@@ -155,6 +155,7 @@ class CurrentUserContextController extends ChangeNotifier {
       case AppRoute.passwordRecovery:
       case AppRoute.passwordRecoveryReset:
       case AppRoute.settings:
+      case AppRoute.chartFullscreen:
       case AppRoute.agents:
       case AppRoute.agentsDetail:
         return true;

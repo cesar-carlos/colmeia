@@ -218,6 +218,9 @@ class AppComboChart<T> extends StatelessWidget {
     this.title,
     this.subtitle,
     this.titleTrailing,
+    this.onOpenFullscreen,
+    this.openFullscreenTooltip,
+    this.openFullscreenSemanticLabel,
     this.belowSubtitle,
     this.onBarTap,
     this.onLineTap,
@@ -268,6 +271,9 @@ class AppComboChart<T> extends StatelessWidget {
   final String? title;
   final String? subtitle;
   final Widget? titleTrailing;
+  final VoidCallback? onOpenFullscreen;
+  final String? openFullscreenTooltip;
+  final String? openFullscreenSemanticLabel;
   final Widget? belowSubtitle;
 
   /// Called when the user taps a bar data point.
@@ -347,6 +353,9 @@ class AppComboChart<T> extends StatelessWidget {
       title: title!,
       subtitle: subtitle,
       titleTrailing: titleTrailing,
+      onOpenFullscreen: onOpenFullscreen,
+      openFullscreenTooltip: openFullscreenTooltip,
+      openFullscreenSemanticLabel: openFullscreenSemanticLabel,
       belowSubtitle: belowSubtitle,
       child: innerChart,
     );

@@ -28,6 +28,7 @@ String _shellRouteLabel(AppRoute route, AppLocalizations l10n) {
     AppRoute.settings => l10n.shellNavSettingsLabel,
     AppRoute.agents => l10n.shellNavAgentsLabel,
     AppRoute.agentsDetail => l10n.shellNavAgentsLabel,
+    AppRoute.chartFullscreen => route.title,
     AppRoute.login ||
     AppRoute.register ||
     AppRoute.registrationStatus ||
@@ -50,6 +51,7 @@ String? _shellRouteSubtitle(AppRoute route, AppLocalizations l10n) {
     AppRoute.settings => l10n.shellNavSettingsSubtitle,
     AppRoute.agents => l10n.shellNavAgentsSubtitle,
     AppRoute.agentsDetail => null,
+    AppRoute.chartFullscreen => null,
     AppRoute.login ||
     AppRoute.register ||
     AppRoute.registrationStatus ||

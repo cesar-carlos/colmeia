@@ -1,3 +1,4 @@
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_legacy_route_redirect.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/router/app_shell_routes.dart';
@@ -40,6 +41,7 @@ class AppRouter {
         redirect: (_, _) => AppRoute.dashboard.path,
       ),
       ...buildAuthRoutes(),
+      ...buildAppChartFullscreenRoutes(),
       ...buildAppShellRoutes(),
     ],
   );

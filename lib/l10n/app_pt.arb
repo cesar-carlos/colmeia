@@ -307,6 +307,10 @@
   "chartComparisonPanGestureHint": "Deslize o gráfico horizontalmente para ver mais categorias.",
   "chartComboLoadingDefault": "Carregando gráfico de barras e linha…",
   "chartComboEmptyDefault": "Sem dados combinados para este recorte.",
+  "chartOpenFullscreenTooltip": "Abrir gráfico em tela cheia",
+  "chartCloseFullscreenTooltip": "Fechar gráfico em tela cheia",
+  "chartFullscreenUnavailableTitle": "Gráfico indisponível",
+  "chartFullscreenUnavailableMessage": "Não foi possível abrir este gráfico em tela cheia. Volte e tente novamente.",
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {

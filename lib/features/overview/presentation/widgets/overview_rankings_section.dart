@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
@@ -99,9 +102,62 @@ class OverviewAgentRankingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final showEmpty = agentRankings.isEmpty;
+    void openFullscreen() {
+      final rankingsSnapshot = List<OverviewAgentRanking>.of(
+        agentRankings,
+        growable: false,
+      );
+      unawaited(
+        context.pushChartFullscreen<void>(
+          extra: AppChartFullscreenRouteExtra(
+            title: l10n.dashboardAgentRankingTitle,
+            subtitle: l10n.dashboardAgentRankingSubtitle,
+            chartSemanticsLabel: l10n.dashboardAgentRankingTitle,
+            chartBuilder: (fullscreenContext) {
+              final fullscreenTokens = Theme.of(
+                fullscreenContext,
+              ).extension<AppThemeTokens>()!;
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return AppComparisonBarChart<OverviewAgentRanking>(
+                    items: rankingsSnapshot,
+                    plotFloorAccessibilityNotice:
+                        l10n.chartComparisonPlotFloorNotice,
+                    extremeSpreadAccessibilityNotice:
+                        l10n.chartComparisonExtremeValueSpreadNotice,
+                    labelBuilder: (a) => a.displayName,
+                    valueBuilder: (a) => a.totalAmount,
+                    tooltipLabelBuilder: (a, v) =>
+                        '${a.displayName}: ${AppBrFormatters.currency(v)}',
+                    dataLabelBuilder: (a, v) => AppBrFormatters.compactCurrency(v),
+                    style: overviewHomeComparisonBarChartStyle(
+                      tokens: fullscreenTokens,
+                      kind: OverviewHomeBarChartKind.ranking,
+                      l10n: l10n,
+                      heightOverride: constraints.maxHeight,
+                    ),
+                    emptyPlaceholder: showEmpty
+                        ? Center(
+                            child: Text(
+                              l10n.overviewAgentRankingEmpty,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          )
+                        : null,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     return AppComparisonBarChart<OverviewAgentRanking>(
       title: l10n.dashboardAgentRankingTitle,
       subtitle: l10n.dashboardAgentRankingSubtitle,
+      onOpenFullscreen: openFullscreen,
       items: agentRankings,
       plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
       extremeSpreadAccessibilityNotice:
@@ -146,9 +202,62 @@ class OverviewUserRankingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final showEmpty = userRankings.isEmpty;
+    void openFullscreen() {
+      final rankingsSnapshot = List<OverviewUserRanking>.of(
+        userRankings,
+        growable: false,
+      );
+      unawaited(
+        context.pushChartFullscreen<void>(
+          extra: AppChartFullscreenRouteExtra(
+            title: l10n.dashboardUserRankingTitle,
+            subtitle: l10n.dashboardUserRankingSubtitle,
+            chartSemanticsLabel: l10n.dashboardUserRankingTitle,
+            chartBuilder: (fullscreenContext) {
+              final fullscreenTokens = Theme.of(
+                fullscreenContext,
+              ).extension<AppThemeTokens>()!;
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return AppComparisonBarChart<OverviewUserRanking>(
+                    items: rankingsSnapshot,
+                    plotFloorAccessibilityNotice:
+                        l10n.chartComparisonPlotFloorNotice,
+                    extremeSpreadAccessibilityNotice:
+                        l10n.chartComparisonExtremeValueSpreadNotice,
+                    labelBuilder: (u) => u.userName,
+                    valueBuilder: (u) => u.totalAmount,
+                    tooltipLabelBuilder: (u, v) =>
+                        '${u.userName}: ${AppBrFormatters.currency(v)}',
+                    dataLabelBuilder: (u, v) => AppBrFormatters.compactCurrency(v),
+                    style: overviewHomeComparisonBarChartStyle(
+                      tokens: fullscreenTokens,
+                      kind: OverviewHomeBarChartKind.ranking,
+                      l10n: l10n,
+                      heightOverride: constraints.maxHeight,
+                    ),
+                    emptyPlaceholder: showEmpty
+                        ? Center(
+                            child: Text(
+                              l10n.overviewUserRankingEmpty,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          )
+                        : null,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     return AppComparisonBarChart<OverviewUserRanking>(
       title: l10n.dashboardUserRankingTitle,
       subtitle: l10n.dashboardUserRankingSubtitle,
+      onOpenFullscreen: openFullscreen,
       items: userRankings,
       plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
       extremeSpreadAccessibilityNotice:

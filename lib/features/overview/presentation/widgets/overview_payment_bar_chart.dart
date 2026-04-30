@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_bar_chart_style.dart';
@@ -60,9 +63,61 @@ class _OverviewPaymentBarChartState extends State<OverviewPaymentBarChart> {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final l10n = widget.l10n;
     final showEmpty = widget.methods.isEmpty || _nonZeroSorted.isEmpty;
+    void openFullscreen() {
+      unawaited(
+        context.pushChartFullscreen<void>(
+          extra: AppChartFullscreenRouteExtra(
+            title: l10n.overviewPaymentBarTitle,
+            subtitle: l10n.overviewPaymentBarSubtitle,
+            chartSemanticsLabel: l10n.overviewPaymentBarTitle,
+            chartBuilder: (fullscreenContext) {
+              final fullscreenTokens = Theme.of(
+                fullscreenContext,
+              ).extension<AppThemeTokens>()!;
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return AppComparisonBarChart<OverviewPaymentMethodBreakdown>(
+                    items: _nonZeroSorted,
+                    plotFloorAccessibilityNotice:
+                        l10n.chartComparisonPlotFloorNotice,
+                    extremeSpreadAccessibilityNotice:
+                        l10n.chartComparisonExtremeValueSpreadNotice,
+                    labelBuilder: (m) => m.label,
+                    valueBuilder: (m) => m.totalAmount,
+                    tooltipLabelBuilder: (m, v) => l10n.overviewPaymentBarTooltip(
+                      m.label,
+                      AppBrFormatters.currency(v),
+                    ),
+                    dataLabelBuilder: (m, v) =>
+                        AppBrFormatters.smartCompactCurrency(v),
+                    style: overviewHomeComparisonBarChartStyle(
+                      tokens: fullscreenTokens,
+                      kind: OverviewHomeBarChartKind.payment,
+                      l10n: l10n,
+                      heightOverride: constraints.maxHeight,
+                    ),
+                    emptyPlaceholder: showEmpty
+                        ? Center(
+                            child: Text(
+                              l10n.overviewPaymentBarEmpty,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          )
+                        : null,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     return AppComparisonBarChart<OverviewPaymentMethodBreakdown>(
       title: l10n.overviewPaymentBarTitle,
       subtitle: l10n.overviewPaymentBarSubtitle,
+      onOpenFullscreen: openFullscreen,
       items: _nonZeroSorted,
       plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
       extremeSpreadAccessibilityNotice:

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -181,6 +184,38 @@ class _OverviewMonthlyParcelsComboChartState
       '${tokens.chartStandardHeight}|'
       '${AppChartEngineCartesianBarGeometryDefaults.minCategorySlotWidth}|$pointCount';
 
+  AppComboChartStyle _buildComboStyle({
+    required AppThemeTokens tokens,
+    required AppLocalizations l10n,
+    required NumberFormat leftAxis,
+    required NumberFormat rightAxis,
+    double? heightOverride,
+  }) {
+    return AppComboChartStyle(
+      // One [contentSpacing]: bar values use chart annotations, not Syncfusion
+      // outer column labels, so we do not need the full +2* buffer used on
+      // comparison column charts — extra height only adds empty band above
+      // the bottom legend inside the fixed [SizedBox].
+      height: heightOverride ?? (tokens.chartStandardHeight + tokens.contentSpacing),
+      // Aligned with the bar charts (350 ms): the previous Duration.zero left
+      // this card visually static while siblings animated in via staged
+      // mounting + 350 ms entrance.
+      animationDuration: const Duration(milliseconds: 350),
+      leftAxisFormat: leftAxis,
+      rightAxisFormat: rightAxis,
+      chartPadding: EdgeInsets.only(bottom: tokens.gapSm),
+      showRightYAxis: false,
+      showDataLabels: true,
+      barDataLabelOffset: Offset(0, tokens.gapSm),
+      categoryLabelIntersectAction: AxisLabelIntersectAction.none,
+      horizontalScrollSemanticsHint: l10n.overviewComparisonBarHorizontalScrollHint,
+      // Use horizontal scroll (default) instead of category-axis pan: pan kept
+      // the chart width fixed but Y-axis was still scaled by the full dataset.
+      stickyPrimaryYAxisWhileScrolling: false,
+      loadingLabel: l10n.overviewComparisonChartLoading,
+    );
+  }
+
   void _ensureComboStyles({
     required AppThemeTokens tokens,
     required AppLocalizations l10n,
@@ -198,32 +233,11 @@ class _OverviewMonthlyParcelsComboChartState
       required NumberFormat leftAxis,
       required NumberFormat rightAxis,
     }) {
-      return AppComboChartStyle(
-        // One [contentSpacing]: bar values use chart annotations, not Syncfusion
-        // outer column labels, so we do not need the full +2* buffer used on
-        // comparison column charts — extra height only adds empty band above
-        // the bottom legend inside the fixed [SizedBox].
-        height: tokens.chartStandardHeight + tokens.contentSpacing,
-        // Aligned with the bar charts (350 ms): the previous Duration.zero left
-        // this card visually static while siblings animated in via staged
-        // mounting + 350 ms entrance.
-        animationDuration: const Duration(milliseconds: 350),
-        leftAxisFormat: leftAxis,
-        rightAxisFormat: rightAxis,
-        chartPadding: EdgeInsets.only(bottom: tokens.gapSm),
-        showRightYAxis: false,
-        showDataLabels: true,
-        barDataLabelOffset: Offset(0, tokens.gapSm),
-        categoryLabelIntersectAction: AxisLabelIntersectAction.none,
-        horizontalScrollSemanticsHint:
-            l10n.overviewComparisonBarHorizontalScrollHint,
-        // Use horizontal scroll (default) instead of category-axis pan: pan
-        // kept the chart width fixed but Y-axis was still scaled by the *full*
-        // dataset, making low-volume months invisible (e.g. a bar of 8 with
-        // Y-max 2.500 is < 0.4% of the plot height). Scroll widens the plot so
-        // all months are reachable with the same axis.
-        stickyPrimaryYAxisWhileScrolling: false,
-        loadingLabel: l10n.overviewComparisonChartLoading,
+      return _buildComboStyle(
+        tokens: tokens,
+        l10n: l10n,
+        leftAxis: leftAxis,
+        rightAxis: rightAxis,
       );
     }
 
@@ -284,6 +298,120 @@ class _OverviewMonthlyParcelsComboChartState
               l10n.overviewMonthlyParcelsChartSemanticsValueView)
         : (copy?.semanticsWhenSalesPrimary ??
               l10n.overviewMonthlyParcelsChartSemantics);
+    void openFullscreen() {
+      final pointsSnapshot = List<OverviewMonthlyParcelPoint>.of(
+        widget.points,
+        growable: false,
+      );
+      final copySnapshot = copy;
+      unawaited(
+        context.pushChartFullscreen<void>(
+          extra: AppChartFullscreenRouteExtra(
+            title: copySnapshot?.chartTitle ?? l10n.overviewMonthlyParcelsTitle,
+            subtitle: valuePrimary
+                ? (copySnapshot?.subtitleWhenValuePrimary ??
+                      l10n.overviewMonthlyParcelsSubtitleValueView)
+                : (copySnapshot?.subtitleWhenSalesPrimary ??
+                      l10n.overviewMonthlyParcelsSubtitle),
+            chartSemanticsLabel: semanticsLabel,
+            chartBuilder: (fullscreenContext) {
+              final fullscreenTokens = Theme.of(
+                fullscreenContext,
+              ).extension<AppThemeTokens>()!;
+              var fullscreenDisplay = _display;
+              return StatefulBuilder(
+                builder: (context, setFullscreenState) {
+                  final fullscreenValuePrimary =
+                      fullscreenDisplay == _OverviewMonthlyParcelDisplay.byParcelValue;
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final availableChartHeight =
+                          (constraints.maxHeight -
+                                  fullscreenTokens.contentSpacing -
+                                  48)
+                              .clamp(220.0, constraints.maxHeight);
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          AppSegmentedControl<_OverviewMonthlyParcelDisplay>(
+                            options: <AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>>[
+                              AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>(
+                                value: _OverviewMonthlyParcelDisplay.bySalesCount,
+                                label:
+                                    copySnapshot?.switchSalesLabel ??
+                                    l10n.overviewMonthlyParcelsSwitchSalesLabel,
+                              ),
+                              AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>(
+                                value: _OverviewMonthlyParcelDisplay.byParcelValue,
+                                label:
+                                    copySnapshot?.switchParcelValueLabel ??
+                                    l10n.overviewMonthlyParcelsSwitchValueLabel,
+                              ),
+                            ],
+                            value: fullscreenDisplay,
+                            onChanged: (v) =>
+                                setFullscreenState(() => fullscreenDisplay = v),
+                          ),
+                          SizedBox(height: fullscreenTokens.contentSpacing),
+                          SizedBox(
+                            height: availableChartHeight,
+                            child: AppComboChart<OverviewMonthlyParcelPoint>(
+                              key: ValueKey<int>(identityHashCode(pointsSnapshot)),
+                              items: pointsSnapshot,
+                              xLabelBuilder: _monthlyXLabel,
+                              barValueBuilder: fullscreenValuePrimary
+                                  ? _monthlyBarByValue
+                                  : _monthlyBarBySales,
+                              barSeriesLabel: fullscreenValuePrimary
+                                  ? (copySnapshot?.seriesParcelAmountLabel ??
+                                        l10n.overviewMonthlyParcelsAmountSeriesLabel)
+                                  : (copySnapshot?.seriesSalesLabel ??
+                                        l10n.overviewMonthlyParcelsSalesSeriesLabel),
+                              lineValueBuilder: fullscreenValuePrimary
+                                  ? _monthlyLineByValue
+                                  : _monthlyLineBySales,
+                              lineSeriesLabel: fullscreenValuePrimary
+                                  ? (copySnapshot?.seriesSalesLabel ??
+                                        l10n.overviewMonthlyParcelsSalesSeriesLabel)
+                                  : (copySnapshot?.seriesParcelAmountLabel ??
+                                        l10n.overviewMonthlyParcelsAmountSeriesLabel),
+                              barDataLabelBuilder: fullscreenValuePrimary
+                                  ? _barDataLabelCurrency
+                                  : _barDataLabelDecimal,
+                              style: _buildComboStyle(
+                                tokens: fullscreenTokens,
+                                l10n: l10n,
+                                leftAxis: fullscreenValuePrimary
+                                    ? _compactCurrencyFormat
+                                    : _decimalFormat,
+                                rightAxis: fullscreenValuePrimary
+                                    ? _decimalFormat
+                                    : _compactCurrencyFormat,
+                                heightOverride: availableChartHeight,
+                              ),
+                              isLoading: widget.isLoading,
+                              emptyPlaceholder: pointsSnapshot.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        emptyMessage,
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      );
+    }
 
     return Semantics(
       label: semanticsLabel,
@@ -295,6 +423,7 @@ class _OverviewMonthlyParcelsComboChartState
         child: AppComboChart<OverviewMonthlyParcelPoint>(
           key: ValueKey<int>(identityHashCode(widget.points)),
           title: copy?.chartTitle ?? l10n.overviewMonthlyParcelsTitle,
+          onOpenFullscreen: openFullscreen,
           subtitle: valuePrimary
               ? (copy?.subtitleWhenValuePrimary ??
                     l10n.overviewMonthlyParcelsSubtitleValueView)

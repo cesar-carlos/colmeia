@@ -718,6 +718,19 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sem dados combinados para este recorte.';
 
   @override
+  String get chartOpenFullscreenTooltip => 'Abrir gráfico em tela cheia';
+
+  @override
+  String get chartCloseFullscreenTooltip => 'Fechar gráfico em tela cheia';
+
+  @override
+  String get chartFullscreenUnavailableTitle => 'Gráfico indisponível';
+
+  @override
+  String get chartFullscreenUnavailableMessage =>
+      'Não foi possível abrir este gráfico em tela cheia. Volte e tente novamente.';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Forma de pagamento $label';
   }
@@ -2841,6 +2854,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get chartComboEmptyDefault =>
       'Sem dados combinados para este recorte.';
+
+  @override
+  String get chartOpenFullscreenTooltip => 'Abrir gráfico em tela cheia';
+
+  @override
+  String get chartCloseFullscreenTooltip => 'Fechar gráfico em tela cheia';
+
+  @override
+  String get chartFullscreenUnavailableTitle => 'Gráfico indisponível';
+
+  @override
+  String get chartFullscreenUnavailableMessage =>
+      'Não foi possível abrir este gráfico em tela cheia. Volte e tente novamente.';
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {

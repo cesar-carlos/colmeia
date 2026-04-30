@@ -20,6 +20,13 @@ void main() {
       check(AppRoute.fromLocation('/settings')).equals(AppRoute.settings);
     });
 
+    test('should resolve chart fullscreen route from location', () {
+      check(AppRoute.fromLocation(AppRoute.chartFullscreen.path)).equals(
+        AppRoute.chartFullscreen,
+      );
+      check(AppRoute.chartFullscreen.shellNavSelectionIndex).isNull();
+    });
+
     test('should treat root path as dashboard home', () {
       check(AppRoute.fromLocation('/')).equals(AppRoute.dashboard);
       check(AppRoute.fromLocation('')).equals(AppRoute.dashboard);

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -337,6 +338,39 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     );
   }
 
+  void _openChartFullscreen() {
+    final pointsSnapshot = List<SalesMonthlyPnlPoint>.of(_points, growable: false);
+    final isLoadingSnapshot = _loading && _selectedAgentId != null;
+    final loadFailedSnapshot = _chartLoadFailed;
+    final loadFailureMessageSnapshot = _chartLoadFailureMessage;
+    final pageL10n = AppLocalizations.of(context);
+    unawaited(
+      context.pushChartFullscreen<void>(
+        extra: AppChartFullscreenRouteExtra(
+          title: pageL10n.salesMonthlyPnlChartTitle,
+          subtitle: pageL10n.salesMonthlyPnlChartSubtitle,
+          chartSemanticsLabel: pageL10n.salesMonthlyPnlChartSemantics,
+          chartBuilder: (fullscreenContext) {
+            final l10n = AppLocalizations.of(fullscreenContext);
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return _SalesMonthlyPnlLineChart(
+                  l10n: l10n,
+                  points: pointsSnapshot,
+                  loadFailed: loadFailedSnapshot,
+                  loadFailureMessage: loadFailureMessageSnapshot,
+                  isLoading: isLoadingSnapshot,
+                  useChartShell: false,
+                  chartHeightOverride: constraints.maxHeight,
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -395,6 +429,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
                 loadFailed: _chartLoadFailed,
                 loadFailureMessage: _chartLoadFailureMessage,
                 isLoading: _loading && _selectedAgentId != null,
+                onOpenFullscreen: _openChartFullscreen,
               ),
             ),
         ],
@@ -410,6 +445,9 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
     required this.loadFailed,
     required this.isLoading,
     this.loadFailureMessage,
+    this.onOpenFullscreen,
+    this.useChartShell = true,
+    this.chartHeightOverride,
   });
 
   final AppLocalizations l10n;
@@ -417,6 +455,9 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
   final bool loadFailed;
   final bool isLoading;
   final String? loadFailureMessage;
+  final VoidCallback? onOpenFullscreen;
+  final bool useChartShell;
+  final double? chartHeightOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -436,7 +477,7 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
         ? (loadFailureMessage ?? l10n.salesMonthlyPnlLoadFailed)
         : l10n.salesMonthlyPnlEmpty;
     final semanticsLabel = l10n.salesMonthlyPnlChartSemantics;
-    final resolvedHeight = chartTheme.height;
+    final resolvedHeight = chartHeightOverride ?? chartTheme.height;
     final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
     final animationDuration = resolveChartAnimationDurationMs(
       context: context,
@@ -601,13 +642,18 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
             },
           );
 
+    final chartSurface = useChartShell
+        ? AppChartShell(
+            title: l10n.salesMonthlyPnlChartTitle,
+            subtitle: l10n.salesMonthlyPnlChartSubtitle,
+            onOpenFullscreen: onOpenFullscreen,
+            child: chartBody,
+          )
+        : chartBody;
+
     return Semantics(
       label: semanticsLabel,
-      child: AppChartShell(
-        title: l10n.salesMonthlyPnlChartTitle,
-        subtitle: l10n.salesMonthlyPnlChartSubtitle,
-        child: chartBody,
-      ),
+      child: chartSurface,
     );
   }
 }

@@ -52,6 +52,10 @@ void main() {
         appShellRouteLabel(AppRoute.register, l10n),
         AppRoute.register.title,
       );
+      expect(
+        appShellRouteLabel(AppRoute.chartFullscreen, l10n),
+        AppRoute.chartFullscreen.title,
+      );
     });
   });
 
@@ -97,6 +101,7 @@ void main() {
     test('should omit subtitle for auth routes', () {
       expect(appShellRouteSubtitle(AppRoute.login, l10n), isNull);
       expect(appShellRouteSubtitle(AppRoute.register, l10n), isNull);
+      expect(appShellRouteSubtitle(AppRoute.chartFullscreen, l10n), isNull);
     });
   });
 

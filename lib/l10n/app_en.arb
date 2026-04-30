@@ -342,6 +342,14 @@
   "chartComparisonPanGestureHint": "Swipe the chart sideways to see more categories.",
   "chartComboLoadingDefault": "Loading bar and line chart…",
   "chartComboEmptyDefault": "No combined data for this view.",
+  "chartOpenFullscreenTooltip": "Open chart in fullscreen",
+  "@chartOpenFullscreenTooltip": {"description": "Tooltip and semantics label for the chart fullscreen action button."},
+  "chartCloseFullscreenTooltip": "Close fullscreen chart",
+  "@chartCloseFullscreenTooltip": {"description": "Tooltip for the close action in the fullscreen chart scaffold."},
+  "chartFullscreenUnavailableTitle": "Chart unavailable",
+  "@chartFullscreenUnavailableTitle": {"description": "Title shown when the fullscreen chart route is opened without a valid payload."},
+  "chartFullscreenUnavailableMessage": "This chart could not be opened in fullscreen. Go back and try again.",
+  "@chartFullscreenUnavailableMessage": {"description": "Body shown when the fullscreen chart route is opened without a valid payload."},
   "overviewSemanticsPaymentMethodRow": "Payment method {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {

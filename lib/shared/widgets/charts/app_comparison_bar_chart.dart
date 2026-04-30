@@ -385,6 +385,9 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     this.titleWidget,
     this.subtitle,
     this.titleTrailing,
+    this.onOpenFullscreen,
+    this.openFullscreenTooltip,
+    this.openFullscreenSemanticLabel,
     this.belowSubtitle,
     this.colorBuilder,
     this.dataLabelBuilder,
@@ -447,6 +450,15 @@ class AppComparisonBarChart<T> extends StatelessWidget {
 
   /// Widget aligned to the trailing edge of the header row.
   final Widget? titleTrailing;
+
+  /// Optional callback that enables fullscreen expansion from the chart header.
+  final VoidCallback? onOpenFullscreen;
+
+  /// Optional tooltip for the fullscreen action button.
+  final String? openFullscreenTooltip;
+
+  /// Optional semantics label for the fullscreen action button.
+  final String? openFullscreenSemanticLabel;
 
   /// Widget rendered between the subtitle and the chart (e.g. period picker).
   final Widget? belowSubtitle;
@@ -636,6 +648,9 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       titleWidget: titleWidget,
       subtitle: subtitle,
       titleTrailing: mergedTitleTrailing,
+      onOpenFullscreen: onOpenFullscreen,
+      openFullscreenTooltip: openFullscreenTooltip,
+      openFullscreenSemanticLabel: openFullscreenSemanticLabel,
       belowSubtitle: belowSubtitle,
       child: innerChart,
     );

@@ -701,6 +701,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartComboEmptyDefault => 'No combined data for this view.';
 
   @override
+  String get chartOpenFullscreenTooltip => 'Open chart in fullscreen';
+
+  @override
+  String get chartCloseFullscreenTooltip => 'Close fullscreen chart';
+
+  @override
+  String get chartFullscreenUnavailableTitle => 'Chart unavailable';
+
+  @override
+  String get chartFullscreenUnavailableMessage =>
+      'This chart could not be opened in fullscreen. Go back and try again.';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Payment method $label';
   }
