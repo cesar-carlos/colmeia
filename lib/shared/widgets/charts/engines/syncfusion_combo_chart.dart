@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
@@ -98,12 +99,19 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       final primaryGridW = primaryYAxisGrid && style.showYGridLines ? 1.0 : 0.0;
       final barLabelsVisible =
           style.showDataLabels && layout != _ComboLayout.yAxisStrip;
+      final colorScheme = Theme.of(chartContext).colorScheme;
+      final tokens = Theme.of(chartContext).extension<AppThemeTokens>()!;
+      final useAnnotationBarLabels =
+          barLabelsVisible &&
+          (style.barDataLabelAlignment == ChartDataLabelAlignment.outer ||
+              style.barDataLabelAlignment == ChartDataLabelAlignment.auto);
       final chartMargin = resolveComparisonBarChartMargin(
         chartContext,
         showDataLabels: barLabelsVisible,
         dataLabelAlignment: style.barDataLabelAlignment,
         dataLabelOffset: style.barDataLabelOffset,
         chartPadding: style.chartPadding,
+        valueLabelsRenderedAsChartAnnotations: useAnnotationBarLabels,
       );
       final delta = style.categoryAutoScrollingDelta;
       final useCategoryAxisPan =
@@ -111,10 +119,6 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           enableTooltip &&
           delta != null &&
           delta > 0;
-      final colorScheme = Theme.of(chartContext).colorScheme;
-      final useAnnotationBarLabels = barLabelsVisible &&
-          (style.barDataLabelAlignment == ChartDataLabelAlignment.outer ||
-              style.barDataLabelAlignment == ChartDataLabelAlignment.auto);
       final barValueAnnotations = useAnnotationBarLabels
           ? _comboBarValueLabelAnnotations<T>(
               items: items,
@@ -135,8 +139,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 zoomMode: ZoomMode.x,
               )
             : null,
-        onTooltipRender:
-            enableTooltip ? buildSanitizingTooltipRenderer() : null,
+        onTooltipRender: enableTooltip
+            ? buildSanitizingTooltipRenderer()
+            : null,
         // Shared tooltip when both series exist; single-series charts still work.
         tooltipBehavior: buildChartTooltipBehavior(
           context,
@@ -148,13 +153,18 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           position: LegendPosition.bottom,
           textStyle: style.legendTextStyle,
           overflowMode: LegendItemOverflowMode.wrap,
+          padding: tokens.gapSm,
+          itemPadding: tokens.gapMd,
         ),
+        // Do not set [CategoryAxis.arrangeByIndex] to true with bar + line on
+        // the same categories: Syncfusion concatenates labels per index
+        // ("2025/05, 2025/05"). Default false merges duplicate category strings.
         primaryXAxis: CategoryAxis(
-          arrangeByIndex: true,
           isVisible: showXAxisLabels && style.showXAxis,
           majorGridLines: const MajorGridLines(width: 0),
           labelStyle: style.axisLabelTextStyle,
-          labelIntersectAction: style.categoryLabelIntersectAction ??
+          labelIntersectAction:
+              style.categoryLabelIntersectAction ??
               AxisLabelIntersectAction.none,
           maximumLabels: items.length,
           autoScrollingDelta: useCategoryAxisPan ? delta : null,
@@ -214,9 +224,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             color: layout == _ComboLayout.yAxisStrip
                 ? resolvedBarColor.withValues(alpha: 0)
                 : resolvedBarColor,
-            width: style.barWidth ??
+            width:
+                style.barWidth ??
                 AppChartEngineCartesianBarGeometryDefaults.columnWidthRatio,
-            spacing: style.barSpacing ??
+            spacing:
+                style.barSpacing ??
                 AppChartEngineCartesianBarGeometryDefaults.columnSpacingRatio,
             borderRadius: style.barBorderRadius,
             animationDuration: resolveChartAnimationDurationMs(
@@ -415,8 +427,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           // the *resolved* slot — not the raw constant — to avoid the inner
           // column overflowing at large text scales (text scaler 2.25 turns
           // a 22 px slot into ~49 px).
-          final resolvedScrollSlot =
-              chartHorizontalScrollBottomTrackSlotHeight(context);
+          final resolvedScrollSlot = chartHorizontalScrollBottomTrackSlotHeight(
+            context,
+          );
           final plotChartBodyHeight = coreH - resolvedScrollSlot;
 
           if (!sticky) {
@@ -559,9 +572,8 @@ List<CartesianChartAnnotation>? _comboBarValueLabelAnnotations<T>({
       offset: Offset(offset.dx, -offset.dy),
       child: label,
     );
-    // Same as comparison bars: [x] must be the category index when
-    // [CategoryAxis.arrangeByIndex] is true; string labels can collapse via
-    // [indexOf] and stack every value on one bar.
+    // Same as comparison bars: [x] is the resolved category index (row index
+    // when each category string is unique and bar/line share [items] order).
     annotations.add(
       CartesianChartAnnotation(
         coordinateUnit: CoordinateUnit.point,

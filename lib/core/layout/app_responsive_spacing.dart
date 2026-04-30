@@ -2,6 +2,13 @@ import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
+abstract final class AppPageSpacingPresets {
+  const AppPageSpacingPresets._();
+
+  /// Slightly widens the content rail to match dense dashboard pages.
+  static const double dashboardHorizontalAdjustment = -6;
+}
+
 /// Horizontal padding for scrollable shell pages, scaled by breakpoint.
 extension AppResponsivePagePadding on BuildContext {
   double get pageHorizontalPadding {

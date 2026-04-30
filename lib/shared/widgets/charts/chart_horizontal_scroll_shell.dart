@@ -18,7 +18,8 @@ const double _kChartHorizontalScrollBottomTrackSlotMin = 18;
 const double _kChartHorizontalScrollBottomTrackSlotMax = 56;
 
 /// Returns the actual height occupied by the bottom-track strip used by
-/// [ChartHorizontalScrollShell] when [bottomTrackSlot] is positive.
+/// [ChartHorizontalScrollShell] when [bottomTrackSlot] is positive and the
+/// platform shows a visible scrollbar thumb.
 ///
 /// The shell scales the strip by the platform [TextScaler] so the scrollbar
 /// thumb stays comfortably tappable for users with large text. Engines that
@@ -29,10 +30,13 @@ double chartHorizontalScrollBottomTrackSlotHeight(
   BuildContext context, {
   double bottomTrackSlot = kChartHorizontalScrollBottomTrackSlot,
 }) {
-  if (bottomTrackSlot <= 0) {
+  if (bottomTrackSlot <= 0 ||
+      !chartHorizontalScrollScrollbarThumbVisible(context)) {
     return 0;
   }
-  return MediaQuery.textScalerOf(context).scale(bottomTrackSlot).clamp(
+  return MediaQuery.textScalerOf(context)
+      .scale(bottomTrackSlot)
+      .clamp(
         _kChartHorizontalScrollBottomTrackSlotMin,
         _kChartHorizontalScrollBottomTrackSlotMax,
       );
@@ -68,9 +72,13 @@ class ChartHorizontalScrollShell extends StatefulWidget {
 
   /// When positive, a blank strip this tall is stacked **below** [child] inside
   /// the scrollable so the horizontal scrollbar thumb paints over the strip, not
-  /// over X-axis labels. Callers should size [child] with height
-  /// `outerHeight - bottomTrackSlot`. Defaults to `0` (no strip). Prefer
-  /// [kChartHorizontalScrollBottomTrackSlot] for comparison-style charts.
+  /// over X-axis labels.
+  ///
+  /// The strip is only reserved on platforms where the scrollbar thumb is
+  /// visible. Callers should size [child] with height
+  /// `outerHeight - chartHorizontalScrollBottomTrackSlotHeight(...)`.
+  /// Defaults to `0` (no strip). Prefer [kChartHorizontalScrollBottomTrackSlot]
+  /// for comparison-style charts.
   final double bottomTrackSlot;
 
   @override

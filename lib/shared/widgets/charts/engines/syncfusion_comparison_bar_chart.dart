@@ -150,6 +150,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           dataLabelOffset: style.dataLabelOffset,
           chartPadding: style.chartPadding,
           outerDataLabelTopReserve: style.outerDataLabelTopReserve,
+          valueLabelsRenderedAsChartAnnotations: useAnnotationValueLabels,
         ),
         plotAreaBorderWidth: 0,
         plotAreaBackgroundColor: style.plotAreaBackgroundColor,

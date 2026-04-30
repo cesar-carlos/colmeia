@@ -60,6 +60,12 @@ class AppHorizontalProgressChartStyle {
   final TextAlign? titleTextAlign;
   final TextAlign? labelTextAlign;
   final TextAlign? valueTextAlign;
+
+  /// Gap between the title block (string [AppHorizontalProgressChart.title] or
+  /// custom widget [AppHorizontalProgressChart.titleWidget]) and the first row.
+  ///
+  /// When null, [AppHorizontalProgressChart] uses the active theme's medium
+  /// gap token (`gapMd`).
   final double? titleBottomSpacing;
   final double? leadingSpacing;
   final EdgeInsetsGeometry? dividerPadding;
@@ -75,6 +81,9 @@ class AppHorizontalProgressChartStyle {
 /// Default trailing text uses `defaultHorizontalProgressValueLabel` (see
 /// `horizontal_progress_chart_math.dart`) and can be customized with
 /// [valueLabelMode].
+///
+/// When [AppHorizontalProgressChartStyle.titleBottomSpacing] is null, the gap
+/// between the title block and the first row uses the theme's `gapMd` token.
 class AppHorizontalProgressChart<T> extends StatelessWidget {
   const AppHorizontalProgressChart({
     required this.items,
@@ -140,8 +149,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
     final valueColor = style.valueColor ?? barColor;
     final barRadius =
         style.barRadius ?? BorderRadius.circular(tokens.formFieldRadius);
-    final titleBottomSpacing =
-        style.titleBottomSpacing ?? tokens.contentSpacing;
+    final titleBottomSpacing = style.titleBottomSpacing ?? tokens.gapMd;
     final leadingSpacing = style.leadingSpacing ?? tokens.gapSm;
     final resolvedTitleStyle =
         style.titleTextStyle ??

@@ -30,6 +30,41 @@ void main() {
   });
 
   testWidgets(
+    'resolveComparisonBarChartMargin uses smaller top when value labels are annotations',
+    (tester) async {
+      late EdgeInsets fullMargin;
+      late EdgeInsets annotationMargin;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Builder(
+            builder: (context) {
+              fullMargin = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: null,
+              );
+              annotationMargin = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: null,
+                valueLabelsRenderedAsChartAnnotations: true,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(annotationMargin.top, lessThan(fullMargin.top));
+      expect(annotationMargin.top, greaterThan(0));
+    },
+  );
+
+  testWidgets(
     'resolveComparisonBarChartMargin adds outerDataLabelTopReserve after headroom',
     (tester) async {
       late EdgeInsets withoutReserve;

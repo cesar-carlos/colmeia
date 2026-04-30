@@ -93,8 +93,9 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
         semanticsParts.add(t);
       }
     }
-    final semanticsCoordinatorLabel =
-        semanticsParts.isEmpty ? null : semanticsParts.join(' ');
+    final semanticsCoordinatorLabel = semanticsParts.isEmpty
+        ? null
+        : semanticsParts.join(' ');
 
     Widget? floorTrailing;
     if (hasPlotFloor) {
@@ -205,7 +206,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
 
     final chart = LayoutBuilder(
       builder: (context, constraints) {
-        var layoutW = constraints.hasBoundedWidth &&
+        var layoutW =
+            constraints.hasBoundedWidth &&
                 constraints.maxWidth.isFinite &&
                 constraints.maxWidth > 0
             ? constraints.maxWidth
@@ -215,7 +217,7 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
         }
         final requiredW = math.max(layoutW, minCategoryWidth * categoryCount);
         final needsScroll = requiredW > layoutW + 0.5;
-        const scrollSlot = kChartHorizontalScrollBottomTrackSlot;
+        final scrollSlot = chartHorizontalScrollBottomTrackSlotHeight(context);
         final chartBodyH = needsScroll ? plotHeight - scrollSlot : plotHeight;
 
         var body = buildCartesian(
@@ -246,7 +248,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
         : SizedBox(height: tokens.gapSm);
 
     final mediaPlatform = Theme.of(context).platform;
-    final isMobilePlatform = mediaPlatform == TargetPlatform.android ||
+    final isMobilePlatform =
+        mediaPlatform == TargetPlatform.android ||
         mediaPlatform == TargetPlatform.iOS ||
         mediaPlatform == TargetPlatform.fuchsia;
 
@@ -257,7 +260,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
           final layoutW = constraints.hasBoundedWidth
               ? constraints.maxWidth
               : MediaQuery.sizeOf(context).width;
-          final wouldScroll = (minCategoryWidth * categoryCount) > layoutW + 0.5;
+          final wouldScroll =
+              (minCategoryWidth * categoryCount) > layoutW + 0.5;
           if (!wouldScroll || !isMobilePlatform) {
             return chart;
           }
@@ -271,8 +275,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
                   l10n.chartComparisonPanGestureHint,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -292,8 +296,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
       );

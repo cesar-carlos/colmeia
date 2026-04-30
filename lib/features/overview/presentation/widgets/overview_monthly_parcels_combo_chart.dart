@@ -159,7 +159,11 @@ class _OverviewMonthlyParcelsComboChartState
       required NumberFormat rightAxis,
     }) {
       return AppComboChartStyle(
-        height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
+        // One [contentSpacing]: bar values use chart annotations, not Syncfusion
+        // outer column labels, so we do not need the full +2* buffer used on
+        // comparison column charts — extra height only adds empty band above
+        // the bottom legend inside the fixed [SizedBox].
+        height: tokens.chartStandardHeight + tokens.contentSpacing,
         // Aligned with the bar charts (350 ms): the previous Duration.zero left
         // this card visually static while siblings animated in via staged
         // mounting + 350 ms entrance.

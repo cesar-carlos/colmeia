@@ -33,6 +33,11 @@ bool comparisonBarChartNeedsOuterDataLabelHeadroom({
 
 /// Top (and base) margin for [SfCartesianChart] so outer data labels are not
 /// clipped; uses [MediaQuery.textScalerOf] for accessibility font scaling.
+///
+/// When [valueLabelsRenderedAsChartAnnotations] is true, built-in column
+/// [DataLabelSettings] are typically off and value text is drawn with
+/// [CartesianChartAnnotation] instead. Do not reserve the full built-in outer
+/// label band (that would leave a tall empty strip above the plot).
 EdgeInsets resolveComparisonBarChartMargin(
   BuildContext context, {
   required bool showDataLabels,
@@ -40,6 +45,7 @@ EdgeInsets resolveComparisonBarChartMargin(
   required Offset? dataLabelOffset,
   required EdgeInsets? chartPadding,
   double outerDataLabelTopReserve = 0,
+  bool valueLabelsRenderedAsChartAnnotations = false,
 }) {
   final base = chartPadding ?? EdgeInsets.zero;
   if (!comparisonBarChartNeedsOuterDataLabelHeadroom(
@@ -48,6 +54,18 @@ EdgeInsets resolveComparisonBarChartMargin(
   )) {
     return base;
   }
+
+  if (valueLabelsRenderedAsChartAnnotations) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>();
+    final textScaler = MediaQuery.textScalerOf(context);
+    final lift = dataLabelOffset?.dy ?? 0;
+    final bump = textScaler.scale(tokens?.gapMd ?? 12.0) +
+        textScaler.scale(tokens?.gapSm ?? 8.0) +
+        lift.abs();
+    final top = math.max(base.top, bump) + outerDataLabelTopReserve;
+    return EdgeInsets.fromLTRB(base.left, top, base.right, base.bottom);
+  }
+
   final theme = Theme.of(context);
   final tokens = theme.extension<AppThemeTokens>();
   final bodyStyle =

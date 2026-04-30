@@ -93,18 +93,18 @@ class _OverviewHomePageState extends State<OverviewHomePage> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: context.pageScrollPadding(
                     tokens,
-                    horizontalAdjustment: -6,
+                    horizontalAdjustment:
+                        AppPageSpacingPresets.dashboardHorizontalAdjustment,
                   ),
                   children: <Widget>[
                     _OverviewHomeIntro(l10n: l10n),
                     SizedBox(height: tokens.gapMd),
                     Selector<OverviewController, _FilterSlice>(
-                      selector: (_, c) =>
-                          _FilterSlice(
-                            filter: c.activeFilter,
-                            agents: c.availableAgents,
-                            isLoading: c.isLoading,
-                          ),
+                      selector: (_, c) => _FilterSlice(
+                        filter: c.activeFilter,
+                        agents: c.availableAgents,
+                        isLoading: c.isLoading,
+                      ),
                       builder: (context, slice, _) {
                         return OverviewFilterBar(
                           l10n: l10n,
