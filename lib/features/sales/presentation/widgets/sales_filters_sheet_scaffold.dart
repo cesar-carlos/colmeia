@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:flutter/material.dart';
 
 class SalesFiltersSheetScaffold extends StatelessWidget {
@@ -48,80 +51,91 @@ class SalesFiltersSheetScaffold extends StatelessWidget {
         minChildSize: minChildSize,
         maxChildSize: maxChildSize,
         builder: (context, scrollController) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.contentSpacing,
-                  tokens.gapSm,
-                  tokens.contentSpacing,
-                  tokens.gapSm,
-                ),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: math.min(560, MediaQuery.sizeOf(context).width),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  const BottomSheetCompactDragHandle(),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.contentSpacing,
+                      0,
+                      tokens.contentSpacing,
+                      tokens.gapSm,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          icon: const Icon(Icons.close_rounded),
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).closeButtonTooltip,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (description != null)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        tokens.contentSpacing,
+                        0,
+                        tokens.contentSpacing,
+                        tokens.gapMd,
+                      ),
                       child: Text(
-                        title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                        description!,
+                        style: theme.appTypography.caption.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).closeButtonTooltip,
+                  Expanded(child: bodyBuilder(scrollController)),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.contentSpacing,
+                      tokens.gapSm,
+                      tokens.contentSpacing,
+                      tokens.contentSpacing,
                     ),
-                  ],
-                ),
-              ),
-              if (description != null)
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    tokens.contentSpacing,
-                    0,
-                    tokens.contentSpacing,
-                    tokens.gapMd,
+                    child: Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: AppSecondaryButton(
+                            fillWidth: true,
+                            label: secondaryActionLabel,
+                            onPressed: onSecondaryAction,
+                          ),
+                        ),
+                        SizedBox(width: tokens.gapMd),
+                        Expanded(
+                          child: AppPrimaryButton(
+                            fillWidth: true,
+                            label: primaryActionLabel,
+                            onPressed: canPrimaryAction
+                                ? onPrimaryAction
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(
-                    description!,
-                    style: theme.appTypography.caption.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              Expanded(child: bodyBuilder(scrollController)),
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.contentSpacing,
-                  tokens.gapSm,
-                  tokens.contentSpacing,
-                  tokens.contentSpacing,
-                ),
-                child: Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: AppSecondaryButton(
-                        fillWidth: true,
-                        label: secondaryActionLabel,
-                        onPressed: onSecondaryAction,
-                      ),
-                    ),
-                    SizedBox(width: tokens.gapMd),
-                    Expanded(
-                      child: AppPrimaryButton(
-                        fillWidth: true,
-                        label: primaryActionLabel,
-                        onPressed: canPrimaryAction ? onPrimaryAction : null,
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-            ],
+            ),
           );
         },
       ),

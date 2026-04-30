@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:flutter/material.dart';
 
 /// Returns trimmed, non-empty names, sorted case-insensitively, with
@@ -45,7 +46,7 @@ Future<void> showOverviewAgentNamesListSheet({
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    showDragHandle: true,
+    showDragHandle: false,
     builder: (ctx) => _OverviewAgentNamesListSheet(
       title: title,
       agentNames: normalizedAgentNames,
@@ -113,7 +114,7 @@ class _OverviewAgentNamesListSheetState
         maxChildSize: _OverviewAgentNamesListSheetLayout.maxChildSize,
         builder: (context, scrollController) {
           return Align(
-            alignment: Alignment.bottomCenter,
+            alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: math.min(
@@ -124,10 +125,11 @@ class _OverviewAgentNamesListSheetState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
+                  const BottomSheetCompactDragHandle(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(
                       tokens.contentSpacing,
-                      tokens.gapSm,
+                      0,
                       tokens.contentSpacing,
                       tokens.gapSm,
                     ),

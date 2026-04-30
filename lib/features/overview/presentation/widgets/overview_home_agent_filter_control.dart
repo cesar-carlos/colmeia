@@ -6,6 +6,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:flutter/material.dart';
 
 const int _kMaxInlineChips = 3;
@@ -31,8 +32,7 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
   final ValueChanged<Set<String>?> onSelectionChanged;
   final bool enabled;
 
-  Set<String> get _allIds =>
-      availableAgents.map((e) => e.agentId).toSet();
+  Set<String> get _allIds => availableAgents.map((e) => e.agentId).toSet();
 
   void _emitNormalized(Set<String> explicit) {
     final all = _allIds;
@@ -55,7 +55,7 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
+      showDragHandle: false,
       builder: (ctx) => _OverviewAgentSelectionSheet(
         l10n: l10n,
         availableAgents: availableAgents,
@@ -86,8 +86,7 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
     final colors = theme.appColors;
     final scheme = theme.colorScheme;
     final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
-    final labelToFieldGap =
-        tokens.gapXs;
+    final labelToFieldGap = tokens.gapXs;
 
     if (availableAgents.isEmpty) {
       return Column(
@@ -111,9 +110,7 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
       );
     }
 
-    final explicitIds = selectedAgentIds == null
-        ? _allIds
-        : selectedAgentIds!;
+    final explicitIds = selectedAgentIds == null ? _allIds : selectedAgentIds!;
     final count = explicitIds.length;
     final allCount = availableAgents.length;
     final isImplicitAll = selectedAgentIds == null;
@@ -308,11 +305,12 @@ class _InlineChipsRow extends StatelessWidget {
     final byId = <String, OverviewAgentOption>{
       for (final a in availableAgents) a.agentId: a,
     };
-    final ordered = selectedIds
-        .map((id) => byId[id])
-        .whereType<OverviewAgentOption>()
-        .toList(growable: false)
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final ordered =
+        selectedIds
+            .map((id) => byId[id])
+            .whereType<OverviewAgentOption>()
+            .toList(growable: false)
+          ..sort((a, b) => a.name.compareTo(b.name));
     final canRemove = selectedIds.length > 1;
 
     return Column(
@@ -456,7 +454,8 @@ class _OverviewAgentSelectionSheetState
     final tokens = theme.extension<AppThemeTokens>()!;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final filtered = _filtered;
-    final matchingNotAllSelected = _query.isNotEmpty &&
+    final matchingNotAllSelected =
+        _query.isNotEmpty &&
         filtered.isNotEmpty &&
         filtered.any((a) => !_selected.contains(a.agentId));
     final byIdForBanner = <String, OverviewAgentOption>{
@@ -475,7 +474,7 @@ class _OverviewAgentSelectionSheetState
         maxChildSize: 0.94,
         builder: (context, scrollController) {
           return Align(
-            alignment: Alignment.bottomCenter,
+            alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: math.min(560, MediaQuery.sizeOf(context).width),
@@ -483,10 +482,11 @@ class _OverviewAgentSelectionSheetState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
+                  const BottomSheetCompactDragHandle(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(
                       tokens.contentSpacing,
-                      tokens.gapSm,
+                      0,
                       tokens.contentSpacing,
                       tokens.gapSm,
                     ),
@@ -618,7 +618,8 @@ class _OverviewAgentSelectionSheetState
                                 agent.connectionStatus,
                                 scheme,
                               );
-                              final isOffline = agent.connectionStatus ==
+                              final isOffline =
+                                  agent.connectionStatus ==
                                   AgentConnectionStatus.offline;
                               final title = Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -631,7 +632,8 @@ class _OverviewAgentSelectionSheetState
                                     ),
                                     SizedBox(width: tokens.gapXs),
                                   ],
-                                  if (agent.missingLocalClientToken) ...<Widget>[
+                                  if (agent
+                                      .missingLocalClientToken) ...<Widget>[
                                     Icon(
                                       Icons.vpn_key_off_outlined,
                                       size: 18,
@@ -654,7 +656,8 @@ class _OverviewAgentSelectionSheetState
                                 if (isOffline)
                                   widget.l10n.agentConnectionOffline,
                                 if (agent.missingLocalClientToken)
-                                  widget.l10n
+                                  widget
+                                      .l10n
                                       .overviewAgentFilterMissingClientTokenRowSubtitle,
                               ];
                               final titleWidget = tooltipLines.isEmpty
@@ -667,7 +670,8 @@ class _OverviewAgentSelectionSheetState
                                 title: titleWidget,
                                 subtitle: agent.missingLocalClientToken
                                     ? Text(
-                                        widget.l10n
+                                        widget
+                                            .l10n
                                             .overviewAgentFilterMissingClientTokenRowSubtitle,
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
@@ -696,7 +700,9 @@ class _OverviewAgentSelectionSheetState
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () => Navigator.of(context).pop(),
-                              child: Text(widget.l10n.overviewAgentFilterCancel),
+                              child: Text(
+                                widget.l10n.overviewAgentFilterCancel,
+                              ),
                             ),
                           ),
                           SizedBox(width: tokens.gapMd),
@@ -726,8 +732,8 @@ Color _overviewAgentNameColor(
 ) {
   return switch (status) {
     AgentConnectionStatus.offline => scheme.error,
-    AgentConnectionStatus.online || AgentConnectionStatus.unknown =>
-      scheme.onSurface,
+    AgentConnectionStatus.online ||
+    AgentConnectionStatus.unknown => scheme.onSurface,
   };
 }
 

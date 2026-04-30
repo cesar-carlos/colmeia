@@ -256,7 +256,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
+      showDragHandle: false,
       builder: (context) {
         return _SalesProdutoRankLucroFiltersSheet(
           l10n: AppLocalizations.of(context),

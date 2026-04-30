@@ -9,6 +9,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:flutter/material.dart';
 
 /// Figma-style agent filter trigger: circular peach background + dark icon.
@@ -60,7 +61,7 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      showDragHandle: true,
+      showDragHandle: false,
       builder: (ctx) => _SalesAgentSelectionSheet(
         l10n: l10n,
         availableAgents: availableAgents,
@@ -134,9 +135,7 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
                 vertical: tokens.gapXs,
               ),
               child: Text(
-                hasSelection
-                    ? selectedAgent.name
-                    : l10n.salesAgentPickerEmpty,
+                hasSelection ? selectedAgent.name : l10n.salesAgentPickerEmpty,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: typography.body.copyWith(
@@ -352,7 +351,7 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
         maxChildSize: 0.94,
         builder: (context, scrollController) {
           return Align(
-            alignment: Alignment.bottomCenter,
+            alignment: Alignment.topCenter,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxWidth: math.min(560, MediaQuery.sizeOf(context).width),
@@ -360,10 +359,11 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
+                  const BottomSheetCompactDragHandle(),
                   Padding(
                     padding: EdgeInsets.fromLTRB(
                       tokens.contentSpacing,
-                      tokens.gapSm,
+                      0,
                       tokens.contentSpacing,
                       tokens.gapSm,
                     ),
