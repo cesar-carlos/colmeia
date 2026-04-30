@@ -40,6 +40,10 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
   static String pagedQuery({
     required int startRow,
     required int endRow,
+    String? searchTerm,
+    String? classificacao,
+    int? codGrupoProduto,
+    int? codMarca,
   }) {
     if (startRow < 1) {
       throw ArgumentError.value(startRow, 'startRow', 'must be >= 1');
@@ -51,6 +55,16 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
         'must be >= startRow',
       );
     }
+    final codGrupoProdutoLine = _whereIntEquals(
+      columnSql: 'p.CodGrupoProduto',
+      value: codGrupoProduto,
+    );
+    final codMarcaLine = _whereIntEquals(
+      columnSql: 'p.CodMarca',
+      value: codMarca,
+    );
+    final searchTermLine = _whereContainsProductDimensions(searchTerm);
+    final classificacaoLine = _whereOptionalClassificacao(classificacao);
     return '''
     WITH Parametros AS (
       SELECT
@@ -102,6 +116,9 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
         AND pv.Origem LIKE :origem
         AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'
         AND pv.PreVenda = 'N'
+$codGrupoProdutoLine
+$codMarcaLine
+$searchTermLine
     ),
     Vendas AS (
       SELECT
@@ -209,6 +226,7 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
         PercentualTendencia,
         Classificacao
       FROM Resultado
+$classificacaoLine
     )
     SELECT
       CodEmpresa,
@@ -230,5 +248,39 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
     ORDER BY
       RowNum ASC
   ''';
+  }
+
+  static String _whereIntEquals({
+    required String columnSql,
+    required int? value,
+  }) {
+    if (value == null) {
+      return '        AND (1 = 1)';
+    }
+    return '        AND $columnSql = $value';
+  }
+
+  static String _whereContainsProductDimensions(String? searchTerm) {
+    final normalized = searchTerm?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return '        AND (1 = 1)';
+    }
+    final escaped = normalized.replaceAll("'", "''");
+    final likeLiteral = "N'%$escaped%'";
+    return '''
+        AND (
+          UPPER(p.Nome) LIKE UPPER($likeLiteral)
+          OR UPPER(COALESCE(gp.Nome, '')) LIKE UPPER($likeLiteral)
+          OR UPPER(COALESCE(m.Nome, '')) LIKE UPPER($likeLiteral)
+        )''';
+  }
+
+  static String _whereOptionalClassificacao(String? classificacao) {
+    final normalized = classificacao?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return '      WHERE (1 = 1)';
+    }
+    final escaped = normalized.replaceAll("'", "''");
+    return "      WHERE Classificacao = N'$escaped'";
   }
 }

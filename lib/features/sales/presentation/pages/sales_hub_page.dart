@@ -104,6 +104,7 @@ class SalesHubPage extends StatelessWidget {
     return switch (key) {
       'salesCardProdutoRankLucroTitle' => l10n.salesCardProdutoRankLucroTitle,
       'salesCardMonthlyPnlTitle' => l10n.salesCardMonthlyPnlTitle,
+      'salesCardProdutoTendenciaTitle' => l10n.salesCardProdutoTendenciaTitle,
       _ => key,
     };
   }

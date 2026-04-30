@@ -1,12 +1,11 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
-import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/grupo_produto_options_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
 
-import 'support/e2e_dependency_bootstrap.dart';
+import 'support/e2e_agent_queries_test_helpers.dart';
 import 'support/e2e_name_filter_helpers.dart';
 
 void main() {
@@ -16,20 +15,13 @@ void main() {
       test(
         'loadAll executes the real GrupoProduto options query',
         () async {
-          final missingKeys = missingE2eRepositoryKeys();
-          if (missingKeys.isNotEmpty) {
-            // E2E skip hint; `print` is intentional for local diagnostics.
-            // ignore: avoid_print
-            print(
-              'SKIP grupo_produto_options_repository_e2e: missing '
-              '${missingKeys.join(', ')}. '
-              'Set them in assets/env/local.env, process env, or --dart-define.',
-            );
+          if (shouldSkipE2eRepositoryTest(
+            'grupo_produto_options_repository_e2e',
+          )) {
             return;
           }
 
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
+          await setupE2eDependenciesWithTearDown();
 
           final repository = getIt<GrupoProdutoOptionsRepository>();
 
@@ -48,19 +40,9 @@ void main() {
               }
             },
             (failure) {
-              expect(
+              expectAcceptableAgentQueriesE2eFailure(
                 failure,
-                isNot(isA<SessionFailure>()),
-                reason:
-                    'Unexpected HTTP 401 after client login '
-                    '— check E2E_* values.',
-              );
-              expect(
-                isAcceptableE2eAgentSqlRepositoryFailure(failure),
-                isTrue,
-                reason:
-                    'Repository e2e should return rows, invalid_policy / '
-                    'missing_permission RPC, or transient bridge HTTP 5xx.',
+                failureScope: 'Repository e2e',
               );
             },
           );
@@ -70,20 +52,13 @@ void main() {
       test(
         'use case executes the same GrupoProduto options query',
         () async {
-          final missingKeys = missingE2eRepositoryKeys();
-          if (missingKeys.isNotEmpty) {
-            // E2E skip hint; `print` is intentional for local diagnostics.
-            // ignore: avoid_print
-            print(
-              'SKIP load_grupo_produto_options use_case e2e: missing '
-              '${missingKeys.join(', ')}. '
-              'Set them in assets/env/local.env, process env, or --dart-define.',
-            );
+          if (shouldSkipE2eRepositoryTest(
+            'load_grupo_produto_options use_case e2e',
+          )) {
             return;
           }
 
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
+          await setupE2eDependenciesWithTearDown();
 
           final useCase = getIt<LoadGrupoProdutoOptionsUseCase>();
           final result = await useCase(
@@ -101,19 +76,9 @@ void main() {
               }
             },
             (failure) {
-              expect(
+              expectAcceptableAgentQueriesE2eFailure(
                 failure,
-                isNot(isA<SessionFailure>()),
-                reason:
-                    'Unexpected HTTP 401 after client login '
-                    '— check E2E_* values.',
-              );
-              expect(
-                isAcceptableE2eAgentSqlRepositoryFailure(failure),
-                isTrue,
-                reason:
-                    'Use-case e2e should return rows, invalid_policy / '
-                    'missing_permission RPC, or transient bridge HTTP 5xx.',
+                failureScope: 'Use-case e2e',
               );
             },
           );
@@ -123,20 +88,13 @@ void main() {
       test(
         'loadAll applies searchTerm filter when provided',
         () async {
-          final missingKeys = missingE2eRepositoryKeys();
-          if (missingKeys.isNotEmpty) {
-            // E2E skip hint; `print` is intentional for local diagnostics.
-            // ignore: avoid_print
-            print(
-              'SKIP grupo_produto_options_repository name-filter e2e: missing '
-              '${missingKeys.join(', ')}. '
-              'Set them in assets/env/local.env, process env, or --dart-define.',
-            );
+          if (shouldSkipE2eRepositoryTest(
+            'grupo_produto_options_repository name-filter e2e',
+          )) {
             return;
           }
 
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
+          await setupE2eDependenciesWithTearDown();
 
           final repository = getIt<GrupoProdutoOptionsRepository>();
           final baseline = await repository.loadAll(
@@ -147,20 +105,10 @@ void main() {
 
           if (baseline.isError()) {
             final failure = baseline.exceptionOrNull();
-            expect(
-              failure,
-              isNot(isA<SessionFailure>()),
-              reason:
-                  'Unexpected HTTP 401 after client login '
-                  '— check E2E_* values.',
-            );
-            expect(
-              failure != null &&
-                  isAcceptableE2eAgentSqlRepositoryFailure(failure),
-              isTrue,
-              reason:
-                  'Repository e2e should return rows, invalid_policy / '
-                  'missing_permission RPC, or transient bridge HTTP 5xx.',
+            expect(failure, isNotNull);
+            expectAcceptableAgentQueriesE2eFailure(
+              failure!,
+              failureScope: 'Repository e2e',
             );
             return;
           }
@@ -192,19 +140,9 @@ void main() {
               }
             },
             (failure) {
-              expect(
+              expectAcceptableAgentQueriesE2eFailure(
                 failure,
-                isNot(isA<SessionFailure>()),
-                reason:
-                    'Unexpected HTTP 401 after client login '
-                    '— check E2E_* values.',
-              );
-              expect(
-                isAcceptableE2eAgentSqlRepositoryFailure(failure),
-                isTrue,
-                reason:
-                    'Repository e2e should return rows, invalid_policy / '
-                    'missing_permission RPC, or transient bridge HTTP 5xx.',
+                failureScope: 'Repository e2e',
               );
             },
           );

@@ -1,6 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_summary_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -92,6 +93,24 @@ void main() {
         periodoAnteriorInicio: anteriorInicio,
         periodoAnteriorFim: anteriorFim,
         origem: '   ',
+      ),
+    );
+
+    check(result.isError()).isTrue();
+    check(result.exceptionOrNull()).isA<ValidationFailure>();
+    verifyNever(() => agentQueriesRepository.executeSql(any()));
+  });
+
+  test('returns validation failure when classificacao is invalid', () async {
+    final result = await repository.loadAll(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: ProdutoVendidoTendenciaDeVendaFilter(
+        periodoAtualInicio: atualInicio,
+        periodoAtualFim: atualFim,
+        periodoAnteriorInicio: anteriorInicio,
+        periodoAnteriorFim: anteriorFim,
+        classificacao: 'INVALIDA',
       ),
     );
 
@@ -221,6 +240,43 @@ void main() {
     check(captured.executeOptions?.maxRows).equals(45);
   });
 
+  test('optional detail filters are inlined into paged SQL', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.loadAll(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: ProdutoVendidoTendenciaDeVendaFilter(
+        periodoAtualInicio: atualInicio,
+        periodoAtualFim: atualFim,
+        periodoAnteriorInicio: anteriorInicio,
+        periodoAnteriorFim: anteriorFim,
+        searchTerm: "fox' prime",
+        classificacao: 'crescendo',
+        codGrupoProduto: 14,
+        codMarca: 490,
+      ),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+
+    check(captured.sql).contains('AND p.CodGrupoProduto = 14');
+    check(captured.sql).contains('AND p.CodMarca = 490');
+    check(captured.sql).contains("N'%fox'' prime%'");
+    check(captured.sql).contains("WHERE Classificacao = N'CRESCENDO'");
+    check(captured.namedParams.length).equals(5);
+  });
+
   test('maps rows to entities correctly with decimal trend values', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
@@ -268,5 +324,64 @@ void main() {
     check(row.diferenca).equals(19);
     check(row.percentualTendencia).equals(1900);
     check(row.classificacao).equals('CRESCENDO');
+  });
+
+  test('loadSummary sends summary SQL and bounded maxRows', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.loadSummary(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: buildValidFilter(),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+
+    check(captured.sql).equals(ProdutoVendidoTendenciaDeVendaSummarySql.query);
+    check(captured.namedParams['periodoAtualInicio']).equals('2026-03-01');
+    check(captured.namedParams['origem']).equals('FrenteLoja');
+    check(captured.executeOptions?.maxRows).equals(32);
+  });
+
+  test('loadSummary maps aggregated rows', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'Classificacao': 'CRESCENDO',
+              'QuantidadeProdutos': 8,
+              'ImpactoLiquido': '53.0',
+            },
+          ],
+          rowCount: 1,
+        ),
+      ),
+    );
+
+    final result = await repository.loadSummary(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: buildValidFilter(),
+    );
+
+    check(result.isSuccess()).isTrue();
+    final rows = result.getOrThrow();
+    check(rows.length).equals(1);
+    check(rows.single.classificacao).equals('CRESCENDO');
+    check(rows.single.quantidadeProdutos).equals(8);
+    check(rows.single.impactoLiquido).equals(53);
   });
 }

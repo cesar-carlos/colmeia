@@ -73,6 +73,11 @@ void main() {
     check(sql).contains('ORDER BY\n      RowNum ASC');
   });
 
+  test('query keeps default optional filter predicates as tautologies', () {
+    check(sql).contains('AND (1 = 1)');
+    check(sql).contains('WHERE (1 = 1)');
+  });
+
   test('query inlines custom pagination bounds', () {
     final custom = ProdutoVendidoTendenciaDeVendaSql.pagedQuery(
       startRow: 41,
@@ -85,6 +90,22 @@ void main() {
 
   test('query does not include CustoProduto join', () {
     check(sql.contains('CustoProduto')).isFalse();
+  });
+
+  test('query inlines optional detail filters as SQL literals', () {
+    final filtered = ProdutoVendidoTendenciaDeVendaSql.pagedQuery(
+      startRow: 1,
+      endRow: 20,
+      searchTerm: "fox' prime",
+      classificacao: 'CRESCENDO',
+      codGrupoProduto: 14,
+      codMarca: 490,
+    );
+
+    check(filtered).contains('AND p.CodGrupoProduto = 14');
+    check(filtered).contains('AND p.CodMarca = 490');
+    check(filtered).contains("N'%fox'' prime%'");
+    check(filtered).contains("WHERE Classificacao = N'CRESCENDO'");
   });
 
   test('pagedQuery validates bounds', () {

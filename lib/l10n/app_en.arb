@@ -981,6 +981,7 @@
   "salesCardNewPaymentTitle": "New Payment",
   "salesCardProdutoRankLucroTitle": "Product ranking",
   "salesCardMonthlyPnlTitle": "Monthly P&L",
+  "salesCardProdutoTendenciaTitle": "Sales trend",
   "salesMonthlyPnlPageSubtitle": "Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.",
   "salesMonthlyPnlFilterAnchorMonth": "Reference month",
   "salesMonthlyPnlChartTitle": "Monthly P&L",
@@ -996,6 +997,60 @@
   "salesProdutoRankLucroFilterSortBy": "Metric",
   "salesProdutoRankLucroSortQuantity": "Quantity sold",
   "salesProdutoRankLucroSortProfit": "Total profit",
+  "salesProdutoTendenciaPageSubtitle": "Executive snapshot of product sales trend with summary, movers, and paged details.",
+  "salesProdutoTendenciaFilterCurrentPeriod": "Current period",
+  "salesProdutoTendenciaFilterPreviousPeriod": "Previous period",
+  "salesProdutoTendenciaFilterSearch": "Search term",
+  "salesProdutoTendenciaFilterSearchHint": "Product, group, or brand",
+  "salesProdutoTendenciaFilterClassification": "Classification",
+  "salesProdutoTendenciaFilterGroup": "Group",
+  "salesProdutoTendenciaFilterBrand": "Brand",
+  "salesProdutoTendenciaFilterPageSize": "Rows per page",
+  "salesProdutoTendenciaFilterAllOption": "All",
+  "salesProdutoTendenciaSummaryTitle": "Executive summary",
+  "salesProdutoTendenciaSummarySubtitle": "Overview of product movement by trend classification.",
+  "salesProdutoTendenciaSummaryByClassificacaoTitle": "Products by classification",
+  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Distribution and impact in the loaded page.",
+  "salesProdutoTendenciaTopMoversTitle": "Top movers",
+  "salesProdutoTendenciaTopMoversSubtitle": "Highest growth and decline in the selected period.",
+  "salesProdutoTendenciaTopGainersTitle": "Top 5 gainers",
+  "salesProdutoTendenciaTopLosersTitle": "Top 5 losers",
+  "salesProdutoTendenciaDetailsTitle": "Detailed rows",
+  "salesProdutoTendenciaDetailsSubtitle": "Paginated detail with product, classification, group, and brand.",
+  "salesProdutoTendenciaDetailsEntityLabel": "rows",
+  "salesProdutoTendenciaNoData": "No trend data for the selected filters.",
+  "salesProdutoTendenciaKpiGrowing": "Growing products",
+  "salesProdutoTendenciaKpiFalling": "Falling products",
+  "salesProdutoTendenciaKpiNewProducts": "New products",
+  "salesProdutoTendenciaKpiStopped": "Stopped selling",
+  "salesProdutoTendenciaKpiNetImpact": "Net impact (qty)",
+  "salesProdutoTendenciaColProduct": "Product",
+  "salesProdutoTendenciaColClassificacao": "Classification",
+  "salesProdutoTendenciaColGrupo": "Group",
+  "salesProdutoTendenciaColMarca": "Brand",
+  "salesProdutoTendenciaColDiferenca": "Delta",
+  "salesProdutoTendenciaColPercentual": "Trend %",
+  "salesProdutoTendenciaClassificacaoStopped": "Stopped selling",
+  "salesProdutoTendenciaClassificacaoNew": "New product",
+  "salesProdutoTendenciaClassificacaoGrowing": "Growing",
+  "salesProdutoTendenciaClassificacaoFalling": "Falling",
+  "salesProdutoTendenciaClassificacaoStable": "Stable",
+  "salesProdutoTendenciaActiveFiltersSummary": "{count, plural, =0{No extra filters} one{1 extra filter} other{{count} extra filters}}",
+  "@salesProdutoTendenciaActiveFiltersSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "salesProdutoTendenciaDetailsNotice": "Results may contain more rows. Use pagination to load next pages (current size: {pageSize}).",
+  "@salesProdutoTendenciaDetailsNotice": {
+    "placeholders": {
+      "pageSize": {
+        "type": "String"
+      }
+    }
+  },
   "agentStatusPending": "Pending",
   "agentStatusRejected": "Rejected",
   "agentStatusUnknown": "Unknown",

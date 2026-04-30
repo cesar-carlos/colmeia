@@ -58,4 +58,7 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Trend rows by product between two periods; can be high cardinality for
   /// catalogs with many active SKUs.
   static const int produtoVendidoTendenciaDeVenda = 10000;
+
+  /// Summary grouped by trend classification (`CRESCENDO`, `CAINDO`, etc.).
+  static const int produtoVendidoTendenciaDeVendaSummary = 32;
 }

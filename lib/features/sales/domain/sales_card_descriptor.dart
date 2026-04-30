@@ -25,4 +25,9 @@ const List<SalesCardDescriptor> allSalesCards = <SalesCardDescriptor>[
     icon: Icons.show_chart_rounded,
     l10nTitleKey: 'salesCardMonthlyPnlTitle',
   ),
+  SalesCardDescriptor(
+    id: 'produto_tendencia_venda',
+    icon: Icons.trending_up_rounded,
+    l10nTitleKey: 'salesCardProdutoTendenciaTitle',
+  ),
 ];

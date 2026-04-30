@@ -755,6 +755,7 @@
   "salesCardNewPaymentTitle": "Novo Pagamento",
   "salesCardProdutoRankLucroTitle": "Ranking de produtos",
   "salesCardMonthlyPnlTitle": "Resultado mensal",
+  "salesCardProdutoTendenciaTitle": "Tendencia de vendas",
   "salesMonthlyPnlPageSubtitle": "Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.",
   "salesMonthlyPnlFilterAnchorMonth": "Mes de referencia",
   "salesMonthlyPnlChartTitle": "Resultado mensal",
@@ -770,6 +771,60 @@
   "salesProdutoRankLucroFilterSortBy": "Metrica",
   "salesProdutoRankLucroSortQuantity": "Quantidade vendida",
   "salesProdutoRankLucroSortProfit": "Lucro total",
+  "salesProdutoTendenciaPageSubtitle": "Visao executiva da tendencia de venda por produto com resumo, movers e detalhe paginado.",
+  "salesProdutoTendenciaFilterCurrentPeriod": "Periodo atual",
+  "salesProdutoTendenciaFilterPreviousPeriod": "Periodo anterior",
+  "salesProdutoTendenciaFilterSearch": "Busca",
+  "salesProdutoTendenciaFilterSearchHint": "Produto, grupo ou marca",
+  "salesProdutoTendenciaFilterClassification": "Classificacao",
+  "salesProdutoTendenciaFilterGroup": "Grupo",
+  "salesProdutoTendenciaFilterBrand": "Marca",
+  "salesProdutoTendenciaFilterPageSize": "Linhas por pagina",
+  "salesProdutoTendenciaFilterAllOption": "Todos",
+  "salesProdutoTendenciaSummaryTitle": "Resumo executivo",
+  "salesProdutoTendenciaSummarySubtitle": "Visao geral da movimentacao por classificacao de tendencia.",
+  "salesProdutoTendenciaSummaryByClassificacaoTitle": "Produtos por classificacao",
+  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Distribuicao e impacto dentro da pagina carregada.",
+  "salesProdutoTendenciaTopMoversTitle": "Top movers",
+  "salesProdutoTendenciaTopMoversSubtitle": "Maiores altas e quedas no periodo selecionado.",
+  "salesProdutoTendenciaTopGainersTitle": "Top 5 altas",
+  "salesProdutoTendenciaTopLosersTitle": "Top 5 quedas",
+  "salesProdutoTendenciaDetailsTitle": "Detalhes",
+  "salesProdutoTendenciaDetailsSubtitle": "Lista paginada com produto, classificacao, grupo e marca.",
+  "salesProdutoTendenciaDetailsEntityLabel": "linhas",
+  "salesProdutoTendenciaNoData": "Sem dados de tendencia para os filtros selecionados.",
+  "salesProdutoTendenciaKpiGrowing": "Produtos crescendo",
+  "salesProdutoTendenciaKpiFalling": "Produtos caindo",
+  "salesProdutoTendenciaKpiNewProducts": "Produtos novos",
+  "salesProdutoTendenciaKpiStopped": "Parou de vender",
+  "salesProdutoTendenciaKpiNetImpact": "Impacto liquido (qtd)",
+  "salesProdutoTendenciaColProduct": "Produto",
+  "salesProdutoTendenciaColClassificacao": "Classificacao",
+  "salesProdutoTendenciaColGrupo": "Grupo",
+  "salesProdutoTendenciaColMarca": "Marca",
+  "salesProdutoTendenciaColDiferenca": "Diferenca",
+  "salesProdutoTendenciaColPercentual": "Tendencia %",
+  "salesProdutoTendenciaClassificacaoStopped": "Parou de vender",
+  "salesProdutoTendenciaClassificacaoNew": "Novo produto",
+  "salesProdutoTendenciaClassificacaoGrowing": "Crescendo",
+  "salesProdutoTendenciaClassificacaoFalling": "Caindo",
+  "salesProdutoTendenciaClassificacaoStable": "Estavel",
+  "salesProdutoTendenciaActiveFiltersSummary": "{count, plural, =0{Sem filtros extras} one{1 filtro extra} other{{count} filtros extras}}",
+  "@salesProdutoTendenciaActiveFiltersSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "salesProdutoTendenciaDetailsNotice": "Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: {pageSize}).",
+  "@salesProdutoTendenciaDetailsNotice": {
+    "placeholders": {
+      "pageSize": {
+        "type": "String"
+      }
+    }
+  },
   "agentStatusPending": "Pendente",
   "agentStatusRejected": "Rejeitado",
   "agentStatusUnknown": "Desconhecido",

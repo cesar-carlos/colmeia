@@ -37,6 +37,20 @@ class SalesPreferences {
     return store.restoreJsonMap(suffix: 'filters');
   }
 
+  Future<void> persistCardFilters(
+    String cardId,
+    Map<String, Object?> filters,
+  ) async {
+    final store = PersistedPageSessionStore(
+      prefs: _prefs,
+      namespace: 'colmeia_sales_card.$cardId',
+    );
+    await store.persistJsonMap(
+      suffix: 'filters',
+      value: filters,
+    );
+  }
+
   /// produto_rank_lucro card: date range encoded as epochs + metric key.
   static const Set<String> produtoRankLucroSortByAllowedValues = <String>{
     'qtdItensVendido',

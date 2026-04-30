@@ -9,6 +9,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_p
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_across_agents_use_case.dart';
@@ -348,6 +349,11 @@ void registerInjectorAgentQueries(GetIt getIt) {
       getIt<AgentQueriesRepository>(),
     ),
     useCase: () => LoadProdutoVendidoTendenciaDeVendaUseCase(
+      getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
+    ),
+  );
+  getIt.registerLazySingleton<LoadProdutoVendidoTendenciaDeVendaSummaryUseCase>(
+    () => LoadProdutoVendidoTendenciaDeVendaSummaryUseCase(
       getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
     ),
   );

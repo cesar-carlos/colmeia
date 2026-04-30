@@ -10,6 +10,10 @@ class ProdutoVendidoTendenciaDeVendaFilter {
     required this.periodoAnteriorInicio,
     required this.periodoAnteriorFim,
     this.origem = 'FrenteLoja',
+    this.searchTerm,
+    this.classificacao,
+    this.codGrupoProduto,
+    this.codMarca,
     this.page = 1,
     this.pageSize = defaultPageSize,
   });
@@ -18,6 +22,13 @@ class ProdutoVendidoTendenciaDeVendaFilter {
   static const int maxDateRangeDays = 366;
   static const int defaultPageSize = 20;
   static const int maxPageSize = 500;
+  static const Set<String> allowedClassificacoes = <String>{
+    'PAROU DE VENDER',
+    'NOVO PRODUTO',
+    'CRESCENDO',
+    'CAINDO',
+    'ESTAVEL',
+  };
 
   final DateTime periodoAtualInicio;
   final DateTime periodoAtualFim;
@@ -26,10 +37,17 @@ class ProdutoVendidoTendenciaDeVendaFilter {
 
   /// Bound to `pv.Origem LIKE :origem`.
   final String origem;
+  final String? searchTerm;
+  final String? classificacao;
+  final int? codGrupoProduto;
+  final int? codMarca;
   final int page;
   final int pageSize;
 
   String get trimmedOrigem => origem.trim();
+  String? get normalizedSearchTerm => _normalizeOptionalText(searchTerm);
+  String? get normalizedClassificacao =>
+      _normalizeOptionalText(classificacao)?.toUpperCase();
   int get offset => (page - 1) * pageSize;
   int get startRow => offset + 1;
   int get endRow => offset + pageSize;
@@ -46,6 +64,18 @@ class ProdutoVendidoTendenciaDeVendaFilter {
     }
     if (pageSize > maxPageSize) {
       return 'pageSize must be <= $maxPageSize';
+    }
+    final grupo = codGrupoProduto;
+    if (grupo != null && grupo <= 0) {
+      return 'codGrupoProduto must be > 0 when provided';
+    }
+    final marca = codMarca;
+    if (marca != null && marca <= 0) {
+      return 'codMarca must be > 0 when provided';
+    }
+    final categoria = normalizedClassificacao;
+    if (categoria != null && !allowedClassificacoes.contains(categoria)) {
+      return 'classificacao is not allowed';
     }
 
     final atualInicio = _toCalendarDate(periodoAtualInicio);
@@ -76,6 +106,14 @@ class ProdutoVendidoTendenciaDeVendaFilter {
     }
 
     return null;
+  }
+
+  String? _normalizeOptionalText(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
   }
 
   DateTime _toCalendarDate(DateTime date) {

@@ -2051,6 +2051,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesCardMonthlyPnlTitle => 'Monthly P&L';
 
   @override
+  String get salesCardProdutoTendenciaTitle => 'Sales trend';
+
+  @override
   String get salesMonthlyPnlPageSubtitle =>
       'Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.';
 
@@ -2098,6 +2101,145 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoRankLucroSortProfit => 'Total profit';
+
+  @override
+  String get salesProdutoTendenciaPageSubtitle =>
+      'Executive snapshot of product sales trend with summary, movers, and paged details.';
+
+  @override
+  String get salesProdutoTendenciaFilterCurrentPeriod => 'Current period';
+
+  @override
+  String get salesProdutoTendenciaFilterPreviousPeriod => 'Previous period';
+
+  @override
+  String get salesProdutoTendenciaFilterSearch => 'Search term';
+
+  @override
+  String get salesProdutoTendenciaFilterSearchHint =>
+      'Product, group, or brand';
+
+  @override
+  String get salesProdutoTendenciaFilterClassification => 'Classification';
+
+  @override
+  String get salesProdutoTendenciaFilterGroup => 'Group';
+
+  @override
+  String get salesProdutoTendenciaFilterBrand => 'Brand';
+
+  @override
+  String get salesProdutoTendenciaFilterPageSize => 'Rows per page';
+
+  @override
+  String get salesProdutoTendenciaFilterAllOption => 'All';
+
+  @override
+  String get salesProdutoTendenciaSummaryTitle => 'Executive summary';
+
+  @override
+  String get salesProdutoTendenciaSummarySubtitle =>
+      'Overview of product movement by trend classification.';
+
+  @override
+  String get salesProdutoTendenciaSummaryByClassificacaoTitle =>
+      'Products by classification';
+
+  @override
+  String get salesProdutoTendenciaSummaryByClassificacaoSubtitle =>
+      'Distribution and impact in the loaded page.';
+
+  @override
+  String get salesProdutoTendenciaTopMoversTitle => 'Top movers';
+
+  @override
+  String get salesProdutoTendenciaTopMoversSubtitle =>
+      'Highest growth and decline in the selected period.';
+
+  @override
+  String get salesProdutoTendenciaTopGainersTitle => 'Top 5 gainers';
+
+  @override
+  String get salesProdutoTendenciaTopLosersTitle => 'Top 5 losers';
+
+  @override
+  String get salesProdutoTendenciaDetailsTitle => 'Detailed rows';
+
+  @override
+  String get salesProdutoTendenciaDetailsSubtitle =>
+      'Paginated detail with product, classification, group, and brand.';
+
+  @override
+  String get salesProdutoTendenciaDetailsEntityLabel => 'rows';
+
+  @override
+  String get salesProdutoTendenciaNoData =>
+      'No trend data for the selected filters.';
+
+  @override
+  String get salesProdutoTendenciaKpiGrowing => 'Growing products';
+
+  @override
+  String get salesProdutoTendenciaKpiFalling => 'Falling products';
+
+  @override
+  String get salesProdutoTendenciaKpiNewProducts => 'New products';
+
+  @override
+  String get salesProdutoTendenciaKpiStopped => 'Stopped selling';
+
+  @override
+  String get salesProdutoTendenciaKpiNetImpact => 'Net impact (qty)';
+
+  @override
+  String get salesProdutoTendenciaColProduct => 'Product';
+
+  @override
+  String get salesProdutoTendenciaColClassificacao => 'Classification';
+
+  @override
+  String get salesProdutoTendenciaColGrupo => 'Group';
+
+  @override
+  String get salesProdutoTendenciaColMarca => 'Brand';
+
+  @override
+  String get salesProdutoTendenciaColDiferenca => 'Delta';
+
+  @override
+  String get salesProdutoTendenciaColPercentual => 'Trend %';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoStopped => 'Stopped selling';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoNew => 'New product';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoGrowing => 'Growing';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoFalling => 'Falling';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoStable => 'Stable';
+
+  @override
+  String salesProdutoTendenciaActiveFiltersSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count extra filters',
+      one: '1 extra filter',
+      zero: 'No extra filters',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String salesProdutoTendenciaDetailsNotice(String pageSize) {
+    return 'Results may contain more rows. Use pagination to load next pages (current size: $pageSize).';
+  }
 
   @override
   String get agentStatusPending => 'Pending';

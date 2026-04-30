@@ -4,12 +4,15 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/models/produto_vendido_tendencia_de_venda_row_model.dart';
+import 'package:colmeia/features/agent_queries/data/models/produto_vendido_tendencia_de_venda_summary_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_summary_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
 import 'package:result_dart/result_dart.dart';
@@ -27,6 +30,8 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
   static const int _maxRowsPageBuffer = 25;
 
   static const String _operation = 'loadProdutoVendidoTendenciaDeVenda';
+  static const String _summaryOperation =
+      'loadProdutoVendidoTendenciaDeVendaSummary';
 
   final AgentQueriesRepository _agentQueriesRepository;
 
@@ -72,24 +77,14 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       sql: ProdutoVendidoTendenciaDeVendaSql.pagedQuery(
         startRow: filter.startRow,
         endRow: filter.endRow,
+        searchTerm: filter.normalizedSearchTerm,
+        classificacao: filter.normalizedClassificacao,
+        codGrupoProduto: filter.codGrupoProduto,
+        codMarca: filter.codMarca,
       ),
       clientToken: clientToken,
       bridgeTimeoutMs: effectiveBridgeMs,
-      namedParams: <String, Object?>{
-        'periodoAtualInicio': AgentQueriesSqlLocalDate.format(
-          filter.periodoAtualInicio,
-        ),
-        'periodoAtualFim': AgentQueriesSqlLocalDate.format(
-          filter.periodoAtualFim,
-        ),
-        'periodoAnteriorInicio': AgentQueriesSqlLocalDate.format(
-          filter.periodoAnteriorInicio,
-        ),
-        'periodoAnteriorFim': AgentQueriesSqlLocalDate.format(
-          filter.periodoAnteriorFim,
-        ),
-        'origem': filter.trimmedOrigem,
-      },
+      namedParams: _buildPeriodNamedParams(filter),
       executeOptions: AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: sqlMaxRowsCap,
@@ -107,6 +102,88 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       ),
       Failure<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>.new,
     );
+  }
+
+  @override
+  Future<AppResult<List<ProdutoVendidoTendenciaDeVendaSummaryRow>>>
+  loadSummary({
+    required String userId,
+    required String agentId,
+    required ProdutoVendidoTendenciaDeVendaFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+  }) async {
+    final validationError = filter.validationError();
+    if (validationError != null) {
+      return Failure<
+        List<ProdutoVendidoTendenciaDeVendaSummaryRow>,
+        AppFailure
+      >(
+        ValidationFailure(
+          message: validationError,
+          userMessage: 'Os filtros da consulta sao invalidos.',
+          context: <String, Object?>{
+            'operation': _summaryOperation,
+            'agentId': agentId.trim(),
+          },
+        ),
+      );
+    }
+
+    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
+      _minSqlTimeoutMs,
+      _defaultSqlTimeoutMs,
+    );
+
+    final request = AgentSqlExecuteRequest(
+      agentId: agentId,
+      requestingUserId: userId,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      sql: ProdutoVendidoTendenciaDeVendaSummarySql.query,
+      clientToken: clientToken,
+      bridgeTimeoutMs: effectiveBridgeMs,
+      namedParams: _buildPeriodNamedParams(filter),
+      executeOptions: AgentSqlExecuteOptions(
+        executionMode: AgentSqlExecutionMode.preserve,
+        maxRows: AgentQueriesBoundedResultMaxRows
+            .produtoVendidoTendenciaDeVendaSummary,
+        sqlTimeoutMs: effectiveSqlMs,
+      ),
+      useRelay: true,
+    );
+
+    final result = await _agentQueriesRepository.executeSql(request);
+    return result.fold(
+      (executionResult) => _mapSummaryExecution(
+        executionResult,
+        agentId: agentId.trim(),
+      ),
+      Failure<List<ProdutoVendidoTendenciaDeVendaSummaryRow>, AppFailure>.new,
+    );
+  }
+
+  Map<String, Object?> _buildPeriodNamedParams(
+    ProdutoVendidoTendenciaDeVendaFilter filter,
+  ) {
+    return <String, Object?>{
+      'periodoAtualInicio': AgentQueriesSqlLocalDate.format(
+        filter.periodoAtualInicio,
+      ),
+      'periodoAtualFim': AgentQueriesSqlLocalDate.format(
+        filter.periodoAtualFim,
+      ),
+      'periodoAnteriorInicio': AgentQueriesSqlLocalDate.format(
+        filter.periodoAnteriorInicio,
+      ),
+      'periodoAnteriorFim': AgentQueriesSqlLocalDate.format(
+        filter.periodoAnteriorFim,
+      ),
+      'origem': filter.trimmedOrigem,
+    };
   }
 
   AppResult<List<ProdutoVendidoTendenciaDeVendaRow>> _mapExecution(
@@ -163,6 +240,61 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
           stackTrace: stackTrace,
           context: <String, Object?>{
             'operation': _operation,
+            'agentId': agentId,
+          },
+        ),
+      );
+    }
+  }
+
+  AppResult<List<ProdutoVendidoTendenciaDeVendaSummaryRow>>
+  _mapSummaryExecution(
+    AgentSqlExecutionResult executionResult, {
+    required String agentId,
+  }) {
+    if (executionResult.rows.isEmpty) {
+      return const Success<
+        List<ProdutoVendidoTendenciaDeVendaSummaryRow>,
+        AppFailure
+      >(<ProdutoVendidoTendenciaDeVendaSummaryRow>[]);
+    }
+
+    try {
+      final items = executionResult.rows
+          .map(
+            (row) => ProdutoVendidoTendenciaDeVendaSummaryRowModel.fromMap(
+              row,
+            ).toEntity(),
+          )
+          .toList(growable: false);
+      return Success<
+        List<ProdutoVendidoTendenciaDeVendaSummaryRow>,
+        AppFailure
+      >(
+        items,
+      );
+    } on FormatException catch (error, stackTrace) {
+      AppLogger.error(
+        'Unexpected row shape for $_summaryOperation',
+        context: <String, Object?>{
+          'operation': _summaryOperation,
+          'agentId': agentId,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Failure<
+        List<ProdutoVendidoTendenciaDeVendaSummaryRow>,
+        AppFailure
+      >(
+        UnknownFailure(
+          message: error.message,
+          userMessage:
+              'Resumo de tendencia veio em formato inesperado. Tente novamente.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            'operation': _summaryOperation,
             'agentId': agentId,
           },
         ),

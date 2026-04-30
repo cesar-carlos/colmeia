@@ -3430,6 +3430,12 @@ abstract class AppLocalizations {
   /// **'Monthly P&L'**
   String get salesCardMonthlyPnlTitle;
 
+  /// No description provided for @salesCardProdutoTendenciaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales trend'**
+  String get salesCardProdutoTendenciaTitle;
+
   /// No description provided for @salesMonthlyPnlPageSubtitle.
   ///
   /// In en, this message translates to:
@@ -3519,6 +3525,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total profit'**
   String get salesProdutoRankLucroSortProfit;
+
+  /// No description provided for @salesProdutoTendenciaPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Executive snapshot of product sales trend with summary, movers, and paged details.'**
+  String get salesProdutoTendenciaPageSubtitle;
+
+  /// No description provided for @salesProdutoTendenciaFilterCurrentPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Current period'**
+  String get salesProdutoTendenciaFilterCurrentPeriod;
+
+  /// No description provided for @salesProdutoTendenciaFilterPreviousPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous period'**
+  String get salesProdutoTendenciaFilterPreviousPeriod;
+
+  /// No description provided for @salesProdutoTendenciaFilterSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search term'**
+  String get salesProdutoTendenciaFilterSearch;
+
+  /// No description provided for @salesProdutoTendenciaFilterSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Product, group, or brand'**
+  String get salesProdutoTendenciaFilterSearchHint;
+
+  /// No description provided for @salesProdutoTendenciaFilterClassification.
+  ///
+  /// In en, this message translates to:
+  /// **'Classification'**
+  String get salesProdutoTendenciaFilterClassification;
+
+  /// No description provided for @salesProdutoTendenciaFilterGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get salesProdutoTendenciaFilterGroup;
+
+  /// No description provided for @salesProdutoTendenciaFilterBrand.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get salesProdutoTendenciaFilterBrand;
+
+  /// No description provided for @salesProdutoTendenciaFilterPageSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows per page'**
+  String get salesProdutoTendenciaFilterPageSize;
+
+  /// No description provided for @salesProdutoTendenciaFilterAllOption.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get salesProdutoTendenciaFilterAllOption;
+
+  /// No description provided for @salesProdutoTendenciaSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Executive summary'**
+  String get salesProdutoTendenciaSummaryTitle;
+
+  /// No description provided for @salesProdutoTendenciaSummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview of product movement by trend classification.'**
+  String get salesProdutoTendenciaSummarySubtitle;
+
+  /// No description provided for @salesProdutoTendenciaSummaryByClassificacaoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Products by classification'**
+  String get salesProdutoTendenciaSummaryByClassificacaoTitle;
+
+  /// No description provided for @salesProdutoTendenciaSummaryByClassificacaoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Distribution and impact in the loaded page.'**
+  String get salesProdutoTendenciaSummaryByClassificacaoSubtitle;
+
+  /// No description provided for @salesProdutoTendenciaTopMoversTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top movers'**
+  String get salesProdutoTendenciaTopMoversTitle;
+
+  /// No description provided for @salesProdutoTendenciaTopMoversSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest growth and decline in the selected period.'**
+  String get salesProdutoTendenciaTopMoversSubtitle;
+
+  /// No description provided for @salesProdutoTendenciaTopGainersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top 5 gainers'**
+  String get salesProdutoTendenciaTopGainersTitle;
+
+  /// No description provided for @salesProdutoTendenciaTopLosersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top 5 losers'**
+  String get salesProdutoTendenciaTopLosersTitle;
+
+  /// No description provided for @salesProdutoTendenciaDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed rows'**
+  String get salesProdutoTendenciaDetailsTitle;
+
+  /// No description provided for @salesProdutoTendenciaDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paginated detail with product, classification, group, and brand.'**
+  String get salesProdutoTendenciaDetailsSubtitle;
+
+  /// No description provided for @salesProdutoTendenciaDetailsEntityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'rows'**
+  String get salesProdutoTendenciaDetailsEntityLabel;
+
+  /// No description provided for @salesProdutoTendenciaNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No trend data for the selected filters.'**
+  String get salesProdutoTendenciaNoData;
+
+  /// No description provided for @salesProdutoTendenciaKpiGrowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Growing products'**
+  String get salesProdutoTendenciaKpiGrowing;
+
+  /// No description provided for @salesProdutoTendenciaKpiFalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Falling products'**
+  String get salesProdutoTendenciaKpiFalling;
+
+  /// No description provided for @salesProdutoTendenciaKpiNewProducts.
+  ///
+  /// In en, this message translates to:
+  /// **'New products'**
+  String get salesProdutoTendenciaKpiNewProducts;
+
+  /// No description provided for @salesProdutoTendenciaKpiStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped selling'**
+  String get salesProdutoTendenciaKpiStopped;
+
+  /// No description provided for @salesProdutoTendenciaKpiNetImpact.
+  ///
+  /// In en, this message translates to:
+  /// **'Net impact (qty)'**
+  String get salesProdutoTendenciaKpiNetImpact;
+
+  /// No description provided for @salesProdutoTendenciaColProduct.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get salesProdutoTendenciaColProduct;
+
+  /// No description provided for @salesProdutoTendenciaColClassificacao.
+  ///
+  /// In en, this message translates to:
+  /// **'Classification'**
+  String get salesProdutoTendenciaColClassificacao;
+
+  /// No description provided for @salesProdutoTendenciaColGrupo.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get salesProdutoTendenciaColGrupo;
+
+  /// No description provided for @salesProdutoTendenciaColMarca.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get salesProdutoTendenciaColMarca;
+
+  /// No description provided for @salesProdutoTendenciaColDiferenca.
+  ///
+  /// In en, this message translates to:
+  /// **'Delta'**
+  String get salesProdutoTendenciaColDiferenca;
+
+  /// No description provided for @salesProdutoTendenciaColPercentual.
+  ///
+  /// In en, this message translates to:
+  /// **'Trend %'**
+  String get salesProdutoTendenciaColPercentual;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped selling'**
+  String get salesProdutoTendenciaClassificacaoStopped;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New product'**
+  String get salesProdutoTendenciaClassificacaoNew;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoGrowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Growing'**
+  String get salesProdutoTendenciaClassificacaoGrowing;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoFalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Falling'**
+  String get salesProdutoTendenciaClassificacaoFalling;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Stable'**
+  String get salesProdutoTendenciaClassificacaoStable;
+
+  /// No description provided for @salesProdutoTendenciaActiveFiltersSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No extra filters} one{1 extra filter} other{{count} extra filters}}'**
+  String salesProdutoTendenciaActiveFiltersSummary(int count);
+
+  /// No description provided for @salesProdutoTendenciaDetailsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Results may contain more rows. Use pagination to load next pages (current size: {pageSize}).'**
+  String salesProdutoTendenciaDetailsNotice(String pageSize);
 
   /// No description provided for @agentStatusPending.
   ///
