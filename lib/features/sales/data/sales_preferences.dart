@@ -1,6 +1,7 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SalesPreferences {
@@ -44,6 +45,45 @@ class SalesPreferences {
 
   static const String produtoRankLucroCardId = 'produto_rank_lucro';
 
+  static const String monthlyPnlCardId = 'monthly_pnl';
+  static const String _legacyParcelasMensal12mCardId = 'parcelas_mensal_12m';
+
+  static const int _anchorYearMin = 2000;
+  static const int _anchorYearMax = 2100;
+
+  /// Restores [OverviewYearMonth] anchor for the monthly P&L chart,
+  /// or null when nothing valid is stored.
+  OverviewYearMonth? restoreMonthlyPnlAnchor() {
+    final current = restoreCardFilters(monthlyPnlCardId);
+    final raw = current.isNotEmpty
+        ? current
+        : restoreCardFilters(_legacyParcelasMensal12mCardId);
+    final y = raw['anchor_year'];
+    final m = raw['anchor_month'];
+    if (y is! int || m is! int) {
+      return null;
+    }
+    if (m < 1 || m > 12 || y < _anchorYearMin || y > _anchorYearMax) {
+      return null;
+    }
+    return OverviewYearMonth(year: y, month: m);
+  }
+
+  Future<void> persistMonthlyPnlAnchor(OverviewYearMonth anchor) async {
+    final encoded = <String, Object?>{
+      'anchor_year': anchor.year,
+      'anchor_month': anchor.month,
+    };
+    final store = PersistedPageSessionStore(
+      prefs: _prefs,
+      namespace: 'colmeia_sales_card.$monthlyPnlCardId',
+    );
+    await store.persistJsonMap(
+      suffix: 'filters',
+      value: encoded,
+    );
+  }
+
   /// Converts stored epochs into `'periodo': DateTimeRange` and sort key.
   Map<String, Object?> restoreProdutoRankLucroFilters() {
     final raw = restoreCardFilters(produtoRankLucroCardId);
@@ -62,7 +102,9 @@ class SalesPreferences {
     });
   }
 
-  Future<void> persistProdutoRankLucroFilters(Map<String, Object?> filters) async {
+  Future<void> persistProdutoRankLucroFilters(
+    Map<String, Object?> filters,
+  ) async {
     final encoded = PersistedFilterMapCodec.sanitize((draft) {
       draft
         ..dateRangeToEpoch(

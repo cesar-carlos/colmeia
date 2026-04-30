@@ -2035,6 +2035,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesCardProdutoRankLucroTitle => 'Product ranking';
 
   @override
+  String get salesCardMonthlyPnlTitle => 'Monthly P&L';
+
+  @override
+  String get salesMonthlyPnlPageSubtitle =>
+      'Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.';
+
+  @override
+  String get salesMonthlyPnlFilterAnchorMonth => 'Reference month';
+
+  @override
+  String get salesMonthlyPnlChartTitle => 'Monthly P&L';
+
+  @override
+  String get salesMonthlyPnlChartSubtitle =>
+      'Sales value, profit, and merchandise cost by month (selected branch).';
+
+  @override
+  String get salesMonthlyPnlSeriesSalesLabel => 'Sales';
+
+  @override
+  String get salesMonthlyPnlSeriesProfitLabel => 'Profit';
+
+  @override
+  String get salesMonthlyPnlSeriesCostLabel => 'Merchandise cost';
+
+  @override
+  String get salesMonthlyPnlEmpty => 'No monthly data for this period.';
+
+  @override
+  String get salesMonthlyPnlLoadFailed =>
+      'Could not load the monthly chart. Try again later.';
+
+  @override
+  String get salesMonthlyPnlChartSemantics =>
+      'Monthly P&L chart with sales value, profit, and merchandise cost for the selected branch';
+
+  @override
   String get salesProdutoRankLucroChartTitle => 'Top products';
 
   @override

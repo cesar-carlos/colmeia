@@ -103,6 +103,7 @@ class SalesHubPage extends StatelessWidget {
   String _getCardTitle(AppLocalizations l10n, String key) {
     return switch (key) {
       'salesCardProdutoRankLucroTitle' => l10n.salesCardProdutoRankLucroTitle,
+      'salesCardMonthlyPnlTitle' => l10n.salesCardMonthlyPnlTitle,
       _ => key,
     };
   }

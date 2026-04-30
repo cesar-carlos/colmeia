@@ -26,6 +26,37 @@ num _monthlyBarByValue(OverviewMonthlyParcelPoint p) => p.valorParcela;
 
 num _monthlyLineByValue(OverviewMonthlyParcelPoint p) => p.qtdVendas;
 
+/// Optional copy for [OverviewMonthlyParcelsComboChart] outside the overview
+/// (e.g. Sales hub) so titles do not imply multi-branch scope.
+@immutable
+class MonthlyParcelsComboChartStrings {
+  const MonthlyParcelsComboChartStrings({
+    required this.chartTitle,
+    required this.subtitleWhenSalesPrimary,
+    required this.subtitleWhenValuePrimary,
+    required this.switchSalesLabel,
+    required this.switchParcelValueLabel,
+    required this.seriesSalesLabel,
+    required this.seriesParcelAmountLabel,
+    required this.emptyMessage,
+    required this.loadFailedMessage,
+    required this.semanticsWhenSalesPrimary,
+    required this.semanticsWhenValuePrimary,
+  });
+
+  final String chartTitle;
+  final String subtitleWhenSalesPrimary;
+  final String subtitleWhenValuePrimary;
+  final String switchSalesLabel;
+  final String switchParcelValueLabel;
+  final String seriesSalesLabel;
+  final String seriesParcelAmountLabel;
+  final String emptyMessage;
+  final String loadFailedMessage;
+  final String semanticsWhenSalesPrimary;
+  final String semanticsWhenValuePrimary;
+}
+
 /// Last-12-months parcel trend (bar + line) with a sales vs parcel-value
 /// toggle.
 ///
@@ -37,12 +68,21 @@ class OverviewMonthlyParcelsComboChart extends StatefulWidget {
     required this.points,
     required this.loadFailed,
     this.loadFailureMessage,
+    this.chartStrings,
+    this.isLoading = false,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<OverviewMonthlyParcelPoint> points;
   final bool loadFailed;
+
+  /// When true, shows the chart loading state (e.g. first fetch on a page).
+  final bool isLoading;
+
+  /// Copy for titles, subtitles and semantics. When null, overview l10n keys
+  /// are used.
+  final MonthlyParcelsComboChartStrings? chartStrings;
 
   /// Specific message extracted from the underlying `AppFailure` (e.g.
   /// "Voce nao tem acesso a este agente."). When set AND [loadFailed] is
@@ -230,16 +270,23 @@ class _OverviewMonthlyParcelsComboChartState
       pointCount: pointCount,
     );
 
+    final copy = widget.chartStrings;
     final emptyMessage = widget.loadFailed
-        ? (widget.loadFailureMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
-        : l10n.overviewMonthlyParcelsEmpty;
+        ? (widget.loadFailureMessage ??
+              (copy?.loadFailedMessage ??
+                  l10n.overviewMonthlyParcelsLoadFailed))
+        : (copy?.emptyMessage ?? l10n.overviewMonthlyParcelsEmpty);
 
     final activeStyle = valuePrimary ? _cachedStyleValue! : _cachedStyleSales!;
 
+    final semanticsLabel = valuePrimary
+        ? (copy?.semanticsWhenValuePrimary ??
+              l10n.overviewMonthlyParcelsChartSemanticsValueView)
+        : (copy?.semanticsWhenSalesPrimary ??
+              l10n.overviewMonthlyParcelsChartSemantics);
+
     return Semantics(
-      label: valuePrimary
-          ? l10n.overviewMonthlyParcelsChartSemanticsValueView
-          : l10n.overviewMonthlyParcelsChartSemantics,
+      label: semanticsLabel,
       child: RepaintBoundary(
         // Stable key: re-mounting the SfCartesianChart on every new payload is
         // expensive (Syncfusion rebuilds painters). Pegging the key to the
@@ -247,19 +294,25 @@ class _OverviewMonthlyParcelsComboChartState
         // caches the list (mirrors the donut card fix).
         child: AppComboChart<OverviewMonthlyParcelPoint>(
           key: ValueKey<int>(identityHashCode(widget.points)),
-          title: l10n.overviewMonthlyParcelsTitle,
+          title: copy?.chartTitle ?? l10n.overviewMonthlyParcelsTitle,
           subtitle: valuePrimary
-              ? l10n.overviewMonthlyParcelsSubtitleValueView
-              : l10n.overviewMonthlyParcelsSubtitle,
+              ? (copy?.subtitleWhenValuePrimary ??
+                    l10n.overviewMonthlyParcelsSubtitleValueView)
+              : (copy?.subtitleWhenSalesPrimary ??
+                    l10n.overviewMonthlyParcelsSubtitle),
           belowSubtitle: AppSegmentedControl<_OverviewMonthlyParcelDisplay>(
             options: <AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>>[
               AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>(
                 value: _OverviewMonthlyParcelDisplay.bySalesCount,
-                label: l10n.overviewMonthlyParcelsSwitchSalesLabel,
+                label:
+                    copy?.switchSalesLabel ??
+                    l10n.overviewMonthlyParcelsSwitchSalesLabel,
               ),
               AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>(
                 value: _OverviewMonthlyParcelDisplay.byParcelValue,
-                label: l10n.overviewMonthlyParcelsSwitchValueLabel,
+                label:
+                    copy?.switchParcelValueLabel ??
+                    l10n.overviewMonthlyParcelsSwitchValueLabel,
               ),
             ],
             value: _display,
@@ -271,18 +324,23 @@ class _OverviewMonthlyParcelsComboChartState
               ? _monthlyBarByValue
               : _monthlyBarBySales,
           barSeriesLabel: valuePrimary
-              ? l10n.overviewMonthlyParcelsAmountSeriesLabel
-              : l10n.overviewMonthlyParcelsSalesSeriesLabel,
+              ? (copy?.seriesParcelAmountLabel ??
+                    l10n.overviewMonthlyParcelsAmountSeriesLabel)
+              : (copy?.seriesSalesLabel ??
+                    l10n.overviewMonthlyParcelsSalesSeriesLabel),
           lineValueBuilder: valuePrimary
               ? _monthlyLineByValue
               : _monthlyLineBySales,
           lineSeriesLabel: valuePrimary
-              ? l10n.overviewMonthlyParcelsSalesSeriesLabel
-              : l10n.overviewMonthlyParcelsAmountSeriesLabel,
+              ? (copy?.seriesSalesLabel ??
+                    l10n.overviewMonthlyParcelsSalesSeriesLabel)
+              : (copy?.seriesParcelAmountLabel ??
+                    l10n.overviewMonthlyParcelsAmountSeriesLabel),
           barDataLabelBuilder: valuePrimary
               ? _barDataLabelCurrency
               : _barDataLabelDecimal,
           style: activeStyle,
+          isLoading: widget.isLoading,
           emptyPlaceholder: widget.points.isEmpty
               ? DefaultTextStyle.merge(
                   style: Theme.of(context).textTheme.bodyMedium,

@@ -2065,6 +2065,43 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesCardProdutoRankLucroTitle => 'Ranking de produtos';
 
   @override
+  String get salesCardMonthlyPnlTitle => 'Resultado mensal';
+
+  @override
+  String get salesMonthlyPnlPageSubtitle =>
+      'Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.';
+
+  @override
+  String get salesMonthlyPnlFilterAnchorMonth => 'Mes de referencia';
+
+  @override
+  String get salesMonthlyPnlChartTitle => 'Resultado mensal';
+
+  @override
+  String get salesMonthlyPnlChartSubtitle =>
+      'Venda, lucro e custo da mercadoria por mes (filial selecionada).';
+
+  @override
+  String get salesMonthlyPnlSeriesSalesLabel => 'Vendas';
+
+  @override
+  String get salesMonthlyPnlSeriesProfitLabel => 'Lucro';
+
+  @override
+  String get salesMonthlyPnlSeriesCostLabel => 'Custo da mercadoria';
+
+  @override
+  String get salesMonthlyPnlEmpty => 'Sem dados mensais para este periodo.';
+
+  @override
+  String get salesMonthlyPnlLoadFailed =>
+      'Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.';
+
+  @override
+  String get salesMonthlyPnlChartSemantics =>
+      'Grafico do resultado mensal com venda, lucro e custo da mercadoria na filial selecionada';
+
+  @override
   String get salesProdutoRankLucroChartTitle => 'Top produtos';
 
   @override
@@ -4035,6 +4072,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Receita, custo e margem no periodo selecionado, por agente (todas as filiais somadas).';
 
   @override
+  String get overviewLucratividadeSwitchProfit => 'Lucro';
+
+  @override
   String get overviewLucratividadeSwitchRevenue => 'Receita';
 
   @override
@@ -4042,6 +4082,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadeSwitchMargin => 'Margem %';
+
+  @override
+  String get overviewLucratividadeProfitSeriesLabel => 'Lucro';
 
   @override
   String get overviewLucratividadeRevenueSeriesLabel => 'Receita';
@@ -4107,4 +4150,106 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewLoadingLucratividadeMensalSemantics =>
       'Carregando grafico de lucratividade mensal do produto…';
+
+  @override
+  String get salesHubTitle => 'Vendas';
+
+  @override
+  String get salesHubSubtitle =>
+      'Acesse e gerencie informacoes comerciais por categoria.';
+
+  @override
+  String get salesAgentPickerLabel => 'Agente';
+
+  @override
+  String get salesAgentPickerEmpty => 'Selecione um agente';
+
+  @override
+  String get salesAgentPickerSheetTitle => 'Selecione um agente';
+
+  @override
+  String get salesAgentRequiredTitle => 'Selecao de agente obrigatoria';
+
+  @override
+  String get salesAgentRequiredMessage =>
+      'Selecione um agente para visualizar essas informacoes.';
+
+  @override
+  String get salesCardOpenAccountsTitle => 'Contas em Aberto';
+
+  @override
+  String get salesCardPaidAccountsTitle => 'Contas Pagas';
+
+  @override
+  String get salesCardPaymentHistoryTitle => 'Historico de Pagamentos';
+
+  @override
+  String get salesCardNewPaymentTitle => 'Novo Pagamento';
+
+  @override
+  String get salesCardProdutoRankLucroTitle => 'Ranking de produtos';
+
+  @override
+  String get salesCardMonthlyPnlTitle => 'Resultado mensal';
+
+  @override
+  String get salesMonthlyPnlPageSubtitle =>
+      'Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.';
+
+  @override
+  String get salesMonthlyPnlFilterAnchorMonth => 'Mes de referencia';
+
+  @override
+  String get salesMonthlyPnlChartTitle => 'Resultado mensal';
+
+  @override
+  String get salesMonthlyPnlChartSubtitle =>
+      'Venda, lucro e custo da mercadoria por mes (filial selecionada).';
+
+  @override
+  String get salesMonthlyPnlSeriesSalesLabel => 'Vendas';
+
+  @override
+  String get salesMonthlyPnlSeriesProfitLabel => 'Lucro';
+
+  @override
+  String get salesMonthlyPnlSeriesCostLabel => 'Custo da mercadoria';
+
+  @override
+  String get salesMonthlyPnlEmpty => 'Sem dados mensais para este periodo.';
+
+  @override
+  String get salesMonthlyPnlLoadFailed =>
+      'Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.';
+
+  @override
+  String get salesMonthlyPnlChartSemantics =>
+      'Grafico do resultado mensal com venda, lucro e custo da mercadoria na filial selecionada';
+
+  @override
+  String get salesProdutoRankLucroChartTitle => 'Top produtos';
+
+  @override
+  String get salesProdutoRankLucroFilterPeriod => 'Periodo';
+
+  @override
+  String get salesProdutoRankLucroFilterSortBy => 'Metrica';
+
+  @override
+  String get salesProdutoRankLucroSortQuantity => 'Quantidade vendida';
+
+  @override
+  String get salesProdutoRankLucroSortProfit => 'Lucro total';
+
+  @override
+  String get agentStatusPending => 'Pendente';
+
+  @override
+  String get agentStatusRejected => 'Rejeitado';
+
+  @override
+  String get agentStatusUnknown => 'Desconhecido';
+
+  @override
+  String get reportFiltersApplyButton => 'Aplicar';
 }

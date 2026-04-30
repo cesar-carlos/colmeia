@@ -3400,6 +3400,72 @@ abstract class AppLocalizations {
   /// **'Product ranking'**
   String get salesCardProdutoRankLucroTitle;
 
+  /// No description provided for @salesCardMonthlyPnlTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly P&L'**
+  String get salesCardMonthlyPnlTitle;
+
+  /// No description provided for @salesMonthlyPnlPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.'**
+  String get salesMonthlyPnlPageSubtitle;
+
+  /// No description provided for @salesMonthlyPnlFilterAnchorMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference month'**
+  String get salesMonthlyPnlFilterAnchorMonth;
+
+  /// No description provided for @salesMonthlyPnlChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly P&L'**
+  String get salesMonthlyPnlChartTitle;
+
+  /// No description provided for @salesMonthlyPnlChartSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales value, profit, and merchandise cost by month (selected branch).'**
+  String get salesMonthlyPnlChartSubtitle;
+
+  /// No description provided for @salesMonthlyPnlSeriesSalesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get salesMonthlyPnlSeriesSalesLabel;
+
+  /// No description provided for @salesMonthlyPnlSeriesProfitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get salesMonthlyPnlSeriesProfitLabel;
+
+  /// No description provided for @salesMonthlyPnlSeriesCostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Merchandise cost'**
+  String get salesMonthlyPnlSeriesCostLabel;
+
+  /// No description provided for @salesMonthlyPnlEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No monthly data for this period.'**
+  String get salesMonthlyPnlEmpty;
+
+  /// No description provided for @salesMonthlyPnlLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the monthly chart. Try again later.'**
+  String get salesMonthlyPnlLoadFailed;
+
+  /// No description provided for @salesMonthlyPnlChartSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly P&L chart with sales value, profit, and merchandise cost for the selected branch'**
+  String get salesMonthlyPnlChartSemantics;
+
   /// No description provided for @salesProdutoRankLucroChartTitle.
   ///
   /// In en, this message translates to:

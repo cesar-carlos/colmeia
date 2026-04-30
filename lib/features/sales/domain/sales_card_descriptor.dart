@@ -20,4 +20,9 @@ const List<SalesCardDescriptor> allSalesCards = <SalesCardDescriptor>[
     icon: Icons.leaderboard_outlined,
     l10nTitleKey: 'salesCardProdutoRankLucroTitle',
   ),
+  SalesCardDescriptor(
+    id: 'monthly_pnl',
+    icon: Icons.show_chart_rounded,
+    l10nTitleKey: 'salesCardMonthlyPnlTitle',
+  ),
 ];
