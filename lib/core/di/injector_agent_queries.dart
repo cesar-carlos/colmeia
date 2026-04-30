@@ -269,7 +269,8 @@ void registerInjectorAgentQueries(GetIt getIt) {
     LoadGrupoProdutoOptionsUseCase
   >(
     getIt,
-    repo: () => GrupoProdutoOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
+    repo: () =>
+        GrupoProdutoOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
     useCase: () => LoadGrupoProdutoOptionsUseCase(
       getIt<GrupoProdutoOptionsRepository>(),
     ),
@@ -280,7 +281,8 @@ void registerInjectorAgentQueries(GetIt getIt) {
     LoadMarcaProdutoOptionsUseCase
   >(
     getIt,
-    repo: () => MarcaProdutoOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
+    repo: () =>
+        MarcaProdutoOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
     useCase: () => LoadMarcaProdutoOptionsUseCase(
       getIt<MarcaProdutoOptionsRepository>(),
     ),

@@ -70,7 +70,10 @@ void main() {
       ),
     );
 
-    final result = await repository.loadAll(userId: 'user-1', agentId: 'agent-1');
+    final result = await repository.loadAll(
+      userId: 'user-1',
+      agentId: 'agent-1',
+    );
 
     check(result.isSuccess()).isTrue();
     check(result.getOrThrow().single.codGrupoProduto).equals(14);
@@ -91,7 +94,10 @@ void main() {
       ),
     );
 
-    final result = await repository.loadAll(userId: 'user-1', agentId: 'agent-1');
+    final result = await repository.loadAll(
+      userId: 'user-1',
+      agentId: 'agent-1',
+    );
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<UnknownFailure>();

@@ -11,7 +11,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/agent_queries/domain/repositories/grupo_produto_options_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
-class GrupoProdutoOptionsRepositoryImpl implements GrupoProdutoOptionsRepository {
+class GrupoProdutoOptionsRepositoryImpl
+    implements GrupoProdutoOptionsRepository {
   GrupoProdutoOptionsRepositoryImpl(this._agentQueriesRepository);
 
   static const int _defaultBridgeTimeoutMs = 120000;

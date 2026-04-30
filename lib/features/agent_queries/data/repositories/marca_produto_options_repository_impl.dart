@@ -11,7 +11,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
-class MarcaProdutoOptionsRepositoryImpl implements MarcaProdutoOptionsRepository {
+class MarcaProdutoOptionsRepositoryImpl
+    implements MarcaProdutoOptionsRepository {
   MarcaProdutoOptionsRepositoryImpl(this._agentQueriesRepository);
 
   static const int _defaultBridgeTimeoutMs = 120000;
