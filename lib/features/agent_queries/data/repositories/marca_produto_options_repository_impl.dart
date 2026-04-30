@@ -16,6 +16,9 @@ class MarcaProdutoOptionsRepositoryImpl
   MarcaProdutoOptionsRepositoryImpl(this._agentQueriesRepository);
 
   static const int _defaultBridgeTimeoutMs = 120000;
+  static const int _defaultPageSize = 20;
+  static const int _maxPageSize = 500;
+  static const int _maxRowsPageBuffer = 25;
   static const String _operation = 'loadMarcaProdutoOptions';
 
   final AgentQueriesRepository _agentQueriesRepository;
@@ -24,22 +27,80 @@ class MarcaProdutoOptionsRepositoryImpl
   Future<AppResult<List<MarcaProdutoOption>>> loadAll({
     required String userId,
     required String agentId,
+    int page = 1,
+    int pageSize = _defaultPageSize,
+    String? searchTerm,
+    @Deprecated('Use searchTerm instead.') String? nomeMarca,
     String? clientToken,
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
+    if (page < 1) {
+      return Failure<List<MarcaProdutoOption>, AppFailure>(
+        ValidationFailure(
+          message: 'page must be >= 1',
+          userMessage: 'Os filtros da consulta sao invalidos.',
+          context: <String, Object?>{
+            'operation': _operation,
+            'agentId': agentId.trim(),
+          },
+        ),
+      );
+    }
+    if (pageSize < 1) {
+      return Failure<List<MarcaProdutoOption>, AppFailure>(
+        ValidationFailure(
+          message: 'pageSize must be >= 1',
+          userMessage: 'Os filtros da consulta sao invalidos.',
+          context: <String, Object?>{
+            'operation': _operation,
+            'agentId': agentId.trim(),
+          },
+        ),
+      );
+    }
+    if (pageSize > _maxPageSize) {
+      return Failure<List<MarcaProdutoOption>, AppFailure>(
+        ValidationFailure(
+          message: 'pageSize must be <= $_maxPageSize',
+          userMessage: 'Os filtros da consulta sao invalidos.',
+          context: <String, Object?>{
+            'operation': _operation,
+            'agentId': agentId.trim(),
+          },
+        ),
+      );
+    }
+
+    final startRow = ((page - 1) * pageSize) + 1;
+    final endRow = startRow + pageSize - 1;
+    final resolvedSearchTerm = _resolveSearchTerm(
+      searchTerm: searchTerm,
+      fallback: nomeMarca,
+    );
+    final nomeMarcaLike = _containsLikeParam(resolvedSearchTerm);
+    final sqlMaxRowsCap = (pageSize + _maxRowsPageBuffer).clamp(
+      _maxRowsPageBuffer + 1,
+      AgentQueriesBoundedResultMaxRows.marcaProdutoOptions,
+    );
+
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
       requestingUserId: userId,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: MarcaProdutoOptionsSql.query,
+      sql: MarcaProdutoOptionsSql.pagedQuery,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
-      executeOptions: const AgentSqlExecuteOptions(
+      namedParams: <String, Object?>{
+        'startRow': startRow,
+        'endRow': endRow,
+        'nomeMarca': nomeMarcaLike,
+      },
+      executeOptions: AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
-        maxRows: AgentQueriesBoundedResultMaxRows.marcaProdutoOptions,
+        maxRows: sqlMaxRowsCap,
       ),
       useRelay: true,
     );
@@ -80,5 +141,26 @@ class MarcaProdutoOptionsRepositoryImpl
       },
       Failure<List<MarcaProdutoOption>, AppFailure>.new,
     );
+  }
+
+  static String? _containsLikeParam(String? value) {
+    final normalized = value?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return '%$normalized%';
+  }
+
+  static String? _resolveSearchTerm({
+    String? searchTerm,
+    String? fallback,
+  }) {
+    // `searchTerm` is the canonical autocomplete input. Keep fallback support
+    // while legacy callers still pass `nomeMarca`.
+    final normalized = searchTerm?.trim();
+    if (normalized != null && normalized.isNotEmpty) {
+      return normalized;
+    }
+    return fallback;
   }
 }
