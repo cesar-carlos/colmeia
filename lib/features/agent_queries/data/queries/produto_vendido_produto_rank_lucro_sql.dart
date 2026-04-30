@@ -34,7 +34,10 @@ abstract final class ProdutoVendidoProdutoRankLucroSql {
     ResumoProdutoVendaSortDirection sortDirection =
         ResumoProdutoVendaSortDirection.descending,
   }) {
-    final orderBy = _orderByClause(sortBy: sortBy, sortDirection: sortDirection);
+    final orderBy = _orderByClause(
+      sortBy: sortBy,
+      sortDirection: sortDirection,
+    );
     return '''
 WITH Resumo AS (
     SELECT

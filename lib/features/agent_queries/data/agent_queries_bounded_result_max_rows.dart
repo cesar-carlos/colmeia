@@ -38,6 +38,12 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// max page size in domain).
   static const int municipioListPage = 100;
 
+  /// Full product-group catalog (`GrupoProduto`) ordered by name.
+  static const int grupoProdutoOptions = 2000;
+
+  /// Full product-brand catalog (`Marca`) ordered by name.
+  static const int marcaProdutoOptions = 2000;
+
   /// Monthly product profitability buckets: `(months in range) × filiais`.
   /// At most ~13 months × many branches; 2 000 is a conservative safety cap.
   static const int resumoProdutoVendaLucratividadeMensal = 2000;

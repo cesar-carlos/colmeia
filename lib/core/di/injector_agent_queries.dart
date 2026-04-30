@@ -5,6 +5,8 @@ import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
@@ -50,6 +52,8 @@ import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_q
 import 'package:colmeia/features/agent_queries/data/repositories/circuit_breaker_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/grupo_produto_options_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/marca_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_produto_rank_lucro_repository_impl.dart';
@@ -89,6 +93,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/grupo_produto_options_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/municipio_list_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_produto_rank_lucro_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
@@ -256,6 +262,28 @@ void registerInjectorAgentQueries(GetIt getIt) {
     getIt,
     repo: () => MunicipioListRepositoryImpl(getIt<AgentQueriesRepository>()),
     useCase: () => LoadMunicipiosPageUseCase(getIt<MunicipioListRepository>()),
+  );
+
+  _registerSingle<
+    GrupoProdutoOptionsRepository,
+    LoadGrupoProdutoOptionsUseCase
+  >(
+    getIt,
+    repo: () => GrupoProdutoOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadGrupoProdutoOptionsUseCase(
+      getIt<GrupoProdutoOptionsRepository>(),
+    ),
+  );
+
+  _registerSingle<
+    MarcaProdutoOptionsRepository,
+    LoadMarcaProdutoOptionsUseCase
+  >(
+    getIt,
+    repo: () => MarcaProdutoOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadMarcaProdutoOptionsUseCase(
+      getIt<MarcaProdutoOptionsRepository>(),
+    ),
   );
 
   _registerSingle<
