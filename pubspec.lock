@@ -649,10 +649,10 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: "12956d0ad8390bbcc63ca2e1469c0619946ccb52809807067a7020d57e647aa6"
+      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.18"
+    version: "0.12.19"
   material_color_utilities:
     dependency: transitive
     description:
@@ -1103,10 +1103,10 @@ packages:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: "06ca4169ed9fc3fc881a984772ac4c6ab4626a69770c073ed76b25defb2ac55c"
+      sha256: b377be3df580e9fdc4e5cc5e47fc09a513c8b08dc4ed05eb45c43f5fd34add2d
       url: "https://pub.dev"
     source: hosted
-    version: "33.1.49"
+    version: "33.2.4"
   syncfusion_flutter_datagrid:
     dependency: "direct main"
     description:
@@ -1119,10 +1119,10 @@ packages:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
-      sha256: "0afd0ad196263f045dbae57b4e893d24ec2e3f2d5aeb783548f8a7b3a9c29f9a"
+      sha256: d1e73e1032aa796e01b14ef2e534d881ebbe92b920a3c68bacbdc165fbe9deae
       url: "https://pub.dev"
     source: hosted
-    version: "33.1.45"
+    version: "33.2.4"
   syncfusion_flutter_gauges:
     dependency: "direct main"
     description:
@@ -1175,10 +1175,10 @@ packages:
     dependency: "direct dev"
     description:
       name: test_api
-      sha256: "93167629bfc610f71560ab9312acdda4959de4df6fac7492c89ff0d3886f6636"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.9"
+    version: "0.7.10"
   typed_data:
     dependency: transitive
     description:
