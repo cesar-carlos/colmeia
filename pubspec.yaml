@@ -8,7 +8,7 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
-  brasil_fields: ^1.18.0
+  brasil_fields: ^1.19.0
   crypto: ^3.0.7
   dio: ^5.9.2
 
