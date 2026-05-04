@@ -2084,6 +2084,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesCardProdutoTendenciaTitle => 'Tendencia de vendas';
 
   @override
+  String get salesCardProdutoTendenciaMediaMovelTitle =>
+      'Tendencia de vendas (media movel)';
+
+  @override
   String get salesMonthlyPnlPageSubtitle =>
       'Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.';
 
@@ -2134,13 +2138,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaPageSubtitle =>
-      'Visao executiva da tendencia de venda por produto com resumo, movers e detalhe paginado.';
+      'Visao executiva da tendencia de venda por produto com resumo, destaques e detalhe paginado.';
 
   @override
   String get salesProdutoTendenciaFilterCurrentPeriod => 'Periodo atual';
 
   @override
   String get salesProdutoTendenciaFilterPreviousPeriod => 'Periodo anterior';
+
+  @override
+  String get salesProdutoTendenciaComparisonCurrentChip => 'Atual';
+
+  @override
+  String get salesProdutoTendenciaComparisonPreviousChip => 'Anterior';
 
   @override
   String get salesProdutoTendenciaFilterSearch => 'Busca';
@@ -2164,6 +2174,72 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesProdutoTendenciaFilterAllOption => 'Todos';
 
   @override
+  String get salesProdutoTendenciaFilterQuickPeriodsTitle =>
+      'Periodos sugeridos';
+
+  @override
+  String get salesProdutoTendenciaFilterQuickPeriodsSubtitle =>
+      'Escolha uma janela base e o relatorio alinha a comparacao automaticamente.';
+
+  @override
+  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Mes atual';
+
+  @override
+  String get salesProdutoTendenciaFilterPresetPreviousMonth => 'Mes anterior';
+
+  @override
+  String get salesProdutoTendenciaFilterPresetLast7Days => 'Ultimos 7 dias';
+
+  @override
+  String get salesProdutoTendenciaFilterPresetLast30Days => 'Ultimos 30 dias';
+
+  @override
+  String get salesProdutoTendenciaFilterAutoAdjustPreviousAction =>
+      'Ajustar periodo anterior';
+
+  @override
+  String get salesProdutoTendenciaFilterRuleHelperTitle =>
+      'Regra da comparacao';
+
+  @override
+  String get salesProdutoTendenciaFilterRuleHelper =>
+      'Compare mes completo com mes completo, ou periodos personalizados com a mesma quantidade de dias.';
+
+  @override
+  String get salesProdutoTendenciaFilterApplyDisabledTitle =>
+      'A comparacao precisa de ajuste';
+
+  @override
+  String get salesProdutoTendenciaFilterApplyDisabledHint =>
+      'Atualize os periodos acima para habilitar a aplicacao dos filtros.';
+
+  @override
+  String salesProdutoTendenciaFilterDurationDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dias',
+      one: '1 dia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get salesProdutoTendenciaFilterRangeKindFullMonth => 'Mes completo';
+
+  @override
+  String get salesProdutoTendenciaFilterRangeKindCustom =>
+      'Periodo personalizado';
+
+  @override
+  String get salesProdutoTendenciaFilterPeriodsOrderError =>
+      'O periodo anterior precisa terminar antes do inicio do periodo atual.';
+
+  @override
+  String get salesProdutoTendenciaFilterPeriodsEquivalentWindowError =>
+      'Use janelas equivalentes na comparacao: mes completo contra mes completo, ou periodo personalizado contra periodo personalizado com a mesma quantidade de dias.';
+
+  @override
   String get salesProdutoTendenciaSummaryTitle => 'Resumo executivo';
 
   @override
@@ -2179,7 +2255,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Distribuicao e impacto dentro da pagina carregada.';
 
   @override
-  String get salesProdutoTendenciaTopMoversTitle => 'Top movers';
+  String get salesProdutoTendenciaTopMoversTitle => 'Principais movimentacoes';
 
   @override
   String get salesProdutoTendenciaTopMoversSubtitle =>
@@ -2270,9 +2346,9 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filtros extras',
-      one: '1 filtro extra',
-      zero: 'Sem filtros extras',
+      other: '$count filtros adicionais',
+      one: '1 filtro adicional',
+      zero: 'Sem filtros adicionais',
     );
     return '$_temp0';
   }
@@ -2281,6 +2357,199 @@ class AppLocalizationsPt extends AppLocalizations {
   String salesProdutoTendenciaDetailsNotice(String pageSize) {
     return 'Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: $pageSize).';
   }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelPageSubtitle =>
+      'Painel de media movel com resumo por classificacao e detalhe paginado por produto.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDias =>
+      'Janela de dias';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint =>
+      'Quantidade de dias usada em cada media movel';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper =>
+      'Use a mesma janela para comparar a media atual com a anterior.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid =>
+      'Informe uma quantidade de dias valida e maior que zero.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasPresetsTitle =>
+      'Janelas rapidas';
+
+  @override
+  String salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge(
+    int maxDays,
+  ) {
+    return 'Use no maximo $maxDays dias.';
+  }
+
+  @override
+  String salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dias',
+      one: '1 dia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String salesProdutoTendenciaMediaMovelActiveFiltersSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filtros adicionais',
+      one: '1 filtro adicional',
+      zero: 'Sem filtros adicionais',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar =>
+      'Filtros aplicados. Atualizando a tendencia por media movel.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSelectAgentHint =>
+      'Escolha um agente de vendas para carregar a tendencia de vendas por media movel.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryTitle => 'Resumo executivo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummarySubtitle =>
+      'Totais por classificacao em todo o resultado filtrado.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryUnavailableTitle =>
+      'Resumo indisponivel';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryUnavailableMessage =>
+      'Nao foi possivel carregar o resumo, entao a pagina esta mostrando uma estimativa baseada nas linhas atuais.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle =>
+      'Produtos por classificacao';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle =>
+      'Distribuicao dos produtos em todo o resultado filtrado.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>
+      'Impacto por classificacao';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle =>
+      'Impacto liquido em quantidade de cada classificacao em todo o resultado filtrado.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelDetailsTitle => 'Detalhes';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
+      'Lista paginada com produto, medias, grupo, marca e classificacao de tendencia.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>
+      'Deslize para o lado para ver todas as colunas.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelDetailsEntityLabel => 'linhas';
+
+  @override
+  String salesProdutoTendenciaMediaMovelDetailsSortedBy(String sortLabel) {
+    return 'Ordenado por: $sortLabel';
+  }
+
+  @override
+  String salesProdutoTendenciaMediaMovelDetailsNotice(String pageSize) {
+    return 'Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: $pageSize).';
+  }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelNoData =>
+      'Sem dados de tendencia por media movel para os filtros selecionados.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiGrowing => 'Produtos crescendo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiFalling => 'Produtos caindo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiNewProducts => 'Produtos novos';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiStopped => 'Parou de vender';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiNetImpact =>
+      'Impacto liquido (qtd)';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColProduct => 'Produto';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColClassificacao => 'Classificacao';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColGrupo => 'Grupo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColMarca => 'Marca';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColMediaAtual => 'Media atual';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColMediaAnterior =>
+      'Media anterior';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColDiferenca => 'Diferenca';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColPercentual => 'Tendencia %';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterSortBy =>
+      'Ordenar linhas por';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSortTrendPercent =>
+      'Percentual de tendencia';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSortDifference => 'Diferenca';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSortProductName =>
+      'Nome do produto';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoStopped =>
+      'Parou de vender';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoNew => 'Novo produto';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoGrowing => 'Crescendo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoFalling => 'Caindo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoStable => 'Estavel';
 
   @override
   String get agentStatusPending => 'Pendente';
@@ -4375,6 +4644,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesCardProdutoTendenciaTitle => 'Tendencia de vendas';
 
   @override
+  String get salesCardProdutoTendenciaMediaMovelTitle =>
+      'Tendencia de vendas (media movel)';
+
+  @override
   String get salesMonthlyPnlPageSubtitle =>
       'Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.';
 
@@ -4425,13 +4698,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaPageSubtitle =>
-      'Visao executiva da tendencia de venda por produto com resumo, movers e detalhe paginado.';
+      'Visao executiva da tendencia de venda por produto com resumo, destaques e detalhe paginado.';
 
   @override
   String get salesProdutoTendenciaFilterCurrentPeriod => 'Periodo atual';
 
   @override
   String get salesProdutoTendenciaFilterPreviousPeriod => 'Periodo anterior';
+
+  @override
+  String get salesProdutoTendenciaComparisonCurrentChip => 'Atual';
+
+  @override
+  String get salesProdutoTendenciaComparisonPreviousChip => 'Anterior';
 
   @override
   String get salesProdutoTendenciaFilterSearch => 'Busca';
@@ -4455,6 +4734,72 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesProdutoTendenciaFilterAllOption => 'Todos';
 
   @override
+  String get salesProdutoTendenciaFilterQuickPeriodsTitle =>
+      'Periodos sugeridos';
+
+  @override
+  String get salesProdutoTendenciaFilterQuickPeriodsSubtitle =>
+      'Escolha uma janela base e o relatorio alinha a comparacao automaticamente.';
+
+  @override
+  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Mes atual';
+
+  @override
+  String get salesProdutoTendenciaFilterPresetPreviousMonth => 'Mes anterior';
+
+  @override
+  String get salesProdutoTendenciaFilterPresetLast7Days => 'Ultimos 7 dias';
+
+  @override
+  String get salesProdutoTendenciaFilterPresetLast30Days => 'Ultimos 30 dias';
+
+  @override
+  String get salesProdutoTendenciaFilterAutoAdjustPreviousAction =>
+      'Ajustar periodo anterior';
+
+  @override
+  String get salesProdutoTendenciaFilterRuleHelperTitle =>
+      'Regra da comparacao';
+
+  @override
+  String get salesProdutoTendenciaFilterRuleHelper =>
+      'Compare mes completo com mes completo, ou periodos personalizados com a mesma quantidade de dias.';
+
+  @override
+  String get salesProdutoTendenciaFilterApplyDisabledTitle =>
+      'A comparacao precisa de ajuste';
+
+  @override
+  String get salesProdutoTendenciaFilterApplyDisabledHint =>
+      'Atualize os periodos acima para habilitar a aplicacao dos filtros.';
+
+  @override
+  String salesProdutoTendenciaFilterDurationDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dias',
+      one: '1 dia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get salesProdutoTendenciaFilterRangeKindFullMonth => 'Mes completo';
+
+  @override
+  String get salesProdutoTendenciaFilterRangeKindCustom =>
+      'Periodo personalizado';
+
+  @override
+  String get salesProdutoTendenciaFilterPeriodsOrderError =>
+      'O periodo anterior precisa terminar antes do inicio do periodo atual.';
+
+  @override
+  String get salesProdutoTendenciaFilterPeriodsEquivalentWindowError =>
+      'Use janelas equivalentes na comparacao: mes completo contra mes completo, ou periodo personalizado contra periodo personalizado com a mesma quantidade de dias.';
+
+  @override
   String get salesProdutoTendenciaSummaryTitle => 'Resumo executivo';
 
   @override
@@ -4470,7 +4815,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Distribuicao e impacto dentro da pagina carregada.';
 
   @override
-  String get salesProdutoTendenciaTopMoversTitle => 'Top movers';
+  String get salesProdutoTendenciaTopMoversTitle => 'Principais movimentacoes';
 
   @override
   String get salesProdutoTendenciaTopMoversSubtitle =>
@@ -4561,9 +4906,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filtros extras',
-      one: '1 filtro extra',
-      zero: 'Sem filtros extras',
+      other: '$count filtros adicionais',
+      one: '1 filtro adicional',
+      zero: 'Sem filtros adicionais',
     );
     return '$_temp0';
   }
@@ -4572,6 +4917,199 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String salesProdutoTendenciaDetailsNotice(String pageSize) {
     return 'Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: $pageSize).';
   }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelPageSubtitle =>
+      'Painel de media movel com resumo por classificacao e detalhe paginado por produto.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDias =>
+      'Janela de dias';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint =>
+      'Quantidade de dias usada em cada media movel';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper =>
+      'Use a mesma janela para comparar a media atual com a anterior.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid =>
+      'Informe uma quantidade de dias valida e maior que zero.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasPresetsTitle =>
+      'Janelas rapidas';
+
+  @override
+  String salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge(
+    int maxDays,
+  ) {
+    return 'Use no maximo $maxDays dias.';
+  }
+
+  @override
+  String salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dias',
+      one: '1 dia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String salesProdutoTendenciaMediaMovelActiveFiltersSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filtros adicionais',
+      one: '1 filtro adicional',
+      zero: 'Sem filtros adicionais',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar =>
+      'Filtros aplicados. Atualizando a tendencia por media movel.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSelectAgentHint =>
+      'Escolha um agente de vendas para carregar a tendencia de vendas por media movel.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryTitle => 'Resumo executivo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummarySubtitle =>
+      'Totais por classificacao em todo o resultado filtrado.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryUnavailableTitle =>
+      'Resumo indisponivel';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryUnavailableMessage =>
+      'Nao foi possivel carregar o resumo, entao a pagina esta mostrando uma estimativa baseada nas linhas atuais.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle =>
+      'Produtos por classificacao';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle =>
+      'Distribuicao dos produtos em todo o resultado filtrado.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>
+      'Impacto por classificacao';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle =>
+      'Impacto liquido em quantidade de cada classificacao em todo o resultado filtrado.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelDetailsTitle => 'Detalhes';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
+      'Lista paginada com produto, medias, grupo, marca e classificacao de tendencia.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>
+      'Deslize para o lado para ver todas as colunas.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelDetailsEntityLabel => 'linhas';
+
+  @override
+  String salesProdutoTendenciaMediaMovelDetailsSortedBy(String sortLabel) {
+    return 'Ordenado por: $sortLabel';
+  }
+
+  @override
+  String salesProdutoTendenciaMediaMovelDetailsNotice(String pageSize) {
+    return 'Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: $pageSize).';
+  }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelNoData =>
+      'Sem dados de tendencia por media movel para os filtros selecionados.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiGrowing => 'Produtos crescendo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiFalling => 'Produtos caindo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiNewProducts => 'Produtos novos';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiStopped => 'Parou de vender';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelKpiNetImpact =>
+      'Impacto liquido (qtd)';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColProduct => 'Produto';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColClassificacao => 'Classificacao';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColGrupo => 'Grupo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColMarca => 'Marca';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColMediaAtual => 'Media atual';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColMediaAnterior =>
+      'Media anterior';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColDiferenca => 'Diferenca';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelColPercentual => 'Tendencia %';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelFilterSortBy =>
+      'Ordenar linhas por';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSortTrendPercent =>
+      'Percentual de tendencia';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSortDifference => 'Diferenca';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSortProductName =>
+      'Nome do produto';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoStopped =>
+      'Parou de vender';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoNew => 'Novo produto';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoGrowing => 'Crescendo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoFalling => 'Caindo';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoStable => 'Estavel';
 
   @override
   String get agentStatusPending => 'Pendente';

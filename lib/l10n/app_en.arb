@@ -982,6 +982,7 @@
   "salesCardProdutoRankLucroTitle": "Product ranking",
   "salesCardMonthlyPnlTitle": "Monthly P&L",
   "salesCardProdutoTendenciaTitle": "Sales trend",
+  "salesCardProdutoTendenciaMediaMovelTitle": "Sales trend (moving average)",
   "salesMonthlyPnlPageSubtitle": "Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.",
   "salesMonthlyPnlFilterAnchorMonth": "Reference month",
   "salesMonthlyPnlChartTitle": "Monthly P&L",
@@ -1000,6 +1001,8 @@
   "salesProdutoTendenciaPageSubtitle": "Executive snapshot of product sales trend with summary, movers, and paged details.",
   "salesProdutoTendenciaFilterCurrentPeriod": "Current period",
   "salesProdutoTendenciaFilterPreviousPeriod": "Previous period",
+  "salesProdutoTendenciaComparisonCurrentChip": "Current",
+  "salesProdutoTendenciaComparisonPreviousChip": "Previous",
   "salesProdutoTendenciaFilterSearch": "Search term",
   "salesProdutoTendenciaFilterSearchHint": "Product, group, or brand",
   "salesProdutoTendenciaFilterClassification": "Classification",
@@ -1007,6 +1010,29 @@
   "salesProdutoTendenciaFilterBrand": "Brand",
   "salesProdutoTendenciaFilterPageSize": "Rows per page",
   "salesProdutoTendenciaFilterAllOption": "All",
+  "salesProdutoTendenciaFilterQuickPeriodsTitle": "Suggested periods",
+  "salesProdutoTendenciaFilterQuickPeriodsSubtitle": "Pick a base window and the report will align the comparison for you.",
+  "salesProdutoTendenciaFilterPresetCurrentMonth": "Current month",
+  "salesProdutoTendenciaFilterPresetPreviousMonth": "Previous month",
+  "salesProdutoTendenciaFilterPresetLast7Days": "Last 7 days",
+  "salesProdutoTendenciaFilterPresetLast30Days": "Last 30 days",
+  "salesProdutoTendenciaFilterAutoAdjustPreviousAction": "Adjust previous period",
+  "salesProdutoTendenciaFilterRuleHelperTitle": "Comparison rule",
+  "salesProdutoTendenciaFilterRuleHelper": "Compare full months with full months, or custom periods with the same number of days.",
+  "salesProdutoTendenciaFilterApplyDisabledTitle": "Comparison needs adjustment",
+  "salesProdutoTendenciaFilterApplyDisabledHint": "Update the periods above to enable the apply action.",
+  "salesProdutoTendenciaFilterDurationDays": "{count, plural, one{1 day} other{{count} days}}",
+  "@salesProdutoTendenciaFilterDurationDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "salesProdutoTendenciaFilterRangeKindFullMonth": "Full month",
+  "salesProdutoTendenciaFilterRangeKindCustom": "Custom period",
+  "salesProdutoTendenciaFilterPeriodsOrderError": "The previous period must end before the current period starts.",
+  "salesProdutoTendenciaFilterPeriodsEquivalentWindowError": "Use equivalent comparison windows: full month versus full month, or custom period versus custom period with the same number of days.",
   "salesProdutoTendenciaSummaryTitle": "Executive summary",
   "salesProdutoTendenciaSummarySubtitle": "Overview of product movement by trend classification.",
   "salesProdutoTendenciaSummaryByClassificacaoTitle": "Products by classification",
@@ -1038,7 +1064,7 @@
   "salesProdutoTendenciaClassificacaoGrowing": "Growing",
   "salesProdutoTendenciaClassificacaoFalling": "Falling",
   "salesProdutoTendenciaClassificacaoStable": "Stable",
-  "salesProdutoTendenciaActiveFiltersSummary": "{count, plural, =0{No extra filters} one{1 extra filter} other{{count} extra filters}}",
+  "salesProdutoTendenciaActiveFiltersSummary": "{count, plural, =0{No additional filters} one{1 additional filter} other{{count} additional filters}}",
   "@salesProdutoTendenciaActiveFiltersSummary": {
     "placeholders": {
       "count": {
@@ -1054,6 +1080,89 @@
       }
     }
   },
+  "salesProdutoTendenciaMediaMovelPageSubtitle": "Moving-average dashboard with classification summary and paged product detail.",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDias": "Window size",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint": "Number of days used in each moving average",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper": "Use the same window size for the current and previous averages.",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid": "Enter a valid number of days greater than zero.",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasPresetsTitle": "Quick windows",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge": "Use at most {maxDays} days.",
+  "@salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge": {
+    "placeholders": {
+      "maxDays": {
+        "type": "int"
+      }
+    }
+  },
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue": "{count, plural, one{1 day} other{{count} days}}",
+  "@salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "salesProdutoTendenciaMediaMovelActiveFiltersSummary": "{count, plural, =0{No additional filters} one{1 additional filter} other{{count} additional filters}}",
+  "@salesProdutoTendenciaMediaMovelActiveFiltersSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar": "Filters applied. Refreshing moving-average trend.",
+  "salesProdutoTendenciaMediaMovelSelectAgentHint": "Choose one sales agent to load the moving-average sales trend.",
+  "salesProdutoTendenciaMediaMovelSummaryTitle": "Executive summary",
+  "salesProdutoTendenciaMediaMovelSummarySubtitle": "Classification totals across the full filtered result.",
+  "salesProdutoTendenciaMediaMovelSummaryUnavailableTitle": "Summary unavailable",
+  "salesProdutoTendenciaMediaMovelSummaryUnavailableMessage": "The summary could not be loaded, so the page is showing an estimate based on the current rows.",
+  "salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle": "Products by classification",
+  "salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle": "Distribution of products across the full filtered result.",
+  "salesProdutoTendenciaMediaMovelSummaryByImpactTitle": "Impact by classification",
+  "salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle": "Net quantity impact of each classification across the full filtered result.",
+  "salesProdutoTendenciaMediaMovelDetailsTitle": "Detailed rows",
+  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Paginated detail with product, averages, group, brand, and trend classification.",
+  "salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption": "Swipe sideways to see all columns.",
+  "salesProdutoTendenciaMediaMovelDetailsEntityLabel": "rows",
+  "salesProdutoTendenciaMediaMovelDetailsSortedBy": "Sorted by: {sortLabel}",
+  "@salesProdutoTendenciaMediaMovelDetailsSortedBy": {
+    "placeholders": {
+      "sortLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "salesProdutoTendenciaMediaMovelDetailsNotice": "Results may contain more rows. Use pagination to load next pages (current size: {pageSize}).",
+  "@salesProdutoTendenciaMediaMovelDetailsNotice": {
+    "placeholders": {
+      "pageSize": {
+        "type": "String"
+      }
+    }
+  },
+  "salesProdutoTendenciaMediaMovelNoData": "No moving-average trend data for the selected filters.",
+  "salesProdutoTendenciaMediaMovelKpiGrowing": "Growing products",
+  "salesProdutoTendenciaMediaMovelKpiFalling": "Falling products",
+  "salesProdutoTendenciaMediaMovelKpiNewProducts": "New products",
+  "salesProdutoTendenciaMediaMovelKpiStopped": "Stopped selling",
+  "salesProdutoTendenciaMediaMovelKpiNetImpact": "Net impact (qty)",
+  "salesProdutoTendenciaMediaMovelColProduct": "Product",
+  "salesProdutoTendenciaMediaMovelColClassificacao": "Classification",
+  "salesProdutoTendenciaMediaMovelColGrupo": "Group",
+  "salesProdutoTendenciaMediaMovelColMarca": "Brand",
+  "salesProdutoTendenciaMediaMovelColMediaAtual": "Current avg.",
+  "salesProdutoTendenciaMediaMovelColMediaAnterior": "Previous avg.",
+  "salesProdutoTendenciaMediaMovelColDiferenca": "Delta",
+  "salesProdutoTendenciaMediaMovelColPercentual": "Trend %",
+  "salesProdutoTendenciaMediaMovelFilterSortBy": "Sort rows by",
+  "salesProdutoTendenciaMediaMovelSortTrendPercent": "Trend percentage",
+  "salesProdutoTendenciaMediaMovelSortDifference": "Delta",
+  "salesProdutoTendenciaMediaMovelSortProductName": "Product name",
+  "salesProdutoTendenciaMediaMovelClassificacaoStopped": "Stopped selling",
+  "salesProdutoTendenciaMediaMovelClassificacaoNew": "New product",
+  "salesProdutoTendenciaMediaMovelClassificacaoGrowing": "Growing",
+  "salesProdutoTendenciaMediaMovelClassificacaoFalling": "Falling",
+  "salesProdutoTendenciaMediaMovelClassificacaoStable": "Stable",
   "agentStatusPending": "Pending",
   "agentStatusRejected": "Rejected",
   "agentStatusUnknown": "Unknown",

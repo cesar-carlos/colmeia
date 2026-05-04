@@ -300,6 +300,95 @@ void main() {
     expect(find.text('Test detail error'), findsOneWidget);
   });
 
+  testWidgets('shows quick period presets and guidance in filters sheet', (
+    tester,
+  ) async {
+    await _pumpTrendPage(tester, authController: authController);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.filter_list_rounded));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -220));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Suggested periods'), findsOneWidget);
+    expect(
+      find.text(
+        'Pick a base window and the report will align the comparison for you.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Current month'), findsOneWidget);
+    expect(find.text('Previous month'), findsOneWidget);
+    expect(find.text('Last 7 days'), findsOneWidget);
+    expect(find.text('Last 30 days'), findsOneWidget);
+    expect(find.text('Adjust previous period'), findsOneWidget);
+    expect(find.text('Comparison rule'), findsOneWidget);
+  });
+
+  testWidgets(
+    'disables filter apply when restored periods are inconsistent',
+    (tester) async {
+      when(() => salesPreferences.restoreCardFilters(any())).thenReturn(
+        <String, Object?>{
+          'periodo_atual_start_ms': DateTime(2026, 4).millisecondsSinceEpoch,
+          'periodo_atual_end_ms': DateTime(
+            2026,
+            4,
+            30,
+          ).millisecondsSinceEpoch,
+          'periodo_anterior_start_ms': DateTime(2026, 2).millisecondsSinceEpoch,
+          'periodo_anterior_end_ms': DateTime(
+            2026,
+            3,
+            31,
+          ).millisecondsSinceEpoch,
+        },
+      );
+
+      await _pumpTrendPage(tester, authController: authController);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(Scrollable).last, const Offset(0, -240));
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(SalesProdutoTendenciaPage)),
+      );
+      expect(
+        find.text(l10n.salesProdutoTendenciaFilterPeriodsEquivalentWindowError),
+        findsWidgets,
+      );
+
+      final applyButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Apply filters'),
+      );
+      expect(applyButton.onPressed, isNull);
+    },
+  );
+
+  testWidgets('shows active filter chips when extra filters are applied', (
+    tester,
+  ) async {
+    when(() => salesPreferences.restoreCardFilters(any())).thenReturn(
+      <String, Object?>{
+        'search_term': 'smart fox',
+        'classificacao': 'CRESCENDO',
+      },
+    );
+
+    await _pumpTrendPage(tester, authController: authController);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Search term: smart fox'), findsOneWidget);
+    expect(find.text('Classification: Growing'), findsOneWidget);
+    expect(find.text('2 additional filters'), findsOneWidget);
+  });
+
   testWidgets('shows empty-state message when summary and details are empty', (
     tester,
   ) async {

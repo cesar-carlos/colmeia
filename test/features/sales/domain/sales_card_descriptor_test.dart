@@ -14,5 +14,20 @@ void main() {
       check(descriptor!.route).equals('/sales/produto_tendencia_venda');
       check(descriptor.l10nTitleKey).equals('salesCardProdutoTendenciaTitle');
     });
+
+    test('contains moving-average sales trend card descriptor', () {
+      final descriptor = allSalesCards.cast<SalesCardDescriptor?>().firstWhere(
+        (card) => card?.id == 'produto_tendencia_venda_media_movel',
+        orElse: () => null,
+      );
+
+      check(descriptor).isNotNull();
+      check(descriptor!.route).equals(
+        '/sales/produto_tendencia_venda_media_movel',
+      );
+      check(descriptor.l10nTitleKey).equals(
+        'salesCardProdutoTendenciaMediaMovelTitle',
+      );
+    });
   });
 }

@@ -105,6 +105,8 @@ class SalesHubPage extends StatelessWidget {
       'salesCardProdutoRankLucroTitle' => l10n.salesCardProdutoRankLucroTitle,
       'salesCardMonthlyPnlTitle' => l10n.salesCardMonthlyPnlTitle,
       'salesCardProdutoTendenciaTitle' => l10n.salesCardProdutoTendenciaTitle,
+      'salesCardProdutoTendenciaMediaMovelTitle' =>
+        l10n.salesCardProdutoTendenciaMediaMovelTitle,
       _ => key,
     };
   }

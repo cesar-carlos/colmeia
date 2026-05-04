@@ -46,11 +46,15 @@ class AppTagChip extends StatelessWidget {
               Icon(icon, size: 14, color: resolvedForeground),
               SizedBox(width: tokens.gapXs),
             ],
-            Text(
-              label,
-              style: typography.utilityOverline.copyWith(
-                color: resolvedForeground,
-                letterSpacing: 0.4,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.utilityOverline.copyWith(
+                  color: resolvedForeground,
+                  letterSpacing: 0.4,
+                ),
               ),
             ),
           ],

@@ -59,6 +59,13 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// catalogs with many active SKUs.
   static const int produtoVendidoTendenciaDeVenda = 10000;
 
+  /// Moving-average trend rows by product; same order of magnitude as the
+  /// explicit-period trend report.
+  static const int produtoVendidoTendenciaDeVendaMediaMovel = 10000;
+
+  /// Summary grouped by moving-average trend classification.
+  static const int produtoVendidoTendenciaDeVendaMediaMovelSummary = 32;
+
   /// Summary grouped by trend classification (`CRESCENDO`, `CAINDO`, etc.).
   static const int produtoVendidoTendenciaDeVendaSummary = 32;
 }

@@ -30,4 +30,9 @@ const List<SalesCardDescriptor> allSalesCards = <SalesCardDescriptor>[
     icon: Icons.trending_up_rounded,
     l10nTitleKey: 'salesCardProdutoTendenciaTitle',
   ),
+  SalesCardDescriptor(
+    id: 'produto_tendencia_venda_media_movel',
+    icon: Icons.insights_rounded,
+    l10nTitleKey: 'salesCardProdutoTendenciaMediaMovelTitle',
+  ),
 ];

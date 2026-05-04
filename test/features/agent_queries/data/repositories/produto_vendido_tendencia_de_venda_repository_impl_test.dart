@@ -83,6 +83,26 @@ void main() {
     verifyNever(() => agentQueriesRepository.executeSql(any()));
   });
 
+  test(
+    'returns validation failure when comparison windows are inconsistent',
+    () async {
+      final result = await repository.loadAll(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: ProdutoVendidoTendenciaDeVendaFilter(
+          periodoAtualInicio: DateTime(2026, 4),
+          periodoAtualFim: DateTime(2026, 4, 30),
+          periodoAnteriorInicio: DateTime(2026, 2),
+          periodoAnteriorFim: DateTime(2026, 3, 31),
+        ),
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<ValidationFailure>();
+      verifyNever(() => agentQueriesRepository.executeSql(any()));
+    },
+  );
+
   test('returns validation failure when origem is empty', () async {
     final result = await repository.loadAll(
       userId: 'user-1',

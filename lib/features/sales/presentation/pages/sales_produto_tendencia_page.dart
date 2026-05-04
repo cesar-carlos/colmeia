@@ -31,8 +31,10 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
@@ -75,6 +77,123 @@ List<ProdutoVendidoTendenciaDeVendaRow> _trendTopLosersRows(
           return a.diferenca.compareTo(b.diferenca);
         });
   return values.take(5).toList(growable: false);
+}
+
+enum _SalesTrendDatePreset {
+  currentMonth,
+  previousMonth,
+  last7Days,
+  last30Days,
+}
+
+DateTime _salesTrendCalendarDate(DateTime date) {
+  return DateTime(date.year, date.month, date.day);
+}
+
+DateTimeRange _salesTrendFullMonthInclusiveRange(DateTime anchor) {
+  return DateTimeRange(
+    start: DateTime(anchor.year, anchor.month),
+    end: DateTime(anchor.year, anchor.month + 1, 0),
+  );
+}
+
+DateTimeRange _salesTrendPreviousMonthInclusiveRange(DateTime anchor) {
+  final previous = DateTime(anchor.year, anchor.month - 1);
+  return DateTimeRange(
+    start: DateTime(previous.year, previous.month),
+    end: DateTime(previous.year, previous.month + 1, 0),
+  );
+}
+
+DateTimeRange _salesTrendCurrentRangeForPreset(
+  _SalesTrendDatePreset preset, {
+  DateTime? anchor,
+}) {
+  final today = _salesTrendCalendarDate(anchor ?? DateTime.now());
+  return switch (preset) {
+    _SalesTrendDatePreset.currentMonth => _salesTrendFullMonthInclusiveRange(
+      today,
+    ),
+    _SalesTrendDatePreset.previousMonth =>
+      _salesTrendPreviousMonthInclusiveRange(today),
+    _SalesTrendDatePreset.last7Days => DateTimeRange(
+      start: today.subtract(const Duration(days: 6)),
+      end: today,
+    ),
+    _SalesTrendDatePreset.last30Days => DateTimeRange(
+      start: today.subtract(const Duration(days: 29)),
+      end: today,
+    ),
+  };
+}
+
+bool _salesTrendIsWholeCalendarMonthRange(DateTimeRange range) {
+  final normalizedStart = _salesTrendCalendarDate(range.start);
+  final normalizedEnd = _salesTrendCalendarDate(range.end);
+  return normalizedStart.day == 1 &&
+      normalizedEnd.day ==
+          DateTime(
+            normalizedEnd.year,
+            normalizedEnd.month + 1,
+            0,
+          ).day;
+}
+
+int _salesTrendInclusiveDayCount(DateTimeRange range) {
+  final normalizedStart = _salesTrendCalendarDate(range.start);
+  final normalizedEnd = _salesTrendCalendarDate(range.end);
+  return normalizedEnd.difference(normalizedStart).inDays + 1;
+}
+
+int _salesTrendCalendarMonthSpan(DateTimeRange range) {
+  final normalizedStart = _salesTrendCalendarDate(range.start);
+  final normalizedEnd = _salesTrendCalendarDate(range.end);
+  return (normalizedEnd.year - normalizedStart.year) * 12 +
+      normalizedEnd.month -
+      normalizedStart.month +
+      1;
+}
+
+DateTimeRange _salesTrendAutoPreviousRange(DateTimeRange currentRange) {
+  final normalizedStart = _salesTrendCalendarDate(currentRange.start);
+  if (_salesTrendIsWholeCalendarMonthRange(currentRange)) {
+    final monthSpan = _salesTrendCalendarMonthSpan(currentRange);
+    return DateTimeRange(
+      start: DateTime(
+        normalizedStart.year,
+        normalizedStart.month - monthSpan,
+      ),
+      end: DateTime(normalizedStart.year, normalizedStart.month, 0),
+    );
+  }
+
+  final inclusiveDays = _salesTrendInclusiveDayCount(currentRange);
+  final previousEnd = normalizedStart.subtract(const Duration(days: 1));
+  final previousStart = previousEnd.subtract(
+    Duration(days: inclusiveDays - 1),
+  );
+  return DateTimeRange(start: previousStart, end: previousEnd);
+}
+
+bool _salesTrendSameRange(DateTimeRange? a, DateTimeRange? b) {
+  if (a == null || b == null) {
+    return a == b;
+  }
+  return _salesTrendCalendarDate(a.start) == _salesTrendCalendarDate(b.start) &&
+      _salesTrendCalendarDate(a.end) == _salesTrendCalendarDate(b.end);
+}
+
+String _salesTrendRangeDescriptorLabel(
+  AppLocalizations l10n,
+  DateTimeRange range,
+) {
+  final durationLabel = l10n.salesProdutoTendenciaFilterDurationDays(
+    _salesTrendInclusiveDayCount(range),
+  );
+  final rangeKind = _salesTrendIsWholeCalendarMonthRange(range)
+      ? l10n.salesProdutoTendenciaFilterRangeKindFullMonth
+      : l10n.salesProdutoTendenciaFilterRangeKindCustom;
+  return '$durationLabel • $rangeKind';
 }
 
 class SalesProdutoTendenciaPage extends StatefulWidget {
@@ -123,18 +242,11 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
   List<ProdutoVendidoTendenciaDeVendaSummaryRow> _summaryRows =
       const <ProdutoVendidoTendenciaDeVendaSummaryRow>[];
 
-  DateTimeRange _fullMonthInclusiveRange(DateTime anchor) => DateTimeRange(
-    start: DateTime(anchor.year, anchor.month),
-    end: DateTime(anchor.year, anchor.month + 1, 0),
-  );
+  DateTimeRange _fullMonthInclusiveRange(DateTime anchor) =>
+      _salesTrendFullMonthInclusiveRange(anchor);
 
-  DateTimeRange _previousMonthInclusiveRange(DateTime anchor) {
-    final previous = DateTime(anchor.year, anchor.month - 1);
-    return DateTimeRange(
-      start: DateTime(previous.year, previous.month),
-      end: DateTime(previous.year, previous.month + 1, 0),
-    );
-  }
+  DateTimeRange _previousMonthInclusiveRange(DateTime anchor) =>
+      _salesTrendPreviousMonthInclusiveRange(anchor);
 
   @override
   void initState() {
@@ -712,6 +824,49 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
     };
   }
 
+  String _periodDescriptorLabel(AppLocalizations l10n, DateTimeRange range) {
+    return _salesTrendRangeDescriptorLabel(l10n, range);
+  }
+
+  List<String> _activeFilterChipLabels(AppLocalizations l10n) {
+    final labels = <String>[];
+    final trimmedSearch = _searchTerm.trim();
+    if (trimmedSearch.isNotEmpty) {
+      labels.add('${l10n.salesProdutoTendenciaFilterSearch}: $trimmedSearch');
+    }
+    if (_classificacao != null) {
+      labels.add(
+        '${l10n.salesProdutoTendenciaFilterClassification}: '
+        '${_classificacaoLabel(l10n, _classificacao)}',
+      );
+    }
+    if (_codGrupoProduto != null) {
+      final grupoLabel =
+          _grupoOptions
+              .cast<GrupoProdutoOption?>()
+              .firstWhere(
+                (option) => option?.codGrupoProduto == _codGrupoProduto,
+                orElse: () => null,
+              )
+              ?.nomeGrupoProduto ??
+          '#$_codGrupoProduto';
+      labels.add('${l10n.salesProdutoTendenciaFilterGroup}: $grupoLabel');
+    }
+    if (_codMarca != null) {
+      final marcaLabel =
+          _marcaOptions
+              .cast<MarcaProdutoOption?>()
+              .firstWhere(
+                (option) => option?.codMarca == _codMarca,
+                orElse: () => null,
+              )
+              ?.nomeMarca ??
+          '#$_codMarca';
+      labels.add('${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel');
+    }
+    return labels;
+  }
+
   List<ProdutoVendidoTendenciaDeVendaSummaryRow> _buildSummaryRowsFallback(
     List<ProdutoVendidoTendenciaDeVendaRow> rows,
   ) {
@@ -745,18 +900,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
           orElse: () => null,
         );
     final selectedAgentName = selectedAgent?.name ?? l10n.salesAgentPickerEmpty;
-
-    final activeDetailFilterValues = <Object?>[
-      _classificacao,
-      _codGrupoProduto,
-      _codMarca,
-    ];
-    if (_searchTerm.trim().isNotEmpty) {
-      activeDetailFilterValues.add(_searchTerm);
-    }
-    final activeDetailFilterCount = activeDetailFilterValues
-        .whereType<Object>()
-        .length;
+    final activeFilterChipLabels = _activeFilterChipLabels(l10n);
+    final activeDetailFilterCount = activeFilterChipLabels.length;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -791,6 +936,10 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
                   value: _dateRangeLabel(_periodoAtual),
                 ),
                 SalesCardFilterSummaryItem(
+                  label: l10n.salesProdutoTendenciaFilterPreviousPeriod,
+                  value: _dateRangeLabel(_periodoAnterior),
+                ),
+                SalesCardFilterSummaryItem(
                   label: l10n.reportFiltersTitle,
                   value: l10n.salesProdutoTendenciaActiveFiltersSummary(
                     activeDetailFilterCount,
@@ -799,6 +948,16 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
               ],
               enabled: !_loading,
             ),
+            if (activeFilterChipLabels.isNotEmpty) ...<Widget>[
+              SizedBox(height: tokens.gapMd),
+              Wrap(
+                spacing: tokens.gapSm,
+                runSpacing: tokens.gapSm,
+                children: activeFilterChipLabels
+                    .map((label) => AppTagChip(label: label))
+                    .toList(growable: false),
+              ),
+            ],
             SizedBox(height: tokens.sectionSpacing),
             if (_selectedAgentId == null) ...<Widget>[
               AppInlineErrorPanel(
@@ -816,6 +975,16 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
                 l10n: l10n,
                 summaryRows: _summaryRows,
                 loading: _loading,
+                periodoAtual: _periodoAtual,
+                periodoAnterior: _periodoAnterior,
+                periodoAtualDescriptor: _periodDescriptorLabel(
+                  l10n,
+                  _periodoAtual,
+                ),
+                periodoAnteriorDescriptor: _periodDescriptorLabel(
+                  l10n,
+                  _periodoAnterior,
+                ),
                 classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
                 onOpenClassificacaoFullscreen: _openClassificacaoFullscreen,
               ),
@@ -851,6 +1020,10 @@ class _TrendSummarySection extends StatelessWidget {
     required this.l10n,
     required this.summaryRows,
     required this.loading,
+    required this.periodoAtual,
+    required this.periodoAnterior,
+    required this.periodoAtualDescriptor,
+    required this.periodoAnteriorDescriptor,
     required this.classLabelBuilder,
     required this.onOpenClassificacaoFullscreen,
   });
@@ -858,6 +1031,10 @@ class _TrendSummarySection extends StatelessWidget {
   final AppLocalizations l10n;
   final List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows;
   final bool loading;
+  final DateTimeRange periodoAtual;
+  final DateTimeRange periodoAnterior;
+  final String periodoAtualDescriptor;
+  final String periodoAnteriorDescriptor;
   final String Function(String value) classLabelBuilder;
   final VoidCallback onOpenClassificacaoFullscreen;
 
@@ -885,6 +1062,29 @@ class _TrendSummarySection extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
+          ),
+          SizedBox(height: tokens.gapMd),
+          Wrap(
+            spacing: tokens.gapSm,
+            runSpacing: tokens.gapSm,
+            children: <Widget>[
+              AppTagChip(
+                icon: Icons.timeline_rounded,
+                label:
+                    '${l10n.salesProdutoTendenciaComparisonCurrentChip}: '
+                    '${AppBrFormatters.shortDate(periodoAtual.start)} - '
+                    '${AppBrFormatters.shortDate(periodoAtual.end)} • '
+                    '$periodoAtualDescriptor',
+              ),
+              AppTagChip(
+                icon: Icons.history_rounded,
+                label:
+                    '${l10n.salesProdutoTendenciaComparisonPreviousChip}: '
+                    '${AppBrFormatters.shortDate(periodoAnterior.start)} - '
+                    '${AppBrFormatters.shortDate(periodoAnterior.end)} • '
+                    '$periodoAnteriorDescriptor',
+              ),
+            ],
           ),
           SizedBox(height: tokens.contentSpacing),
           if (loading && summaryRows.isEmpty)
@@ -1327,7 +1527,7 @@ class _TrendDetailsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final rowNumber = NumberFormat.decimalPattern('pt_BR');
+    final rowNumber = NumberFormat.decimalPattern(l10n.localeName);
     final hasNextPage = rows.length >= pageSize;
     final totalPages = hasNextPage ? currentPage + 1 : math.max(1, currentPage);
     final rangeStart = rows.isEmpty ? 0 : ((currentPage - 1) * pageSize) + 1;
@@ -1589,7 +1789,7 @@ class _TrendDetailsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final numberFmt = NumberFormat.decimalPattern('pt_BR');
+    final numberFmt = NumberFormat.decimalPattern(l10n.localeName);
     final percentText = '${row.percentualTendencia.toStringAsFixed(1)}%';
     const tabularFigures = <FontFeature>[FontFeature.tabularFigures()];
 
@@ -1718,6 +1918,56 @@ class _SalesProdutoTendenciaFiltersSheetState
   int? _codMarca;
   late int _pageSize;
 
+  _SalesTrendDatePreset? get _selectedPreset {
+    for (final preset in _SalesTrendDatePreset.values) {
+      final current = _salesTrendCurrentRangeForPreset(preset);
+      final previous = _salesTrendAutoPreviousRange(current);
+      if (_salesTrendSameRange(_periodoAtual, current) &&
+          _salesTrendSameRange(_periodoAnterior, previous)) {
+        return preset;
+      }
+    }
+    return null;
+  }
+
+  String? get _periodValidationMessage {
+    final periodoAtual = _periodoAtual;
+    final periodoAnterior = _periodoAnterior;
+    if (periodoAtual == null || periodoAnterior == null) {
+      return null;
+    }
+
+    final error = ProdutoVendidoTendenciaDeVendaFilter(
+      periodoAtualInicio: periodoAtual.start,
+      periodoAtualFim: periodoAtual.end,
+      periodoAnteriorInicio: periodoAnterior.start,
+      periodoAnteriorFim: periodoAnterior.end,
+      searchTerm: _searchController.text,
+      classificacao: _classificacao,
+      codGrupoProduto: _codGrupoProduto,
+      codMarca: _codMarca,
+      pageSize: _pageSize,
+    ).validationError();
+
+    return _localizedPeriodValidationMessage(error);
+  }
+
+  bool get _canApply {
+    final selectedAgentId = _selectedAgentId;
+    return selectedAgentId != null &&
+        selectedAgentId.trim().isNotEmpty &&
+        _periodoAtual != null &&
+        _periodoAnterior != null &&
+        _periodValidationMessage == null;
+  }
+
+  String? _rangeHelperText(DateTimeRange? range) {
+    if (range == null) {
+      return null;
+    }
+    return _salesTrendRangeDescriptorLabel(widget.l10n, range);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1737,11 +1987,28 @@ class _SalesProdutoTendenciaFiltersSheetState
     super.dispose();
   }
 
+  String? _localizedPeriodValidationMessage(String? error) {
+    if (error == null) {
+      return null;
+    }
+
+    final l10n = widget.l10n;
+    return switch (error) {
+      ProdutoVendidoTendenciaDeVendaFilter
+          .errorPeriodoAnteriorMustBeBeforeAtual =>
+        l10n.salesProdutoTendenciaFilterPeriodsOrderError,
+      ProdutoVendidoTendenciaDeVendaFilter
+          .errorPeriodsMustCoverEquivalentWindows =>
+        l10n.salesProdutoTendenciaFilterPeriodsEquivalentWindowError,
+      _ => null,
+    };
+  }
+
   void _apply() {
-    final selectedAgentId = _selectedAgentId;
-    if (selectedAgentId == null || selectedAgentId.trim().isEmpty) {
+    if (!_canApply) {
       return;
     }
+    final selectedAgentId = _selectedAgentId!;
     widget.onApply(<String, Object?>{
       'agentId': selectedAgentId,
       'periodoAtual': _periodoAtual,
@@ -1755,18 +2022,29 @@ class _SalesProdutoTendenciaFiltersSheetState
     Navigator.of(context).pop();
   }
 
+  void _applyPreset(_SalesTrendDatePreset preset) {
+    final current = _salesTrendCurrentRangeForPreset(preset);
+    setState(() {
+      _periodoAtual = current;
+      _periodoAnterior = _salesTrendAutoPreviousRange(current);
+    });
+  }
+
+  void _autoAdjustPreviousPeriod() {
+    final periodoAtual = _periodoAtual;
+    if (periodoAtual == null) {
+      return;
+    }
+    setState(() {
+      _periodoAnterior = _salesTrendAutoPreviousRange(periodoAtual);
+    });
+  }
+
   void _clear() {
     final now = DateTime.now();
     setState(() {
-      _periodoAtual = DateTimeRange(
-        start: DateTime(now.year, now.month),
-        end: DateTime(now.year, now.month + 1, 0),
-      );
-      final previous = DateTime(now.year, now.month - 1);
-      _periodoAnterior = DateTimeRange(
-        start: DateTime(previous.year, previous.month),
-        end: DateTime(previous.year, previous.month + 1, 0),
-      );
+      _periodoAtual = _salesTrendFullMonthInclusiveRange(now);
+      _periodoAnterior = _salesTrendPreviousMonthInclusiveRange(now);
       _searchController.text = '';
       _classificacao = null;
       _codGrupoProduto = null;
@@ -1780,6 +2058,8 @@ class _SalesProdutoTendenciaFiltersSheetState
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final l10n = widget.l10n;
+    final periodValidationMessage = _periodValidationMessage;
+    final selectedPreset = _selectedPreset;
     final selectedAgentMissingToken =
         _selectedAgentId != null &&
         widget.availableAgents.any(
@@ -1797,7 +2077,7 @@ class _SalesProdutoTendenciaFiltersSheetState
       secondaryActionLabel: l10n.reportFiltersClearAction,
       onPrimaryAction: _apply,
       onSecondaryAction: _clear,
-      canPrimaryAction: _selectedAgentId != null,
+      canPrimaryAction: _canApply,
       bodyBuilder: (scrollController) {
         return ListView(
           controller: scrollController,
@@ -1841,6 +2121,84 @@ class _SalesProdutoTendenciaFiltersSheetState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
+                  Text(
+                    l10n.salesProdutoTendenciaFilterQuickPeriodsTitle,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: tokens.gapXs),
+                  Text(
+                    l10n.salesProdutoTendenciaFilterQuickPeriodsSubtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: tokens.gapMd),
+                  Wrap(
+                    spacing: tokens.gapSm,
+                    runSpacing: tokens.gapSm,
+                    children: <Widget>[
+                      AppChoiceChip(
+                        label:
+                            l10n.salesProdutoTendenciaFilterPresetCurrentMonth,
+                        selected:
+                            selectedPreset ==
+                            _SalesTrendDatePreset.currentMonth,
+                        icon: Icons.calendar_view_month_rounded,
+                        onSelected: () => _applyPreset(
+                          _SalesTrendDatePreset.currentMonth,
+                        ),
+                      ),
+                      AppChoiceChip(
+                        label:
+                            l10n.salesProdutoTendenciaFilterPresetPreviousMonth,
+                        selected:
+                            selectedPreset ==
+                            _SalesTrendDatePreset.previousMonth,
+                        icon: Icons.history_rounded,
+                        onSelected: () => _applyPreset(
+                          _SalesTrendDatePreset.previousMonth,
+                        ),
+                      ),
+                      AppChoiceChip(
+                        label: l10n.salesProdutoTendenciaFilterPresetLast7Days,
+                        selected:
+                            selectedPreset == _SalesTrendDatePreset.last7Days,
+                        icon: Icons.date_range_rounded,
+                        onSelected: () =>
+                            _applyPreset(_SalesTrendDatePreset.last7Days),
+                      ),
+                      AppChoiceChip(
+                        label: l10n.salesProdutoTendenciaFilterPresetLast30Days,
+                        selected:
+                            selectedPreset == _SalesTrendDatePreset.last30Days,
+                        icon: Icons.insights_rounded,
+                        onSelected: () =>
+                            _applyPreset(_SalesTrendDatePreset.last30Days),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: tokens.gapSm),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _periodoAtual == null
+                          ? null
+                          : _autoAdjustPreviousPeriod,
+                      icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
+                      label: Text(
+                        l10n.salesProdutoTendenciaFilterAutoAdjustPreviousAction,
+                      ),
+                    ),
+                  ),
+                  AppInlineErrorPanel(
+                    variant: AppInlineErrorPanelVariant.plain,
+                    tone: AppInlinePanelTone.informational,
+                    title: l10n.salesProdutoTendenciaFilterRuleHelperTitle,
+                    message: l10n.salesProdutoTendenciaFilterRuleHelper,
+                  ),
+                  SizedBox(height: tokens.contentSpacing),
                   AppDateRangePickerField(
                     label: l10n.salesProdutoTendenciaFilterCurrentPeriod,
                     pickerTitle: l10n.salesProdutoTendenciaFilterCurrentPeriod,
@@ -1848,8 +2206,15 @@ class _SalesProdutoTendenciaFiltersSheetState
                     firstDate: DateTime(2000),
                     lastDate: DateTime.now(),
                     density: AppTextFieldDensity.compact,
+                    helperText: _rangeHelperText(_periodoAtual),
+                    errorText: periodValidationMessage,
                     onChanged: (value) {
-                      setState(() => _periodoAtual = value);
+                      setState(() {
+                        _periodoAtual = value;
+                        _periodoAnterior = value == null
+                            ? null
+                            : _salesTrendAutoPreviousRange(value);
+                      });
                     },
                   ),
                   SizedBox(height: tokens.contentSpacing),
@@ -1860,6 +2225,8 @@ class _SalesProdutoTendenciaFiltersSheetState
                     firstDate: DateTime(2000),
                     lastDate: DateTime.now(),
                     density: AppTextFieldDensity.compact,
+                    helperText: _rangeHelperText(_periodoAnterior),
+                    errorText: periodValidationMessage,
                     onChanged: (value) {
                       setState(() => _periodoAnterior = value);
                     },
@@ -1966,6 +2333,35 @@ class _SalesProdutoTendenciaFiltersSheetState
                       setState(() => _pageSize = value);
                     },
                   ),
+                  if (periodValidationMessage != null) ...<Widget>[
+                    SizedBox(height: tokens.contentSpacing),
+                    AppInlineErrorPanel(
+                      variant: AppInlineErrorPanelVariant.plain,
+                      title: l10n.salesProdutoTendenciaFilterApplyDisabledTitle,
+                      message: periodValidationMessage,
+                      belowMessage: Text(
+                        l10n.salesProdutoTendenciaFilterApplyDisabledHint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      actions: Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: _periodoAtual == null
+                              ? null
+                              : _autoAdjustPreviousPeriod,
+                          icon: const Icon(
+                            Icons.auto_fix_high_rounded,
+                            size: 18,
+                          ),
+                          label: Text(
+                            l10n.salesProdutoTendenciaFilterAutoAdjustPreviousAction,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -37,7 +37,9 @@ void main() {
 
     test('rejects unsupported classificacao', () {
       final filter = buildValid(classificacao: 'invalida');
-      check(filter.validationError()).equals('classificacao is not allowed');
+      check(filter.validationError()).equals(
+        ProdutoVendidoTendenciaDeVendaFilter.errorClassificacaoNotAllowed,
+      );
     });
 
     test('rejects non-positive codGrupoProduto', () {
@@ -51,6 +53,59 @@ void main() {
       final filter = buildValid(codMarca: -1);
       check(filter.validationError()).equals(
         'codMarca must be > 0 when provided',
+      );
+    });
+
+    test('rejects previous period that does not end before current starts', () {
+      final filter = ProdutoVendidoTendenciaDeVendaFilter(
+        periodoAtualInicio: DateTime(2026, 3),
+        periodoAtualFim: DateTime(2026, 3, 31),
+        periodoAnteriorInicio: DateTime(2026, 3),
+        periodoAnteriorFim: DateTime(2026, 3, 31),
+      );
+
+      check(filter.validationError()).equals(
+        ProdutoVendidoTendenciaDeVendaFilter
+            .errorPeriodoAnteriorMustBeBeforeAtual,
+      );
+    });
+
+    test('accepts equivalent full-month comparison windows', () {
+      final filter = ProdutoVendidoTendenciaDeVendaFilter(
+        periodoAtualInicio: DateTime(2026, 4),
+        periodoAtualFim: DateTime(2026, 4, 30),
+        periodoAnteriorInicio: DateTime(2026, 3),
+        periodoAnteriorFim: DateTime(2026, 3, 31),
+      );
+
+      check(filter.validationError()).isNull();
+    });
+
+    test('rejects full-month windows with different month spans', () {
+      final filter = ProdutoVendidoTendenciaDeVendaFilter(
+        periodoAtualInicio: DateTime(2026, 4),
+        periodoAtualFim: DateTime(2026, 4, 30),
+        periodoAnteriorInicio: DateTime(2026, 2),
+        periodoAnteriorFim: DateTime(2026, 3, 31),
+      );
+
+      check(filter.validationError()).equals(
+        ProdutoVendidoTendenciaDeVendaFilter
+            .errorPeriodsMustCoverEquivalentWindows,
+      );
+    });
+
+    test('rejects custom comparison windows with different inclusive days', () {
+      final filter = ProdutoVendidoTendenciaDeVendaFilter(
+        periodoAtualInicio: DateTime(2026, 4, 10),
+        periodoAtualFim: DateTime(2026, 4, 20),
+        periodoAnteriorInicio: DateTime(2026, 3, 25),
+        periodoAnteriorFim: DateTime(2026, 4, 2),
+      );
+
+      check(filter.validationError()).equals(
+        ProdutoVendidoTendenciaDeVendaFilter
+            .errorPeriodsMustCoverEquivalentWindows,
       );
     });
   });

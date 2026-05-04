@@ -22,6 +22,19 @@ class ProdutoVendidoTendenciaDeVendaFilter {
   static const int maxDateRangeDays = 366;
   static const int defaultPageSize = 20;
   static const int maxPageSize = 500;
+  static const String errorOrigemMustNotBeEmpty = 'origem must not be empty';
+  static const String errorPageMustBePositive = 'page must be >= 1';
+  static const String errorPageSizeMustBePositive = 'pageSize must be >= 1';
+  static const String errorClassificacaoNotAllowed =
+      'classificacao is not allowed';
+  static const String errorPeriodoAtualFimBeforeInicio =
+      'periodoAtualFim must be on or after periodoAtualInicio';
+  static const String errorPeriodoAnteriorFimBeforeInicio =
+      'periodoAnteriorFim must be on or after periodoAnteriorInicio';
+  static const String errorPeriodoAnteriorMustBeBeforeAtual =
+      'periodoAnterior must end before periodoAtual starts';
+  static const String errorPeriodsMustCoverEquivalentWindows =
+      'periodoAtual and periodoAnterior must cover equivalent windows';
   static const Set<String> allowedClassificacoes = <String>{
     'PAROU DE VENDER',
     'NOVO PRODUTO',
@@ -54,13 +67,13 @@ class ProdutoVendidoTendenciaDeVendaFilter {
 
   String? validationError() {
     if (trimmedOrigem.isEmpty) {
-      return 'origem must not be empty';
+      return errorOrigemMustNotBeEmpty;
     }
     if (page < 1) {
-      return 'page must be >= 1';
+      return errorPageMustBePositive;
     }
     if (pageSize < 1) {
-      return 'pageSize must be >= 1';
+      return errorPageSizeMustBePositive;
     }
     if (pageSize > maxPageSize) {
       return 'pageSize must be <= $maxPageSize';
@@ -75,19 +88,19 @@ class ProdutoVendidoTendenciaDeVendaFilter {
     }
     final categoria = normalizedClassificacao;
     if (categoria != null && !allowedClassificacoes.contains(categoria)) {
-      return 'classificacao is not allowed';
+      return errorClassificacaoNotAllowed;
     }
 
     final atualInicio = _toCalendarDate(periodoAtualInicio);
     final atualFim = _toCalendarDate(periodoAtualFim);
     if (atualFim.isBefore(atualInicio)) {
-      return 'periodoAtualFim must be on or after periodoAtualInicio';
+      return errorPeriodoAtualFimBeforeInicio;
     }
 
     final anteriorInicio = _toCalendarDate(periodoAnteriorInicio);
     final anteriorFim = _toCalendarDate(periodoAnteriorFim);
     if (anteriorFim.isBefore(anteriorInicio)) {
-      return 'periodoAnteriorFim must be on or after periodoAnteriorInicio';
+      return errorPeriodoAnteriorFimBeforeInicio;
     }
 
     final atualInclusiveDays = atualFim.difference(atualInicio).inDays + 1;
@@ -101,8 +114,23 @@ class ProdutoVendidoTendenciaDeVendaFilter {
       return 'periodoAnterior must be at most $maxDateRangeDays inclusive days';
     }
 
+    if (!anteriorFim.isBefore(atualInicio)) {
+      return errorPeriodoAnteriorMustBeBeforeAtual;
+    }
+
     if (_periodsOverlap(atualInicio, atualFim, anteriorInicio, anteriorFim)) {
       return 'periodoAtual and periodoAnterior must not overlap';
+    }
+
+    if (!_hasEquivalentComparisonWindow(
+      atualInicio: atualInicio,
+      atualFim: atualFim,
+      anteriorInicio: anteriorInicio,
+      anteriorFim: anteriorFim,
+      atualInclusiveDays: atualInclusiveDays,
+      anteriorInclusiveDays: anteriorInclusiveDays,
+    )) {
+      return errorPeriodsMustCoverEquivalentWindows;
     }
 
     return null;
@@ -127,5 +155,40 @@ class ProdutoVendidoTendenciaDeVendaFilter {
     DateTime bEnd,
   ) {
     return !aEnd.isBefore(bStart) && !bEnd.isBefore(aStart);
+  }
+
+  bool _hasEquivalentComparisonWindow({
+    required DateTime atualInicio,
+    required DateTime atualFim,
+    required DateTime anteriorInicio,
+    required DateTime anteriorFim,
+    required int atualInclusiveDays,
+    required int anteriorInclusiveDays,
+  }) {
+    final atualIsCalendarMonthWindow = _isWholeCalendarMonthWindow(
+      atualInicio,
+      atualFim,
+    );
+    final anteriorIsCalendarMonthWindow = _isWholeCalendarMonthWindow(
+      anteriorInicio,
+      anteriorFim,
+    );
+    if (atualIsCalendarMonthWindow || anteriorIsCalendarMonthWindow) {
+      return atualIsCalendarMonthWindow &&
+          anteriorIsCalendarMonthWindow &&
+          _calendarMonthSpan(atualInicio, atualFim) ==
+              _calendarMonthSpan(anteriorInicio, anteriorFim);
+    }
+
+    return atualInclusiveDays == anteriorInclusiveDays;
+  }
+
+  bool _isWholeCalendarMonthWindow(DateTime start, DateTime end) {
+    final lastDayOfEndMonth = DateTime(end.year, end.month + 1, 0).day;
+    return start.day == 1 && end.day == lastDayOfEndMonth;
+  }
+
+  int _calendarMonthSpan(DateTime start, DateTime end) {
+    return (end.year - start.year) * 12 + end.month - start.month + 1;
   }
 }
