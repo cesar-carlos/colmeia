@@ -3,6 +3,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -114,7 +115,11 @@ void main() {
       chartRestored.tooltipLabelBuilder!(points[1], points[1].salesCount),
       contains(r'R$'),
     );
-    expect(chartRestored.style.minBarWidth, 92);
+    expect(chartRestored.style.minBarWidth, isNull);
+    expect(
+      AppChartEngineCartesianBarGeometryDefaults.minCategorySlotWidth,
+      128,
+    );
     expect(
       chartRestored.style.animationDuration,
       const Duration(milliseconds: 350),
