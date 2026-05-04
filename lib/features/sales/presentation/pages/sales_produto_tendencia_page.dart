@@ -23,12 +23,12 @@ import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sal
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
@@ -692,58 +692,79 @@ class _TrendSummarySection extends StatelessWidget {
               ),
             )
           else ...<Widget>[
-            Wrap(
-              spacing: tokens.gapMd,
-              runSpacing: tokens.gapMd,
-              children: <Widget>[
-                _kpiCard(
-                  context,
-                  icon: Icons.trending_up_rounded,
-                  label: l10n.salesProdutoTendenciaKpiGrowing,
-                  value: NumberFormat.decimalPattern(
-                    'pt_BR',
-                  ).format(summary.countGrowing),
-                  color: colors.tertiary,
-                ),
-                _kpiCard(
-                  context,
-                  icon: Icons.trending_down_rounded,
-                  label: l10n.salesProdutoTendenciaKpiFalling,
-                  value: NumberFormat.decimalPattern(
-                    'pt_BR',
-                  ).format(summary.countFalling),
-                  color: colors.error,
-                ),
-                _kpiCard(
-                  context,
-                  icon: Icons.new_releases_outlined,
-                  label: l10n.salesProdutoTendenciaKpiNewProducts,
-                  value: NumberFormat.decimalPattern(
-                    'pt_BR',
-                  ).format(summary.countNew),
-                  color: colors.primary,
-                ),
-                _kpiCard(
-                  context,
-                  icon: Icons.pause_circle_outline_rounded,
-                  label: l10n.salesProdutoTendenciaKpiStopped,
-                  value: NumberFormat.decimalPattern(
-                    'pt_BR',
-                  ).format(summary.countStopped),
-                  color: colors.onSurfaceVariant,
-                ),
-                _kpiCard(
-                  context,
-                  icon: Icons.balance_rounded,
-                  label: l10n.salesProdutoTendenciaKpiNetImpact,
-                  value: NumberFormat.decimalPattern(
-                    'pt_BR',
-                  ).format(summary.netImpact),
-                  color: summary.netImpact >= 0
-                      ? colors.tertiary
-                      : colors.error,
-                ),
-              ],
+            SizedBox(
+              height: tokens.gapMd * 10 + tokens.gapSm,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemCount: 5,
+                separatorBuilder: (_, _) => SizedBox(width: tokens.gapMd),
+                itemBuilder: (context, index) {
+                  final locale = l10n.localeName;
+                  final nf = NumberFormat.decimalPattern(locale);
+                  final tileWidth =
+                      math.max(160, tokens.chartCompactHeight).toDouble();
+                  switch (index) {
+                    case 0:
+                      return SizedBox(
+                        width: tileWidth,
+                        child: _kpiCard(
+                          context,
+                          icon: Icons.trending_up_rounded,
+                          label: l10n.salesProdutoTendenciaKpiGrowing,
+                          value: nf.format(summary.countGrowing),
+                          color: colors.tertiary,
+                        ),
+                      );
+                    case 1:
+                      return SizedBox(
+                        width: tileWidth,
+                        child: _kpiCard(
+                          context,
+                          icon: Icons.trending_down_rounded,
+                          label: l10n.salesProdutoTendenciaKpiFalling,
+                          value: nf.format(summary.countFalling),
+                          color: colors.error,
+                        ),
+                      );
+                    case 2:
+                      return SizedBox(
+                        width: tileWidth,
+                        child: _kpiCard(
+                          context,
+                          icon: Icons.new_releases_outlined,
+                          label: l10n.salesProdutoTendenciaKpiNewProducts,
+                          value: nf.format(summary.countNew),
+                          color: colors.primary,
+                        ),
+                      );
+                    case 3:
+                      return SizedBox(
+                        width: tileWidth,
+                        child: _kpiCard(
+                          context,
+                          icon: Icons.pause_circle_outline_rounded,
+                          label: l10n.salesProdutoTendenciaKpiStopped,
+                          value: nf.format(summary.countStopped),
+                          color: colors.onSurfaceVariant,
+                        ),
+                      );
+                    default:
+                      return SizedBox(
+                        width: tileWidth,
+                        child: _kpiCard(
+                          context,
+                          icon: Icons.balance_rounded,
+                          label: l10n.salesProdutoTendenciaKpiNetImpact,
+                          value: nf.format(summary.netImpact),
+                          color: summary.netImpact >= 0
+                              ? colors.tertiary
+                              : colors.error,
+                        ),
+                      );
+                  }
+                },
+              ),
             ),
             SizedBox(height: tokens.contentSpacing),
             AppComparisonBarChart<_TrendClassBucket>(
@@ -753,18 +774,22 @@ class _TrendSummarySection extends StatelessWidget {
               items: summary.buckets,
               labelBuilder: (bucket) => classLabelBuilder(bucket.classificacao),
               valueBuilder: (bucket) => bucket.count,
-              style: const AppComparisonBarChartStyle(
-                height: 220,
-                showDataLabels: true,
-                xLabelRotation: 25,
-                autoRotateXLabels: false,
+              plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
+              extremeSpreadAccessibilityNotice:
+                  l10n.chartComparisonExtremeValueSpreadNotice,
+              style: salesTrendHomeLikeComparisonBarChartStyle(
+                tokens: tokens,
+                l10n: l10n,
+                yAxisFormat: NumberFormat.decimalPattern(l10n.localeName),
               ),
               dataLabelBuilder: (bucket, value) =>
-                  NumberFormat.decimalPattern('pt_BR').format(bucket.count),
+                  NumberFormat.decimalPattern(l10n.localeName).format(
+                    bucket.count,
+                  ),
               tooltipLabelBuilder: (bucket, value) =>
                   '${classLabelBuilder(bucket.classificacao)} • '
                   '${bucket.count} • '
-                  '${NumberFormat.decimalPattern('pt_BR').format(bucket.impacto.round())}',
+                  '${NumberFormat.decimalPattern(l10n.localeName).format(bucket.impacto.round())}',
             ),
           ],
         ],
@@ -779,14 +804,10 @@ class _TrendSummarySection extends StatelessWidget {
     required String value,
     required Color color,
   }) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    return SizedBox(
-      width: math.max(160, tokens.chartCompactHeight),
-      child: AppMetricStatCard(
-        leading: Icon(icon, color: color),
-        label: label,
-        value: value,
-      ),
+    return AppMetricStatCard(
+      leading: Icon(icon, color: color),
+      label: label,
+      value: value,
     );
   }
 }
@@ -840,23 +861,31 @@ class _TrendTopMoversSection extends StatelessWidget {
             LayoutBuilder(
               builder: (context, constraints) {
                 final isWide = constraints.maxWidth >= 900;
+                final chartAxisFormat = NumberFormat.decimalPattern(
+                  l10n.localeName,
+                );
                 final gainersChart =
                     AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
                       title: l10n.salesProdutoTendenciaTopGainersTitle,
                       items: topGainers,
                       labelBuilder: (row) => row.nomeProduto,
                       valueBuilder: (row) => row.percentualTendencia,
-                      style: const AppComparisonBarChartStyle(
-                        height: 260,
-                        showDataLabels: true,
+                      plotFloorAccessibilityNotice:
+                          l10n.chartComparisonPlotFloorNotice,
+                      extremeSpreadAccessibilityNotice:
+                          l10n.chartComparisonExtremeValueSpreadNotice,
+                      style: salesTrendHomeLikeComparisonBarChartStyle(
+                        tokens: tokens,
+                        l10n: l10n,
+                        yAxisFormat: chartAxisFormat,
+                        minPlottedValueShareOfMax: 0.03,
                       ),
                       dataLabelBuilder: (row, value) =>
                           '${row.percentualTendencia.toStringAsFixed(1)}%',
                       tooltipLabelBuilder: (row, value) =>
                           '${row.nomeProduto} • '
                           '${row.percentualTendencia.toStringAsFixed(2)}% • '
-                          '${NumberFormat.decimalPattern('pt_BR').format(row.diferenca.round())}',
-                      preset: AppChartPreset.compact,
+                          '${NumberFormat.decimalPattern(l10n.localeName).format(row.diferenca.round())}',
                     );
                 final losersChart =
                     AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
@@ -864,17 +893,22 @@ class _TrendTopMoversSection extends StatelessWidget {
                       items: topLosers,
                       labelBuilder: (row) => row.nomeProduto,
                       valueBuilder: (row) => row.percentualTendencia.abs(),
-                      style: const AppComparisonBarChartStyle(
-                        height: 260,
-                        showDataLabels: true,
+                      plotFloorAccessibilityNotice:
+                          l10n.chartComparisonPlotFloorNotice,
+                      extremeSpreadAccessibilityNotice:
+                          l10n.chartComparisonExtremeValueSpreadNotice,
+                      style: salesTrendHomeLikeComparisonBarChartStyle(
+                        tokens: tokens,
+                        l10n: l10n,
+                        yAxisFormat: chartAxisFormat,
+                        minPlottedValueShareOfMax: 0.03,
                       ),
                       dataLabelBuilder: (row, value) =>
                           '${row.percentualTendencia.toStringAsFixed(1)}%',
                       tooltipLabelBuilder: (row, value) =>
                           '${row.nomeProduto} • '
                           '${row.percentualTendencia.toStringAsFixed(2)}% • '
-                          '${NumberFormat.decimalPattern('pt_BR').format(row.diferenca.round())}',
-                      preset: AppChartPreset.compact,
+                          '${NumberFormat.decimalPattern(l10n.localeName).format(row.diferenca.round())}',
                     );
                 if (isWide) {
                   return Row(

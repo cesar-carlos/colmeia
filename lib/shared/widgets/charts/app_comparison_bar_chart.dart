@@ -25,10 +25,10 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 ///
 /// **Vertical space:** [height] is the outer box for the Syncfusion chart.
 /// With [showDataLabels] and outer label alignment, the engine applies extra
-/// top margin (see comparison bar chart margin helper) and numeric axis range
-/// padding so labels are not clipped — tightening [height] without adjusting
-/// labels can make bars shorter; prefer tuning [chartPadding] or label
-/// alignment per screen if needed.
+/// top margin (see comparison bar chart margin helper) and numeric axis
+/// [ChartRangePadding.additionalEnd] so labels are not clipped at the plot top —
+/// tightening [height] without adjusting labels can make bars shorter; prefer
+/// tuning [chartPadding] or label alignment per screen if needed.
 ///
 /// All other properties are optional; omitted values fall back to the
 /// preset-driven defaults from the chart theme helper.
@@ -178,7 +178,7 @@ class AppComparisonBarChartStyle {
   final num? interval;
 
   /// When set, applied as [NumericAxis.rangePadding] instead of the engine
-  /// default (outer labels use [ChartRangePadding.normal]).
+  /// default (outer labels use [ChartRangePadding.additionalEnd]).
   ///
   /// Use [ChartRangePadding.additionalEnd] when outer data labels still clip
   /// at the plot top: Syncfusion extends the axis maximum by one tick

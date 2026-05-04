@@ -178,7 +178,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                 showDataLabels: barLabelsVisible,
                 dataLabelAlignment: style.barDataLabelAlignment,
               )
-              ? ChartRangePadding.normal
+              ? ChartRangePadding.additionalEnd
               : ChartRangePadding.auto,
           axisLine: const AxisLine(width: 0),
           majorGridLines: MajorGridLines(

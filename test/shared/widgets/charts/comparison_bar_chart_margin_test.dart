@@ -27,10 +27,12 @@ void main() {
       ),
     );
     expect(margin.top, greaterThanOrEqualTo(32));
+    expect(margin.left, greaterThan(0));
+    expect(margin.right, greaterThan(0));
   });
 
   testWidgets(
-    'resolveComparisonBarChartMargin uses smaller top when value labels are annotations',
+    'resolveComparisonBarChartMargin adds annotation widget inset when labels are annotations',
     (tester) async {
       late EdgeInsets fullMargin;
       late EdgeInsets annotationMargin;
@@ -59,8 +61,10 @@ void main() {
           ),
         ),
       );
-      expect(annotationMargin.top, lessThan(fullMargin.top));
-      expect(annotationMargin.top, greaterThan(0));
+      expect(
+        annotationMargin.top,
+        equals(fullMargin.top + kComparisonBarAnnotationLabelVerticalInset),
+      );
     },
   );
 

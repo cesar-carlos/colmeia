@@ -246,9 +246,10 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 showDataLabels: style.showDataLabels,
                 dataLabelAlignment: _kComparisonBarValueLabelAlignment,
               )
-              // additionalEnd stacks with chart margin top; normal keeps labels
-              // readable without a second tall empty band inside the plot.
-              ? ChartRangePadding.normal
+              // [ChartRangePadding.normal] often leaves the tallest column flush
+              // with the plot top so outer/annotation value labels clip.
+              // [additionalEnd] extends the axis maximum so labels fit inside the plot.
+              ? ChartRangePadding.additionalEnd
               : ChartRangePadding.auto),
           axisLine: const AxisLine(width: 0),
           // Column charts must anchor at zero when [style.minY] is unset.

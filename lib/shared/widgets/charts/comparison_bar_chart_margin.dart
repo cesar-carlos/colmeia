@@ -15,6 +15,12 @@ const double kComparisonBarOuterLabelLineHeightMin = 18;
 /// `R$ 16,7 mil`) and modest [TextScaler] values are not clipped at the chart top.
 const double kComparisonBarOuterLabelLineHeightMax = 50;
 
+/// Vertical padding around bar value text when labels are drawn as
+/// [CartesianChartAnnotation]s (`syncfusion_combo_chart.dart` uses
+/// `EdgeInsets.all(5)`). Top margin must include this so tall columns do not
+/// clip the label at the chart edge.
+const double kComparisonBarAnnotationLabelVerticalInset = 10;
+
 /// Whether data labels sit outside the column and need extra top margin.
 bool comparisonBarChartNeedsOuterDataLabelHeadroom({
   required bool showDataLabels,
@@ -36,8 +42,9 @@ bool comparisonBarChartNeedsOuterDataLabelHeadroom({
 ///
 /// When [valueLabelsRenderedAsChartAnnotations] is true, built-in column
 /// [DataLabelSettings] are typically off and value text is drawn with
-/// [CartesianChartAnnotation] instead. Do not reserve the full built-in outer
-/// label band (that would leave a tall empty strip above the plot).
+/// [CartesianChartAnnotation] instead. The top margin still must reserve one
+/// line of label height (same as built-in outer labels) plus annotation padding,
+/// otherwise a column near the axis maximum clips its value label at the plot top.
 EdgeInsets resolveComparisonBarChartMargin(
   BuildContext context, {
   required bool showDataLabels,
@@ -53,17 +60,6 @@ EdgeInsets resolveComparisonBarChartMargin(
     dataLabelAlignment: dataLabelAlignment,
   )) {
     return base;
-  }
-
-  if (valueLabelsRenderedAsChartAnnotations) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>();
-    final textScaler = MediaQuery.textScalerOf(context);
-    final lift = dataLabelOffset?.dy ?? 0;
-    final bump = textScaler.scale(tokens?.gapMd ?? 12.0) +
-        textScaler.scale(tokens?.gapSm ?? 8.0) +
-        lift.abs();
-    final top = math.max(base.top, bump) + outerDataLabelTopReserve;
-    return EdgeInsets.fromLTRB(base.left, top, base.right, base.bottom);
   }
 
   final theme = Theme.of(context);
@@ -89,7 +85,13 @@ EdgeInsets resolveComparisonBarChartMargin(
     textScaler.scale(tokens?.gapSm ?? 8.0),
     tokens?.gapMd ?? 12.0,
   );
-  final minTop = estimatedLineHeight + lift.abs() + clearance;
+  var minTop = estimatedLineHeight + lift.abs() + clearance;
+  if (valueLabelsRenderedAsChartAnnotations) {
+    minTop += kComparisonBarAnnotationLabelVerticalInset;
+  }
   final top = math.max(base.top, minTop) + outerDataLabelTopReserve;
-  return EdgeInsets.fromLTRB(base.left, top, base.right, base.bottom);
+  final hPad = textScaler.scale(tokens?.gapMd ?? 12.0);
+  final left = math.max(base.left, hPad);
+  final right = math.max(base.right, hPad);
+  return EdgeInsets.fromLTRB(left, top, right, base.bottom);
 }
