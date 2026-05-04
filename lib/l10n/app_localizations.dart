@@ -3646,6 +3646,24 @@ abstract class AppLocalizations {
   /// **'Paginated detail with product, classification, group, and brand.'**
   String get salesProdutoTendenciaDetailsSubtitle;
 
+  /// No description provided for @salesProdutoTendenciaDetailsHorizontalScrollCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe sideways to see all columns.'**
+  String get salesProdutoTendenciaDetailsHorizontalScrollCaption;
+
+  /// No description provided for @salesProdutoTendenciaFiltersAppliedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters applied. Refreshing data.'**
+  String get salesProdutoTendenciaFiltersAppliedSnackbar;
+
+  /// No description provided for @salesProdutoTendenciaLoadingTrendSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading sales trend…'**
+  String get salesProdutoTendenciaLoadingTrendSemantics;
+
   /// No description provided for @salesProdutoTendenciaDetailsEntityLabel.
   ///
   /// In en, this message translates to:

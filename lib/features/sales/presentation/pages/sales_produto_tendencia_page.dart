@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
@@ -29,7 +30,9 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
@@ -39,6 +42,40 @@ import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.da
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
+List<ProdutoVendidoTendenciaDeVendaRow> _trendTopGainersRows(
+  List<ProdutoVendidoTendenciaDeVendaRow> rows,
+) {
+  final values =
+      rows.where((r) => r.percentualTendencia > 0).toList(growable: false)
+        ..sort((a, b) {
+          final byPercent = b.percentualTendencia.compareTo(
+            a.percentualTendencia,
+          );
+          if (byPercent != 0) {
+            return byPercent;
+          }
+          return b.diferenca.compareTo(a.diferenca);
+        });
+  return values.take(5).toList(growable: false);
+}
+
+List<ProdutoVendidoTendenciaDeVendaRow> _trendTopLosersRows(
+  List<ProdutoVendidoTendenciaDeVendaRow> rows,
+) {
+  final values =
+      rows.where((r) => r.percentualTendencia < 0).toList(growable: false)
+        ..sort((a, b) {
+          final byPercent = a.percentualTendencia.compareTo(
+            b.percentualTendencia,
+          );
+          if (byPercent != 0) {
+            return byPercent;
+          }
+          return a.diferenca.compareTo(b.diferenca);
+        });
+  return values.take(5).toList(growable: false);
+}
 
 class SalesProdutoTendenciaPage extends StatefulWidget {
   const SalesProdutoTendenciaPage({super.key});
@@ -361,6 +398,161 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
     return err is AppFailure ? err.displayMessage : failure.toString();
   }
 
+  void _showFiltersAppliedSnackBar() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger == null) {
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(
+              context,
+            ).salesProdutoTendenciaFiltersAppliedSnackbar,
+          ),
+        ),
+      );
+    });
+  }
+
+  void _openClassificacaoFullscreen() {
+    final l10n = AppLocalizations.of(context);
+    final buckets = List<_TrendClassBucket>.of(
+      _buildSummary(_summaryRows).buckets,
+      growable: false,
+    );
+    unawaited(
+      context.pushChartFullscreen<void>(
+        extra: AppChartFullscreenRouteExtra(
+          title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+          subtitle: l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle,
+          chartSemanticsLabel:
+              l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+          chartBuilder: (fullscreenContext) {
+            final ft = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            final fl10n = AppLocalizations.of(fullscreenContext);
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return AppComparisonBarChart<_TrendClassBucket>(
+                  items: buckets,
+                  labelBuilder: (b) =>
+                      _classificacaoLabel(fl10n, b.classificacao),
+                  valueBuilder: (b) => b.count,
+                  plotFloorAccessibilityNotice:
+                      fl10n.chartComparisonPlotFloorNotice,
+                  extremeSpreadAccessibilityNotice:
+                      fl10n.chartComparisonExtremeValueSpreadNotice,
+                  style: salesTrendHomeLikeComparisonBarChartStyle(
+                    tokens: ft,
+                    l10n: fl10n,
+                    yAxisFormat: NumberFormat.decimalPattern(fl10n.localeName),
+                    heightOverride: constraints.maxHeight,
+                  ),
+                  dataLabelBuilder: (bucket, _) =>
+                      NumberFormat.decimalPattern(fl10n.localeName).format(
+                        bucket.count,
+                      ),
+                  tooltipLabelBuilder: (bucket, _) =>
+                      '${_classificacaoLabel(fl10n, bucket.classificacao)} • '
+                      '${bucket.count} • '
+                      '${NumberFormat.decimalPattern(fl10n.localeName).format(bucket.impacto.round())}',
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openGainersFullscreen() {
+    final snap = List<ProdutoVendidoTendenciaDeVendaRow>.of(
+      _trendTopGainersRows(_rows),
+      growable: false,
+    );
+    _pushTopMoversChartFullscreen(
+      title: AppLocalizations.of(context).salesProdutoTendenciaTopGainersTitle,
+      subtitle: AppLocalizations.of(
+        context,
+      ).salesProdutoTendenciaTopMoversSubtitle,
+      items: snap,
+      useAbsolutePercentForLosers: false,
+    );
+  }
+
+  void _openLosersFullscreen() {
+    final snap = List<ProdutoVendidoTendenciaDeVendaRow>.of(
+      _trendTopLosersRows(_rows),
+      growable: false,
+    );
+    _pushTopMoversChartFullscreen(
+      title: AppLocalizations.of(context).salesProdutoTendenciaTopLosersTitle,
+      subtitle: AppLocalizations.of(
+        context,
+      ).salesProdutoTendenciaTopMoversSubtitle,
+      items: snap,
+      useAbsolutePercentForLosers: true,
+    );
+  }
+
+  void _pushTopMoversChartFullscreen({
+    required String title,
+    required String subtitle,
+    required List<ProdutoVendidoTendenciaDeVendaRow> items,
+    required bool useAbsolutePercentForLosers,
+  }) {
+    unawaited(
+      context.pushChartFullscreen<void>(
+        extra: AppChartFullscreenRouteExtra(
+          title: title,
+          subtitle: subtitle,
+          chartSemanticsLabel: title,
+          chartBuilder: (fullscreenContext) {
+            final ft = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            final fl10n = AppLocalizations.of(fullscreenContext);
+            final axisFormat = NumberFormat.decimalPattern(fl10n.localeName);
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
+                  items: items,
+                  labelBuilder: (row) => row.nomeProduto,
+                  valueBuilder: (row) => useAbsolutePercentForLosers
+                      ? row.percentualTendencia.abs()
+                      : row.percentualTendencia,
+                  plotFloorAccessibilityNotice:
+                      fl10n.chartComparisonPlotFloorNotice,
+                  extremeSpreadAccessibilityNotice:
+                      fl10n.chartComparisonExtremeValueSpreadNotice,
+                  style: salesTrendHomeLikeComparisonBarChartStyle(
+                    tokens: ft,
+                    l10n: fl10n,
+                    yAxisFormat: axisFormat,
+                    minPlottedValueShareOfMax: 0.03,
+                    heightOverride: constraints.maxHeight,
+                  ),
+                  dataLabelBuilder: (row, _) =>
+                      '${row.percentualTendencia.toStringAsFixed(1)}%',
+                  tooltipLabelBuilder: (row, _) =>
+                      '${row.nomeProduto} • '
+                      '${row.percentualTendencia.toStringAsFixed(2)}% • '
+                      '${NumberFormat.decimalPattern(fl10n.localeName).format(row.diferenca.round())}',
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   void _onFiltersChanged(Map<String, Object?> next) {
     final nextAgentId = (next['agentId'] as String?)?.trim();
     final normalizedAgentId = nextAgentId == null || nextAgentId.isEmpty
@@ -408,6 +600,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
     unawaited(_prefs.setSelectedAgentId(normalizedAgentId));
     unawaited(_persistFilters());
     unawaited(_reload());
+    _showFiltersAppliedSnackBar();
   }
 
   Future<void> _persistFilters() {
@@ -565,80 +758,89 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
         .whereType<Object>()
         .length;
 
-    return SingleChildScrollView(
-      padding: context.pageScrollPadding(
-        tokens,
-        horizontalAdjustment:
-            AppPageSpacingPresets.dashboardHorizontalAdjustment,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppShellPageIntro(
-            sectionLabel: l10n.shellNavSalesLabel,
-            title: l10n.salesCardProdutoTendenciaTitle,
-            subtitle: l10n.salesProdutoTendenciaPageSubtitle,
-          ),
-          SizedBox(height: tokens.sectionSpacing),
-          SalesCardFilterTrigger(
-            onTap: () => unawaited(_openFiltersSheet()),
-            buttonSemanticsLabel: l10n.reportFiltersButton,
-            summaryItems: <SalesCardFilterSummaryItem>[
-              SalesCardFilterSummaryItem(
-                label: l10n.dashboardHomeFiltersAgentsLabel,
-                value: selectedAgentName,
-              ),
-              SalesCardFilterSummaryItem(
-                label: l10n.salesProdutoTendenciaFilterCurrentPeriod,
-                value: _dateRangeLabel(_periodoAtual),
-              ),
-              SalesCardFilterSummaryItem(
-                label: l10n.reportFiltersTitle,
-                value: l10n.salesProdutoTendenciaActiveFiltersSummary(
-                  activeDetailFilterCount,
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _reload();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: context.pageScrollPadding(
+          tokens,
+          horizontalAdjustment:
+              AppPageSpacingPresets.dashboardHorizontalAdjustment,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppShellPageIntro(
+              sectionLabel: l10n.shellNavSalesLabel,
+              title: l10n.salesCardProdutoTendenciaTitle,
+              subtitle: l10n.salesProdutoTendenciaPageSubtitle,
+            ),
+            SizedBox(height: tokens.sectionSpacing),
+            SalesCardFilterTrigger(
+              onTap: () => unawaited(_openFiltersSheet()),
+              buttonSemanticsLabel: l10n.reportFiltersButton,
+              summaryItems: <SalesCardFilterSummaryItem>[
+                SalesCardFilterSummaryItem(
+                  label: l10n.dashboardHomeFiltersAgentsLabel,
+                  value: selectedAgentName,
                 ),
+                SalesCardFilterSummaryItem(
+                  label: l10n.salesProdutoTendenciaFilterCurrentPeriod,
+                  value: _dateRangeLabel(_periodoAtual),
+                ),
+                SalesCardFilterSummaryItem(
+                  label: l10n.reportFiltersTitle,
+                  value: l10n.salesProdutoTendenciaActiveFiltersSummary(
+                    activeDetailFilterCount,
+                  ),
+                ),
+              ],
+              enabled: !_loading,
+            ),
+            SizedBox(height: tokens.sectionSpacing),
+            if (_selectedAgentId == null) ...<Widget>[
+              AppInlineErrorPanel(
+                tone: AppInlinePanelTone.informational,
+                title: l10n.salesAgentRequiredTitle,
+                message: l10n.salesAgentRequiredMessage,
+              ),
+            ] else if (_error != null && _error!.trim().isNotEmpty) ...<Widget>[
+              AppInlineErrorPanel(
+                message: _error!,
+                onRetry: () => unawaited(_reload()),
+              ),
+            ] else ...<Widget>[
+              _TrendSummarySection(
+                l10n: l10n,
+                summaryRows: _summaryRows,
+                loading: _loading,
+                classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
+                onOpenClassificacaoFullscreen: _openClassificacaoFullscreen,
+              ),
+              SizedBox(height: tokens.sectionSpacing),
+              _TrendTopMoversSection(
+                l10n: l10n,
+                rows: _rows,
+                loading: _loading,
+                onOpenGainersFullscreen: _openGainersFullscreen,
+                onOpenLosersFullscreen: _openLosersFullscreen,
+              ),
+              SizedBox(height: tokens.sectionSpacing),
+              _TrendDetailsSection(
+                l10n: l10n,
+                rows: _rows,
+                loading: _loading,
+                currentPage: _page,
+                pageSize: _pageSize,
+                onPageSelected: _onPageSelected,
+                onPageSizeChanged: _onPageSizeChanged,
+                classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
               ),
             ],
-            enabled: !_loading,
-          ),
-          SizedBox(height: tokens.sectionSpacing),
-          if (_selectedAgentId == null) ...<Widget>[
-            AppInlineErrorPanel(
-              tone: AppInlinePanelTone.informational,
-              title: l10n.salesAgentRequiredTitle,
-              message: l10n.salesAgentRequiredMessage,
-            ),
-          ] else if (_error != null && _error!.trim().isNotEmpty) ...<Widget>[
-            AppInlineErrorPanel(
-              message: _error!,
-              onRetry: () => unawaited(_reload()),
-            ),
-          ] else ...<Widget>[
-            _TrendSummarySection(
-              l10n: l10n,
-              summaryRows: _summaryRows,
-              loading: _loading,
-              classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
-            ),
-            SizedBox(height: tokens.sectionSpacing),
-            _TrendTopMoversSection(
-              l10n: l10n,
-              rows: _rows,
-              loading: _loading,
-            ),
-            SizedBox(height: tokens.sectionSpacing),
-            _TrendDetailsSection(
-              l10n: l10n,
-              rows: _rows,
-              loading: _loading,
-              currentPage: _page,
-              pageSize: _pageSize,
-              onPageSelected: _onPageSelected,
-              onPageSizeChanged: _onPageSizeChanged,
-              classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -650,12 +852,14 @@ class _TrendSummarySection extends StatelessWidget {
     required this.summaryRows,
     required this.loading,
     required this.classLabelBuilder,
+    required this.onOpenClassificacaoFullscreen,
   });
 
   final AppLocalizations l10n;
   final List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows;
   final bool loading;
   final String Function(String value) classLabelBuilder;
+  final VoidCallback onOpenClassificacaoFullscreen;
 
   @override
   Widget build(BuildContext context) {
@@ -663,6 +867,7 @@ class _TrendSummarySection extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
     final summary = _buildSummary(summaryRows);
+    final chartBlockHeight = AppComparisonBarChart.loadingBlockHeight(tokens);
 
     return AppSectionCard(
       child: Column(
@@ -683,7 +888,35 @@ class _TrendSummarySection extends StatelessWidget {
           ),
           SizedBox(height: tokens.contentSpacing),
           if (loading && summaryRows.isEmpty)
-            const Center(child: CircularProgressIndicator())
+            AppSkeleton(
+              enabled: true,
+              loadingSemanticsLabel:
+                  l10n.salesProdutoTendenciaLoadingTrendSemantics,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _trendSummaryKpiStrip(
+                    context,
+                    summary: _buildSummary(
+                      const <ProdutoVendidoTendenciaDeVendaSummaryRow>[],
+                    ),
+                    tokens: tokens,
+                    colors: colors,
+                  ),
+                  SizedBox(height: tokens.contentSpacing),
+                  SizedBox(
+                    height: chartBlockHeight,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+                        style: theme.textTheme.titleSmall,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
           else if (summaryRows.isEmpty)
             Text(
               l10n.salesProdutoTendenciaNoData,
@@ -692,79 +925,11 @@ class _TrendSummarySection extends StatelessWidget {
               ),
             )
           else ...<Widget>[
-            SizedBox(
-              height: tokens.gapMd * 10 + tokens.gapSm,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: 5,
-                separatorBuilder: (_, _) => SizedBox(width: tokens.gapMd),
-                itemBuilder: (context, index) {
-                  final locale = l10n.localeName;
-                  final nf = NumberFormat.decimalPattern(locale);
-                  final tileWidth =
-                      math.max(160, tokens.chartCompactHeight).toDouble();
-                  switch (index) {
-                    case 0:
-                      return SizedBox(
-                        width: tileWidth,
-                        child: _kpiCard(
-                          context,
-                          icon: Icons.trending_up_rounded,
-                          label: l10n.salesProdutoTendenciaKpiGrowing,
-                          value: nf.format(summary.countGrowing),
-                          color: colors.tertiary,
-                        ),
-                      );
-                    case 1:
-                      return SizedBox(
-                        width: tileWidth,
-                        child: _kpiCard(
-                          context,
-                          icon: Icons.trending_down_rounded,
-                          label: l10n.salesProdutoTendenciaKpiFalling,
-                          value: nf.format(summary.countFalling),
-                          color: colors.error,
-                        ),
-                      );
-                    case 2:
-                      return SizedBox(
-                        width: tileWidth,
-                        child: _kpiCard(
-                          context,
-                          icon: Icons.new_releases_outlined,
-                          label: l10n.salesProdutoTendenciaKpiNewProducts,
-                          value: nf.format(summary.countNew),
-                          color: colors.primary,
-                        ),
-                      );
-                    case 3:
-                      return SizedBox(
-                        width: tileWidth,
-                        child: _kpiCard(
-                          context,
-                          icon: Icons.pause_circle_outline_rounded,
-                          label: l10n.salesProdutoTendenciaKpiStopped,
-                          value: nf.format(summary.countStopped),
-                          color: colors.onSurfaceVariant,
-                        ),
-                      );
-                    default:
-                      return SizedBox(
-                        width: tileWidth,
-                        child: _kpiCard(
-                          context,
-                          icon: Icons.balance_rounded,
-                          label: l10n.salesProdutoTendenciaKpiNetImpact,
-                          value: nf.format(summary.netImpact),
-                          color: summary.netImpact >= 0
-                              ? colors.tertiary
-                              : colors.error,
-                        ),
-                      );
-                  }
-                },
-              ),
+            _trendSummaryKpiStrip(
+              context,
+              summary: summary,
+              tokens: tokens,
+              colors: colors,
             ),
             SizedBox(height: tokens.contentSpacing),
             AppComparisonBarChart<_TrendClassBucket>(
@@ -774,6 +939,9 @@ class _TrendSummarySection extends StatelessWidget {
               items: summary.buckets,
               labelBuilder: (bucket) => classLabelBuilder(bucket.classificacao),
               valueBuilder: (bucket) => bucket.count,
+              onOpenFullscreen: onOpenClassificacaoFullscreen,
+              openFullscreenTooltip: l10n.chartOpenFullscreenTooltip,
+              openFullscreenSemanticLabel: l10n.chartOpenFullscreenTooltip,
               plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
               extremeSpreadAccessibilityNotice:
                   l10n.chartComparisonExtremeValueSpreadNotice,
@@ -793,6 +961,88 @@ class _TrendSummarySection extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _trendSummaryKpiStrip(
+    BuildContext context, {
+    required _TrendSummary summary,
+    required AppThemeTokens tokens,
+    required AppColors colors,
+  }) {
+    return SizedBox(
+      height: tokens.gapMd * 10 + tokens.gapSm,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+        physics: const BouncingScrollPhysics(),
+        itemCount: 5,
+        separatorBuilder: (_, _) => SizedBox(width: tokens.gapMd),
+        itemBuilder: (context, index) {
+          final locale = l10n.localeName;
+          final nf = NumberFormat.decimalPattern(locale);
+          final tileWidth = math.max(160, tokens.chartCompactHeight).toDouble();
+          switch (index) {
+            case 0:
+              return SizedBox(
+                width: tileWidth,
+                child: _kpiCard(
+                  context,
+                  icon: Icons.trending_up_rounded,
+                  label: l10n.salesProdutoTendenciaKpiGrowing,
+                  value: nf.format(summary.countGrowing),
+                  color: colors.tertiary,
+                ),
+              );
+            case 1:
+              return SizedBox(
+                width: tileWidth,
+                child: _kpiCard(
+                  context,
+                  icon: Icons.trending_down_rounded,
+                  label: l10n.salesProdutoTendenciaKpiFalling,
+                  value: nf.format(summary.countFalling),
+                  color: colors.error,
+                ),
+              );
+            case 2:
+              return SizedBox(
+                width: tileWidth,
+                child: _kpiCard(
+                  context,
+                  icon: Icons.new_releases_outlined,
+                  label: l10n.salesProdutoTendenciaKpiNewProducts,
+                  value: nf.format(summary.countNew),
+                  color: colors.primary,
+                ),
+              );
+            case 3:
+              return SizedBox(
+                width: tileWidth,
+                child: _kpiCard(
+                  context,
+                  icon: Icons.pause_circle_outline_rounded,
+                  label: l10n.salesProdutoTendenciaKpiStopped,
+                  value: nf.format(summary.countStopped),
+                  color: colors.onSurfaceVariant,
+                ),
+              );
+            default:
+              return SizedBox(
+                width: tileWidth,
+                child: _kpiCard(
+                  context,
+                  icon: Icons.balance_rounded,
+                  label: l10n.salesProdutoTendenciaKpiNetImpact,
+                  value: nf.format(summary.netImpact),
+                  color: summary.netImpact >= 0
+                      ? colors.tertiary
+                      : colors.error,
+                ),
+              );
+          }
+        },
       ),
     );
   }
@@ -817,18 +1067,23 @@ class _TrendTopMoversSection extends StatelessWidget {
     required this.l10n,
     required this.rows,
     required this.loading,
+    required this.onOpenGainersFullscreen,
+    required this.onOpenLosersFullscreen,
   });
 
   final AppLocalizations l10n;
   final List<ProdutoVendidoTendenciaDeVendaRow> rows;
   final bool loading;
+  final VoidCallback onOpenGainersFullscreen;
+  final VoidCallback onOpenLosersFullscreen;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final topGainers = _topGainers(rows);
-    final topLosers = _topLosers(rows);
+    final topGainers = _trendTopGainersRows(rows);
+    final topLosers = _trendTopLosersRows(rows);
+    final chartBlockHeight = AppComparisonBarChart.loadingBlockHeight(tokens);
 
     return AppSectionCard(
       child: Column(
@@ -849,7 +1104,111 @@ class _TrendTopMoversSection extends StatelessWidget {
           ),
           SizedBox(height: tokens.contentSpacing),
           if (loading && rows.isEmpty)
-            const Center(child: CircularProgressIndicator())
+            AppSkeleton(
+              enabled: true,
+              loadingSemanticsLabel:
+                  l10n.salesProdutoTendenciaLoadingTrendSemantics,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final titleStyle = theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  );
+                  final wideSkeleton = Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            Text(
+                              l10n.salesProdutoTendenciaTopGainersTitle,
+                              style: titleStyle,
+                            ),
+                            SizedBox(height: tokens.gapSm),
+                            SizedBox(
+                              height: chartBlockHeight,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  l10n.salesProdutoTendenciaTopGainersTitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: tokens.gapMd),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            Text(
+                              l10n.salesProdutoTendenciaTopLosersTitle,
+                              style: titleStyle,
+                            ),
+                            SizedBox(height: tokens.gapSm),
+                            SizedBox(
+                              height: chartBlockHeight,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  l10n.salesProdutoTendenciaTopLosersTitle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                  final narrowSkeleton = Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Text(
+                        l10n.salesProdutoTendenciaTopGainersTitle,
+                        style: titleStyle,
+                      ),
+                      SizedBox(height: tokens.gapSm),
+                      SizedBox(
+                        height: chartBlockHeight,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            l10n.salesProdutoTendenciaTopGainersTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: tokens.gapMd),
+                      Text(
+                        l10n.salesProdutoTendenciaTopLosersTitle,
+                        style: titleStyle,
+                      ),
+                      SizedBox(height: tokens.gapSm),
+                      SizedBox(
+                        height: chartBlockHeight,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            l10n.salesProdutoTendenciaTopLosersTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                  return constraints.maxWidth >= 900
+                      ? wideSkeleton
+                      : narrowSkeleton;
+                },
+              ),
+            )
           else if (rows.isEmpty)
             Text(
               l10n.salesProdutoTendenciaNoData,
@@ -870,6 +1229,10 @@ class _TrendTopMoversSection extends StatelessWidget {
                       items: topGainers,
                       labelBuilder: (row) => row.nomeProduto,
                       valueBuilder: (row) => row.percentualTendencia,
+                      onOpenFullscreen: onOpenGainersFullscreen,
+                      openFullscreenTooltip: l10n.chartOpenFullscreenTooltip,
+                      openFullscreenSemanticLabel:
+                          l10n.chartOpenFullscreenTooltip,
                       plotFloorAccessibilityNotice:
                           l10n.chartComparisonPlotFloorNotice,
                       extremeSpreadAccessibilityNotice:
@@ -880,7 +1243,7 @@ class _TrendTopMoversSection extends StatelessWidget {
                         yAxisFormat: chartAxisFormat,
                         minPlottedValueShareOfMax: 0.03,
                       ),
-                      dataLabelBuilder: (row, value) =>
+                      dataLabelBuilder: (row, _) =>
                           '${row.percentualTendencia.toStringAsFixed(1)}%',
                       tooltipLabelBuilder: (row, value) =>
                           '${row.nomeProduto} • '
@@ -893,6 +1256,10 @@ class _TrendTopMoversSection extends StatelessWidget {
                       items: topLosers,
                       labelBuilder: (row) => row.nomeProduto,
                       valueBuilder: (row) => row.percentualTendencia.abs(),
+                      onOpenFullscreen: onOpenLosersFullscreen,
+                      openFullscreenTooltip: l10n.chartOpenFullscreenTooltip,
+                      openFullscreenSemanticLabel:
+                          l10n.chartOpenFullscreenTooltip,
                       plotFloorAccessibilityNotice:
                           l10n.chartComparisonPlotFloorNotice,
                       extremeSpreadAccessibilityNotice:
@@ -903,7 +1270,7 @@ class _TrendTopMoversSection extends StatelessWidget {
                         yAxisFormat: chartAxisFormat,
                         minPlottedValueShareOfMax: 0.03,
                       ),
-                      dataLabelBuilder: (row, value) =>
+                      dataLabelBuilder: (row, _) =>
                           '${row.percentualTendencia.toStringAsFixed(1)}%',
                       tooltipLabelBuilder: (row, value) =>
                           '${row.nomeProduto} • '
@@ -932,40 +1299,6 @@ class _TrendTopMoversSection extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  List<ProdutoVendidoTendenciaDeVendaRow> _topGainers(
-    List<ProdutoVendidoTendenciaDeVendaRow> rows,
-  ) {
-    final values =
-        rows.where((row) => row.percentualTendencia > 0).toList(growable: false)
-          ..sort((a, b) {
-            final byPercent = b.percentualTendencia.compareTo(
-              a.percentualTendencia,
-            );
-            if (byPercent != 0) {
-              return byPercent;
-            }
-            return b.diferenca.compareTo(a.diferenca);
-          });
-    return values.take(5).toList(growable: false);
-  }
-
-  List<ProdutoVendidoTendenciaDeVendaRow> _topLosers(
-    List<ProdutoVendidoTendenciaDeVendaRow> rows,
-  ) {
-    final values =
-        rows.where((row) => row.percentualTendencia < 0).toList(growable: false)
-          ..sort((a, b) {
-            final byPercent = a.percentualTendencia.compareTo(
-              b.percentualTendencia,
-            );
-            if (byPercent != 0) {
-              return byPercent;
-            }
-            return a.diferenca.compareTo(b.diferenca);
-          });
-    return values.take(5).toList(growable: false);
   }
 }
 
@@ -1020,9 +1353,47 @@ class _TrendDetailsSection extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (rows.isNotEmpty) ...<Widget>[
+            SizedBox(height: tokens.gapXs),
+            Text(
+              l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           SizedBox(height: tokens.contentSpacing),
           if (loading && rows.isEmpty)
-            const Center(child: CircularProgressIndicator())
+            AppSkeleton(
+              enabled: true,
+              loadingSemanticsLabel:
+                  l10n.salesProdutoTendenciaLoadingTrendSemantics,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (var i = 0; i < 5; i++) ...<Widget>[
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: tokens.gapSm,
+                        vertical: tokens.gapSm,
+                      ),
+                      child: const Text(
+                        '—',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (i < 4)
+                      Divider(
+                        height: tokens.gapMd * 2,
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.35,
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            )
           else if (rows.isEmpty)
             Text(
               l10n.salesProdutoTendenciaNoData,
@@ -1031,25 +1402,57 @@ class _TrendDetailsSection extends StatelessWidget {
               ),
             )
           else ...<Widget>[
-            _TrendDetailsTableHeader(l10n: l10n),
-            Divider(
-              height: tokens.gapMd * 2,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: rows.length,
-              separatorBuilder: (_, _) => Divider(
-                height: tokens.gapMd * 2,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
-              ),
-              itemBuilder: (context, index) {
-                final row = rows[index];
-                return _TrendDetailsRow(
-                  row: row,
-                  l10n: l10n,
-                  classLabel: classLabelBuilder(row.classificacao),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final minTable = _TrendDetailsTableLayout.minScrollContentWidth(
+                  tokens,
+                );
+                final outer = constraints.maxWidth;
+                final contentWidth = outer.isFinite && outer > 0
+                    ? math.max(outer, minTable)
+                    : minTable;
+                return ChartHorizontalScrollShell(
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: SizedBox(
+                      width: contentWidth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          _TrendDetailsTableHeader(l10n: l10n),
+                          Divider(
+                            height: tokens.gapMd * 2,
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: rows.length,
+                            separatorBuilder: (_, _) => Divider(
+                              height: tokens.gapMd * 2,
+                              color: theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.35),
+                            ),
+                            itemBuilder: (context, index) {
+                              final row = rows[index];
+                              return _TrendDetailsRow(
+                                row: row,
+                                l10n: l10n,
+                                classLabel: classLabelBuilder(
+                                  row.classificacao,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  semanticsHint:
+                      l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
                 );
               },
             ),
@@ -1089,6 +1492,29 @@ class _TrendDetailsSection extends StatelessWidget {
   }
 }
 
+/// Minimum column widths for the trend details grid so labels stay on one line
+/// when the viewport is narrow; the table scrolls horizontally as a unit.
+abstract final class _TrendDetailsTableLayout {
+  static double _product(AppThemeTokens t) => math.max(220, t.gapMd * 18);
+  static double _classificacao(AppThemeTokens t) => math.max(120, t.gapMd * 10);
+  static double _grupo(AppThemeTokens t) => math.max(132, t.gapMd * 11);
+  static double _marca(AppThemeTokens t) => math.max(100, t.gapMd * 9);
+  static double _delta(AppThemeTokens t) => math.max(104, t.gapMd * 9);
+  static double _percentual(AppThemeTokens t) => math.max(104, t.gapMd * 9);
+
+  static double minWidth(AppThemeTokens t) =>
+      _product(t) +
+      _classificacao(t) +
+      _grupo(t) +
+      _marca(t) +
+      _delta(t) +
+      _percentual(t);
+
+  /// Row [Padding] uses [AppThemeTokens.gapSm] on each horizontal side.
+  static double minScrollContentWidth(AppThemeTokens t) =>
+      minWidth(t) + 2 * t.gapSm;
+}
+
 class _TrendDetailsTableHeader extends StatelessWidget {
   const _TrendDetailsTableHeader({required this.l10n});
 
@@ -1105,34 +1531,37 @@ class _TrendDetailsTableHeader extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Expanded(
-            flex: 3,
+          SizedBox(
+            width: _TrendDetailsTableLayout._product(tokens),
             child: Text(l10n.salesProdutoTendenciaColProduct, style: style),
           ),
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: _TrendDetailsTableLayout._classificacao(tokens),
             child: Text(
               l10n.salesProdutoTendenciaColClassificacao,
               style: style,
             ),
           ),
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: _TrendDetailsTableLayout._grupo(tokens),
             child: Text(l10n.salesProdutoTendenciaColGrupo, style: style),
           ),
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: _TrendDetailsTableLayout._marca(tokens),
             child: Text(l10n.salesProdutoTendenciaColMarca, style: style),
           ),
-          Expanded(
+          SizedBox(
+            width: _TrendDetailsTableLayout._delta(tokens),
             child: Text(
               l10n.salesProdutoTendenciaColDiferenca,
               style: style,
               textAlign: TextAlign.end,
             ),
           ),
-          Expanded(
+          SizedBox(
+            width: _TrendDetailsTableLayout._percentual(tokens),
             child: Text(
               l10n.salesProdutoTendenciaColPercentual,
               style: style,
@@ -1162,67 +1591,81 @@ class _TrendDetailsRow extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final numberFmt = NumberFormat.decimalPattern('pt_BR');
     final percentText = '${row.percentualTendencia.toStringAsFixed(1)}%';
+    const tabularFigures = <FontFeature>[FontFeature.tabularFigures()];
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            flex: 3,
-            child: Text(
-              row.nomeProduto,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              classLabel,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              row.nomeGrupoProduto?.trim().isNotEmpty == true
-                  ? row.nomeGrupoProduto!
-                  : l10n.salesProdutoTendenciaFilterAllOption,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              row.nomeMarca?.trim().isNotEmpty == true
-                  ? row.nomeMarca!
-                  : l10n.salesProdutoTendenciaFilterAllOption,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              numberFmt.format(row.diferenca.round()),
-              textAlign: TextAlign.end,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              percentText,
-              textAlign: TextAlign.end,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: row.percentualTendencia >= 0
-                    ? theme.appColors.tertiary
-                    : theme.appColors.error,
-                fontWeight: FontWeight.w700,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: _TrendDetailsTableLayout._product(tokens),
+              child: Text(
+                row.nomeProduto,
+                softWrap: true,
+                maxLines: 4,
               ),
             ),
-          ),
-        ],
+            SizedBox(
+              width: _TrendDetailsTableLayout._classificacao(tokens),
+              child: Text(
+                classLabel,
+                softWrap: true,
+                maxLines: 3,
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+            SizedBox(
+              width: _TrendDetailsTableLayout._grupo(tokens),
+              child: Text(
+                row.nomeGrupoProduto?.trim().isNotEmpty == true
+                    ? row.nomeGrupoProduto!
+                    : l10n.salesProdutoTendenciaFilterAllOption,
+                softWrap: true,
+                maxLines: 4,
+              ),
+            ),
+            SizedBox(
+              width: _TrendDetailsTableLayout._marca(tokens),
+              child: Text(
+                row.nomeMarca?.trim().isNotEmpty == true
+                    ? row.nomeMarca!
+                    : l10n.salesProdutoTendenciaFilterAllOption,
+                softWrap: true,
+                maxLines: 3,
+              ),
+            ),
+            SizedBox(
+              width: _TrendDetailsTableLayout._delta(tokens),
+              child: Text(
+                numberFmt.format(row.diferenca.round()),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontFeatures: tabularFigures,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: _TrendDetailsTableLayout._percentual(tokens),
+              child: Text(
+                percentText,
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFeatures: tabularFigures,
+                  color: row.percentualTendencia >= 0
+                      ? theme.appColors.tertiary
+                      : theme.appColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

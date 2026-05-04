@@ -2170,6 +2170,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Paginated detail with product, classification, group, and brand.';
 
   @override
+  String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
+      'Swipe sideways to see all columns.';
+
+  @override
+  String get salesProdutoTendenciaFiltersAppliedSnackbar =>
+      'Filters applied. Refreshing data.';
+
+  @override
+  String get salesProdutoTendenciaLoadingTrendSemantics =>
+      'Loading sales trend…';
+
+  @override
   String get salesProdutoTendenciaDetailsEntityLabel => 'rows';
 
   @override

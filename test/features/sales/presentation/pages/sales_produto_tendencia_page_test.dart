@@ -25,6 +25,7 @@ import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_page.dart';
 import 'package:colmeia/features/sales/presentation/routes/sales_routes.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -258,7 +259,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(find.byType(AppSkeleton), findsNWidgets(3));
     expect(find.text('Executive summary'), findsOneWidget);
     expect(find.text('Detailed rows'), findsOneWidget);
 

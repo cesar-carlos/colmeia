@@ -2199,6 +2199,18 @@ class AppLocalizationsPt extends AppLocalizations {
       'Lista paginada com produto, classificacao, grupo e marca.';
 
   @override
+  String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
+      'Deslize para o lado para ver todas as colunas.';
+
+  @override
+  String get salesProdutoTendenciaFiltersAppliedSnackbar =>
+      'Filtros aplicados. Atualizando dados.';
+
+  @override
+  String get salesProdutoTendenciaLoadingTrendSemantics =>
+      'Carregando tendencia de vendas…';
+
+  @override
   String get salesProdutoTendenciaDetailsEntityLabel => 'linhas';
 
   @override
@@ -4476,6 +4488,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesProdutoTendenciaDetailsSubtitle =>
       'Lista paginada com produto, classificacao, grupo e marca.';
+
+  @override
+  String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
+      'Deslize para o lado para ver todas as colunas.';
+
+  @override
+  String get salesProdutoTendenciaFiltersAppliedSnackbar =>
+      'Filtros aplicados. Atualizando dados.';
+
+  @override
+  String get salesProdutoTendenciaLoadingTrendSemantics =>
+      'Carregando tendencia de vendas…';
 
   @override
   String get salesProdutoTendenciaDetailsEntityLabel => 'linhas';
