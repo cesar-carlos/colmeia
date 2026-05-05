@@ -29,7 +29,11 @@ runs:
       run: |
         set -euo pipefail
         if [ ! -f assets/env/local.env ]; then
-          cp assets/env/.env.example assets/env/local.env
+          cat > assets/env/local.env <<'EOF'
+          # CI placeholder asset.
+          # Keep this file comment-only so release builds never bundle
+          # local overrides or secrets by accident.
+          EOF
         fi
 
     - name: Set up Flutter
