@@ -24,6 +24,20 @@ jobs:
         with:
           flutter-version: ${{ vars.FLUTTER_CI_VERSION }}
 
+      - name: Verify versioned Windows release files are synchronized
+        shell: bash
+        run: |
+          set -euo pipefail
+          python installer/update_version.py
+          git diff --exit-code -- installer/setup.iss lib/core/constants/app_version.g.dart
+
+      - name: Test Python release tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s installer/tests -p '*_test.py'
+          python -m unittest discover -s tool/tests -p '*_test.py'
+
       - name: Analyze
         run: flutter analyze --fatal-warnings --no-fatal-infos
 

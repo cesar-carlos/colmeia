@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
+import 'package:colmeia/core/constants/app_version.g.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
+import 'package:colmeia/core/update/windows_auto_update_controller.dart';
 import 'package:colmeia/features/auth/application/usecases/change_password_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/update_current_user_profile_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/upload_client_thumbnail_use_case.dart';
@@ -12,6 +14,7 @@ import 'package:colmeia/features/auth/presentation/widgets/auth_form_text_field.
 import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_field.dart';
 import 'package:colmeia/features/settings/presentation/controllers/client_account_settings_controller.dart';
 import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
+import 'package:colmeia/features/settings/presentation/widgets/windows_auto_update_settings_tile.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/features/user_context/presentation/localization/user_permission_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -50,6 +53,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   late bool _pushNotificationsEnabled;
   late final ClientAccountSettingsController _accountSettingsController;
+  late final WindowsAutoUpdateController _windowsAutoUpdateController;
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -57,6 +61,7 @@ class _SettingsPageState extends State<SettingsPage> {
     super.initState();
     _pushNotificationsEnabled =
         getIt<AppUserPreferencesStore>().pushNotificationsEnabled;
+    _windowsAutoUpdateController = getIt<WindowsAutoUpdateController>();
     _accountSettingsController = ClientAccountSettingsController(
       updateCurrentUserProfileUseCase: getIt<UpdateCurrentUserProfileUseCase>(),
       uploadClientThumbnailUseCase: getIt<UploadClientThumbnailUseCase>(),
@@ -643,6 +648,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: _SettingsPreferencesTab(
                     pushNotificationsEnabled: _pushNotificationsEnabled,
                     themePreferenceLabel: _themePreferenceLabel(themeMode),
+                    windowsAutoUpdateController: _windowsAutoUpdateController,
                     onPushNotificationsChanged: _persistPushNotifications,
                     onAppearanceTap: _showThemeModePicker,
                     onComponentsTap: () => context.push(
@@ -702,7 +708,13 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (context, snapshot) {
             final info = snapshot.data;
             if (info == null) {
-              return const SizedBox.shrink();
+              return Text(
+                _formatVersionLabel(info),
+                textAlign: TextAlign.center,
+                style: typography.caption.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              );
             }
             return Text(
               'Versão ${info.version} (Build ${info.buildNumber})',
@@ -1004,6 +1016,7 @@ class _SettingsPreferencesTab extends StatelessWidget {
   const _SettingsPreferencesTab({
     required this.pushNotificationsEnabled,
     required this.themePreferenceLabel,
+    required this.windowsAutoUpdateController,
     required this.onPushNotificationsChanged,
     required this.onAppearanceTap,
     required this.onComponentsTap,
@@ -1011,6 +1024,7 @@ class _SettingsPreferencesTab extends StatelessWidget {
 
   final bool pushNotificationsEnabled;
   final String themePreferenceLabel;
+  final WindowsAutoUpdateController windowsAutoUpdateController;
   final ValueChanged<bool> onPushNotificationsChanged;
   final VoidCallback onAppearanceTap;
   final VoidCallback onComponentsTap;
@@ -1116,9 +1130,26 @@ class _SettingsPreferencesTab extends StatelessWidget {
           ),
           onTap: onComponentsTap,
         ),
+        SizedBox(height: tokens.gapMd),
+        WindowsAutoUpdateSettingsTile(
+          controller: windowsAutoUpdateController,
+        ),
       ],
     );
   }
+}
+
+String _formatVersionLabel(PackageInfo? info) {
+  if (info == null) {
+    return 'Versao $appVersion';
+  }
+
+  final buildNumber = info.buildNumber.trim();
+  if (buildNumber.isEmpty) {
+    return 'Versao ${info.version}';
+  }
+
+  return 'Versao ${info.version} (Build $buildNumber)';
 }
 
 String _themePreferenceLabel(ThemeMode mode) {

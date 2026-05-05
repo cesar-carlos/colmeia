@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.release.example
 assets/env/local.env
 
 # Miscellaneous
@@ -9,6 +10,7 @@ assets/env/local.env
 *.class
 *.log
 *.pyc
+__pycache__/
 *.swp
 .DS_Store
 .atom/
@@ -39,6 +41,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/installer/dist/
 
 # Symbolication related
 app.*.symbols

@@ -26,6 +26,15 @@ abstract final class AppEnvironment {
     fallback: '',
   );
 
+  /// Sparkle/WinSparkle appcast XML feed used by the Windows updater.
+  /// Prefer `--dart-define=AUTO_UPDATE_FEED_URL=...` for release builds and
+  /// keep dotenv empty for local/mobile builds.
+  static String get autoUpdateFeedUrl => AppEnvironmentResolution.resolveString(
+    fromDefine: const String.fromEnvironment(EnvKeys.autoUpdateFeedUrl),
+    fromDotenv: _dotenvMaybe(EnvKeys.autoUpdateFeedUrl),
+    fallback: '',
+  );
+
   /// When true, initializes Sentry in debug builds if [sentryDsn] is set.
   static bool get sentryDebug => AppEnvironmentResolution.resolveBool(
     fromDefine: const String.fromEnvironment(EnvKeys.sentryDebug),

@@ -12,6 +12,9 @@ import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/core/storage/app_hive.dart';
 import 'package:colmeia/core/storage/app_secure_storage_factory.dart';
 import 'package:colmeia/core/storage/session_storage.dart';
+import 'package:colmeia/core/update/appcast_probe_client.dart';
+import 'package:colmeia/core/update/auto_updater_client.dart';
+import 'package:colmeia/core/update/windows_auto_update_controller.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/datasources/fake_auth_remote_datasource.dart';
@@ -33,6 +36,16 @@ Future<void> registerInjectorCore(GetIt getIt) async {
     ..registerSingleton<SharedPreferences>(sharedPreferences)
     ..registerSingleton<AppUserPreferencesStore>(
       AppUserPreferencesStore(sharedPreferences),
+    )
+    ..registerSingleton<AutoUpdaterClient>(const LeanAutoUpdaterClient())
+    ..registerLazySingleton<AppcastProbeClient>(DioAppcastProbeClient.new)
+    ..registerLazySingleton<WindowsAutoUpdateController>(
+      () => WindowsAutoUpdateController(
+        autoUpdaterClient: getIt<AutoUpdaterClient>(),
+        appcastProbeClient: getIt<AppcastProbeClient>(),
+        feedUrlResolver: () => AppEnvironment.autoUpdateFeedUrl,
+        preferencesStore: getIt<AppUserPreferencesStore>(),
+      ),
     )
     ..registerLazySingleton<AppThemeModeController>(
       () => AppThemeModeController(getIt<AppUserPreferencesStore>()),

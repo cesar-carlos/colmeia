@@ -13,6 +13,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/sentry_bootstrap.dart';
 import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/update/windows_auto_update_controller.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:flutter/widgets.dart';
@@ -46,6 +47,7 @@ Future<void> bootstrap() async {
 
   await runAppWithOptionalSentry(() async {
     await setupDependencies();
+    await getIt<WindowsAutoUpdateController>().initialize();
     if (resolvedTransport == AgentBridgeTransport.socket) {
       // Activate metrics only when the socket channel is enabled. On REST
       // builds the listener stays unregistered (lazy singleton).
