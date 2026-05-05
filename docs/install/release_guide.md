@@ -40,6 +40,34 @@ Exemplo:
 - secret `ANDROID_KEY_ALIAS`
 - secret `ANDROID_KEY_PASSWORD`
 
+## Alinhamento Flutter local e CI
+
+Use a mesma versao do Flutter que o repositorio fixa na variavel de Actions
+**`FLUTTER_CI_VERSION`** (GitHub: Settings > Secrets and variables > Actions >
+Variables). Compare com `flutter --version` na maquina de release.
+
+Pastas **`build/`** e **`installer/dist/`** estao no `.gitignore` e nao devem ser
+commitadas.
+
+## Icones do launcher
+
+Ao alterar PNGs em **`assets/icons/`** (por exemplo `colmeia-512.png`):
+
+1. `dart run flutter_launcher_icons`
+2. Revise e commit dos ficheiros gerados por plataforma (Android, iOS, Web,
+   Windows, etc., conforme o diff).
+3. Para o instalador Windows refletir o novo `app_icon.ico`: `python installer/build_installer.py`
+
+**Nota:** o projeto nao inclui a pasta `macos/`; quando existir suporte macOS,
+adicione o bloco `macos:` em `flutter_launcher_icons` no `pubspec.yaml` e volte a
+correr o comando acima.
+
+## Feed do auto-update no instalador local
+
+Para embutir o URL do appcast no `.exe` gerado por `build_installer.py`, copie
+**`.env.release.example`** para **`.env.release`** na raiz e ajuste se necessario.
+O ficheiro `.env.release` nao e versionado. Ver tambem [auto_update_setup.md](auto_update_setup.md).
+
 ## Signing Android local
 
 O build Android de release exige:
@@ -122,9 +150,7 @@ flutter build apk --debug
 python installer/build_installer.py
 ```
 
-Se quiser injetar o feed oficial no instalador local sem depender de
-variaveis globais do shell, crie `.env.release` na raiz a partir de
-`.env.release.example`.
+Para o feed oficial no `.exe` gerado localmente, veja a secao **Feed do auto-update no instalador local** acima (copie `.env.release.example` para `.env.release`).
 
 Se a keystore Android ja estiver configurada localmente, valide tambem:
 

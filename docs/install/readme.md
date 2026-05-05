@@ -14,7 +14,11 @@ Colmeia.
 ### Gerar um instalador local
 
 1. Revisar [release_guide.md](release_guide.md)
-2. Executar `python installer/build_installer.py`
+2. (Opcional) Copiar `.env.release.example` para `.env.release` na raiz para embutir
+   o feed oficial no binario Windows (auto-update).
+3. Se alterou icones em `assets/icons/`, executar `dart run flutter_launcher_icons`
+   e commitar alteracoes geradas antes do instalador.
+4. Executar `python installer/build_installer.py`
 
 Saida esperada:
 

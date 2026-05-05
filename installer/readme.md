@@ -51,6 +51,9 @@ Precedencia do `installer/build_installer.py`:
 3. `.env.release` na raiz do projeto;
 4. `.env` na raiz do projeto como fallback legado.
 
+Modelo versionado na raiz do repositorio: **`.env.release.example`** (copie para
+`.env.release`; nao commite o destino).
+
 ## Fluxo manual
 
 ```powershell
