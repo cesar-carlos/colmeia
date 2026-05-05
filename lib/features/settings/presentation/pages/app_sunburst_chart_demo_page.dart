@@ -1,4 +1,5 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -24,7 +25,7 @@ class _AppSunburstChartDemoPageState extends State<AppSunburstChartDemoPage> {
     final cs = theme.colorScheme;
 
     return ListView(
-      padding: EdgeInsets.all(tokens.contentSpacing),
+      padding: context.pageScrollPadding(tokens),
       children: <Widget>[
         const AppShellPageIntro(
           eyebrow: 'Graficos sunburst',
@@ -62,7 +63,7 @@ class _AppSunburstChartDemoPageState extends State<AppSunburstChartDemoPage> {
           title: '2. Hierarquia de OPEX com selecao',
           subtitle:
               _selectionSummary ??
-              'Tap em qualquer anel para destacar a fatia selecionada.',
+              'Tap em qualquer anel para atualizar o resumo selecionado.',
           child: AppSunburstChart<_SunburstMetric>(
             items: _opexTree(cs),
             idBuilder: (item) => item.id,

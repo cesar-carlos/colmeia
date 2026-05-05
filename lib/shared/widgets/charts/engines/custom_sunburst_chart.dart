@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
-import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_sunburst_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 
 class CustomSunburstChart<T> extends StatelessWidget {
@@ -21,6 +21,10 @@ class CustomSunburstChart<T> extends StatelessWidget {
     this.onSegmentTap,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.semanticsLabel,
+    this.semanticsHint,
+    this.loadingSemanticsLabel = 'Carregando grafico sunburst...',
+    this.emptySemanticsLabel = 'Grafico sunburst sem dados.',
   });
 
   final List<T> items;
@@ -35,38 +39,24 @@ class CustomSunburstChart<T> extends StatelessWidget {
   final AppChartPreset preset;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final String? semanticsLabel;
+  final String? semanticsHint;
+  final String loadingSemanticsLabel;
+  final String emptySemanticsLabel;
 
   @override
   Widget build(BuildContext context) {
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final theme = Theme.of(context);
-    final colors = theme.appColors;
     final colorScheme = theme.colorScheme;
     final resolvedHeight = style.height ?? chartTheme.height;
 
     if (isLoading) {
-      return SizedBox(
+      return buildChartLoadingState(
+        context: context,
         height: resolvedHeight,
-        child: Center(
-          child: Semantics(
-            container: true,
-            liveRegion: true,
-            label: 'Carregando distribuicao hierarquica...',
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                CircularProgressIndicator(color: chartTheme.primaryColor),
-                const SizedBox(height: 12),
-                Text(
-                  'Carregando distribuicao hierarquica...',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        indicatorColor: chartTheme.primaryColor,
+        label: loadingSemanticsLabel,
       );
     }
 
@@ -81,23 +71,16 @@ class CustomSunburstChart<T> extends StatelessWidget {
     );
 
     if (tree.roots.isEmpty) {
-      return SizedBox(
+      return buildChartEmptyState(
+        context: context,
         height: resolvedHeight,
-        child: Center(
-          child:
-              emptyPlaceholder ??
-              Text(
-                'Sem distribuicao hierarquica para este recorte.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-              ),
-        ),
+        message: 'Sem distribuicao hierarquica para este recorte.',
+        placeholder: emptyPlaceholder,
+        semanticsLabel: emptySemanticsLabel,
       );
     }
 
-    return SizedBox(
+    Widget chart = SizedBox(
       height: resolvedHeight,
       child: Padding(
         padding: style.chartPadding ?? EdgeInsets.zero,
@@ -201,6 +184,21 @@ class CustomSunburstChart<T> extends StatelessWidget {
         ),
       ),
     );
+
+    final trimmedSemanticsLabel = semanticsLabel?.trim();
+    final trimmedSemanticsHint = semanticsHint?.trim();
+    if ((trimmedSemanticsLabel != null && trimmedSemanticsLabel.isNotEmpty) ||
+        (trimmedSemanticsHint != null && trimmedSemanticsHint.isNotEmpty)) {
+      chart = Semantics(
+        container: true,
+        excludeSemantics: true,
+        label: trimmedSemanticsLabel,
+        hint: trimmedSemanticsHint,
+        child: chart,
+      );
+    }
+
+    return chart;
   }
 }
 
@@ -386,7 +384,7 @@ class _SunburstTree<T> {
     }
 
     node
-      ..totalValue = childrenTotal > 0 ? childrenTotal : node.ownValue
+      ..totalValue = node.ownValue + childrenTotal
       ..publicNode = AppSunburstNode<T>(
         id: node.id,
         item: node.item,

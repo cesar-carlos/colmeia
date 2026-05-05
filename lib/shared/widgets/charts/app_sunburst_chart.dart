@@ -84,6 +84,10 @@ class AppSunburstChart<T> extends StatelessWidget {
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.semanticsLabel,
+    this.semanticsHint,
+    this.loadingSemanticsLabel,
+    this.emptySemanticsLabel,
   });
 
   final List<T> items;
@@ -105,6 +109,10 @@ class AppSunburstChart<T> extends StatelessWidget {
   final AppChartPreset preset;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final String? semanticsLabel;
+  final String? semanticsHint;
+  final String? loadingSemanticsLabel;
+  final String? emptySemanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +138,10 @@ class AppSunburstChart<T> extends StatelessWidget {
       preset: preset,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
+      semanticsLabel: _resolvedChartSemanticsLabel(),
+      semanticsHint: _resolvedChartSemanticsHint(),
+      loadingSemanticsLabel: _resolvedLoadingSemanticsLabel(),
+      emptySemanticsLabel: _resolvedEmptySemanticsLabel(),
     );
 
     if (title == null) {
@@ -143,5 +155,59 @@ class AppSunburstChart<T> extends StatelessWidget {
       belowSubtitle: belowSubtitle,
       child: innerChart,
     );
+  }
+
+  String _resolvedChartSemanticsLabel() {
+    final custom = semanticsLabel?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+
+    final trimmedTitle = title?.trim();
+    final itemCountLabel = items.length == 1
+        ? '1 item'
+        : '${items.length} itens';
+    if (trimmedTitle != null && trimmedTitle.isNotEmpty) {
+      return '$trimmedTitle, grafico sunburst com $itemCountLabel.';
+    }
+    return 'Grafico sunburst com $itemCountLabel.';
+  }
+
+  String? _resolvedChartSemanticsHint() {
+    final custom = semanticsHint?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+
+    if (onSegmentTap == null && onSegmentTapEvent == null) {
+      return null;
+    }
+    return 'Toque em um segmento para explorar a hierarquia.';
+  }
+
+  String _resolvedLoadingSemanticsLabel() {
+    final custom = loadingSemanticsLabel?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+
+    final trimmedTitle = title?.trim();
+    if (trimmedTitle != null && trimmedTitle.isNotEmpty) {
+      return 'Carregando $trimmedTitle...';
+    }
+    return 'Carregando grafico sunburst...';
+  }
+
+  String _resolvedEmptySemanticsLabel() {
+    final custom = emptySemanticsLabel?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+
+    final trimmedTitle = title?.trim();
+    if (trimmedTitle != null && trimmedTitle.isNotEmpty) {
+      return '$trimmedTitle, sem dados.';
+    }
+    return 'Grafico sunburst sem dados.';
   }
 }

@@ -1,3 +1,4 @@
+import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -16,7 +17,7 @@ class AppRadialBarChartDemoPage extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return ListView(
-      padding: EdgeInsets.all(tokens.contentSpacing),
+      padding: context.pageScrollPadding(tokens),
       children: <Widget>[
         const AppShellPageIntro(
           eyebrow: 'Graficos radial bar',

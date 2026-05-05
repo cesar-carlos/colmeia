@@ -58,6 +58,10 @@ class AppRadialBarChart<T> extends StatelessWidget {
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.semanticsLabel,
+    this.semanticsHint,
+    this.loadingSemanticsLabel,
+    this.emptySemanticsLabel,
   });
 
   final List<T> items;
@@ -80,6 +84,10 @@ class AppRadialBarChart<T> extends StatelessWidget {
   final AppChartPreset preset;
   final bool isLoading;
   final Widget? emptyPlaceholder;
+  final String? semanticsLabel;
+  final String? semanticsHint;
+  final String? loadingSemanticsLabel;
+  final String? emptySemanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +110,10 @@ class AppRadialBarChart<T> extends StatelessWidget {
       preset: preset,
       isLoading: isLoading,
       emptyPlaceholder: emptyPlaceholder,
+      semanticsLabel: _resolvedChartSemanticsLabel(),
+      semanticsHint: _resolvedChartSemanticsHint(),
+      loadingSemanticsLabel: _resolvedLoadingSemanticsLabel(),
+      emptySemanticsLabel: _resolvedEmptySemanticsLabel(),
     );
 
     if (title == null) {
@@ -115,5 +127,61 @@ class AppRadialBarChart<T> extends StatelessWidget {
       belowSubtitle: belowSubtitle,
       child: innerChart,
     );
+  }
+
+  String _resolvedChartSemanticsLabel() {
+    final custom = semanticsLabel?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+
+    final trimmedTitle = title?.trim();
+    final countLabel = items.length == 1 ? '1 serie' : '${items.length} series';
+    if (trimmedTitle != null && trimmedTitle.isNotEmpty) {
+      return '$trimmedTitle, grafico radial com $countLabel.';
+    }
+    return 'Grafico radial com $countLabel.';
+  }
+
+  String? _resolvedChartSemanticsHint() {
+    final custom = semanticsHint?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+
+    final isInteractive =
+        onSegmentTap != null ||
+        onSegmentTapEvent != null ||
+        style.enableTapHighlight;
+    if (!isInteractive) {
+      return null;
+    }
+    return 'Toque em um anel para destacar ou ver detalhes.';
+  }
+
+  String _resolvedLoadingSemanticsLabel() {
+    final custom = loadingSemanticsLabel?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+
+    final trimmedTitle = title?.trim();
+    if (trimmedTitle != null && trimmedTitle.isNotEmpty) {
+      return 'Carregando $trimmedTitle...';
+    }
+    return 'Carregando grafico radial...';
+  }
+
+  String _resolvedEmptySemanticsLabel() {
+    final custom = emptySemanticsLabel?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
+
+    final trimmedTitle = title?.trim();
+    if (trimmedTitle != null && trimmedTitle.isNotEmpty) {
+      return '$trimmedTitle, sem dados.';
+    }
+    return 'Grafico radial sem dados.';
   }
 }

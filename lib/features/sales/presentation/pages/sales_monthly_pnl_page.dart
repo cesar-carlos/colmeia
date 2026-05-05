@@ -166,6 +166,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
   bool _loading = false;
   bool _chartLoadFailed = false;
   String? _chartLoadFailureMessage;
+  int _chartLoadGeneration = 0;
 
   @override
   void initState() {
@@ -239,6 +240,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
+    final anchor = _anchorYearMonth;
+    final generation = ++_chartLoadGeneration;
 
     setState(() {
       _loading = true;
@@ -247,7 +250,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     });
 
     if (userId == null || agentId == null || agentId.trim().isEmpty) {
-      if (!mounted) {
+      if (!mounted || generation != _chartLoadGeneration) {
         return;
       }
       setState(() {
@@ -264,7 +267,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
       userId: userId,
       agentId: trimmed,
     );
-    if (!mounted) {
+    if (!mounted || generation != _chartLoadGeneration) {
       return;
     }
     if (clientToken == null) {
@@ -282,11 +285,11 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     final bundle = await _loadPnlLines(
       userId: userId,
       agentId: trimmed,
-      anchor: _anchorYearMonth,
+      anchor: anchor,
       clientToken: clientToken,
     );
 
-    if (!mounted) {
+    if (!mounted || generation != _chartLoadGeneration) {
       return;
     }
     setState(() {
@@ -491,6 +494,7 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
             height: resolvedHeight,
             indicatorColor: chartTheme.primaryColor,
             label: l10n.overviewComparisonChartLoading,
+            variant: ChartLoadingPlaceholderVariant.timeSeries,
           )
         : points.isEmpty
         ? buildChartEmptyState(
@@ -637,6 +641,7 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
                       ],
                     ),
                   ),
+                  semanticsHint: l10n.overviewComparisonBarHorizontalScrollHint,
                 ),
               );
             },
