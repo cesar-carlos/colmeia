@@ -28,6 +28,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag commit is reachable from main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"; then
+            echo "::error::Release tags must point to a commit reachable from origin/main."
+            exit 1
+          fi
 
       - name: Resolve release metadata
         id: metadata
@@ -215,12 +227,22 @@ jobs:
             release-assets/${{ needs.prepare_release.outputs.android_aab_asset_name }}
           if-no-files-found: error
 
+      - name: Clean Android signing files
+        if: always()
+        shell: bash
+        run: rm -f android/key.properties android/app/upload-keystore.jks
+
   publish_release:
     needs:
       - prepare_release
       - build_windows
       - build_android
     runs-on: ubuntu-latest
+    environment:
+      name: production
+    outputs:
+      published_at_http: ${{ steps.release_metadata.outputs.published_at_http }}
+      release_url: ${{ steps.release_metadata.outputs.release_url }}
     steps:
       - name: Download release artifacts
         uses: actions/download-artifact@v4
@@ -228,6 +250,25 @@ jobs:
           pattern: release-*
           merge-multiple: true
           path: release-assets
+
+      - name: Generate release checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          assets=(release-assets/*)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "::error::No release assets were found to publish."
+            exit 1
+          fi
+
+          pushd release-assets >/dev/null
+          for asset in *; do
+            if [ -f "$asset" ] && [[ "$asset" != *.sha256 ]]; then
+              sha256sum "$asset" > "$asset.sha256"
+            fi
+          done
+          popd >/dev/null
 
       - name: Publish GitHub release
         env:
@@ -248,6 +289,37 @@ jobs:
               --generate-notes \
               --latest
           fi
+
+      - name: Resolve published release metadata
+        id: release_metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag='${{ needs.prepare_release.outputs.release_tag }}'
+          gh release view "$tag" --json publishedAt,url > release-metadata.json
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          metadata = json.loads(Path("release-metadata.json").read_text(encoding="utf-8"))
+          published_at = metadata.get("publishedAt")
+          if not published_at:
+              raise SystemExit("GitHub release did not return publishedAt.")
+
+          published_at_http = (
+              datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+              .astimezone(timezone.utc)
+              .strftime("%a, %d %b %Y %H:%M:%S GMT")
+          )
+
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"published_at_http={published_at_http}\n")
+              output.write(f"release_url={metadata['url']}\n")
+          PY
 
   update_windows_appcast:
     needs:
@@ -271,15 +343,14 @@ jobs:
           set -euo pipefail
           asset_path="release-assets/${{ needs.prepare_release.outputs.windows_asset_name }}"
           asset_length=$(stat -c%s "$asset_path")
-          published_at=$(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S GMT')
 
           python tool/update_appcast.py \
             --output appcast.xml \
             --version '${{ needs.prepare_release.outputs.full_version }}' \
             --short-version '${{ needs.prepare_release.outputs.short_version }}' \
             --asset-url '${{ needs.prepare_release.outputs.windows_asset_url }}' \
-            --release-notes-url '${{ needs.prepare_release.outputs.release_url }}' \
-            --published-at "$published_at" \
+            --release-notes-url '${{ needs.publish_release.outputs.release_url }}' \
+            --published-at '${{ needs.publish_release.outputs.published_at_http }}' \
             --content-length "$asset_length" \
             --title 'Colmeia' \
             --description 'Most recent Windows releases for Colmeia' \

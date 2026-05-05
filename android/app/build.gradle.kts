@@ -1,3 +1,4 @@
+import java.io.File
 import org.gradle.api.GradleException
 import java.util.Properties
 
@@ -40,11 +41,35 @@ if (releaseTaskRequested) {
     }
 
     val storeFilePath = requireSigningProperty("storeFile")
+    if (File(storeFilePath).isAbsolute) {
+        throw GradleException(
+            "Android release signing must use a storeFile path relative to android/. "
+                + "Update android/key.properties to avoid absolute paths.",
+        )
+    }
+
     val resolvedStoreFile = rootProject.file(storeFilePath)
     if (!resolvedStoreFile.exists()) {
         throw GradleException(
             "Android release signing keystore was not found at '$storeFilePath'. "
                 + "Update android/key.properties with a valid relative path.",
+        )
+    }
+
+    val androidRoot = rootProject.projectDir.canonicalFile.toPath()
+    val resolvedStorePath = resolvedStoreFile.canonicalFile.toPath()
+    if (!resolvedStorePath.startsWith(androidRoot)) {
+        throw GradleException(
+            "Android release signing keystore must stay inside the android/ directory. "
+                + "Update android/key.properties with a safe relative path.",
+        )
+    }
+
+    val keyAlias = requireSigningProperty("keyAlias")
+    if (!keyAlias.matches(Regex("[A-Za-z0-9._-]+"))) {
+        throw GradleException(
+            "Android release signing keyAlias contains unsupported characters. "
+                + "Use only letters, numbers, dot, underscore, or hyphen.",
         )
     }
 }

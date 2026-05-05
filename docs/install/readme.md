@@ -26,10 +26,11 @@ installer/dist/Colmeia-Setup-{MAJOR.MINOR.PATCH}.exe
 
 1. Atualizar `pubspec.yaml`
 2. Garantir sincronismo com `python installer/update_version.py`
-3. Criar a tag `vX.Y.Z`
-4. Deixar o GitHub Actions publicar `.exe` Windows, `apk` Android, `aab`
-   Android e `appcast.xml`
-5. Se `main` tiver protecao restritiva, configurar `APPCAST_PUSH_TOKEN`
+3. Criar a tag `vX.Y.Z` em um commit ja alcancavel a partir de `main`
+4. Aprovar o environment `production`, quando configurado
+5. Deixar o GitHub Actions publicar `.exe` Windows, `apk` Android, `aab`
+   Android, seus `.sha256` e `appcast.xml`
+6. Se `main` tiver protecao restritiva, configurar `APPCAST_PUSH_TOKEN`
 
 ## Documentos
 

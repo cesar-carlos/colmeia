@@ -15,6 +15,9 @@ Toda tag `vX.Y.Z` publica uma unica GitHub Release com:
 - `Colmeia-Setup-X.Y.Z.exe`
 - `Colmeia-Android-X.Y.Z.apk`
 - `Colmeia-Android-X.Y.Z.aab`
+- `Colmeia-Setup-X.Y.Z.exe.sha256`
+- `Colmeia-Android-X.Y.Z.apk.sha256`
+- `Colmeia-Android-X.Y.Z.aab.sha256`
 
 Tags oficiais:
 
@@ -30,6 +33,7 @@ Exemplo:
 ## Pre-requisitos do CI
 
 - repository variable `FLUTTER_CI_VERSION`
+- environment `production` no GitHub, idealmente com reviewers obrigatorios
 - secret `APPCAST_PUSH_TOKEN` se `main` bloquear o token padrao do Actions
 - secret `ANDROID_KEYSTORE_BASE64`
 - secret `ANDROID_KEYSTORE_PASSWORD`
@@ -144,6 +148,9 @@ git tag v1.1.1
 git push origin v1.1.1
 ```
 
+A tag precisa apontar para um commit ja alcancavel a partir de `main`.
+O workflow falha se a tag for criada em um commit fora da historia de `main`.
+
 ### 6. Aguardar o workflow
 
 O workflow `Tagged Release`:
@@ -153,14 +160,41 @@ O workflow `Tagged Release`:
 3. gera `Colmeia-Setup-{versao}.exe`;
 4. gera `Colmeia-Android-{versao}.apk`;
 5. gera `Colmeia-Android-{versao}.aab`;
-6. cria/atualiza uma unica GitHub Release com os 3 assets;
-7. atualiza `appcast.xml` em `main`.
+6. gera os arquivos `.sha256` para os 3 assets;
+7. aguarda a aprovacao do environment `production`, quando configurado;
+8. cria/atualiza uma unica GitHub Release com os 6 arquivos;
+9. usa o horario real da GitHub Release para atualizar `appcast.xml` em `main`.
 
 ## Token para branch protegida
 
 Por padrao o workflow tenta atualizar `appcast.xml` com `github.token`.
 Se a branch `main` bloquear esse push via Contents API, crie o secret
 `APPCAST_PUSH_TOKEN` com permissao de `contents:write`.
+
+## Checksums dos assets
+
+Cada binario oficial recebe um arquivo `.sha256` na mesma GitHub Release.
+
+Exemplo de validacao local no Windows:
+
+```powershell
+Get-FileHash .\Colmeia-Setup-1.1.1.exe -Algorithm SHA256
+```
+
+Compare o hash calculado com o conteudo de `Colmeia-Setup-1.1.1.exe.sha256`.
+
+## Rollback de release
+
+Se uma tag publicar uma release incorreta:
+
+1. desative distribuicao do asset ruim removendo os downloads da GitHub Release
+2. se o problema afetar Windows, reverta `appcast.xml` para a ultima versao valida
+3. corrija o commit em `main`
+4. publique uma nova versao corrigida no ciclo normal, por exemplo `vX.Y.(Z+1)`, sem reaproveitar binarios antigos
+
+Se a tag foi criada no commit errado antes da aprovacao do environment
+`production`, prefira rejeitar a aprovacao, apagar a tag remota e recria-la no
+commit correto.
 
 ## Feed oficial
 
