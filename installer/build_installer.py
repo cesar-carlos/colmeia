@@ -4,8 +4,9 @@ Build the Windows installer for Colmeia.
 
 Flow:
 1. Synchronize versioned files from pubspec.yaml
-2. Build `flutter build windows --release`
-3. Compile the Inno Setup installer
+2. Generate multi-resolution Windows `app_icon.ico` from `assets/icons/colmeia-512.png`
+3. Build `flutter build windows --release`
+4. Compile the Inno Setup installer
 
 Output:
     installer/dist/Colmeia-Setup-{MAJOR.MINOR.PATCH}.exe
@@ -42,7 +43,10 @@ def main() -> None:
     print("1. Synchronizing installer/version files...", flush=True)
     run([sys.executable, str(INSTALLER_DIR / "update_version.py")])
 
-    print("\n2. Building Flutter Windows release...", flush=True)
+    print("\n2. Windows multi-resolution app_icon.ico...", flush=True)
+    run(["dart", "run", "tool/generate_windows_app_icon.dart"])
+
+    print("\n3. Building Flutter Windows release...", flush=True)
     flutter_command = ["flutter", "build", "windows", "--release"]
     if feed_url := resolve_auto_update_feed_url():
         flutter_command.append(f"--dart-define=AUTO_UPDATE_FEED_URL={feed_url}")
@@ -61,7 +65,7 @@ def main() -> None:
     if not binary_path.exists():
         raise SystemExit(f"Windows binary not found: {binary_path}")
 
-    print("\n3. Compiling Inno Setup installer...", flush=True)
+    print("\n4. Compiling Inno Setup installer...", flush=True)
     DIST_DIR.mkdir(parents=True, exist_ok=True)
     run([find_iscc(), str(SETUP_ISS)], cwd=INSTALLER_DIR)
 

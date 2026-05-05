@@ -53,10 +53,14 @@ commitadas.
 
 Ao alterar PNGs em **`assets/icons/`** (por exemplo `colmeia-512.png`):
 
-1. `dart run flutter_launcher_icons`
-2. Revise e commit dos ficheiros gerados por plataforma (Android, iOS, Web,
-   Windows, etc., conforme o diff).
-3. Para o instalador Windows refletir o novo `app_icon.ico`: `python installer/build_installer.py`
+1. `dart run flutter_launcher_icons` (Android, iOS, Web; Windows esta desativado
+   no `pubspec.yaml` para evitar ICO de uma unica resolucao).
+2. Para atualizar **`windows/runner/resources/app_icon.ico`** manualmente:
+   `dart run tool/generate_windows_app_icon.dart` (gera camadas 16–256 px para o
+   Explorer e Inno Setup). Este passo corre **automaticamente** dentro de
+   `python installer/build_installer.py` antes do `flutter build windows`.
+3. Revise e commit dos ficheiros gerados (Android, iOS, Web e `app_icon.ico`).
+4. Para o instalador Windows completo: `python installer/build_installer.py`
 
 **Nota:** o projeto nao inclui a pasta `macos/`; quando existir suporte macOS,
 adicione o bloco `macos:` em `flutter_launcher_icons` no `pubspec.yaml` e volte a

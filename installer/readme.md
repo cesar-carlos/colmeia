@@ -34,8 +34,10 @@ python installer/build_installer.py
 O script:
 
 1. sincroniza `installer/setup.iss` e `lib/core/constants/app_version.g.dart`;
-2. executa `flutter build windows --release`;
-3. compila o instalador via Inno Setup.
+2. gera `windows/runner/resources/app_icon.ico` em multiplas resolucoes (16–256 px)
+   a partir de `assets/icons/colmeia-512.png` (`tool/generate_windows_app_icon.dart`);
+3. executa `flutter build windows --release`;
+4. compila o instalador via Inno Setup.
 
 Se a variavel `AUTO_UPDATE_FEED_URL` estiver definida no ambiente do processo
 ou em um arquivo de release, o build injeta:
