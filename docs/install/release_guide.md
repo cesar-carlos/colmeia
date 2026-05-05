@@ -44,7 +44,9 @@ Exemplo:
 
 Use a mesma versao do Flutter que o repositorio fixa na variavel de Actions
 **`FLUTTER_CI_VERSION`** (GitHub: Settings > Secrets and variables > Actions >
-Variables). Compare com `flutter --version` na maquina de release.
+Variables). Quando a variavel estiver vazia, o fallback versionado do repo vem
+de **`tool/flutter_ci_version.txt`**. Compare sempre esse valor com
+`flutter --version` na maquina de release.
 
 Pastas **`build/`** e **`installer/dist/`** estao no `.gitignore` e nao devem ser
 commitadas.
@@ -64,6 +66,10 @@ Ao alterar PNGs em **`assets/icons/`** (por exemplo `colmeia-512.png`):
 3. Revise e commit dos ficheiros gerados (Android, iOS, Web e `app_icon.ico`).
    **`installer/setup_icon.ico`** e gerado e esta **gitignored** — nao commite.
 4. Para o instalador Windows completo: `python installer/build_installer.py`
+
+Se `assets/env/local.env` tiver linhas nao comentadas, o build local do
+instalador agora falha por padrao para evitar empacotar segredos no bundle.
+So use `COLMEIA_ALLOW_BUNDLED_LOCAL_ENV=1` quando isso for intencional.
 
 ### Troubleshooting do icone do Setup.exe
 

@@ -95,6 +95,44 @@ class UpdateAppcastTest(unittest.TestCase):
         ]
         self.assertEqual(["1.0.2+1", "1.0.1+1"], versions)
 
+    def test_should_preserve_existing_items_when_updating_existing_document(self) -> None:
+        existing_document = """<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+  <channel>
+    <title>Colmeia</title>
+    <description>Most recent Windows releases for Colmeia</description>
+    <language>pt-BR</language>
+    <item>
+      <title>Version 1.0.1</title>
+      <pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate>
+      <link>https://example.com/releases/1.0.1</link>
+      <sparkle:releaseNotesLink>https://example.com/releases/1.0.1</sparkle:releaseNotesLink>
+      <enclosure
+        url="https://example.com/1.0.1.exe"
+        sparkle:version="1.0.1+1"
+        sparkle:os="windows"
+        length="111"
+        type="application/octet-stream" />
+    </item>
+  </channel>
+</rss>
+"""
+        self.output.write_text(existing_document, encoding="utf-8")
+        release = self._release(version="1.0.2+1", short_version="1.0.2")
+
+        root = self.module.ensure_document(self.output, release)
+        channel = root.find("channel")
+        self.assertIsNotNone(channel)
+
+        self.module.upsert_release_item(channel, release)
+        self.module.trim_release_items(channel, release.max_items)
+
+        versions = [
+            item.find("enclosure").attrib[f"{{{self.module.SPARKLE_NS}}}version"]
+            for item in channel.findall("item")
+        ]
+        self.assertEqual(["1.0.2+1", "1.0.1+1"], versions)
+
     def _release(
         self,
         *,

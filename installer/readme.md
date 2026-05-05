@@ -58,6 +58,11 @@ O script:
    `installer/setup_icon.ico`, fora de `windows/`, para o icone do Setup.exe);
 5. compila o instalador via Inno Setup (`SetupIconFile=setup_icon.ico`).
 
+Observacao de seguranca: se `assets/env/local.env` tiver linhas nao comentadas,
+o build local agora falha por padrao para evitar empacotar segredos no bundle.
+Se voce realmente quiser seguir mesmo assim, use
+`COLMEIA_ALLOW_BUNDLED_LOCAL_ENV=1` de forma explicita.
+
 Se a variavel `AUTO_UPDATE_FEED_URL` estiver definida no ambiente do processo
 ou em arquivo de release, o build injeta:
 

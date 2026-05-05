@@ -163,6 +163,44 @@ class BuildInstallerTest(unittest.TestCase):
         self.assertFalse(checksum.exists())
         self.assertTrue(keep.exists())
 
+    def test_guard_against_bundled_local_env_allows_missing_file(self) -> None:
+        self.module.guard_against_bundled_local_env()
+
+    def test_guard_against_bundled_local_env_allows_comment_only_file(self) -> None:
+        self.module.BUNDLED_LOCAL_ENV.parent.mkdir(parents=True, exist_ok=True)
+        self.module.BUNDLED_LOCAL_ENV.write_text(
+            "# comment only\n\n   # still ignored\n",
+            encoding="utf-8",
+        )
+
+        self.module.guard_against_bundled_local_env()
+
+    def test_guard_against_bundled_local_env_fails_when_entries_exist(self) -> None:
+        self.module.BUNDLED_LOCAL_ENV.parent.mkdir(parents=True, exist_ok=True)
+        self.module.BUNDLED_LOCAL_ENV.write_text(
+            "SECRET=value\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaises(SystemExit) as ctx:
+            self.module.guard_against_bundled_local_env()
+
+        self.assertIn("would be bundled", str(ctx.exception))
+
+    def test_guard_against_bundled_local_env_can_be_overridden_explicitly(self) -> None:
+        self.module.BUNDLED_LOCAL_ENV.parent.mkdir(parents=True, exist_ok=True)
+        self.module.BUNDLED_LOCAL_ENV.write_text(
+            "SECRET=value\n",
+            encoding="utf-8",
+        )
+
+        with mock.patch.dict(
+            os.environ,
+            {self.module.ALLOW_BUNDLED_LOCAL_ENV_VAR: "1"},
+            clear=True,
+        ):
+            self.module.guard_against_bundled_local_env()
+
 
 if __name__ == "__main__":
     unittest.main()

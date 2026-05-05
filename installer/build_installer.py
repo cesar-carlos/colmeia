@@ -31,6 +31,7 @@ RELEASE_ENV_FILE = PROJECT_ROOT / ".env.release"
 RELEASE_ENV_OVERRIDE_VAR = "COLMEIA_RELEASE_ENV_FILE"
 SKIP_VERSION_SYNC_VAR = "COLMEIA_SKIP_VERSION_SYNC"
 BUNDLED_LOCAL_ENV = PROJECT_ROOT / "assets" / "env" / "local.env"
+ALLOW_BUNDLED_LOCAL_ENV_VAR = "COLMEIA_ALLOW_BUNDLED_LOCAL_ENV"
 WINDOWS_BINARY_NAME = "colmeia.exe"
 INSTALLER_GLOB = "Colmeia-Setup-*.exe"
 
@@ -55,7 +56,7 @@ def main() -> None:
     run(["dart", "run", "tool/generate_windows_app_icon.dart"])
 
     print("\n3. Building Flutter Windows release...", flush=True)
-    warn_if_bundled_local_env_has_entries()
+    guard_against_bundled_local_env()
 
     flutter_command = ["flutter", "build", "windows", "--release"]
     if feed_url := resolve_auto_update_feed_url():
@@ -95,7 +96,7 @@ def _skip_version_sync() -> bool:
     return os.environ.get(SKIP_VERSION_SYNC_VAR, "").strip() == "1"
 
 
-def warn_if_bundled_local_env_has_entries() -> None:
+def guard_against_bundled_local_env() -> None:
     if not BUNDLED_LOCAL_ENV.is_file():
         return
     has_entry = any(
@@ -104,11 +105,22 @@ def warn_if_bundled_local_env_has_entries() -> None:
     )
     if not has_entry:
         return
-    print(
-        "   WARNING: assets/env/local.env contains entries and may be bundled "
-        "(pubspec assets). Review secrets before distributing this build.",
-        flush=True,
+    if allow_bundled_local_env():
+        print(
+            "   WARNING: assets/env/local.env contains entries and will be bundled "
+            f"because {ALLOW_BUNDLED_LOCAL_ENV_VAR}=1.",
+            flush=True,
+        )
+        return
+    raise SystemExit(
+        "assets/env/local.env contains entries and would be bundled into this "
+        "release build (pubspec assets). Clear the file or rerun with "
+        f"{ALLOW_BUNDLED_LOCAL_ENV_VAR}=1 if you really intend to ship it."
     )
+
+
+def allow_bundled_local_env() -> bool:
+    return os.environ.get(ALLOW_BUNDLED_LOCAL_ENV_VAR, "").strip() == "1"
 
 
 def clear_previous_installer_outputs() -> None:
