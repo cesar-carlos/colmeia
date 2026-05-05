@@ -92,6 +92,10 @@ flutter_launcher_icons:
     image_path: assets/icons/colmeia-512.png
     background_color: "#FFB300"
     theme_color: "#FFB300"
+  windows:
+    generate: true
+    image_path: assets/icons/colmeia-512.png
+    icon_size: 256
 
 flutter:
   generate: true
