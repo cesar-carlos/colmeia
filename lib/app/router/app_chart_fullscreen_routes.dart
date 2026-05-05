@@ -26,6 +26,7 @@ final class AppChartFullscreenRouteExtra {
     required this.chartBuilder,
     this.title,
     this.subtitle,
+    this.filterSummary,
     this.headerTrailing,
     this.bodyPadding,
     this.chartSemanticsLabel,
@@ -34,6 +35,7 @@ final class AppChartFullscreenRouteExtra {
   final AppChartFullscreenBuilder chartBuilder;
   final String? title;
   final String? subtitle;
+  final String? filterSummary;
   final Widget? headerTrailing;
   final EdgeInsetsGeometry? bodyPadding;
   final String? chartSemanticsLabel;
@@ -96,6 +98,7 @@ Widget _buildChartFullscreenRoute(BuildContext context, GoRouterState state) {
   return AppChartFullscreenScaffold(
     title: payload.title,
     subtitle: payload.subtitle,
+    filterSummary: payload.filterSummary,
     headerTrailing: payload.headerTrailing,
     bodyPadding: payload.bodyPadding,
     child: chart,

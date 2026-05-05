@@ -2214,6 +2214,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesMonthlyPnlBarDisplayPercentLabel => 'Percentuais';
 
   @override
+  String get salesMonthlyPnlBarDisplayValuesCompactLabel => 'Val.';
+
+  @override
+  String get salesMonthlyPnlBarDisplayPercentCompactLabel => '%';
+
+  @override
+  String salesMonthlyPnlFullscreenFilterSummary(
+    String agentsLabel,
+    String agentName,
+    String anchorLabel,
+    String anchorValue,
+  ) {
+    return '$agentsLabel: $agentName. $anchorLabel: $anchorValue.';
+  }
+
+  @override
   String get salesMonthlyPnlBarZerosOnlyMessage =>
       'Nada para plotar nesta vista na janela selecionada (todos os valores sao zero).';
 
@@ -4883,6 +4899,22 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesMonthlyPnlBarDisplayPercentLabel => 'Percentuais';
+
+  @override
+  String get salesMonthlyPnlBarDisplayValuesCompactLabel => 'Val.';
+
+  @override
+  String get salesMonthlyPnlBarDisplayPercentCompactLabel => '%';
+
+  @override
+  String salesMonthlyPnlFullscreenFilterSummary(
+    String agentsLabel,
+    String agentName,
+    String anchorLabel,
+    String anchorValue,
+  ) {
+    return '$agentsLabel: $agentName. $anchorLabel: $anchorValue.';
+  }
 
   @override
   String get salesMonthlyPnlBarZerosOnlyMessage =>

@@ -2182,6 +2182,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesMonthlyPnlBarDisplayPercentLabel => 'Percent metrics';
 
   @override
+  String get salesMonthlyPnlBarDisplayValuesCompactLabel => 'Amt';
+
+  @override
+  String get salesMonthlyPnlBarDisplayPercentCompactLabel => '%';
+
+  @override
+  String salesMonthlyPnlFullscreenFilterSummary(
+    String agentsLabel,
+    String agentName,
+    String anchorLabel,
+    String anchorValue,
+  ) {
+    return '$agentsLabel: $agentName. $anchorLabel: $anchorValue.';
+  }
+
+  @override
   String get salesMonthlyPnlBarZerosOnlyMessage =>
       'Nothing to plot for this view in the selected window (all values are zero).';
 

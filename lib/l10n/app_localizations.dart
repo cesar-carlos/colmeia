@@ -3652,6 +3652,29 @@ abstract class AppLocalizations {
   /// **'Percent metrics'**
   String get salesMonthlyPnlBarDisplayPercentLabel;
 
+  /// No description provided for @salesMonthlyPnlBarDisplayValuesCompactLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amt'**
+  String get salesMonthlyPnlBarDisplayValuesCompactLabel;
+
+  /// No description provided for @salesMonthlyPnlBarDisplayPercentCompactLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'%'**
+  String get salesMonthlyPnlBarDisplayPercentCompactLabel;
+
+  /// No description provided for @salesMonthlyPnlFullscreenFilterSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{agentsLabel}: {agentName}. {anchorLabel}: {anchorValue}.'**
+  String salesMonthlyPnlFullscreenFilterSummary(
+    String agentsLabel,
+    String agentName,
+    String anchorLabel,
+    String anchorValue,
+  );
+
   /// No description provided for @salesMonthlyPnlBarZerosOnlyMessage.
   ///
   /// In en, this message translates to:

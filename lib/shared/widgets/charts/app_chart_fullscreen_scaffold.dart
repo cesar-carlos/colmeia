@@ -9,6 +9,7 @@ class AppChartFullscreenScaffold extends StatelessWidget {
     super.key,
     this.title,
     this.subtitle,
+    this.filterSummary,
     this.headerTrailing,
     this.bodyPadding,
   });
@@ -16,6 +17,7 @@ class AppChartFullscreenScaffold extends StatelessWidget {
   final Widget child;
   final String? title;
   final String? subtitle;
+  final String? filterSummary;
   final Widget? headerTrailing;
   final EdgeInsetsGeometry? bodyPadding;
 
@@ -31,6 +33,9 @@ class AppChartFullscreenScaffold extends StatelessWidget {
     final hasTitle = resolvedTitle != null && resolvedTitle.isNotEmpty;
     final resolvedSubtitle = subtitle?.trim();
     final hasSubtitle = resolvedSubtitle != null && resolvedSubtitle.isNotEmpty;
+    final resolvedFilterSummary = filterSummary?.trim();
+    final hasFilterSummary =
+        resolvedFilterSummary != null && resolvedFilterSummary.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,8 +47,8 @@ class AppChartFullscreenScaffold extends StatelessWidget {
                 icon: const Icon(Icons.close),
               )
             : null,
-        titleSpacing: hasTitle || hasSubtitle ? null : 0,
-        title: (hasTitle || hasSubtitle)
+        titleSpacing: hasTitle || hasSubtitle || hasFilterSummary ? null : 0,
+        title: (hasTitle || hasSubtitle || hasFilterSummary)
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -60,6 +65,15 @@ class AppChartFullscreenScaffold extends StatelessWidget {
                       resolvedSubtitle,
                       style: typography.body,
                     ),
+                  if (hasFilterSummary) ...<Widget>[
+                    if (hasSubtitle || hasTitle) SizedBox(height: tokens.gapXs),
+                    Text(
+                      resolvedFilterSummary,
+                      style: typography.caption,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               )
             : null,

@@ -1018,6 +1018,17 @@
   "salesMonthlyPnlBarChartSubtitle": "Bars use the same monthly totals as the line chart above (aggregated sales, profit, and merchandise cost—not per-item averages). Percent metrics are computed from those monthly totals.",
   "salesMonthlyPnlBarDisplayValuesLabel": "Amounts",
   "salesMonthlyPnlBarDisplayPercentLabel": "Percent metrics",
+  "salesMonthlyPnlBarDisplayValuesCompactLabel": "Amt",
+  "salesMonthlyPnlBarDisplayPercentCompactLabel": "%",
+  "salesMonthlyPnlFullscreenFilterSummary": "{agentsLabel}: {agentName}. {anchorLabel}: {anchorValue}.",
+  "@salesMonthlyPnlFullscreenFilterSummary": {
+    "placeholders": {
+      "agentsLabel": {"type": "String"},
+      "agentName": {"type": "String"},
+      "anchorLabel": {"type": "String"},
+      "anchorValue": {"type": "String"}
+    }
+  },
   "salesMonthlyPnlBarZerosOnlyMessage": "Nothing to plot for this view in the selected window (all values are zero).",
   "salesMonthlyPnlBarChartSemantics": "Monthly grouped bar chart for sales, profit, and merchandise cost",
   "salesMonthlyPnlBarSummarySemantics": "Period totals: {totalSales} sales, {totalProfit} profit, {totalCost} merchandise cost. Highest sales month: {topMonth} ({topSales}).",

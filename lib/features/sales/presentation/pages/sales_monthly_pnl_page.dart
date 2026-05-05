@@ -323,6 +323,23 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     unawaited(_reload());
   }
 
+  String _monthlyPnlFullscreenFilterSummary(AppLocalizations l10n) {
+    final selectedAgent = _availableAgents
+        .cast<OverviewAgentOption?>()
+        .firstWhere(
+          (agent) => agent?.agentId == _selectedAgentId,
+          orElse: () => null,
+        );
+    final agentName = selectedAgent?.name ?? l10n.salesAgentPickerEmpty;
+    final anchorValue = _formatYearMonthLabel(context, _anchorYearMonth);
+    return l10n.salesMonthlyPnlFullscreenFilterSummary(
+      l10n.dashboardHomeFiltersAgentsLabel,
+      agentName,
+      l10n.salesMonthlyPnlFilterAnchorMonth,
+      anchorValue,
+    );
+  }
+
   Future<void> _openFiltersSheet() async {
     if (!mounted) {
       return;
@@ -358,6 +375,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         extra: AppChartFullscreenRouteExtra(
           title: pageL10n.salesMonthlyPnlChartTitle,
           subtitle: pageL10n.salesMonthlyPnlChartSubtitle,
+          filterSummary: _monthlyPnlFullscreenFilterSummary(pageL10n),
           chartSemanticsLabel: pageL10n.salesMonthlyPnlChartSemantics,
           chartBuilder: (fullscreenContext) {
             final l10n = AppLocalizations.of(fullscreenContext);
@@ -389,6 +407,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         isLoading: _loading && _selectedAgentId != null,
         loadFailed: _chartLoadFailed,
         loadFailureMessage: _chartLoadFailureMessage,
+        filterSummary: _monthlyPnlFullscreenFilterSummary(AppLocalizations.of(context)),
       ),
     );
   }

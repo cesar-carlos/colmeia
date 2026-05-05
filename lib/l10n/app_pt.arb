@@ -792,6 +792,17 @@
   "salesMonthlyPnlBarChartSubtitle": "As barras usam os mesmos totais mensais que o grafico de linhas acima (venda, lucro e custo da mercadoria agregados — nao medias por item). Os percentuais sao calculados a partir desses totais mensais.",
   "salesMonthlyPnlBarDisplayValuesLabel": "Valores",
   "salesMonthlyPnlBarDisplayPercentLabel": "Percentuais",
+  "salesMonthlyPnlBarDisplayValuesCompactLabel": "Val.",
+  "salesMonthlyPnlBarDisplayPercentCompactLabel": "%",
+  "salesMonthlyPnlFullscreenFilterSummary": "{agentsLabel}: {agentName}. {anchorLabel}: {anchorValue}.",
+  "@salesMonthlyPnlFullscreenFilterSummary": {
+    "placeholders": {
+      "agentsLabel": {"type": "String"},
+      "agentName": {"type": "String"},
+      "anchorLabel": {"type": "String"},
+      "anchorValue": {"type": "String"}
+    }
+  },
   "salesMonthlyPnlBarZerosOnlyMessage": "Nada para plotar nesta vista na janela selecionada (todos os valores sao zero).",
   "salesMonthlyPnlBarChartSemantics": "Grafico de barras agrupadas mensais de venda, lucro e custo da mercadoria",
   "salesMonthlyPnlBarSummarySemantics": "Totais do periodo: {totalSales} em vendas, {totalProfit} de lucro, {totalCost} de custo da mercadoria. Mes com maior venda: {topMonth} ({topSales}).",

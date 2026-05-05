@@ -11,6 +11,7 @@ import 'package:colmeia/features/sales/domain/sales_monthly_pnl_point_percent_me
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
@@ -334,12 +335,26 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
         height: chartHeightOverride,
         message: l10n.salesMonthlyPnlBarZerosOnlyMessage,
         placeholder: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
+          padding: EdgeInsets.symmetric(horizontal: tokens.contentSpacing),
           child: Center(
-            child: Text(
-              l10n.salesMonthlyPnlBarZerosOnlyMessage,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: theme.colorScheme.outline,
+                ),
+                SizedBox(width: tokens.gapSm),
+                Expanded(
+                  child: Text(
+                    l10n.salesMonthlyPnlBarZerosOnlyMessage,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -435,27 +450,12 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
       );
     }
 
-    final mainModeControl = Semantics(
-      sortKey: const OrdinalSortKey(1),
-      child: AppSegmentedControl<SalesMonthlyPnlBarDisplayMode>(
-        expandToFill: true,
-        options: <AppSegmentedControlOption<SalesMonthlyPnlBarDisplayMode>>[
-          AppSegmentedControlOption<SalesMonthlyPnlBarDisplayMode>(
-            value: SalesMonthlyPnlBarDisplayMode.amounts,
-            label: l10n.salesMonthlyPnlBarDisplayValuesLabel,
-          ),
-          AppSegmentedControlOption<SalesMonthlyPnlBarDisplayMode>(
-            value: SalesMonthlyPnlBarDisplayMode.percent,
-            label: l10n.salesMonthlyPnlBarDisplayPercentLabel,
-          ),
-        ],
-        value: session.displayMode,
-        onChanged: onSessionChanged == null
-            ? null
-            : (v) => onSessionChanged!(
-                session.copyWith(displayMode: v),
-              ),
-      ),
+    final mainModeControl = salesMonthlyPnlBarDisplayModeSegmented(
+      l10n: l10n,
+      value: session.displayMode,
+      onChanged: onSessionChanged == null
+          ? null
+          : (v) => onSessionChanged!(session.copyWith(displayMode: v)),
     );
 
     final percentSection =
@@ -497,7 +497,10 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
 
     final surface = useChartShell
         ? AppChartShell(
-            title: l10n.salesMonthlyPnlBarChartTitle,
+            titleWidget: Text(
+              l10n.salesMonthlyPnlBarChartTitle,
+              style: theme.appTypography.sectionHeaderH2,
+            ),
             subtitle: l10n.salesMonthlyPnlBarChartSubtitle,
             onOpenFullscreen: openFullscreen,
             belowSubtitle: onSessionChanged == null ? null : belowSubtitle,
@@ -587,6 +590,43 @@ AppComparisonBarChartStyle _comparisonStyleWithPercent({
   );
 }
 
+Widget salesMonthlyPnlBarDisplayModeSegmented({
+  required AppLocalizations l10n,
+  required SalesMonthlyPnlBarDisplayMode value,
+  required ValueChanged<SalesMonthlyPnlBarDisplayMode>? onChanged,
+}) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final narrow = constraints.maxWidth < 340;
+      return Semantics(
+        sortKey: const OrdinalSortKey(1),
+        child: AppSegmentedControl<SalesMonthlyPnlBarDisplayMode>(
+          expandToFill: true,
+          options: <AppSegmentedControlOption<SalesMonthlyPnlBarDisplayMode>>[
+            AppSegmentedControlOption<SalesMonthlyPnlBarDisplayMode>(
+              value: SalesMonthlyPnlBarDisplayMode.amounts,
+              label: narrow
+                  ? l10n.salesMonthlyPnlBarDisplayValuesCompactLabel
+                  : l10n.salesMonthlyPnlBarDisplayValuesLabel,
+              tooltip: narrow ? l10n.salesMonthlyPnlBarDisplayValuesLabel : null,
+            ),
+            AppSegmentedControlOption<SalesMonthlyPnlBarDisplayMode>(
+              value: SalesMonthlyPnlBarDisplayMode.percent,
+              label: narrow
+                  ? l10n.salesMonthlyPnlBarDisplayPercentCompactLabel
+                  : l10n.salesMonthlyPnlBarDisplayPercentLabel,
+              tooltip:
+                  narrow ? l10n.salesMonthlyPnlBarDisplayPercentLabel : null,
+            ),
+          ],
+          value: value,
+          onChanged: onChanged,
+        ),
+      );
+    },
+  );
+}
+
 Future<void> pushSalesMonthlyPnlBarChartFullscreen({
   required BuildContext context,
   required List<SalesMonthlyPnlPoint> points,
@@ -594,12 +634,14 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
   required bool isLoading,
   required bool loadFailed,
   String? loadFailureMessage,
+  String? filterSummary,
 }) {
   final pageL10n = AppLocalizations.of(context);
   return context.pushChartFullscreen<void>(
     extra: AppChartFullscreenRouteExtra(
       title: pageL10n.salesMonthlyPnlBarChartTitle,
       subtitle: pageL10n.salesMonthlyPnlBarChartSubtitle,
+      filterSummary: filterSummary,
       chartSemanticsLabel: pageL10n.salesMonthlyPnlBarChartSemantics,
       chartBuilder: (fullscreenContext) {
         final l10nFs = AppLocalizations.of(fullscreenContext);
@@ -622,33 +664,13 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Semantics(
-                      sortKey: const OrdinalSortKey(1),
-                      child: AppSegmentedControl<SalesMonthlyPnlBarDisplayMode>(
-                        expandToFill: true,
-                        options:
-                            <
-                              AppSegmentedControlOption<
-                                SalesMonthlyPnlBarDisplayMode
-                              >
-                            >[
-                              AppSegmentedControlOption(
-                                value: SalesMonthlyPnlBarDisplayMode.amounts,
-                                label:
-                                    l10nFs.salesMonthlyPnlBarDisplayValuesLabel,
-                              ),
-                              AppSegmentedControlOption(
-                                value: SalesMonthlyPnlBarDisplayMode.percent,
-                                label:
-                                    l10nFs.salesMonthlyPnlBarDisplayPercentLabel,
-                              ),
-                            ],
-                        value: fsSession.displayMode,
-                        onChanged: (v) => setFs(() {
-                          sessionHolder[0] =
-                              sessionHolder[0].copyWith(displayMode: v);
-                        }),
-                      ),
+                    salesMonthlyPnlBarDisplayModeSegmented(
+                      l10n: l10nFs,
+                      value: fsSession.displayMode,
+                      onChanged: (v) => setFs(() {
+                        sessionHolder[0] =
+                            sessionHolder[0].copyWith(displayMode: v);
+                      }),
                     ),
                     if (isPct) ...<Widget>[
                       SizedBox(height: tokensFs.gapSm),
