@@ -55,12 +55,38 @@ Ao alterar PNGs em **`assets/icons/`** (por exemplo `colmeia-512.png`):
 
 1. `dart run flutter_launcher_icons` (Android, iOS, Web; Windows esta desativado
    no `pubspec.yaml` para evitar ICO de uma unica resolucao).
-2. Para atualizar **`windows/runner/resources/app_icon.ico`** manualmente:
-   `dart run tool/generate_windows_app_icon.dart` (gera camadas 16–256 px para o
-   Explorer e Inno Setup). Este passo corre **automaticamente** dentro de
-   `python installer/build_installer.py` antes do `flutter build windows`.
+2. Para atualizar **`windows/runner/resources/app_icon.ico`** e gerar
+   **`installer/setup_icon.ico`** (icone dedicado do Inno Setup, fora de `windows/`):
+   `dart run tool/generate_windows_app_icon.dart`. Este passo corre **automaticamente**
+   dentro de `python installer/build_installer.py` **antes e depois** do
+   `flutter build windows` (o segundo evita que o Setup.exe fique com ICO substituido
+   pelo tooling do Flutter).
 3. Revise e commit dos ficheiros gerados (Android, iOS, Web e `app_icon.ico`).
+   **`installer/setup_icon.ico`** e gerado e esta **gitignored** — nao commite.
 4. Para o instalador Windows completo: `python installer/build_installer.py`
+
+### Troubleshooting do icone do Setup.exe
+
+Se apenas `installer/dist/Colmeia-Setup-X.Y.Z.exe` aparecer com o icone antigo
+no Explorer, mas o app instalado e `colmeia.exe` estiverem corretos, o problema
+normalmente e **cache de icones do Windows**, nao o build do instalador.
+
+O fluxo atual ja:
+
+- gera `installer/setup_icon.ico` a partir de `assets/icons/colmeia-512.png`;
+- recompila esse `.ico` antes e depois do `flutter build windows`;
+- injeta o arquivo no Inno Setup via `SetupIconFile=setup_icon.ico`.
+
+Na pratica, recriar o mesmo ficheiro `Colmeia-Setup-X.Y.Z.exe` durante testes
+locais pode fazer o Explorer continuar a mostrar o icone anterior para o mesmo
+caminho/nome.
+
+Validacoes e workarounds:
+
+- confirmar o recurso embutido abrindo o `.exe` noutra maquina ou com outro nome;
+- gerar a proxima versao para mudar o nome final do asset;
+- reiniciar o Explorer ou limpar o icon cache local antes de concluir que o
+  build saiu com icone errado.
 
 **Nota:** o projeto nao inclui a pasta `macos/`; quando existir suporte macOS,
 adicione o bloco `macos:` em `flutter_launcher_icons` no `pubspec.yaml` e volte a
@@ -69,7 +95,7 @@ correr o comando acima.
 ## Feed do auto-update no instalador local
 
 Para embutir o URL do appcast no `.exe` gerado por `build_installer.py`, copie
-**`.env.release.example`** para **`.env.release`** na raiz e ajuste se necessario.
+**`.env.example`** para **`.env.release`** na raiz e ajuste se necessario.
 O ficheiro `.env.release` nao e versionado. Ver tambem [auto_update_setup.md](auto_update_setup.md).
 
 ## Signing Android local
@@ -154,7 +180,7 @@ flutter build apk --debug
 python installer/build_installer.py
 ```
 
-Para o feed oficial no `.exe` gerado localmente, veja a secao **Feed do auto-update no instalador local** acima (copie `.env.release.example` para `.env.release`).
+Para o feed oficial no `.exe` gerado localmente, veja a secao **Feed do auto-update no instalador local** acima (copie `.env.example` para `.env.release`).
 
 Se a keystore Android ja estiver configurada localmente, valide tambem:
 

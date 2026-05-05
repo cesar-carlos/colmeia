@@ -46,57 +46,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import os
-          import re
-          from pathlib import Path
-
-          content = Path("pubspec.yaml").read_text(encoding="utf-8")
-          match = re.search(
-              r'^version:\s*["\']?(\d+\.\d+\.\d+(?:\+\d+)?)["\']?\s*(?:#|$)',
-              content,
-              re.MULTILINE,
-          )
-          if match is None:
-              raise SystemExit("version was not found in pubspec.yaml")
-
-          full_version = match.group(1).strip()
-          short_version = full_version.split("+", maxsplit=1)[0]
-          release_tag = os.environ["GITHUB_REF_NAME"]
-          expected_tag = f"v{short_version}"
-          if release_tag != expected_tag:
-              raise SystemExit(
-                  f"Tag {release_tag} does not match pubspec.yaml version {short_version}",
-              )
-
-          repository = os.environ["GITHUB_REPOSITORY"]
-          windows_asset_name = f"Colmeia-Setup-{short_version}.exe"
-          android_apk_asset_name = f"Colmeia-Android-{short_version}.apk"
-          android_aab_asset_name = f"Colmeia-Android-{short_version}.aab"
-          release_title = f"Version {short_version}"
-          release_url = f"https://github.com/{repository}/releases/tag/{release_tag}"
-          windows_asset_url = (
-              f"https://github.com/{repository}/releases/download/"
-              f"{release_tag}/{windows_asset_name}"
-          )
-
-          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
-              output.write(f"full_version={full_version}\n")
-              output.write(f"short_version={short_version}\n")
-              output.write(f"release_title={release_title}\n")
-              output.write(f"release_tag={release_tag}\n")
-              output.write(f"windows_asset_name={windows_asset_name}\n")
-              output.write(f"android_apk_asset_name={android_apk_asset_name}\n")
-              output.write(f"android_aab_asset_name={android_aab_asset_name}\n")
-              output.write(f"release_url={release_url}\n")
-              output.write(f"windows_asset_url={windows_asset_url}\n")
-          PY
+          python installer/ci_print_release_metadata.py
 
   build_windows:
     needs: prepare_release
     runs-on: windows-latest
     env:
-      AUTO_UPDATE_FEED_URL: https://raw.githubusercontent.com/${{ github.repository }}/main/appcast.xml
+      # Optional repository variable `APPCAST_FEED_URL` overrides the default feed.
+      AUTO_UPDATE_FEED_URL: ${{ vars.APPCAST_FEED_URL != '' && vars.APPCAST_FEED_URL || format('https://raw.githubusercontent.com/{0}/main/appcast.xml', github.repository) }}
+      COLMEIA_SKIP_VERSION_SYNC: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@v6

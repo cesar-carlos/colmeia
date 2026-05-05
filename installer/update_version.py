@@ -10,7 +10,14 @@ Updates:
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+
+_INSTALLER_DIR = Path(__file__).resolve().parent
+if str(_INSTALLER_DIR) not in sys.path:
+    sys.path.insert(0, str(_INSTALLER_DIR))
+
+from pubspec_version import read_pubspec_versions
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PUBSPEC = PROJECT_ROOT / "pubspec.yaml"
@@ -27,21 +34,7 @@ def main() -> None:
 
 
 def resolve_versions() -> tuple[str, str]:
-    if not PUBSPEC.exists():
-        raise SystemExit(f"pubspec.yaml not found: {PUBSPEC}")
-
-    content = PUBSPEC.read_text(encoding="utf-8")
-    match = re.search(
-        r'^version:\s*["\']?(\d+\.\d+\.\d+(?:\+\d+)?)["\']?\s*(?:#|$)',
-        content,
-        re.MULTILINE,
-    )
-    if match is None:
-        raise SystemExit("version was not found in pubspec.yaml")
-
-    full_version = match.group(1).strip()
-    short_version = full_version.split("+", maxsplit=1)[0]
-    return short_version, full_version
+    return read_pubspec_versions(PUBSPEC)
 
 
 def update_setup_iss(version: str) -> None:

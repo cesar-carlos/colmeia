@@ -1,8 +1,14 @@
-// Generates windows/runner/resources/app_icon.ico with multiple embedded PNG
-// layers (standard Windows / Explorer / Inno Setup compatibility).
+// Generates Windows ICO files with multiple embedded PNG layers (16–256 px).
 //
-// flutter_launcher_icons produces a single-resolution ICO; this script
-// overwrites that output before `flutter build windows`.
+// Outputs:
+// - `windows/runner/resources/app_icon.ico` — linked via Runner.rc into colmeia.exe.
+// - `installer/setup_icon.ico` — used only by Inno Setup (`SetupIconFile`).
+//
+// `installer/setup_icon.ico` lives outside `windows/` so `flutter build windows`
+// cannot overwrite it before ISCC runs (the Flutter tool may replace the runner ICO).
+//
+// flutter_launcher_icons single-resolution ICO is insufficient for Explorer/Inno;
+// this script runs before (and after) release builds — see `installer/build_installer.py`.
 
 import 'dart:io';
 
@@ -10,10 +16,13 @@ import 'package:image/image.dart';
 
 const List<int> _icoSizes = <int>[256, 128, 64, 48, 32, 16];
 
-Future<void> main(List<String> args) async {
+Future<void> main() async {
   final root = Directory.current.path;
   final srcPath = '$root/assets/icons/colmeia-512.png';
-  final outPath = '$root/windows/runner/resources/app_icon.ico';
+  final outputPaths = <String>[
+    '$root/windows/runner/resources/app_icon.ico',
+    '$root/installer/setup_icon.ico',
+  ];
 
   final srcFile = File(srcPath);
   if (!srcFile.existsSync()) {
@@ -45,12 +54,14 @@ Future<void> main(List<String> args) async {
   }
 
   final bytes = encodeIco(icon);
-  final outFile = File(outPath);
-  await outFile.parent.create(recursive: true);
-  await outFile.writeAsBytes(bytes, flush: true);
 
-  stdout.writeln(
-    'generate_windows_app_icon: wrote $outPath '
-    '(${bytes.length} bytes, ${_icoSizes.length} sizes)',
-  );
+  for (final outPath in outputPaths) {
+    final outFile = File(outPath);
+    await outFile.parent.create(recursive: true);
+    await outFile.writeAsBytes(bytes, flush: true);
+    stdout.writeln(
+      'generate_windows_app_icon: wrote $outPath '
+      '(${bytes.length} bytes, ${_icoSizes.length} sizes)',
+    );
+  }
 }

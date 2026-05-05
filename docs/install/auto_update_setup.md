@@ -10,7 +10,10 @@ O feed e resolvido nesta ordem:
 
 1. `--dart-define=AUTO_UPDATE_FEED_URL=...`
 2. `.env.release` da raiz, consumido por `installer/build_installer.py`
-3. `.env` da raiz como fallback legado
+   (modelo versionado: copie `.env.example` → `.env.release`)
+
+No GitHub Actions (workflow de tag), o URL vem do ambiente do job; opcionalmente
+substitua pela variavel de repositorio **`APPCAST_FEED_URL`** (ver `installer/readme.md`).
 
 Se `AUTO_UPDATE_FEED_URL` estiver vazio ou invalido, a UI de update no Windows
 permanece visivel apenas em modo informativo e a checagem manual fica
