@@ -11,11 +11,13 @@ import 'package:provider/provider.dart';
 
 class AppShellScaffold extends StatelessWidget {
   const AppShellScaffold({
+    required this.currentLocation,
     required this.currentRoute,
     required this.child,
     super.key,
   });
 
+  final String currentLocation;
   final AppRoute currentRoute;
   final Widget child;
 
@@ -52,6 +54,7 @@ class AppShellScaffold extends StatelessWidget {
             children: <Widget>[
               if (showShellNav) ...<Widget>[
                 AppShellRail(
+                  currentLocation: currentLocation,
                   currentRoute: currentRoute,
                   visibleShellRoutes: visibleShellRoutes,
                 ),
@@ -82,6 +85,7 @@ class AppShellScaffold extends StatelessWidget {
       appBar: const AppShellAppBar(),
       drawer: showShellNav
           ? AppShellDrawer(
+              currentLocation: currentLocation,
               currentRoute: currentRoute,
               visibleShellRoutes: visibleShellRoutes,
             )

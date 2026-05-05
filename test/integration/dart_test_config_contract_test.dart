@@ -1,6 +1,6 @@
-// Contract test: `flutter test test/integration --exclude-tags e2e` is wired
-// in [.github/workflows/flutter_ci.yml]. If this file is removed, CI may exit
-// 79 when every file under test/integration is tagged `e2e`.
+// Contract test: CI runs `flutter test ... test/integration/dart_test_config_contract_test.dart`
+// (see [.github/workflows/flutter_ci.yml]) so `dart_test.yaml` keeps the `e2e` tag used by
+// `--exclude-tags e2e`. This file must remain a non-e2e integration test entrypoint.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';

@@ -1,0 +1,16 @@
+# Copy this file to android/key.properties and fill it with your real
+# Android release signing data. Do not commit android/key.properties or
+# the referenced keystore file.
+#
+# `storeFile` is resolved relative to the android/ directory.
+# Example for a local keystore stored at android/app/upload-keystore.jks:
+#
+# storeFile=app/upload-keystore.jks
+# storePassword=change-me
+# keyAlias=upload
+# keyPassword=change-me
+
+storeFile=app/upload-keystore.jks
+storePassword=
+keyAlias=
+keyPassword=

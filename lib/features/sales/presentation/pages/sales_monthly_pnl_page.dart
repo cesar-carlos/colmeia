@@ -10,10 +10,13 @@ import 'package:colmeia/features/client_agents/domain/repositories/agent_client_
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_monthly_pnl_bar_chart_card.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
@@ -342,7 +345,10 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
   }
 
   void _openChartFullscreen() {
-    final pointsSnapshot = List<SalesMonthlyPnlPoint>.of(_points, growable: false);
+    final pointsSnapshot = List<SalesMonthlyPnlPoint>.of(
+      _points,
+      growable: false,
+    );
     final isLoadingSnapshot = _loading && _selectedAgentId != null;
     final loadFailedSnapshot = _chartLoadFailed;
     final loadFailureMessageSnapshot = _chartLoadFailureMessage;
@@ -370,6 +376,19 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  void _openBarChartFullscreen() {
+    unawaited(
+      pushSalesMonthlyPnlBarChartFullscreen(
+        context: context,
+        points: List<SalesMonthlyPnlPoint>.of(_points, growable: false),
+        initialSession: _prefs.restoreMonthlyPnlBarChartPreferences(),
+        isLoading: _loading && _selectedAgentId != null,
+        loadFailed: _chartLoadFailed,
+        loadFailureMessage: _chartLoadFailureMessage,
       ),
     );
   }
@@ -425,15 +444,32 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
               message: l10n.salesAgentRequiredMessage,
             )
           else
-            RepaintBoundary(
-              child: _SalesMonthlyPnlLineChart(
-                l10n: l10n,
-                points: _points,
-                loadFailed: _chartLoadFailed,
-                loadFailureMessage: _chartLoadFailureMessage,
-                isLoading: _loading && _selectedAgentId != null,
-                onOpenFullscreen: _openChartFullscreen,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                RepaintBoundary(
+                  child: _SalesMonthlyPnlLineChart(
+                    l10n: l10n,
+                    points: _points,
+                    loadFailed: _chartLoadFailed,
+                    loadFailureMessage: _chartLoadFailureMessage,
+                    isLoading: _loading && _selectedAgentId != null,
+                    onOpenFullscreen: _openChartFullscreen,
+                  ),
+                ),
+                SizedBox(height: tokens.sectionSpacing),
+                RepaintBoundary(
+                  child: SalesMonthlyPnlBarChartCard(
+                    l10n: l10n,
+                    points: _points,
+                    loadFailed: _chartLoadFailed,
+                    loadFailureMessage: _chartLoadFailureMessage,
+                    isLoading: _loading && _selectedAgentId != null,
+                    preferences: _prefs,
+                    onOpenFullscreen: _openBarChartFullscreen,
+                  ),
+                ),
+              ],
             ),
         ],
       ),
@@ -642,6 +678,7 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
                     ),
                   ),
                   semanticsHint: l10n.overviewComparisonBarHorizontalScrollHint,
+                  key: SalesMonthlyPnlChartKeys.lineHorizontalScrollShell,
                 ),
               );
             },

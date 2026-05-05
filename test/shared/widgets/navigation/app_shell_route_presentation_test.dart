@@ -26,20 +26,8 @@ void main() {
       );
     });
 
-    test('should map placeholder shell routes to shell labels', () {
+    test('should map active shell routes to shell labels', () {
       expect(appShellRouteLabel(AppRoute.sales, l10n), l10n.shellNavSalesLabel);
-      expect(
-        appShellRouteLabel(AppRoute.returns, l10n),
-        l10n.shellNavReturnsLabel,
-      );
-      expect(
-        appShellRouteLabel(AppRoute.finance, l10n),
-        l10n.shellNavFinanceLabel,
-      );
-      expect(
-        appShellRouteLabel(AppRoute.purchases, l10n),
-        l10n.shellNavPurchasesLabel,
-      );
       expect(
         appShellRouteLabel(AppRoute.inventory, l10n),
         l10n.shellNavInventoryLabel,
@@ -75,22 +63,10 @@ void main() {
       );
     });
 
-    test('should describe placeholder shell destinations', () {
+    test('should describe active shell destinations', () {
       expect(
         appShellRouteSubtitle(AppRoute.sales, l10n),
         l10n.shellNavSalesSubtitle,
-      );
-      expect(
-        appShellRouteSubtitle(AppRoute.returns, l10n),
-        l10n.shellNavReturnsSubtitle,
-      );
-      expect(
-        appShellRouteSubtitle(AppRoute.finance, l10n),
-        l10n.shellNavFinanceSubtitle,
-      );
-      expect(
-        appShellRouteSubtitle(AppRoute.purchases, l10n),
-        l10n.shellNavPurchasesSubtitle,
       );
       expect(
         appShellRouteSubtitle(AppRoute.inventory, l10n),

@@ -20,7 +20,9 @@ and a `RepaintBoundary` where applicable:
 | 4   | `OverviewWeekdaySalesTrendChart`         | `AppComparisonBarChart`                              |
 | 5   | `OverviewWeekdayUserGroupedBarChart`     | direct `SfCartesianChart` (clustered columns)        |
 | 6   | `OverviewRankingsSection` (agent + user) | `AppComparisonBarChart` x2                           |
-| 7   | `OverviewLucratividadeChart`             | `AppComboChart` (one category per agent, branches summed) |
+| 7   | `OverviewLucratividadeChart`             | `AppComboChart` (one category per agent, branches summed); mode **Percentuais** defaults to gross-margin % with sub-options cost % / markup % via [`overview_lucratividade_percent_metrics.dart`](../../lib/features/overview/presentation/widgets/overview_lucratividade_percent_metrics.dart) |
+
+**Sales — resultado mensal (`SalesMonthlyPnlPage`):** [`SalesMonthlyPnlBarChartCard`](../../lib/features/sales/presentation/widgets/sales_monthly_pnl_bar_chart_card.dart) adds grouped monthly bars via [`AppGroupedColumnChart`](../../lib/shared/widgets/charts/app_grouped_column_chart.dart) (sales on primary Y-axis, profit + merchandise cost on secondary), optional **Percentuais** mode via `AppComparisonBarChart` with **~150 ms** series animation (via `resolveChartAnimationDurationMs`, matching the overview lucratividade percent chart); bar-chart mode and percent metric persist via [`SalesPreferences`](../../lib/features/sales/data/sales_preferences.dart); horizontal scroll regions use stable keys in [`sales_monthly_pnl_chart_keys.dart`](../../lib/features/sales/presentation/sales_monthly_pnl_chart_keys.dart) for tests; complements the existing three-series line chart on the same aggregates.
 
 ### Shared design-system catalog (24 widgets)
 
@@ -38,6 +40,7 @@ smoke tests for the engines.
 | `AppStepLineChart`           | `engines/syncfusion_step_line_chart.dart`                    |
 | `AppTimeSeriesChart`         | `engines/syncfusion_time_series_chart.dart`                  |
 | `AppComboChart`              | `engines/syncfusion_combo_chart.dart`                        |
+| `AppGroupedColumnChart`      | `app_grouped_column_chart.dart` (dual axis, 3 `ColumnSeries`) |
 | `AppWaterfallChart`          | `engines/syncfusion_waterfall_chart.dart`                    |
 | `AppDistributionChart`       | `engines/syncfusion_distribution_chart.dart`                 |
 | `AppCategoryDonutCard`       | `app_category_donut_card.dart` (engine inline)               |

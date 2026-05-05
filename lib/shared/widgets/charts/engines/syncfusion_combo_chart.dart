@@ -140,7 +140,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               )
             : null,
         onTooltipRender: enableTooltip
-            ? buildSanitizingTooltipRenderer()
+            ? buildSanitizingTooltipRenderer(
+                bodyResolver: style.tooltipBodyResolver,
+              )
             : null,
         // Shared tooltip when both series exist; single-series charts still work.
         tooltipBehavior: buildChartTooltipBehavior(

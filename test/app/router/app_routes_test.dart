@@ -32,11 +32,8 @@ void main() {
       check(AppRoute.fromLocation('')).equals(AppRoute.dashboard);
     });
 
-    test('should resolve placeholder shell paths', () {
+    test('should resolve active shell paths', () {
       check(AppRoute.fromLocation('/sales')).equals(AppRoute.sales);
-      check(AppRoute.fromLocation('/returns')).equals(AppRoute.returns);
-      check(AppRoute.fromLocation('/finance')).equals(AppRoute.finance);
-      check(AppRoute.fromLocation('/purchases')).equals(AppRoute.purchases);
       check(AppRoute.fromLocation('/inventory')).equals(AppRoute.inventory);
     });
 
@@ -54,6 +51,59 @@ void main() {
         AppRoute.agents.shellIndex,
       );
       check(AppRoute.dashboard.shellNavSelectionIndex).equals(0);
+    });
+
+    test('should resolve shell root route for shell details and roots', () {
+      check(AppRoute.salesCard.shellRootRoute).equals(AppRoute.sales);
+      check(AppRoute.dashboardStore.shellRootRoute).equals(AppRoute.dashboard);
+      check(AppRoute.agentsDetail.shellRootRoute).equals(AppRoute.agents);
+      check(AppRoute.sales.shellRootRoute).equals(AppRoute.sales);
+      check(AppRoute.login.shellRootRoute).isNull();
+    });
+
+    test('should resolve shell navigation target for drawer and rail taps', () {
+      check(
+        AppRoute.resolveShellNavigationTarget(
+          current: AppRoute.sales,
+          currentLocation: AppRoute.sales.path,
+          tapped: AppRoute.sales,
+        ),
+      ).isNull();
+      check(
+        AppRoute.resolveShellNavigationTarget(
+          current: AppRoute.salesCard,
+          currentLocation: '/sales/produto_rank_lucro',
+          tapped: AppRoute.sales,
+        ),
+      ).equals(AppRoute.sales);
+      check(
+        AppRoute.resolveShellNavigationTarget(
+          current: AppRoute.dashboardStore,
+          currentLocation: '/dashboard/store/03',
+          tapped: AppRoute.dashboard,
+        ),
+      ).equals(AppRoute.dashboard);
+      check(
+        AppRoute.resolveShellNavigationTarget(
+          current: AppRoute.agentsDetail,
+          currentLocation: '/agents/42',
+          tapped: AppRoute.agents,
+        ),
+      ).equals(AppRoute.agents);
+      check(
+        AppRoute.resolveShellNavigationTarget(
+          current: AppRoute.settings,
+          currentLocation: '/settings/component-demos/app-buttons-demo',
+          tapped: AppRoute.settings,
+        ),
+      ).equals(AppRoute.settings);
+      check(
+        AppRoute.resolveShellNavigationTarget(
+          current: AppRoute.salesCard,
+          currentLocation: '/sales/produto_rank_lucro',
+          tapped: AppRoute.dashboard,
+        ),
+      ).equals(AppRoute.dashboard);
     });
   });
 }

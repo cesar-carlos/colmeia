@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 
 class AppShellRail extends StatelessWidget {
   const AppShellRail({
+    required this.currentLocation,
     required this.currentRoute,
     required this.visibleShellRoutes,
     super.key,
   });
 
+  final String currentLocation;
   final AppRoute currentRoute;
   final List<AppRoute> visibleShellRoutes;
 
@@ -30,6 +32,7 @@ class AppShellRail extends StatelessWidget {
       child: ColoredBox(
         color: colors.surfaceContainerLowest,
         child: AppShellNavigationPanel(
+          currentLocation: currentLocation,
           currentRoute: currentRoute,
           visibleShellRoutes: visibleShellRoutes,
           closeOverlayBeforeNavigate: false,

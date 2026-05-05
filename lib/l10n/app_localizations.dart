@@ -3229,8 +3229,134 @@ abstract class AppLocalizations {
   /// No description provided for @overviewLucratividadeSwitchMargin.
   ///
   /// In en, this message translates to:
-  /// **'Margin %'**
+  /// **'Percent metrics'**
   String get overviewLucratividadeSwitchMargin;
+
+  /// No description provided for @overviewLucratividadePercentMetricCostShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost %'**
+  String get overviewLucratividadePercentMetricCostShort;
+
+  /// No description provided for @overviewLucratividadePercentMetricGrossShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross margin'**
+  String get overviewLucratividadePercentMetricGrossShort;
+
+  /// No description provided for @overviewLucratividadePercentMetricMarkupShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup'**
+  String get overviewLucratividadePercentMetricMarkupShort;
+
+  /// No description provided for @overviewLucratividadePercentSeriesCostLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost on sales %'**
+  String get overviewLucratividadePercentSeriesCostLabel;
+
+  /// No description provided for @overviewLucratividadePercentSeriesGrossLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross margin %'**
+  String get overviewLucratividadePercentSeriesGrossLabel;
+
+  /// No description provided for @overviewLucratividadePercentSeriesMarkupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup on cost %'**
+  String get overviewLucratividadePercentSeriesMarkupLabel;
+
+  /// No description provided for @overviewLucratividadePercentHelpCostBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost / Sales × 100. Shows the share of revenue consumed by replacement cost.'**
+  String get overviewLucratividadePercentHelpCostBody;
+
+  /// No description provided for @overviewLucratividadePercentHelpGrossBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit / Sales × 100. Shows the share of revenue left as gross profit.'**
+  String get overviewLucratividadePercentHelpGrossBody;
+
+  /// No description provided for @overviewLucratividadePercentHelpMarkupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit / Cost × 100. Shows profit relative to replacement cost.'**
+  String get overviewLucratividadePercentHelpMarkupBody;
+
+  /// No description provided for @overviewLucratividadeMarkupNotApplicable.
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get overviewLucratividadeMarkupNotApplicable;
+
+  /// No description provided for @overviewLucratividadePercentSemanticsCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost percentage on sales.'**
+  String get overviewLucratividadePercentSemanticsCost;
+
+  /// No description provided for @overviewLucratividadePercentSemanticsGross.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross margin percentage on sales.'**
+  String get overviewLucratividadePercentSemanticsGross;
+
+  /// No description provided for @overviewLucratividadePercentSemanticsMarkup.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup percentage on replacement cost.'**
+  String get overviewLucratividadePercentSemanticsMarkup;
+
+  /// No description provided for @overviewLucratividadePercentIndicatorHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Percent indicator'**
+  String get overviewLucratividadePercentIndicatorHeading;
+
+  /// No description provided for @overviewLucratividadePercentIndicatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Indicator'**
+  String get overviewLucratividadePercentIndicatorLabel;
+
+  /// No description provided for @overviewLucratividadePercentEmptyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'No data to illustrate this metric.'**
+  String get overviewLucratividadePercentEmptyHelp;
+
+  /// No description provided for @overviewLucratividadeMarkupUndefinedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup is undefined when replacement cost is missing or zero.'**
+  String get overviewLucratividadeMarkupUndefinedTooltip;
+
+  /// No description provided for @overviewLucratividadePercentMetricCostTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of revenue that is replacement cost (cost divided by sales).'**
+  String get overviewLucratividadePercentMetricCostTooltip;
+
+  /// No description provided for @overviewLucratividadePercentMetricGrossTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross margin on sales (profit divided by sales).'**
+  String get overviewLucratividadePercentMetricGrossTooltip;
+
+  /// No description provided for @overviewLucratividadePercentMetricMarkupTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup on replacement cost (profit divided by cost).'**
+  String get overviewLucratividadePercentMetricMarkupTooltip;
+
+  /// No description provided for @overviewLucratividadeMensalPercentChronologicalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Months stay in chronological order (not ranked by value).'**
+  String get overviewLucratividadeMensalPercentChronologicalHint;
 
   /// No description provided for @overviewLucratividadeProfitSeriesLabel.
   ///
@@ -3319,7 +3445,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewLucratividadeMensalSwitchMargin.
   ///
   /// In en, this message translates to:
-  /// **'Margin %'**
+  /// **'Percent metrics'**
   String get overviewLucratividadeMensalSwitchMargin;
 
   /// No description provided for @overviewLucratividadeMensalProfitSeriesLabel.
@@ -3501,6 +3627,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Monthly P&L chart with sales value, profit, and merchandise cost for the selected branch'**
   String get salesMonthlyPnlChartSemantics;
+
+  /// No description provided for @salesMonthlyPnlBarChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly comparison (bars)'**
+  String get salesMonthlyPnlBarChartTitle;
+
+  /// No description provided for @salesMonthlyPnlBarChartSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bars use the same monthly totals as the line chart above (aggregated sales, profit, and merchandise cost—not per-item averages). Percent metrics are computed from those monthly totals.'**
+  String get salesMonthlyPnlBarChartSubtitle;
+
+  /// No description provided for @salesMonthlyPnlBarDisplayValuesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amounts'**
+  String get salesMonthlyPnlBarDisplayValuesLabel;
+
+  /// No description provided for @salesMonthlyPnlBarDisplayPercentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Percent metrics'**
+  String get salesMonthlyPnlBarDisplayPercentLabel;
+
+  /// No description provided for @salesMonthlyPnlBarZerosOnlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to plot for this view in the selected window (all values are zero).'**
+  String get salesMonthlyPnlBarZerosOnlyMessage;
+
+  /// No description provided for @salesMonthlyPnlBarChartSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly grouped bar chart for sales, profit, and merchandise cost'**
+  String get salesMonthlyPnlBarChartSemantics;
+
+  /// No description provided for @salesMonthlyPnlBarSummarySemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Period totals: {totalSales} sales, {totalProfit} profit, {totalCost} merchandise cost. Highest sales month: {topMonth} ({topSales}).'**
+  String salesMonthlyPnlBarSummarySemantics(
+    String totalSales,
+    String totalProfit,
+    String totalCost,
+    String topMonth,
+    String topSales,
+  );
 
   /// No description provided for @salesProdutoRankLucroChartTitle.
   ///

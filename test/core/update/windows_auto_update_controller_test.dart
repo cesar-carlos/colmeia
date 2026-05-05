@@ -15,7 +15,7 @@ void main() {
     test('should stay hidden on unsupported platforms', () async {
       final controller = WindowsAutoUpdateController(
         autoUpdaterClient: _FakeAutoUpdaterClient(),
-        appcastProbeClient: _FakeAppcastProbeClient(),
+        appcastProbeClient: _FakeProbeHarness().client,
         feedUrlResolver: () => 'https://example.com/appcast.xml',
         preferencesStore: await _createPreferencesStore(),
         supportsNativeUpdates: () => false,
@@ -34,7 +34,7 @@ void main() {
       () async {
         final controller = WindowsAutoUpdateController(
           autoUpdaterClient: _FakeAutoUpdaterClient(),
-          appcastProbeClient: _FakeAppcastProbeClient(),
+          appcastProbeClient: _FakeProbeHarness().client,
           feedUrlResolver: () => '',
           preferencesStore: await _createPreferencesStore(),
           supportsNativeUpdates: () => true,
@@ -52,10 +52,10 @@ void main() {
 
     test('should initialize updater and trigger background check', () async {
       final client = _FakeAutoUpdaterClient();
-      final probeClient = _FakeAppcastProbeClient();
+      final probeHarness = _FakeProbeHarness();
       final controller = WindowsAutoUpdateController(
         autoUpdaterClient: client,
-        appcastProbeClient: probeClient,
+        appcastProbeClient: probeHarness.client,
         feedUrlResolver: () => 'https://example.com/appcast.xml',
         preferencesStore: await _createPreferencesStore(),
         supportsNativeUpdates: () => true,
@@ -71,7 +71,7 @@ void main() {
         WindowsAutoUpdateController.scheduledCheckIntervalInSeconds,
       ]);
       check(client.checkCalls).deepEquals(<bool>[true]);
-      check(probeClient.feedUrls).deepEquals(<String>[
+      check(probeHarness.feedUrls).deepEquals(<String>[
         'https://example.com/appcast.xml',
       ]);
       check(controller.state.status).equals(WindowsAutoUpdateStatus.checking);
@@ -81,7 +81,7 @@ void main() {
       final client = _FakeAutoUpdaterClient();
       final controller = WindowsAutoUpdateController(
         autoUpdaterClient: client,
-        appcastProbeClient: _FakeAppcastProbeClient(),
+        appcastProbeClient: _FakeProbeHarness().client,
         feedUrlResolver: () => 'https://example.com/appcast.xml',
         preferencesStore: await _createPreferencesStore(),
         supportsNativeUpdates: () => true,
@@ -102,7 +102,7 @@ void main() {
       final client = _FakeAutoUpdaterClient();
       final controller = WindowsAutoUpdateController(
         autoUpdaterClient: client,
-        appcastProbeClient: _FakeAppcastProbeClient(),
+        appcastProbeClient: _FakeProbeHarness().client,
         feedUrlResolver: () => 'https://example.com/appcast.xml',
         preferencesStore: await _createPreferencesStore(),
         supportsNativeUpdates: () => true,
@@ -117,7 +117,7 @@ void main() {
 
     test('should stop before native check when appcast probe fails', () async {
       final client = _FakeAutoUpdaterClient();
-      final probeClient = _FakeAppcastProbeClient(
+      final probeHarness = _FakeProbeHarness(
         nextResult: const AppcastProbeResult.failure(
           failureKind: AppcastProbeFailureKind.timeout,
           details: 'O feed demorou mais que o esperado para responder.',
@@ -125,7 +125,7 @@ void main() {
       );
       final controller = WindowsAutoUpdateController(
         autoUpdaterClient: client,
-        appcastProbeClient: probeClient,
+        appcastProbeClient: probeHarness.client,
         feedUrlResolver: () => 'https://example.com/appcast.xml',
         preferencesStore: await _createPreferencesStore(),
         supportsNativeUpdates: () => true,
@@ -163,7 +163,7 @@ void main() {
 
         final controller = WindowsAutoUpdateController(
           autoUpdaterClient: _FakeAutoUpdaterClient(),
-          appcastProbeClient: _FakeAppcastProbeClient(),
+          appcastProbeClient: _FakeProbeHarness().client,
           feedUrlResolver: () => 'https://example.com/appcast.xml',
           preferencesStore: prefsStore,
           supportsNativeUpdates: () => true,
@@ -211,19 +211,20 @@ final class _FakeAutoUpdaterClient implements AutoUpdaterClient {
   }
 }
 
-final class _FakeAppcastProbeClient implements AppcastProbeClient {
-  _FakeAppcastProbeClient({
+final class _FakeProbeHarness {
+  _FakeProbeHarness({
     this.nextResult = const AppcastProbeResult.success(),
   });
 
   final AppcastProbeResult nextResult;
   final List<String> feedUrls = <String>[];
 
-  @override
-  Future<AppcastProbeResult> probe({required String feedUrl}) async {
+  Future<AppcastProbeResult> _invoke({required String feedUrl}) async {
     feedUrls.add(feedUrl);
     return nextResult;
   }
+
+  AppcastProbeClient get client => _invoke;
 }
 
 Future<AppUserPreferencesStore> _createPreferencesStore() async {

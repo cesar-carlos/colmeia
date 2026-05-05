@@ -59,6 +59,7 @@ class AppComboChartStyle {
     this.categoryViewportFootnote,
     this.categoryViewportPanSemanticsLabel,
     this.categoryLabelIntersectAction,
+    this.tooltipBodyResolver,
   });
 
   final double? height;
@@ -160,6 +161,10 @@ class AppComboChartStyle {
   /// When set, overrides the default slot-width-based X-axis label overlap
   /// policy in the Syncfusion engine.
   final AxisLabelIntersectAction? categoryLabelIntersectAction;
+
+  /// Optional Syncfusion tooltip body override or augmentation (runs after the
+  /// chart fills default tooltip text; return non-null to replace [TooltipArgs.text]).
+  final String? Function(TooltipArgs args)? tooltipBodyResolver;
 }
 
 enum AppComboChartSeriesType {

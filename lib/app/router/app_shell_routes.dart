@@ -15,6 +15,7 @@ List<RouteBase> buildAppShellRoutes() {
       observers: <NavigatorObserver>[appShellRouteObserver],
       builder: (context, state, child) {
         return AppShellScaffold(
+          currentLocation: state.uri.path,
           currentRoute: AppRoute.fromLocation(state.matchedLocation),
           child: child,
         );

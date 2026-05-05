@@ -105,7 +105,7 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
     );
 
     try {
-      final probeResult = await _appcastProbeClient.probe(
+      final probeResult = await _appcastProbeClient(
         feedUrl: _state.feedUrl,
       );
       if (!probeResult.success) {

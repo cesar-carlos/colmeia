@@ -19,11 +19,7 @@ String _shellRouteLabel(AppRoute route, AppLocalizations l10n) {
     AppRoute.unmatched => route.title,
     AppRoute.dashboard ||
     AppRoute.dashboardStore => l10n.shellNavDashboardLabel,
-    AppRoute.sales ||
-    AppRoute.salesCard => l10n.shellNavSalesLabel,
-    AppRoute.returns => l10n.shellNavReturnsLabel,
-    AppRoute.finance => l10n.shellNavFinanceLabel,
-    AppRoute.purchases => l10n.shellNavPurchasesLabel,
+    AppRoute.sales || AppRoute.salesCard => l10n.shellNavSalesLabel,
     AppRoute.inventory => l10n.shellNavInventoryLabel,
     AppRoute.settings => l10n.shellNavSettingsLabel,
     AppRoute.agents => l10n.shellNavAgentsLabel,
@@ -42,11 +38,7 @@ String? _shellRouteSubtitle(AppRoute route, AppLocalizations l10n) {
     AppRoute.unmatched => null,
     AppRoute.dashboard ||
     AppRoute.dashboardStore => l10n.shellNavDashboardSubtitle,
-    AppRoute.sales ||
-    AppRoute.salesCard => l10n.shellNavSalesSubtitle,
-    AppRoute.returns => l10n.shellNavReturnsSubtitle,
-    AppRoute.finance => l10n.shellNavFinanceSubtitle,
-    AppRoute.purchases => l10n.shellNavPurchasesSubtitle,
+    AppRoute.sales || AppRoute.salesCard => l10n.shellNavSalesSubtitle,
     AppRoute.inventory => l10n.shellNavInventorySubtitle,
     AppRoute.settings => l10n.shellNavSettingsSubtitle,
     AppRoute.agents => l10n.shellNavAgentsSubtitle,

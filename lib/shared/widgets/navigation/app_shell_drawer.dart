@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 
 class AppShellDrawer extends StatelessWidget {
   const AppShellDrawer({
+    required this.currentLocation,
     required this.currentRoute,
     required this.visibleShellRoutes,
     super.key,
   });
 
+  final String currentLocation;
   final AppRoute currentRoute;
   final List<AppRoute> visibleShellRoutes;
 
@@ -21,6 +23,7 @@ class AppShellDrawer extends StatelessWidget {
       width: tokens.shellDrawerWidth,
       child: SafeArea(
         child: AppShellNavigationPanel(
+          currentLocation: currentLocation,
           currentRoute: currentRoute,
           visibleShellRoutes: visibleShellRoutes,
           closeOverlayBeforeNavigate: true,

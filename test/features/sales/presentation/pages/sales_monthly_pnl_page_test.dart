@@ -9,8 +9,11 @@ import 'package:colmeia/features/client_agents/domain/repositories/agent_client_
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page.dart';
+import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
@@ -47,6 +50,7 @@ void main() {
       const OverviewYearMonth(year: 2026, month: 5),
     );
     registerFallbackValue(<String>['agent-1']);
+    registerFallbackValue(SalesMonthlyPnlBarChartPreferences.defaults);
   });
 
   setUp(() async {
@@ -78,6 +82,12 @@ void main() {
     );
     when(
       () => salesPreferences.persistMonthlyPnlAnchor(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => salesPreferences.restoreMonthlyPnlBarChartPreferences(),
+    ).thenReturn(SalesMonthlyPnlBarChartPreferences.defaults);
+    when(
+      () => salesPreferences.persistMonthlyPnlBarChartPreferences(any()),
     ).thenAnswer((_) async {});
 
     when(
@@ -128,12 +138,12 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.byType(AppSkeleton), findsOneWidget);
+    expect(find.byType(AppSkeleton), findsNWidgets(2));
     expect(
       find.byKey(
         const ValueKey<String>('chart-loading-placeholder-timeSeries'),
       ),
-      findsOneWidget,
+      findsNWidgets(2),
     );
   });
 
@@ -153,7 +163,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final shell = tester.widget<ChartHorizontalScrollShell>(
-      find.byType(ChartHorizontalScrollShell),
+      find.byKey(SalesMonthlyPnlChartKeys.lineHorizontalScrollShell),
     );
     expect(
       shell.semanticsHint,
@@ -273,7 +283,13 @@ SalesMonthlyPnlLinesLoadResult _bundleWithBaseValue(double baseValue) => (
 );
 
 void _expectSalesSeriesBaseValue(WidgetTester tester, double expectedValue) {
-  final chart = tester.widget<SfCartesianChart>(find.byType(SfCartesianChart));
+  final chartFinder = find.byWidgetPredicate(
+    (widget) =>
+        widget is SfCartesianChart &&
+        widget.series.isNotEmpty &&
+        widget.series.first is LineSeries<SalesMonthlyPnlPoint, String>,
+  );
+  final chart = tester.widget<SfCartesianChart>(chartFinder);
   final salesSeries =
       chart.series.first as LineSeries<SalesMonthlyPnlPoint, String>;
   final dataSource = salesSeries.dataSource!;

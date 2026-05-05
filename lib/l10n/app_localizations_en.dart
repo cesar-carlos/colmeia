@@ -1939,7 +1939,84 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewLucratividadeSwitchCost => 'Cost';
 
   @override
-  String get overviewLucratividadeSwitchMargin => 'Margin %';
+  String get overviewLucratividadeSwitchMargin => 'Percent metrics';
+
+  @override
+  String get overviewLucratividadePercentMetricCostShort => 'Cost %';
+
+  @override
+  String get overviewLucratividadePercentMetricGrossShort => 'Gross margin';
+
+  @override
+  String get overviewLucratividadePercentMetricMarkupShort => 'Markup';
+
+  @override
+  String get overviewLucratividadePercentSeriesCostLabel => 'Cost on sales %';
+
+  @override
+  String get overviewLucratividadePercentSeriesGrossLabel => 'Gross margin %';
+
+  @override
+  String get overviewLucratividadePercentSeriesMarkupLabel =>
+      'Markup on cost %';
+
+  @override
+  String get overviewLucratividadePercentHelpCostBody =>
+      'Cost / Sales × 100. Shows the share of revenue consumed by replacement cost.';
+
+  @override
+  String get overviewLucratividadePercentHelpGrossBody =>
+      'Profit / Sales × 100. Shows the share of revenue left as gross profit.';
+
+  @override
+  String get overviewLucratividadePercentHelpMarkupBody =>
+      'Profit / Cost × 100. Shows profit relative to replacement cost.';
+
+  @override
+  String get overviewLucratividadeMarkupNotApplicable => '—';
+
+  @override
+  String get overviewLucratividadePercentSemanticsCost =>
+      'Cost percentage on sales.';
+
+  @override
+  String get overviewLucratividadePercentSemanticsGross =>
+      'Gross margin percentage on sales.';
+
+  @override
+  String get overviewLucratividadePercentSemanticsMarkup =>
+      'Markup percentage on replacement cost.';
+
+  @override
+  String get overviewLucratividadePercentIndicatorHeading =>
+      'Percent indicator';
+
+  @override
+  String get overviewLucratividadePercentIndicatorLabel => 'Indicator';
+
+  @override
+  String get overviewLucratividadePercentEmptyHelp =>
+      'No data to illustrate this metric.';
+
+  @override
+  String get overviewLucratividadeMarkupUndefinedTooltip =>
+      'Markup is undefined when replacement cost is missing or zero.';
+
+  @override
+  String get overviewLucratividadePercentMetricCostTooltip =>
+      'Share of revenue that is replacement cost (cost divided by sales).';
+
+  @override
+  String get overviewLucratividadePercentMetricGrossTooltip =>
+      'Gross margin on sales (profit divided by sales).';
+
+  @override
+  String get overviewLucratividadePercentMetricMarkupTooltip =>
+      'Markup on replacement cost (profit divided by cost).';
+
+  @override
+  String get overviewLucratividadeMensalPercentChronologicalHint =>
+      'Months stay in chronological order (not ranked by value).';
 
   @override
   String get overviewLucratividadeProfitSeriesLabel => 'Profit';
@@ -1991,7 +2068,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewLucratividadeMensalSwitchCost => 'Cost';
 
   @override
-  String get overviewLucratividadeMensalSwitchMargin => 'Margin %';
+  String get overviewLucratividadeMensalSwitchMargin => 'Percent metrics';
 
   @override
   String get overviewLucratividadeMensalProfitSeriesLabel => 'Profit';
@@ -2090,6 +2167,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get salesMonthlyPnlChartSemantics =>
       'Monthly P&L chart with sales value, profit, and merchandise cost for the selected branch';
+
+  @override
+  String get salesMonthlyPnlBarChartTitle => 'Monthly comparison (bars)';
+
+  @override
+  String get salesMonthlyPnlBarChartSubtitle =>
+      'Bars use the same monthly totals as the line chart above (aggregated sales, profit, and merchandise cost—not per-item averages). Percent metrics are computed from those monthly totals.';
+
+  @override
+  String get salesMonthlyPnlBarDisplayValuesLabel => 'Amounts';
+
+  @override
+  String get salesMonthlyPnlBarDisplayPercentLabel => 'Percent metrics';
+
+  @override
+  String get salesMonthlyPnlBarZerosOnlyMessage =>
+      'Nothing to plot for this view in the selected window (all values are zero).';
+
+  @override
+  String get salesMonthlyPnlBarChartSemantics =>
+      'Monthly grouped bar chart for sales, profit, and merchandise cost';
+
+  @override
+  String salesMonthlyPnlBarSummarySemantics(
+    String totalSales,
+    String totalProfit,
+    String totalCost,
+    String topMonth,
+    String topSales,
+  ) {
+    return 'Period totals: $totalSales sales, $totalProfit profit, $totalCost merchandise cost. Highest sales month: $topMonth ($topSales).';
+  }
 
   @override
   String get salesProdutoRankLucroChartTitle => 'Top products';

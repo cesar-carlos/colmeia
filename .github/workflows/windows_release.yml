@@ -1,4 +1,4 @@
-name: Windows Release
+name: Tagged Release
 
 on:
   push:
@@ -6,14 +6,82 @@ on:
       - 'v*.*.*'
 
 concurrency:
-  group: windows-release-${{ github.ref }}
+  group: tagged-release-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  prepare_release:
+    runs-on: ubuntu-latest
+    outputs:
+      full_version: ${{ steps.metadata.outputs.full_version }}
+      short_version: ${{ steps.metadata.outputs.short_version }}
+      release_title: ${{ steps.metadata.outputs.release_title }}
+      release_tag: ${{ steps.metadata.outputs.release_tag }}
+      windows_asset_name: ${{ steps.metadata.outputs.windows_asset_name }}
+      android_apk_asset_name: ${{ steps.metadata.outputs.android_apk_asset_name }}
+      android_aab_asset_name: ${{ steps.metadata.outputs.android_aab_asset_name }}
+      release_url: ${{ steps.metadata.outputs.release_url }}
+      windows_asset_url: ${{ steps.metadata.outputs.windows_asset_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Resolve release metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          content = Path("pubspec.yaml").read_text(encoding="utf-8")
+          match = re.search(
+              r'^version:\s*["\']?(\d+\.\d+\.\d+(?:\+\d+)?)["\']?\s*(?:#|$)',
+              content,
+              re.MULTILINE,
+          )
+          if match is None:
+              raise SystemExit("version was not found in pubspec.yaml")
+
+          full_version = match.group(1).strip()
+          short_version = full_version.split("+", maxsplit=1)[0]
+          release_tag = os.environ["GITHUB_REF_NAME"]
+          expected_tag = f"v{short_version}"
+          if release_tag != expected_tag:
+              raise SystemExit(
+                  f"Tag {release_tag} does not match pubspec.yaml version {short_version}",
+              )
+
+          repository = os.environ["GITHUB_REPOSITORY"]
+          windows_asset_name = f"Colmeia-Setup-{short_version}.exe"
+          android_apk_asset_name = f"Colmeia-Android-{short_version}.apk"
+          android_aab_asset_name = f"Colmeia-Android-{short_version}.aab"
+          release_title = f"Version {short_version}"
+          release_url = f"https://github.com/{repository}/releases/tag/{release_tag}"
+          windows_asset_url = (
+              f"https://github.com/{repository}/releases/download/"
+              f"{release_tag}/{windows_asset_name}"
+          )
+
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"full_version={full_version}\n")
+              output.write(f"short_version={short_version}\n")
+              output.write(f"release_title={release_title}\n")
+              output.write(f"release_tag={release_tag}\n")
+              output.write(f"windows_asset_name={windows_asset_name}\n")
+              output.write(f"android_apk_asset_name={android_apk_asset_name}\n")
+              output.write(f"android_aab_asset_name={android_aab_asset_name}\n")
+              output.write(f"release_url={release_url}\n")
+              output.write(f"windows_asset_url={windows_asset_url}\n")
+          PY
+
+  build_windows:
+    needs: prepare_release
     runs-on: windows-latest
     env:
       AUTO_UPDATE_FEED_URL: https://raw.githubusercontent.com/${{ github.repository }}/main/appcast.xml
@@ -27,34 +95,6 @@ jobs:
         uses: ./.github/actions/setup-colmeia-flutter
         with:
           flutter-version: ${{ vars.FLUTTER_CI_VERSION }}
-
-      - name: Resolve release metadata
-        id: metadata
-        shell: pwsh
-        run: |
-          $content = Get-Content pubspec.yaml -Raw
-          $match = [regex]::Match(
-            $content,
-            '^version:\s*["'']?(\d+\.\d+\.\d+(?:\+\d+)?)',
-            [System.Text.RegularExpressions.RegexOptions]::Multiline
-          )
-          if (-not $match.Success) {
-            throw 'version was not found in pubspec.yaml'
-          }
-
-          $fullVersion = $match.Groups[1].Value
-          $shortVersion = $fullVersion.Split('+')[0]
-          $expectedTag = "v$shortVersion"
-          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
-            throw "Tag $env:GITHUB_REF_NAME does not match pubspec.yaml version $shortVersion"
-          }
-
-          "full_version=$fullVersion" >> $env:GITHUB_OUTPUT
-          "short_version=$shortVersion" >> $env:GITHUB_OUTPUT
-          "asset_name=Colmeia-Setup-$shortVersion.exe" >> $env:GITHUB_OUTPUT
-          "asset_path=installer/dist/Colmeia-Setup-$shortVersion.exe" >> $env:GITHUB_OUTPUT
-          "release_url=https://github.com/${{ github.repository }}/releases/tag/$env:GITHUB_REF_NAME" >> $env:GITHUB_OUTPUT
-          "asset_url=https://github.com/${{ github.repository }}/releases/download/$env:GITHUB_REF_NAME/Colmeia-Setup-$shortVersion.exe" >> $env:GITHUB_OUTPUT
 
       - name: Install Inno Setup
         shell: pwsh
@@ -71,115 +111,246 @@ jobs:
         shell: pwsh
         run: python installer/build_installer.py
 
-      - name: Verify installer asset
+      - name: Prepare Windows release asset
         shell: pwsh
         run: |
-          if (-not (Test-Path '${{ steps.metadata.outputs.asset_path }}')) {
-            throw 'Expected installer asset was not generated.'
+          $assetPath = "installer/dist/${{ needs.prepare_release.outputs.windows_asset_name }}"
+          if (-not (Test-Path $assetPath)) {
+            throw "Expected installer asset was not generated: $assetPath"
           }
+
+          New-Item -ItemType Directory -Force -Path release-assets | Out-Null
+          Copy-Item $assetPath "release-assets/${{ needs.prepare_release.outputs.windows_asset_name }}"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: release-assets/${{ needs.prepare_release.outputs.windows_asset_name }}
+          if-no-files-found: error
+
+  build_android:
+    needs: prepare_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: ./.github/actions/setup-colmeia-flutter
+        with:
+          flutter-version: ${{ vars.FLUTTER_CI_VERSION }}
+
+      - name: Validate Android signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -z "$ANDROID_KEYSTORE_BASE64" ] && missing+=(ANDROID_KEYSTORE_BASE64)
+          [ -z "$ANDROID_KEYSTORE_PASSWORD" ] && missing+=(ANDROID_KEYSTORE_PASSWORD)
+          [ -z "$ANDROID_KEY_ALIAS" ] && missing+=(ANDROID_KEY_ALIAS)
+          [ -z "$ANDROID_KEY_PASSWORD" ] && missing+=(ANDROID_KEY_PASSWORD)
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing repository secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Materialize Android signing files
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=app/upload-keystore.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+          chmod 600 android/key.properties android/app/upload-keystore.jks
+
+      - name: Build signed Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build apk --release
+
+      - name: Build signed Android App Bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build appbundle --release
+
+      - name: Prepare Android release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "release-assets/${{ needs.prepare_release.outputs.android_apk_asset_name }}"
+          cp build/app/outputs/bundle/release/app-release.aab \
+            "release-assets/${{ needs.prepare_release.outputs.android_aab_asset_name }}"
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-android
+          path: |
+            release-assets/${{ needs.prepare_release.outputs.android_apk_asset_name }}
+            release-assets/${{ needs.prepare_release.outputs.android_aab_asset_name }}
+          if-no-files-found: error
+
+  publish_release:
+    needs:
+      - prepare_release
+      - build_windows
+      - build_android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: release-assets
 
       - name: Publish GitHub release
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          $tag = '${{ github.ref_name }}'
-          $title = 'Version ${{ steps.metadata.outputs.short_version }}'
-          $asset = '${{ steps.metadata.outputs.asset_path }}'
+          set -euo pipefail
+          tag='${{ needs.prepare_release.outputs.release_tag }}'
+          title='${{ needs.prepare_release.outputs.release_title }}'
 
           gh --version
-          gh release view $tag *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release edit $tag --title $title
-            gh release upload $tag $asset --clobber
-          } else {
-            gh release create $tag $asset --title $title --generate-notes --latest
-          }
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "$title"
+            gh release upload "$tag" release-assets/* --clobber
+          else
+            gh release create "$tag" release-assets/* \
+              --title "$title" \
+              --generate-notes \
+              --latest
+          fi
 
-      - name: Update appcast.xml
-        shell: pwsh
+  update_windows_appcast:
+    needs:
+      - prepare_release
+      - build_windows
+      - publish_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download Windows release asset
+        uses: actions/download-artifact@v4
+        with:
+          name: release-windows
+          path: release-assets
+
+      - name: Generate appcast.xml
+        shell: bash
         run: |
-          $publishedAt = (Get-Date).ToUniversalTime().ToString('r')
-          $assetLength = (Get-Item '${{ steps.metadata.outputs.asset_path }}').Length
+          set -euo pipefail
+          asset_path="release-assets/${{ needs.prepare_release.outputs.windows_asset_name }}"
+          asset_length=$(stat -c%s "$asset_path")
+          published_at=$(LC_ALL=C date -u '+%a, %d %b %Y %H:%M:%S GMT')
 
-          python tool/update_appcast.py `
-            --output appcast.xml `
-            --version '${{ steps.metadata.outputs.full_version }}' `
-            --short-version '${{ steps.metadata.outputs.short_version }}' `
-            --asset-url '${{ steps.metadata.outputs.asset_url }}' `
-            --release-notes-url '${{ steps.metadata.outputs.release_url }}' `
-            --published-at "$publishedAt" `
-            --content-length $assetLength `
-            --title 'Colmeia' `
-            --description 'Most recent Windows releases for Colmeia' `
-            --language 'pt-BR' `
+          python tool/update_appcast.py \
+            --output appcast.xml \
+            --version '${{ needs.prepare_release.outputs.full_version }}' \
+            --short-version '${{ needs.prepare_release.outputs.short_version }}' \
+            --asset-url '${{ needs.prepare_release.outputs.windows_asset_url }}' \
+            --release-notes-url '${{ needs.prepare_release.outputs.release_url }}' \
+            --published-at "$published_at" \
+            --content-length "$asset_length" \
+            --title 'Colmeia' \
+            --description 'Most recent Windows releases for Colmeia' \
+            --language 'pt-BR' \
             --max-items 5
 
-      - name: Commit appcast.xml to main via Contents API
-        shell: pwsh
+      - name: Publish appcast.xml to main
         env:
           GITHUB_TOKEN: ${{ github.token }}
           APPCAST_PUSH_TOKEN: ${{ secrets.APPCAST_PUSH_TOKEN }}
+        shell: bash
         run: |
-          $token = if ([string]::IsNullOrWhiteSpace($env:APPCAST_PUSH_TOKEN)) {
-            $env:GITHUB_TOKEN
-          } else {
-            $env:APPCAST_PUSH_TOKEN
-          }
-          if ([string]::IsNullOrWhiteSpace($token)) {
-            throw 'No token available to publish appcast.xml.'
-          }
+          set -euo pipefail
+          python - <<'PY'
+          import base64
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
 
-          $headers = @{
-            Authorization = "Bearer $token"
-            Accept = 'application/vnd.github+json'
-            'X-GitHub-Api-Version' = '2022-11-28'
-            'User-Agent' = 'colmeia-windows-release'
-          }
+          token = (os.environ.get("APPCAST_PUSH_TOKEN") or "").strip() or (
+              os.environ.get("GITHUB_TOKEN") or ""
+          ).strip()
+          if not token:
+              raise SystemExit("No token available to publish appcast.xml.")
 
-          $repoContentsUrl = 'https://api.github.com/repos/${{ github.repository }}/contents/appcast.xml'
-          $localContent = [System.IO.File]::ReadAllText((Join-Path $PWD 'appcast.xml'))
-          $remoteDocument = $null
-
-          try {
-            $remoteDocument = Invoke-RestMethod `
-              -Uri "$repoContentsUrl?ref=main" `
-              -Headers $headers `
-              -Method Get
-          } catch {
-            $statusCode = $_.Exception.Response.StatusCode.value__
-            if ($statusCode -ne 404) {
-              throw
-            }
+          repo = os.environ["GITHUB_REPOSITORY"]
+          url = f"https://api.github.com/repos/{repo}/contents/appcast.xml"
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "colmeia-tagged-release",
           }
 
-          if ($remoteDocument -ne $null) {
-            $remoteContentBytes = [Convert]::FromBase64String(
-              ($remoteDocument.content -replace '\s', '')
-            )
-            $remoteContent = [System.Text.Encoding]::UTF8.GetString($remoteContentBytes)
-            if ($remoteContent -eq $localContent) {
-              Write-Host 'appcast.xml already up to date.'
-              exit 0
-            }
-          }
+          local_content = Path("appcast.xml").read_text(encoding="utf-8")
+          remote_document = None
 
-          $requestBody = @{
-            message = 'chore: update appcast for ${{ steps.metadata.outputs.short_version }}'
-            content = [Convert]::ToBase64String(
-              [System.Text.Encoding]::UTF8.GetBytes($localContent)
-            )
-            branch = 'main'
-          }
+          request = urllib.request.Request(f"{url}?ref=main", headers=headers)
+          try:
+              with urllib.request.urlopen(request) as response:
+                  remote_document = json.load(response)
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
 
-          if ($remoteDocument -ne $null) {
-            $requestBody.sha = $remoteDocument.sha
-          }
+          if remote_document is not None:
+              remote_content = base64.b64decode(remote_document["content"]).decode("utf-8")
+              if remote_content == local_content:
+                  print("appcast.xml already up to date.")
+                  sys.exit(0)
 
-          $requestJson = $requestBody | ConvertTo-Json
-          Invoke-RestMethod `
-            -Uri $repoContentsUrl `
-            -Headers $headers `
-            -Method Put `
-            -ContentType 'application/json' `
-            -Body $requestJson | Out-Null
+          request_body = {
+              "message": (
+                  "chore: update appcast for "
+                  "${{ needs.prepare_release.outputs.short_version }}"
+              ),
+              "content": base64.b64encode(local_content.encode("utf-8")).decode("ascii"),
+              "branch": "main",
+          }
+          if remote_document is not None:
+              request_body["sha"] = remote_document["sha"]
+
+          update_request = urllib.request.Request(
+              url,
+              data=json.dumps(request_body).encode("utf-8"),
+              headers={**headers, "Content-Type": "application/json"},
+              method="PUT",
+          )
+          with urllib.request.urlopen(update_request):
+              pass
+          PY

@@ -1,6 +1,6 @@
 # Windows Install e Release
 
-Indice canonico da documentacao de instalacao, release e auto-update Windows do
+Indice canonico da documentacao de instalacao Windows e release oficial do
 Colmeia.
 
 ## Fluxos principais
@@ -27,7 +27,8 @@ installer/dist/Colmeia-Setup-{MAJOR.MINOR.PATCH}.exe
 1. Atualizar `pubspec.yaml`
 2. Garantir sincronismo com `python installer/update_version.py`
 3. Criar a tag `vX.Y.Z`
-4. Deixar o GitHub Actions publicar release e `appcast.xml`
+4. Deixar o GitHub Actions publicar `.exe` Windows, `apk` Android, `aab`
+   Android e `appcast.xml`
 5. Se `main` tiver protecao restritiva, configurar `APPCAST_PUSH_TOKEN`
 
 ## Documentos

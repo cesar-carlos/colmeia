@@ -162,8 +162,9 @@ void main() {
     check(row.qtdItensVendido).equals(150);
     check(row.valorTotalCustoMedio).equals(3000);
     check(row.valorTotalItem).equals(5000);
-    // percentualLucro is computed in-app: (custoReposicao / valorTotalItem) * 100
-    // = (2500 / 5000) * 100 = 50.0 (exact in IEEE 754)
-    check(row.percentualLucro).equals(50);
+    // percentualCustoSobreVenda: (custoReposicao / valorTotalItem) * 100 = 50
+    check(row.percentualCustoSobreVenda).equals(50);
+    check(row.margemLucroBrutoPercent).equals(50);
+    check(row.markupSobreCustoPercent).equals(100);
   });
 }

@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SalesPreferences {
@@ -95,6 +96,33 @@ class SalesPreferences {
     await store.persistJsonMap(
       suffix: 'filters',
       value: encoded,
+    );
+  }
+
+  static const String _monthlyPnlBarChartSuffix = 'bar_chart';
+
+  SalesMonthlyPnlBarChartPreferences restoreMonthlyPnlBarChartPreferences() {
+    final store = PersistedPageSessionStore(
+      prefs: _prefs,
+      namespace: 'colmeia_sales_card.$monthlyPnlCardId',
+    );
+    final raw = store.restoreJsonMap(suffix: _monthlyPnlBarChartSuffix);
+    if (raw.isEmpty) {
+      return SalesMonthlyPnlBarChartPreferences.defaults;
+    }
+    return SalesMonthlyPnlBarChartPreferences.fromRaw(raw);
+  }
+
+  Future<void> persistMonthlyPnlBarChartPreferences(
+    SalesMonthlyPnlBarChartPreferences value,
+  ) async {
+    final store = PersistedPageSessionStore(
+      prefs: _prefs,
+      namespace: 'colmeia_sales_card.$monthlyPnlCardId',
+    );
+    await store.persistJsonMap(
+      suffix: _monthlyPnlBarChartSuffix,
+      value: value.toJson(),
     );
   }
 

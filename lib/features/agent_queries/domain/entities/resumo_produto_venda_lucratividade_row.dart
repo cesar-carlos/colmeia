@@ -2,7 +2,7 @@
 /// aggregate query.
 ///
 /// Grouped by `CodEmpresa` and `CodFilial` for the requested date range.
-/// `percentualLucro` is computed in the app from `custoReposicao` and
+/// Percent metrics are computed in the app from `custoReposicao` and
 /// `valorTotalItem` to avoid SQL compatibility issues with Sybase SQL Anywhere
 /// and SQL Server when using aggregate expressions inside a CASE WHEN.
 class ResumoProdutoVendaLucratividadeRow {
@@ -33,11 +33,27 @@ class ResumoProdutoVendaLucratividadeRow {
   /// the chart category label instead of [filialLabel].
   final String? chartAxisLabel;
 
-  /// Cost-to-revenue ratio in %: `(custoReposicao / valorTotalItem) × 100`.
-  /// Computed from the raw aggregates returned by the query.
-  double get percentualLucro {
+  /// Cost as % of revenue: `(custoReposicao / valorTotalItem) × 100`.
+  double get percentualCustoSobreVenda {
     if (custoReposicao > 0 && valorTotalItem > 0) {
       return (custoReposicao / valorTotalItem) * 100;
+    }
+    return 0;
+  }
+
+  /// Gross margin %: `(lucro / valorTotalItem) × 100`.
+  double get margemLucroBrutoPercent {
+    if (valorTotalItem > 0) {
+      return (lucro / valorTotalItem) * 100;
+    }
+    return 0;
+  }
+
+  /// Markup on replacement cost: `(lucro / custoReposicao) × 100`.
+  /// Returns `0` when [custoReposicao] is not positive (undefined markup).
+  double get markupSobreCustoPercent {
+    if (custoReposicao > 0) {
+      return (lucro / custoReposicao) * 100;
     }
     return 0;
   }

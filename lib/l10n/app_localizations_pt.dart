@@ -1969,7 +1969,86 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewLucratividadeSwitchCost => 'Custo';
 
   @override
-  String get overviewLucratividadeSwitchMargin => 'Margem %';
+  String get overviewLucratividadeSwitchMargin => 'Percentuais';
+
+  @override
+  String get overviewLucratividadePercentMetricCostShort => 'Custo %';
+
+  @override
+  String get overviewLucratividadePercentMetricGrossShort => 'Margem bruta';
+
+  @override
+  String get overviewLucratividadePercentMetricMarkupShort => 'Markup';
+
+  @override
+  String get overviewLucratividadePercentSeriesCostLabel =>
+      'Percentual de custo';
+
+  @override
+  String get overviewLucratividadePercentSeriesGrossLabel =>
+      'Margem de lucro bruto';
+
+  @override
+  String get overviewLucratividadePercentSeriesMarkupLabel =>
+      'Markup sobre custo';
+
+  @override
+  String get overviewLucratividadePercentHelpCostBody =>
+      'Custo / Venda × 100. Mostra qual parcela da receita corresponde ao custo de reposicao.';
+
+  @override
+  String get overviewLucratividadePercentHelpGrossBody =>
+      'Lucro / Venda × 100. Mostra qual parcela da receita permanece como lucro bruto.';
+
+  @override
+  String get overviewLucratividadePercentHelpMarkupBody =>
+      'Lucro / Custo × 100. Mostra quanto o lucro representa em relacao ao custo de reposicao.';
+
+  @override
+  String get overviewLucratividadeMarkupNotApplicable => '—';
+
+  @override
+  String get overviewLucratividadePercentSemanticsCost =>
+      'Percentual de custo sobre a venda.';
+
+  @override
+  String get overviewLucratividadePercentSemanticsGross =>
+      'Margem de lucro bruto sobre a venda.';
+
+  @override
+  String get overviewLucratividadePercentSemanticsMarkup =>
+      'Markup sobre o custo de reposicao.';
+
+  @override
+  String get overviewLucratividadePercentIndicatorHeading =>
+      'Indicador percentual';
+
+  @override
+  String get overviewLucratividadePercentIndicatorLabel => 'Indicador';
+
+  @override
+  String get overviewLucratividadePercentEmptyHelp =>
+      'Sem dados para ilustrar este indicador.';
+
+  @override
+  String get overviewLucratividadeMarkupUndefinedTooltip =>
+      'Markup nao definido quando o custo de reposicao e zero ou ausente.';
+
+  @override
+  String get overviewLucratividadePercentMetricCostTooltip =>
+      'Parcela da receita correspondente ao custo de reposicao (custo dividido pela venda).';
+
+  @override
+  String get overviewLucratividadePercentMetricGrossTooltip =>
+      'Margem bruta sobre a venda (lucro dividido pela venda).';
+
+  @override
+  String get overviewLucratividadePercentMetricMarkupTooltip =>
+      'Markup sobre o custo de reposicao (lucro dividido pelo custo).';
+
+  @override
+  String get overviewLucratividadeMensalPercentChronologicalHint =>
+      'Meses em ordem cronologica (sem ranking por valor).';
 
   @override
   String get overviewLucratividadeProfitSeriesLabel => 'Lucro';
@@ -2021,7 +2100,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewLucratividadeMensalSwitchCost => 'Custo';
 
   @override
-  String get overviewLucratividadeMensalSwitchMargin => 'Margem %';
+  String get overviewLucratividadeMensalSwitchMargin => 'Percentuais';
 
   @override
   String get overviewLucratividadeMensalProfitSeriesLabel => 'Lucro';
@@ -2120,6 +2199,38 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesMonthlyPnlChartSemantics =>
       'Grafico do resultado mensal com venda, lucro e custo da mercadoria na filial selecionada';
+
+  @override
+  String get salesMonthlyPnlBarChartTitle => 'Comparativo mensal (barras)';
+
+  @override
+  String get salesMonthlyPnlBarChartSubtitle =>
+      'As barras usam os mesmos totais mensais que o grafico de linhas acima (venda, lucro e custo da mercadoria agregados — nao medias por item). Os percentuais sao calculados a partir desses totais mensais.';
+
+  @override
+  String get salesMonthlyPnlBarDisplayValuesLabel => 'Valores';
+
+  @override
+  String get salesMonthlyPnlBarDisplayPercentLabel => 'Percentuais';
+
+  @override
+  String get salesMonthlyPnlBarZerosOnlyMessage =>
+      'Nada para plotar nesta vista na janela selecionada (todos os valores sao zero).';
+
+  @override
+  String get salesMonthlyPnlBarChartSemantics =>
+      'Grafico de barras agrupadas mensais de venda, lucro e custo da mercadoria';
+
+  @override
+  String salesMonthlyPnlBarSummarySemantics(
+    String totalSales,
+    String totalProfit,
+    String totalCost,
+    String topMonth,
+    String topSales,
+  ) {
+    return 'Totais do periodo: $totalSales em vendas, $totalProfit de lucro, $totalCost de custo da mercadoria. Mes com maior venda: $topMonth ($topSales).';
+  }
 
   @override
   String get salesProdutoRankLucroChartTitle => 'Top produtos';
@@ -4529,7 +4640,86 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get overviewLucratividadeSwitchCost => 'Custo';
 
   @override
-  String get overviewLucratividadeSwitchMargin => 'Margem %';
+  String get overviewLucratividadeSwitchMargin => 'Percentuais';
+
+  @override
+  String get overviewLucratividadePercentMetricCostShort => 'Custo %';
+
+  @override
+  String get overviewLucratividadePercentMetricGrossShort => 'Margem bruta';
+
+  @override
+  String get overviewLucratividadePercentMetricMarkupShort => 'Markup';
+
+  @override
+  String get overviewLucratividadePercentSeriesCostLabel =>
+      'Percentual de custo';
+
+  @override
+  String get overviewLucratividadePercentSeriesGrossLabel =>
+      'Margem de lucro bruto';
+
+  @override
+  String get overviewLucratividadePercentSeriesMarkupLabel =>
+      'Markup sobre custo';
+
+  @override
+  String get overviewLucratividadePercentHelpCostBody =>
+      'Custo / Venda × 100. Mostra qual parcela da receita corresponde ao custo de reposicao.';
+
+  @override
+  String get overviewLucratividadePercentHelpGrossBody =>
+      'Lucro / Venda × 100. Mostra qual parcela da receita permanece como lucro bruto.';
+
+  @override
+  String get overviewLucratividadePercentHelpMarkupBody =>
+      'Lucro / Custo × 100. Mostra quanto o lucro representa em relacao ao custo de reposicao.';
+
+  @override
+  String get overviewLucratividadeMarkupNotApplicable => '—';
+
+  @override
+  String get overviewLucratividadePercentSemanticsCost =>
+      'Percentual de custo sobre a venda.';
+
+  @override
+  String get overviewLucratividadePercentSemanticsGross =>
+      'Margem de lucro bruto sobre a venda.';
+
+  @override
+  String get overviewLucratividadePercentSemanticsMarkup =>
+      'Markup sobre o custo de reposicao.';
+
+  @override
+  String get overviewLucratividadePercentIndicatorHeading =>
+      'Indicador percentual';
+
+  @override
+  String get overviewLucratividadePercentIndicatorLabel => 'Indicador';
+
+  @override
+  String get overviewLucratividadePercentEmptyHelp =>
+      'Sem dados para ilustrar este indicador.';
+
+  @override
+  String get overviewLucratividadeMarkupUndefinedTooltip =>
+      'Markup nao definido quando o custo de reposicao e zero ou ausente.';
+
+  @override
+  String get overviewLucratividadePercentMetricCostTooltip =>
+      'Parcela da receita correspondente ao custo de reposicao (custo dividido pela venda).';
+
+  @override
+  String get overviewLucratividadePercentMetricGrossTooltip =>
+      'Margem bruta sobre a venda (lucro dividido pela venda).';
+
+  @override
+  String get overviewLucratividadePercentMetricMarkupTooltip =>
+      'Markup sobre o custo de reposicao (lucro dividido pelo custo).';
+
+  @override
+  String get overviewLucratividadeMensalPercentChronologicalHint =>
+      'Meses em ordem cronologica (sem ranking por valor).';
 
   @override
   String get overviewLucratividadeProfitSeriesLabel => 'Lucro';
@@ -4581,7 +4771,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get overviewLucratividadeMensalSwitchCost => 'Custo';
 
   @override
-  String get overviewLucratividadeMensalSwitchMargin => 'Margem %';
+  String get overviewLucratividadeMensalSwitchMargin => 'Percentuais';
 
   @override
   String get overviewLucratividadeMensalProfitSeriesLabel => 'Lucro';
@@ -4680,6 +4870,38 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesMonthlyPnlChartSemantics =>
       'Grafico do resultado mensal com venda, lucro e custo da mercadoria na filial selecionada';
+
+  @override
+  String get salesMonthlyPnlBarChartTitle => 'Comparativo mensal (barras)';
+
+  @override
+  String get salesMonthlyPnlBarChartSubtitle =>
+      'As barras usam os mesmos totais mensais que o grafico de linhas acima (venda, lucro e custo da mercadoria agregados — nao medias por item). Os percentuais sao calculados a partir desses totais mensais.';
+
+  @override
+  String get salesMonthlyPnlBarDisplayValuesLabel => 'Valores';
+
+  @override
+  String get salesMonthlyPnlBarDisplayPercentLabel => 'Percentuais';
+
+  @override
+  String get salesMonthlyPnlBarZerosOnlyMessage =>
+      'Nada para plotar nesta vista na janela selecionada (todos os valores sao zero).';
+
+  @override
+  String get salesMonthlyPnlBarChartSemantics =>
+      'Grafico de barras agrupadas mensais de venda, lucro e custo da mercadoria';
+
+  @override
+  String salesMonthlyPnlBarSummarySemantics(
+    String totalSales,
+    String totalProfit,
+    String totalCost,
+    String topMonth,
+    String topSales,
+  ) {
+    return 'Totais do periodo: $totalSales em vendas, $totalProfit de lucro, $totalCost de custo da mercadoria. Mes com maior venda: $topMonth ($topSales).';
+  }
 
   @override
   String get salesProdutoRankLucroChartTitle => 'Top produtos';

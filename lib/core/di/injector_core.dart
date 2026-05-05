@@ -38,7 +38,10 @@ Future<void> registerInjectorCore(GetIt getIt) async {
       AppUserPreferencesStore(sharedPreferences),
     )
     ..registerSingleton<AutoUpdaterClient>(const LeanAutoUpdaterClient())
-    ..registerLazySingleton<AppcastProbeClient>(DioAppcastProbeClient.new)
+    ..registerLazySingleton<AppcastProbeClient>(() {
+      final client = DioAppcastProbeClient();
+      return client.probe;
+    })
     ..registerLazySingleton<WindowsAutoUpdateController>(
       () => WindowsAutoUpdateController(
         autoUpdaterClient: getIt<AutoUpdaterClient>(),

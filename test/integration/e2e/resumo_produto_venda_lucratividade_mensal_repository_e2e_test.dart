@@ -61,7 +61,9 @@ void main() {
                 expect(row.qtdItensVendido, isNonNegative);
                 expect(row.valorTotalItem, isNonNegative);
                 expect(row.custoReposicao, isNonNegative);
-                expect(row.percentualLucro, isNonNegative);
+                expect(row.percentualCustoSobreVenda, isNonNegative);
+                expect(row.margemLucroBrutoPercent, isNonNegative);
+                expect(row.markupSobreCustoPercent, isNonNegative);
               }
             },
             (failure) {

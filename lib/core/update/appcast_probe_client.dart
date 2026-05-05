@@ -36,11 +36,10 @@ class AppcastProbeResult {
   final String? details;
 }
 
-abstract interface class AppcastProbeClient {
-  Future<AppcastProbeResult> probe({required String feedUrl});
-}
+typedef AppcastProbeClient =
+    Future<AppcastProbeResult> Function({required String feedUrl});
 
-final class DioAppcastProbeClient implements AppcastProbeClient {
+final class DioAppcastProbeClient {
   DioAppcastProbeClient({Dio? dio})
     : _dio =
           dio ??
@@ -57,7 +56,6 @@ final class DioAppcastProbeClient implements AppcastProbeClient {
 
   final Dio _dio;
 
-  @override
   Future<AppcastProbeResult> probe({required String feedUrl}) async {
     final normalizedFeedUrl = feedUrl.trim();
     final uri = Uri.tryParse(normalizedFeedUrl);

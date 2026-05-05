@@ -46,18 +46,6 @@ enum AppRoute {
     path: '/charts/fullscreen',
     title: 'Grafico',
   ),
-  returns(
-    path: '/returns',
-    title: 'Devolucoes',
-  ),
-  finance(
-    path: '/finance',
-    title: 'Financeiro',
-  ),
-  purchases(
-    path: '/purchases',
-    title: 'Compras',
-  ),
   inventory(
     path: '/inventory',
     title: 'Estoque',
@@ -94,26 +82,43 @@ enum AppRoute {
     settings,
   ];
 
+  /// Shell section owner for this route.
+  ///
+  /// Root shell routes return themselves. Detail routes that belong to a shell
+  /// section resolve back to that root. Non-shell routes return `null`.
+  AppRoute? get shellRootRoute {
+    switch (this) {
+      case AppRoute.dashboardStore:
+        return AppRoute.dashboard;
+      case AppRoute.salesCard:
+        return AppRoute.sales;
+      case AppRoute.agentsDetail:
+        return AppRoute.agents;
+      case AppRoute.dashboard:
+      case AppRoute.sales:
+      case AppRoute.inventory:
+      case AppRoute.agents:
+      case AppRoute.settings:
+        return this;
+      case AppRoute.unmatched:
+      case AppRoute.chartFullscreen:
+      case AppRoute.login:
+      case AppRoute.register:
+      case AppRoute.registrationStatus:
+      case AppRoute.passwordRecovery:
+      case AppRoute.passwordRecoveryReset:
+        return null;
+    }
+  }
+
   /// Position in [shellRoutes] for drawer/rail highlight, or null when not a
-  /// primary shell tab (e.g. [agentsDetail], auth routes, [unmatched]).
+  /// primary shell tab (e.g. auth routes, [unmatched]).
   int? get shellIndex {
-    if (this == AppRoute.unmatched ||
-        this == AppRoute.agentsDetail ||
-        this == AppRoute.chartFullscreen ||
-        this == AppRoute.login ||
-        this == AppRoute.register ||
-        this == AppRoute.registrationStatus ||
-        this == AppRoute.passwordRecovery ||
-        this == AppRoute.passwordRecoveryReset) {
+    final root = shellRootRoute;
+    if (root == null) {
       return null;
     }
-    if (this == AppRoute.dashboardStore) {
-      return shellRoutes.indexOf(AppRoute.dashboard);
-    }
-    if (this == AppRoute.salesCard) {
-      return shellRoutes.indexOf(AppRoute.sales);
-    }
-    final index = shellRoutes.indexOf(this);
+    final index = shellRoutes.indexOf(root);
     return index >= 0 ? index : null;
   }
 
@@ -129,12 +134,6 @@ enum AppRoute {
         return Icons.point_of_sale_rounded;
       case AppRoute.chartFullscreen:
         return Icons.open_in_full_rounded;
-      case AppRoute.returns:
-        return Icons.assignment_return_rounded;
-      case AppRoute.finance:
-        return Icons.account_balance_rounded;
-      case AppRoute.purchases:
-        return Icons.shopping_cart_rounded;
       case AppRoute.inventory:
         return Icons.inventory_2_rounded;
       case AppRoute.settings:
@@ -164,12 +163,6 @@ enum AppRoute {
         return Icons.point_of_sale_outlined;
       case AppRoute.chartFullscreen:
         return Icons.open_in_full_outlined;
-      case AppRoute.returns:
-        return Icons.assignment_return_outlined;
-      case AppRoute.finance:
-        return Icons.account_balance_outlined;
-      case AppRoute.purchases:
-        return Icons.shopping_cart_outlined;
       case AppRoute.inventory:
         return Icons.inventory_2_outlined;
       case AppRoute.settings:
@@ -189,32 +182,47 @@ enum AppRoute {
 
   bool get isShellRoute => shellIndex != null;
 
-  /// Shell drawer/rail highlight index; [agentsDetail] shares [agents].
-  int? get shellNavSelectionIndex {
-    switch (this) {
-      case AppRoute.agentsDetail:
-        return AppRoute.agents.shellIndex;
-      case AppRoute.salesCard:
-        return AppRoute.sales.shellIndex;
-      case AppRoute.unmatched:
-      case AppRoute.chartFullscreen:
-      case AppRoute.login:
-      case AppRoute.register:
-      case AppRoute.registrationStatus:
-      case AppRoute.passwordRecovery:
-      case AppRoute.passwordRecoveryReset:
-        return null;
-      case AppRoute.dashboard:
-      case AppRoute.dashboardStore:
-      case AppRoute.sales:
-      case AppRoute.returns:
-      case AppRoute.finance:
-      case AppRoute.purchases:
-      case AppRoute.inventory:
-      case AppRoute.agents:
-      case AppRoute.settings:
-        return shellIndex;
+  static String _normalizeLocation(String location) {
+    final trimmed = location.trim();
+    if (trimmed.isEmpty) {
+      return '/';
     }
+    if (trimmed.length > 1 && trimmed.endsWith('/')) {
+      return trimmed.substring(0, trimmed.length - 1);
+    }
+    return trimmed;
+  }
+
+  bool matchesExactLocation(String location) {
+    return _normalizeLocation(location) == _normalizeLocation(path);
+  }
+
+  /// Shell drawer/rail highlight index; [agentsDetail] shares [agents].
+  int? get shellNavSelectionIndex => shellIndex;
+
+  /// Resolves navigation target for drawer/rail shell items.
+  ///
+  /// Returns `null` when the tapped item already matches the current root route.
+  /// When the current route is a detail route inside the same shell section,
+  /// returns that section root so the shell returns to the section home without
+  /// pushing another page.
+  static AppRoute? resolveShellNavigationTarget({
+    required AppRoute current,
+    required String currentLocation,
+    required AppRoute tapped,
+  }) {
+    final targetRoot = tapped.shellRootRoute;
+    if (targetRoot == null) {
+      return null;
+    }
+    final currentRoot = current.shellRootRoute;
+    if (currentRoot != targetRoot) {
+      return targetRoot;
+    }
+    if (targetRoot.matchesExactLocation(currentLocation)) {
+      return null;
+    }
+    return targetRoot;
   }
 
   UserPermission? get requiredPermission {
@@ -225,12 +233,6 @@ enum AppRoute {
       case AppRoute.sales:
       case AppRoute.salesCard:
         return UserPermission.viewSales;
-      case AppRoute.returns:
-        return UserPermission.viewReturns;
-      case AppRoute.finance:
-        return UserPermission.viewFinance;
-      case AppRoute.purchases:
-        return UserPermission.viewPurchases;
       case AppRoute.inventory:
         return UserPermission.viewInventory;
       case AppRoute.unmatched:

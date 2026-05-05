@@ -21,12 +21,14 @@ import 'package:provider/provider.dart';
 /// Shared column for shell drawer and rail: brand, profile, routes, sign out.
 class AppShellNavigationPanel extends StatelessWidget {
   const AppShellNavigationPanel({
+    required this.currentLocation,
     required this.currentRoute,
     required this.visibleShellRoutes,
     required this.closeOverlayBeforeNavigate,
     super.key,
   });
 
+  final String currentLocation;
   final AppRoute currentRoute;
   final List<AppRoute> visibleShellRoutes;
 
@@ -35,13 +37,18 @@ class AppShellNavigationPanel extends StatelessWidget {
   final bool closeOverlayBeforeNavigate;
 
   void _handleRouteSelected(BuildContext context, AppRoute route) {
-    if (route.shellIndex == currentRoute.shellNavSelectionIndex) {
+    final targetRoute = AppRoute.resolveShellNavigationTarget(
+      currentLocation: currentLocation,
+      current: currentRoute,
+      tapped: route,
+    );
+    if (targetRoute == null) {
       return;
     }
     if (closeOverlayBeforeNavigate) {
       Navigator.of(context).pop();
     }
-    context.goTo(route);
+    context.goTo(targetRoute);
   }
 
   void _handleProfileOpen(BuildContext context) {
@@ -111,6 +118,9 @@ class AppShellNavigationPanel extends StatelessWidget {
                             presentation.route.shellIndex ==
                             currentRoute.shellNavSelectionIndex;
                         return AppShellNavMenuItem(
+                          key: ValueKey<String>(
+                            'shell-nav-${presentation.route.name}',
+                          ),
                           icon: appShellRouteIcon(
                             presentation.route,
                             selected: isSelected,

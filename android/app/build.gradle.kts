@@ -1,8 +1,52 @@
+import org.gradle.api.GradleException
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use(keystoreProperties::load)
+}
+
+val releaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("release", ignoreCase = true)
+}
+
+fun requireSigningProperty(name: String): String {
+    return keystoreProperties
+        .getProperty(name)
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?: throw GradleException(
+            "Android release signing is not configured. "
+                + "Missing '$name' in android/key.properties. "
+                + "Copy android/key.properties.example and provide a real keystore.",
+        )
+}
+
+if (releaseTaskRequested) {
+    if (!keystorePropertiesFile.exists()) {
+        throw GradleException(
+            "Android release signing is not configured. "
+                + "Expected android/key.properties before running a release build. "
+                + "Copy android/key.properties.example and point storeFile to a real .jks.",
+        )
+    }
+
+    val storeFilePath = requireSigningProperty("storeFile")
+    val resolvedStoreFile = rootProject.file(storeFilePath)
+    if (!resolvedStoreFile.exists()) {
+        throw GradleException(
+            "Android release signing keystore was not found at '$storeFilePath'. "
+                + "Update android/key.properties with a valid relative path.",
+        )
+    }
 }
 
 android {
@@ -21,21 +65,30 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "br.com.se7esistemas.colmeia"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                val storeFilePath = requireSigningProperty("storeFile")
+                storeFile = rootProject.file(storeFilePath)
+                storePassword = requireSigningProperty("storePassword")
+                keyAlias = requireSigningProperty("keyAlias")
+                keyPassword = requireSigningProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }

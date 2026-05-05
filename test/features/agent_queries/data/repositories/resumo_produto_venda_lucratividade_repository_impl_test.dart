@@ -202,6 +202,8 @@ void main() {
     check(row.qtdItensVendido).equals(150);
     check(row.valorTotalCustoMedio).equals(3000);
     check(row.valorTotalItem).equals(5000);
-    check(row.percentualLucro).equals(50);
+    check(row.percentualCustoSobreVenda).equals(50);
+    check(row.margemLucroBrutoPercent).equals(50);
+    check(row.markupSobreCustoPercent).equals(100);
   });
 }

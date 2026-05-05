@@ -32,15 +32,34 @@ class ResumoProdutoVendaRow {
   final double pontoEquilibrio;
   final double valorTotalItem;
 
-  /// Cost-to-revenue ratio in %: `(custoReposicao / valorTotalItem) × 100`.
+  /// Cost as % of revenue: `(custoReposicao / valorTotalItem) × 100`.
   /// Computed from raw aggregates — removed from SQL to avoid Sybase SQL Anywhere
   /// SQLCODE -156 (invalid expression near 'SUM' inside CASE WHEN).
-  double get percentualLucro {
+  double get percentualCustoSobreVenda {
     if (custoReposicao > 0 && valorTotalItem > 0) {
       return (custoReposicao / valorTotalItem) * 100;
     }
     return 0;
   }
+
+  /// Gross margin %: `(lucro / valorTotalItem) × 100`.
+  double get margemLucroBrutoPercent {
+    if (valorTotalItem > 0) {
+      return (lucro / valorTotalItem) * 100;
+    }
+    return 0;
+  }
+
+  /// Markup on replacement cost: `(lucro / custoReposicao) × 100`.
+  double get markupSobreCustoPercent {
+    if (custoReposicao > 0) {
+      return (lucro / custoReposicao) * 100;
+    }
+    return 0;
+  }
+
+  /// Absolute profit: `valorTotalItem - custoReposicao`.
+  double get lucro => valorTotalItem - custoReposicao;
 
   final int? codGrupoProduto;
   final String? nomeGrupoProduto;

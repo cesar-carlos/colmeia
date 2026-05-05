@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:flutter/foundation.dart';
 
 typedef SalesMonthlyPnlLinesLoadResult = ({
@@ -11,25 +12,6 @@ typedef SalesMonthlyPnlLinesLoadResult = ({
   bool loadFailed,
   String? loadFailureMessage,
 });
-
-@immutable
-class SalesMonthlyPnlPoint {
-  const SalesMonthlyPnlPoint({
-    required this.year,
-    required this.month,
-    required this.anoMes,
-    required this.venda,
-    required this.lucro,
-    required this.custoMercadoria,
-  });
-
-  final int year;
-  final int month;
-  final String anoMes;
-  final double venda;
-  final double lucro;
-  final double custoMercadoria;
-}
 
 class LoadSalesMonthlyPnlLinesUseCase {
   LoadSalesMonthlyPnlLinesUseCase(this._loadLucratividadeMensal);

@@ -420,8 +420,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
 
     setState(() {
       _selectedAgentId = result['agentId'] as String?;
-      _quantidadeDias =
-          (result['quantidadeDias'] as int?) ?? _quantidadeDias;
+      _quantidadeDias = (result['quantidadeDias'] as int?) ?? _quantidadeDias;
       _searchTerm = (result['searchTerm'] as String?)?.trim() ?? '';
       _classificacao = result['classificacao'] as String?;
       _codGrupoProduto = result['codGrupoProduto'] as int?;

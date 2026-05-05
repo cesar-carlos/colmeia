@@ -90,8 +90,10 @@ class Overview {
   final String? weekdayUserSalesTrendLoadFailureMessage;
 
   /// Monthly product profitability trend (lucratividade mensal): 12 months
-  /// ending at the filter month. Each row carries `anoMes`, costs, revenue
-  /// and `percentualLucro`. Empty when not loaded or when the query fails.
+  /// ending at the filter month. Each row carries `anoMes`, costs, revenue,
+  /// and derived percent metrics (`percentualCustoSobreVenda`,
+  /// `margemLucroBrutoPercent`, `markupSobreCustoPercent`). Empty when not
+  /// loaded or when the query fails.
   final List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalTrend;
 
   /// True when the lucratividade mensal query failed.
