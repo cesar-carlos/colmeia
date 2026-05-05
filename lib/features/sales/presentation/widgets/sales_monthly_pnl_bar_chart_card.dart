@@ -650,70 +650,68 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
         final sessionHolder = <SalesMonthlyPnlBarChartPreferences>[
           initialSession,
         ];
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final maxBound =
-                constraints.maxHeight.isFinite ? constraints.maxHeight : 720.0;
-            final chartBodyHeight = (maxBound - 120).clamp(220.0, maxBound);
-            return StatefulBuilder(
-              builder: (context, setFs) {
-                final fsSession = sessionHolder[0];
-                final isPct =
-                    fsSession.displayMode ==
-                    SalesMonthlyPnlBarDisplayMode.percent;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    salesMonthlyPnlBarDisplayModeSegmented(
-                      l10n: l10nFs,
-                      value: fsSession.displayMode,
-                      onChanged: (v) => setFs(() {
-                        sessionHolder[0] =
-                            sessionHolder[0].copyWith(displayMode: v);
-                      }),
+        return StatefulBuilder(
+          builder: (context, setFs) {
+            final fsSession = sessionHolder[0];
+            final isPct =
+                fsSession.displayMode == SalesMonthlyPnlBarDisplayMode.percent;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                salesMonthlyPnlBarDisplayModeSegmented(
+                  l10n: l10nFs,
+                  value: fsSession.displayMode,
+                  onChanged: (v) => setFs(() {
+                    sessionHolder[0] =
+                        sessionHolder[0].copyWith(displayMode: v);
+                  }),
+                ),
+                if (isPct) ...<Widget>[
+                  SizedBox(height: tokensFs.gapSm),
+                  Semantics(
+                    sortKey: const OrdinalSortKey(2),
+                    child: LayoutBuilder(
+                      builder: (context, c2) {
+                        final narrow = c2.maxWidth < 380;
+                        return OverviewLucratividadePercentMetricSection(
+                          l10n: l10nFs,
+                          tokens: tokensFs,
+                          metric: fsSession.percentMetric,
+                          useDropdownLayout: narrow,
+                          hasChartData: points.isNotEmpty,
+                          showChronologicalHint: true,
+                          onMetricChanged: (v) => setFs(() {
+                            sessionHolder[0] =
+                                sessionHolder[0].copyWith(
+                                  percentMetric: v,
+                                );
+                          }),
+                        );
+                      },
                     ),
-                    if (isPct) ...<Widget>[
-                      SizedBox(height: tokensFs.gapSm),
-                      Semantics(
-                        sortKey: const OrdinalSortKey(2),
-                        child: LayoutBuilder(
-                          builder: (context, c2) {
-                            final narrow = c2.maxWidth < 380;
-                            return OverviewLucratividadePercentMetricSection(
-                              l10n: l10nFs,
-                              tokens: tokensFs,
-                              metric: fsSession.percentMetric,
-                              useDropdownLayout: narrow,
-                              hasChartData: points.isNotEmpty,
-                              showChronologicalHint: true,
-                              onMetricChanged: (v) => setFs(() {
-                                sessionHolder[0] =
-                                    sessionHolder[0].copyWith(
-                                      percentMetric: v,
-                                    );
-                              }),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                    SizedBox(height: tokensFs.contentSpacing),
-                    SizedBox(
-                      height: chartBodyHeight,
-                      child: _SalesMonthlyPnlBarChartBody(
+                  ),
+                ],
+                SizedBox(height: tokensFs.contentSpacing),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, innerConstraints) {
+                      final chartH = innerConstraints.maxHeight.isFinite
+                          ? innerConstraints.maxHeight
+                          : 220.0;
+                      return _SalesMonthlyPnlBarChartBody(
                         l10n: l10nFs,
                         points: points,
                         loadFailed: loadFailed,
                         loadFailureMessage: loadFailureMessage,
                         isLoading: isLoading,
                         session: sessionHolder[0],
-                        chartHeightOverride: chartBodyHeight,
+                        chartHeightOverride: chartH,
                         useChartShell: false,
-                      ),
-                    ),
-                  ],
-                );
-              },
+                      );
+                    },
+                  ),
+                ),
+              ],
             );
           },
         );
