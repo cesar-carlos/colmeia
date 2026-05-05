@@ -52,7 +52,9 @@ Precedencia do `installer/build_installer.py`:
 4. `.env` na raiz do projeto como fallback legado.
 
 Modelo versionado na raiz do repositorio: **`.env.release.example`** (copie para
-`.env.release`; nao commite o destino).
+`.env.release`; nao commite o destino). Para o fallback legado **`.env`**, veja
+**`.env.example`** na raiz (apenas `AUTO_UPDATE_FEED_URL`; nao commite o ficheiro
+copiado).
 
 ## Fluxo manual
 
