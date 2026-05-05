@@ -163,6 +163,35 @@ class BuildInstallerTest(unittest.TestCase):
         self.assertFalse(checksum.exists())
         self.assertTrue(keep.exists())
 
+    def test_find_dart_prefers_flutter_root_sdk_executable(self) -> None:
+        flutter_root = self.workspace / "flutter"
+        dart_exe = flutter_root / self.module.DART_RELATIVE_TO_FLUTTER_ROOT
+        dart_exe.parent.mkdir(parents=True, exist_ok=True)
+        dart_exe.write_text("", encoding="utf-8")
+
+        with mock.patch.dict(
+            os.environ,
+            {"FLUTTER_ROOT": str(flutter_root)},
+            clear=True,
+        ):
+            resolved = self.module.find_dart()
+
+        self.assertEqual(str(dart_exe), resolved)
+
+    def test_find_dart_converts_dart_bat_into_sdk_dart_exe(self) -> None:
+        flutter_bin = self.workspace / "flutter" / "bin"
+        flutter_bin.mkdir(parents=True, exist_ok=True)
+        dart_bat = flutter_bin / "dart.bat"
+        dart_bat.write_text("", encoding="utf-8")
+        dart_exe = flutter_bin / "cache" / "dart-sdk" / "bin" / "dart.exe"
+        dart_exe.parent.mkdir(parents=True, exist_ok=True)
+        dart_exe.write_text("", encoding="utf-8")
+
+        with mock.patch("shutil.which", side_effect=lambda name: str(dart_bat) if name == "dart" else None):
+            resolved = self.module.find_dart()
+
+        self.assertEqual(str(dart_exe), resolved)
+
     def test_guard_against_bundled_local_env_allows_missing_file(self) -> None:
         self.module.guard_against_bundled_local_env()
 

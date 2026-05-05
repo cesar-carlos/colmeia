@@ -34,6 +34,7 @@ BUNDLED_LOCAL_ENV = PROJECT_ROOT / "assets" / "env" / "local.env"
 ALLOW_BUNDLED_LOCAL_ENV_VAR = "COLMEIA_ALLOW_BUNDLED_LOCAL_ENV"
 WINDOWS_BINARY_NAME = "colmeia.exe"
 INSTALLER_GLOB = "Colmeia-Setup-*.exe"
+DART_RELATIVE_TO_FLUTTER_ROOT = Path("bin") / "cache" / "dart-sdk" / "bin" / "dart.exe"
 
 ISCC_PATHS = (
     "ISCC",
@@ -53,7 +54,7 @@ def main() -> None:
         run([sys.executable, str(INSTALLER_DIR / "update_version.py")])
 
     print("\n2. Windows multi-resolution ICO (runner + Inno)...", flush=True)
-    run(["dart", "run", "tool/generate_windows_app_icon.dart"])
+    run([find_dart(), "run", "tool/generate_windows_app_icon.dart"])
 
     print("\n3. Building Flutter Windows release...", flush=True)
     guard_against_bundled_local_env()
@@ -81,7 +82,7 @@ def main() -> None:
         "Inno uses installer/setup_icon.ico)...",
         flush=True,
     )
-    run(["dart", "run", "tool/generate_windows_app_icon.dart"])
+    run([find_dart(), "run", "tool/generate_windows_app_icon.dart"])
 
     print("\n5. Compiling Inno Setup installer...", flush=True)
     DIST_DIR.mkdir(parents=True, exist_ok=True)
@@ -192,6 +193,37 @@ def find_iscc() -> str:
     raise SystemExit(
         "Inno Setup (ISCC) was not found. "
         "Install Inno Setup 6 and ensure ISCC is on PATH."
+    )
+
+
+def find_dart() -> str:
+    flutter_root = normalize_env_value(os.environ.get("FLUTTER_ROOT"))
+    if flutter_root:
+        candidate = Path(flutter_root) / DART_RELATIVE_TO_FLUTTER_ROOT
+        if candidate.exists():
+            return str(candidate)
+
+    flutter_path = shutil.which("flutter")
+    if flutter_path:
+        flutter_candidate = Path(flutter_path)
+        for candidate in (
+            flutter_candidate.parent / DART_RELATIVE_TO_FLUTTER_ROOT,
+            flutter_candidate.with_suffix(".bat").parent / DART_RELATIVE_TO_FLUTTER_ROOT,
+        ):
+            if candidate.exists():
+                return str(candidate)
+
+    dart_path = shutil.which("dart")
+    if dart_path:
+        dart_candidate = Path(dart_path)
+        if dart_candidate.suffix.lower() == ".bat":
+            sdk_candidate = dart_candidate.parent / "cache" / "dart-sdk" / "bin" / "dart.exe"
+            if sdk_candidate.exists():
+                return str(sdk_candidate)
+        return dart_path
+
+    raise SystemExit(
+        "Dart SDK executable was not found. Ensure Flutter/Dart is installed and on PATH."
     )
 
 
