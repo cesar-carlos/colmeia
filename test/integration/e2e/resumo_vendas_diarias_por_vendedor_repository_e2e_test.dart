@@ -1,3 +1,4 @@
+@Tags(['e2e'])
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
@@ -34,8 +35,7 @@ void main() {
           await e2eSetupDependencies();
           addTearDown(e2eTeardownDependencies);
 
-          final repository =
-              getIt<ResumoVendasDiariasPorVendedorRepository>();
+          final repository = getIt<ResumoVendasDiariasPorVendedorRepository>();
           final today = DateTime.now();
           final periodEnd = DateTime(today.year, today.month, today.day);
           final periodStart = periodEnd.subtract(const Duration(days: 14));

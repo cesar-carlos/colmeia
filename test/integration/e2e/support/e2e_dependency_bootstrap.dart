@@ -155,8 +155,7 @@ bool isTransientAgentSqlBridgeHttpFailure(AppFailure failure) {
     DioExceptionType.connectionTimeout ||
     DioExceptionType.sendTimeout ||
     DioExceptionType.receiveTimeout ||
-    DioExceptionType.connectionError =>
-      true,
+    DioExceptionType.connectionError => true,
     _ => false,
   };
 }
@@ -216,7 +215,8 @@ bool isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(AppFailure failure) {
   final errorData = failure.context[AgentSqlRpcFailureUiKey.errorDataField];
   if (errorData is Map) {
     final detail = errorData['detail']?.toString().toLowerCase() ?? '';
-    if (detail.contains('named parameters') && detail.contains('supports up to')) {
+    if (detail.contains('named parameters') &&
+        detail.contains('supports up to')) {
       return true;
     }
   }
@@ -229,8 +229,7 @@ bool isKnownE2eAgentSqlQueueSaturationFailure(AppFailure failure) {
   if (failure is! RpcFailure) {
     return false;
   }
-  if (failure.reason != 'sql_execution_failed' ||
-      failure.category != 'sql') {
+  if (failure.reason != 'sql_execution_failed' || failure.category != 'sql') {
     return false;
   }
   final odbc = _agentSqlOdbcReason(failure);

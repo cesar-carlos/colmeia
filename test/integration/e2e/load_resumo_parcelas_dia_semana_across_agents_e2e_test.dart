@@ -1,3 +1,4 @@
+@Tags(['e2e'])
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
@@ -44,7 +45,8 @@ void main() {
             dataVendaFim: yearMonth.end,
           );
 
-          final useCase = getIt<LoadResumoParcelasDiaSemanaAcrossAgentsUseCase>();
+          final useCase =
+              getIt<LoadResumoParcelasDiaSemanaAcrossAgentsUseCase>();
           final result = await useCase(
             userId: 'e2e-overview-user',
             filter: filter,
@@ -59,8 +61,14 @@ void main() {
                 final row = chartRows[i];
                 expect(row.diaSemanaNumero, i + 1);
                 expect(row.diaSemana, isNotEmpty);
-                expect(row.codEmpresa, ResumoParcelasDiaSemanaRow.aggregatedBranchSentinel);
-                expect(row.codFilial, ResumoParcelasDiaSemanaRow.aggregatedBranchSentinel);
+                expect(
+                  row.codEmpresa,
+                  ResumoParcelasDiaSemanaRow.aggregatedBranchSentinel,
+                );
+                expect(
+                  row.codFilial,
+                  ResumoParcelasDiaSemanaRow.aggregatedBranchSentinel,
+                );
                 expect(row.qtdVendas, greaterThanOrEqualTo(0));
                 expect(row.valorParcela, isNonNegative);
               }

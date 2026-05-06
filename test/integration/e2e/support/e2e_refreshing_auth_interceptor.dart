@@ -17,7 +17,8 @@ final class E2eRefreshingAuthInterceptor extends QueuedInterceptor {
     required Dio dio,
     required AuthRemoteDataSource refreshAuthApi,
     required E2eAuthSessionHolder sessionHolder,
-    Duration proactiveRefreshWindow = AuthInterceptor.defaultProactiveRefreshWindow,
+    Duration proactiveRefreshWindow =
+        AuthInterceptor.defaultProactiveRefreshWindow,
     DateTime Function()? clock,
   }) : _dio = dio,
        _refreshAuthApi = refreshAuthApi,

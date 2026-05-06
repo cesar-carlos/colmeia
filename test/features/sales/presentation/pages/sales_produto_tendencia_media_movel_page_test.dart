@@ -218,7 +218,7 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('shows agent-required state when there is no selected agent', (
+  testWidgets('shows branch-required state when there is no selected branch', (
     tester,
   ) async {
     when(() => salesPreferences.selectedAgentId).thenReturn(null);
@@ -230,7 +230,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Select an agent to view this information.'),
+      find.text('Select a branch to view this information.'),
       findsWidgets,
     );
   });

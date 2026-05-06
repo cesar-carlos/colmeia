@@ -1,3 +1,4 @@
+@Tags(['e2e'])
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
@@ -159,8 +160,9 @@ void main() {
                 String key(ResumoProdutoVendaRow r) =>
                     '${r.codEmpresa}-${r.codFilial}-${r.codProduto}';
                 final keys1 = page1.items.map(key).toSet();
-                final overlap =
-                    page2.items.where((r) => keys1.contains(key(r))).toList();
+                final overlap = page2.items
+                    .where((r) => keys1.contains(key(r)))
+                    .toList();
                 expect(
                   overlap,
                   isEmpty,
@@ -229,8 +231,7 @@ void main() {
                   expect(
                     page.items[i].qtdVendas,
                     greaterThanOrEqualTo(page.items[i + 1].qtdVendas),
-                    reason:
-                        'qtdVendas DESC should not increase down the page',
+                    reason: 'qtdVendas DESC should not increase down the page',
                   );
                 }
               }

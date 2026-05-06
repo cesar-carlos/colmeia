@@ -216,7 +216,7 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('shows agent-required state when there is no selected agent', (
+  testWidgets('shows branch-required state when there is no selected branch', (
     tester,
   ) async {
     when(() => salesPreferences.selectedAgentId).thenReturn(null);
@@ -227,7 +227,7 @@ void main() {
     await _pumpTrendPage(tester, authController: authController);
     await tester.pumpAndSettle();
 
-    expect(find.text('Agent selection required'), findsOneWidget);
+    expect(find.text('Branch selection required'), findsOneWidget);
   });
 
   testWidgets('shows loading indicators while trend requests are in flight', (
