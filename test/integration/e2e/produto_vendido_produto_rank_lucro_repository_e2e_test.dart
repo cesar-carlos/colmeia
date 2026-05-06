@@ -1,4 +1,6 @@
 @Tags(['e2e'])
+library;
+
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;

@@ -204,6 +204,15 @@ class BuildInstallerTest(unittest.TestCase):
 
         self.module.guard_against_bundled_local_env()
 
+    def test_has_meaningful_local_env_entries_ignores_utf8_bom_comment_lines(self) -> None:
+        self.module.BUNDLED_LOCAL_ENV.parent.mkdir(parents=True, exist_ok=True)
+        self.module.BUNDLED_LOCAL_ENV.write_text(
+            "# comment only\n# still ignored\n",
+            encoding="utf-8-sig",
+        )
+
+        self.assertFalse(self.module.has_meaningful_local_env_entries())
+
     def test_guard_against_bundled_local_env_fails_when_entries_exist(self) -> None:
         self.module.BUNDLED_LOCAL_ENV.parent.mkdir(parents=True, exist_ok=True)
         self.module.BUNDLED_LOCAL_ENV.write_text(
@@ -229,6 +238,53 @@ class BuildInstallerTest(unittest.TestCase):
             clear=True,
         ):
             self.module.guard_against_bundled_local_env()
+
+    def test_prepared_local_env_for_release_sanitizes_and_restores_sensitive_file(self) -> None:
+        self.module.BUNDLED_LOCAL_ENV.parent.mkdir(parents=True, exist_ok=True)
+        original_content = "SECRET=value\n"
+        self.module.BUNDLED_LOCAL_ENV.write_text(original_content, encoding="utf-8")
+
+        with self.module.prepared_local_env_for_release():
+            sanitized_content = self.module.BUNDLED_LOCAL_ENV.read_text(
+                encoding="utf-8",
+            )
+            self.assertNotIn("SECRET=value", sanitized_content)
+            self.assertIn("Sanitized automatically", sanitized_content)
+
+        restored_content = self.module.BUNDLED_LOCAL_ENV.read_text(encoding="utf-8")
+        self.assertEqual(original_content, restored_content)
+
+    def test_prepared_local_env_for_release_keeps_file_when_explicitly_allowed(self) -> None:
+        self.module.BUNDLED_LOCAL_ENV.parent.mkdir(parents=True, exist_ok=True)
+        original_content = "SECRET=value\n"
+        self.module.BUNDLED_LOCAL_ENV.write_text(original_content, encoding="utf-8")
+
+        with mock.patch.dict(
+            os.environ,
+            {self.module.ALLOW_BUNDLED_LOCAL_ENV_VAR: "1"},
+            clear=True,
+        ):
+            with self.module.prepared_local_env_for_release():
+                current_content = self.module.BUNDLED_LOCAL_ENV.read_text(
+                    encoding="utf-8",
+                )
+                self.assertEqual(original_content, current_content)
+
+    def test_write_sha256_file_creates_checksum_sidecar(self) -> None:
+        asset_path = self.workspace / "installer" / "dist" / "Colmeia-Setup-9.9.9.exe"
+        asset_path.parent.mkdir(parents=True, exist_ok=True)
+        asset_path.write_text("binary-content", encoding="utf-8")
+
+        checksum_path = self.module.write_sha256_file(asset_path)
+
+        self.assertEqual(
+            asset_path.with_name("Colmeia-Setup-9.9.9.exe.sha256"),
+            checksum_path,
+        )
+        self.assertEqual(
+            "37456ce54a2ef39b6c9c1d96ddc978f2edc730744bd2c9872dc1cc9ac886b00e",
+            checksum_path.read_text(encoding="utf-8"),
+        )
 
 
 if __name__ == "__main__":

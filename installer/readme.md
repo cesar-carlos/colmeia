@@ -7,16 +7,16 @@ Scripts e arquivos do instalador Windows do Colmeia.
 | Contexto | Onde configurar | O que afeta |
 |----------|-----------------|---------------|
 | App em runtime (API, Sentry, socket, E2E) | `assets/env/default.env`, opcional `assets/env/local.env`, `--dart-define` | Dart `AppEnvironment` apos `loadAppDotenv()` |
-| Build do instalador Windows local | processo: `AUTO_UPDATE_FEED_URL`; ou `.env.release`; ou `COLMEIA_RELEASE_ENV_FILE` → ficheiro extra | `flutter build windows --release` recebe `--dart-define=AUTO_UPDATE_FEED_URL=...` |
+| Build do instalador Windows local | processo: `AUTO_UPDATE_FEED_URL`; ou `.env.release`; ou `COLMEIA_RELEASE_ENV_FILE` Ã¢â€ â€™ ficheiro extra | `flutter build windows --release` recebe `--dart-define=AUTO_UPDATE_FEED_URL=...` |
 | CI (GitHub Actions, tag `v*.*.*`) | env do job: `AUTO_UPDATE_FEED_URL` (default aponta ao `appcast.xml` no repo); opcional variavel de repositorio **`APPCAST_FEED_URL`** para substituir o URL | Mesmo `dart-define`; **nao** usa `.env.release` no runner |
-| Release checklist | Antes de distribuir um `.exe` local: verificar `assets/env/local.env` — se existir com entradas, pode ir embutido no bundle (`pubspec.yaml` assets) | Evitar fugir segredos em builds que partilha |
+| Release checklist | Antes de distribuir um `.exe` local: verificar `assets/env/local.env` Ã¢â‚¬â€ se existir com entradas, pode ir embutido no bundle (`pubspec.yaml` assets) | Evitar fugir segredos em builds que partilha |
 
 ## Estrutura
 
 ```text
 installer/
 |-- build_installer.py       # sync opcional + ICO + flutter build + refresh ICO + ISCC
-|-- setup_icon.ico           # gerado (gitignored); icone do Setup.exe — ver `SetupIconFile`
+|-- setup_icon.ico           # gerado (gitignored); icone do Setup.exe Ã¢â‚¬â€ ver `SetupIconFile`
 |-- ci_print_release_metadata.py  # saida GITHUB_OUTPUT no workflow de tag
 |-- pubspec_version.py       # parsing de version em pubspec (partilhado)
 |-- setup.iss                # script Inno Setup
@@ -28,6 +28,7 @@ installer/
 
 ```text
 installer/dist/Colmeia-Setup-{MAJOR.MINOR.PATCH}.exe
+installer/dist/Colmeia-Setup-{MAJOR.MINOR.PATCH}.exe.sha256
 ```
 
 Antes do Inno Setup, `build_installer.py` remove `Colmeia-Setup-*.exe` e `.sha256`
@@ -50,17 +51,19 @@ O script:
 
 1. sincroniza `installer/setup.iss` e `lib/core/constants/app_version.g.dart`
    (**omitido** se `COLMEIA_SKIP_VERSION_SYNC=1`, usado no CI apos `update_version.py`);
-2. gera `windows/runner/resources/app_icon.ico` e `installer/setup_icon.ico` (16–256 px)
+2. gera `windows/runner/resources/app_icon.ico` e `installer/setup_icon.ico` (16Ã¢â‚¬â€œ256 px)
    a partir de `assets/icons/colmeia-512.png` (`tool/generate_windows_app_icon.dart`);
-3. executa `flutter build windows --release`
-   (emite aviso se `assets/env/local.env` tiver linhas nao comentadas — pode ir no bundle);
+3. se `assets/env/local.env` tiver linhas nao comentadas e
+   `COLMEIA_ALLOW_BUNDLED_LOCAL_ENV` **nao** estiver em `1`, substitui o
+   arquivo temporariamente por uma copia sanitizada so durante o
+   `flutter build windows --release`, restaurando o original no fim;
 4. volta a gerar os ICO (o Flutter pode substituir `app_icon.ico` no runner; o Inno usa
    `installer/setup_icon.ico`, fora de `windows/`, para o icone do Setup.exe);
-5. compila o instalador via Inno Setup (`SetupIconFile=setup_icon.ico`).
+5. compila o instalador via Inno Setup (`SetupIconFile=setup_icon.ico`);
+6. gera `installer/dist/Colmeia-Setup-{versao}.exe.sha256`.
 
-Observacao de seguranca: se `assets/env/local.env` tiver linhas nao comentadas,
-o build local agora falha por padrao para evitar empacotar segredos no bundle.
-Se voce realmente quiser seguir mesmo assim, use
+Observacao de seguranca: o build local nao empacota por acidente valores reais
+de `assets/env/local.env`. Se voce realmente quiser seguir mesmo assim, use
 `COLMEIA_ALLOW_BUNDLED_LOCAL_ENV=1` de forma explicita.
 
 Se a variavel `AUTO_UPDATE_FEED_URL` estiver definida no ambiente do processo
@@ -77,7 +80,7 @@ Precedencia do `installer/build_installer.py`:
 3. `.env.release` na raiz do projeto.
 
 Valores vazios (`AUTO_UPDATE_FEED_URL=`) num ficheiro **nao bloqueiam** o seguinte
-na lista — o script ignora e continua.
+na lista Ã¢â‚¬â€ o script ignora e continua.
 
 ## Troubleshooting do icone do instalador
 
@@ -103,7 +106,7 @@ para embutir o feed no build do instalador; nao commite o destino.
 
 ### Variavel de repositorio GitHub (opcional)
 
-No repositorio GitHub: **Settings → Secrets and variables → Actions → Variables**,
+No repositorio GitHub: **Settings Ã¢â€ â€™ Secrets and variables Ã¢â€ â€™ Actions Ã¢â€ â€™ Variables**,
 crie **`APPCAST_FEED_URL`** se quiser um URL de appcast fixo diferente do padrao
 `https://raw.githubusercontent.com/<repo>/main/appcast.xml` usado no workflow
 de release.
@@ -117,6 +120,18 @@ flutter build windows --release
 dart run tool/generate_windows_app_icon.dart
 ISCC installer/setup.iss
 ```
+
+## Fluxo automatizado de release local
+
+Para automatizar bump de versao, validacao, build do instalador, commit e tag:
+
+```powershell
+python tool/release_windows.py --dry-run
+python tool/release_windows.py
+```
+
+Sem `--version`, o script sugere a proxima patch version com base na ultima tag
+`v*.*.*` e incrementa o build atual do `pubspec.yaml`.
 
 ## Documentacao relacionada
 

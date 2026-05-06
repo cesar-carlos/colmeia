@@ -15,11 +15,14 @@ Output:
 
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import subprocess
 import sys
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 from typing import Optional, Sequence
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -35,6 +38,10 @@ ALLOW_BUNDLED_LOCAL_ENV_VAR = "COLMEIA_ALLOW_BUNDLED_LOCAL_ENV"
 WINDOWS_BINARY_NAME = "colmeia.exe"
 INSTALLER_GLOB = "Colmeia-Setup-*.exe"
 DART_RELATIVE_TO_FLUTTER_ROOT = Path("bin") / "cache" / "dart-sdk" / "bin" / "dart.exe"
+SANITIZED_LOCAL_ENV_LINES = (
+    "# Sanitized automatically by installer/build_installer.py for release builds.",
+    "# Original assets/env/local.env is restored after the build finishes.",
+)
 
 ISCC_PATHS = (
     "ISCC",
@@ -57,19 +64,18 @@ def main() -> None:
     run([find_dart(), "run", "tool/generate_windows_app_icon.dart"])
 
     print("\n3. Building Flutter Windows release...", flush=True)
-    guard_against_bundled_local_env()
-
-    flutter_command = ["flutter", "build", "windows", "--release"]
-    if feed_url := resolve_auto_update_feed_url():
-        flutter_command.append(f"--dart-define=AUTO_UPDATE_FEED_URL={feed_url}")
-        print(f"   AUTO_UPDATE_FEED_URL={feed_url}", flush=True)
-    else:
-        print(
-            "   AUTO_UPDATE_FEED_URL not configured. "
-            "Windows auto-update will stay disabled in this build.",
-            flush=True,
-        )
-    run(flutter_command)
+    with prepared_local_env_for_release():
+        flutter_command = ["flutter", "build", "windows", "--release"]
+        if feed_url := resolve_auto_update_feed_url():
+            flutter_command.append(f"--dart-define=AUTO_UPDATE_FEED_URL={feed_url}")
+            print(f"   AUTO_UPDATE_FEED_URL={feed_url}", flush=True)
+        else:
+            print(
+                "   AUTO_UPDATE_FEED_URL not configured. "
+                "Windows auto-update will stay disabled in this build.",
+                flush=True,
+            )
+        run(flutter_command)
 
     binary_path = BUILD_DIR / WINDOWS_BINARY_NAME
     if not BUILD_DIR.exists():
@@ -90,21 +96,49 @@ def main() -> None:
     run([find_iscc(), str(SETUP_ISS)], cwd=INSTALLER_DIR)
 
     installer_path = find_generated_installer()
+    checksum_path = write_sha256_file(installer_path)
     print(f"\nInstaller generated at: {installer_path}", flush=True)
+    print(f"SHA-256 written to: {checksum_path}", flush=True)
 
 
 def _skip_version_sync() -> bool:
     return os.environ.get(SKIP_VERSION_SYNC_VAR, "").strip() == "1"
 
 
-def guard_against_bundled_local_env() -> None:
-    if not BUNDLED_LOCAL_ENV.is_file():
+@contextmanager
+def prepared_local_env_for_release() -> Iterator[None]:
+    if not has_meaningful_local_env_entries():
+        yield
         return
-    has_entry = any(
-        line.strip() and not line.strip().startswith("#")
-        for line in BUNDLED_LOCAL_ENV.read_text(encoding="utf-8").splitlines()
+
+    if allow_bundled_local_env():
+        print(
+            "   WARNING: assets/env/local.env contains entries and will be bundled "
+            f"because {ALLOW_BUNDLED_LOCAL_ENV_VAR}=1.",
+            flush=True,
+        )
+        yield
+        return
+
+    original_bytes = BUNDLED_LOCAL_ENV.read_bytes()
+    write_sanitized_local_env(BUNDLED_LOCAL_ENV)
+    print(
+        "   assets/env/local.env contains entries; replacing it with a "
+        "sanitized placeholder for this release build.",
+        flush=True,
     )
-    if not has_entry:
+    try:
+        yield
+    finally:
+        BUNDLED_LOCAL_ENV.write_bytes(original_bytes)
+        print(
+            "   Restored the original assets/env/local.env after the release build.",
+            flush=True,
+        )
+
+
+def guard_against_bundled_local_env() -> None:
+    if not has_meaningful_local_env_entries():
         return
     if allow_bundled_local_env():
         print(
@@ -115,9 +149,24 @@ def guard_against_bundled_local_env() -> None:
         return
     raise SystemExit(
         "assets/env/local.env contains entries and would be bundled into this "
-        "release build (pubspec assets). Clear the file or rerun with "
+        "release build (pubspec assets). Clear the file, rely on automatic "
+        "sanitization during installer/build_installer.py, or rerun with "
         f"{ALLOW_BUNDLED_LOCAL_ENV_VAR}=1 if you really intend to ship it."
     )
+
+
+def has_meaningful_local_env_entries() -> bool:
+    if not BUNDLED_LOCAL_ENV.is_file():
+        return False
+    return any(
+        line.strip() and not line.strip().lstrip("\ufeff").startswith("#")
+        for line in BUNDLED_LOCAL_ENV.read_text(encoding="utf-8-sig").splitlines()
+    )
+
+
+def write_sanitized_local_env(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(SANITIZED_LOCAL_ENV_LINES) + "\n", encoding="utf-8")
 
 
 def allow_bundled_local_env() -> bool:
@@ -236,6 +285,13 @@ def find_generated_installer() -> Path:
     if not candidates:
         raise SystemExit(f"No installer matching {INSTALLER_GLOB} was found.")
     return candidates[0]
+
+
+def write_sha256_file(asset_path: Path) -> Path:
+    digest = hashlib.sha256(asset_path.read_bytes()).hexdigest()
+    checksum_path = asset_path.with_name(f"{asset_path.name}.sha256")
+    checksum_path.write_text(digest, encoding="utf-8")
+    return checksum_path
 
 
 def resolve_command(command: Sequence[str]) -> list[str]:

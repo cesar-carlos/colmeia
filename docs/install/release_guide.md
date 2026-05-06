@@ -68,8 +68,9 @@ Ao alterar PNGs em **`assets/icons/`** (por exemplo `colmeia-512.png`):
 4. Para o instalador Windows completo: `python installer/build_installer.py`
 
 Se `assets/env/local.env` tiver linhas nao comentadas, o build local do
-instalador agora falha por padrao para evitar empacotar segredos no bundle.
-So use `COLMEIA_ALLOW_BUNDLED_LOCAL_ENV=1` quando isso for intencional.
+instalador troca o arquivo temporariamente por uma copia sanitizada durante o
+build e restaura o original no fim. So use `COLMEIA_ALLOW_BUNDLED_LOCAL_ENV=1`
+quando isso for intencional.
 
 ### Troubleshooting do icone do Setup.exe
 
@@ -157,6 +158,19 @@ Depois:
 4. guarde a keystore fora do repositorio e com backup seguro
 
 ## Processo recomendado
+
+### Atalho automatizado
+
+Para rodar o fluxo local de bump, validacao, build do instalador, commit e tag
+num unico comando:
+
+```powershell
+python tool/release_windows.py --dry-run
+python tool/release_windows.py
+```
+
+Sem `--version`, o script calcula a proxima patch version com base na ultima
+tag `v*.*.*` e incrementa o build atual do `pubspec.yaml`.
 
 ### 1. Atualizar a versao
 
