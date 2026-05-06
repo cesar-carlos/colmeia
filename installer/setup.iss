@@ -2,7 +2,7 @@
 ; Version is synchronized by installer/update_version.py
 
 #define MyAppName "Colmeia"
-#define MyAppVersion "1.1.7"
+#define MyAppVersion "1.1.8"
 #define MyAppPublisher "Se7e Sistemas"
 #define MyAppURL "https://github.com/cesar-carlos/colmeia"
 #define MyAppExeName "colmeia.exe"
