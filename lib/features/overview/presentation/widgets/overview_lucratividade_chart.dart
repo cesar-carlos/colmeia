@@ -360,8 +360,7 @@ class _OverviewLucratividadeChartState
                   metric: _percentMetric,
                   useDropdownLayout: narrow,
                   hasChartData: widget.points.isNotEmpty,
-                  onMetricChanged: (v) =>
-                      setState(() => _percentMetric = v),
+                  onMetricChanged: (v) => setState(() => _percentMetric = v),
                 );
               },
             ),
@@ -498,11 +497,9 @@ class _OverviewLucratividadeChartState
                                 metric: fullscreenPercentMetric,
                                 useDropdownLayout: narrow,
                                 hasChartData: sortedPointsSnapshot.isNotEmpty,
-                                onMetricChanged:
-                                    (v) =>
-                                        setFullscreenState(() {
-                                          fullscreenPercentMetric = v;
-                                        }),
+                                onMetricChanged: (v) => setFullscreenState(() {
+                                  fullscreenPercentMetric = v;
+                                }),
                               );
                             },
                           ),

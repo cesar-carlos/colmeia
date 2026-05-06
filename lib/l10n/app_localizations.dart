@@ -483,6 +483,18 @@ abstract class AppLocalizations {
   /// **'Load the overview to list agents.'**
   String get dashboardHomeFiltersAgentsEmptyHint;
 
+  /// No description provided for @dashboardHomeFiltersBranchesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BRANCHES'**
+  String get dashboardHomeFiltersBranchesLabel;
+
+  /// No description provided for @dashboardHomeFiltersBranchesEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Load the overview to list branches.'**
+  String get dashboardHomeFiltersBranchesEmptyHint;
+
   /// No description provided for @dashboardHomeFiltersYearMonthLabel.
   ///
   /// In en, this message translates to:
@@ -537,11 +549,23 @@ abstract class AppLocalizations {
   /// **'All agents ({count})'**
   String overviewAgentFilterAllAgentsSummary(int count);
 
+  /// No description provided for @overviewHomeBranchFilterAllBranchesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'All branches ({count})'**
+  String overviewHomeBranchFilterAllBranchesSummary(int count);
+
   /// No description provided for @overviewAgentFilterSelectedCount.
   ///
   /// In en, this message translates to:
   /// **'{count} agents selected'**
   String overviewAgentFilterSelectedCount(int count);
+
+  /// No description provided for @overviewHomeBranchFilterSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branches selected'**
+  String overviewHomeBranchFilterSelectedCount(int count);
 
   /// No description provided for @overviewAgentFilterRefineAction.
   ///
@@ -567,6 +591,18 @@ abstract class AppLocalizations {
   /// **'Search agents…'**
   String get overviewAgentFilterSheetSearchHint;
 
+  /// No description provided for @overviewHomeBranchFilterSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select branches'**
+  String get overviewHomeBranchFilterSheetTitle;
+
+  /// No description provided for @overviewHomeBranchFilterSheetSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search branches…'**
+  String get overviewHomeBranchFilterSheetSearchHint;
+
   /// No description provided for @overviewAgentFilterSelectMatching.
   ///
   /// In en, this message translates to:
@@ -591,11 +627,23 @@ abstract class AppLocalizations {
   /// **'No agents match your search.'**
   String get overviewAgentFilterNoSearchResults;
 
+  /// No description provided for @overviewHomeBranchFilterNoSearchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches match your search.'**
+  String get overviewHomeBranchFilterNoSearchResults;
+
   /// No description provided for @overviewAgentFilterMissingClientTokenBanner.
   ///
   /// In en, this message translates to:
   /// **'Agents without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.'**
   String get overviewAgentFilterMissingClientTokenBanner;
+
+  /// No description provided for @overviewHomeBranchFilterMissingClientTokenBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.'**
+  String get overviewHomeBranchFilterMissingClientTokenBanner;
 
   /// No description provided for @overviewAgentFilterMissingClientTokenRowSubtitle.
   ///
@@ -3490,34 +3538,88 @@ abstract class AppLocalizations {
   /// **'Access and manage commercial information by category.'**
   String get salesHubSubtitle;
 
+  /// No description provided for @salesBranchFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'BRANCHES'**
+  String get salesBranchFilterLabel;
+
+  /// No description provided for @salesBranchFilterEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Load the report to list branches.'**
+  String get salesBranchFilterEmptyHint;
+
+  /// No description provided for @salesBranchFilterSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select branches'**
+  String get salesBranchFilterSheetTitle;
+
+  /// No description provided for @salesBranchFilterSheetSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search branches…'**
+  String get salesBranchFilterSheetSearchHint;
+
+  /// No description provided for @salesBranchFilterNoSearchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches match your search.'**
+  String get salesBranchFilterNoSearchResults;
+
+  /// No description provided for @salesBranchFilterMissingClientTokenBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.'**
+  String get salesBranchFilterMissingClientTokenBanner;
+
+  /// No description provided for @salesBranchPickerEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a branch'**
+  String get salesBranchPickerEmpty;
+
+  /// No description provided for @salesBranchRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch selection required'**
+  String get salesBranchRequiredTitle;
+
+  /// No description provided for @salesBranchRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a branch to view this information.'**
+  String get salesBranchRequiredMessage;
+
   /// No description provided for @salesAgentPickerLabel.
   ///
   /// In en, this message translates to:
-  /// **'Agent'**
+  /// **'Branch'**
   String get salesAgentPickerLabel;
 
   /// No description provided for @salesAgentPickerEmpty.
   ///
   /// In en, this message translates to:
-  /// **'Select an agent'**
+  /// **'Select a branch'**
   String get salesAgentPickerEmpty;
 
   /// No description provided for @salesAgentPickerSheetTitle.
   ///
   /// In en, this message translates to:
-  /// **'Select an agent'**
+  /// **'Select a branch'**
   String get salesAgentPickerSheetTitle;
 
   /// No description provided for @salesAgentRequiredTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agent selection required'**
+  /// **'Branch selection required'**
   String get salesAgentRequiredTitle;
 
   /// No description provided for @salesAgentRequiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'Select an agent to view this information.'**
+  /// **'Select a branch to view this information.'**
   String get salesAgentRequiredMessage;
 
   /// No description provided for @salesCardOpenAccountsTitle.
@@ -4151,6 +4253,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No additional filters} one{1 additional filter} other{{count} additional filters}}'**
   String salesProdutoTendenciaMediaMovelActiveFiltersSummary(int count);
 
+  /// No description provided for @salesProdutoTendenciaMediaMovelFilterSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Product or group'**
+  String get salesProdutoTendenciaMediaMovelFilterSearchHint;
+
   /// No description provided for @salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar.
   ///
   /// In en, this message translates to:
@@ -4220,7 +4328,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaMediaMovelDetailsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Paginated detail with product, averages, group, brand, and trend classification.'**
+  /// **'Paginated detail with product, averages, group, and trend classification.'**
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption.
@@ -4300,12 +4408,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Group'**
   String get salesProdutoTendenciaMediaMovelColGrupo;
-
-  /// No description provided for @salesProdutoTendenciaMediaMovelColMarca.
-  ///
-  /// In en, this message translates to:
-  /// **'Brand'**
-  String get salesProdutoTendenciaMediaMovelColMarca;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelColMediaAtual.
   ///

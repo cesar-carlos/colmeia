@@ -12,48 +12,79 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:flutter/material.dart';
 
-/// Figma-style agent filter trigger: circular peach background + dark icon.
 const double _kAgentFilterCircleSize = 44;
 const Color _kAgentFilterCircleFill = Color(0xFFFFE5D9);
 const Color _kAgentFilterCircleIcon = Color(0xFF5D4037);
 
-OverviewAgentOption? _salesFindAgent(
-  List<OverviewAgentOption> agents,
+class SalesBranchFilterCopy {
+  const SalesBranchFilterCopy({
+    required this.label,
+    required this.emptyHint,
+    required this.selectionEmpty,
+    required this.sheetTitle,
+    required this.sheetSearchHint,
+    required this.noSearchResults,
+    required this.missingClientTokenBanner,
+  });
+
+  factory SalesBranchFilterCopy.sales(AppLocalizations l10n) {
+    return SalesBranchFilterCopy(
+      label: l10n.salesBranchFilterLabel,
+      emptyHint: l10n.salesBranchFilterEmptyHint,
+      selectionEmpty: l10n.salesBranchPickerEmpty,
+      sheetTitle: l10n.salesBranchFilterSheetTitle,
+      sheetSearchHint: l10n.salesBranchFilterSheetSearchHint,
+      noSearchResults: l10n.salesBranchFilterNoSearchResults,
+      missingClientTokenBanner: l10n.salesBranchFilterMissingClientTokenBanner,
+    );
+  }
+
+  final String label;
+  final String emptyHint;
+  final String selectionEmpty;
+  final String sheetTitle;
+  final String sheetSearchHint;
+  final String noSearchResults;
+  final String missingClientTokenBanner;
+}
+
+OverviewAgentOption? _salesFindBranch(
+  List<OverviewAgentOption> branches,
   String? id,
 ) {
   if (id == null) {
     return null;
   }
-  for (final a in agents) {
-    if (a.agentId == id) {
-      return a;
+  for (final branch in branches) {
+    if (branch.agentId == id) {
+      return branch;
     }
   }
   return null;
 }
 
-/// Sales hub: choose exactly one approved agent — same visuals as Overview home
-/// agent sheet but single-select instead of multi.
-class SalesSingleAgentPickerControl extends StatelessWidget {
-  const SalesSingleAgentPickerControl({
+class SalesBranchPickerControl extends StatelessWidget {
+  const SalesBranchPickerControl({
     required this.l10n,
-    required this.availableAgents,
-    required this.selectedAgentId,
+    required this.availableBranches,
+    required this.selectedBranchId,
     required this.onSelectionChanged,
     super.key,
     this.enabled = true,
     this.showTrailingFilterButton = true,
+    this.copy,
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableAgents;
-  final String? selectedAgentId;
+  final List<OverviewAgentOption> availableBranches;
+  final String? selectedBranchId;
   final ValueChanged<String> onSelectionChanged;
   final bool enabled;
   final bool showTrailingFilterButton;
+  final SalesBranchFilterCopy? copy;
 
   Future<void> _openSheet(BuildContext context) async {
-    if (!enabled || availableAgents.isEmpty) {
+    if (!enabled || availableBranches.isEmpty) {
       return;
     }
 
@@ -62,10 +93,11 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: false,
-      builder: (ctx) => _SalesAgentSelectionSheet(
+      builder: (ctx) => _SalesBranchSelectionSheet(
         l10n: l10n,
-        availableAgents: availableAgents,
-        initialSelectedId: selectedAgentId,
+        availableBranches: availableBranches,
+        initialSelectedBranchId: selectedBranchId,
+        copy: copy ?? SalesBranchFilterCopy.sales(l10n),
       ),
     );
 
@@ -83,21 +115,22 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
     final colors = theme.appColors;
     final scheme = theme.colorScheme;
     final labelToFieldGap = tokens.gapXs;
+    final branchCopy = copy ?? SalesBranchFilterCopy.sales(l10n);
 
-    if (availableAgents.isEmpty) {
+    if (availableBranches.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(
-            l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+            branchCopy.label.toUpperCase(),
             style: typography.utilityOverline.copyWith(
               color: colors.onSurfaceVariant,
             ),
           ),
           SizedBox(height: labelToFieldGap),
           Text(
-            l10n.dashboardHomeFiltersAgentsEmptyHint,
+            branchCopy.emptyHint,
             style: typography.caption.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -106,8 +139,11 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
       );
     }
 
-    final selectedAgent = _salesFindAgent(availableAgents, selectedAgentId);
-    final hasSelection = selectedAgent != null;
+    final selectedBranch = _salesFindBranch(
+      availableBranches,
+      selectedBranchId,
+    );
+    final hasSelection = selectedBranch != null;
 
     void openSheet() => _openSheet(context);
 
@@ -116,7 +152,7 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Text(
-          l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+          branchCopy.label.toUpperCase(),
           style: typography.utilityOverline.copyWith(
             color: colors.onSurfaceVariant,
           ),
@@ -125,17 +161,15 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
         Semantics(
           button: true,
           label: hasSelection
-              ? '${l10n.dashboardHomeFiltersAgentsLabel}: ${selectedAgent.name}'
-              : l10n.salesAgentPickerEmpty,
+              ? '${branchCopy.label}: ${selectedBranch.name}'
+              : branchCopy.selectionEmpty,
           child: InkWell(
             onTap: enabled ? openSheet : null,
             borderRadius: BorderRadius.circular(tokens.formFieldRadius),
             child: Padding(
-              padding: EdgeInsets.symmetric(
-                vertical: tokens.gapXs,
-              ),
+              padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
               child: Text(
-                hasSelection ? selectedAgent.name : l10n.salesAgentPickerEmpty,
+                hasSelection ? selectedBranch.name : branchCopy.selectionEmpty,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: typography.body.copyWith(
@@ -199,43 +233,83 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
   }
 }
 
-class _SalesAgentSelectionSheet extends StatefulWidget {
-  const _SalesAgentSelectionSheet({
+@Deprecated('Use SalesBranchPickerControl instead.')
+class SalesSingleAgentPickerControl extends StatelessWidget {
+  @Deprecated('Use SalesBranchPickerControl instead.')
+  const SalesSingleAgentPickerControl({
     required this.l10n,
     required this.availableAgents,
-    required this.initialSelectedId,
+    required this.selectedAgentId,
+    required this.onSelectionChanged,
+    super.key,
+    this.enabled = true,
+    this.showTrailingFilterButton = true,
+    this.copy,
   });
 
   final AppLocalizations l10n;
   final List<OverviewAgentOption> availableAgents;
-  final String? initialSelectedId;
+  final String? selectedAgentId;
+  final ValueChanged<String> onSelectionChanged;
+  final bool enabled;
+  final bool showTrailingFilterButton;
+  final SalesBranchFilterCopy? copy;
 
   @override
-  State<_SalesAgentSelectionSheet> createState() =>
-      _SalesAgentSelectionSheetState();
+  Widget build(BuildContext context) {
+    return SalesBranchPickerControl(
+      l10n: l10n,
+      availableBranches: availableAgents,
+      selectedBranchId: selectedAgentId,
+      onSelectionChanged: onSelectionChanged,
+      enabled: enabled,
+      showTrailingFilterButton: showTrailingFilterButton,
+      copy: copy,
+    );
+  }
 }
 
-class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
+class _SalesBranchSelectionSheet extends StatefulWidget {
+  const _SalesBranchSelectionSheet({
+    required this.l10n,
+    required this.availableBranches,
+    required this.initialSelectedBranchId,
+    required this.copy,
+  });
+
+  final AppLocalizations l10n;
+  final List<OverviewAgentOption> availableBranches;
+  final String? initialSelectedBranchId;
+  final SalesBranchFilterCopy copy;
+
+  @override
+  State<_SalesBranchSelectionSheet> createState() =>
+      _SalesBranchSelectionSheetState();
+}
+
+class _SalesBranchSelectionSheetState
+    extends State<_SalesBranchSelectionSheet> {
   static const Duration _searchDebounceDelay = Duration(milliseconds: 120);
 
-  String? _selectedAgentId;
+  String? _selectedBranchId;
   late final TextEditingController _searchController;
   Timer? _searchDebounceTimer;
-  Map<String, OverviewAgentOption> _agentById = <String, OverviewAgentOption>{};
+  Map<String, OverviewAgentOption> _branchById =
+      <String, OverviewAgentOption>{};
   late String _appliedFilterQuery;
 
-  List<OverviewAgentOption>? _memoFilteredAgents;
-  Object? _memoAgentsListIdentity;
+  List<OverviewAgentOption>? _memoFilteredBranches;
+  Object? _memoBranchesListIdentity;
   String? _memoFilterQuery;
 
   @override
   void initState() {
     super.initState();
-    _rebuildAgentByIdMap();
+    _rebuildBranchByIdMap();
     _appliedFilterQuery = '';
-    _selectedAgentId = reconcileSelectedSalesAgentId(
-      agents: widget.availableAgents,
-      previousSelectedId: widget.initialSelectedId,
+    _selectedBranchId = reconcileSelectedSalesAgentId(
+      agents: widget.availableBranches,
+      previousSelectedId: widget.initialSelectedBranchId,
     );
     _searchController = TextEditingController();
   }
@@ -248,34 +322,34 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
   }
 
   @override
-  void didUpdateWidget(covariant _SalesAgentSelectionSheet oldWidget) {
+  void didUpdateWidget(covariant _SalesBranchSelectionSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (identical(oldWidget.availableAgents, widget.availableAgents)) {
+    if (identical(oldWidget.availableBranches, widget.availableBranches)) {
       return;
     }
-    _rebuildAgentByIdMap();
-    _invalidateFilteredCache();
+    _rebuildBranchByIdMap();
+    _invalidateFilteredBranchesCache();
     final nextId = reconcileSelectedSalesAgentId(
-      agents: widget.availableAgents,
-      previousSelectedId: _selectedAgentId,
+      agents: widget.availableBranches,
+      previousSelectedId: _selectedBranchId,
     );
-    if (nextId == _selectedAgentId) {
+    if (nextId == _selectedBranchId) {
       return;
     }
     setState(() {
-      _selectedAgentId = nextId;
+      _selectedBranchId = nextId;
     });
   }
 
-  void _rebuildAgentByIdMap() {
-    _agentById = <String, OverviewAgentOption>{
-      for (final a in widget.availableAgents) a.agentId: a,
+  void _rebuildBranchByIdMap() {
+    _branchById = <String, OverviewAgentOption>{
+      for (final branch in widget.availableBranches) branch.agentId: branch,
     };
   }
 
-  void _invalidateFilteredCache() {
-    _memoFilteredAgents = null;
-    _memoAgentsListIdentity = null;
+  void _invalidateFilteredBranchesCache() {
+    _memoFilteredBranches = null;
+    _memoBranchesListIdentity = null;
     _memoFilterQuery = null;
   }
 
@@ -295,35 +369,35 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
     });
   }
 
-  List<OverviewAgentOption> _getFilteredAgents() {
-    final agents = widget.availableAgents;
+  List<OverviewAgentOption> _getFilteredBranches() {
+    final branches = widget.availableBranches;
     final q = _appliedFilterQuery;
-    if (identical(_memoAgentsListIdentity, agents) &&
+    if (identical(_memoBranchesListIdentity, branches) &&
         _memoFilterQuery == q &&
-        _memoFilteredAgents != null) {
-      return _memoFilteredAgents!;
+        _memoFilteredBranches != null) {
+      return _memoFilteredBranches!;
     }
     final result = q.isEmpty
-        ? agents
-        : agents
-              .where((a) => a.name.toLowerCase().contains(q))
+        ? branches
+        : branches
+              .where((branch) => branch.name.toLowerCase().contains(q))
               .toList(growable: false);
-    _memoAgentsListIdentity = agents;
+    _memoBranchesListIdentity = branches;
     _memoFilterQuery = q;
-    _memoFilteredAgents = result;
+    _memoFilteredBranches = result;
     return result;
   }
 
-  void _toggleAgent(String agentId, bool? checked) {
+  void _toggleBranch(String branchId, bool? checked) {
     if (checked ?? false) {
-      setState(() => _selectedAgentId = agentId);
+      setState(() => _selectedBranchId = branchId);
     } else {
-      setState(() => _selectedAgentId = null);
+      setState(() => _selectedBranchId = null);
     }
   }
 
   void _apply() {
-    Navigator.of(context).pop(_selectedAgentId);
+    Navigator.of(context).pop(_selectedBranchId);
   }
 
   void _cancel() {
@@ -337,13 +411,13 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
     final tokens = theme.extension<AppThemeTokens>()!;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final viewportHeight = MediaQuery.sizeOf(context).height;
-    final filtered = _getFilteredAgents();
+    final filtered = _getFilteredBranches();
 
-    final selectedAgentMissingToken =
-        _selectedAgentId != null &&
-        (_agentById[_selectedAgentId]?.missingLocalClientToken ?? false);
+    final selectedBranchMissingToken =
+        _selectedBranchId != null &&
+        (_branchById[_selectedBranchId]?.missingLocalClientToken ?? false);
 
-    final minChromePx = 232.0 + (selectedAgentMissingToken ? 88.0 : 0.0);
+    final minChromePx = 232.0 + (selectedBranchMissingToken ? 88.0 : 0.0);
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
@@ -377,7 +451,7 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
                       children: <Widget>[
                         Expanded(
                           child: Text(
-                            widget.l10n.overviewAgentFilterSheetTitle,
+                            widget.copy.sheetTitle,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -403,8 +477,7 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
                       controller: _searchController,
                       autofocus: true,
                       decoration: InputDecoration(
-                        hintText:
-                            widget.l10n.overviewAgentFilterSheetSearchHint,
+                        hintText: widget.copy.sheetSearchHint,
                         prefixIcon: const Icon(Icons.search_rounded),
                         isDense: true,
                         border: OutlineInputBorder(
@@ -416,7 +489,7 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
                       onChanged: (_) => _scheduleSearchFilterRebuild(),
                     ),
                   ),
-                  if (selectedAgentMissingToken)
+                  if (selectedBranchMissingToken)
                     Padding(
                       padding: EdgeInsets.fromLTRB(
                         tokens.contentSpacing,
@@ -447,9 +520,7 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
                               SizedBox(width: tokens.gapSm),
                               Expanded(
                                 child: Text(
-                                  widget
-                                      .l10n
-                                      .overviewAgentFilterMissingClientTokenBanner,
+                                  widget.copy.missingClientTokenBanner,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: scheme.onSurfaceVariant,
                                   ),
@@ -464,11 +535,9 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
                     child: filtered.isEmpty
                         ? Center(
                             child: Padding(
-                              padding: EdgeInsets.all(
-                                tokens.contentSpacing,
-                              ),
+                              padding: EdgeInsets.all(tokens.contentSpacing),
                               child: Text(
-                                widget.l10n.overviewAgentFilterNoSearchResults,
+                                widget.copy.noSearchResults,
                                 textAlign: TextAlign.center,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: scheme.onSurfaceVariant,
@@ -483,17 +552,17 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
                             ),
                             itemCount: filtered.length,
                             itemBuilder: (context, index) {
-                              final agent = filtered[index];
-                              return _SalesAgentSheetCheckboxRow(
-                                key: ValueKey(agent.agentId),
+                              final branch = filtered[index];
+                              return _SalesBranchSheetCheckboxRow(
+                                key: ValueKey(branch.agentId),
                                 l10n: widget.l10n,
-                                agent: agent,
+                                branch: branch,
                                 scheme: scheme,
                                 tokens: tokens,
                                 theme: theme,
-                                selected: _selectedAgentId == agent.agentId,
+                                selected: _selectedBranchId == branch.agentId,
                                 onChanged: (v) =>
-                                    _toggleAgent(agent.agentId, v),
+                                    _toggleBranch(branch.agentId, v),
                               );
                             },
                           ),
@@ -515,7 +584,7 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
                           SizedBox(width: tokens.gapMd),
                           Expanded(
                             child: FilledButton(
-                              onPressed: _selectedAgentId != null
+                              onPressed: _selectedBranchId != null
                                   ? _apply
                                   : null,
                               child: Text(widget.l10n.overviewAgentFilterApply),
@@ -535,10 +604,10 @@ class _SalesAgentSelectionSheetState extends State<_SalesAgentSelectionSheet> {
   }
 }
 
-class _SalesAgentSheetCheckboxRow extends StatelessWidget {
-  const _SalesAgentSheetCheckboxRow({
+class _SalesBranchSheetCheckboxRow extends StatelessWidget {
+  const _SalesBranchSheetCheckboxRow({
     required this.l10n,
-    required this.agent,
+    required this.branch,
     required this.scheme,
     required this.tokens,
     required this.theme,
@@ -548,7 +617,7 @@ class _SalesAgentSheetCheckboxRow extends StatelessWidget {
   });
 
   final AppLocalizations l10n;
-  final OverviewAgentOption agent;
+  final OverviewAgentOption branch;
   final ColorScheme scheme;
   final AppThemeTokens tokens;
   final ThemeData theme;
@@ -557,11 +626,11 @@ class _SalesAgentSheetCheckboxRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nameColor = _salesAgentNameColor(
-      agent.connectionStatus,
+    final nameColor = _salesBranchNameColor(
+      branch.connectionStatus,
       scheme,
     );
-    final isOffline = agent.connectionStatus == AgentConnectionStatus.offline;
+    final isOffline = branch.connectionStatus == AgentConnectionStatus.offline;
 
     final title = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,7 +643,7 @@ class _SalesAgentSheetCheckboxRow extends StatelessWidget {
           ),
           SizedBox(width: tokens.gapXs),
         ],
-        if (agent.missingLocalClientToken) ...<Widget>[
+        if (branch.missingLocalClientToken) ...<Widget>[
           Icon(
             Icons.vpn_key_off_outlined,
             size: 18,
@@ -584,7 +653,7 @@ class _SalesAgentSheetCheckboxRow extends StatelessWidget {
         ],
         Expanded(
           child: Text(
-            agent.name,
+            branch.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(color: nameColor),
@@ -595,7 +664,7 @@ class _SalesAgentSheetCheckboxRow extends StatelessWidget {
 
     final tooltipLines = <String>[
       if (isOffline) l10n.agentConnectionOffline,
-      if (agent.missingLocalClientToken)
+      if (branch.missingLocalClientToken)
         l10n.overviewAgentFilterMissingClientTokenRowSubtitle,
     ];
     final titleWidget = tooltipLines.isEmpty
@@ -607,7 +676,7 @@ class _SalesAgentSheetCheckboxRow extends StatelessWidget {
 
     return CheckboxListTile(
       title: titleWidget,
-      subtitle: agent.missingLocalClientToken
+      subtitle: branch.missingLocalClientToken
           ? Text(
               l10n.overviewAgentFilterMissingClientTokenRowSubtitle,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -622,7 +691,7 @@ class _SalesAgentSheetCheckboxRow extends StatelessWidget {
   }
 }
 
-Color _salesAgentNameColor(
+Color _salesBranchNameColor(
   AgentConnectionStatus status,
   ColorScheme scheme,
 ) {

@@ -5,11 +5,9 @@ import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
@@ -51,12 +49,10 @@ class _SalesProdutoTendenciaMediaMovelPageState
   late final LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
   _loadTrendSummary;
   late final LoadGrupoProdutoOptionsUseCase _loadGrupoOptions;
-  late final LoadMarcaProdutoOptionsUseCase _loadMarcaOptions;
 
   String? _selectedAgentId;
   List<OverviewAgentOption> _availableAgents = <OverviewAgentOption>[];
   List<GrupoProdutoOption> _grupoOptions = const <GrupoProdutoOption>[];
-  List<MarcaProdutoOption> _marcaOptions = const <MarcaProdutoOption>[];
   String? _optionsLoadedForAgentId;
 
   String? _cachedClientTokenUserId;
@@ -67,7 +63,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
   String _searchTerm = '';
   String? _classificacao;
   int? _codGrupoProduto;
-  int? _codMarca;
   ProdutoVendidoTendenciaDeVendaMediaMovelSortBy _sortBy =
       ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.tendenciaPercentualDesc;
   int _page = 1;
@@ -96,7 +91,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
     _loadTrendSummary =
         getIt<LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase>();
     _loadGrupoOptions = getIt<LoadGrupoProdutoOptionsUseCase>();
-    _loadMarcaOptions = getIt<LoadMarcaProdutoOptionsUseCase>();
     _selectedAgentId = _prefs.selectedAgentId;
 
     final restored = _prefs.restoreCardFilters(_cardId);
@@ -116,7 +110,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
         ? restoredClassificacao
         : null;
     _codGrupoProduto = _restorePositiveInt(restored['cod_grupo_produto']);
-    _codMarca = _restorePositiveInt(restored['cod_marca']);
 
     final restoredSortByName = (restored['sort_by'] as String?)?.trim();
     _sortBy = ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.values.firstWhere(
@@ -232,7 +225,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
       searchTerm: _searchTerm,
       classificacao: _classificacao,
       codGrupoProduto: _codGrupoProduto,
-      codMarca: _codMarca,
       sortBy: _sortBy,
       page: _page,
       pageSize: _pageSize,
@@ -319,14 +311,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
       pageSize: 200,
       clientToken: clientToken,
     );
-    final marcaFuture = _loadMarcaOptions(
-      userId: userId,
-      agentId: agentId,
-      pageSize: 200,
-      clientToken: clientToken,
-    );
     final grupoResult = await grupoFuture;
-    final marcaResult = await marcaFuture;
     if (!mounted) {
       return;
     }
@@ -335,14 +320,9 @@ class _SalesProdutoTendenciaMediaMovelPageState
       (options) => options,
       (_) => const <GrupoProdutoOption>[],
     );
-    final nextMarcas = marcaResult.fold(
-      (options) => options,
-      (_) => const <MarcaProdutoOption>[],
-    );
 
     setState(() {
       _grupoOptions = nextGrupos;
-      _marcaOptions = nextMarcas;
       _optionsLoadedForAgentId = agentId;
     });
   }
@@ -378,7 +358,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
       'search_term': _searchTerm,
       'classificacao': _classificacao,
       'cod_grupo_produto': _codGrupoProduto,
-      'cod_marca': _codMarca,
       'sort_by': _sortBy.name,
       'page_size': _pageSize,
     });
@@ -399,11 +378,9 @@ class _SalesProdutoTendenciaMediaMovelPageState
         initialSearchTerm: _searchTerm,
         initialClassificacao: _classificacao,
         initialCodGrupoProduto: _codGrupoProduto,
-        initialCodMarca: _codMarca,
         initialSortBy: _sortBy,
         initialPageSize: _pageSize,
         grupoOptions: _grupoOptions,
-        marcaOptions: _marcaOptions,
       ),
     );
 
@@ -424,7 +401,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
       _searchTerm = (result['searchTerm'] as String?)?.trim() ?? '';
       _classificacao = result['classificacao'] as String?;
       _codGrupoProduto = result['codGrupoProduto'] as int?;
-      _codMarca = result['codMarca'] as int?;
       _sortBy = nextSortBy;
       _pageSize = (result['pageSize'] as int?) ?? _pageSize;
       _page = 1;
@@ -493,9 +469,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
     if (_codGrupoProduto != null) {
       count++;
     }
-    if (_codMarca != null) {
-      count++;
-    }
     if (_sortBy !=
         ProdutoVendidoTendenciaDeVendaMediaMovelSortBy
             .tendenciaPercentualDesc) {
@@ -513,7 +486,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final selectedAgent = _availableAgents
+    final selectedBranch = _availableAgents
         .cast<OverviewAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
@@ -557,10 +530,10 @@ class _SalesProdutoTendenciaMediaMovelPageState
                     subtitle: l10n.salesProdutoTendenciaMediaMovelPageSubtitle,
                   ),
                   SizedBox(height: tokens.sectionSpacing),
-                  SalesSingleAgentPickerControl(
+                  SalesBranchPickerControl(
                     l10n: l10n,
-                    availableAgents: _availableAgents,
-                    selectedAgentId: _selectedAgentId,
+                    availableBranches: _availableAgents,
+                    selectedBranchId: _selectedAgentId,
                     onSelectionChanged: (agentId) {
                       unawaited(_onAgentChanged(agentId));
                     },
@@ -569,10 +542,10 @@ class _SalesProdutoTendenciaMediaMovelPageState
                   SalesCardFilterTrigger(
                     summaryItems: <SalesCardFilterSummaryItem>[
                       SalesCardFilterSummaryItem(
-                        label: l10n.dashboardHomeFiltersAgentsLabel,
+                        label: l10n.salesBranchFilterLabel,
                         value:
-                            selectedAgent?.name ??
-                            l10n.salesAgentRequiredMessage,
+                            selectedBranch?.name ??
+                            l10n.salesBranchRequiredMessage,
                       ),
                       SalesCardFilterSummaryItem(
                         label: l10n
@@ -607,7 +580,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
                     SizedBox(height: tokens.sectionSpacing),
                     AppInlineErrorPanel(
                       tone: AppInlinePanelTone.informational,
-                      title: l10n.salesAgentRequiredMessage,
+                      title: l10n.salesBranchRequiredTitle,
                       message:
                           l10n.salesProdutoTendenciaMediaMovelSelectAgentHint,
                     ),

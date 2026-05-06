@@ -2,12 +2,14 @@ import 'dart:math' as math;
 
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
+import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
@@ -63,6 +65,25 @@ class SyncfusionComboChart<T> extends StatelessWidget {
     final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
     final resolvedBarColor = style.barColor ?? chartTheme.primaryColor;
     final resolvedLineColor = style.lineColor ?? colors.secondary;
+    final rawBarValues = List<num>.generate(
+      items.length,
+      (index) => barValueBuilder(items[index]),
+      growable: false,
+    );
+    final rawBarPoints = List<AppChartPoint>.generate(
+      items.length,
+      (index) => AppChartPoint(
+        label: xLabelBuilder(items[index]),
+        value: rawBarValues[index],
+      ),
+      growable: false,
+    );
+    final plottedBarPoints = applyComparisonBarPlotHeightFloor(
+      rawBarPoints,
+      style.minPlottedBarValueShareOfMax,
+      strictLinearBarHeights: style.strictLinearBarHeights,
+    );
+    final hasNegativeBars = rawBarValues.any((value) => value < 0);
 
     if (isLoading) {
       return buildChartLoadingState(
@@ -122,7 +143,8 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       final barValueAnnotations = useAnnotationBarLabels
           ? _comboBarValueLabelAnnotations<T>(
               items: items,
-              barValueBuilder: barValueBuilder,
+              rawBarValues: rawBarValues,
+              plottedBarPoints: plottedBarPoints,
               barDataLabelBuilder: barDataLabelBuilder,
               style: style,
               colorScheme: colorScheme,
@@ -183,6 +205,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
               ? ChartRangePadding.additionalEnd
               : ChartRangePadding.auto,
           axisLine: const AxisLine(width: 0),
+          minimum: hasNegativeBars ? null : 0,
           majorGridLines: MajorGridLines(
             color: gridLineColor,
             width: primaryGridW,
@@ -220,7 +243,13 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           ColumnSeries<T, String>(
             dataSource: items,
             xValueMapper: (item, _) => xLabelBuilder(item),
-            yValueMapper: (item, _) => barValueBuilder(item),
+            yValueMapper: (_, index) {
+              if (index < 0 || index >= plottedBarPoints.length) {
+                return null;
+              }
+              final point = plottedBarPoints[index];
+              return point.plottedValue ?? point.value;
+            },
             name: barSeriesLabel,
             yAxisName: 'leftAxis',
             color: layout == _ComboLayout.yAxisStrip
@@ -546,19 +575,24 @@ class SyncfusionComboChart<T> extends StatelessWidget {
 /// paint a second label inside the bar when using [ColumnSeries.dataLabelMapper].
 List<CartesianChartAnnotation>? _comboBarValueLabelAnnotations<T>({
   required List<T> items,
-  required num Function(T item) barValueBuilder,
+  required List<num> rawBarValues,
+  required List<AppChartPoint> plottedBarPoints,
   required String? Function(T item, num barValue)? barDataLabelBuilder,
   required AppComboChartStyle style,
   required ColorScheme colorScheme,
 }) {
+  final count = math.min(
+    items.length,
+    math.min(rawBarValues.length, plottedBarPoints.length),
+  );
   final annotations = <CartesianChartAnnotation>[];
   final offset = style.barDataLabelOffset ?? Offset.zero;
   const outerMargin = EdgeInsets.all(5);
-  for (var i = 0; i < items.length; i++) {
+  for (var i = 0; i < count; i++) {
     final item = items[i];
-    final v = barValueBuilder(item);
-    final mapped = barDataLabelBuilder?.call(item, v);
-    final text = mapped ?? v.toString();
+    final rawValue = rawBarValues[i];
+    final mapped = barDataLabelBuilder?.call(item, rawValue);
+    final text = mapped ?? rawValue.toString();
     if (text.isEmpty) {
       continue;
     }
@@ -580,7 +614,7 @@ List<CartesianChartAnnotation>? _comboBarValueLabelAnnotations<T>({
       CartesianChartAnnotation(
         coordinateUnit: CoordinateUnit.point,
         x: i,
-        y: v,
+        y: plottedBarPoints[i].plottedValue ?? rawValue,
         verticalAlignment: ChartAlignment.far,
         widget: label,
       ),

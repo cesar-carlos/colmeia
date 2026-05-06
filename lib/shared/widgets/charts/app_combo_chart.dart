@@ -60,6 +60,8 @@ class AppComboChartStyle {
     this.categoryViewportPanSemanticsLabel,
     this.categoryLabelIntersectAction,
     this.tooltipBodyResolver,
+    this.minPlottedBarValueShareOfMax = 0.03,
+    this.strictLinearBarHeights = false,
   });
 
   final double? height;
@@ -165,6 +167,21 @@ class AppComboChartStyle {
   /// Optional Syncfusion tooltip body override or augmentation (runs after the
   /// chart fills default tooltip text; return non-null to replace [TooltipArgs.text]).
   final String? Function(TooltipArgs args)? tooltipBodyResolver;
+
+  /// Minimum plotted height for positive bars as a fraction of the largest
+  /// positive bar value in the same series.
+  ///
+  /// Keeps very small bars visible without changing their real numeric value in
+  /// labels, tooltips, or tap callbacks. Defaults to `0.03`, matching the
+  /// shared comparison bar chart. Set to `0` to keep strict linear proportions
+  /// unless [strictLinearBarHeights] is enabled explicitly.
+  final double minPlottedBarValueShareOfMax;
+
+  /// When true, combo-chart bar heights match the real bar value exactly.
+  ///
+  /// Disables any readability floor configured through
+  /// [minPlottedBarValueShareOfMax].
+  final bool strictLinearBarHeights;
 }
 
 enum AppComboChartSeriesType {

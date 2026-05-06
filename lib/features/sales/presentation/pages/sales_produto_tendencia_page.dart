@@ -893,13 +893,14 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final selectedAgent = _availableAgents
+    final selectedBranch = _availableAgents
         .cast<OverviewAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,
         );
-    final selectedAgentName = selectedAgent?.name ?? l10n.salesAgentPickerEmpty;
+    final selectedBranchName =
+        selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
     final activeFilterChipLabels = _activeFilterChipLabels(l10n);
     final activeDetailFilterCount = activeFilterChipLabels.length;
 
@@ -928,8 +929,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
               buttonSemanticsLabel: l10n.reportFiltersButton,
               summaryItems: <SalesCardFilterSummaryItem>[
                 SalesCardFilterSummaryItem(
-                  label: l10n.dashboardHomeFiltersAgentsLabel,
-                  value: selectedAgentName,
+                  label: l10n.salesBranchFilterLabel,
+                  value: selectedBranchName,
                 ),
                 SalesCardFilterSummaryItem(
                   label: l10n.salesProdutoTendenciaFilterCurrentPeriod,
@@ -962,8 +963,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
             if (_selectedAgentId == null) ...<Widget>[
               AppInlineErrorPanel(
                 tone: AppInlinePanelTone.informational,
-                title: l10n.salesAgentRequiredTitle,
-                message: l10n.salesAgentRequiredMessage,
+                title: l10n.salesBranchRequiredTitle,
+                message: l10n.salesBranchRequiredMessage,
               ),
             ] else if (_error != null && _error!.trim().isNotEmpty) ...<Widget>[
               AppInlineErrorPanel(
@@ -1171,79 +1172,75 @@ class _TrendSummarySection extends StatelessWidget {
     required AppThemeTokens tokens,
     required AppColors colors,
   }) {
-    return SizedBox(
-      height: tokens.gapMd * 10 + tokens.gapSm,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
-        physics: const BouncingScrollPhysics(),
-        itemCount: 5,
-        separatorBuilder: (_, _) => SizedBox(width: tokens.gapMd),
-        itemBuilder: (context, index) {
-          final locale = l10n.localeName;
-          final nf = NumberFormat.decimalPattern(locale);
-          final tileWidth = math.max(160, tokens.chartCompactHeight).toDouble();
-          switch (index) {
-            case 0:
-              return SizedBox(
-                width: tileWidth,
-                child: _kpiCard(
-                  context,
-                  icon: Icons.trending_up_rounded,
-                  label: l10n.salesProdutoTendenciaKpiGrowing,
-                  value: nf.format(summary.countGrowing),
-                  color: colors.tertiary,
-                ),
-              );
-            case 1:
-              return SizedBox(
-                width: tileWidth,
-                child: _kpiCard(
-                  context,
-                  icon: Icons.trending_down_rounded,
-                  label: l10n.salesProdutoTendenciaKpiFalling,
-                  value: nf.format(summary.countFalling),
-                  color: colors.error,
-                ),
-              );
-            case 2:
-              return SizedBox(
-                width: tileWidth,
-                child: _kpiCard(
-                  context,
-                  icon: Icons.new_releases_outlined,
-                  label: l10n.salesProdutoTendenciaKpiNewProducts,
-                  value: nf.format(summary.countNew),
-                  color: colors.primary,
-                ),
-              );
-            case 3:
-              return SizedBox(
-                width: tileWidth,
-                child: _kpiCard(
-                  context,
-                  icon: Icons.pause_circle_outline_rounded,
-                  label: l10n.salesProdutoTendenciaKpiStopped,
-                  value: nf.format(summary.countStopped),
-                  color: colors.onSurfaceVariant,
-                ),
-              );
-            default:
-              return SizedBox(
-                width: tileWidth,
-                child: _kpiCard(
-                  context,
-                  icon: Icons.balance_rounded,
-                  label: l10n.salesProdutoTendenciaKpiNetImpact,
-                  value: nf.format(summary.netImpact),
-                  color: summary.netImpact >= 0
-                      ? colors.tertiary
-                      : colors.error,
-                ),
-              );
-          }
-        },
+    final locale = l10n.localeName;
+    final nf = NumberFormat.decimalPattern(locale);
+    final items = <_TrendSummaryKpiItem>[
+      _TrendSummaryKpiItem(
+        icon: Icons.trending_up_rounded,
+        label: l10n.salesProdutoTendenciaKpiGrowing,
+        value: nf.format(summary.countGrowing),
+        color: colors.tertiary,
       ),
+      _TrendSummaryKpiItem(
+        icon: Icons.trending_down_rounded,
+        label: l10n.salesProdutoTendenciaKpiFalling,
+        value: nf.format(summary.countFalling),
+        color: colors.error,
+      ),
+      _TrendSummaryKpiItem(
+        icon: Icons.new_releases_outlined,
+        label: l10n.salesProdutoTendenciaKpiNewProducts,
+        value: nf.format(summary.countNew),
+        color: colors.primary,
+      ),
+      _TrendSummaryKpiItem(
+        icon: Icons.pause_circle_outline_rounded,
+        label: l10n.salesProdutoTendenciaKpiStopped,
+        value: nf.format(summary.countStopped),
+        color: colors.onSurfaceVariant,
+      ),
+      _TrendSummaryKpiItem(
+        icon: Icons.balance_rounded,
+        label: l10n.salesProdutoTendenciaKpiNetImpact,
+        value: nf.format(summary.netImpact),
+        color: summary.netImpact >= 0 ? colors.tertiary : colors.error,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const minCardWidth = 176.0;
+        final spacing = tokens.gapMd;
+        final maxWidth = constraints.maxWidth;
+        final columns = maxWidth.isFinite && maxWidth > 0
+            ? ((maxWidth + spacing) / (minCardWidth + spacing)).floor().clamp(
+                1,
+                items.length,
+              )
+            : items.length;
+        final cardWidth = maxWidth.isFinite && maxWidth > 0
+            ? (maxWidth - (spacing * (columns - 1))) / columns
+            : minCardWidth;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: items
+              .map(
+                (item) => SizedBox(
+                  width: cardWidth,
+                  child: _kpiCard(
+                    context,
+                    icon: item.icon,
+                    label: item.label,
+                    value: item.value,
+                    color: item.color,
+                  ),
+                ),
+              )
+              .toList(growable: false),
+        );
+      },
     );
   }
 
@@ -1260,6 +1257,20 @@ class _TrendSummarySection extends StatelessWidget {
       value: value,
     );
   }
+}
+
+class _TrendSummaryKpiItem {
+  const _TrendSummaryKpiItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
 }
 
 class _TrendTopMoversSection extends StatelessWidget {
@@ -2089,15 +2100,15 @@ class _SalesProdutoTendenciaFiltersSheetState
           ),
           children: <Widget>[
             SalesFiltersSectionHeader(
-              title: l10n.dashboardHomeFiltersAgentsLabel,
-              subtitle: l10n.salesAgentRequiredMessage,
+              title: l10n.salesBranchFilterLabel,
+              subtitle: l10n.salesBranchRequiredMessage,
               requiredBadgeLabel: l10n.reportFiltersRequiredCount(1),
             ),
             SizedBox(height: tokens.gapSm),
-            SalesSingleAgentPickerControl(
+            SalesBranchPickerControl(
               l10n: l10n,
-              availableAgents: widget.availableAgents,
-              selectedAgentId: _selectedAgentId,
+              availableBranches: widget.availableAgents,
+              selectedBranchId: _selectedAgentId,
               showTrailingFilterButton: false,
               onSelectionChanged: (agentId) {
                 setState(() => _selectedAgentId = agentId);
@@ -2107,7 +2118,7 @@ class _SalesProdutoTendenciaFiltersSheetState
               SizedBox(height: tokens.gapMd),
               AppInlineErrorPanel(
                 tone: AppInlinePanelTone.informational,
-                message: l10n.overviewAgentFilterMissingClientTokenBanner,
+                message: l10n.salesBranchFilterMissingClientTokenBanner,
               ),
             ],
             SizedBox(height: tokens.sectionSpacing),

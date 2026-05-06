@@ -308,13 +308,14 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
         ? AppBrFormatters.compactCurrencyFormat
         : NumberFormat.decimalPattern('pt_BR');
 
-    final selectedAgent = _availableAgents
+    final selectedBranch = _availableAgents
         .cast<OverviewAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,
         );
-    final selectedAgentName = selectedAgent?.name ?? l10n.salesAgentPickerEmpty;
+    final selectedBranchName =
+        selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
     final metricLabel = metricProfit
         ? l10n.salesProdutoRankLucroSortProfit
         : l10n.salesProdutoRankLucroSortQuantity;
@@ -359,8 +360,8 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
             buttonSemanticsLabel: l10n.reportFiltersButton,
             summaryItems: <SalesCardFilterSummaryItem>[
               SalesCardFilterSummaryItem(
-                label: l10n.dashboardHomeFiltersAgentsLabel,
-                value: selectedAgentName,
+                label: l10n.salesBranchFilterLabel,
+                value: selectedBranchName,
               ),
               SalesCardFilterSummaryItem(
                 label: l10n.salesProdutoRankLucroFilterPeriod,
@@ -377,8 +378,8 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
           if (_selectedAgentId == null)
             AppInlineErrorPanel(
               tone: AppInlinePanelTone.informational,
-              title: l10n.salesAgentRequiredTitle,
-              message: l10n.salesAgentRequiredMessage,
+              title: l10n.salesBranchRequiredTitle,
+              message: l10n.salesBranchRequiredMessage,
             )
           else if (_error != null && _error!.trim().isNotEmpty)
             AppInlineErrorPanel(
@@ -548,15 +549,15 @@ class _SalesProdutoRankLucroFiltersSheetState
           ),
           children: <Widget>[
             SalesFiltersSectionHeader(
-              title: widget.l10n.dashboardHomeFiltersAgentsLabel,
-              subtitle: widget.l10n.salesAgentRequiredMessage,
+              title: widget.l10n.salesBranchFilterLabel,
+              subtitle: widget.l10n.salesBranchRequiredMessage,
               requiredBadgeLabel: widget.l10n.reportFiltersRequiredCount(1),
             ),
             SizedBox(height: tokens.gapSm),
-            SalesSingleAgentPickerControl(
+            SalesBranchPickerControl(
               l10n: widget.l10n,
-              availableAgents: widget.availableAgents,
-              selectedAgentId: _selectedAgentId,
+              availableBranches: widget.availableAgents,
+              selectedBranchId: _selectedAgentId,
               showTrailingFilterButton: false,
               onSelectionChanged: (agentId) {
                 setState(() => _selectedAgentId = agentId);
@@ -566,8 +567,7 @@ class _SalesProdutoRankLucroFiltersSheetState
               SizedBox(height: tokens.gapMd),
               AppInlineErrorPanel(
                 tone: AppInlinePanelTone.informational,
-                message:
-                    widget.l10n.overviewAgentFilterMissingClientTokenBanner,
+                message: widget.l10n.salesBranchFilterMissingClientTokenBanner,
               ),
             ],
             SizedBox(height: tokens.sectionSpacing),

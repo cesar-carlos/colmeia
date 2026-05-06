@@ -324,17 +324,17 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
   }
 
   String _monthlyPnlFullscreenFilterSummary(AppLocalizations l10n) {
-    final selectedAgent = _availableAgents
+    final selectedBranch = _availableAgents
         .cast<OverviewAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,
         );
-    final agentName = selectedAgent?.name ?? l10n.salesAgentPickerEmpty;
+    final branchName = selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
     final anchorValue = _formatYearMonthLabel(context, _anchorYearMonth);
     return l10n.salesMonthlyPnlFullscreenFilterSummary(
-      l10n.dashboardHomeFiltersAgentsLabel,
-      agentName,
+      l10n.salesBranchFilterLabel,
+      branchName,
       l10n.salesMonthlyPnlFilterAnchorMonth,
       anchorValue,
     );
@@ -407,7 +407,9 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         isLoading: _loading && _selectedAgentId != null,
         loadFailed: _chartLoadFailed,
         loadFailureMessage: _chartLoadFailureMessage,
-        filterSummary: _monthlyPnlFullscreenFilterSummary(AppLocalizations.of(context)),
+        filterSummary: _monthlyPnlFullscreenFilterSummary(
+          AppLocalizations.of(context),
+        ),
       ),
     );
   }
@@ -416,13 +418,14 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final selectedAgent = _availableAgents
+    final selectedBranch = _availableAgents
         .cast<OverviewAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,
         );
-    final selectedAgentName = selectedAgent?.name ?? l10n.salesAgentPickerEmpty;
+    final selectedBranchName =
+        selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
     final anchorLabel = _formatYearMonthLabel(context, _anchorYearMonth);
 
     return SingleChildScrollView(
@@ -445,8 +448,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
             buttonSemanticsLabel: l10n.reportFiltersButton,
             summaryItems: <SalesCardFilterSummaryItem>[
               SalesCardFilterSummaryItem(
-                label: l10n.dashboardHomeFiltersAgentsLabel,
-                value: selectedAgentName,
+                label: l10n.salesBranchFilterLabel,
+                value: selectedBranchName,
               ),
               SalesCardFilterSummaryItem(
                 label: l10n.salesMonthlyPnlFilterAnchorMonth,
@@ -459,8 +462,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
           if (_selectedAgentId == null)
             AppInlineErrorPanel(
               tone: AppInlinePanelTone.informational,
-              title: l10n.salesAgentRequiredTitle,
-              message: l10n.salesAgentRequiredMessage,
+              title: l10n.salesBranchRequiredTitle,
+              message: l10n.salesBranchRequiredMessage,
             )
           else
             Column(
@@ -807,15 +810,15 @@ class _SalesMonthlyPnlFiltersSheetState
           ),
           children: <Widget>[
             SalesFiltersSectionHeader(
-              title: widget.l10n.dashboardHomeFiltersAgentsLabel,
-              subtitle: widget.l10n.salesAgentRequiredMessage,
+              title: widget.l10n.salesBranchFilterLabel,
+              subtitle: widget.l10n.salesBranchRequiredMessage,
               requiredBadgeLabel: widget.l10n.reportFiltersRequiredCount(1),
             ),
             SizedBox(height: tokens.gapSm),
-            SalesSingleAgentPickerControl(
+            SalesBranchPickerControl(
               l10n: widget.l10n,
-              availableAgents: widget.availableAgents,
-              selectedAgentId: _selectedAgentId,
+              availableBranches: widget.availableAgents,
+              selectedBranchId: _selectedAgentId,
               showTrailingFilterButton: false,
               onSelectionChanged: (agentId) {
                 setState(() => _selectedAgentId = agentId);
@@ -825,8 +828,7 @@ class _SalesMonthlyPnlFiltersSheetState
               SizedBox(height: tokens.gapMd),
               AppInlineErrorPanel(
                 tone: AppInlinePanelTone.informational,
-                message:
-                    widget.l10n.overviewAgentFilterMissingClientTokenBanner,
+                message: widget.l10n.salesBranchFilterMissingClientTokenBanner,
               ),
             ],
             SizedBox(height: tokens.sectionSpacing),

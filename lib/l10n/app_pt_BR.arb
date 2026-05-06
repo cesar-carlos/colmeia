@@ -69,6 +69,8 @@
   "dashboardPaymentSummaryHeaderAvgTicket": "TICKET\nMEDIO",
   "dashboardHomeFiltersAgentsLabel": "AGENTES",
   "dashboardHomeFiltersAgentsEmptyHint": "Carregue a visao geral para listar os agentes.",
+  "dashboardHomeFiltersBranchesLabel": "FILIAIS",
+  "dashboardHomeFiltersBranchesEmptyHint": "Carregue a visao geral para listar as filiais.",
   "dashboardHomeFiltersYearMonthLabel": "ANO / MÊS",
   "dashboardHomeFiltersCurrentMonth": "Mês atual",
   "dashboardHomeFiltersReferenceRangeLabel": "PERÍODO",
@@ -93,8 +95,20 @@
       "count": {"type": "int"}
     }
   },
+  "overviewHomeBranchFilterAllBranchesSummary": "Todas as filiais ({count})",
+  "@overviewHomeBranchFilterAllBranchesSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "overviewAgentFilterSelectedCount": "{count} agentes selecionados",
   "@overviewAgentFilterSelectedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "overviewHomeBranchFilterSelectedCount": "{count} filiais selecionadas",
+  "@overviewHomeBranchFilterSelectedCount": {
     "placeholders": {
       "count": {"type": "int"}
     }
@@ -103,11 +117,15 @@
   "overviewAgentFilterEditAction": "Editar",
   "overviewAgentFilterSheetTitle": "Selecionar agentes",
   "overviewAgentFilterSheetSearchHint": "Buscar agentes…",
+  "overviewHomeBranchFilterSheetTitle": "Selecionar filiais",
+  "overviewHomeBranchFilterSheetSearchHint": "Buscar filiais…",
   "overviewAgentFilterSelectMatching": "Selecionar todos os filtrados",
   "overviewAgentFilterApply": "Aplicar",
   "overviewAgentFilterCancel": "Cancelar",
   "overviewAgentFilterNoSearchResults": "Nenhum agente corresponde à busca.",
+  "overviewHomeBranchFilterNoSearchResults": "Nenhuma filial corresponde à busca.",
   "overviewAgentFilterMissingClientTokenBanner": "Agentes sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.",
+  "overviewHomeBranchFilterMissingClientTokenBanner": "Filiais sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.",
   "overviewAgentFilterMissingClientTokenRowSubtitle": "Sem token neste dispositivo — consultas SQL são ignoradas.",
   "chartCategoryDonutEmptyForFilter": "Sem dados de categorias para este recorte.",
   "dashboardAgentRankingTitle": "Ranking por agente",
@@ -765,11 +783,20 @@
   "overviewLoadingLucratividadeMensalSemantics": "Carregando grafico de lucratividade mensal do produto…",
   "salesHubTitle": "Vendas",
   "salesHubSubtitle": "Acesse e gerencie informacoes comerciais por categoria.",
-  "salesAgentPickerLabel": "Agente",
-  "salesAgentPickerEmpty": "Selecione um agente",
-  "salesAgentPickerSheetTitle": "Selecione um agente",
-  "salesAgentRequiredTitle": "Selecao de agente obrigatoria",
-  "salesAgentRequiredMessage": "Selecione um agente para visualizar essas informacoes.",
+  "salesBranchFilterLabel": "FILIAIS",
+  "salesBranchFilterEmptyHint": "Carregue o relatorio para listar as filiais.",
+  "salesBranchFilterSheetTitle": "Selecionar filiais",
+  "salesBranchFilterSheetSearchHint": "Buscar filiais…",
+  "salesBranchFilterNoSearchResults": "Nenhuma filial corresponde à busca.",
+  "salesBranchFilterMissingClientTokenBanner": "Filiais sem token de cliente neste dispositivo nao executam consultas SQL. “Online” indica apenas ligacao ao hub.",
+  "salesBranchPickerEmpty": "Selecione uma filial",
+  "salesBranchRequiredTitle": "Selecao de filial obrigatoria",
+  "salesBranchRequiredMessage": "Selecione uma filial para visualizar essas informacoes.",
+  "salesAgentPickerLabel": "Filial",
+  "salesAgentPickerEmpty": "Selecione uma filial",
+  "salesAgentPickerSheetTitle": "Selecione uma filial",
+  "salesAgentRequiredTitle": "Selecao de filial obrigatoria",
+  "salesAgentRequiredMessage": "Selecione uma filial para visualizar essas informacoes.",
   "salesCardOpenAccountsTitle": "Contas em Aberto",
   "salesCardPaidAccountsTitle": "Contas Pagas",
   "salesCardPaymentHistoryTitle": "Historico de Pagamentos",
@@ -932,6 +959,7 @@
       }
     }
   },
+  "salesProdutoTendenciaMediaMovelFilterSearchHint": "Produto ou grupo",
   "salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar": "Filtros aplicados. Atualizando a tendencia por media movel.",
   "salesProdutoTendenciaMediaMovelSelectAgentHint": "Escolha um agente de vendas para carregar a tendencia de vendas por media movel.",
   "salesProdutoTendenciaMediaMovelSummaryTitle": "Resumo executivo",
@@ -943,7 +971,7 @@
   "salesProdutoTendenciaMediaMovelSummaryByImpactTitle": "Impacto por classificacao",
   "salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle": "Impacto liquido em quantidade de cada classificacao em todo o resultado filtrado.",
   "salesProdutoTendenciaMediaMovelDetailsTitle": "Detalhes",
-  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Lista paginada com produto, medias, grupo, marca e classificacao de tendencia.",
+  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Lista paginada com produto, medias, grupo e classificacao de tendencia.",
   "salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
   "salesProdutoTendenciaMediaMovelDetailsEntityLabel": "linhas",
   "salesProdutoTendenciaMediaMovelDetailsSortedBy": "Ordenado por: {sortLabel}",
@@ -971,7 +999,6 @@
   "salesProdutoTendenciaMediaMovelColProduct": "Produto",
   "salesProdutoTendenciaMediaMovelColClassificacao": "Classificacao",
   "salesProdutoTendenciaMediaMovelColGrupo": "Grupo",
-  "salesProdutoTendenciaMediaMovelColMarca": "Marca",
   "salesProdutoTendenciaMediaMovelColMediaAtual": "Media atual",
   "salesProdutoTendenciaMediaMovelColMediaAnterior": "Media anterior",
   "salesProdutoTendenciaMediaMovelColDiferenca": "Diferenca",

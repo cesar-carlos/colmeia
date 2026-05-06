@@ -48,7 +48,8 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
   @override
   void didUpdateWidget(covariant OverviewFilterBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.filter.referenceRange != null && _mode == _DateFilterMode.month) {
+    if (widget.filter.referenceRange != null &&
+        _mode == _DateFilterMode.month) {
       _mode = _DateFilterMode.customRange;
     } else if (widget.filter.referenceRange == null &&
         oldWidget.filter.referenceRange != null &&
@@ -138,7 +139,9 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: typography.utilityOverline.copyWith(
-                    color: hasActiveFilter ? cs.primary : colors.onSurfaceVariant,
+                    color: hasActiveFilter
+                        ? cs.primary
+                        : colors.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -147,12 +150,14 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                   onPressed: isDisabled
                       ? null
                       : () => widget.onFilterChanged!(
-                            widget.filter.copyWith(selectedAgentIds: null),
-                          ),
+                          widget.filter.copyWith(selectedAgentIds: null),
+                        ),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    textStyle: const TextStyle(decoration: TextDecoration.underline),
+                    textStyle: const TextStyle(
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                   child: Text(widget.l10n.reportInlineFiltersAllOption),
                 ),
@@ -166,7 +171,9 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    textStyle: const TextStyle(decoration: TextDecoration.underline),
+                    textStyle: const TextStyle(
+                      decoration: TextDecoration.underline,
+                    ),
                   ),
                   child: Text(widget.l10n.reportFiltersClearAction),
                 ),
@@ -182,14 +189,14 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Text(
-                      widget.l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+                      widget.l10n.dashboardHomeFiltersBranchesLabel,
                       style: typography.utilityOverline.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
                     ),
                     SizedBox(height: tokens.gapXs),
                     Text(
-                      widget.l10n.dashboardHomeFiltersAgentsEmptyHint,
+                      widget.l10n.dashboardHomeFiltersBranchesEmptyHint,
                       style: typography.caption.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -228,25 +235,28 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                     label: widget.l10n.dashboardHomeFiltersReferenceRangeLabel,
                   ),
                 ],
-                onChanged: isDisabled ? null : (mode) {
-                  setState(() => _mode = mode);
-                  if (mode == _DateFilterMode.month) {
-                    widget.onFilterChanged!(
-                      widget.filter.copyWith(
-                        referenceRange: null,
-                        yearMonth: selectedYm,
-                      ),
-                    );
-                  }
-                },
+                onChanged: isDisabled
+                    ? null
+                    : (mode) {
+                        setState(() => _mode = mode);
+                        if (mode == _DateFilterMode.month) {
+                          widget.onFilterChanged!(
+                            widget.filter.copyWith(
+                              referenceRange: null,
+                              yearMonth: selectedYm,
+                            ),
+                          );
+                        }
+                      },
               ),
               SizedBox(height: tokens.gapMd),
               if (_mode == _DateFilterMode.customRange)
                 AppDateRangePickerField(
                   label: widget.l10n.dashboardHomeFiltersReferenceRangeLabel,
-                  helperText: widget.l10n.dashboardHomeFiltersReferenceRangeHelper(
-                    kOverviewCustomReferenceRangeMaxInclusiveDays,
-                  ),
+                  helperText: widget.l10n
+                      .dashboardHomeFiltersReferenceRangeHelper(
+                        kOverviewCustomReferenceRangeMaxInclusiveDays,
+                      ),
                   pickerTitle:
                       widget.l10n.dashboardHomeFiltersReferenceRangePickerTitle,
                   value: widget.filter.referenceRange == null
@@ -278,9 +288,10 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                         SnackBar(
                           behavior: SnackBarBehavior.floating,
                           content: Text(
-                            widget.l10n.dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(
-                              kOverviewCustomReferenceRangeMaxInclusiveDays,
-                            ),
+                            widget.l10n
+                                .dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(
+                                  kOverviewCustomReferenceRangeMaxInclusiveDays,
+                                ),
                           ),
                         ),
                       );

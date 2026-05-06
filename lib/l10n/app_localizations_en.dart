@@ -221,6 +221,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Load the overview to list agents.';
 
   @override
+  String get dashboardHomeFiltersBranchesLabel => 'BRANCHES';
+
+  @override
+  String get dashboardHomeFiltersBranchesEmptyHint =>
+      'Load the overview to list branches.';
+
+  @override
   String get dashboardHomeFiltersYearMonthLabel => 'YEAR / MONTH';
 
   @override
@@ -254,8 +261,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String overviewHomeBranchFilterAllBranchesSummary(int count) {
+    return 'All branches ($count)';
+  }
+
+  @override
   String overviewAgentFilterSelectedCount(int count) {
     return '$count agents selected';
+  }
+
+  @override
+  String overviewHomeBranchFilterSelectedCount(int count) {
+    return '$count branches selected';
   }
 
   @override
@@ -271,6 +288,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewAgentFilterSheetSearchHint => 'Search agents…';
 
   @override
+  String get overviewHomeBranchFilterSheetTitle => 'Select branches';
+
+  @override
+  String get overviewHomeBranchFilterSheetSearchHint => 'Search branches…';
+
+  @override
   String get overviewAgentFilterSelectMatching => 'Select all matching';
 
   @override
@@ -284,8 +307,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'No agents match your search.';
 
   @override
+  String get overviewHomeBranchFilterNoSearchResults =>
+      'No branches match your search.';
+
+  @override
   String get overviewAgentFilterMissingClientTokenBanner =>
       'Agents without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenBanner =>
+      'Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.';
 
   @override
   String get overviewAgentFilterMissingClientTokenRowSubtitle =>
@@ -2094,20 +2125,50 @@ class AppLocalizationsEn extends AppLocalizations {
       'Access and manage commercial information by category.';
 
   @override
-  String get salesAgentPickerLabel => 'Agent';
+  String get salesBranchFilterLabel => 'BRANCHES';
 
   @override
-  String get salesAgentPickerEmpty => 'Select an agent';
+  String get salesBranchFilterEmptyHint => 'Load the report to list branches.';
 
   @override
-  String get salesAgentPickerSheetTitle => 'Select an agent';
+  String get salesBranchFilterSheetTitle => 'Select branches';
 
   @override
-  String get salesAgentRequiredTitle => 'Agent selection required';
+  String get salesBranchFilterSheetSearchHint => 'Search branches…';
+
+  @override
+  String get salesBranchFilterNoSearchResults =>
+      'No branches match your search.';
+
+  @override
+  String get salesBranchFilterMissingClientTokenBanner =>
+      'Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.';
+
+  @override
+  String get salesBranchPickerEmpty => 'Select a branch';
+
+  @override
+  String get salesBranchRequiredTitle => 'Branch selection required';
+
+  @override
+  String get salesBranchRequiredMessage =>
+      'Select a branch to view this information.';
+
+  @override
+  String get salesAgentPickerLabel => 'Branch';
+
+  @override
+  String get salesAgentPickerEmpty => 'Select a branch';
+
+  @override
+  String get salesAgentPickerSheetTitle => 'Select a branch';
+
+  @override
+  String get salesAgentRequiredTitle => 'Branch selection required';
 
   @override
   String get salesAgentRequiredMessage =>
-      'Select an agent to view this information.';
+      'Select a branch to view this information.';
 
   @override
   String get salesCardOpenAccountsTitle => 'Open Accounts';
@@ -2507,6 +2568,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get salesProdutoTendenciaMediaMovelFilterSearchHint =>
+      'Product or group';
+
+  @override
   String get salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar =>
       'Filters applied. Refreshing moving-average trend.';
 
@@ -2550,7 +2615,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
-      'Paginated detail with product, averages, group, brand, and trend classification.';
+      'Paginated detail with product, averages, group, and trend classification.';
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>
@@ -2597,9 +2662,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelColGrupo => 'Group';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColMarca => 'Brand';
 
   @override
   String get salesProdutoTendenciaMediaMovelColMediaAtual => 'Current avg.';

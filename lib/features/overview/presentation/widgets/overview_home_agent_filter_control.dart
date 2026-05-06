@@ -94,14 +94,14 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Text(
-            l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+            l10n.dashboardHomeFiltersBranchesLabel,
             style: typography.utilityOverline.copyWith(
               color: colors.onSurfaceVariant,
             ),
           ),
           SizedBox(height: labelToFieldGap),
           Text(
-            l10n.dashboardHomeFiltersAgentsEmptyHint,
+            l10n.dashboardHomeFiltersBranchesEmptyHint,
             style: typography.caption.copyWith(
               color: colors.onSurfaceVariant,
             ),
@@ -120,7 +120,7 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          l10n.dashboardHomeFiltersAgentsLabel.toUpperCase(),
+          l10n.dashboardHomeFiltersBranchesLabel,
           style: typography.utilityOverline.copyWith(
             color: colors.onSurfaceVariant,
           ),
@@ -129,8 +129,8 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
         Semantics(
           container: true,
           label: isImplicitAll
-              ? l10n.overviewAgentFilterAllAgentsSummary(allCount)
-              : l10n.overviewAgentFilterSelectedCount(count),
+              ? l10n.overviewHomeBranchFilterAllBranchesSummary(allCount)
+              : l10n.overviewHomeBranchFilterSelectedCount(count),
           child: Material(
             color: scheme.surfaceContainerLowest,
             borderRadius: borderRadius,
@@ -215,7 +215,7 @@ class _AllAgentsSummaryRow extends StatelessWidget {
         SizedBox(width: theme.extension<AppThemeTokens>()!.gapSm),
         Expanded(
           child: Text(
-            l10n.overviewAgentFilterAllAgentsSummary(totalCount),
+            l10n.overviewHomeBranchFilterAllBranchesSummary(totalCount),
             style: theme.appTypography.body.copyWith(
               fontWeight: FontWeight.w600,
               color: scheme.onSurface,
@@ -261,7 +261,7 @@ class _ManySelectedSummaryRow extends StatelessWidget {
         SizedBox(width: theme.extension<AppThemeTokens>()!.gapSm),
         Expanded(
           child: Text(
-            l10n.overviewAgentFilterSelectedCount(count),
+            l10n.overviewHomeBranchFilterSelectedCount(count),
             style: theme.appTypography.body.copyWith(
               fontWeight: FontWeight.w600,
               color: scheme.onSurface,
@@ -503,7 +503,7 @@ class _OverviewAgentSelectionSheetState
                       children: <Widget>[
                         Expanded(
                           child: Text(
-                            widget.l10n.overviewAgentFilterSheetTitle,
+                            widget.l10n.overviewHomeBranchFilterSheetTitle,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -530,7 +530,7 @@ class _OverviewAgentSelectionSheetState
                       autofocus: true,
                       decoration: InputDecoration(
                         hintText:
-                            widget.l10n.overviewAgentFilterSheetSearchHint,
+                            widget.l10n.overviewHomeBranchFilterSheetSearchHint,
                         prefixIcon: const Icon(Icons.search_rounded),
                         isDense: true,
                         border: OutlineInputBorder(
@@ -590,7 +590,7 @@ class _OverviewAgentSelectionSheetState
                                 child: Text(
                                   widget
                                       .l10n
-                                      .overviewAgentFilterMissingClientTokenBanner,
+                                      .overviewHomeBranchFilterMissingClientTokenBanner,
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: scheme.onSurfaceVariant,
                                   ),
@@ -607,7 +607,9 @@ class _OverviewAgentSelectionSheetState
                             child: Padding(
                               padding: EdgeInsets.all(tokens.contentSpacing),
                               child: Text(
-                                widget.l10n.overviewAgentFilterNoSearchResults,
+                                widget
+                                    .l10n
+                                    .overviewHomeBranchFilterNoSearchResults,
                                 textAlign: TextAlign.center,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,

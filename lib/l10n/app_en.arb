@@ -69,6 +69,8 @@
   "dashboardPaymentSummaryHeaderAvgTicket": "AVG.\nTICKET",
   "dashboardHomeFiltersAgentsLabel": "Agents",
   "dashboardHomeFiltersAgentsEmptyHint": "Load the overview to list agents.",
+  "dashboardHomeFiltersBranchesLabel": "BRANCHES",
+  "dashboardHomeFiltersBranchesEmptyHint": "Load the overview to list branches.",
   "dashboardHomeFiltersYearMonthLabel": "YEAR / MONTH",
   "dashboardHomeFiltersCurrentMonth": "Current month",
   "dashboardHomeFiltersReferenceRangeLabel": "Date range",
@@ -93,8 +95,20 @@
       "count": {"type": "int"}
     }
   },
+  "overviewHomeBranchFilterAllBranchesSummary": "All branches ({count})",
+  "@overviewHomeBranchFilterAllBranchesSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "overviewAgentFilterSelectedCount": "{count} agents selected",
   "@overviewAgentFilterSelectedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "overviewHomeBranchFilterSelectedCount": "{count} branches selected",
+  "@overviewHomeBranchFilterSelectedCount": {
     "placeholders": {
       "count": {"type": "int"}
     }
@@ -103,11 +117,15 @@
   "overviewAgentFilterEditAction": "Edit",
   "overviewAgentFilterSheetTitle": "Select agents",
   "overviewAgentFilterSheetSearchHint": "Search agents…",
+  "overviewHomeBranchFilterSheetTitle": "Select branches",
+  "overviewHomeBranchFilterSheetSearchHint": "Search branches…",
   "overviewAgentFilterSelectMatching": "Select all matching",
   "overviewAgentFilterApply": "Apply",
   "overviewAgentFilterCancel": "Cancel",
   "overviewAgentFilterNoSearchResults": "No agents match your search.",
+  "overviewHomeBranchFilterNoSearchResults": "No branches match your search.",
   "overviewAgentFilterMissingClientTokenBanner": "Agents without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.",
+  "overviewHomeBranchFilterMissingClientTokenBanner": "Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.",
   "overviewAgentFilterMissingClientTokenRowSubtitle": "No client token on this device — SQL queries are skipped.",
   "chartCategoryDonutEmptyForFilter": "No category data for this view.",
   "dashboardAgentRankingTitle": "Ranking by agent",
@@ -991,11 +1009,20 @@
   "overviewLoadingLucratividadeMensalSemantics": "Loading monthly product profitability chart…",
   "salesHubTitle": "Sales",
   "salesHubSubtitle": "Access and manage commercial information by category.",
-  "salesAgentPickerLabel": "Agent",
-  "salesAgentPickerEmpty": "Select an agent",
-  "salesAgentPickerSheetTitle": "Select an agent",
-  "salesAgentRequiredTitle": "Agent selection required",
-  "salesAgentRequiredMessage": "Select an agent to view this information.",
+  "salesBranchFilterLabel": "BRANCHES",
+  "salesBranchFilterEmptyHint": "Load the report to list branches.",
+  "salesBranchFilterSheetTitle": "Select branches",
+  "salesBranchFilterSheetSearchHint": "Search branches…",
+  "salesBranchFilterNoSearchResults": "No branches match your search.",
+  "salesBranchFilterMissingClientTokenBanner": "Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.",
+  "salesBranchPickerEmpty": "Select a branch",
+  "salesBranchRequiredTitle": "Branch selection required",
+  "salesBranchRequiredMessage": "Select a branch to view this information.",
+  "salesAgentPickerLabel": "Branch",
+  "salesAgentPickerEmpty": "Select a branch",
+  "salesAgentPickerSheetTitle": "Select a branch",
+  "salesAgentRequiredTitle": "Branch selection required",
+  "salesAgentRequiredMessage": "Select a branch to view this information.",
   "salesCardOpenAccountsTitle": "Open Accounts",
   "salesCardPaidAccountsTitle": "Paid Accounts",
   "salesCardPaymentHistoryTitle": "Payment History",
@@ -1158,6 +1185,7 @@
       }
     }
   },
+  "salesProdutoTendenciaMediaMovelFilterSearchHint": "Product or group",
   "salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar": "Filters applied. Refreshing moving-average trend.",
   "salesProdutoTendenciaMediaMovelSelectAgentHint": "Choose one sales agent to load the moving-average sales trend.",
   "salesProdutoTendenciaMediaMovelSummaryTitle": "Executive summary",
@@ -1169,7 +1197,7 @@
   "salesProdutoTendenciaMediaMovelSummaryByImpactTitle": "Impact by classification",
   "salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle": "Net quantity impact of each classification across the full filtered result.",
   "salesProdutoTendenciaMediaMovelDetailsTitle": "Detailed rows",
-  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Paginated detail with product, averages, group, brand, and trend classification.",
+  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Paginated detail with product, averages, group, and trend classification.",
   "salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption": "Swipe sideways to see all columns.",
   "salesProdutoTendenciaMediaMovelDetailsEntityLabel": "rows",
   "salesProdutoTendenciaMediaMovelDetailsSortedBy": "Sorted by: {sortLabel}",
@@ -1197,7 +1225,6 @@
   "salesProdutoTendenciaMediaMovelColProduct": "Product",
   "salesProdutoTendenciaMediaMovelColClassificacao": "Classification",
   "salesProdutoTendenciaMediaMovelColGrupo": "Group",
-  "salesProdutoTendenciaMediaMovelColMarca": "Brand",
   "salesProdutoTendenciaMediaMovelColMediaAtual": "Current avg.",
   "salesProdutoTendenciaMediaMovelColMediaAnterior": "Previous avg.",
   "salesProdutoTendenciaMediaMovelColDiferenca": "Delta",

@@ -225,6 +225,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Carregue a visao geral para listar os agentes.';
 
   @override
+  String get dashboardHomeFiltersBranchesLabel => 'FILIAIS';
+
+  @override
+  String get dashboardHomeFiltersBranchesEmptyHint =>
+      'Carregue a visao geral para listar as filiais.';
+
+  @override
   String get dashboardHomeFiltersYearMonthLabel => 'ANO / MÊS';
 
   @override
@@ -259,8 +266,18 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String overviewHomeBranchFilterAllBranchesSummary(int count) {
+    return 'Todas as filiais ($count)';
+  }
+
+  @override
   String overviewAgentFilterSelectedCount(int count) {
     return '$count agentes selecionados';
+  }
+
+  @override
+  String overviewHomeBranchFilterSelectedCount(int count) {
+    return '$count filiais selecionadas';
   }
 
   @override
@@ -274,6 +291,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewAgentFilterSheetSearchHint => 'Buscar agentes…';
+
+  @override
+  String get overviewHomeBranchFilterSheetTitle => 'Selecionar filiais';
+
+  @override
+  String get overviewHomeBranchFilterSheetSearchHint => 'Buscar filiais…';
 
   @override
   String get overviewAgentFilterSelectMatching =>
@@ -290,8 +313,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhum agente corresponde à busca.';
 
   @override
+  String get overviewHomeBranchFilterNoSearchResults =>
+      'Nenhuma filial corresponde à busca.';
+
+  @override
   String get overviewAgentFilterMissingClientTokenBanner =>
       'Agentes sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenBanner =>
+      'Filiais sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
 
   @override
   String get overviewAgentFilterMissingClientTokenRowSubtitle =>
@@ -2126,20 +2157,51 @@ class AppLocalizationsPt extends AppLocalizations {
       'Acesse e gerencie informacoes comerciais por categoria.';
 
   @override
-  String get salesAgentPickerLabel => 'Agente';
+  String get salesBranchFilterLabel => 'FILIAIS';
 
   @override
-  String get salesAgentPickerEmpty => 'Selecione um agente';
+  String get salesBranchFilterEmptyHint =>
+      'Carregue o relatorio para listar as filiais.';
 
   @override
-  String get salesAgentPickerSheetTitle => 'Selecione um agente';
+  String get salesBranchFilterSheetTitle => 'Selecionar filiais';
 
   @override
-  String get salesAgentRequiredTitle => 'Selecao de agente obrigatoria';
+  String get salesBranchFilterSheetSearchHint => 'Buscar filiais…';
+
+  @override
+  String get salesBranchFilterNoSearchResults =>
+      'Nenhuma filial corresponde à busca.';
+
+  @override
+  String get salesBranchFilterMissingClientTokenBanner =>
+      'Filiais sem token de cliente neste dispositivo nao executam consultas SQL. “Online” indica apenas ligacao ao hub.';
+
+  @override
+  String get salesBranchPickerEmpty => 'Selecione uma filial';
+
+  @override
+  String get salesBranchRequiredTitle => 'Selecao de filial obrigatoria';
+
+  @override
+  String get salesBranchRequiredMessage =>
+      'Selecione uma filial para visualizar essas informacoes.';
+
+  @override
+  String get salesAgentPickerLabel => 'Filial';
+
+  @override
+  String get salesAgentPickerEmpty => 'Selecione uma filial';
+
+  @override
+  String get salesAgentPickerSheetTitle => 'Selecione uma filial';
+
+  @override
+  String get salesAgentRequiredTitle => 'Selecao de filial obrigatoria';
 
   @override
   String get salesAgentRequiredMessage =>
-      'Selecione um agente para visualizar essas informacoes.';
+      'Selecione uma filial para visualizar essas informacoes.';
 
   @override
   String get salesCardOpenAccountsTitle => 'Contas em Aberto';
@@ -2540,6 +2602,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get salesProdutoTendenciaMediaMovelFilterSearchHint =>
+      'Produto ou grupo';
+
+  @override
   String get salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar =>
       'Filtros aplicados. Atualizando a tendencia por media movel.';
 
@@ -2583,7 +2649,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
-      'Lista paginada com produto, medias, grupo, marca e classificacao de tendencia.';
+      'Lista paginada com produto, medias, grupo e classificacao de tendencia.';
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>
@@ -2630,9 +2696,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelColGrupo => 'Grupo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColMarca => 'Marca';
 
   @override
   String get salesProdutoTendenciaMediaMovelColMediaAtual => 'Media atual';
@@ -2912,6 +2975,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Carregue a visao geral para listar os agentes.';
 
   @override
+  String get dashboardHomeFiltersBranchesLabel => 'FILIAIS';
+
+  @override
+  String get dashboardHomeFiltersBranchesEmptyHint =>
+      'Carregue a visao geral para listar as filiais.';
+
+  @override
   String get dashboardHomeFiltersYearMonthLabel => 'ANO / MÊS';
 
   @override
@@ -2946,8 +3016,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
+  String overviewHomeBranchFilterAllBranchesSummary(int count) {
+    return 'Todas as filiais ($count)';
+  }
+
+  @override
   String overviewAgentFilterSelectedCount(int count) {
     return '$count agentes selecionados';
+  }
+
+  @override
+  String overviewHomeBranchFilterSelectedCount(int count) {
+    return '$count filiais selecionadas';
   }
 
   @override
@@ -2961,6 +3041,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewAgentFilterSheetSearchHint => 'Buscar agentes…';
+
+  @override
+  String get overviewHomeBranchFilterSheetTitle => 'Selecionar filiais';
+
+  @override
+  String get overviewHomeBranchFilterSheetSearchHint => 'Buscar filiais…';
 
   @override
   String get overviewAgentFilterSelectMatching =>
@@ -2977,8 +3063,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Nenhum agente corresponde à busca.';
 
   @override
+  String get overviewHomeBranchFilterNoSearchResults =>
+      'Nenhuma filial corresponde à busca.';
+
+  @override
   String get overviewAgentFilterMissingClientTokenBanner =>
       'Agentes sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenBanner =>
+      'Filiais sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
 
   @override
   String get overviewAgentFilterMissingClientTokenRowSubtitle =>
@@ -4813,20 +4907,51 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Acesse e gerencie informacoes comerciais por categoria.';
 
   @override
-  String get salesAgentPickerLabel => 'Agente';
+  String get salesBranchFilterLabel => 'FILIAIS';
 
   @override
-  String get salesAgentPickerEmpty => 'Selecione um agente';
+  String get salesBranchFilterEmptyHint =>
+      'Carregue o relatorio para listar as filiais.';
 
   @override
-  String get salesAgentPickerSheetTitle => 'Selecione um agente';
+  String get salesBranchFilterSheetTitle => 'Selecionar filiais';
 
   @override
-  String get salesAgentRequiredTitle => 'Selecao de agente obrigatoria';
+  String get salesBranchFilterSheetSearchHint => 'Buscar filiais…';
+
+  @override
+  String get salesBranchFilterNoSearchResults =>
+      'Nenhuma filial corresponde à busca.';
+
+  @override
+  String get salesBranchFilterMissingClientTokenBanner =>
+      'Filiais sem token de cliente neste dispositivo nao executam consultas SQL. “Online” indica apenas ligacao ao hub.';
+
+  @override
+  String get salesBranchPickerEmpty => 'Selecione uma filial';
+
+  @override
+  String get salesBranchRequiredTitle => 'Selecao de filial obrigatoria';
+
+  @override
+  String get salesBranchRequiredMessage =>
+      'Selecione uma filial para visualizar essas informacoes.';
+
+  @override
+  String get salesAgentPickerLabel => 'Filial';
+
+  @override
+  String get salesAgentPickerEmpty => 'Selecione uma filial';
+
+  @override
+  String get salesAgentPickerSheetTitle => 'Selecione uma filial';
+
+  @override
+  String get salesAgentRequiredTitle => 'Selecao de filial obrigatoria';
 
   @override
   String get salesAgentRequiredMessage =>
-      'Selecione um agente para visualizar essas informacoes.';
+      'Selecione uma filial para visualizar essas informacoes.';
 
   @override
   String get salesCardOpenAccountsTitle => 'Contas em Aberto';
@@ -5227,6 +5352,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
+  String get salesProdutoTendenciaMediaMovelFilterSearchHint =>
+      'Produto ou grupo';
+
+  @override
   String get salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar =>
       'Filtros aplicados. Atualizando a tendencia por media movel.';
 
@@ -5270,7 +5399,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
-      'Lista paginada com produto, medias, grupo, marca e classificacao de tendencia.';
+      'Lista paginada com produto, medias, grupo e classificacao de tendencia.';
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>
@@ -5317,9 +5446,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaMediaMovelColGrupo => 'Grupo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColMarca => 'Marca';
 
   @override
   String get salesProdutoTendenciaMediaMovelColMediaAtual => 'Media atual';

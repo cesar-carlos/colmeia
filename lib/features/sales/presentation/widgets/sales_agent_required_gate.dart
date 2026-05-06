@@ -19,8 +19,8 @@ class SalesAgentRequiredGate extends StatelessWidget {
     if (selectedAgentId == null) {
       return AppInlineErrorPanel(
         tone: AppInlinePanelTone.informational,
-        title: l10n.salesAgentRequiredTitle,
-        message: l10n.salesAgentRequiredMessage,
+        title: l10n.salesBranchRequiredTitle,
+        message: l10n.salesBranchRequiredMessage,
       );
     }
 
