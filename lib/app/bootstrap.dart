@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/app.dart';
+import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/router/app_router.dart';
 import 'package:colmeia/app/socket_lifecycle_observer.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
@@ -87,6 +88,9 @@ class ColmeiaBootstrap extends StatelessWidget {
         ),
         ChangeNotifierProvider<AppThemeModeController>(
           create: (_) => getIt<AppThemeModeController>(),
+        ),
+        ChangeNotifierProvider<AppUserExperiencePreferencesController>(
+          create: (_) => getIt<AppUserExperiencePreferencesController>(),
         ),
         Provider<GoRouter>(
           create: (context) {

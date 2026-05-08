@@ -2,6 +2,11 @@ import 'package:colmeia/core/update/windows_auto_update_diagnostic.dart';
 import 'package:colmeia/core/update/windows_auto_update_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum OverviewLoadingMode {
+  progressive,
+  complete,
+}
+
 /// Lightweight user-facing preferences persisted on device.
 class AppUserPreferencesStore {
   AppUserPreferencesStore(this._prefs);
@@ -10,6 +15,8 @@ class AppUserPreferencesStore {
 
   static const String _pushNotificationsKey = 'colmeia_push_notifications_v1';
   static const String _themeModeKey = 'colmeia_theme_mode_v1';
+  static const String _overviewLoadingModeKey =
+      'colmeia_overview_loading_mode_v1';
   static const String _windowsAutoUpdateStatusKey =
       'colmeia_windows_auto_update_status_v1';
   static const String _windowsAutoUpdateHeadlineKey =
@@ -24,6 +31,8 @@ class AppUserPreferencesStore {
   static const String themeModeSystem = 'system';
   static const String themeModeLight = 'light';
   static const String themeModeDark = 'dark';
+  static const String overviewLoadingModeProgressive = 'progressive';
+  static const String overviewLoadingModeComplete = 'complete';
 
   bool get pushNotificationsEnabled =>
       _prefs.getBool(_pushNotificationsKey) ?? true;
@@ -36,6 +45,25 @@ class AppUserPreferencesStore {
 
   Future<void> setThemeModePreference(String value) async {
     await _prefs.setString(_themeModeKey, value);
+  }
+
+  OverviewLoadingMode get overviewLoadingMode {
+    return switch (_prefs.getString(_overviewLoadingModeKey)) {
+      overviewLoadingModeComplete => OverviewLoadingMode.complete,
+      overviewLoadingModeProgressive => OverviewLoadingMode.progressive,
+      null => OverviewLoadingMode.progressive,
+      _ => OverviewLoadingMode.progressive,
+    };
+  }
+
+  Future<void> setOverviewLoadingMode(OverviewLoadingMode mode) async {
+    await _prefs.setString(
+      _overviewLoadingModeKey,
+      switch (mode) {
+        OverviewLoadingMode.progressive => overviewLoadingModeProgressive,
+        OverviewLoadingMode.complete => overviewLoadingModeComplete,
+      },
+    );
   }
 
   WindowsAutoUpdateDiagnostic? get windowsAutoUpdateDiagnostic {

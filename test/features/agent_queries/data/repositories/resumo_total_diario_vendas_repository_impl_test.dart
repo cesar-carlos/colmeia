@@ -103,6 +103,10 @@ void main() {
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
     check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.sql).contains('ResumoTotalDiarioVendasInner');
+    check(capturedRequest.sql).contains(
+      'CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim',
+    );
+    check(capturedRequest.sql.contains('WHERE pv.DataVenda BETWEEN')).isFalse();
     expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
   });
 }

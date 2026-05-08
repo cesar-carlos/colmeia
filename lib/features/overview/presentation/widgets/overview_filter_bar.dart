@@ -59,8 +59,10 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
     }
   }
 
-  static List<OverviewYearMonth> _buildPastMonthOptions({int monthsBack = 12}) {
-    final now = DateTime.now();
+  static List<OverviewYearMonth> _buildPastMonthOptions({
+    required DateTime now,
+    int monthsBack = 12,
+  }) {
     return List<OverviewYearMonth>.generate(monthsBack, (i) {
       var month = now.month - (i + 1);
       var year = now.year;
@@ -85,14 +87,14 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
     final colors = theme.appColors;
-    final currentYm = OverviewYearMonth.fromDate(DateTime.now());
-    final pastMonthOptions = _buildPastMonthOptions();
+    final now = DateTime.now();
+    final currentYm = OverviewYearMonth.fromDate(now);
+    final pastMonthOptions = _buildPastMonthOptions(now: now);
     final isDisabled = widget.onFilterChanged == null || widget.isLoading;
     final hasActiveFilter = !widget.filter.isDefault;
     final hasAgentFilter = widget.filter.selectedAgentIds != null;
 
     final selectedYm = widget.filter.yearMonth ?? currentYm;
-    final now = DateTime.now();
     final rangePickerLastDate = DateTime(now.year, now.month, now.day);
     final rangePickerFirstDate = DateTime(now.year - 10);
     var monthDropdownOptions = <AppDropdownOption<OverviewYearMonth>>[

@@ -34,5 +34,21 @@ void main() {
       check(diagnostic.feedUrl).equals('https://example.com/appcast.xml');
       check(diagnostic.lastCheckedAt).equals(checkedAt);
     });
+
+    test('should default overview loading mode to progressive', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final store = AppUserPreferencesStore(prefs);
+
+      check(store.overviewLoadingMode).equals(OverviewLoadingMode.progressive);
+    });
+
+    test('should persist overview loading mode', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final store = AppUserPreferencesStore(prefs);
+
+      await store.setOverviewLoadingMode(OverviewLoadingMode.complete);
+
+      check(store.overviewLoadingMode).equals(OverviewLoadingMode.complete);
+    });
   });
 }

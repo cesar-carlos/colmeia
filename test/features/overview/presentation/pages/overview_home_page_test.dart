@@ -14,14 +14,18 @@ import 'package:colmeia/features/overview/domain/entities/overview_load_labels.d
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_home_page.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_daily_sales_trend_chart.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -91,6 +95,20 @@ void main() {
         rowLabels: any(named: 'rowLabels'),
       ),
     ).thenAnswer((_) async => Success<Overview, AppFailure>(_overview()));
+    when(
+      () => overviewRepository.loadOverviewProgressively(
+        userId: any(named: 'userId'),
+        policy: any(named: 'policy'),
+        filter: any(named: 'filter'),
+        rowLabels: any(named: 'rowLabels'),
+      ),
+    ).thenAnswer(
+      (_) => Stream<AppResult<OverviewProgressiveSnapshot>>.value(
+        Success<OverviewProgressiveSnapshot, AppFailure>(
+          _snapshot(_overview()),
+        ),
+      ),
+    );
   });
 
   testWidgets('renders weekday card in the home page after monthly chart', (
@@ -151,18 +169,62 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testWidgets('keeps weekday card in the skeleton path while loading', (
+  testWidgets('waits for user context before loading overview', (
     tester,
   ) async {
-    final completer = Completer<AppResult<Overview>>();
     when(
-      () => overviewRepository.loadOverview(
+      () => currentUserContextController.hasResolvedData,
+    ).thenReturn(false);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          Provider<AuthController>.value(value: authController),
+          Provider<CurrentUserContextController>.value(
+            value: currentUserContextController,
+          ),
+          ChangeNotifierProvider<OverviewController>.value(
+            value: overviewController,
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const OverviewHomePage(),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump();
+
+    verifyNever(
+      () => overviewRepository.loadOverviewProgressively(
         userId: any(named: 'userId'),
         policy: any(named: 'policy'),
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
       ),
-    ).thenAnswer((_) => completer.future);
+    );
+  });
+
+  testWidgets('keeps weekday card in the skeleton path while loading', (
+    tester,
+  ) async {
+    final completer = Completer<AppResult<Overview>>();
+    when(
+      () => overviewRepository.loadOverviewProgressively(
+        userId: any(named: 'userId'),
+        policy: any(named: 'policy'),
+        filter: any(named: 'filter'),
+        rowLabels: any(named: 'rowLabels'),
+      ),
+    ).thenAnswer((_) async* {
+      yield Success<OverviewProgressiveSnapshot, AppFailure>(
+        _snapshot((await completer.future).getOrNull() ?? _overview()),
+      );
+    });
 
     await tester.pumpWidget(
       MultiProvider(
@@ -205,6 +267,56 @@ void main() {
 
     await tester.pump(const Duration(seconds: 2));
   });
+
+  testWidgets('progressive below-kpis UI mounts only ready daily sales section', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              return SingleChildScrollView(
+                child: OverviewHomeStagedBelowKpis(
+                  tokens: Theme.of(context).extension<AppThemeTokens>()!,
+                  l10n: AppLocalizations.of(context),
+                  showSkeleton: false,
+                  displayOverview: _overview(),
+                  completedSections: const <OverviewProgressiveSection>{
+                    OverviewProgressiveSection.dailySales,
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.byType(OverviewDailySalesTrendChart), findsOneWidget);
+    expect(find.text('Daily sales'), findsOneWidget);
+    expect(find.byType(OverviewWeekdaySalesTrendChart), findsNothing);
+    expect(find.text('Last 12 months'), findsNothing);
+
+    await tester.pump(const Duration(seconds: 2));
+  });
+}
+
+OverviewProgressiveSnapshot _snapshot(Overview overview) {
+  return OverviewProgressiveSnapshot(
+    overview: overview,
+    completedSections: Set<OverviewProgressiveSection>.of(
+      OverviewProgressiveSection.values,
+    ),
+    pendingSections: const <OverviewProgressiveSection>{},
+    isFinal: true,
+  );
 }
 
 Overview _overview() {

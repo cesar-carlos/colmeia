@@ -162,12 +162,12 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.byType(AppSkeleton), findsNWidgets(2));
+    expect(find.byType(AppSkeleton), findsNWidgets(3));
     expect(
       find.byKey(
         const ValueKey<String>('chart-loading-placeholder-timeSeries'),
       ),
-      findsNWidgets(2),
+      findsNWidgets(3),
     );
   });
 

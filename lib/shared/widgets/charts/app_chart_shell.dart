@@ -116,7 +116,7 @@ class AppChartShell extends StatelessWidget {
             null => const <Widget>[],
             final Widget w => <Widget>[
               w,
-              SizedBox(height: tokens.contentSpacing),
+              SizedBox(height: tokens.gapMd),
             ],
           },
           child,

@@ -24,6 +24,7 @@ class OverviewDailySalesTrendChart extends StatefulWidget {
     required this.l10n,
     required this.points,
     required this.loadFailed,
+    this.isLoading = false,
     this.loadFailureMessage,
     this.useSalesDailyTotalsLabels = false,
     super.key,
@@ -32,6 +33,7 @@ class OverviewDailySalesTrendChart extends StatefulWidget {
   final AppLocalizations l10n;
   final List<OverviewDailySalesTrendPoint> points;
   final bool loadFailed;
+  final bool isLoading;
   final String? loadFailureMessage;
 
   /// When true, chart titles and messages use [DailySalesTrendChartLabels] sales
@@ -97,6 +99,7 @@ class _OverviewDailySalesTrendChartState
         growable: false,
       );
       final isSalesCountSnapshot = isSalesCount;
+      final isLoadingSnapshot = widget.isLoading;
       unawaited(
         context.pushChartFullscreen<void>(
           extra: AppChartFullscreenRouteExtra(
@@ -157,6 +160,7 @@ class _OverviewDailySalesTrendChartState
                                   OverviewDailySalesTrendPoint
                                 >(
                                   items: chartPointsSnapshot,
+                                  isLoading: isLoadingSnapshot,
                                   plotFloorAccessibilityNotice:
                                       l10n.chartComparisonPlotFloorNotice,
                                   extremeSpreadAccessibilityNotice: l10n
@@ -241,6 +245,7 @@ class _OverviewDailySalesTrendChartState
           onChanged: (value) => setState(() => _metric = value),
         ),
         items: chartPoints,
+        isLoading: widget.isLoading,
         plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
         extremeSpreadAccessibilityNotice:
             l10n.chartComparisonExtremeValueSpreadNotice,

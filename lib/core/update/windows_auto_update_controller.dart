@@ -261,11 +261,11 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
           WindowsAutoUpdateState(
             availability: availability,
             status: WindowsAutoUpdateStatus.unavailable,
-            headline: 'Auto-update desabilitado neste build.',
+            headline: 'Atualizacoes automaticas indisponiveis neste build.',
             details:
-                'Defina AUTO_UPDATE_FEED_URL apontando para um appcast .xml para habilitar verificacoes no Windows.',
+                'Este instalador foi gerado sem o feed oficial de atualizacoes. Instale uma versao publicada pelo GitHub Releases ou gere o instalador com o feed configurado.',
             feedUrl: normalizedFeedUrl,
-            lastCheckedAt: _state.lastCheckedAt,
+            lastCheckedAt: null,
           ),
           notify: notify,
         );
@@ -276,9 +276,9 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
             status: WindowsAutoUpdateStatus.unavailable,
             headline: 'Feed de atualizacao invalido.',
             details:
-                'A URL configurada precisa terminar em .xml. Valor atual: $normalizedFeedUrl',
+                'Este instalador foi gerado com um feed de atualizacoes invalido. Gere novamente o instalador com uma URL appcast .xml valida.',
             feedUrl: normalizedFeedUrl,
-            lastCheckedAt: _state.lastCheckedAt,
+            lastCheckedAt: null,
           ),
           notify: notify,
         );

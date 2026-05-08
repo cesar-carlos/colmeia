@@ -9,7 +9,6 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_daily_sales_trend_chart.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
@@ -21,6 +20,7 @@ import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_sup
 import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_branch_anchor_month_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_daily_totals_chart_card.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_monthly_pnl_bar_chart_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
@@ -470,14 +470,12 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
                   ),
                 ),
                 SizedBox(height: tokens.sectionSpacing),
-                RepaintBoundary(
-                  child: OverviewDailySalesTrendChart(
-                    l10n: l10n,
-                    points: _dailyPoints,
-                    loadFailed: _dailyChartLoadFailed,
-                    loadFailureMessage: _dailyChartLoadFailureMessage,
-                    useSalesDailyTotalsLabels: true,
-                  ),
+                SalesDailyTotalsChartCard(
+                  l10n: l10n,
+                  points: _dailyPoints,
+                  loadFailed: _dailyChartLoadFailed,
+                  loadFailureMessage: _dailyChartLoadFailureMessage,
+                  isLoading: _loading && _selectedAgentId != null,
                 ),
               ],
             ),

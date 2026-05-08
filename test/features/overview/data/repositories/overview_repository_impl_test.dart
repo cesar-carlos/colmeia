@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
@@ -31,6 +34,7 @@ import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/data/repositories/overview_repository_impl.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
@@ -403,6 +407,102 @@ void main() {
         check(captured.sourceAgentIds).isNotNull();
         check(captured.sourceAgentIds!.length).equals(1);
         check(captured.sourceAgentIds!.single).equals('agent-42');
+      },
+    );
+
+    test(
+      'progressive stream emits summary before slower chart sections',
+      () async {
+        final dailyCompleter =
+            Completer<
+              ResultDart<
+                AgentQueryExecutionReport<ResumoTotalDiarioVendasRow>,
+                AppFailure
+              >
+            >();
+        when(
+          () => loadResumoTotalDiarioVendasAcrossAgents(
+            userId: any(named: 'userId'),
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).thenAnswer((_) => dailyCompleter.future);
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              consideredApprovedAgentCount: 1,
+              plannedTargets: <AgentQueryTarget>[
+                _target('agent-42', name: 'Agente 42'),
+              ],
+              participants:
+                  <
+                    AgentQueryExecutionParticipant<
+                      ResumoParcelaFormaPagamentoRow
+                    >
+                  >[
+                    _successParticipant(
+                      agentId: 'agent-42',
+                      displayName: 'Agente 42',
+                      rows: <ResumoParcelaFormaPagamentoRow>[
+                        _row(
+                          userName: 'Caixa 01',
+                          code: 'PIX',
+                          description: 'Pix',
+                          salesCount: 10,
+                          amount: 900,
+                        ),
+                      ],
+                    ),
+                  ],
+            ),
+          ),
+        );
+
+        final repository = makeRepository();
+        final iterator = StreamIterator<AppResult<OverviewProgressiveSnapshot>>(
+          repository.loadOverviewProgressively(userId: 'user-1'),
+        );
+
+        check(await iterator.moveNext()).isTrue();
+        final first = iterator.current.getOrNull()!;
+        check(first.isFinal).isFalse();
+        check(
+          first.completedSections.contains(OverviewProgressiveSection.summary),
+        ).isTrue();
+        check(
+          first.completedSections.contains(
+            OverviewProgressiveSection.dailySales,
+          ),
+        ).isFalse();
+        check(first.overview.kpis.totalSalesCount).equals(10);
+
+        dailyCompleter.complete(
+          Success<
+            AgentQueryExecutionReport<ResumoTotalDiarioVendasRow>,
+            AppFailure
+          >(_dailyReport()),
+        );
+
+        OverviewProgressiveSnapshot? last;
+        while (await iterator.moveNext()) {
+          last = iterator.current.getOrNull();
+        }
+
+        check(last).isNotNull();
+        check(last!.isFinal).isTrue();
+        check(
+          last.completedSections.contains(
+            OverviewProgressiveSection.dailySales,
+          ),
+        ).isTrue();
+        check(last.overview.dailySalesTrend).isNotEmpty();
       },
     );
 
@@ -1301,6 +1401,35 @@ AgentQueryExecutionReport<ResumoTotalDiarioVendasRow> _emptyDailyReport() {
     participants:
         <AgentQueryExecutionParticipant<ResumoTotalDiarioVendasRow>>[],
     totalElapsedMs: 0,
+  );
+}
+
+AgentQueryExecutionReport<ResumoTotalDiarioVendasRow> _dailyReport() {
+  return AgentQueryExecutionReport<ResumoTotalDiarioVendasRow>(
+    queryKey: AgentQueryKey.resumoTotalDiarioVendas,
+    strategy: AgentQueryExecutionStrategy.mergeAll,
+    consideredApprovedAgentCount: 1,
+    plannedTargets: <AgentQueryTarget>[
+      _target('agent-42', name: 'Agente 42'),
+    ],
+    missingClientTokenTargets: const <AgentQueryTarget>[],
+    participants: <AgentQueryExecutionParticipant<ResumoTotalDiarioVendasRow>>[
+      AgentQueryExecutionParticipant<ResumoTotalDiarioVendasRow>(
+        agentId: 'agent-42',
+        displayName: 'Agente 42',
+        rows: <ResumoTotalDiarioVendasRow>[
+          ResumoTotalDiarioVendasRow(
+            codEmpresa: 1,
+            codFilial: 1,
+            dataVenda: DateTime(2026, 3, 15),
+            qtdVendas: 2,
+            valorTotalDiarioVenda: 200,
+          ),
+        ],
+        elapsedMs: 5,
+      ),
+    ],
+    totalElapsedMs: 10,
   );
 }
 

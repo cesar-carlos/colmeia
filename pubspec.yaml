@@ -105,7 +105,6 @@ flutter:
   assets:
     # Runtime env config (see EnvAssetPaths in core/config/env_keys.dart)
     - assets/env/default.env
-    - assets/env/local.env
 
     # App images — add files to assets/images/ and register the directory once:
     # - assets/images/

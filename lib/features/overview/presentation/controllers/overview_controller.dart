@@ -2,20 +2,21 @@ import 'dart:async';
 
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
-import 'package:colmeia/core/localization/app_localizations_fallback.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
-import 'package:colmeia/features/overview/presentation/localization/overview_failure_l10n.dart';
-import 'package:colmeia/features/overview/presentation/localization/overview_load_labels_l10n.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
-import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+
+typedef OverviewFailureMessageBuilder = String Function(AppFailure failure);
 
 class OverviewController extends ChangeNotifier {
   OverviewController(
@@ -49,16 +50,6 @@ class OverviewController extends ChangeNotifier {
   /// is best-effort.
   final AgentRpcCapabilitiesRegistry? _agentRpcCapabilitiesRegistry;
 
-  AppLocalizations? _l10n;
-
-  /// Set from the active page context (`OverviewHomePage`) for localized
-  /// error messages.
-  AppLocalizations? get activeLocalizations => _l10n;
-
-  set activeLocalizations(AppLocalizations value) => _l10n = value;
-
-  AppLocalizations get _s => _l10n ?? fallbackAppLocalizationsForPlatform();
-
   Overview? _overview;
   bool _isLoadingInitial = false;
   bool _isRefreshing = false;
@@ -67,6 +58,8 @@ class OverviewController extends ChangeNotifier {
   String? _loadedOverviewSignature;
   int _loadGeneration = 0;
   bool _disposed = false;
+  Set<OverviewProgressiveSection> _completedOverviewSections =
+      const <OverviewProgressiveSection>{};
 
   OverviewFilter _activeFilter = OverviewFilter.initial();
 
@@ -153,6 +146,8 @@ class OverviewController extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
   bool get hasContent => _overview != null;
   String? get errorMessage => _errorMessage;
+  Set<OverviewProgressiveSection> get completedOverviewSections =>
+      _completedOverviewSections;
 
   /// Read-only access to the cool-down gate so the home page can render
   /// a "Retry in Ns" countdown.
@@ -167,6 +162,9 @@ class OverviewController extends ChangeNotifier {
   Future<void> applyFilter({
     required String userId,
     required OverviewFilter filter,
+    OverviewLoadingMode loadingMode = OverviewLoadingMode.progressive,
+    OverviewLoadLabels? rowLabels,
+    OverviewFailureMessageBuilder? failureMessageBuilder,
   }) async {
     _activeFilter = filter.normalizedForHomeDashboardReferenceRange();
     _requestedOverviewSignature = null;
@@ -174,6 +172,10 @@ class OverviewController extends ChangeNotifier {
       userId: userId,
       policy: OverviewLoadPolicy.forceRefresh,
       keepContentVisible: _overview != null,
+      loadingMode: loadingMode,
+      rowLabels: rowLabels ?? OverviewLoadLabels.englishFallback,
+      failureMessageBuilder:
+          failureMessageBuilder ?? _defaultFailureMessageBuilder,
     );
   }
 
@@ -181,6 +183,9 @@ class OverviewController extends ChangeNotifier {
   /// user changes. Safe to call from widget build methods.
   void scheduleOverviewLoadIfNeeded({
     required String userId,
+    OverviewLoadingMode loadingMode = OverviewLoadingMode.progressive,
+    OverviewLoadLabels? rowLabels,
+    OverviewFailureMessageBuilder? failureMessageBuilder,
   }) {
     final signature = _signatureFor(userId: userId);
     if (_requestedOverviewSignature == signature) {
@@ -194,6 +199,9 @@ class OverviewController extends ChangeNotifier {
       unawaited(
         loadOverview(
           userId: userId,
+          loadingMode: loadingMode,
+          rowLabels: rowLabels,
+          failureMessageBuilder: failureMessageBuilder,
         ),
       );
     });
@@ -201,16 +209,26 @@ class OverviewController extends ChangeNotifier {
 
   Future<void> loadOverview({
     required String userId,
+    OverviewLoadingMode loadingMode = OverviewLoadingMode.progressive,
+    OverviewLoadLabels? rowLabels,
+    OverviewFailureMessageBuilder? failureMessageBuilder,
   }) async {
     await _loadOverview(
       userId: userId,
       policy: OverviewLoadPolicy.defaultLoad,
       keepContentVisible: false,
+      loadingMode: loadingMode,
+      rowLabels: rowLabels ?? OverviewLoadLabels.englishFallback,
+      failureMessageBuilder:
+          failureMessageBuilder ?? _defaultFailureMessageBuilder,
     );
   }
 
   Future<void> refreshOverview({
     required String userId,
+    OverviewLoadingMode loadingMode = OverviewLoadingMode.progressive,
+    OverviewLoadLabels? rowLabels,
+    OverviewFailureMessageBuilder? failureMessageBuilder,
   }) async {
     if (isOnRetryCooldown) {
       // Server explicitly asked us to back off — respect the window.
@@ -226,11 +244,18 @@ class OverviewController extends ChangeNotifier {
       userId: userId,
       policy: OverviewLoadPolicy.forceRefresh,
       keepContentVisible: keepContentVisible,
+      loadingMode: loadingMode,
+      rowLabels: rowLabels ?? OverviewLoadLabels.englishFallback,
+      failureMessageBuilder:
+          failureMessageBuilder ?? _defaultFailureMessageBuilder,
     );
   }
 
   Future<void> retryOverview({
     required String userId,
+    OverviewLoadingMode loadingMode = OverviewLoadingMode.progressive,
+    OverviewLoadLabels? rowLabels,
+    OverviewFailureMessageBuilder? failureMessageBuilder,
   }) async {
     if (isOnRetryCooldown) {
       return;
@@ -244,6 +269,10 @@ class OverviewController extends ChangeNotifier {
           ? OverviewLoadPolicy.forceRefresh
           : OverviewLoadPolicy.defaultLoad,
       keepContentVisible: keepContentVisible,
+      loadingMode: loadingMode,
+      rowLabels: rowLabels ?? OverviewLoadLabels.englishFallback,
+      failureMessageBuilder:
+          failureMessageBuilder ?? _defaultFailureMessageBuilder,
     );
   }
 
@@ -251,6 +280,9 @@ class OverviewController extends ChangeNotifier {
     required String userId,
     required OverviewLoadPolicy policy,
     required bool keepContentVisible,
+    required OverviewLoadingMode loadingMode,
+    required OverviewLoadLabels rowLabels,
+    required OverviewFailureMessageBuilder failureMessageBuilder,
   }) async {
     final normalized = _activeFilter.normalizedForHomeDashboardReferenceRange();
     if (normalized != _activeFilter) {
@@ -268,6 +300,7 @@ class OverviewController extends ChangeNotifier {
         'userId': userId,
         'policy': policy.name,
         'keepContentVisible': keepContentVisible,
+        'loadingMode': loadingMode.name,
       },
     );
 
@@ -279,15 +312,29 @@ class OverviewController extends ChangeNotifier {
       _isLoadingInitial = true;
       _overview = null;
       _loadedOverviewSignature = null;
+      _completedOverviewSections = const <OverviewProgressiveSection>{};
     }
     _errorMessage = null;
     _notifyListenersIfAlive();
+
+    if (loadingMode == OverviewLoadingMode.progressive) {
+      await _loadOverviewProgressively(
+        userId: userId,
+        policy: policy,
+        keepContentVisible: keepContentVisible,
+        rowLabels: rowLabels,
+        failureMessageBuilder: failureMessageBuilder,
+        signature: signature,
+        generation: generation,
+      );
+      return;
+    }
 
     final result = await _loadOverviewUseCase(
       userId: userId,
       policy: policy,
       filter: _activeFilter,
-      rowLabels: _s.overviewLoadLabels,
+      rowLabels: rowLabels,
     );
     if (_disposed || generation != _loadGeneration) {
       return;
@@ -296,6 +343,9 @@ class OverviewController extends ChangeNotifier {
     final overview = result.getOrNull();
     if (overview != null) {
       _overview = overview;
+      _completedOverviewSections = Set<OverviewProgressiveSection>.of(
+        OverviewProgressiveSection.values,
+      );
       _loadedOverviewSignature = signature;
       await _updateAvailableAgents(overview, userId);
       AppLogger.info(
@@ -313,6 +363,7 @@ class OverviewController extends ChangeNotifier {
         if (!keepContentVisible) {
           _overview = null;
           _loadedOverviewSignature = null;
+          _completedOverviewSections = const <OverviewProgressiveSection>{};
         }
         // Arm the cool-down gate when the bridge propagated a
         // `Retry-After` hint (HTTP header, JSON-RPC
@@ -323,7 +374,7 @@ class OverviewController extends ChangeNotifier {
         if (retryAfter != null) {
           _retryAfterGate.arm(retryAfter);
         }
-        _errorMessage = overviewFailureUserMessage(failure, _s);
+        _errorMessage = failureMessageBuilder(failure);
         AppLogger.warning(
           'Overview load failed in controller',
           context: <String, Object?>{
@@ -348,6 +399,116 @@ class OverviewController extends ChangeNotifier {
       _isLoadingInitial = false;
     }
     _notifyListenersIfAlive();
+  }
+
+  Future<void> _loadOverviewProgressively({
+    required String userId,
+    required OverviewLoadPolicy policy,
+    required bool keepContentVisible,
+    required OverviewLoadLabels rowLabels,
+    required OverviewFailureMessageBuilder failureMessageBuilder,
+    required String signature,
+    required int generation,
+  }) async {
+    await for (final result in _loadOverviewUseCase.progressively(
+      userId: userId,
+      policy: policy,
+      filter: _activeFilter,
+      rowLabels: rowLabels,
+    )) {
+      if (_disposed || generation != _loadGeneration) {
+        return;
+      }
+
+      final snapshot = result.getOrNull();
+      if (snapshot != null) {
+        _overview = snapshot.overview;
+        _completedOverviewSections = snapshot.completedSections;
+        _errorMessage = null;
+        if (snapshot.isFinal) {
+          _loadedOverviewSignature = signature;
+          await _updateAvailableAgents(snapshot.overview, userId);
+          if (_disposed || generation != _loadGeneration) {
+            return;
+          }
+          AppLogger.info(
+            'Overview loaded progressively in controller',
+            context: <String, Object?>{
+              'operation': 'loadOverview',
+              'userId': userId,
+              'paymentMethods': snapshot.overview.paymentMethods.length,
+              'policy': policy.name,
+            },
+          );
+          _finishProgressiveLoading(keepContentVisible: keepContentVisible);
+          return;
+        }
+        _notifyListenersIfAlive();
+        continue;
+      }
+
+      final failure = result.exceptionOrNull();
+      if (failure != null) {
+        _handleProgressiveFailure(
+          failure,
+          userId: userId,
+          policy: policy,
+          keepContentVisible: keepContentVisible,
+          failureMessageBuilder: failureMessageBuilder,
+        );
+      }
+      _finishProgressiveLoading(keepContentVisible: keepContentVisible);
+      return;
+    }
+
+    _finishProgressiveLoading(keepContentVisible: keepContentVisible);
+  }
+
+  void _handleProgressiveFailure(
+    AppFailure failure, {
+    required String userId,
+    required OverviewLoadPolicy policy,
+    required bool keepContentVisible,
+    required OverviewFailureMessageBuilder failureMessageBuilder,
+  }) {
+    if (!keepContentVisible) {
+      _overview = null;
+      _loadedOverviewSignature = null;
+      _completedOverviewSections = const <OverviewProgressiveSection>{};
+    }
+    final retryAfter = appFailureRetryAfter(failure);
+    if (retryAfter != null) {
+      _retryAfterGate.arm(retryAfter);
+    }
+    _errorMessage = failureMessageBuilder(failure);
+    AppLogger.warning(
+      'Overview load failed in controller',
+      context: <String, Object?>{
+        'operation': 'loadOverview',
+        'userId': userId,
+        'policy': policy.name,
+        'keepContentVisible': keepContentVisible,
+        'technicalMessage': switch (failure) {
+          RpcFailure(:final technicalMessage) => technicalMessage,
+          _ => failure.message,
+        },
+      },
+      error: failure.cause ?? failure,
+      stackTrace: failure.stackTrace,
+    );
+  }
+
+  void _finishProgressiveLoading({required bool keepContentVisible}) {
+    if (keepContentVisible) {
+      _isRefreshing = false;
+    } else {
+      _isLoadingInitial = false;
+    }
+    _notifyListenersIfAlive();
+  }
+
+  static String _defaultFailureMessageBuilder(AppFailure failure) {
+    return failure.displayMessage;
   }
 
   String _signatureFor({required String userId}) {

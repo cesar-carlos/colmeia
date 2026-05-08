@@ -17,6 +17,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
@@ -396,6 +397,23 @@ class _PendingOverviewRepository implements OverviewRepository {
   }) {
     return _resultFuture;
   }
+
+  @override
+  Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
+    required String userId,
+    OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
+    OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
+  }) async* {
+    yield _asSnapshot(
+      await loadOverview(
+        userId: userId,
+        policy: policy,
+        filter: filter,
+        rowLabels: rowLabels,
+      ),
+    );
+  }
 }
 
 class _QueuedOverviewRepository implements OverviewRepository {
@@ -415,6 +433,41 @@ class _QueuedOverviewRepository implements OverviewRepository {
     requestedPolicies.add(policy);
     return _results[_index++];
   }
+
+  @override
+  Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
+    required String userId,
+    OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
+    OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
+  }) async* {
+    yield _asSnapshot(
+      await loadOverview(
+        userId: userId,
+        policy: policy,
+        filter: filter,
+        rowLabels: rowLabels,
+      ),
+    );
+  }
+}
+
+AppResult<OverviewProgressiveSnapshot> _asSnapshot(
+  AppResult<Overview> result,
+) {
+  return result.fold(
+    (overview) => Success<OverviewProgressiveSnapshot, AppFailure>(
+      OverviewProgressiveSnapshot(
+        overview: overview,
+        completedSections: Set<OverviewProgressiveSection>.of(
+          OverviewProgressiveSection.values,
+        ),
+        pendingSections: const <OverviewProgressiveSection>{},
+        isFinal: true,
+      ),
+    ),
+    Failure<OverviewProgressiveSnapshot, AppFailure>.new,
+  );
 }
 
 class _RecordingDiscoverRepository implements AgentMetaRepository {

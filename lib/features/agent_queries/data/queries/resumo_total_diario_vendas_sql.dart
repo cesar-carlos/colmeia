@@ -18,7 +18,7 @@ FROM (
     tos.CodEmpresa = pv.CodEmpresa
     AND tos.CodFilial = pv.CodFilial
     AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
-  WHERE pv.DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+  WHERE CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
     AND pv.Origem LIKE :origem
     AND tos.GeraFinanceiro = :geraFinanceiro
     AND pv.PreVenda = :preVenda

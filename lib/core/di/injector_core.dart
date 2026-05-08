@@ -1,3 +1,4 @@
+import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/cache/hive_app_cache_store.dart';
@@ -52,6 +53,11 @@ Future<void> registerInjectorCore(GetIt getIt) async {
     )
     ..registerLazySingleton<AppThemeModeController>(
       () => AppThemeModeController(getIt<AppUserPreferencesStore>()),
+    )
+    ..registerLazySingleton<AppUserExperiencePreferencesController>(
+      () => AppUserExperiencePreferencesController(
+        getIt<AppUserPreferencesStore>(),
+      ),
     )
     ..registerLazySingleton<FlutterSecureStorage>(createAppSecureStorage)
     ..registerLazySingleton<SessionStorage>(

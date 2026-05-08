@@ -35,6 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python tool/validate_env.py
           python -m unittest discover -s installer/tests -p '*_test.py'
           python -m unittest discover -s tool/tests -p '*_test.py'
 

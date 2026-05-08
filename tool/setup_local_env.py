@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Copy assets/env/.env.example to local.env if missing."""
+"""Copy assets/env/.env.example to local.env if missing.
+
+The file is intentionally not registered as a Flutter asset by default. Prefer
+--dart-define or process env for local overrides, and only add local.env to
+pubspec.yaml in an uncommitted local-only change if you need bundled overrides.
+"""
 
 from __future__ import annotations
 
@@ -22,6 +27,7 @@ def main() -> int:
 
     target.write_text(example.read_text(encoding="utf-8"), encoding="utf-8")
     print("Created assets/env/local.env from .env.example.")
+    print("Note: local.env is not bundled unless you add it to pubspec.yaml.")
     return 0
 
 

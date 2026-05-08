@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/constants/app_version.g.dart';
 import 'package:colmeia/core/di/injector.dart';
@@ -182,7 +183,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         if (!formKey.currentState!.validate()) {
                           return;
                         }
-                        final success = await _accountSettingsController
+                        final updatedProfile = await _accountSettingsController
                             .updateProfile(
                               firstName: firstNameController.text.trim(),
                               lastName: lastNameController.text.trim(),
@@ -191,12 +192,14 @@ class _SettingsPageState extends State<SettingsPage> {
                         if (!mounted || !sheetContext.mounted) {
                           return;
                         }
-                        if (!success) {
+                        if (updatedProfile == null) {
                           return;
                         }
 
                         Navigator.of(sheetContext).pop();
-                        await userContextController.reloadUserContext();
+                        userContextController.applyUpdatedProfile(
+                          updatedProfile,
+                        );
                         _showSoonSnack(
                           _accountSettingsController.successMessage ??
                               'Conta atualizada com sucesso.',
@@ -394,12 +397,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       return;
                     }
                     _showSoonSnack('Enviando foto do perfil...');
-                    final success = await _accountSettingsController
+                    final updatedProfile = await _accountSettingsController
                         .uploadThumbnail(filePath: file.path);
                     if (!mounted) {
                       return;
                     }
-                    if (!success) {
+                    if (updatedProfile == null) {
                       _showSoonSnack(
                         _accountSettingsController.errorMessage ??
                             'Nao foi possivel enviar a foto.',
@@ -408,7 +411,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     }
 
                     await _evictThumbnailCache(scope.thumbnailUrl);
-                    await userContextController.reloadUserContext();
+                    userContextController.applyUpdatedProfile(updatedProfile);
                     _showSoonSnack(
                       _accountSettingsController.successMessage ??
                           'Foto atualizada com sucesso.',
@@ -421,7 +424,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: const Text('Remover foto'),
                     onTap: () async {
                       Navigator.of(sheetContext).pop();
-                      final success = await _accountSettingsController
+                      final updatedProfile = await _accountSettingsController
                           .updateProfile(
                             firstName: scope.firstName,
                             lastName: scope.lastName,
@@ -431,7 +434,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       if (!mounted) {
                         return;
                       }
-                      if (!success) {
+                      if (updatedProfile == null) {
                         _showSoonSnack(
                           _accountSettingsController.errorMessage ??
                               'Nao foi possivel remover a foto.',
@@ -440,7 +443,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       }
 
                       await _evictThumbnailCache(scope.thumbnailUrl);
-                      await userContextController.reloadUserContext();
+                      userContextController.applyUpdatedProfile(updatedProfile);
                       _showSoonSnack(
                         _accountSettingsController.successMessage ??
                             'Foto removida com sucesso.',
@@ -540,12 +543,100 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Future<void> _showOverviewLoadingModePicker() async {
+    final preferencesCtrl = context
+        .read<AppUserExperiencePreferencesController>();
+    final rootContext = context;
+    final sheetTheme = Theme.of(rootContext);
+    final tokens = sheetTheme.extension<AppThemeTokens>()!;
+    final typography = sheetTheme.appTypography;
+    final cs = sheetTheme.colorScheme;
+
+    await showModalBottomSheet<void>(
+      context: rootContext,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        Widget option(
+          OverviewLoadingMode mode,
+          String title,
+          String subtitle,
+        ) {
+          final selected = preferencesCtrl.overviewLoadingMode == mode;
+          return ListTile(
+            leading: Icon(
+              selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+              color: selected ? cs.primary : cs.onSurfaceVariant,
+            ),
+            title: Text(title),
+            subtitle: Text(subtitle),
+            onTap: () {
+              unawaited(preferencesCtrl.setOverviewLoadingMode(mode));
+              Navigator.of(sheetContext).pop();
+            },
+          );
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: tokens.gapMd),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.contentSpacing,
+                    tokens.gapSm,
+                    tokens.contentSpacing,
+                    tokens.gapXs,
+                  ),
+                  child: Text(
+                    'Carregamento da home',
+                    style: typography.sectionHeaderH2.copyWith(
+                      fontSize: sheetTheme.textTheme.titleLarge?.fontSize,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.contentSpacing,
+                  ),
+                  child: Text(
+                    'Escolha como os dados do dashboard aparecem na tela.',
+                    style: typography.caption.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                SizedBox(height: tokens.gapSm),
+                option(
+                  OverviewLoadingMode.progressive,
+                  'Progressivo',
+                  'Mostra gráficos e indicadores conforme ficam prontos.',
+                ),
+                option(
+                  OverviewLoadingMode.complete,
+                  'Completo',
+                  'Mostra a tela apenas quando todos os dados terminarem de carregar.',
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final controller = context.watch<CurrentUserContextController>();
     final authController = context.watch<AuthController>();
     final themeMode = context.watch<AppThemeModeController>().themeMode;
+    final overviewLoadingMode = context
+        .watch<AppUserExperiencePreferencesController>()
+        .overviewLoadingMode;
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
@@ -648,9 +739,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   child: _SettingsPreferencesTab(
                     pushNotificationsEnabled: _pushNotificationsEnabled,
                     themePreferenceLabel: _themePreferenceLabel(themeMode),
+                    overviewLoadingModeLabel: _overviewLoadingModeLabel(
+                      overviewLoadingMode,
+                    ),
                     windowsAutoUpdateController: _windowsAutoUpdateController,
                     onPushNotificationsChanged: _persistPushNotifications,
                     onAppearanceTap: _showThemeModePicker,
+                    onOverviewLoadingModeTap: _showOverviewLoadingModePicker,
                     onComponentsTap: () => context.push(
                       sharedComponentsDemoIndexLocation,
                     ),
@@ -1016,17 +1111,21 @@ class _SettingsPreferencesTab extends StatelessWidget {
   const _SettingsPreferencesTab({
     required this.pushNotificationsEnabled,
     required this.themePreferenceLabel,
+    required this.overviewLoadingModeLabel,
     required this.windowsAutoUpdateController,
     required this.onPushNotificationsChanged,
     required this.onAppearanceTap,
+    required this.onOverviewLoadingModeTap,
     required this.onComponentsTap,
   });
 
   final bool pushNotificationsEnabled;
   final String themePreferenceLabel;
+  final String overviewLoadingModeLabel;
   final WindowsAutoUpdateController windowsAutoUpdateController;
   final ValueChanged<bool> onPushNotificationsChanged;
   final VoidCallback onAppearanceTap;
+  final VoidCallback onOverviewLoadingModeTap;
   final VoidCallback onComponentsTap;
 
   @override
@@ -1110,6 +1209,29 @@ class _SettingsPreferencesTab extends StatelessWidget {
         SizedBox(height: tokens.gapMd),
         ListTile(
           contentPadding: EdgeInsets.zero,
+          leading: Icon(Icons.dashboard_customize_outlined, color: cs.primary),
+          title: Text(
+            'Carregamento da home',
+            style: typography.sectionHeaderH2.copyWith(
+              fontSize: theme.textTheme.titleSmall?.fontSize,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          subtitle: Text(
+            overviewLoadingModeLabel,
+            style: typography.caption.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: cs.onSurfaceVariant,
+          ),
+          onTap: onOverviewLoadingModeTap,
+        ),
+        SizedBox(height: tokens.gapMd),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
           leading: Icon(Icons.widgets_outlined, color: cs.primary),
           title: Text(
             'Componentes do app',
@@ -1157,5 +1279,14 @@ String _themePreferenceLabel(ThemeMode mode) {
     ThemeMode.system => 'Seguindo o dispositivo.',
     ThemeMode.light => 'Tema claro fixo.',
     ThemeMode.dark => 'Tema escuro fixo.',
+  };
+}
+
+String _overviewLoadingModeLabel(OverviewLoadingMode mode) {
+  return switch (mode) {
+    OverviewLoadingMode.progressive =>
+      'Progressivo: mostra seções conforme ficam prontas.',
+    OverviewLoadingMode.complete =>
+      'Completo: troca os dados quando tudo terminar.',
   };
 }

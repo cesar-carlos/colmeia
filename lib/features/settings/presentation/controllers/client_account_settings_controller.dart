@@ -1,6 +1,7 @@
 import 'package:colmeia/features/auth/application/usecases/change_password_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/update_current_user_profile_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/upload_client_thumbnail_use_case.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
 import 'package:flutter/foundation.dart';
 
 class ClientAccountSettingsController extends ChangeNotifier {
@@ -36,7 +37,7 @@ class ClientAccountSettingsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> updateProfile({
+  Future<UserProfile?> updateProfile({
     required String firstName,
     required String lastName,
     String? mobile,
@@ -53,25 +54,25 @@ class ClientAccountSettingsController extends ChangeNotifier {
       mobile: mobile,
       removeThumbnail: removeThumbnail,
     );
-    final success = result.fold(
-      (_) {
+    final profile = result.fold(
+      (updated) {
         _successMessage = removeThumbnail
             ? 'Foto removida com sucesso.'
             : 'Dados da conta atualizados com sucesso.';
-        return true;
+        return updated;
       },
       (failure) {
         _errorMessage = failure.displayMessage;
-        return false;
+        return null;
       },
     );
 
     _isSavingProfile = false;
     notifyListeners();
-    return success;
+    return profile;
   }
 
-  Future<bool> uploadThumbnail({
+  Future<UserProfile?> uploadThumbnail({
     required String filePath,
   }) async {
     _isUploadingThumbnail = true;
@@ -80,20 +81,20 @@ class ClientAccountSettingsController extends ChangeNotifier {
     notifyListeners();
 
     final result = await _uploadClientThumbnailUseCase(filePath: filePath);
-    final success = result.fold(
-      (_) {
+    final profile = result.fold(
+      (updated) {
         _successMessage = 'Foto da conta atualizada com sucesso.';
-        return true;
+        return updated;
       },
       (failure) {
         _errorMessage = failure.displayMessage;
-        return false;
+        return null;
       },
     );
 
     _isUploadingThumbnail = false;
     notifyListeners();
-    return success;
+    return profile;
   }
 
   Future<bool> changePassword({

@@ -46,7 +46,39 @@ void main() {
           AppAutoUpdateAvailability.feedUrlMissing,
         );
         check(controller.state.canCheckForUpdates).isFalse();
-        check(controller.state.headline).contains('desabilitado');
+        check(controller.state.headline).contains('indisponiveis');
+        check(controller.state.details).isNotNull().contains('feed oficial');
+        check(controller.state.lastCheckedAt).isNull();
+      },
+    );
+
+    test(
+      'should clear stale last check when current build has no feed',
+      () async {
+        final prefsStore = await _createPreferencesStore();
+        await prefsStore.persistWindowsAutoUpdateDiagnostic(
+          WindowsAutoUpdateDiagnostic(
+            status: WindowsAutoUpdateStatus.upToDate,
+            headline: 'Este build ja esta atualizado.',
+            details: 'Nenhuma release mais nova foi encontrada.',
+            feedUrl: 'https://example.com/appcast.xml',
+            lastCheckedAt: DateTime(2026, 5, 5, 12),
+          ),
+        );
+        final controller = WindowsAutoUpdateController(
+          autoUpdaterClient: _FakeAutoUpdaterClient(),
+          appcastProbeClient: _FakeProbeHarness().client,
+          feedUrlResolver: () => '',
+          preferencesStore: prefsStore,
+          supportsNativeUpdates: () => true,
+        );
+
+        await controller.initialize();
+
+        check(controller.state.availability).equals(
+          AppAutoUpdateAvailability.feedUrlMissing,
+        );
+        check(controller.state.lastCheckedAt).isNull();
       },
     );
 

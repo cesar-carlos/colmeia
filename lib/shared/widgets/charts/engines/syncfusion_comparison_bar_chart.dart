@@ -12,6 +12,10 @@ import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+/// Keeps the custom tooltip bubble from spanning the full plot width so it
+/// does not sit on top of neighboring outer value labels.
+const double _kComparisonBarTooltipMaxBodyWidth = 240;
+
 /// Value labels on comparison column charts are always placed above the bar
 /// ([ChartDataLabelAlignment.outer]), never inside the bar fill.
 const ChartDataLabelAlignment _kComparisonBarValueLabelAlignment =
@@ -61,6 +65,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: chartTheme.primaryColor,
+        variant: style.loadingPlaceholderVariant,
         label:
             resolvedLoadingLabel ??
             style.loadingLabel ??
@@ -197,6 +202,9 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           context,
           enable: enableInteraction && style.showTooltip,
           canShowMarker: tooltipLabelList == null,
+          tooltipPosition: style.showDataLabels
+              ? TooltipPosition.pointer
+              : TooltipPosition.auto,
           builder: tooltipLabelList == null
               ? null
               : (data, point, series, pointIndex, seriesIndex) {
@@ -209,17 +217,22 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                     return const SizedBox.shrink();
                   }
                   final colorScheme = Theme.of(chartContext).colorScheme;
-                  return Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Text(
-                      text,
-                      style: TextStyle(
-                        color: colorScheme.onInverseSurface,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: _kComparisonBarTooltipMaxBodyWidth,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6),
+                      child: Text(
+                        text,
+                        style: TextStyle(
+                          color: colorScheme.onInverseSurface,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        softWrap: true,
+                        textAlign: TextAlign.start,
                       ),
-                      softWrap: true,
-                      textAlign: TextAlign.start,
                     ),
                   );
                 },

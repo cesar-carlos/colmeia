@@ -7,21 +7,25 @@ This folder hosts the dashboard widgets consumed by the overview feature
 
 ### Currently rendered
 
-These six chart cards are mounted by `OverviewHomeStagedBelowKpis` on the
-home screen and are the focus of design/polish work:
+These chart cards are mounted by `OverviewHomeStagedBelowKpis` on the home
+screen and are the focus of design/polish work:
 
-- `OverviewPaymentMixCard` — donut "Mix by payment method".
-- `OverviewPaymentBarChart` — column "Revenue by payment method".
-- `OverviewMonthlyParcelsComboChart` — bar+line "Last 12 months".
-- `OverviewWeekdaySalesTrendChart` — column "Sales/Revenue by weekday".
-- `OverviewWeekdayUserGroupedBarChart` — clustered column "Sales/Revenue
+- `OverviewDailySalesTrendChart` - line/area "Daily sales".
+- `OverviewMonthlyParcelsComboChart` - bar+line "Last 12 months".
+- `OverviewPaymentMixCard` - donut "Mix by payment method".
+- `OverviewWeekdaySalesTrendChart` - column "Sales/Revenue by weekday".
+- `OverviewWeekdayUserSalesTrendChart` - clustered column "Sales/Revenue
   by weekday and user".
-- `OverviewRankingsSection` — agent + user ranking columns.
+- `OverviewAgentRankingCard` - agent ranking columns.
+- `OverviewUserRankingCard` - user ranking columns.
+- `OverviewLucratividadeChart` - period profitability by agent.
 
 Plus the supporting non-chart cards:
 
-- `OverviewSummaryCard` — KPI tiles above the charts.
-- `OverviewHomeStagedBelowKpis` — staged mounter that sequences the cards
+- `OverviewKpiBar` - KPI summary above the charts.
+- `OverviewHomeAlertsSection` - consolidated banners for load and agent states.
+- `OverviewFilterBar` - branch/agent and date filters.
+- `OverviewHomeStagedBelowKpis` - staged mounter that sequences the cards
   above to keep the UI thread responsive while Syncfusion charts initialize.
 
 ### NOT_RENDERED (kept for the upcoming overview revamp)
@@ -35,7 +39,7 @@ not show up in the running app until a host page mounts them.
 |---|---|
 | `overview_sales_trend_card.dart` | Weekly/monthly toggle around `AppTimeSeriesChart`. |
 | `overview_chart_renderer.dart` | Thin wrapper used only by `OverviewSalesTrendCard`. |
-| `overview_category_mix_card.dart` | Donut "Vendas por categoria" — distinct from the payment mix. |
+| `overview_category_mix_card.dart` | Donut "Vendas por categoria" - distinct from the payment mix. |
 | `overview_ai_insight_card.dart` | Editorial card for AI-generated insights. |
 
 Decision rationale: chose to **keep** rather than delete (or move to
@@ -50,7 +54,7 @@ pages land.
 When changing a widget that lives here:
 
 1. Confirm it's in the **Currently rendered** list above. If it's
-   `NOT_RENDERED`, the change won't surface in the app — make sure that's
+   `NOT_RENDERED`, the change won't surface in the app - make sure that's
    intentional (e.g. preparing for the revamp).
 2. Re-run `flutter test test/features/overview/` before committing.
 3. Cross-check the design-system inventory in

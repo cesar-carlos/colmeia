@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_comparison_bar_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -68,6 +69,7 @@ class AppComparisonBarChartStyle {
     this.wrapXAxisCharsPerLine = 14,
     this.wrapXAxisMaxLines = 2,
     this.loadingLabel,
+    this.loadingPlaceholderVariant = ChartLoadingPlaceholderVariant.radial,
     this.emptyMessage,
     this.enableAutoScroll = true,
     this.minBarWidth,
@@ -251,6 +253,9 @@ class AppComparisonBarChartStyle {
   ///
   /// When `null` a built-in default is used.
   final String? loadingLabel;
+
+  /// Visual shape used while [AppComparisonBarChart.isLoading] is true.
+  final ChartLoadingPlaceholderVariant loadingPlaceholderVariant;
 
   /// Override message for the empty state.
   ///

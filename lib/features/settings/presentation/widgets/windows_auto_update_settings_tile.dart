@@ -143,7 +143,7 @@ String _statusLabel(WindowsAutoUpdateState state) {
     WindowsAutoUpdateStatus.upToDate => 'Build atualizado',
     WindowsAutoUpdateStatus.readyToInstall => 'Pronto para instalar',
     WindowsAutoUpdateStatus.failed => 'Verificacao com falha',
-    WindowsAutoUpdateStatus.unavailable => 'Windows auto-update indisponivel',
+    WindowsAutoUpdateStatus.unavailable => 'Atualizacoes indisponiveis',
     WindowsAutoUpdateStatus.idle => 'Pronto para verificar',
     WindowsAutoUpdateStatus.checking => 'Consultando feed oficial',
   };

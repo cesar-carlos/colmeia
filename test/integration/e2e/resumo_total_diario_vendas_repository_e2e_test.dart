@@ -76,6 +76,64 @@ void main() {
           );
         },
       );
+
+      test('load accepts a single-day calendar range', () async {
+        final missingKeys = missingE2eRepositoryKeys();
+        if (missingKeys.isNotEmpty) {
+          // E2E skip hint; `print` is intentional for local diagnostics.
+          // ignore: avoid_print
+          print(
+            'SKIP resumo_total_diario_vendas_single_day_e2e: '
+            'missing ${missingKeys.join(', ')}. '
+            'Set them in assets/env/local.env, process env, or --dart-define.',
+          );
+          return;
+        }
+
+        await e2eSetupDependencies();
+        addTearDown(e2eTeardownDependencies);
+
+        final repository = getIt<ResumoTotalDiarioVendasRepository>();
+        final today = DateTime.now();
+        final day = DateTime(today.year, today.month, today.day);
+
+        final result = await repository.load(
+          userId: 'user-1',
+          agentId: AppEnvironment.e2eAgentId,
+          clientToken: AppEnvironment.e2eClientToken,
+          filter: ResumoTotalDiarioVendasFilter(
+            dataVendaInicio: day,
+            dataVendaFim: day,
+          ),
+        );
+
+        result.fold(
+          (rows) {
+            for (final row in rows) {
+              expect(row.dataVenda, DateTime(day.year, day.month, day.day));
+              expect(row.qtdVendas, greaterThanOrEqualTo(0));
+              expect(row.valorTotalDiarioVenda, isNonNegative);
+            }
+          },
+          (failure) {
+            expect(
+              failure,
+              isNot(isA<SessionFailure>()),
+              reason:
+                  'Unexpected HTTP 401 after client login '
+                  'â€” check E2E_* values.',
+            );
+            expect(
+              isAcceptableE2eAgentSqlRepositoryFailure(failure),
+              isTrue,
+              reason:
+                  'Single-day repository e2e should return rows, '
+                  'invalid_policy / missing_permission RPC, or transient '
+                  'bridge HTTP 5xx.',
+            );
+          },
+        );
+      });
     },
     tags: <String>['e2e'],
   );

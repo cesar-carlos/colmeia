@@ -2,6 +2,7 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -48,6 +49,9 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     horizontalScrollSemanticsHint:
         l10n.overviewComparisonBarHorizontalScrollHint,
     loadingLabel: l10n.overviewComparisonChartLoading,
+    loadingPlaceholderVariant: isDaily
+        ? ChartLoadingPlaceholderVariant.timeSeries
+        : ChartLoadingPlaceholderVariant.radial,
     showDataLabels: showDataLabels,
     autoRotateXLabels: false,
     wrapXAxisLabelsInTwoLines: true,
@@ -60,11 +64,8 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
         : null,
     dataLabelOffset: Offset(
       0,
-      metricRevenueAxis
-          ? tokens.gapMd + tokens.gapSm + tokens.gapXs
-          : ((isRanking || isPayment) ? tokens.gapSm : tokens.gapMd),
+      (isRanking || isPayment) ? tokens.gapSm : tokens.gapMd,
     ),
-    outerDataLabelTopReserve: metricRevenueAxis ? tokens.contentSpacing : 0,
     yAxisRangePadding: metricRevenueAxis
         ? ChartRangePadding.additionalEnd
         : null,

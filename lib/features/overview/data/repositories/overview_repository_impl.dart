@@ -41,6 +41,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_monthly_parce
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_resumo_row.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
@@ -57,6 +58,16 @@ class _LucratividadeLoadBundle {
 
   final List<ResumoProdutoVendaLucratividadeRow> rows;
   final List<String> partialFailureAgentNames;
+}
+
+class _OverviewProgressivePatch {
+  const _OverviewProgressivePatch({
+    required this.section,
+    required this.apply,
+  });
+
+  final OverviewProgressiveSection section;
+  final Overview Function(Overview overview) apply;
 }
 
 class OverviewRepositoryImpl implements OverviewRepository {
@@ -132,6 +143,28 @@ class OverviewRepositoryImpl implements OverviewRepository {
   /// the mensal variant (no month dimension).
   static const int _overviewLucratividadeBridgeTimeoutMs = 120000;
 
+  static const Set<OverviewProgressiveSection> _allProgressiveSections =
+      <OverviewProgressiveSection>{
+        OverviewProgressiveSection.summary,
+        OverviewProgressiveSection.dailySales,
+        OverviewProgressiveSection.monthlyParcels,
+        OverviewProgressiveSection.paymentMix,
+        OverviewProgressiveSection.weekdaySales,
+        OverviewProgressiveSection.weekdayUserSales,
+        OverviewProgressiveSection.agentRanking,
+        OverviewProgressiveSection.userRanking,
+        OverviewProgressiveSection.lucratividadePeriod,
+        OverviewProgressiveSection.lucratividadeMensal,
+      };
+
+  static const Set<OverviewProgressiveSection> _summaryProgressiveSections =
+      <OverviewProgressiveSection>{
+        OverviewProgressiveSection.summary,
+        OverviewProgressiveSection.paymentMix,
+        OverviewProgressiveSection.agentRanking,
+        OverviewProgressiveSection.userRanking,
+      };
+
   @override
   Future<AppResult<Overview>> loadOverview({
     required String userId,
@@ -139,6 +172,36 @@ class OverviewRepositoryImpl implements OverviewRepository {
     OverviewFilter filter = const OverviewFilter(),
     OverviewLoadLabels? rowLabels,
   }) async {
+    AppResult<Overview>? lastResult;
+    await for (final result in loadOverviewProgressively(
+      userId: userId,
+      policy: policy,
+      filter: filter,
+      rowLabels: rowLabels,
+    )) {
+      final snapshot = result.getOrNull();
+      if (snapshot != null) {
+        lastResult = Success<Overview, AppFailure>(snapshot.overview);
+      } else {
+        return Failure<Overview, AppFailure>(result.exceptionOrNull()!);
+      }
+    }
+    return lastResult ??
+        const Failure<Overview, AppFailure>(
+          UnknownFailure(
+            message: 'Overview load produced no data',
+            userMessage: 'Unable to load the overview.',
+          ),
+        );
+  }
+
+  @override
+  Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
+    required String userId,
+    OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
+    OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
+  }) async* {
     final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
     final period = _buildPeriod(filter);
     final selectedNorm = _normalizeSelectedAgentIds(filter.selectedAgentIds);
@@ -220,16 +283,19 @@ class OverviewRepositoryImpl implements OverviewRepository {
             );
       }
       if (report == null) {
-        await monthlyParcelFuture;
-        await weekdaySalesFuture;
-        await dailySalesFuture;
-        await lucratividadeMensalFuture;
-        await lucratividadeFuture;
+        await _drainOverviewFutures(
+          monthlyParcelFuture: monthlyParcelFuture,
+          weekdaySalesFuture: weekdaySalesFuture,
+          dailySalesFuture: dailySalesFuture,
+          lucratividadeMensalFuture: lucratividadeMensalFuture,
+          lucratividadeFuture: lucratividadeFuture,
+          weekdayUserBridgeFuture: weekdayUserBridgeFuture,
+        );
         final failure = _mapOverviewFailure(
           reportResult.exceptionOrNull()!,
           userId: userId,
         );
-        return _recoverOrFail(
+        final recovered = await _recoverOrFail(
           failure: failure,
           userId: userId,
           policy: policy,
@@ -239,67 +305,51 @@ class OverviewRepositoryImpl implements OverviewRepository {
             fallbackSelectedAgentIds: filter.selectedAgentIds,
           ),
         );
+        yield _asProgressiveResult(recovered);
+        return;
       }
 
-      if (report.consideredApprovedAgentCount == 0) {
-        final monthlyF = _resolveMonthlyParcelTrend(
-          monthlyParcelFuture,
-          mensalFilter,
+      final sourceAgentIds = report.consideredApprovedAgentCount == 0
+          ? null
+          : _resolveSourceAgentIds(report);
+      var shouldSaveFinalOverview = report.consideredApprovedAgentCount > 0;
+      var overview = _buildOverview(
+        _mapOverviewRows(report.mergedRows),
+        rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
+        agentDisplayNamesById: _resolveAgentDisplayNames(report),
+        periodStart: period.start,
+        periodEnd: period.end,
+        approvedAgentCount: report.consideredApprovedAgentCount,
+        rowLabels: resolvedRowLabels,
+        agentIdsExcludedFromQueryFailure: report.failedAgentIds,
+        agentNamesExcludedFromQueryFailure: report.failedAgentNames,
+        agentIdsMissingClientToken: report.missingClientTokenAgentIds,
+        agentNamesMissingClientToken: report.missingClientTokenAgentNames,
+        agentIdsSkippedDueToHubPresence: report.skippedDueToHubPresenceAgentIds,
+        agentNamesSkippedDueToHubPresence:
+            report.skippedDueToHubPresenceAgentNames,
+        mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
+      );
+
+      final completedSections = <OverviewProgressiveSection>{
+        ..._summaryProgressiveSections,
+      };
+
+      if (report.requiresClientTokenSetup && sourceAgentIds != null) {
+        final cachedOverview = await _readCachedOverviewForMissingClientTokens(
+          userId: userId,
+          policy: policy,
+          period: period,
+          expectedSortedAgentIds: sourceAgentIds,
+          agentIdsMissingClientToken: report.missingClientTokenAgentIds,
+          agentNamesMissingClientToken: report.missingClientTokenAgentNames,
         );
-        final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
-        final dailyF = _resolveDailySalesTrend(
-          dailySalesFuture,
-          dailyTotalFilter,
-        );
-        final userF = _resolveWeekdayUserSalesTrendOptional(
-          weekdayUserBridgeFuture,
-        );
-        final lucratividadeMensalF = _resolveLucratividadeMensalTrend(
-          lucratividadeMensalFuture,
-        );
-        final lvcF = _resolveLucratividadeTrend(lucratividadeFuture);
-        final monthly = await monthlyF;
-        final weekday = await weekdayF;
-        final daily = await dailyF;
-        final weekdayUser = await userF;
-        final lucratividadeMensal = await lucratividadeMensalF;
-        final lvc = await lvcF;
-        return Success<Overview, AppFailure>(
-          _buildOverview(
-            const <OverviewPaymentResumoRow>[],
-            rowsByAgentId: const <String, List<OverviewPaymentResumoRow>>{},
-            agentDisplayNamesById: const <String, String>{},
-            periodStart: period.start,
-            periodEnd: period.end,
-            approvedAgentCount: 0,
-            rowLabels: resolvedRowLabels,
-            monthlyParcelTrend: monthly.points,
-            monthlyParcelTrendLoadFailed: monthly.loadFailed,
-            monthlyParcelTrendLoadFailureMessage: monthly.loadFailureMessage,
-            weekdaySalesTrend: weekday.points,
-            weekdaySalesTrendLoadFailed: weekday.loadFailed,
-            weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
-            dailySalesTrend: daily.points,
-            dailySalesTrendLoadFailed: daily.loadFailed,
-            dailySalesTrendLoadFailureMessage: daily.loadFailureMessage,
-            weekdayUserSalesTrend: weekdayUser.points,
-            weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
-            weekdayUserSalesTrendLoadFailureMessage:
-                weekdayUser.loadFailureMessage,
-            lucratividadeMensalTrend: lucratividadeMensal.points,
-            lucratividadeMensalTrendLoadFailed: lucratividadeMensal.loadFailed,
-            lucratividadeMensalTrendLoadFailureMessage:
-                lucratividadeMensal.loadFailureMessage,
-            lucratividadeTrend: lvc.points,
-            lucratividadeTrendLoadFailed: lvc.loadFailed,
-            lucratividadeTrendLoadFailureMessage: lvc.loadFailureMessage,
-            lucratividadePartialFailureAgentNames:
-                lvc.lucratividadePartialFailureAgentNames,
-          ),
-        );
+        if (cachedOverview != null) {
+          overview = cachedOverview;
+          shouldSaveFinalOverview = false;
+        }
       }
 
-      final sourceAgentIds = _resolveSourceAgentIds(report);
       final lucTargets = _orderedLucratividadeTargets(
         selectedNorm: selectedNorm,
         plannedTargets: report.plannedTargets,
@@ -330,68 +380,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
         );
       }
 
-      if (report.requiresClientTokenSetup) {
-        final cachedOverview = await _readCachedOverviewForMissingClientTokens(
-          userId: userId,
-          policy: policy,
-          period: period,
-          expectedSortedAgentIds: sourceAgentIds,
-          agentIdsMissingClientToken: report.missingClientTokenAgentIds,
-          agentNamesMissingClientToken: report.missingClientTokenAgentNames,
-        );
-        if (cachedOverview != null) {
-          final monthlyF = _resolveMonthlyParcelTrend(
-            monthlyParcelFuture,
-            mensalFilter,
-          );
-          final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
-          final dailyF = _resolveDailySalesTrend(
-            dailySalesFuture,
-            dailyTotalFilter,
-          );
-          final userF = _resolveWeekdayUserSalesTrendOptional(
-            weekdayUserBridgeFuture,
-          );
-          final lucratividadeMensalF = _resolveLucratividadeMensalTrend(
-            lucratividadeMensalFuture,
-          );
-          final lvcF = _resolveLucratividadeTrend(lucratividadeFuture);
-          final monthly = await monthlyF;
-          final weekday = await weekdayF;
-          final daily = await dailyF;
-          final weekdayUser = await userF;
-          final lucratividadeMensal = await lucratividadeMensalF;
-          final lvc = await lvcF;
-          return Success<Overview, AppFailure>(
-            cachedOverview.copyWith(
-              monthlyParcelTrend: monthly.points,
-              monthlyParcelTrendLoadFailed: monthly.loadFailed,
-              monthlyParcelTrendLoadFailureMessage: monthly.loadFailureMessage,
-              weekdaySalesTrend: weekday.points,
-              weekdaySalesTrendLoadFailed: weekday.loadFailed,
-              weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
-              dailySalesTrend: daily.points,
-              dailySalesTrendLoadFailed: daily.loadFailed,
-              dailySalesTrendLoadFailureMessage: daily.loadFailureMessage,
-              weekdayUserSalesTrend: weekdayUser.points,
-              weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
-              weekdayUserSalesTrendLoadFailureMessage:
-                  weekdayUser.loadFailureMessage,
-              lucratividadeMensalTrend: lucratividadeMensal.points,
-              lucratividadeMensalTrendLoadFailed:
-                  lucratividadeMensal.loadFailed,
-              lucratividadeMensalTrendLoadFailureMessage:
-                  lucratividadeMensal.loadFailureMessage,
-              lucratividadeTrend: lvc.points,
-              lucratividadeTrendLoadFailed: lvc.loadFailed,
-              lucratividadeTrendLoadFailureMessage: lvc.loadFailureMessage,
-              lucratividadePartialFailureAgentNames:
-                  lvc.lucratividadePartialFailureAgentNames,
-            ),
-          );
-        }
-      }
-
       if (report.failedAgentIds.isNotEmpty) {
         AppLogger.warning(
           'Overview: partial agent resumo results',
@@ -404,114 +392,144 @@ class OverviewRepositoryImpl implements OverviewRepository {
         );
       }
 
-      final monthlyF = _resolveMonthlyParcelTrend(
-        monthlyParcelFuture,
-        mensalFilter,
-      );
-      final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
-      final dailyF = _resolveDailySalesTrend(
-        dailySalesFuture,
-        dailyTotalFilter,
-      );
-      final userF = _resolveWeekdayUserSalesTrendOptional(
-        weekdayUserBridgeFuture,
-      );
-      final lucratividadeMensalF = _resolveLucratividadeMensalTrend(
-        lucratividadeMensalFuture,
-      );
-      final lvcF = _resolveLucratividadeTrend(lucratividadeFuture);
-      final monthly = await monthlyF;
-      final weekday = await weekdayF;
-      final daily = await dailyF;
-      final weekdayUser = await userF;
-      final lucratividadeMensal = await lucratividadeMensalF;
-      final lvc = await lvcF;
-      final overview = _buildOverview(
-        _mapOverviewRows(report.mergedRows),
-        rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
-        agentDisplayNamesById: _resolveAgentDisplayNames(report),
-        periodStart: period.start,
-        periodEnd: period.end,
-        approvedAgentCount: report.consideredApprovedAgentCount,
-        rowLabels: resolvedRowLabels,
-        agentIdsExcludedFromQueryFailure: report.failedAgentIds,
-        agentNamesExcludedFromQueryFailure: report.failedAgentNames,
-        agentIdsMissingClientToken: report.missingClientTokenAgentIds,
-        agentNamesMissingClientToken: report.missingClientTokenAgentNames,
-        agentIdsSkippedDueToHubPresence: report.skippedDueToHubPresenceAgentIds,
-        agentNamesSkippedDueToHubPresence:
-            report.skippedDueToHubPresenceAgentNames,
-        monthlyParcelTrend: monthly.points,
-        monthlyParcelTrendLoadFailed: monthly.loadFailed,
-        monthlyParcelTrendLoadFailureMessage: monthly.loadFailureMessage,
-        weekdaySalesTrend: weekday.points,
-        weekdaySalesTrendLoadFailed: weekday.loadFailed,
-        weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
-        dailySalesTrend: daily.points,
-        dailySalesTrendLoadFailed: daily.loadFailed,
-        dailySalesTrendLoadFailureMessage: daily.loadFailureMessage,
-        weekdayUserSalesTrend: weekdayUser.points,
-        weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
-        weekdayUserSalesTrendLoadFailureMessage: weekdayUser.loadFailureMessage,
-        lucratividadeMensalTrend: lucratividadeMensal.points,
-        lucratividadeMensalTrendLoadFailed: lucratividadeMensal.loadFailed,
-        lucratividadeMensalTrendLoadFailureMessage:
-            lucratividadeMensal.loadFailureMessage,
-        lucratividadeTrend: lvc.points,
-        lucratividadeTrendLoadFailed: lvc.loadFailed,
-        lucratividadeTrendLoadFailureMessage: lvc.loadFailureMessage,
-        lucratividadePartialFailureAgentNames:
-            lvc.lucratividadePartialFailureAgentNames,
-        mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
+      yield Success<OverviewProgressiveSnapshot, AppFailure>(
+        _snapshotFor(
+          overview: overview,
+          completedSections: completedSections,
+          isFinal: completedSections.length == _allProgressiveSections.length,
+        ),
       );
 
-      final stamp = _now();
-      final model = OverviewModel.fromEntity(
-        overview,
-        cachedAt: stamp,
-        sourceAgentIds: sourceAgentIds,
-      );
+      final pendingPatches = <Future<_OverviewProgressivePatch>>[
+        _resolveDailySalesTrend(dailySalesFuture, dailyTotalFilter).then(
+          (daily) => _OverviewProgressivePatch(
+            section: OverviewProgressiveSection.dailySales,
+            apply: (overview) => overview.copyWith(
+              dailySalesTrend: daily.points,
+              dailySalesTrendLoadFailed: daily.loadFailed,
+              dailySalesTrendLoadFailureMessage: daily.loadFailureMessage,
+            ),
+          ),
+        ),
+        _resolveMonthlyParcelTrend(monthlyParcelFuture, mensalFilter).then(
+          (monthly) => _OverviewProgressivePatch(
+            section: OverviewProgressiveSection.monthlyParcels,
+            apply: (overview) => overview.copyWith(
+              monthlyParcelTrend: monthly.points,
+              monthlyParcelTrendLoadFailed: monthly.loadFailed,
+              monthlyParcelTrendLoadFailureMessage: monthly.loadFailureMessage,
+            ),
+          ),
+        ),
+        _resolveWeekdaySalesTrend(weekdaySalesFuture).then(
+          (weekday) => _OverviewProgressivePatch(
+            section: OverviewProgressiveSection.weekdaySales,
+            apply: (overview) => overview.copyWith(
+              weekdaySalesTrend: weekday.points,
+              weekdaySalesTrendLoadFailed: weekday.loadFailed,
+              weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
+            ),
+          ),
+        ),
+        _resolveWeekdayUserSalesTrendOptional(weekdayUserBridgeFuture).then(
+          (weekdayUser) => _OverviewProgressivePatch(
+            section: OverviewProgressiveSection.weekdayUserSales,
+            apply: (overview) => overview.copyWith(
+              weekdayUserSalesTrend: weekdayUser.points,
+              weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
+              weekdayUserSalesTrendLoadFailureMessage:
+                  weekdayUser.loadFailureMessage,
+            ),
+          ),
+        ),
+        _resolveLucratividadeMensalTrend(lucratividadeMensalFuture).then(
+          (lucratividadeMensal) => _OverviewProgressivePatch(
+            section: OverviewProgressiveSection.lucratividadeMensal,
+            apply: (overview) => overview.copyWith(
+              lucratividadeMensalTrend: lucratividadeMensal.points,
+              lucratividadeMensalTrendLoadFailed:
+                  lucratividadeMensal.loadFailed,
+              lucratividadeMensalTrendLoadFailureMessage:
+                  lucratividadeMensal.loadFailureMessage,
+            ),
+          ),
+        ),
+        _resolveLucratividadeTrend(lucratividadeFuture).then(
+          (lvc) => _OverviewProgressivePatch(
+            section: OverviewProgressiveSection.lucratividadePeriod,
+            apply: (overview) => overview.copyWith(
+              lucratividadeTrend: lvc.points,
+              lucratividadeTrendLoadFailed: lvc.loadFailed,
+              lucratividadeTrendLoadFailureMessage: lvc.loadFailureMessage,
+              lucratividadePartialFailureAgentNames:
+                  lvc.lucratividadePartialFailureAgentNames,
+            ),
+          ),
+        ),
+      ];
 
-      try {
-        await _localDataSource.saveOverview(userId: userId, overview: model);
-      } on Object catch (error, stackTrace) {
-        AppLogger.warning(
-          'Overview cache save failed; returning computed overview',
-          context: <String, Object?>{
-            'operation': 'loadOverview',
-            'userId': userId,
-          },
-          error: error,
-          stackTrace: stackTrace,
+      while (pendingPatches.isNotEmpty) {
+        final next = await Future.any(
+          <
+            Future<
+              ({
+                Future<_OverviewProgressivePatch> future,
+                _OverviewProgressivePatch patch,
+              })
+            >
+          >[
+            for (final future in pendingPatches)
+              future.then((patch) => (future: future, patch: patch)),
+          ],
+        );
+        pendingPatches.remove(next.future);
+        overview = next.patch.apply(overview);
+        completedSections.add(next.patch.section);
+        final isFinal = pendingPatches.isEmpty;
+
+        if (isFinal && shouldSaveFinalOverview && sourceAgentIds != null) {
+          await _saveOverviewCache(
+            userId: userId,
+            overview: overview,
+            sourceAgentIds: sourceAgentIds,
+          );
+        }
+
+        if (isFinal) {
+          AppLogger.info(
+            'Overview loaded from agent query',
+            context: <String, Object?>{
+              'operation': 'loadOverview',
+              'userId': userId,
+              'agentCount': report.consideredApprovedAgentCount,
+              'periodStart': period.start.toIso8601String(),
+              'periodEnd': period.end.toIso8601String(),
+              'paymentMethods': overview.paymentMethods.length,
+              'partialQueryFailures':
+                  overview.agentIdsExcludedFromQueryFailure.length,
+              'agentsMissingClientToken':
+                  overview.agentIdsMissingClientToken.length,
+            },
+          );
+        }
+
+        yield Success<OverviewProgressiveSnapshot, AppFailure>(
+          _snapshotFor(
+            overview: overview,
+            completedSections: completedSections,
+            isFinal: isFinal,
+          ),
         );
       }
-
-      AppLogger.info(
-        'Overview loaded from agent query',
-        context: <String, Object?>{
-          'operation': 'loadOverview',
-          'userId': userId,
-          'agentCount': report.consideredApprovedAgentCount,
-          'periodStart': period.start.toIso8601String(),
-          'periodEnd': period.end.toIso8601String(),
-          'paymentMethods': overview.paymentMethods.length,
-          'partialQueryFailures':
-              overview.agentIdsExcludedFromQueryFailure.length,
-          'agentsMissingClientToken':
-              overview.agentIdsMissingClientToken.length,
-        },
-      );
-
-      return Success<Overview, AppFailure>(overview);
     } on Object catch (error, stackTrace) {
-      await monthlyParcelFuture;
-      await weekdaySalesFuture;
-      await dailySalesFuture;
-      await lucratividadeMensalFuture;
-      await lucratividadeFuture;
-      if (weekdayUserBridgeFuture != null) {
-        await weekdayUserBridgeFuture;
-      }
+      await _drainOverviewFutures(
+        monthlyParcelFuture: monthlyParcelFuture,
+        weekdaySalesFuture: weekdaySalesFuture,
+        dailySalesFuture: dailySalesFuture,
+        lucratividadeMensalFuture: lucratividadeMensalFuture,
+        lucratividadeFuture: lucratividadeFuture,
+        weekdayUserBridgeFuture: weekdayUserBridgeFuture,
+      );
       final failure = mapToAppFailure(
         error,
         stackTrace: stackTrace,
@@ -524,7 +542,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           OverviewFailureUiKey.field: OverviewFailureUiKey.loadFailed,
         },
       );
-      return _recoverOrFail(
+      final recovered = await _recoverOrFail(
         failure: failure,
         userId: userId,
         policy: policy,
@@ -533,6 +551,107 @@ class OverviewRepositoryImpl implements OverviewRepository {
           failure,
           fallbackSelectedAgentIds: filter.selectedAgentIds,
         ),
+        error: error,
+        stackTrace: stackTrace,
+      );
+      yield _asProgressiveResult(recovered);
+    }
+  }
+
+  Future<void> _drainOverviewFutures({
+    required Future<
+      AppResult<AgentQueryExecutionReport<ResumoParcelasMensalRow>>
+    >
+    monthlyParcelFuture,
+    required Future<
+      AppResult<AgentQueryExecutionReport<ResumoParcelasDiaSemanaRow>>
+    >
+    weekdaySalesFuture,
+    required Future<
+      AppResult<AgentQueryExecutionReport<ResumoTotalDiarioVendasRow>>
+    >
+    dailySalesFuture,
+    required Future<AppResult<List<ResumoProdutoVendaLucratividadeMensalRow>>>
+    lucratividadeMensalFuture,
+    required Future<AppResult<_LucratividadeLoadBundle>> lucratividadeFuture,
+    required Future<
+      AppResult<AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>>
+    >?
+    weekdayUserBridgeFuture,
+  }) async {
+    await Future.wait(<Future<void>>[
+      _ignoreFutureFailure(monthlyParcelFuture),
+      _ignoreFutureFailure(weekdaySalesFuture),
+      _ignoreFutureFailure(dailySalesFuture),
+      _ignoreFutureFailure(lucratividadeMensalFuture),
+      _ignoreFutureFailure(lucratividadeFuture),
+      if (weekdayUserBridgeFuture != null)
+        _ignoreFutureFailure(weekdayUserBridgeFuture),
+    ]);
+  }
+
+  Future<void> _ignoreFutureFailure<T>(Future<T> future) async {
+    try {
+      await future;
+    } on Object {
+      // Cleanup path only: keep the original overview failure as the one
+      // surfaced to callers.
+    }
+  }
+
+  AppResult<OverviewProgressiveSnapshot> _asProgressiveResult(
+    AppResult<Overview> result,
+  ) {
+    return result.fold(
+      (overview) => Success<OverviewProgressiveSnapshot, AppFailure>(
+        _snapshotFor(
+          overview: overview,
+          completedSections: _allProgressiveSections,
+          isFinal: true,
+        ),
+      ),
+      Failure<OverviewProgressiveSnapshot, AppFailure>.new,
+    );
+  }
+
+  OverviewProgressiveSnapshot _snapshotFor({
+    required Overview overview,
+    required Set<OverviewProgressiveSection> completedSections,
+    required bool isFinal,
+  }) {
+    final completed = isFinal
+        ? _allProgressiveSections
+        : Set<OverviewProgressiveSection>.unmodifiable(completedSections);
+    return OverviewProgressiveSnapshot(
+      overview: overview,
+      completedSections: completed,
+      pendingSections: Set<OverviewProgressiveSection>.unmodifiable(
+        _allProgressiveSections.difference(completed),
+      ),
+      isFinal: isFinal,
+    );
+  }
+
+  Future<void> _saveOverviewCache({
+    required String userId,
+    required Overview overview,
+    required List<String> sourceAgentIds,
+  }) async {
+    final model = OverviewModel.fromEntity(
+      overview,
+      cachedAt: _now(),
+      sourceAgentIds: sourceAgentIds,
+    );
+
+    try {
+      await _localDataSource.saveOverview(userId: userId, overview: model);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Overview cache save failed; returning computed overview',
+        context: <String, Object?>{
+          'operation': 'loadOverview',
+          'userId': userId,
+        },
         error: error,
         stackTrace: stackTrace,
       );

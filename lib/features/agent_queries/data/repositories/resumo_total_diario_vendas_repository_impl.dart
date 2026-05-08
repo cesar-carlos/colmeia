@@ -12,6 +12,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_diario_vendas_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart';
 
 class ResumoTotalDiarioVendasRepositoryImpl
@@ -76,6 +77,7 @@ class ResumoTotalDiarioVendasRepositoryImpl
       (executionResult) => _mapExecutionToRows(
         executionResult,
         agentId: agentId.trim(),
+        filter: filter,
       ),
       Failure<List<ResumoTotalDiarioVendasRow>, AppFailure>.new,
     );
@@ -84,6 +86,7 @@ class ResumoTotalDiarioVendasRepositoryImpl
   AppResult<List<ResumoTotalDiarioVendasRow>> _mapExecutionToRows(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
+    required ResumoTotalDiarioVendasFilter filter,
   }) {
     try {
       final rows = executionResult.rows
@@ -91,6 +94,13 @@ class ResumoTotalDiarioVendasRepositoryImpl
             (row) => ResumoTotalDiarioVendasRowModel.fromMap(row).toEntity(),
           )
           .toList(growable: false);
+      if (kDebugMode) {
+        _logLoadSummary(
+          rows,
+          agentId: agentId,
+          filter: filter,
+        );
+      }
       return Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(rows);
     } catch (error, stackTrace) {
       if (error is! FormatException && error is! ArgumentError) {
@@ -123,5 +133,60 @@ class ResumoTotalDiarioVendasRepositoryImpl
         ),
       );
     }
+  }
+
+  void _logLoadSummary(
+    List<ResumoTotalDiarioVendasRow> rows, {
+    required String agentId,
+    required ResumoTotalDiarioVendasFilter filter,
+  }) {
+    DateTime? firstDay;
+    DateTime? lastDay;
+    var daysWithSales = 0;
+    var totalSalesCount = 0;
+    var totalSalesAmount = 0.0;
+    final saleDays = <DateTime>{};
+
+    for (final row in rows) {
+      final day = DateTime(
+        row.dataVenda.year,
+        row.dataVenda.month,
+        row.dataVenda.day,
+      );
+      if (firstDay == null || day.isBefore(firstDay)) {
+        firstDay = day;
+      }
+      if (lastDay == null || day.isAfter(lastDay)) {
+        lastDay = day;
+      }
+      if (row.qtdVendas > 0 || row.valorTotalDiarioVenda > 0) {
+        saleDays.add(day);
+      }
+      totalSalesCount += row.qtdVendas;
+      totalSalesAmount += row.valorTotalDiarioVenda;
+    }
+    daysWithSales = saleDays.length;
+
+    AppLogger.debug(
+      'ResumoTotalDiarioVendas load summary',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': agentId,
+        'rowCount': rows.length,
+        'filterStart': AgentQueriesSqlLocalDate.format(
+          filter.dataVendaInicio,
+        ),
+        'filterEnd': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
+        'firstReturnedDay': firstDay == null
+            ? null
+            : AgentQueriesSqlLocalDate.format(firstDay),
+        'lastReturnedDay': lastDay == null
+            ? null
+            : AgentQueriesSqlLocalDate.format(lastDay),
+        'daysWithSales': daysWithSales,
+        'totalSalesCount': totalSalesCount,
+        'totalSalesAmount': totalSalesAmount,
+      },
+    );
   }
 }

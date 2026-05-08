@@ -204,6 +204,20 @@ class CurrentUserContextController extends ChangeNotifier {
     );
   }
 
+  /// Applies profile fields from an API response without a follow-up GET.
+  ///
+  /// Keeps current access grants and active store selection. Call after a
+  /// successful profile PATCH or thumbnail upload when the response already
+  /// contains the authoritative profile snapshot.
+  void applyUpdatedProfile(UserProfile profile) {
+    _userScope = CurrentUserScope(
+      profile: profile,
+      access: _userScope.access,
+    );
+    _availableShellRoutes = _computeAvailableShellRoutes();
+    _notifyListenersIfAlive();
+  }
+
   /// Forces a reload from the server (e.g. user tapped retry after an error).
   Future<void> reloadUserContext() async {
     final authController = _authController;

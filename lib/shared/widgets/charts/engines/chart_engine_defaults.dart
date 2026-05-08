@@ -78,6 +78,7 @@ TooltipBehavior buildChartTooltipBehavior(
   int durationMs = 2400,
   bool canShowMarker = true,
   ChartWidgetBuilder<dynamic, dynamic>? builder,
+  TooltipPosition tooltipPosition = TooltipPosition.auto,
 }) {
   final colorScheme = Theme.of(context).colorScheme;
   return TooltipBehavior(
@@ -85,6 +86,7 @@ TooltipBehavior buildChartTooltipBehavior(
     shared: shared,
     activationMode: activationMode,
     duration: durationMs.toDouble(),
+    tooltipPosition: tooltipPosition,
     color: colorScheme.inverseSurface,
     textStyle: TextStyle(
       color: colorScheme.onInverseSurface,

@@ -7,8 +7,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 /// Loads dotenv from bundled assets before `AppEnvironment` is read.
 ///
 /// `EnvAssetPaths.bundledDefault` is required. Optional
-/// `EnvAssetPaths.bundledLocal` is merged when present in the asset bundle
-/// (add the file and list it under `flutter: assets:` in `pubspec.yaml`).
+/// `EnvAssetPaths.bundledLocal` is merged only when a local development build
+/// explicitly adds it to the asset bundle.
 ///
 /// The merge step uses a small line parser (see `assets/env/.env.example`); for
 /// `bundledDefault`, the full `flutter_dotenv` parser applies.
@@ -41,8 +41,8 @@ Future<void> _mergeOptionalLocalEnv() async {
       if (kDebugMode) {
         AppLogger.debug(
           'Optional ${EnvAssetPaths.bundledLocal} not in asset bundle; '
-          'merge skipped. Add the file and list it under flutter: assets: '
-          'when using local overrides.',
+          'merge skipped. Prefer --dart-define for local overrides, or '
+          'explicitly add the file to flutter assets in a local-only change.',
           context: const <String, Object?>{
             'component': 'loadAppDotenv',
           },
