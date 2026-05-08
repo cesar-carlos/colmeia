@@ -45,7 +45,8 @@ enum RelayPayloadFrameCompression {
 
   /// `always` — gzip every elegible frame, mirroring agents that prefer
   /// "always GZIP" mode.
-  always;
+  always
+  ;
 
   /// Wire string sent in the envelope.
   String get wireValue => switch (this) {

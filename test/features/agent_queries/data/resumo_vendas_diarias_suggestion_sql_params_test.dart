@@ -61,10 +61,12 @@ void main() {
 
   group('buildSearchPattern', () {
     test('returns null for null or blank', () {
-      check(ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(null))
-          .isNull();
-      check(ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern('  '))
-          .isNull();
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(null),
+      ).isNull();
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern('  '),
+      ).isNull();
     });
 
     test('wraps trimmed term with percent wildcards', () {

@@ -891,6 +891,48 @@ abstract class AppLocalizations {
   /// **'Last twelve months parcel amounts and sales counts chart'**
   String get overviewMonthlyParcelsChartSemanticsValueView;
 
+  /// Overview home chart title for daily sales totals.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily sales'**
+  String get overviewDailySalesTitle;
+
+  /// Subtitle clarifying scope for the daily sales chart.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals per calendar day in the selected period (aggregated across branches in scope).'**
+  String get overviewDailySalesSubtitle;
+
+  /// No description provided for @overviewDailySalesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No daily sales data for this period.'**
+  String get overviewDailySalesEmpty;
+
+  /// No description provided for @overviewDailySalesLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the daily sales chart. Try again later.'**
+  String get overviewDailySalesLoadFailed;
+
+  /// No description provided for @overviewDailySalesChartSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily sales count and revenue trend chart'**
+  String get overviewDailySalesChartSemantics;
+
+  /// No description provided for @overviewDailySalesRevenueChartSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily revenue and sales count trend chart'**
+  String get overviewDailySalesRevenueChartSemantics;
+
+  /// No description provided for @overviewLoadingDailySalesSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading daily sales chart'**
+  String get overviewLoadingDailySalesSemantics;
+
   /// Card title when the weekday overview chart is plotting sales count.
   ///
   /// In en, this message translates to:

@@ -753,8 +753,9 @@ String formatComparisonBarXAxisLabelWrapped(
 
     if (line.isEmpty) {
       lines.add(remainder.substring(0, limit));
-      remainder =
-          remainder.length > limit ? remainder.substring(limit).trimLeft() : '';
+      remainder = remainder.length > limit
+          ? remainder.substring(limit).trimLeft()
+          : '';
       continue;
     }
     lines.add(line);

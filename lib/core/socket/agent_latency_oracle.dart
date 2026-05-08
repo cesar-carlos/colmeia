@@ -56,9 +56,7 @@ class AgentLatencyOracle {
       return;
     }
     final key = _key(agentId: agentId, method: method);
-    _stats
-        .putIfAbsent(key, _EwmaStats.new)
-        .observe(value: ms, alpha: alpha);
+    _stats.putIfAbsent(key, _EwmaStats.new).observe(value: ms, alpha: alpha);
   }
 
   /// Returns a recommended dispatch timeout for the given pivot. Falls

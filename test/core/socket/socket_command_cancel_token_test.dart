@@ -17,8 +17,9 @@ void main() {
 
   setUp(() {
     dispatcher = _MockDispatcher();
-    when(() => dispatcher.cancel(any(), reason: any(named: 'reason')))
-        .thenReturn(null);
+    when(
+      () => dispatcher.cancel(any(), reason: any(named: 'reason')),
+    ).thenReturn(null);
     token = SocketCommandCancelToken(dispatcher: dispatcher);
   });
 
@@ -48,18 +49,17 @@ void main() {
       token.register('rpc-1');
       token.register('rpc-2');
       token.cancelAll(reason: 'route_left');
-      verify(() => dispatcher.cancel('rpc-1', reason: 'route_left'))
-          .called(1);
-      verify(() => dispatcher.cancel('rpc-2', reason: 'route_left'))
-          .called(1);
+      verify(() => dispatcher.cancel('rpc-1', reason: 'route_left')).called(1);
+      verify(() => dispatcher.cancel('rpc-2', reason: 'route_left')).called(1);
       check(token.pendingCount).equals(0);
     });
 
     test('cancelAll uses the default reason when none is supplied', () {
       token.register('rpc-x');
       token.cancelAll();
-      verify(() => dispatcher.cancel('rpc-x', reason: 'caller_cancelled'))
-          .called(1);
+      verify(
+        () => dispatcher.cancel('rpc-x', reason: 'caller_cancelled'),
+      ).called(1);
     });
 
     test('cancelAll on empty bag is a silent no-op', () {
@@ -74,8 +74,9 @@ void main() {
       () {
         token.register('rpc-1');
         token.dispose();
-        verify(() => dispatcher.cancel('rpc-1', reason: 'token_disposed'))
-            .called(1);
+        verify(
+          () => dispatcher.cancel('rpc-1', reason: 'token_disposed'),
+        ).called(1);
         check(token.isDisposed).isTrue();
 
         // After dispose, register is a no-op.

@@ -319,8 +319,7 @@ void main() {
         check((merged as NetworkFailure).retryAfter).equals(
           const Duration(seconds: 7),
         );
-        check(appFailureRetryAfter(merged))
-            .equals(const Duration(seconds: 7));
+        check(appFailureRetryAfter(merged)).equals(const Duration(seconds: 7));
         // And the context is properly merged.
         check(merged.context['origin']).equals('remote');
         check(merged.context['operation']).equals('loadOverview');
@@ -344,14 +343,16 @@ void main() {
           <String, Object?>{'operation': 'loadOverview'},
         );
         check(merged).isA<RpcFailure>();
-        check((merged as RpcFailure).retryAfter)
-            .equals(const Duration(milliseconds: 1500));
+        check(
+          (merged as RpcFailure).retryAfter,
+        ).equals(const Duration(milliseconds: 1500));
         check(merged.retryable).isTrue();
         check(merged.isTransient).isTrue();
         check(merged.rpcCode).equals(-32013);
         check(merged.reason).equals('client_token_get_policy_rate_limited');
-        check(appFailureRetryAfter(merged))
-            .equals(const Duration(milliseconds: 1500));
+        check(
+          appFailureRetryAfter(merged),
+        ).equals(const Duration(milliseconds: 1500));
       },
     );
 

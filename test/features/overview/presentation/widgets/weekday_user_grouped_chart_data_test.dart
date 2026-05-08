@@ -79,10 +79,14 @@ void main() {
 
       check(model.combinedRemainingUsers).isTrue();
       check(model.userNames.length).equals(kWeekdayUserGroupedMaxSeries);
-      check(model.userNames.last).equals(l10n.overviewWeekdayUserGroupedOthersLabel);
+      check(
+        model.userNames.last,
+      ).equals(l10n.overviewWeekdayUserGroupedOthersLabel);
 
       check(model.weekdayCategoryLabels).length.equals(1);
-      check(model.weekdayCategoryLabels.single).equals(l10n.overviewWeekdayMonday);
+      check(
+        model.weekdayCategoryLabels.single,
+      ).equals(l10n.overviewWeekdayMonday);
       const mondayIdx = 0;
       final others = model.seriesData.last;
       check(others[mondayIdx].salesCount).equals(3);

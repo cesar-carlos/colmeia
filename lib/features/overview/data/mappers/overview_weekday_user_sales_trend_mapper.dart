@@ -5,7 +5,8 @@ import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_
 ///
 /// Sorted by [OverviewWeekdayUserSalesTrendPoint.weekdayNumber], then by user
 /// name (case-insensitive). Lowercase names are computed once per row for sort.
-List<OverviewWeekdayUserSalesTrendPoint> overviewWeekdayUserSalesTrendPointsFromRows(
+List<OverviewWeekdayUserSalesTrendPoint>
+overviewWeekdayUserSalesTrendPointsFromRows(
   List<ResumoParcelasDiaSemanaUsuarioRow> rows,
 ) {
   if (rows.isEmpty) {

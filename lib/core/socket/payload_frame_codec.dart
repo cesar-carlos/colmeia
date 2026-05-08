@@ -139,7 +139,8 @@ class PayloadFrameCodec {
     // hashes the wire payload, not the JSON. Caller-provided signature
     // (e.g. tests with a deterministic value) always wins over the
     // codec-level signer.
-    final resolvedSignature = signature ??
+    final resolvedSignature =
+        signature ??
         signer?.sign(
           metadata: PayloadFrameSignatureMetadata(
             schemaVersion: PayloadFrame.supportedSchemaVersion,
@@ -322,7 +323,7 @@ class PayloadFrameCodec {
         throw PayloadFrameDecodeException(
           outcome.code,
           'expected ${PayloadFrameSignature.algorithmHmacSha256}, '
-              'got ${frame.signature?.algorithm}',
+          'got ${frame.signature?.algorithm}',
         );
       case PayloadFrameSignatureVerification.malformed:
         throw PayloadFrameDecodeException(

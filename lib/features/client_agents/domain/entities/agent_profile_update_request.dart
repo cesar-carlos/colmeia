@@ -55,7 +55,7 @@ class AgentProfileUpdateRequest {
       if (phone != null) 'phone': phone,
       if (mobile != null) 'mobile': mobile,
       if (email != null) 'email': email,
-      'address':? addressWire,
+      'address': ?addressWire,
       if (notes != null) 'notes': notes,
       if (observation != null) 'observation': observation,
       if (expectedProfileVersion != null)
@@ -79,7 +79,7 @@ Map<String, Object?>? _compactAddressWire(AgentProfileAddress? address) {
     return t.isEmpty ? null : t;
   }
 
-    final out = <String, Object?>{
+  final out = <String, Object?>{
     if (nz(address.street) != null) 'street': nz(address.street),
     if (nz(address.number) != null) 'number': nz(address.number),
     if (nz(address.district) != null) 'district': nz(address.district),

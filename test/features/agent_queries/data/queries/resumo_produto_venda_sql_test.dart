@@ -5,19 +5,22 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('default (codProduto ASC) leads with empresa, filial, produto then qtdVendas DESC', () {
-    final sql = ResumoProdutoVendaSql.pagedQuery(
-      sortBy: ResumoProdutoVendaSortBy.codProduto,
-    );
-    final numbered = sql.split('Numbered AS (').last;
-    final empresa = numbered.indexOf('a.CodEmpresa ASC');
-    final filial = numbered.indexOf('a.CodFilial ASC');
-    final produto = numbered.indexOf('a.CodProduto ASC');
-    final qtd = numbered.indexOf('a.QtdVendas DESC');
-    check(empresa).isLessThan(filial);
-    check(filial).isLessThan(produto);
-    check(produto).isLessThan(qtd);
-  });
+  test(
+    'default (codProduto ASC) leads with empresa, filial, produto then qtdVendas DESC',
+    () {
+      final sql = ResumoProdutoVendaSql.pagedQuery(
+        sortBy: ResumoProdutoVendaSortBy.codProduto,
+      );
+      final numbered = sql.split('Numbered AS (').last;
+      final empresa = numbered.indexOf('a.CodEmpresa ASC');
+      final filial = numbered.indexOf('a.CodFilial ASC');
+      final produto = numbered.indexOf('a.CodProduto ASC');
+      final qtd = numbered.indexOf('a.QtdVendas DESC');
+      check(empresa).isLessThan(filial);
+      check(filial).isLessThan(produto);
+      check(produto).isLessThan(qtd);
+    },
+  );
 
   test('qtdVendas sortBy places QtdVendas after empresa/filial', () {
     final sql = ResumoProdutoVendaSql.pagedQuery(

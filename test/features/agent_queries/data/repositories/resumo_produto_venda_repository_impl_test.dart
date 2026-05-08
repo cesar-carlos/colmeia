@@ -163,35 +163,38 @@ void main() {
     check(filial).isLessThan(qtd);
   });
 
-  test('execute uses ROW_NUMBER order from filter.sortBy nomeProduto', () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
+  test(
+    'execute uses ROW_NUMBER order from filter.sortBy nomeProduto',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
 
-    await repository.loadPage(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      filter: ResumoProdutoVendaFilter(
-        dataVendaInicio: periodStart,
-        dataVendaFim: periodEnd,
-      ),
-    );
+      await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: ResumoProdutoVendaFilter(
+          dataVendaInicio: periodStart,
+          dataVendaFim: periodEnd,
+        ),
+      );
 
-    final captured =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
 
-    final numbered = captured.sql.split('Numbered AS (').last;
-    final filial = numbered.indexOf('a.CodFilial ASC');
-    final nome = numbered.indexOf('a.NomeProduto ASC');
-    check(filial).isLessThan(nome);
-  });
+      final numbered = captured.sql.split('Numbered AS (').last;
+      final filial = numbered.indexOf('a.CodFilial ASC');
+      final nome = numbered.indexOf('a.NomeProduto ASC');
+      check(filial).isLessThan(nome);
+    },
+  );
 
   test('execute passes sortDirection to pagedQuery', () async {
     when(

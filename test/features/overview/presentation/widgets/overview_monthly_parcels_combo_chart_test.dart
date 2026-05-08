@@ -58,7 +58,10 @@ void main() {
     await tester.tap(find.text(l10n.overviewMonthlyParcelsSwitchValueLabel));
     await tester.pump();
 
-    expect(find.text(l10n.overviewMonthlyParcelsSubtitleValueView), findsOneWidget);
+    expect(
+      find.text(l10n.overviewMonthlyParcelsSubtitleValueView),
+      findsOneWidget,
+    );
     expect(
       find.bySemanticsLabel(l10n.overviewMonthlyParcelsChartSemanticsValueView),
       findsOneWidget,

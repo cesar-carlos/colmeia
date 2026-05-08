@@ -15,7 +15,9 @@ void main() {
     );
     check(filter.trimmedOrigem).equals('FrenteLoja');
     check(filter.sortBy).equals(ResumoProdutoVendaSortBy.nomeProduto);
-    check(filter.sortDirection).equals(ResumoProdutoVendaSortDirection.ascending);
+    check(
+      filter.sortDirection,
+    ).equals(ResumoProdutoVendaSortDirection.ascending);
     check(filter.pageSize).equals(20);
     check(filter.startRow).equals(1);
     check(filter.endRow).equals(20);

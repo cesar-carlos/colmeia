@@ -84,7 +84,8 @@ void main() {
     connection = _MockConnection();
     socket = _MockSocket();
     wiring = _SocketWiring()..register(socket);
-    stateController = StreamController<ConsumerSocketConnectionState>.broadcast();
+    stateController =
+        StreamController<ConsumerSocketConnectionState>.broadcast();
 
     when(() => connection.raw).thenReturn(socket);
     when(() => connection.states()).thenAnswer((_) => stateController.stream);
@@ -303,8 +304,9 @@ void main() {
 
         check(errors.length).equals(1);
         check(errors.single).isA<RelayStreamTerminated>();
-        check((errors.single as RelayStreamTerminated).code)
-            .equals('stream_aborted');
+        check(
+          (errors.single as RelayStreamTerminated).code,
+        ).equals('stream_aborted');
       },
     );
 
@@ -399,8 +401,9 @@ void main() {
 
         check(errors.length).equals(1);
         check(errors.single).isA<RelayRequestRejected>();
-        check((errors.single as RelayRequestRejected).code)
-            .equals('RATE_LIMITED');
+        check(
+          (errors.single as RelayRequestRejected).code,
+        ).equals('RATE_LIMITED');
       },
     );
 
@@ -432,34 +435,36 @@ void main() {
       check(errors.single).isA<RelayRequestTimeout>();
     });
 
-    test('dispose closes pending streaming requests with RelayDispatcherDisposed',
-        () async {
-      final dispatcher = buildDispatcher();
-      await openConversation();
+    test(
+      'dispose closes pending streaming requests with RelayDispatcherDisposed',
+      () async {
+        final dispatcher = buildDispatcher();
+        await openConversation();
 
-      final stream = dispatcher.sendStreaming(
-        agentId: 'agent-1',
-        body: <String, Object?>{
-          'command': <String, Object?>{
-            'jsonrpc': '2.0',
-            'method': 'sql.execute',
-            'id': 'rpc-dispose',
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-dispose',
+            },
           },
-        },
-        clientRequestId: 'rpc-dispose',
-      );
-      final errors = <Object>[];
-      final sub = stream.listen((_) {}, onError: errors.add);
-      addTearDown(sub.cancel);
+          clientRequestId: 'rpc-dispose',
+        );
+        final errors = <Object>[];
+        final sub = stream.listen((_) {}, onError: errors.add);
+        addTearDown(sub.cancel);
 
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
-      await dispatcher.dispose();
-      await Future<void>.delayed(Duration.zero);
+        await dispatcher.dispose();
+        await Future<void>.delayed(Duration.zero);
 
-      check(errors.length).equals(1);
-      check(errors.single).isA<RelayDispatcherDisposed>();
-    });
+        check(errors.length).equals(1);
+        check(errors.single).isA<RelayDispatcherDisposed>();
+      },
+    );
   });
 }

@@ -471,6 +471,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'Last twelve months parcel amounts and sales counts chart';
 
   @override
+  String get overviewDailySalesTitle => 'Daily sales';
+
+  @override
+  String get overviewDailySalesSubtitle =>
+      'Totals per calendar day in the selected period (aggregated across branches in scope).';
+
+  @override
+  String get overviewDailySalesEmpty => 'No daily sales data for this period.';
+
+  @override
+  String get overviewDailySalesLoadFailed =>
+      'Could not load the daily sales chart. Try again later.';
+
+  @override
+  String get overviewDailySalesChartSemantics =>
+      'Daily sales count and revenue trend chart';
+
+  @override
+  String get overviewDailySalesRevenueChartSemantics =>
+      'Daily revenue and sales count trend chart';
+
+  @override
+  String get overviewLoadingDailySalesSemantics => 'Loading daily sales chart';
+
+  @override
   String get overviewWeekdaySalesTitle => 'Sales by weekday';
 
   @override

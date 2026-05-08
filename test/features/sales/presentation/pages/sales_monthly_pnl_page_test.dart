@@ -188,8 +188,7 @@ void main() {
         clientToken: any(named: 'clientToken'),
       ),
     ).thenAnswer((invocation) {
-      final anchor =
-          invocation.namedArguments[#anchor] as OverviewYearMonth;
+      final anchor = invocation.namedArguments[#anchor] as OverviewYearMonth;
       if (anchor == currentAnchor) {
         return Future<SalesMonthlyPnlLinesLoadResult>.value(
           _bundleWithBaseValue(100),
@@ -212,7 +211,8 @@ void main() {
 
     final dynamic sheet = tester.widget(
       find.byWidgetPredicate(
-        (widget) => widget.runtimeType.toString() == '_SalesMonthlyPnlFiltersSheet',
+        (widget) =>
+            widget.runtimeType.toString() == '_SalesMonthlyPnlFiltersSheet',
       ),
     );
     // The filter sheet widget is private, so the test reads its public callback

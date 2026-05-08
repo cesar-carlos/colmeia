@@ -46,30 +46,32 @@ void main() {
       check(hinter.isAttached).isTrue();
     });
 
-    test('Success outcome emits an online hint with the right source',
-        () async {
-      hinter.attach();
-      final emitted = sink.stream.toList();
+    test(
+      'Success outcome emits an online hint with the right source',
+      () async {
+        hinter.attach();
+        final emitted = sink.stream.toList();
 
-      outcomes.add(
-        AgentCommandSuccess(
-          agentId: 'agent-1',
-          rpcId: 'r1',
-          observedAt: DateTime.utc(2026, 4, 17),
-          elapsed: Duration.zero,
-          method: 'sql.execute',
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
-      await sink.close();
+        outcomes.add(
+          AgentCommandSuccess(
+            agentId: 'agent-1',
+            rpcId: 'r1',
+            observedAt: DateTime.utc(2026, 4, 17),
+            elapsed: Duration.zero,
+            method: 'sql.execute',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await sink.close();
 
-      final list = await emitted;
-      check(list.length).equals(1);
-      final hint = list.single as AgentPresenceHint;
-      check(hint.agentId).equals('agent-1');
-      check(hint.online).isTrue();
-      check(hint.source).equals('agents:command_success');
-    });
+        final list = await emitted;
+        check(list.length).equals(1);
+        final hint = list.single as AgentPresenceHint;
+        check(hint.agentId).equals('agent-1');
+        check(hint.online).isTrue();
+        check(hint.source).equals('agents:command_success');
+      },
+    );
 
     test('FailedOffline outcome emits an offline hint', () async {
       hinter.attach();

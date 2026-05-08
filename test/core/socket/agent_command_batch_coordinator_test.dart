@@ -117,7 +117,9 @@ void main() {
       windowDuration: const Duration(milliseconds: 5),
       maxBatchSize: 4,
       onBatchEmission: ({required size, required partialFailure}) {
-        emissions.add(_BatchEmission(size: size, partialFailure: partialFailure));
+        emissions.add(
+          _BatchEmission(size: size, partialFailure: partialFailure),
+        );
       },
       onBypass: ({required reason}) => bypassReasons.add(reason),
     );
@@ -169,9 +171,12 @@ void main() {
       );
       final f2 = coordinator.send(
         agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-B', params: const <String, Object?>{
-          'sql': 'SELECT 2',
-        }),
+        body: _body(
+          rpcId: 'rpc-B',
+          params: const <String, Object?>{
+            'sql': 'SELECT 2',
+          },
+        ),
         rpcId: 'rpc-B',
       );
 
@@ -206,8 +211,9 @@ void main() {
       await Future.wait(<Future<Map<String, dynamic>>>[fa, fb]);
 
       check(direct.calls.length).equals(2);
-      check(direct.calls.map((c) => c.agentId).toSet())
-          .deepEquals(<String>{'agent-A', 'agent-B'});
+      check(
+        direct.calls.map((c) => c.agentId).toSet(),
+      ).deepEquals(<String>{'agent-A', 'agent-B'});
     });
 
     test('hitting maxBatchSize triggers immediate flush', () async {
@@ -218,9 +224,12 @@ void main() {
         futures.add(
           coordinator.send(
             agentId: 'agent-1',
-            body: _body(rpcId: 'rpc-$i', params: <String, Object?>{
-              'sql': 'SELECT $i',
-            }),
+            body: _body(
+              rpcId: 'rpc-$i',
+              params: <String, Object?>{
+                'sql': 'SELECT $i',
+              },
+            ),
             rpcId: 'rpc-$i',
           ),
         );
@@ -305,131 +314,146 @@ void main() {
   });
 
   group('partial failure', () {
-    test('per-item error completes only that pending with the failure',
-        () async {
-      direct.responseBuilder = (call) {
-        // Two items: rpc-A succeeds, rpc-B fails.
-        return <String, dynamic>{
-          'mode': 'bridge',
-          'agentId': call.agentId,
-          'requestId': 'req-1',
-          'response': <String, dynamic>{
-            'type': 'batch',
-            'items': <Map<String, dynamic>>[
-              <String, dynamic>{
-                'id': 'rpc-A',
-                'success': true,
-                'result': <String, dynamic>{'rows': <Map<String, dynamic>>[]},
-              },
-              <String, dynamic>{
-                'id': 'rpc-B',
-                'success': false,
-                'error': <String, dynamic>{
-                  'code': -32001,
-                  'reason': 'authentication_failed',
+    test(
+      'per-item error completes only that pending with the failure',
+      () async {
+        direct.responseBuilder = (call) {
+          // Two items: rpc-A succeeds, rpc-B fails.
+          return <String, dynamic>{
+            'mode': 'bridge',
+            'agentId': call.agentId,
+            'requestId': 'req-1',
+            'response': <String, dynamic>{
+              'type': 'batch',
+              'items': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'rpc-A',
+                  'success': true,
+                  'result': <String, dynamic>{'rows': <Map<String, dynamic>>[]},
                 },
-              },
-            ],
-          },
+                <String, dynamic>{
+                  'id': 'rpc-B',
+                  'success': false,
+                  'error': <String, dynamic>{
+                    'code': -32001,
+                    'reason': 'authentication_failed',
+                  },
+                },
+              ],
+            },
+          };
         };
-      };
 
-      final f1 = coordinator.send(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-A'),
-        rpcId: 'rpc-A',
-      );
-      final f2 = coordinator.send(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-B', params: const <String, Object?>{
-          'sql': 'SELECT 2',
-        }),
-        rpcId: 'rpc-B',
-      );
+        final f1 = coordinator.send(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-A'),
+          rpcId: 'rpc-A',
+        );
+        final f2 = coordinator.send(
+          agentId: 'agent-1',
+          body: _body(
+            rpcId: 'rpc-B',
+            params: const <String, Object?>{
+              'sql': 'SELECT 2',
+            },
+          ),
+          rpcId: 'rpc-B',
+        );
 
-      final r1 = await f1;
-      final r2 = await f2;
-      // Both completed (no exception); the per-item error rides inside
-      // the synthesized envelope so the repository's parser can pick it up.
-      final inner1 =
-          (r1['response']! as Map<String, dynamic>)['item']!
-              as Map<String, dynamic>;
-      final inner2 =
-          (r2['response']! as Map<String, dynamic>)['item']!
-              as Map<String, dynamic>;
-      check(inner1['success']).equals(true);
-      check(inner2['success']).equals(false);
-      check(inner2['error']).isNotNull();
+        final r1 = await f1;
+        final r2 = await f2;
+        // Both completed (no exception); the per-item error rides inside
+        // the synthesized envelope so the repository's parser can pick it up.
+        final inner1 =
+            (r1['response']! as Map<String, dynamic>)['item']!
+                as Map<String, dynamic>;
+        final inner2 =
+            (r2['response']! as Map<String, dynamic>)['item']!
+                as Map<String, dynamic>;
+        check(inner1['success']).equals(true);
+        check(inner2['success']).equals(false);
+        check(inner2['error']).isNotNull();
 
-      check(emissions.single.partialFailure).isTrue();
-    });
+        check(emissions.single.partialFailure).isTrue();
+      },
+    );
 
-    test('missing item id in response fails that pending defensively',
-        () async {
-      direct.responseBuilder = (call) {
-        // Only ACKs rpc-A; rpc-B is omitted (server bug simulation).
-        return <String, dynamic>{
-          'mode': 'bridge',
-          'response': <String, dynamic>{
-            'type': 'batch',
-            'items': <Map<String, dynamic>>[
-              <String, dynamic>{
-                'id': 'rpc-A',
-                'success': true,
-                'result': <String, dynamic>{'rows': <Map<String, dynamic>>[]},
-              },
-            ],
-          },
+    test(
+      'missing item id in response fails that pending defensively',
+      () async {
+        direct.responseBuilder = (call) {
+          // Only ACKs rpc-A; rpc-B is omitted (server bug simulation).
+          return <String, dynamic>{
+            'mode': 'bridge',
+            'response': <String, dynamic>{
+              'type': 'batch',
+              'items': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'id': 'rpc-A',
+                  'success': true,
+                  'result': <String, dynamic>{'rows': <Map<String, dynamic>>[]},
+                },
+              ],
+            },
+          };
         };
-      };
 
-      final f1 = coordinator.send(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-A'),
-        rpcId: 'rpc-A',
-      );
-      final f2 = coordinator.send(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-B', params: const <String, Object?>{
-          'sql': 'SELECT 2',
-        }),
-        rpcId: 'rpc-B',
-      );
+        final f1 = coordinator.send(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-A'),
+          rpcId: 'rpc-A',
+        );
+        final f2 = coordinator.send(
+          agentId: 'agent-1',
+          body: _body(
+            rpcId: 'rpc-B',
+            params: const <String, Object?>{
+              'sql': 'SELECT 2',
+            },
+          ),
+          rpcId: 'rpc-B',
+        );
 
-      // f1 must complete successfully…
-      await f1;
-      // …but f2 must fail with a decode error.
-      await check(f2).throws<SocketDispatchDecodeFailure>();
-    });
+        // f1 must complete successfully…
+        await f1;
+        // …but f2 must fail with a decode error.
+        await check(f2).throws<SocketDispatchDecodeFailure>();
+      },
+    );
   });
 
   group('total failure', () {
-    test('dispatcher exception fails every pending in the same batch',
-        () async {
-      direct.errorToThrow = const SocketDispatchTimeout(message: 'boom');
+    test(
+      'dispatcher exception fails every pending in the same batch',
+      () async {
+        direct.errorToThrow = const SocketDispatchTimeout(message: 'boom');
 
-      final f1 = coordinator.send(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-A'),
-        rpcId: 'rpc-A',
-      );
-      final f2 = coordinator.send(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-B', params: const <String, Object?>{
-          'sql': 'SELECT 2',
-        }),
-        rpcId: 'rpc-B',
-      );
+        final f1 = coordinator.send(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-A'),
+          rpcId: 'rpc-A',
+        );
+        final f2 = coordinator.send(
+          agentId: 'agent-1',
+          body: _body(
+            rpcId: 'rpc-B',
+            params: const <String, Object?>{
+              'sql': 'SELECT 2',
+            },
+          ),
+          rpcId: 'rpc-B',
+        );
 
-      // Pre-attach error handlers BEFORE the timer-driven flush so the
-      // sync completeError that runs inside _dispatchBatch does not
-      // surface as an uncaught error.
-      final c1 = expectLater(f1, throwsA(isA<SocketDispatchTimeout>()));
-      final c2 = expectLater(f2, throwsA(isA<SocketDispatchTimeout>()));
+        // Pre-attach error handlers BEFORE the timer-driven flush so the
+        // sync completeError that runs inside _dispatchBatch does not
+        // surface as an uncaught error.
+        final c1 = expectLater(f1, throwsA(isA<SocketDispatchTimeout>()));
+        final c2 = expectLater(f2, throwsA(isA<SocketDispatchTimeout>()));
 
-      await c1;
-      await c2;
-    });
+        await c1;
+        await c2;
+      },
+    );
   });
 
   group('dispose', () {

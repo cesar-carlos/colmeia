@@ -7,7 +7,10 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_daily_sales_trend_chart.dart';
+import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
@@ -156,6 +159,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
   late final SalesPreferences _prefs;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadSalesMonthlyPnlLinesUseCase _loadPnlLines;
+  late final LoadSalesDailyTotalsUseCase _loadDailyTotals;
   late final AgentClientTokenReader _clientTokenReader;
 
   String? _selectedAgentId;
@@ -166,9 +170,13 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
   String? _cachedClientToken;
 
   List<SalesMonthlyPnlPoint> _points = const <SalesMonthlyPnlPoint>[];
+  List<OverviewDailySalesTrendPoint> _dailyPoints =
+      const <OverviewDailySalesTrendPoint>[];
   bool _loading = false;
   bool _chartLoadFailed = false;
   String? _chartLoadFailureMessage;
+  bool _dailyChartLoadFailed = false;
+  String? _dailyChartLoadFailureMessage;
   int _chartLoadGeneration = 0;
 
   @override
@@ -177,6 +185,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     _prefs = getIt<SalesPreferences>();
     _loadAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
     _loadPnlLines = getIt<LoadSalesMonthlyPnlLinesUseCase>();
+    _loadDailyTotals = getIt<LoadSalesDailyTotalsUseCase>();
     _clientTokenReader = getIt<AgentClientTokenReader>();
     _selectedAgentId = _prefs.selectedAgentId;
     _anchorYearMonth =
@@ -250,6 +259,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
       _loading = true;
       _chartLoadFailed = false;
       _chartLoadFailureMessage = null;
+      _dailyChartLoadFailed = false;
+      _dailyChartLoadFailureMessage = null;
     });
 
     if (userId == null || agentId == null || agentId.trim().isEmpty) {
@@ -261,6 +272,9 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         _points = const <SalesMonthlyPnlPoint>[];
         _chartLoadFailed = false;
         _chartLoadFailureMessage = null;
+        _dailyPoints = const <OverviewDailySalesTrendPoint>[];
+        _dailyChartLoadFailed = false;
+        _dailyChartLoadFailureMessage = null;
       });
       return;
     }
@@ -274,31 +288,48 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
       return;
     }
     if (clientToken == null) {
+      final authMsg = AppLocalizations.of(
+        context,
+      ).agentSqlErrorAuthenticationFailed;
       setState(() {
         _loading = false;
         _points = const <SalesMonthlyPnlPoint>[];
         _chartLoadFailed = true;
-        _chartLoadFailureMessage = AppLocalizations.of(
-          context,
-        ).agentSqlErrorAuthenticationFailed;
+        _chartLoadFailureMessage = authMsg;
+        _dailyPoints = const <OverviewDailySalesTrendPoint>[];
+        _dailyChartLoadFailed = true;
+        _dailyChartLoadFailureMessage = authMsg;
       });
       return;
     }
 
-    final bundle = await _loadPnlLines(
-      userId: userId,
-      agentId: trimmed,
-      anchor: anchor,
-      clientToken: clientToken,
-    );
+    final futures = await Future.wait(<Future<Object>>[
+      _loadPnlLines(
+        userId: userId,
+        agentId: trimmed,
+        anchor: anchor,
+        clientToken: clientToken,
+      ),
+      _loadDailyTotals(
+        userId: userId,
+        agentId: trimmed,
+        anchor: anchor,
+        clientToken: clientToken,
+      ),
+    ]);
 
     if (!mounted || generation != _chartLoadGeneration) {
       return;
     }
+    final bundle = futures[0] as SalesMonthlyPnlLinesLoadResult;
+    final dailyBundle = futures[1] as SalesDailyTotalsLoadResult;
     setState(() {
       _points = bundle.points;
       _chartLoadFailed = bundle.loadFailed;
       _chartLoadFailureMessage = bundle.loadFailureMessage;
+      _dailyPoints = dailyBundle.points;
+      _dailyChartLoadFailed = dailyBundle.loadFailed;
+      _dailyChartLoadFailureMessage = dailyBundle.loadFailureMessage;
       _loading = false;
     });
   }
@@ -489,6 +520,15 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
                     isLoading: _loading && _selectedAgentId != null,
                     preferences: _prefs,
                     onOpenFullscreen: _openBarChartFullscreen,
+                  ),
+                ),
+                SizedBox(height: tokens.sectionSpacing),
+                RepaintBoundary(
+                  child: OverviewDailySalesTrendChart(
+                    l10n: l10n,
+                    points: _dailyPoints,
+                    loadFailed: _dailyChartLoadFailed,
+                    loadFailureMessage: _dailyChartLoadFailureMessage,
                   ),
                 ),
               ],

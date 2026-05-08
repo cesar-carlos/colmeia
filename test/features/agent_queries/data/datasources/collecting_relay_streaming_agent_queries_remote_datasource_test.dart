@@ -21,32 +21,31 @@ void main() {
       () async {
         final delegate = _MockStreamingDatasource();
         when(() => delegate.streamSqlExecute(any())).thenAnswer(
-          (_) => Stream<Map<String, dynamic>>.fromIterable(<
-            Map<String, dynamic>
-          >[
-            <String, dynamic>{
-              'stream_id': 's1',
-              'request_id': 'r1',
-              'chunk_index': 0,
-              'rows': <Object?>[
-                <String, Object?>{'k': 'v1'},
-              ],
-            },
-            <String, dynamic>{
-              'stream_id': 's1',
-              'request_id': 'r1',
-              'chunk_index': 1,
-              'rows': <Object?>[
-                <String, Object?>{'k': 'v2'},
-              ],
-            },
-            <String, dynamic>{
-              'stream_id': 's1',
-              'request_id': 'r1',
-              'total_rows': 2,
-              'execution_id': 'exec-1',
-            },
-          ]),
+          (_) =>
+              Stream<Map<String, dynamic>>.fromIterable(<Map<String, dynamic>>[
+                <String, dynamic>{
+                  'stream_id': 's1',
+                  'request_id': 'r1',
+                  'chunk_index': 0,
+                  'rows': <Object?>[
+                    <String, Object?>{'k': 'v1'},
+                  ],
+                },
+                <String, dynamic>{
+                  'stream_id': 's1',
+                  'request_id': 'r1',
+                  'chunk_index': 1,
+                  'rows': <Object?>[
+                    <String, Object?>{'k': 'v2'},
+                  ],
+                },
+                <String, dynamic>{
+                  'stream_id': 's1',
+                  'request_id': 'r1',
+                  'total_rows': 2,
+                  'execution_id': 'exec-1',
+                },
+              ]),
         );
 
         final adapter = CollectingRelayStreamingAgentQueriesRemoteDataSource(

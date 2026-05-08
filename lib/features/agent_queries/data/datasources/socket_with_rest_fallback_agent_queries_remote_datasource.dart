@@ -35,9 +35,9 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     required AgentQueriesRemoteDataSource socketDelegate,
     required AgentQueriesRemoteDataSource restDelegate,
     void Function(SocketDispatchException trigger)? onFallback,
-  })  : _socketDelegate = socketDelegate,
-        _restDelegate = restDelegate,
-        _onFallback = onFallback;
+  }) : _socketDelegate = socketDelegate,
+       _restDelegate = restDelegate,
+       _onFallback = onFallback;
 
   final AgentQueriesRemoteDataSource _socketDelegate;
   final AgentQueriesRemoteDataSource _restDelegate;
@@ -92,8 +92,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
       'Agent queries datasource latched to REST fallback '
       '(socket permanent failure)',
       context: <String, Object?>{
-        'component':
-            'SocketWithRestFallbackAgentQueriesRemoteDataSource',
+        'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
         'reason': reason,
         'triggerCode': trigger.code,
         'triggerMessage': trigger.message,
@@ -110,8 +109,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
         AppLogger.warning(
           'Fallback observability hook threw',
           context: const <String, Object?>{
-            'component':
-                'SocketWithRestFallbackAgentQueriesRemoteDataSource',
+            'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
           },
           error: error,
           stackTrace: stackTrace,

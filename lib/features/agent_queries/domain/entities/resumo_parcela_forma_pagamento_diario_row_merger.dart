@@ -54,8 +54,7 @@ abstract final class ResumoVendaProdutoDiarioRowMerger {
         valorTotalVenda: acc.valorTotalVenda + row.valorTotalVenda,
       );
     }
-    final keys = byKey.keys.toList(growable: false)
-      ..sort(_compareKeys);
+    final keys = byKey.keys.toList(growable: false)..sort(_compareKeys);
     return <ResumoVendaProdutoDiarioRow>[
       for (final key in keys)
         ResumoVendaProdutoDiarioRow(

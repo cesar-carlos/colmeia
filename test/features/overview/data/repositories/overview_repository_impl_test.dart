@@ -5,6 +5,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -21,6 +22,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
@@ -50,6 +53,9 @@ class _MockLoadResumoParcelasDiaSemanaAcrossAgents extends Mock
 class _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents extends Mock
     implements LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase {}
 
+class _MockLoadResumoTotalDiarioVendasAcrossAgents extends Mock
+    implements LoadResumoTotalDiarioVendasAcrossAgentsUseCase {}
+
 class _MockLoadResumoProdutoVendaLucratividadeMensal extends Mock
     implements LoadResumoProdutoVendaLucratividadeMensalUseCase {}
 
@@ -65,6 +71,8 @@ void main() {
   loadResumoParcelasDiaSemanaAcrossAgents;
   late _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents
   loadResumoParcelasDiaSemanaUsuarioAcrossAgents;
+  late _MockLoadResumoTotalDiarioVendasAcrossAgents
+  loadResumoTotalDiarioVendasAcrossAgents;
   late _MockLoadResumoProdutoVendaLucratividadeMensal
   loadResumoProdutoVendaLucratividadeMensal;
   late _MockLoadResumoProdutoVendaLucratividade
@@ -88,6 +96,12 @@ void main() {
     );
     registerFallbackValue(
       ResumoParcelasDiaSemanaFilter(
+        dataVendaInicio: DateTime(2026, 3, 10),
+        dataVendaFim: DateTime(2026, 4, 8),
+      ),
+    );
+    registerFallbackValue(
+      ResumoTotalDiarioVendasFilter(
         dataVendaInicio: DateTime(2026, 3, 10),
         dataVendaFim: DateTime(2026, 4, 8),
       ),
@@ -131,6 +145,8 @@ void main() {
         _MockLoadResumoParcelasDiaSemanaAcrossAgents();
     loadResumoParcelasDiaSemanaUsuarioAcrossAgents =
         _MockLoadResumoParcelasDiaSemanaUsuarioAcrossAgents();
+    loadResumoTotalDiarioVendasAcrossAgents =
+        _MockLoadResumoTotalDiarioVendasAcrossAgents();
     loadResumoProdutoVendaLucratividadeMensal =
         _MockLoadResumoProdutoVendaLucratividadeMensal();
     when(
@@ -156,10 +172,12 @@ void main() {
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot:
-            any(named: 'hubPresenceOnlineAgentIdsSnapshot'),
-        hubConnectedFromApprovedCatalogRow:
-            any(named: 'hubConnectedFromApprovedCatalogRow'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
       ),
     ).thenAnswer(
       (_) async =>
@@ -215,6 +233,22 @@ void main() {
             AppFailure
           >(_emptyWeekdayUsuarioReport()),
     );
+    when(
+      () => loadResumoTotalDiarioVendasAcrossAgents(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          Success<
+            AgentQueryExecutionReport<ResumoTotalDiarioVendasRow>,
+            AppFailure
+          >(_emptyDailyReport()),
+    );
 
     when(
       () => local.saveOverview(
@@ -237,6 +271,8 @@ void main() {
           loadResumoParcelasDiaSemanaAcrossAgents,
       loadResumoParcelasDiaSemanaUsuarioAcrossAgents:
           loadResumoParcelasDiaSemanaUsuarioAcrossAgents,
+      loadResumoTotalDiarioVendasAcrossAgents:
+          loadResumoTotalDiarioVendasAcrossAgents,
       loadResumoProdutoVendaLucratividadeMensal:
           loadResumoProdutoVendaLucratividadeMensal,
       loadResumoProdutoVendaLucratividade: loadResumoProdutoVendaLucratividade,
@@ -1251,6 +1287,19 @@ _emptyWeekdayUsuarioReport() {
     missingClientTokenTargets: <AgentQueryTarget>[],
     participants:
         <AgentQueryExecutionParticipant<ResumoParcelasDiaSemanaUsuarioRow>>[],
+    totalElapsedMs: 0,
+  );
+}
+
+AgentQueryExecutionReport<ResumoTotalDiarioVendasRow> _emptyDailyReport() {
+  return const AgentQueryExecutionReport<ResumoTotalDiarioVendasRow>(
+    queryKey: AgentQueryKey.resumoTotalDiarioVendas,
+    strategy: AgentQueryExecutionStrategy.mergeAll,
+    consideredApprovedAgentCount: 0,
+    plannedTargets: <AgentQueryTarget>[],
+    missingClientTokenTargets: <AgentQueryTarget>[],
+    participants:
+        <AgentQueryExecutionParticipant<ResumoTotalDiarioVendasRow>>[],
     totalElapsedMs: 0,
   );
 }

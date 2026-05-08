@@ -25,8 +25,8 @@ class ClientTokenPolicyResponseDto {
     return ClientTokenPolicyResponseDto(
       tokenIdentifier:
           (result['token_id'] ?? result['tokenIdentifier'] ?? result['jti'])
-                  ?.toString() ??
-              '',
+              ?.toString() ??
+          '',
       allTables: _asBool(
         result['all_tables'] ?? result['allTables'],
         fallback: false,

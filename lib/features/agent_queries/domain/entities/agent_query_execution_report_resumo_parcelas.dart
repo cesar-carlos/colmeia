@@ -14,6 +14,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row_merger.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_complete_period.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row_merger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row_merger.dart';
 
@@ -123,4 +127,20 @@ extension AgentQueryExecutionReportResumoParcelasDiaSemanaRowsX
   /// that need a single line per weekday (not per filial).
   List<ResumoParcelasDiaSemanaRow> get chartRowsWeek =>
       ResumoParcelasDiaSemanaCompleteWeek.fill(aggregatedMergedRows);
+}
+
+extension AgentQueryExecutionReportResumoTotalDiarioVendasRowsX
+    on AgentQueryExecutionReport<ResumoTotalDiarioVendasRow> {
+  List<ResumoTotalDiarioVendasRow> get aggregatedMergedRows =>
+      ResumoTotalDiarioVendasRowMerger.merge(mergedRows);
+
+  List<ResumoTotalDiarioVendasRow> chartRowsFilledPeriod(
+    ResumoTotalDiarioVendasFilter filter,
+  ) {
+    return ResumoTotalDiarioVendasCompletePeriod.fill(
+      dataVendaInicio: filter.dataVendaInicio,
+      dataVendaFim: filter.dataVendaFim,
+      rows: aggregatedMergedRows,
+    );
+  }
 }

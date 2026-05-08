@@ -93,18 +93,20 @@ void main() {
       check(a).not((it) => it.equals(b));
     });
 
-    test('different timeoutMs splits the key (caller may need stricter SLA)',
-        () {
-      final a = SocketCoalesceKey.compute(
-        agentId: 'x',
-        body: body(timeoutMs: 5000),
-      );
-      final b = SocketCoalesceKey.compute(
-        agentId: 'x',
-        body: body(timeoutMs: 10000),
-      );
-      check(a).not((it) => it.equals(b));
-    });
+    test(
+      'different timeoutMs splits the key (caller may need stricter SLA)',
+      () {
+        final a = SocketCoalesceKey.compute(
+          agentId: 'x',
+          body: body(timeoutMs: 5000),
+        );
+        final b = SocketCoalesceKey.compute(
+          agentId: 'x',
+          body: body(timeoutMs: 10000),
+        );
+        check(a).not((it) => it.equals(b));
+      },
+    );
 
     test('different pagination splits the key', () {
       final a = SocketCoalesceKey.compute(

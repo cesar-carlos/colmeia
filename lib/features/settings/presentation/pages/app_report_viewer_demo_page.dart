@@ -927,9 +927,7 @@ class _ShowcaseTryNewFeatures extends StatelessWidget {
                   selected: stressMode,
                   onSelected: (_) => onToggleStressMode(),
                   avatar: Icon(
-                    stressMode
-                        ? Icons.bolt_rounded
-                        : Icons.bolt_outlined,
+                    stressMode ? Icons.bolt_rounded : Icons.bolt_outlined,
                     size: 16,
                     color: stressMode
                         ? theme.colorScheme.onSecondaryContainer

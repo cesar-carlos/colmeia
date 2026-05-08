@@ -52,8 +52,7 @@ class SocketRequestCorrelator {
       if (!entry.completer.isCompleted) {
         entry.completer.completeError(
           SocketDispatchTimeout(
-            message:
-                'No response for rpcId=$rpcId after ${timeout.inSeconds}s',
+            message: 'No response for rpcId=$rpcId after ${timeout.inSeconds}s',
           ),
         );
       }

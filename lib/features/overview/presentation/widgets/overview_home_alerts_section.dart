@@ -182,8 +182,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
               ? null
               : _OverviewAffectedAgentsListLink(
                   l10n: l10n,
-                  normalizedNames:
-                      skippedDueToHubPresenceAgentNamesNormalized,
+                  normalizedNames: skippedDueToHubPresenceAgentNamesNormalized,
                   sheetTitle: l10n.dashboardAffectedAgentsSheetTitleOffline,
                 ),
           actions: OverviewPanelActions(

@@ -20,9 +20,9 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     required AgentQueriesRepository delegate,
     int maxAttempts = 3,
     Duration initialRetryDelay = const Duration(milliseconds: 200),
-  })  : _delegate = delegate,
-        _maxAttempts = maxAttempts,
-        _initialRetryDelay = initialRetryDelay;
+  }) : _delegate = delegate,
+       _maxAttempts = maxAttempts,
+       _initialRetryDelay = initialRetryDelay;
 
   final AgentQueriesRepository _delegate;
   final int _maxAttempts;
@@ -93,8 +93,8 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
       failure.isTransient && _retryAfterOf(failure) == null;
 
   Duration? _retryAfterOf(AppFailure failure) => switch (failure) {
-        final NetworkFailure f => f.retryAfter,
-        final RpcFailure f => f.retryAfter,
-        _ => null,
-      };
+    final NetworkFailure f => f.retryAfter,
+    final RpcFailure f => f.retryAfter,
+    _ => null,
+  };
 }

@@ -44,13 +44,13 @@ class _OverviewSalesTrendCardState extends State<OverviewSalesTrendCard> {
     _resolvedPoints = _range == OverviewSalesTrendRange.lastWeek
         ? widget.points
         : widget.points
-            .map(
-              (p) => OverviewChartPoint(
-                label: p.label,
-                value: p.value * 4.15,
-              ),
-            )
-            .toList(growable: false);
+              .map(
+                (p) => OverviewChartPoint(
+                  label: p.label,
+                  value: p.value * 4.15,
+                ),
+              )
+              .toList(growable: false);
   }
 
   @override

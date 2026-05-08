@@ -71,7 +71,8 @@ void main() {
             ),
       );
 
-      await useCase(userId: 'user-1', 
+      await useCase(
+        userId: 'user-1',
         agentId: 'a1',
         filter: filter,
         clientToken: 'ct',
@@ -121,7 +122,8 @@ void main() {
             >(<ResumoVendasDiariasPorVendedorVendedorOption>[]),
       );
 
-      await useCase(userId: 'user-1', 
+      await useCase(
+        userId: 'user-1',
         agentId: 'a1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,
@@ -177,7 +179,8 @@ void main() {
             >(<ResumoVendasDiariasPorVendedorTextOption>[]),
       );
 
-      await useCase(userId: 'user-1', 
+      await useCase(
+        userId: 'user-1',
         agentId: 'a1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,
@@ -229,7 +232,8 @@ void main() {
             >(<ResumoVendasDiariasPorVendedorTextOption>[]),
       );
 
-      await useCase(userId: 'user-1', 
+      await useCase(
+        userId: 'user-1',
         agentId: 'a1',
         dataVendaInicio: dataInicio,
         dataVendaFim: dataFim,

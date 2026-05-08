@@ -5,10 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('PerAgentConcurrencyGate', () {
     test('rejects non-positive maxInflightPerAgent', () {
-      check(() => PerAgentConcurrencyGate(maxInflightPerAgent: 0))
-          .throws<AssertionError>();
-      check(() => PerAgentConcurrencyGate(maxInflightPerAgent: -1))
-          .throws<AssertionError>();
+      check(
+        () => PerAgentConcurrencyGate(maxInflightPerAgent: 0),
+      ).throws<AssertionError>();
+      check(
+        () => PerAgentConcurrencyGate(maxInflightPerAgent: -1),
+      ).throws<AssertionError>();
     });
 
     test('acquire under the limit completes immediately', () async {
@@ -41,19 +43,21 @@ void main() {
       check(gate.waitingFor('a')).equals(0);
     });
 
-    test('agents are isolated (slot exhaustion in A does not block B)',
-        () async {
-      final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
-      await gate.acquire('a');
+    test(
+      'agents are isolated (slot exhaustion in A does not block B)',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        await gate.acquire('a');
 
-      // Even though A is full, B has its own counter and acquires
-      // immediately.
-      var bResolved = false;
-      await gate.acquire('b').whenComplete(() => bResolved = true);
-      check(bResolved).isTrue();
-      check(gate.inflightFor('a')).equals(1);
-      check(gate.inflightFor('b')).equals(1);
-    });
+        // Even though A is full, B has its own counter and acquires
+        // immediately.
+        var bResolved = false;
+        await gate.acquire('b').whenComplete(() => bResolved = true);
+        check(bResolved).isTrue();
+        check(gate.inflightFor('a')).equals(1);
+        check(gate.inflightFor('b')).equals(1);
+      },
+    );
 
     test('FIFO order: waiters are served in the order they queued', () async {
       final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
@@ -95,8 +99,7 @@ void main() {
       check(gate.peakInflight).equals(0);
     });
 
-    test('cleanup: agent entry is removed when counter reaches zero',
-        () async {
+    test('cleanup: agent entry is removed when counter reaches zero', () async {
       final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 2);
       await gate.acquire('a');
       gate.release('a');

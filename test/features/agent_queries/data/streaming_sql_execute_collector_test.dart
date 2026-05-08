@@ -21,42 +21,42 @@ void main() {
     test(
       'merges row chunks + complete payload into the bridge envelope',
       () async {
-        final stream = Stream<Map<String, dynamic>>.fromIterable(<
-          Map<String, dynamic>
-        >[
-          <String, dynamic>{
-            'stream_id': 'stream-1',
-            'request_id': 'rpc-1',
-            'chunk_index': 0,
-            'rows': <Object?>[
-              <String, Object?>{'id': 1, 'name': 'a'},
-              <String, Object?>{'id': 2, 'name': 'b'},
-            ],
-            'column_metadata': <Object?>[
-              <String, Object?>{'name': 'id', 'type': 'int'},
-              <String, Object?>{'name': 'name', 'type': 'string'},
-            ],
-          },
-          <String, dynamic>{
-            'stream_id': 'stream-1',
-            'request_id': 'rpc-1',
-            'chunk_index': 1,
-            'rows': <Object?>[
-              <String, Object?>{'id': 3, 'name': 'c'},
-            ],
-          },
-          // The dispatcher (PR-L+ p3.5) forwards the complete payload
-          // as the FINAL stream item before closing.
-          <String, dynamic>{
-            'stream_id': 'stream-1',
-            'request_id': 'rpc-1',
-            'total_rows': 3,
-            'affected_rows': 0,
-            'execution_id': 'exec-42',
-            'started_at': '2026-04-17T15:00:00Z',
-            'finished_at': '2026-04-17T15:00:01Z',
-          },
-        ]);
+        final stream = Stream<Map<String, dynamic>>.fromIterable(
+          <Map<String, dynamic>>[
+            <String, dynamic>{
+              'stream_id': 'stream-1',
+              'request_id': 'rpc-1',
+              'chunk_index': 0,
+              'rows': <Object?>[
+                <String, Object?>{'id': 1, 'name': 'a'},
+                <String, Object?>{'id': 2, 'name': 'b'},
+              ],
+              'column_metadata': <Object?>[
+                <String, Object?>{'name': 'id', 'type': 'int'},
+                <String, Object?>{'name': 'name', 'type': 'string'},
+              ],
+            },
+            <String, dynamic>{
+              'stream_id': 'stream-1',
+              'request_id': 'rpc-1',
+              'chunk_index': 1,
+              'rows': <Object?>[
+                <String, Object?>{'id': 3, 'name': 'c'},
+              ],
+            },
+            // The dispatcher (PR-L+ p3.5) forwards the complete payload
+            // as the FINAL stream item before closing.
+            <String, dynamic>{
+              'stream_id': 'stream-1',
+              'request_id': 'rpc-1',
+              'total_rows': 3,
+              'affected_rows': 0,
+              'execution_id': 'exec-42',
+              'started_at': '2026-04-17T15:00:00Z',
+              'finished_at': '2026-04-17T15:00:01Z',
+            },
+          ],
+        );
 
         final envelope = await collector.collect(stream);
         final response = envelope['response']! as Map<String, dynamic>;
@@ -84,21 +84,21 @@ void main() {
     test(
       'falls back to row count when complete.total_rows is absent',
       () async {
-        final stream = Stream<Map<String, dynamic>>.fromIterable(<
-          Map<String, dynamic>
-        >[
-          <String, dynamic>{
-            'request_id': 'rpc-2',
-            'chunk_index': 0,
-            'rows': <Object?>[
-              <String, Object?>{'x': 1},
-              <String, Object?>{'x': 2},
-            ],
-          },
-          // No complete payload — agent disconnected gracefully or
-          // hub forwarded only chunks. Collector still wraps a valid
-          // response so the repository parser succeeds.
-        ]);
+        final stream = Stream<Map<String, dynamic>>.fromIterable(
+          <Map<String, dynamic>>[
+            <String, dynamic>{
+              'request_id': 'rpc-2',
+              'chunk_index': 0,
+              'rows': <Object?>[
+                <String, Object?>{'x': 1},
+                <String, Object?>{'x': 2},
+              ],
+            },
+            // No complete payload — agent disconnected gracefully or
+            // hub forwarded only chunks. Collector still wraps a valid
+            // response so the repository parser succeeds.
+          ],
+        );
 
         final envelope = await collector.collect(stream);
         final result =
@@ -114,8 +114,8 @@ void main() {
       final envelope = await collector.collect(
         const Stream<Map<String, dynamic>>.empty(),
       );
-      final item = (envelope['response']! as Map)['item']!
-          as Map<String, dynamic>;
+      final item =
+          (envelope['response']! as Map)['item']! as Map<String, dynamic>;
       check(item['success']).equals(true);
       final result = item['result']! as Map<String, dynamic>;
       check(result['rows']! as List).isEmpty();

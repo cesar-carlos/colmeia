@@ -92,8 +92,8 @@ class Hmac256PayloadFrameSigner implements PayloadFrameSigner {
   Hmac256PayloadFrameSigner({
     required Uint8List key,
     String? keyId,
-  })  : _hmac = Hmac(sha256, key),
-        _keyId = (keyId != null && keyId.trim().isNotEmpty) ? keyId : null;
+  }) : _hmac = Hmac(sha256, key),
+       _keyId = (keyId != null && keyId.trim().isNotEmpty) ? keyId : null;
 
   /// Convenience constructor for keys provided as plain UTF-8 strings
   /// (e.g. coming straight from `.env`). Hub's `PAYLOAD_SIGNING_KEY` is
@@ -168,7 +168,8 @@ enum PayloadFrameSignatureVerification {
 
   /// HMAC computed locally does not match `signature.value`. Treat as
   /// tampering or key drift.
-  invalid('signature_invalid');
+  invalid('signature_invalid')
+  ;
 
   const PayloadFrameSignatureVerification(this.code);
 
@@ -198,11 +199,11 @@ class Hmac256PayloadFrameSignatureVerifier
   Hmac256PayloadFrameSignatureVerifier({
     required Uint8List key,
     String? expectedKeyId,
-  })  : _hmac = Hmac(sha256, key),
-        _expectedKeyId =
-            (expectedKeyId != null && expectedKeyId.trim().isNotEmpty)
-                ? expectedKeyId
-                : null;
+  }) : _hmac = Hmac(sha256, key),
+       _expectedKeyId =
+           (expectedKeyId != null && expectedKeyId.trim().isNotEmpty)
+           ? expectedKeyId
+           : null;
 
   /// Convenience constructor for keys provided as plain UTF-8
   /// strings (i.e. coming straight from `.env`).

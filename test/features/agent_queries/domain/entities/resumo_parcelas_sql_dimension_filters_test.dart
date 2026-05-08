@@ -74,7 +74,8 @@ void main() {
     });
 
     test('embedLiteralDimensionWhere replaces placeholder', () {
-      const template = 'WHERE 1=1\n'
+      const template =
+          'WHERE 1=1\n'
           '${ResumoParcelasSqlDimensionFilters.resumoParcelasWhereDimensionPlaceholder}\n'
           'GROUP BY x';
       check(

@@ -400,11 +400,9 @@ class _OverviewLucratividadeMensalChartState
                                 useDropdownLayout: narrow,
                                 hasChartData: snapshot.isNotEmpty,
                                 showChronologicalHint: true,
-                                onMetricChanged:
-                                    (v) =>
-                                        setFullscreenState(() {
-                                          fullscreenPercentMetric = v;
-                                        }),
+                                onMetricChanged: (v) => setFullscreenState(() {
+                                  fullscreenPercentMetric = v;
+                                }),
                               );
                             },
                           ),
@@ -536,8 +534,7 @@ class _OverviewLucratividadeMensalChartState
                   useDropdownLayout: narrow,
                   hasChartData: widget.points.isNotEmpty,
                   showChronologicalHint: true,
-                  onMetricChanged: (v) =>
-                      setState(() => _percentMetric = v),
+                  onMetricChanged: (v) => setState(() => _percentMetric = v),
                 );
               },
             ),

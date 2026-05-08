@@ -3,7 +3,10 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_under_construction_page.dart';
 import 'package:go_router/go_router.dart';
 
-typedef _ShellPlaceholderSpec = (AppRoute route, String Function(AppLocalizations) title);
+typedef _ShellPlaceholderSpec = (
+  AppRoute route,
+  String Function(AppLocalizations) title,
+);
 
 List<RouteBase> buildShellPlaceholderRoutes() {
   final specs = <_ShellPlaceholderSpec>[

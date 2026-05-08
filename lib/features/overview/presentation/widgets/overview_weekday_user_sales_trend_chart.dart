@@ -120,16 +120,14 @@ class _OverviewWeekdayUserSalesTrendChartState
     final salesCountFormat = NumberFormat.decimalPattern(localeName);
     final isSalesCount = _metric == _OverviewWeekdayUserMetric.salesCount;
     final emptyMessage = widget.loadFailed
-        ? (widget.loadFailureMessage ??
-              l10n.overviewWeekdayUserSalesLoadFailed)
+        ? (widget.loadFailureMessage ?? l10n.overviewWeekdayUserSalesLoadFailed)
         : l10n.overviewWeekdayUserSalesEmpty;
     final summary = _semanticsSummaryForBuild(
       l10n: l10n,
       salesCountFormat: salesCountFormat,
     );
     final chartPoints = _chartPointsForBuild();
-    final showEmptyPlaceholder =
-        widget.points.isEmpty || chartPoints.isEmpty;
+    final showEmptyPlaceholder = widget.points.isEmpty || chartPoints.isEmpty;
     final chartTitle = isSalesCount
         ? l10n.overviewWeekdayUserSalesTitle
         : l10n.overviewWeekdayUserRevenueTitle;
@@ -191,18 +189,27 @@ class _OverviewWeekdayUserSalesTrendChartState
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       AppSegmentedControl<_OverviewWeekdayUserMetric>(
-                        options: <AppSegmentedControlOption<_OverviewWeekdayUserMetric>>[
-                          AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
-                            value: _OverviewWeekdayUserMetric.salesCount,
-                            label: fullscreenL10n
-                                .overviewWeekdayMetricSalesCountLabel,
-                          ),
-                          AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
-                            value: _OverviewWeekdayUserMetric.salesAmount,
-                            label: fullscreenL10n
-                                .overviewWeekdayMetricSalesAmountLabel,
-                          ),
-                        ],
+                        options:
+                            <
+                              AppSegmentedControlOption<
+                                _OverviewWeekdayUserMetric
+                              >
+                            >[
+                              AppSegmentedControlOption<
+                                _OverviewWeekdayUserMetric
+                              >(
+                                value: _OverviewWeekdayUserMetric.salesCount,
+                                label: fullscreenL10n
+                                    .overviewWeekdayMetricSalesCountLabel,
+                              ),
+                              AppSegmentedControlOption<
+                                _OverviewWeekdayUserMetric
+                              >(
+                                value: _OverviewWeekdayUserMetric.salesAmount,
+                                label: fullscreenL10n
+                                    .overviewWeekdayMetricSalesAmountLabel,
+                              ),
+                            ],
                         value: fullscreenMetric,
                         onChanged: (value) => setFullscreenState(
                           () => fullscreenMetric = value,
@@ -221,13 +228,13 @@ class _OverviewWeekdayUserSalesTrendChartState
                           title: fullscreenIsSalesCount
                               ? fullscreenL10n.overviewWeekdayUserSalesTitle
                               : fullscreenL10n.overviewWeekdayUserRevenueTitle,
-                          subtitle: fullscreenL10n.overviewWeekdayUserSalesSubtitle,
+                          subtitle:
+                              fullscreenL10n.overviewWeekdayUserSalesSubtitle,
                           belowSubtitle: const SizedBox.shrink(),
                           plotFloorAccessibilityNotice:
                               fullscreenL10n.chartComparisonPlotFloorNotice,
-                          extremeSpreadAccessibilityNotice:
-                              fullscreenL10n
-                                  .chartComparisonExtremeValueSpreadNotice,
+                          extremeSpreadAccessibilityNotice: fullscreenL10n
+                              .chartComparisonExtremeValueSpreadNotice,
                           tokens: fullscreenTokens,
                           useChartShell: false,
                           expandPlotVertically: true,
@@ -316,8 +323,10 @@ class _OverviewWeekdayUserSalesTrendChartState
       return rightValue > leftValue ? right : left;
     });
 
-    final topWeekdayLabel =
-        overviewWeekdaySalesLabel(topPoint.weekdayNumber, l10n);
+    final topWeekdayLabel = overviewWeekdaySalesLabel(
+      topPoint.weekdayNumber,
+      l10n,
+    );
     final topUserName = topPoint.userName.trim().isEmpty
         ? '—'
         : topPoint.userName.trim();

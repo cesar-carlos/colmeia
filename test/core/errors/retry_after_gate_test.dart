@@ -46,14 +46,15 @@ void main() {
       'subsequent arm() preserves the larger window (no shrinking)',
       () {
         FakeAsync().run((async) {
-          final gate = RetryAfterGate(
-            tickInterval: const Duration(milliseconds: 200),
-            clock: () => DateTime.utc(2026, 4, 18, 12),
-          )
-            ..arm(const Duration(seconds: 30))
-            // Same clock, so the second arm() with a smaller window should
-            // not move the deadline backwards.
-            ..arm(const Duration(seconds: 5));
+          final gate =
+              RetryAfterGate(
+                  tickInterval: const Duration(milliseconds: 200),
+                  clock: () => DateTime.utc(2026, 4, 18, 12),
+                )
+                ..arm(const Duration(seconds: 30))
+                // Same clock, so the second arm() with a smaller window should
+                // not move the deadline backwards.
+                ..arm(const Duration(seconds: 5));
           check(gate.remaining!.inSeconds).isGreaterOrEqual(29);
           gate.dispose();
           async.flushTimers();
@@ -83,8 +84,8 @@ void main() {
     test('dispose() stops the ticker and short-circuits future arm()', () {
       FakeAsync().run((async) {
         RetryAfterGate(
-          tickInterval: const Duration(milliseconds: 100),
-        )
+            tickInterval: const Duration(milliseconds: 100),
+          )
           ..addListener(() {})
           ..arm(const Duration(seconds: 5))
           ..dispose()

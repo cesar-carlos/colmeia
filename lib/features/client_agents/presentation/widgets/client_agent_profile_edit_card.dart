@@ -70,8 +70,7 @@ class _ClientAgentProfileEditCardState
     super.didUpdateWidget(oldWidget);
     final newAt = widget.agent.profileUpdatedAt;
     final oldAt = oldWidget.agent.profileUpdatedAt;
-    if (widget.agent.agentId != oldWidget.agent.agentId ||
-        newAt != oldAt) {
+    if (widget.agent.agentId != oldWidget.agent.agentId || newAt != oldAt) {
       _hydrateFromAgent(widget.agent);
     }
   }

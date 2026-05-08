@@ -6,10 +6,12 @@ void main() {
   group('AppBrFormatters.smartCompactCurrency', () {
     test(r'uses full currency below R$ 1000 to avoid "mil" ambiguity', () {
       check(AppBrFormatters.smartCompactCurrency(0)).contains('0,00');
-      check(AppBrFormatters.smartCompactCurrency(26.8))
-          .equals(AppBrFormatters.currency(26.8));
-      check(AppBrFormatters.smartCompactCurrency(999.99))
-          .equals(AppBrFormatters.currency(999.99));
+      check(
+        AppBrFormatters.smartCompactCurrency(26.8),
+      ).equals(AppBrFormatters.currency(26.8));
+      check(
+        AppBrFormatters.smartCompactCurrency(999.99),
+      ).equals(AppBrFormatters.currency(999.99));
     });
 
     test(r'switches to compact above R$ 1000', () {
@@ -22,10 +24,12 @@ void main() {
     });
 
     test('handles negative values by absolute threshold', () {
-      check(AppBrFormatters.smartCompactCurrency(-500))
-          .equals(AppBrFormatters.currency(-500));
-      check(AppBrFormatters.smartCompactCurrency(-2500))
-          .equals(AppBrFormatters.compactCurrency(-2500));
+      check(
+        AppBrFormatters.smartCompactCurrency(-500),
+      ).equals(AppBrFormatters.currency(-500));
+      check(
+        AppBrFormatters.smartCompactCurrency(-2500),
+      ).equals(AppBrFormatters.compactCurrency(-2500));
     });
   });
 }

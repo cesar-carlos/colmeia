@@ -10,27 +10,33 @@ void main() {
 
     test('returns rest for empty / whitespace', () {
       check(AgentBridgeTransport.parse('')).equals(AgentBridgeTransport.rest);
-      check(AgentBridgeTransport.parse('   '))
-          .equals(AgentBridgeTransport.rest);
+      check(
+        AgentBridgeTransport.parse('   '),
+      ).equals(AgentBridgeTransport.rest);
     });
 
     test('parses socket case-insensitively', () {
-      check(AgentBridgeTransport.parse('socket'))
-          .equals(AgentBridgeTransport.socket);
-      check(AgentBridgeTransport.parse('SOCKET'))
-          .equals(AgentBridgeTransport.socket);
-      check(AgentBridgeTransport.parse('  Socket  '))
-          .equals(AgentBridgeTransport.socket);
+      check(
+        AgentBridgeTransport.parse('socket'),
+      ).equals(AgentBridgeTransport.socket);
+      check(
+        AgentBridgeTransport.parse('SOCKET'),
+      ).equals(AgentBridgeTransport.socket);
+      check(
+        AgentBridgeTransport.parse('  Socket  '),
+      ).equals(AgentBridgeTransport.socket);
     });
 
     test('parses rest explicitly', () {
-      check(AgentBridgeTransport.parse('rest'))
-          .equals(AgentBridgeTransport.rest);
+      check(
+        AgentBridgeTransport.parse('rest'),
+      ).equals(AgentBridgeTransport.rest);
     });
 
     test('falls back for unknown values', () {
-      check(AgentBridgeTransport.parse('grpc'))
-          .equals(AgentBridgeTransport.rest);
+      check(
+        AgentBridgeTransport.parse('grpc'),
+      ).equals(AgentBridgeTransport.rest);
     });
 
     test('honors fallback override', () {

@@ -124,7 +124,10 @@ void main() {
       chartRestored.style.animationDuration,
       const Duration(milliseconds: 350),
     );
-    expect(chartRestored.style.yAxisFormat!.format(1500), isNot(contains(r'R$')));
+    expect(
+      chartRestored.style.yAxisFormat!.format(1500),
+      isNot(contains(r'R$')),
+    );
 
     await tester.tap(find.text('Revenue'));
     await tester.pumpAndSettle();

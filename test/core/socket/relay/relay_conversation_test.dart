@@ -82,8 +82,7 @@ void main() {
 
       await Future<void>.delayed(Duration.zero);
       check(wiring.emits.length).equals(1);
-      check(wiring.emits.first.event)
-          .equals(RelayEventNames.conversationStart);
+      check(wiring.emits.first.event).equals(RelayEventNames.conversationStart);
 
       wiring.fire(
         RelayEventNames.conversationStarted,

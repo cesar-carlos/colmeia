@@ -81,18 +81,21 @@ void main() {
         // test self-checking — ANY drift in metadata ordering or
         // separator bytes will break it.
         final metadataBytes = metadata.toCanonicalJsonUtf8();
-        final expectedInput = Uint8List(
-          metadataBytes.length + 1 + payload.length,
-        )
-          ..setRange(0, metadataBytes.length, metadataBytes)
-          ..[metadataBytes.length] = 0
-          ..setRange(
-            metadataBytes.length + 1,
-            metadataBytes.length + 1 + payload.length,
-            payload,
-          );
-        final expectedDigest =
-            Hmac(sha256, utf8.encode('shared-secret')).convert(expectedInput);
+        final expectedInput =
+            Uint8List(
+                metadataBytes.length + 1 + payload.length,
+              )
+              ..setRange(0, metadataBytes.length, metadataBytes)
+              ..[metadataBytes.length] = 0
+              ..setRange(
+                metadataBytes.length + 1,
+                metadataBytes.length + 1 + payload.length,
+                payload,
+              );
+        final expectedDigest = Hmac(
+          sha256,
+          utf8.encode('shared-secret'),
+        ).convert(expectedInput);
         final expectedValue = base64Encode(expectedDigest.bytes);
 
         check(signature.algorithm).equals(
@@ -200,8 +203,9 @@ void main() {
         metadata: metadata,
         binaryPayload: payload,
       );
-      final verifier =
-          Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+      final verifier = Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+        key: 'k',
+      );
       check(
         verifier.verify(
           metadata: metadata,
@@ -230,8 +234,9 @@ void main() {
     });
 
     test('absent signature reports `absent` (caller decides policy)', () {
-      final verifier =
-          Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+      final verifier = Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+        key: 'k',
+      );
       check(
         verifier.verify(
           metadata: metadata,
@@ -242,8 +247,9 @@ void main() {
     });
 
     test('rejects unsupported algorithm', () {
-      final verifier =
-          Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+      final verifier = Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+        key: 'k',
+      );
       check(
         verifier.verify(
           metadata: metadata,
@@ -257,8 +263,9 @@ void main() {
     });
 
     test('rejects empty / non-base64 signature value as malformed', () {
-      final verifier =
-          Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+      final verifier = Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+        key: 'k',
+      );
       check(
         verifier.verify(
           metadata: metadata,
@@ -337,14 +344,16 @@ void main() {
     test(
       'single-key verifier (no expectedKeyId) accepts frames without key_id',
       () {
-        final signer =
-            Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'); // no keyId
+        final signer = Hmac256PayloadFrameSigner.fromUtf8Key(
+          key: 'k',
+        ); // no keyId
         final signature = signer.sign(
           metadata: metadata,
           binaryPayload: payload,
         );
-        final verifier =
-            Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k');
+        final verifier = Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+          key: 'k',
+        );
         check(signature.keyId).isNull();
         check(
           verifier.verify(

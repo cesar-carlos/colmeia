@@ -32,10 +32,11 @@ class AgentGetProfileResponseDto {
       profileVersion: _asInt(
         result['profile_version'] ?? result['profileVersion'],
       ),
-      tradeName: result['trade_name']?.toString() ??
-          result['tradeName']?.toString(),
+      tradeName:
+          result['trade_name']?.toString() ?? result['tradeName']?.toString(),
       document: result['document']?.toString(),
-      documentType: result['document_type']?.toString() ??
+      documentType:
+          result['document_type']?.toString() ??
           result['documentType']?.toString(),
       phone: result['phone']?.toString(),
       mobile: result['mobile']?.toString(),

@@ -33,8 +33,9 @@ void main() {
         rawApiBaseUrl: 'https://hub.example.com/api/v1',
         namespace: '/integration-test',
       );
-      check(resolver.consumersUrl)
-          .equals('https://hub.example.com/integration-test');
+      check(
+        resolver.consumersUrl,
+      ).equals('https://hub.example.com/integration-test');
       check(resolver.namespace).equals('/integration-test');
     });
 

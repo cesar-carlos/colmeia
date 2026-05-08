@@ -54,8 +54,7 @@ double resolveChartAnimationDurationMs({
   required Duration? styleDuration,
   required double defaultMs,
 }) {
-  final reduceMotion =
-      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+  final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
   if (reduceMotion) {
     return 0;
   }

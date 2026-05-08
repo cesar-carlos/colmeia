@@ -24,8 +24,7 @@ void main() {
   });
 
   group('RelayStreamingAgentQueriesRemoteDataSource', () {
-    test('forwards each chunk emitted by the dispatcher untouched',
-        () async {
+    test('forwards each chunk emitted by the dispatcher untouched', () async {
       final dispatcher = _MockRelayDispatcher();
       final controller = StreamController<Map<String, dynamic>>();
       addTearDown(controller.close);
@@ -97,40 +96,41 @@ void main() {
       check(capturedTimeout).equals(const Duration(milliseconds: 17000));
     });
 
-    test('uses the default 15s + 5s buffer when bridgeTimeoutMs is null',
-        () async {
-      final dispatcher = _MockRelayDispatcher();
-      Duration? capturedTimeout;
-      when(
-        () => dispatcher.sendStreaming(
-          agentId: any(named: 'agentId'),
-          body: any(named: 'body'),
-          clientRequestId: any(named: 'clientRequestId'),
-          timeout: any(named: 'timeout'),
-          compression: any(named: 'compression'),
-        ),
-      ).thenAnswer((invocation) {
-        capturedTimeout = invocation.namedArguments[#timeout] as Duration?;
-        return const Stream<Map<String, dynamic>>.empty();
-      });
+    test(
+      'uses the default 15s + 5s buffer when bridgeTimeoutMs is null',
+      () async {
+        final dispatcher = _MockRelayDispatcher();
+        Duration? capturedTimeout;
+        when(
+          () => dispatcher.sendStreaming(
+            agentId: any(named: 'agentId'),
+            body: any(named: 'body'),
+            clientRequestId: any(named: 'clientRequestId'),
+            timeout: any(named: 'timeout'),
+            compression: any(named: 'compression'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedTimeout = invocation.namedArguments[#timeout] as Duration?;
+          return const Stream<Map<String, dynamic>>.empty();
+        });
 
-      final datasource = RelayStreamingAgentQueriesRemoteDataSource(
-        dispatcher: dispatcher,
-      );
-      await datasource
-          .streamSqlExecute(
-            const AgentSqlExecuteRequest(
-              agentId: 'agent-1',
-              sql: 'SELECT 1',
-            ),
-          )
-          .toList();
+        final datasource = RelayStreamingAgentQueriesRemoteDataSource(
+          dispatcher: dispatcher,
+        );
+        await datasource
+            .streamSqlExecute(
+              const AgentSqlExecuteRequest(
+                agentId: 'agent-1',
+                sql: 'SELECT 1',
+              ),
+            )
+            .toList();
 
-      check(capturedTimeout).equals(const Duration(milliseconds: 20000));
-    });
+        check(capturedTimeout).equals(const Duration(milliseconds: 20000));
+      },
+    );
 
-    test('passes the configured compression hint to the dispatcher',
-        () async {
+    test('passes the configured compression hint to the dispatcher', () async {
       final dispatcher = _MockRelayDispatcher();
       RelayPayloadFrameCompression? capturedCompression;
       when(
@@ -142,8 +142,9 @@ void main() {
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((invocation) {
-        capturedCompression = invocation.namedArguments[#compression]
-            as RelayPayloadFrameCompression?;
+        capturedCompression =
+            invocation.namedArguments[#compression]
+                as RelayPayloadFrameCompression?;
         return const Stream<Map<String, dynamic>>.empty();
       });
 
@@ -163,48 +164,51 @@ void main() {
       check(capturedCompression).equals(RelayPayloadFrameCompression.always);
     });
 
-    test('builds a body that includes the same agentId + sql.execute method',
-        () async {
-      final dispatcher = _MockRelayDispatcher();
-      final captured = <Map<String, Object?>>[];
-      String? capturedAgentId;
-      when(
-        () => dispatcher.sendStreaming(
-          agentId: any(named: 'agentId'),
-          body: any(named: 'body'),
-          clientRequestId: any(named: 'clientRequestId'),
-          timeout: any(named: 'timeout'),
-          compression: any(named: 'compression'),
-        ),
-      ).thenAnswer((invocation) {
-        capturedAgentId = invocation.namedArguments[#agentId] as String?;
-        captured.add(
-          (invocation.namedArguments[#body] as Map<dynamic, dynamic>)
-              .map((k, v) => MapEntry(k.toString(), v as Object?)),
-        );
-        return const Stream<Map<String, dynamic>>.empty();
-      });
-
-      final datasource = RelayStreamingAgentQueriesRemoteDataSource(
-        dispatcher: dispatcher,
-      );
-      await datasource
-          .streamSqlExecute(
-            const AgentSqlExecuteRequest(
-              agentId: 'agent-1',
-              sql: 'SELECT * FROM Cliente',
-              clientToken: 'token',
+    test(
+      'builds a body that includes the same agentId + sql.execute method',
+      () async {
+        final dispatcher = _MockRelayDispatcher();
+        final captured = <Map<String, Object?>>[];
+        String? capturedAgentId;
+        when(
+          () => dispatcher.sendStreaming(
+            agentId: any(named: 'agentId'),
+            body: any(named: 'body'),
+            clientRequestId: any(named: 'clientRequestId'),
+            timeout: any(named: 'timeout'),
+            compression: any(named: 'compression'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedAgentId = invocation.namedArguments[#agentId] as String?;
+          captured.add(
+            (invocation.namedArguments[#body] as Map<dynamic, dynamic>).map(
+              (k, v) => MapEntry(k.toString(), v as Object?),
             ),
-          )
-          .toList();
+          );
+          return const Stream<Map<String, dynamic>>.empty();
+        });
 
-      check(capturedAgentId).equals('agent-1');
-      check(captured.length).equals(1);
-      final body = captured.single;
-      check(body['agentId']).equals('agent-1');
-      final command = body['command']! as Map<dynamic, dynamic>;
-      check(command['method']).equals('sql.execute');
-    });
+        final datasource = RelayStreamingAgentQueriesRemoteDataSource(
+          dispatcher: dispatcher,
+        );
+        await datasource
+            .streamSqlExecute(
+              const AgentSqlExecuteRequest(
+                agentId: 'agent-1',
+                sql: 'SELECT * FROM Cliente',
+                clientToken: 'token',
+              ),
+            )
+            .toList();
+
+        check(capturedAgentId).equals('agent-1');
+        check(captured.length).equals(1);
+        final body = captured.single;
+        check(body['agentId']).equals('agent-1');
+        final command = body['command']! as Map<dynamic, dynamic>;
+        check(command['method']).equals('sql.execute');
+      },
+    );
 
     test('propagates RelayDispatchException as a stream error', () async {
       final dispatcher = _MockRelayDispatcher();

@@ -13,12 +13,12 @@ class ClientTokenPolicySnapshot {
 
   /// Convenience for "agent does not implement client_token.getPolicy".
   const ClientTokenPolicySnapshot.unsupported()
-      : policy = null,
-        supported = false;
+    : policy = null,
+      supported = false;
 
   /// Convenience for "agent answered with a policy".
   const ClientTokenPolicySnapshot.from(ClientTokenPolicy this.policy)
-      : supported = true;
+    : supported = true;
 
   final ClientTokenPolicy? policy;
   final bool supported;
@@ -52,16 +52,16 @@ class ClientTokenPolicy {
   /// Convenience for missing/invalid responses (no introspection
   /// available on the agent or token still being resolved).
   const ClientTokenPolicy.unknown()
-      : tokenIdentifier = '',
-        allTables = false,
-        allViews = false,
-        allPermissions = false,
-        tableRules = const <String>[],
-        viewRules = const <String>[],
-        permissionRules = const <String>[],
-        revoked = false,
-        revokedAt = null,
-        payload = const <String, Object?>{};
+    : tokenIdentifier = '',
+      allTables = false,
+      allViews = false,
+      allPermissions = false,
+      tableRules = const <String>[],
+      viewRules = const <String>[],
+      permissionRules = const <String>[],
+      revoked = false,
+      revokedAt = null,
+      payload = const <String, Object?>{};
 
   /// Stable identifier the agent assigned to the token (sha-256, jti…).
   /// Empty when the agent did not echo the field.
@@ -99,7 +99,8 @@ class ClientTokenPolicy {
   /// access (all tables AND all views AND all permissions).
   bool get hasFullAccess => allTables && allViews && allPermissions;
 
-  bool get isEmpty => tokenIdentifier.isEmpty &&
+  bool get isEmpty =>
+      tokenIdentifier.isEmpty &&
       tableRules.isEmpty &&
       viewRules.isEmpty &&
       permissionRules.isEmpty;

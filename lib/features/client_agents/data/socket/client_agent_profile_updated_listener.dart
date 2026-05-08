@@ -139,8 +139,7 @@ class ClientAgentProfileUpdatedListener {
         final decoded = _codec.decodeJson(frame);
         if (decoded is Map) {
           return decoded.map(
-            (key, value) =>
-                MapEntry<String, Object?>(key.toString(), value),
+            (key, value) => MapEntry<String, Object?>(key.toString(), value),
           );
         }
         return null;

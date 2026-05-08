@@ -112,25 +112,24 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         ),
       ).thenAnswer(
-        (_) async =>
-            Success<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
-              <ResumoVendaProdutoDiarioRow>[
-                ResumoVendaProdutoDiarioRow(
-                  codEmpresa: 1,
-                  codFilial: 6,
-                  codProdutoVendido: 1,
-                  origem: 'OB',
-                  codOrigem: 1,
-                  dataVenda: DateTime(2026, 4),
-                  anoMesDataVenda: '2026/04',
-                  nomeUsuario: 'U',
-                  codVendedor: 1,
-                  nomeVendedor: 'Pix',
-                  qtdVendas: 2,
-                  valorTotalVenda: 100,
-                ),
-              ],
+        (_) async => Success<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
+          <ResumoVendaProdutoDiarioRow>[
+            ResumoVendaProdutoDiarioRow(
+              codEmpresa: 1,
+              codFilial: 6,
+              codProdutoVendido: 1,
+              origem: 'OB',
+              codOrigem: 1,
+              dataVenda: DateTime(2026, 4),
+              anoMesDataVenda: '2026/04',
+              nomeUsuario: 'U',
+              codVendedor: 1,
+              nomeVendedor: 'Pix',
+              qtdVendas: 2,
+              valorTotalVenda: 100,
             ),
+          ],
+        ),
       );
 
       final filter = ResumoParcelaFormaPagamentoDiarioFilter(
@@ -209,10 +208,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async =>
-            const Failure<
-              List<ResumoVendaProdutoDiarioRow>,
-              AppFailure
-            >(
+            const Failure<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
               NetworkFailure(message: 'failed', userMessage: 'failed'),
             ),
       );

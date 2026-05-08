@@ -61,8 +61,7 @@ class AppDatePickerField extends StatelessWidget {
       errorText: errorText,
       enabled: enabled,
       density: density,
-      semanticsFallbackLabel:
-          l10n?.datePickerSemanticsFallbackLabel ?? 'Data',
+      semanticsFallbackLabel: l10n?.datePickerSemanticsFallbackLabel ?? 'Data',
       onOpen: () async {
         final result = await showAppDatePickerSheet(
           context: context,
@@ -104,8 +103,10 @@ class AppDateRangePickerField extends StatelessWidget {
     this.enabled = true,
     this.errorText,
     this.density = AppTextFieldDensity.comfortable,
+
     /// When non-null and [value] is non-null, shown instead of formatted dates.
     this.displayValueWhenFilledOverride,
+
     /// Extra phrase for accessibility when [displayValueWhenFilledOverride] hides
     /// the concrete dates (e.g. "Custom" with dates in this string).
     this.semanticsDetailWhenFilledOverride,
@@ -129,8 +130,7 @@ class AppDateRangePickerField extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = _tryL10n(context);
     final formatted = _formatDateRange(value);
-    final useOverride =
-        value != null && displayValueWhenFilledOverride != null;
+    final useOverride = value != null && displayValueWhenFilledOverride != null;
     final semanticsDetail = useOverride
         ? (semanticsDetailWhenFilledOverride ?? formatted)
         : null;
@@ -221,7 +221,9 @@ Future<Object?> showAppDateRangePickerSheet({
       final l10n = _tryL10n(sheetContext);
       return _AppDateRangePickerSheet(
         title:
-            title ?? l10n?.dateRangePickerSheetDefaultTitle ?? 'Selecionar período',
+            title ??
+            l10n?.dateRangePickerSheetDefaultTitle ??
+            'Selecionar período',
         initialValue: initialValue,
         firstDate: firstDate,
         lastDate: lastDate,
@@ -301,8 +303,7 @@ class _AppPickerFieldBodyState extends State<_AppPickerFieldBody> {
     final scheme = theme.colorScheme;
     final l10n = _tryL10n(context);
     final hasError = widget.errorText?.trim().isNotEmpty ?? false;
-    final isEmpty =
-        widget.displayValue == null || widget.displayValue!.isEmpty;
+    final isEmpty = widget.displayValue == null || widget.displayValue!.isEmpty;
     final compact = widget.density == AppTextFieldDensity.compact;
 
     final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
@@ -601,12 +602,10 @@ class _AppDatePickerSheetState extends State<_AppDatePickerSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = _tryL10n(context);
-    final canRemove =
-        widget.initialValue != null || _selectedDate != null;
+    final canRemove = widget.initialValue != null || _selectedDate != null;
     return _AppPickerSheetScaffold(
       title: widget.title,
-      removeSelectionLabel:
-          l10n?.datePickerSheetRemoveDate ?? 'Remover data',
+      removeSelectionLabel: l10n?.datePickerSheetRemoveDate ?? 'Remover data',
       applyButtonLabel: l10n?.datePickerSheetApply ?? 'Aplicar',
       closeButtonTooltip: l10n?.datePickerSheetCloseTooltip ?? 'Fechar',
       canRemoveSelection: canRemove,
@@ -701,8 +700,7 @@ class _AppDateRangePickerSheetState extends State<_AppDateRangePickerSheet> {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>();
     final l10n = _tryL10n(context);
-    final canRemove =
-        widget.initialValue != null || _selectedRange != null;
+    final canRemove = widget.initialValue != null || _selectedRange != null;
 
     return _AppPickerSheetScaffold(
       initialChildSize: 0.74,
@@ -862,8 +860,7 @@ class _AppPickerSheetScaffold extends StatelessWidget {
                     child: AppSecondaryButton(
                       fillWidth: true,
                       label: removeSelectionLabel,
-                      onPressed:
-                          canRemoveSelection ? onRemoveSelection : null,
+                      onPressed: canRemoveSelection ? onRemoveSelection : null,
                     ),
                   ),
                   SizedBox(width: tokens.gapMd),

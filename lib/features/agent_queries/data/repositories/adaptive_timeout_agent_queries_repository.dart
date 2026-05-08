@@ -26,10 +26,10 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     double safetyMultiplier = 3.0,
     Duration minTimeout = const Duration(seconds: 10),
     Duration maxTimeout = const Duration(seconds: 180),
-  })  : _delegate = delegate,
-        _safetyMultiplier = safetyMultiplier,
-        _minTimeout = minTimeout,
-        _maxTimeout = maxTimeout;
+  }) : _delegate = delegate,
+       _safetyMultiplier = safetyMultiplier,
+       _minTimeout = minTimeout,
+       _maxTimeout = maxTimeout;
 
   final AgentQueriesRepository _delegate;
   final double _safetyMultiplier;

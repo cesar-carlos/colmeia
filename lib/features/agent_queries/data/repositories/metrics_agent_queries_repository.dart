@@ -23,8 +23,8 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
   MetricsAgentQueriesRepository({
     required AgentQueriesRepository delegate,
     Duration metricsLogInterval = const Duration(minutes: 5),
-  })  : _delegate = delegate,
-        _metricsLogInterval = metricsLogInterval {
+  }) : _delegate = delegate,
+       _metricsLogInterval = metricsLogInterval {
     _schedulePeriodicLog();
   }
 

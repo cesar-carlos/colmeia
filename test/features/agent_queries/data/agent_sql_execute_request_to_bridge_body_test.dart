@@ -50,20 +50,22 @@ void main() {
       check(params['sql']).equals('SELECT * FROM tbl WHERE x = 1');
     });
 
-    test('includes timeoutMs and pagination at the body level when present',
-        () {
-      const request = AgentSqlExecuteRequest(
-        agentId: 'agent-1',
-        sql: 'SELECT 1',
-        bridgeTimeoutMs: 20000,
-        pagination: AgentSqlPagePagination(page: 2, pageSize: 50),
-      );
-      final body = builder.build(request: request, rpcId: 'rpc-3');
-      check(body['timeoutMs']).equals(20000);
-      final pagination = body['pagination']! as Map<String, Object?>;
-      check(pagination['page']).equals(2);
-      check(pagination['pageSize']).equals(50);
-    });
+    test(
+      'includes timeoutMs and pagination at the body level when present',
+      () {
+        const request = AgentSqlExecuteRequest(
+          agentId: 'agent-1',
+          sql: 'SELECT 1',
+          bridgeTimeoutMs: 20000,
+          pagination: AgentSqlPagePagination(page: 2, pageSize: 50),
+        );
+        final body = builder.build(request: request, rpcId: 'rpc-3');
+        check(body['timeoutMs']).equals(20000);
+        final pagination = body['pagination']! as Map<String, Object?>;
+        check(pagination['page']).equals(2);
+        check(pagination['pageSize']).equals(50);
+      },
+    );
 
     test('drops empty client token but keeps trimmed valid token', () {
       const empty = AgentSqlExecuteRequest(
@@ -99,8 +101,9 @@ void main() {
         ),
       );
       final body = builder.build(request: request, rpcId: 'rpc-6');
-      final params = (body['command']! as Map<String, Object?>)['params']!
-          as Map<String, Object?>;
+      final params =
+          (body['command']! as Map<String, Object?>)['params']!
+              as Map<String, Object?>;
       final options = params['options']! as Map<String, Object?>;
       check(options['execution_mode']).equals('preserve');
       check(options['max_rows']).equals(1000);
@@ -113,8 +116,9 @@ void main() {
         namedParams: <String, Object?>{'x': 7},
       );
       final body = builder.build(request: request, rpcId: 'rpc-7');
-      final params = (body['command']! as Map<String, Object?>)['params']!
-          as Map<String, Object?>;
+      final params =
+          (body['command']! as Map<String, Object?>)['params']!
+              as Map<String, Object?>;
       final inner = params['params']! as Map<String, Object?>;
       check(inner['x']).equals(7);
       check(inner.length).equals(1);

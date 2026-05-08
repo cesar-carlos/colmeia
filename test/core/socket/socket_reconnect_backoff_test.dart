@@ -86,31 +86,33 @@ void main() {
       }
     });
 
-    test('distribution covers low, mid and high portions over many samples',
-        () {
-      const ceiling = Duration(milliseconds: 100);
-      final random = math.Random(7);
-      var lowBucket = 0; // 0..33
-      var midBucket = 0; // 34..66
-      var highBucket = 0; // 67..100
-      for (var i = 0; i < 500; i++) {
-        final ms = SocketReconnectBackoff.jittered(
-          ceiling: ceiling,
-          random: random,
-        ).inMilliseconds;
-        if (ms <= 33) {
-          lowBucket++;
-        } else if (ms <= 66) {
-          midBucket++;
-        } else {
-          highBucket++;
+    test(
+      'distribution covers low, mid and high portions over many samples',
+      () {
+        const ceiling = Duration(milliseconds: 100);
+        final random = math.Random(7);
+        var lowBucket = 0; // 0..33
+        var midBucket = 0; // 34..66
+        var highBucket = 0; // 67..100
+        for (var i = 0; i < 500; i++) {
+          final ms = SocketReconnectBackoff.jittered(
+            ceiling: ceiling,
+            random: random,
+          ).inMilliseconds;
+          if (ms <= 33) {
+            lowBucket++;
+          } else if (ms <= 66) {
+            midBucket++;
+          } else {
+            highBucket++;
+          }
         }
-      }
-      // Each bucket must have at least some hits — proves we are not
-      // collapsing on a single value (regression for plain exponential).
-      check(lowBucket).isGreaterThan(50);
-      check(midBucket).isGreaterThan(50);
-      check(highBucket).isGreaterThan(50);
-    });
+        // Each bucket must have at least some hits — proves we are not
+        // collapsing on a single value (regression for plain exponential).
+        check(lowBucket).isGreaterThan(50);
+        check(midBucket).isGreaterThan(50);
+        check(highBucket).isGreaterThan(50);
+      },
+    );
   });
 }

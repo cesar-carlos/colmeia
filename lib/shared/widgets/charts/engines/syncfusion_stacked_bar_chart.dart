@@ -75,8 +75,9 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
       }
       return SelectionBehavior(
         enable: true,
-        unselectedOpacity:
-            style.tapHighlightDimmedOpacity.clamp(0, 1).toDouble(),
+        unselectedOpacity: style.tapHighlightDimmedOpacity
+            .clamp(0, 1)
+            .toDouble(),
       );
     }
 

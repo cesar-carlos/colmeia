@@ -60,9 +60,9 @@ const String _kWeekdayUserGroupedOthersSeriesKey =
     '__colmeia_weekday_user_grouped_others__';
 
 List<String> overviewWeekdayCategoryLabels(AppLocalizations l10n) => <String>[
-      for (final n in kOverviewWeekdayNumbersInOrder)
-        overviewWeekdaySalesLabel(n, l10n),
-    ];
+  for (final n in kOverviewWeekdayNumbersInOrder)
+    overviewWeekdaySalesLabel(n, l10n),
+];
 
 /// Builds clustered column data: X = weekday only; one series per user.
 WeekdayUserGroupedChartModel buildWeekdayUserGroupedChartModel({
@@ -144,12 +144,18 @@ WeekdayUserGroupedChartModel buildWeekdayUserGroupedChartModel({
         .map((s) => s.key)
         .toList(growable: false);
 
-    metricByUser[_kWeekdayUserGroupedOthersSeriesKey] =
-        List<num>.filled(dayCount, 0);
-    countByUser[_kWeekdayUserGroupedOthersSeriesKey] =
-        List<int>.filled(dayCount, 0);
-    amountByUser[_kWeekdayUserGroupedOthersSeriesKey] =
-        List<double>.filled(dayCount, 0);
+    metricByUser[_kWeekdayUserGroupedOthersSeriesKey] = List<num>.filled(
+      dayCount,
+      0,
+    );
+    countByUser[_kWeekdayUserGroupedOthersSeriesKey] = List<int>.filled(
+      dayCount,
+      0,
+    );
+    amountByUser[_kWeekdayUserGroupedOthersSeriesKey] = List<double>.filled(
+      dayCount,
+      0,
+    );
 
     final om = metricByUser[_kWeekdayUserGroupedOthersSeriesKey]!;
     final oc = countByUser[_kWeekdayUserGroupedOthersSeriesKey]!;

@@ -97,8 +97,9 @@ void main() {
         ]);
 
         check(repository.discoverCallCount).equals(1);
-        check(results.every((r) => r?.supportsMethod('sql.execute') ?? false))
-            .isTrue();
+        check(
+          results.every((r) => r?.supportsMethod('sql.execute') ?? false),
+        ).isTrue();
       },
     );
 
@@ -140,10 +141,12 @@ void main() {
           const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
         );
       check(notifications).equals(1);
-      check(registry.supports(agentId: 'a1', method: 'sql.execute'))
-          .equals(true);
-      check(registry.supports(agentId: 'a1', method: 'agent.getProfile'))
-          .equals(false);
+      check(
+        registry.supports(agentId: 'a1', method: 'sql.execute'),
+      ).equals(true);
+      check(
+        registry.supports(agentId: 'a1', method: 'agent.getProfile'),
+      ).equals(false);
 
       registry.invalidate(<String>['a1']);
       check(notifications).equals(2);
@@ -151,19 +154,20 @@ void main() {
     });
 
     test('clear() empties the cache and notifies once', () {
-      final registry = AgentRpcCapabilitiesRegistry(
-        discoverAgentRpcMethodsUseCase: DiscoverAgentRpcMethodsUseCase(
-          _ProgrammableMetaRepository(),
-        ),
-      )
-        ..put(
-          'a1',
-          const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
-        )
-        ..put(
-          'a2',
-          const AgentRpcDescriptor(methods: <String>{'agent.getProfile'}),
-        );
+      final registry =
+          AgentRpcCapabilitiesRegistry(
+              discoverAgentRpcMethodsUseCase: DiscoverAgentRpcMethodsUseCase(
+                _ProgrammableMetaRepository(),
+              ),
+            )
+            ..put(
+              'a1',
+              const AgentRpcDescriptor(methods: <String>{'sql.execute'}),
+            )
+            ..put(
+              'a2',
+              const AgentRpcDescriptor(methods: <String>{'agent.getProfile'}),
+            );
 
       var notifications = 0;
       registry
@@ -183,10 +187,10 @@ class _ProgrammableMetaRepository implements AgentMetaRepository {
     Map<String, AgentRpcDescriptor>? discoverByAgentId,
     Map<String, AppFailure>? failureByAgentId,
     Future<AppResult<AgentRpcDescriptor>>? Function(String)? discoverFuture,
-  })  : _discoverByAgentId =
-            discoverByAgentId ?? const <String, AgentRpcDescriptor>{},
-        _failureByAgentId = failureByAgentId ?? const <String, AppFailure>{},
-        _discoverFuture = discoverFuture;
+  }) : _discoverByAgentId =
+           discoverByAgentId ?? const <String, AgentRpcDescriptor>{},
+       _failureByAgentId = failureByAgentId ?? const <String, AppFailure>{},
+       _discoverFuture = discoverFuture;
 
   final Map<String, AgentRpcDescriptor> _discoverByAgentId;
   final Map<String, AppFailure> _failureByAgentId;

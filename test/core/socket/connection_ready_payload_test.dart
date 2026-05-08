@@ -46,8 +46,9 @@ void main() {
 
     test('returns null when id is missing or empty', () {
       check(decoder.decode(<String, Object?>{'message': 'no id'})).isNull();
-      check(decoder.decode(<String, Object?>{'id': '', 'message': 'empty'}))
-          .isNull();
+      check(
+        decoder.decode(<String, Object?>{'id': '', 'message': 'empty'}),
+      ).isNull();
     });
 
     test('returns null on non-JSON string', () {

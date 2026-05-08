@@ -435,9 +435,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       );
       return;
     }
-    final granted = _toIntOrNull(map['windowSize']) ??
-        _toIntOrNull(map['window_size']);
-    if (granted != null && granted >= 0 && granted < pending.outstandingCredits) {
+    final granted =
+        _toIntOrNull(map['windowSize']) ?? _toIntOrNull(map['window_size']);
+    if (granted != null &&
+        granted >= 0 &&
+        granted < pending.outstandingCredits) {
       // Hub clamped the window: align the local counter so the next refill
       // reflects what the server actually authorized.
       pending.outstandingCredits = granted;
@@ -675,8 +677,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     }
     // rpc.chunk
     pending.controller.add(logical);
-    pending.outstandingCredits =
-        (pending.outstandingCredits - 1).clamp(0, pending.initialWindow);
+    pending.outstandingCredits = (pending.outstandingCredits - 1).clamp(
+      0,
+      pending.initialWindow,
+    );
     if (pending.outstandingCredits <= pending.refillThreshold) {
       final delta = pending.initialWindow - pending.outstandingCredits;
       if (delta > 0) {

@@ -81,49 +81,40 @@ void main() {
 
   group('AgentQueryExecutionReportResumoVendaProdutoDiarioRowsX', () {
     test('aggregatedMergedRows consolidates participants', () {
-      final report =
-          AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow>(
-            queryKey: AgentQueryKey.resumoParcelaFormaPagamentoDiario,
-            strategy: AgentQueryExecutionStrategy.mergeAll,
-            consideredApprovedAgentCount: 2,
-            plannedTargets: <AgentQueryTarget>[],
-            missingClientTokenTargets: <AgentQueryTarget>[],
-            participants:
-                <
-                  AgentQueryExecutionParticipant<
-                    ResumoVendaProdutoDiarioRow
-                  >
-                >[
-                  AgentQueryExecutionParticipant<
-                    ResumoVendaProdutoDiarioRow
-                  >(
-                    agentId: 'a',
-                    displayName: 'a',
-                    rows: <ResumoVendaProdutoDiarioRow>[
-                      baseRow(
-                        dataVenda: day,
-                        valorTotalVenda: 2,
-                      ),
-                    ],
-                    elapsedMs: 1,
-                  ),
-                  AgentQueryExecutionParticipant<
-                    ResumoVendaProdutoDiarioRow
-                  >(
-                    agentId: 'b',
-                    displayName: 'b',
-                    rows: <ResumoVendaProdutoDiarioRow>[
-                      baseRow(
-                        dataVenda: day,
-                        qtdVendas: 3,
-                        valorTotalVenda: 8,
-                      ),
-                    ],
-                    elapsedMs: 1,
+      final report = AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow>(
+        queryKey: AgentQueryKey.resumoParcelaFormaPagamentoDiario,
+        strategy: AgentQueryExecutionStrategy.mergeAll,
+        consideredApprovedAgentCount: 2,
+        plannedTargets: <AgentQueryTarget>[],
+        missingClientTokenTargets: <AgentQueryTarget>[],
+        participants:
+            <AgentQueryExecutionParticipant<ResumoVendaProdutoDiarioRow>>[
+              AgentQueryExecutionParticipant<ResumoVendaProdutoDiarioRow>(
+                agentId: 'a',
+                displayName: 'a',
+                rows: <ResumoVendaProdutoDiarioRow>[
+                  baseRow(
+                    dataVenda: day,
+                    valorTotalVenda: 2,
                   ),
                 ],
-            totalElapsedMs: 2,
-          );
+                elapsedMs: 1,
+              ),
+              AgentQueryExecutionParticipant<ResumoVendaProdutoDiarioRow>(
+                agentId: 'b',
+                displayName: 'b',
+                rows: <ResumoVendaProdutoDiarioRow>[
+                  baseRow(
+                    dataVenda: day,
+                    qtdVendas: 3,
+                    valorTotalVenda: 8,
+                  ),
+                ],
+                elapsedMs: 1,
+              ),
+            ],
+        totalElapsedMs: 2,
+      );
       check(report.mergedRows.length).equals(2);
       check(report.aggregatedMergedRows.length).equals(1);
       check(report.aggregatedMergedRows.single.qtdVendas).equals(4);

@@ -274,8 +274,7 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
       required double layoutW,
       required Widget plotSlot,
     }) {
-      final wouldScroll =
-          (minCategoryWidth * categoryCount) > layoutW + 0.5;
+      final wouldScroll = (minCategoryWidth * categoryCount) > layoutW + 0.5;
       if (!wouldScroll || !isMobilePlatform) {
         return plotSlot;
       }
@@ -329,8 +328,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
               final wouldScroll =
                   (minCategoryWidth * categoryCount) > layoutW + 0.5;
               final wantsPanHint = wouldScroll && isMobilePlatform;
-              final panHintBlock = wantsPanHint &&
-                      expandedConstraints.maxHeight >= 140
+              final panHintBlock =
+                  wantsPanHint && expandedConstraints.maxHeight >= 140
                   ? tokens.gapSm + 40.0
                   : 0.0;
               final plotH = expandedConstraints.maxHeight - panHintBlock < 1

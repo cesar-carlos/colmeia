@@ -1,6 +1,7 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
@@ -25,6 +26,9 @@ class Overview {
     this.weekdayUserSalesTrend = const <OverviewWeekdayUserSalesTrendPoint>[],
     this.weekdayUserSalesTrendLoadFailed = false,
     this.weekdayUserSalesTrendLoadFailureMessage,
+    this.dailySalesTrend = const <OverviewDailySalesTrendPoint>[],
+    this.dailySalesTrendLoadFailed = false,
+    this.dailySalesTrendLoadFailureMessage,
     this.lucratividadeMensalTrend =
         const <ResumoProdutoVendaLucratividadeMensalRow>[],
     this.lucratividadeMensalTrendLoadFailed = false,
@@ -88,6 +92,15 @@ class Overview {
   /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
   /// weekday-by-user chart.
   final String? weekdayUserSalesTrendLoadFailureMessage;
+
+  /// Daily sales totals for the selected period (merged across agents/branches).
+  final List<OverviewDailySalesTrendPoint> dailySalesTrend;
+
+  final bool dailySalesTrendLoadFailed;
+
+  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
+  /// daily-sales chart.
+  final String? dailySalesTrendLoadFailureMessage;
 
   /// Monthly product profitability trend (lucratividade mensal): 12 months
   /// ending at the filter month. Each row carries `anoMes`, costs, revenue,
@@ -212,6 +225,9 @@ class Overview {
     List<OverviewWeekdayUserSalesTrendPoint>? weekdayUserSalesTrend,
     bool? weekdayUserSalesTrendLoadFailed,
     String? weekdayUserSalesTrendLoadFailureMessage,
+    List<OverviewDailySalesTrendPoint>? dailySalesTrend,
+    bool? dailySalesTrendLoadFailed,
+    String? dailySalesTrendLoadFailureMessage,
     List<ResumoProdutoVendaLucratividadeMensalRow>? lucratividadeMensalTrend,
     bool? lucratividadeMensalTrendLoadFailed,
     String? lucratividadeMensalTrendLoadFailureMessage,
@@ -248,6 +264,12 @@ class Overview {
       weekdayUserSalesTrendLoadFailureMessage:
           weekdayUserSalesTrendLoadFailureMessage ??
           this.weekdayUserSalesTrendLoadFailureMessage,
+      dailySalesTrend: dailySalesTrend ?? this.dailySalesTrend,
+      dailySalesTrendLoadFailed:
+          dailySalesTrendLoadFailed ?? this.dailySalesTrendLoadFailed,
+      dailySalesTrendLoadFailureMessage:
+          dailySalesTrendLoadFailureMessage ??
+          this.dailySalesTrendLoadFailureMessage,
       lucratividadeMensalTrend:
           lucratividadeMensalTrend ?? this.lucratividadeMensalTrend,
       lucratividadeMensalTrendLoadFailed:

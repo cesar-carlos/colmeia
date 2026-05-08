@@ -95,13 +95,13 @@ class OverviewDateRange {
 
   @override
   int get hashCode => Object.hash(
-        startInclusive.year,
-        startInclusive.month,
-        startInclusive.day,
-        endInclusive.year,
-        endInclusive.month,
-        endInclusive.day,
-      );
+    startInclusive.year,
+    startInclusive.month,
+    startInclusive.day,
+    endInclusive.year,
+    endInclusive.month,
+    endInclusive.day,
+  );
 }
 
 /// Inclusive calendar-day cap for [OverviewFilter.referenceRange] on home.
@@ -125,7 +125,8 @@ extension OverviewDateRangeHomePolicy on OverviewDateRange {
   }
 
   bool get withinHomeDashboardMaxInclusiveDays =>
-      inclusiveCalendarDayCount <= kOverviewCustomReferenceRangeMaxInclusiveDays;
+      inclusiveCalendarDayCount <=
+      kOverviewCustomReferenceRangeMaxInclusiveDays;
 
   /// Clamps both endpoints to local calendar days inside
   /// [[firstInclusive], [lastInclusive]] (inclusive).

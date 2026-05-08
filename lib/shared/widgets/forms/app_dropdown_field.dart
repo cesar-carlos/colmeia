@@ -32,6 +32,7 @@ class AppDropdownField<T> extends StatefulWidget {
     this.emptyLabel = 'Nenhuma opção disponível.',
     this.semanticsLabel,
     this.menuMaxHeight = 220,
+
     /// When non-null, replaces the matched option label in the collapsed field.
     this.selectedDisplayLabel,
   });
@@ -114,12 +115,14 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
           orElse: () => null,
         );
 
-    final displayLabel = widget.selectedDisplayLabel ??
+    final displayLabel =
+        widget.selectedDisplayLabel ??
         selectedOption?.label ??
         widget.value?.toString() ??
         widget.hintText ??
         'Selecione uma opção';
-    final hasCollapsedSelection = selectedOption != null ||
+    final hasCollapsedSelection =
+        selectedOption != null ||
         widget.selectedDisplayLabel != null ||
         (widget.value != null && selectedOption == null);
 
@@ -285,9 +288,9 @@ class AppMultiSelectSearchField<T> extends StatefulWidget {
     this.semanticsLabel,
     this.minimumSelectionCount = 0,
   }) : assert(
-          minimumSelectionCount >= 0,
-          'minimumSelectionCount must be non-negative',
-        );
+         minimumSelectionCount >= 0,
+         'minimumSelectionCount must be non-negative',
+       );
 
   final List<AppDropdownOption<T>> options;
   final List<T> selectedValues;
@@ -384,18 +387,15 @@ class _AppMultiSelectSearchFieldState<T>
             vertical: tokens.gapSm,
           )
         : _contentPadding(tokens, widget.density);
-    final labelToFieldGap =
-        widget.density == AppTextFieldDensity.compact
-            ? tokens.gapXs
-            : tokens.gapSm;
-    final chipSectionBottomGap =
-        widget.density == AppTextFieldDensity.compact
-            ? tokens.gapXs
-            : tokens.gapSm;
-    final chipWrapSpacing =
-        widget.density == AppTextFieldDensity.compact
-            ? tokens.gapXs
-            : tokens.gapSm;
+    final labelToFieldGap = widget.density == AppTextFieldDensity.compact
+        ? tokens.gapXs
+        : tokens.gapSm;
+    final chipSectionBottomGap = widget.density == AppTextFieldDensity.compact
+        ? tokens.gapXs
+        : tokens.gapSm;
+    final chipWrapSpacing = widget.density == AppTextFieldDensity.compact
+        ? tokens.gapXs
+        : tokens.gapSm;
     final borderSide = _resolveBorderSide(
       colors: colors,
       scheme: scheme,
@@ -471,7 +471,7 @@ class _AppMultiSelectSearchFieldState<T>
                         ),
                         child: Align(
                           alignment: Alignment.centerLeft,
-                            child: Wrap(
+                          child: Wrap(
                             spacing: chipWrapSpacing,
                             runSpacing: chipWrapSpacing,
                             children: widget.selectedValues
@@ -486,8 +486,8 @@ class _AppMultiSelectSearchFieldState<T>
                                     return const SizedBox.shrink();
                                   }
 
-                                  final canRemove = widget.selectedValues
-                                          .length >
+                                  final canRemove =
+                                      widget.selectedValues.length >
                                       widget.minimumSelectionCount;
 
                                   return _MultiSelectChip(
@@ -511,8 +511,8 @@ class _AppMultiSelectSearchFieldState<T>
                       padding: fieldPadding,
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
-                          minHeight: widget.density ==
-                                  AppTextFieldDensity.compact
+                          minHeight:
+                              widget.density == AppTextFieldDensity.compact
                               ? kMinInteractiveDimension
                               : 0,
                         ),
@@ -548,7 +548,8 @@ class _AppMultiSelectSearchFieldState<T>
                                   turns: _expanded ? 0.5 : 0,
                                   child: Icon(
                                     Icons.expand_more_rounded,
-                                    size: widget.density ==
+                                    size:
+                                        widget.density ==
                                             AppTextFieldDensity.compact
                                         ? 20
                                         : 24,

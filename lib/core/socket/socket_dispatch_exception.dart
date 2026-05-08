@@ -75,8 +75,7 @@ final class SocketDispatchUnauthorized extends SocketDispatchException {
 /// configuration error and either fall back to REST (see
 /// `SocketWithRestFallbackAgentQueriesRemoteDataSource`) or surface
 /// a hub-config user message instead of "Sua sessao expirou".
-final class SocketDispatchNamespaceForbidden
-    extends SocketDispatchException {
+final class SocketDispatchNamespaceForbidden extends SocketDispatchException {
   const SocketDispatchNamespaceForbidden({
     required super.message,
     this.role,

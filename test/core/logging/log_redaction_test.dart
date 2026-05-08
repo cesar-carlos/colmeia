@@ -5,10 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('LogRedaction.redactEmail', () {
     test('keeps the first character of the local-part and the domain', () {
-      check(LogRedaction.redactEmail('joao@example.com'))
-          .equals('j***@example.com');
-      check(LogRedaction.redactEmail('pedro@gmail.com'))
-          .equals('p***@gmail.com');
+      check(
+        LogRedaction.redactEmail('joao@example.com'),
+      ).equals('j***@example.com');
+      check(
+        LogRedaction.redactEmail('pedro@gmail.com'),
+      ).equals('p***@gmail.com');
     });
 
     test(
@@ -45,13 +47,13 @@ void main() {
     test('handles `@example.com` (empty local-part) defensively', () {
       // No useful disambiguator survives — emit the opaque mask but
       // keep the domain so log readers know it was email-shaped.
-      check(LogRedaction.redactEmail('@example.com'))
-          .equals('***@example.com');
+      check(LogRedaction.redactEmail('@example.com')).equals('***@example.com');
     });
 
     test('trims surrounding whitespace before redacting', () {
-      check(LogRedaction.redactEmail('  user@host.com  '))
-          .equals('u***@host.com');
+      check(
+        LogRedaction.redactEmail('  user@host.com  '),
+      ).equals('u***@host.com');
     });
   });
 }

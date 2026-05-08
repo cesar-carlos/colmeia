@@ -6,6 +6,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report_resumo_parcelas.dart';
@@ -22,15 +23,19 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
+import 'package:colmeia/features/overview/data/mappers/overview_daily_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_monthly_parcel_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_user_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
@@ -65,6 +70,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     loadResumoParcelasDiaSemanaAcrossAgents,
     required LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase
     loadResumoParcelasDiaSemanaUsuarioAcrossAgents,
+    required LoadResumoTotalDiarioVendasAcrossAgentsUseCase
+    loadResumoTotalDiarioVendasAcrossAgents,
     required LoadResumoProdutoVendaLucratividadeMensalUseCase
     loadResumoProdutoVendaLucratividadeMensal,
     required LoadResumoProdutoVendaLucratividadeUseCase
@@ -78,6 +85,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
            loadResumoParcelasDiaSemanaAcrossAgents,
        _loadResumoParcelasDiaSemanaUsuarioAcrossAgents =
            loadResumoParcelasDiaSemanaUsuarioAcrossAgents,
+       _loadResumoTotalDiarioVendasAcrossAgents =
+           loadResumoTotalDiarioVendasAcrossAgents,
        _loadResumoProdutoVendaLucratividadeMensal =
            loadResumoProdutoVendaLucratividadeMensal,
        _loadResumoProdutoVendaLucratividade =
@@ -93,6 +102,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
   _loadResumoParcelasDiaSemanaAcrossAgents;
   final LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase
   _loadResumoParcelasDiaSemanaUsuarioAcrossAgents;
+  final LoadResumoTotalDiarioVendasAcrossAgentsUseCase
+  _loadResumoTotalDiarioVendasAcrossAgents;
   final LoadResumoProdutoVendaLucratividadeMensalUseCase
   _loadResumoProdutoVendaLucratividadeMensal;
   final LoadResumoProdutoVendaLucratividadeUseCase
@@ -110,6 +121,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
   /// Higher cardinality than the aggregate weekday query; allow merge-all a
   /// little longer before the bridge times out.
   static const int _overviewWeekdayUserSqlBridgeTimeoutMs = 360000;
+
+  static const int _overviewDailySalesSqlBridgeTimeoutMs = 300000;
 
   /// Lucratividade mensal query covers 12 months — allow the same long window
   /// as the monthly parcel trend query.
@@ -161,9 +174,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     );
     // Period lucratividade: one aggregated bar per agent. Targets and display
     // names come from the payment resumo [report] once it returns (see below).
-    var lucratividadeFuture = Future<
-      AppResult<_LucratividadeLoadBundle>
-    >.value(
+    var lucratividadeFuture = Future<AppResult<_LucratividadeLoadBundle>>.value(
       const Success<_LucratividadeLoadBundle, AppFailure>(
         _LucratividadeLoadBundle(rows: <ResumoProdutoVendaLucratividadeRow>[]),
       ),
@@ -174,6 +185,17 @@ class OverviewRepositoryImpl implements OverviewRepository {
       selectedAgentIds: filter.selectedAgentIds,
       strategy: executionStrategy,
       bridgeTimeoutMs: _overviewWeekdaySalesSqlBridgeTimeoutMs,
+    );
+    final dailyTotalFilter = ResumoTotalDiarioVendasFilter(
+      dataVendaInicio: period.start,
+      dataVendaFim: period.end,
+    );
+    final dailySalesFuture = _loadResumoTotalDiarioVendasAcrossAgents(
+      userId: userId,
+      filter: dailyTotalFilter,
+      selectedAgentIds: filter.selectedAgentIds,
+      strategy: executionStrategy,
+      bridgeTimeoutMs: _overviewDailySalesSqlBridgeTimeoutMs,
     );
     Future<
       AppResult<AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>>
@@ -200,6 +222,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       if (report == null) {
         await monthlyParcelFuture;
         await weekdaySalesFuture;
+        await dailySalesFuture;
         await lucratividadeMensalFuture;
         await lucratividadeFuture;
         final failure = _mapOverviewFailure(
@@ -224,6 +247,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
           mensalFilter,
         );
         final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
+        final dailyF = _resolveDailySalesTrend(
+          dailySalesFuture,
+          dailyTotalFilter,
+        );
         final userF = _resolveWeekdayUserSalesTrendOptional(
           weekdayUserBridgeFuture,
         );
@@ -233,6 +260,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         final lvcF = _resolveLucratividadeTrend(lucratividadeFuture);
         final monthly = await monthlyF;
         final weekday = await weekdayF;
+        final daily = await dailyF;
         final weekdayUser = await userF;
         final lucratividadeMensal = await lucratividadeMensalF;
         final lvc = await lvcF;
@@ -251,6 +279,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
             weekdaySalesTrend: weekday.points,
             weekdaySalesTrendLoadFailed: weekday.loadFailed,
             weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
+            dailySalesTrend: daily.points,
+            dailySalesTrendLoadFailed: daily.loadFailed,
+            dailySalesTrendLoadFailureMessage: daily.loadFailureMessage,
             weekdayUserSalesTrend: weekdayUser.points,
             weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
             weekdayUserSalesTrendLoadFailureMessage:
@@ -314,6 +345,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
             mensalFilter,
           );
           final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
+          final dailyF = _resolveDailySalesTrend(
+            dailySalesFuture,
+            dailyTotalFilter,
+          );
           final userF = _resolveWeekdayUserSalesTrendOptional(
             weekdayUserBridgeFuture,
           );
@@ -323,6 +358,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           final lvcF = _resolveLucratividadeTrend(lucratividadeFuture);
           final monthly = await monthlyF;
           final weekday = await weekdayF;
+          final daily = await dailyF;
           final weekdayUser = await userF;
           final lucratividadeMensal = await lucratividadeMensalF;
           final lvc = await lvcF;
@@ -334,6 +370,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
               weekdaySalesTrend: weekday.points,
               weekdaySalesTrendLoadFailed: weekday.loadFailed,
               weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
+              dailySalesTrend: daily.points,
+              dailySalesTrendLoadFailed: daily.loadFailed,
+              dailySalesTrendLoadFailureMessage: daily.loadFailureMessage,
               weekdayUserSalesTrend: weekdayUser.points,
               weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
               weekdayUserSalesTrendLoadFailureMessage:
@@ -370,6 +409,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
         mensalFilter,
       );
       final weekdayF = _resolveWeekdaySalesTrend(weekdaySalesFuture);
+      final dailyF = _resolveDailySalesTrend(
+        dailySalesFuture,
+        dailyTotalFilter,
+      );
       final userF = _resolveWeekdayUserSalesTrendOptional(
         weekdayUserBridgeFuture,
       );
@@ -379,6 +422,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       final lvcF = _resolveLucratividadeTrend(lucratividadeFuture);
       final monthly = await monthlyF;
       final weekday = await weekdayF;
+      final daily = await dailyF;
       final weekdayUser = await userF;
       final lucratividadeMensal = await lucratividadeMensalF;
       final lvc = await lvcF;
@@ -403,6 +447,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
         weekdaySalesTrend: weekday.points,
         weekdaySalesTrendLoadFailed: weekday.loadFailed,
         weekdaySalesTrendLoadFailureMessage: weekday.loadFailureMessage,
+        dailySalesTrend: daily.points,
+        dailySalesTrendLoadFailed: daily.loadFailed,
+        dailySalesTrendLoadFailureMessage: daily.loadFailureMessage,
         weekdayUserSalesTrend: weekdayUser.points,
         weekdayUserSalesTrendLoadFailed: weekdayUser.loadFailed,
         weekdayUserSalesTrendLoadFailureMessage: weekdayUser.loadFailureMessage,
@@ -459,6 +506,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     } on Object catch (error, stackTrace) {
       await monthlyParcelFuture;
       await weekdaySalesFuture;
+      await dailySalesFuture;
       await lucratividadeMensalFuture;
       await lucratividadeFuture;
       if (weekdayUserBridgeFuture != null) {
@@ -550,6 +598,31 @@ class OverviewRepositoryImpl implements OverviewRepository {
           overviewWeekdaySalesTrendPointsFromRows(report.chartRowsWeek),
       failureLogMessage: 'Overview: weekday sales trend query failed',
       emptyValue: const <OverviewWeekdaySalesTrendPoint>[],
+    );
+  }
+
+  Future<
+    ({
+      List<OverviewDailySalesTrendPoint> points,
+      bool loadFailed,
+      String? loadFailureMessage,
+    })
+  >
+  _resolveDailySalesTrend(
+    Future<AppResult<AgentQueryExecutionReport<ResumoTotalDiarioVendasRow>>>
+    dailySalesFuture,
+    ResumoTotalDiarioVendasFilter dailyFilter,
+  ) async {
+    return _resolveOptionalChartData<
+      ResumoTotalDiarioVendasRow,
+      OverviewDailySalesTrendPoint
+    >(
+      future: dailySalesFuture,
+      mapSuccess: (report) => overviewDailySalesTrendPointsFromRows(
+        report.chartRowsFilledPeriod(dailyFilter),
+      ),
+      failureLogMessage: 'Overview: daily sales trend query failed',
+      emptyValue: const <OverviewDailySalesTrendPoint>[],
     );
   }
 
@@ -754,7 +827,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
   /// Uses each [AgentQueryTarget]'s `client_token` and hub-presence hints —
   /// same contract as the payment resumo wave — so the bridge does not treat
   /// follow-up `sql.execute` calls as unauthenticated.
-  Future<AppResult<_LucratividadeLoadBundle>> _loadLucratividadeAggregatedByAgent({
+  Future<AppResult<_LucratividadeLoadBundle>>
+  _loadLucratividadeAggregatedByAgent({
     required String userId,
     required _OverviewPeriod period,
     required List<AgentQueryTarget> targets,
@@ -818,7 +892,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
           firstFailure!,
         );
       }
-      partialFailures.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+      partialFailures.sort(
+        (a, b) => a.toLowerCase().compareTo(b.toLowerCase()),
+      );
       return Success<_LucratividadeLoadBundle, AppFailure>(
         _LucratividadeLoadBundle(
           rows: aggregated,
@@ -860,8 +936,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           points: const <ResumoProdutoVendaLucratividadeRow>[],
           loadFailed: true,
           loadFailureMessage: failure.userMessage,
-          lucratividadePartialFailureAgentNames:
-              const <String>[],
+          lucratividadePartialFailureAgentNames: const <String>[],
         );
       },
     );
@@ -1305,6 +1380,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
         const <OverviewWeekdaySalesTrendPoint>[],
     bool weekdaySalesTrendLoadFailed = false,
     String? weekdaySalesTrendLoadFailureMessage,
+    List<OverviewDailySalesTrendPoint> dailySalesTrend =
+        const <OverviewDailySalesTrendPoint>[],
+    bool dailySalesTrendLoadFailed = false,
+    String? dailySalesTrendLoadFailureMessage,
     List<OverviewWeekdayUserSalesTrendPoint> weekdayUserSalesTrend =
         const <OverviewWeekdayUserSalesTrendPoint>[],
     bool weekdayUserSalesTrendLoadFailed = false,
@@ -1317,8 +1396,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         const <ResumoProdutoVendaLucratividadeRow>[],
     bool lucratividadeTrendLoadFailed = false,
     String? lucratividadeTrendLoadFailureMessage,
-    List<String> lucratividadePartialFailureAgentNames =
-        const <String>[],
+    List<String> lucratividadePartialFailureAgentNames = const <String>[],
     bool mainResumoHadPlannedTargets = false,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
@@ -1424,6 +1502,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
       weekdaySalesTrend: weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
       weekdaySalesTrendLoadFailureMessage: weekdaySalesTrendLoadFailureMessage,
+      dailySalesTrend: dailySalesTrend,
+      dailySalesTrendLoadFailed: dailySalesTrendLoadFailed,
+      dailySalesTrendLoadFailureMessage: dailySalesTrendLoadFailureMessage,
       weekdayUserSalesTrend: weekdayUserSalesTrend,
       weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
       weekdayUserSalesTrendLoadFailureMessage:
@@ -1434,8 +1515,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
           lucratividadeMensalTrendLoadFailureMessage,
       lucratividadeTrend: lucratividadeTrend,
       lucratividadeTrendLoadFailed: lucratividadeTrendLoadFailed,
-      lucratividadeTrendLoadFailureMessage: lucratividadeTrendLoadFailureMessage,
-      lucratividadePartialFailureAgentNames: lucratividadePartialFailureAgentNames,
+      lucratividadeTrendLoadFailureMessage:
+          lucratividadeTrendLoadFailureMessage,
+      lucratividadePartialFailureAgentNames:
+          lucratividadePartialFailureAgentNames,
       approvedAgentCount: approvedAgentCount,
       agentIdsExcludedFromQueryFailure: agentIdsExcludedFromQueryFailure,
       agentNamesExcludedFromQueryFailure: agentNamesExcludedFromQueryFailure,

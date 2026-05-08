@@ -28,9 +28,9 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
     required AgentQueriesRepository delegate,
     int failureThreshold = 5,
     Duration cooldownPeriod = const Duration(seconds: 30),
-  })  : _delegate = delegate,
-        _failureThreshold = failureThreshold,
-        _cooldownPeriod = cooldownPeriod;
+  }) : _delegate = delegate,
+       _failureThreshold = failureThreshold,
+       _cooldownPeriod = cooldownPeriod;
 
   final AgentQueriesRepository _delegate;
   final int _failureThreshold;
@@ -52,8 +52,7 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
   ) async {
     if (_state == _CircuitState.open) {
       final now = DateTime.now();
-      if (_openedAt != null &&
-          now.difference(_openedAt!) >= _cooldownPeriod) {
+      if (_openedAt != null && now.difference(_openedAt!) >= _cooldownPeriod) {
         _state = _CircuitState.halfOpen;
         AppLogger.info(
           'Circuit breaker entering half-open state for probe',
@@ -76,7 +75,7 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
               'cooldownRemainingMs': _openedAt == null
                   ? 0
                   : (_cooldownPeriod.inMilliseconds -
-                      now.difference(_openedAt!).inMilliseconds),
+                        now.difference(_openedAt!).inMilliseconds),
             },
           ),
         );

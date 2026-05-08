@@ -78,7 +78,8 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
       },
       executeOptions: AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
-        maxRows: AgentQueriesBoundedResultMaxRows.produtoVendidoProdutoRankLucro,
+        maxRows:
+            AgentQueriesBoundedResultMaxRows.produtoVendidoProdutoRankLucro,
         sqlTimeoutMs: effectiveSqlMs,
       ),
       useRelay: true,
@@ -97,10 +98,9 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
     required String agentId,
   }) {
     if (executionResult.rows.isEmpty) {
-      return const Success<
-        List<ProdutoVendidoProdutoRankLucroRow>,
-        AppFailure
-      >([]);
+      return const Success<List<ProdutoVendidoProdutoRankLucroRow>, AppFailure>(
+        [],
+      );
     }
 
     try {

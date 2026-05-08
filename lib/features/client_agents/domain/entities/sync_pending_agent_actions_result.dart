@@ -34,6 +34,5 @@ class SyncPendingAgentActionsResult {
       successfulRemoveAccessAgentIds.length;
 
   int get failedActionCount =>
-      failedRequestAccessAgentIds.length +
-      failedRemoveAccessAgentIds.length;
+      failedRequestAccessAgentIds.length + failedRemoveAccessAgentIds.length;
 }

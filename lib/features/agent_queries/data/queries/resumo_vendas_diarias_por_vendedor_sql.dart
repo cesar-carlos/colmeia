@@ -34,12 +34,12 @@ abstract final class ResumoVendasDiariasPorVendedorSql {
         : '        AND CodVendedor = $codVendedor';
     final bairroLine =
         ResumoVendasDiariasPorVendedorBairroNomeExpression.outerWhereNormalizedBairro(
-      bairro,
-    );
+          bairro,
+        );
     final municipioLine =
         ResumoVendasDiariasPorVendedorBairroNomeExpression.outerWhereNormalizedMunicipio(
-      municipio,
-    );
+          municipio,
+        );
     return '''
       SELECT
         CodEmpresa,

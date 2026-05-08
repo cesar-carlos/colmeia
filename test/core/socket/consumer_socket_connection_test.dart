@@ -15,9 +15,9 @@ class _FakeTokenProvider implements SocketAuthTokenProvider {
   _FakeTokenProvider({
     String? token,
     String? refreshToken,
-  })  : _token = token,
-        _refreshToken = refreshToken,
-        _events = StreamController<void>.broadcast();
+  }) : _token = token,
+       _refreshToken = refreshToken,
+       _events = StreamController<void>.broadcast();
 
   String? _token;
   final String? _refreshToken;
@@ -184,8 +184,9 @@ void main() {
 
       // The post-dispose disconnect must NOT push a new state because the
       // controller has already been closed.
-      check(emitted.whereType<ConsumerSocketDisconnected>().length)
-          .isLessOrEqual(1);
+      check(
+        emitted.whereType<ConsumerSocketDisconnected>().length,
+      ).isLessOrEqual(1);
     });
 
     test(

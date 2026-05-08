@@ -281,8 +281,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
       return Failure<AgentSqlExecutionResult, AppFailure>(
         NetworkFailure(
           message: error.message,
-          userMessage:
-              'Falha de comunicacao com o servidor. Tente novamente.',
+          userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{
@@ -560,8 +559,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
       return Failure<AgentSqlExecutionResult, AppFailure>(
         NetworkFailure(
           message: error.message,
-          userMessage:
-              'Falha de comunicacao com o servidor. Tente novamente.',
+          userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{
@@ -620,8 +618,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
     if (isSocketAuthenticationFailedCode(serverCode)) {
       return SessionFailure(
         message: message,
-        userMessage:
-            'Sua sessao expirou. Faca login novamente para continuar.',
+        userMessage: 'Sua sessao expirou. Faca login novamente para continuar.',
         cause: cause,
         stackTrace: stackTrace,
         context: baseContext,

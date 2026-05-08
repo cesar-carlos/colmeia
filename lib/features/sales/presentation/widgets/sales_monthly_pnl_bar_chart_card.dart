@@ -406,47 +406,47 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
         secondaryAxisFormat: primaryMoney,
         height: chartHeightOverride,
         gridLineColor: gridLineColor,
-        horizontalScrollShellKey: SalesMonthlyPnlChartKeys.barHorizontalScrollShell,
+        horizontalScrollShellKey:
+            SalesMonthlyPnlChartKeys.barHorizontalScrollShell,
         horizontalScrollSemanticsHint:
             l10n.overviewComparisonBarHorizontalScrollHint,
-        tooltipBuilder:
-            (data, point, series, pointIndex, seriesIndex) {
-              final p = data as SalesMonthlyPnlPoint;
-              final label = switch (seriesIndex) {
-                1 => l10n.salesMonthlyPnlSeriesProfitLabel,
-                2 => l10n.salesMonthlyPnlSeriesCostLabel,
-                _ => l10n.salesMonthlyPnlSeriesSalesLabel,
-              };
-              final value = switch (seriesIndex) {
-                1 => p.lucro,
-                2 => p.custoMercadoria,
-                _ => p.venda,
-              };
-              return Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      _monthLong(p, localeTag),
-                      style: TextStyle(
-                        color: theme.colorScheme.onInverseSurface,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$label: ${AppBrFormatters.smartCompactCurrencyForLocale(value, localeTag)}',
-                      style: TextStyle(
-                        color: theme.colorScheme.onInverseSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+        tooltipBuilder: (data, point, series, pointIndex, seriesIndex) {
+          final p = data as SalesMonthlyPnlPoint;
+          final label = switch (seriesIndex) {
+            1 => l10n.salesMonthlyPnlSeriesProfitLabel,
+            2 => l10n.salesMonthlyPnlSeriesCostLabel,
+            _ => l10n.salesMonthlyPnlSeriesSalesLabel,
+          };
+          final value = switch (seriesIndex) {
+            1 => p.lucro,
+            2 => p.custoMercadoria,
+            _ => p.venda,
+          };
+          return Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  _monthLong(p, localeTag),
+                  style: TextStyle(
+                    color: theme.colorScheme.onInverseSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              );
-            },
+                const SizedBox(height: 4),
+                Text(
+                  '$label: ${AppBrFormatters.smartCompactCurrencyForLocale(value, localeTag)}',
+                  style: TextStyle(
+                    color: theme.colorScheme.onInverseSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       );
     }
 
@@ -608,15 +608,18 @@ Widget salesMonthlyPnlBarDisplayModeSegmented({
               label: narrow
                   ? l10n.salesMonthlyPnlBarDisplayValuesCompactLabel
                   : l10n.salesMonthlyPnlBarDisplayValuesLabel,
-              tooltip: narrow ? l10n.salesMonthlyPnlBarDisplayValuesLabel : null,
+              tooltip: narrow
+                  ? l10n.salesMonthlyPnlBarDisplayValuesLabel
+                  : null,
             ),
             AppSegmentedControlOption<SalesMonthlyPnlBarDisplayMode>(
               value: SalesMonthlyPnlBarDisplayMode.percent,
               label: narrow
                   ? l10n.salesMonthlyPnlBarDisplayPercentCompactLabel
                   : l10n.salesMonthlyPnlBarDisplayPercentLabel,
-              tooltip:
-                  narrow ? l10n.salesMonthlyPnlBarDisplayPercentLabel : null,
+              tooltip: narrow
+                  ? l10n.salesMonthlyPnlBarDisplayPercentLabel
+                  : null,
             ),
           ],
           value: value,
@@ -645,8 +648,9 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
       chartSemanticsLabel: pageL10n.salesMonthlyPnlBarChartSemantics,
       chartBuilder: (fullscreenContext) {
         final l10nFs = AppLocalizations.of(fullscreenContext);
-        final tokensFs =
-            Theme.of(fullscreenContext).extension<AppThemeTokens>()!;
+        final tokensFs = Theme.of(
+          fullscreenContext,
+        ).extension<AppThemeTokens>()!;
         final sessionHolder = <SalesMonthlyPnlBarChartPreferences>[
           initialSession,
         ];
@@ -662,8 +666,9 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
                   l10n: l10nFs,
                   value: fsSession.displayMode,
                   onChanged: (v) => setFs(() {
-                    sessionHolder[0] =
-                        sessionHolder[0].copyWith(displayMode: v);
+                    sessionHolder[0] = sessionHolder[0].copyWith(
+                      displayMode: v,
+                    );
                   }),
                 ),
                 if (isPct) ...<Widget>[
@@ -681,10 +686,9 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
                           hasChartData: points.isNotEmpty,
                           showChronologicalHint: true,
                           onMetricChanged: (v) => setFs(() {
-                            sessionHolder[0] =
-                                sessionHolder[0].copyWith(
-                                  percentMetric: v,
-                                );
+                            sessionHolder[0] = sessionHolder[0].copyWith(
+                              percentMetric: v,
+                            );
                           }),
                         );
                       },

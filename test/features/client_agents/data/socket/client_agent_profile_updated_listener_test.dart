@@ -103,32 +103,35 @@ void main() {
       check(listener.isAttached).isFalse();
     });
 
-    test('PayloadFrame envelope decodes into AgentPresenceCatalogUpdated',
-        () async {
-      buildListener().attach();
-      final emitted = sink.stream.toList();
+    test(
+      'PayloadFrame envelope decodes into AgentPresenceCatalogUpdated',
+      () async {
+        buildListener().attach();
+        final emitted = sink.stream.toList();
 
-      final frame = _payloadFrame(<String, Object?>{
-        'agent_id': 'agent-7',
-        'profile_version': 12,
-        'changed_fields': <String>['phone', 'address'],
-        'profileUpdatedAt': '2026-04-17T15:30:00Z',
-        'source': 'http',
-      });
-      wiring.fire(ClientAgentProfileUpdatedListener.eventName, frame);
-      await Future<void>.delayed(Duration.zero);
-      await sink.close();
+        final frame = _payloadFrame(<String, Object?>{
+          'agent_id': 'agent-7',
+          'profile_version': 12,
+          'changed_fields': <String>['phone', 'address'],
+          'profileUpdatedAt': '2026-04-17T15:30:00Z',
+          'source': 'http',
+        });
+        wiring.fire(ClientAgentProfileUpdatedListener.eventName, frame);
+        await Future<void>.delayed(Duration.zero);
+        await sink.close();
 
-      final list = await emitted;
-      check(list.length).equals(1);
-      final event = list.single as AgentPresenceCatalogUpdated;
-      check(event.agentId).equals('agent-7');
-      check(event.profileVersion).equals(12);
-      check(event.changedFields)
-          .deepEquals(const <String>{'phone', 'address'});
-      check(event.observedAt).equals(DateTime.utc(2026, 4, 17, 15, 30));
-      check(event.source).equals('http');
-    });
+        final list = await emitted;
+        check(list.length).equals(1);
+        final event = list.single as AgentPresenceCatalogUpdated;
+        check(event.agentId).equals('agent-7');
+        check(event.profileVersion).equals(12);
+        check(
+          event.changedFields,
+        ).deepEquals(const <String>{'phone', 'address'});
+        check(event.observedAt).equals(DateTime.utc(2026, 4, 17, 15, 30));
+        check(event.source).equals('http');
+      },
+    );
 
     test('raw JSON map (legacy hub) is also accepted', () async {
       buildListener().attach();

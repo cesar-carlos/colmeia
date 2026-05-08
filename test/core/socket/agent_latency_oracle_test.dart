@@ -129,12 +129,12 @@ void main() {
           elapsed: const Duration(milliseconds: 5000),
         );
 
-      check(oracle.meanMsFor(agentId: 'fast', method: 'sql.execute'))
-          .isNotNull()
-          .isLessThan(100);
-      check(oracle.meanMsFor(agentId: 'slow', method: 'sql.execute'))
-          .isNotNull()
-          .isGreaterThan(1000);
+      check(
+        oracle.meanMsFor(agentId: 'fast', method: 'sql.execute'),
+      ).isNotNull().isLessThan(100);
+      check(
+        oracle.meanMsFor(agentId: 'slow', method: 'sql.execute'),
+      ).isNotNull().isGreaterThan(1000);
     });
 
     test('drops invalid samples (negative or NaN durations)', () {

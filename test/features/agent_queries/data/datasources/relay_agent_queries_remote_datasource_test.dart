@@ -61,8 +61,9 @@ void main() {
             invocation.namedArguments[#compression]
                 as RelayPayloadFrameCompression?;
         captured.add(
-          (invocation.namedArguments[#body] as Map<dynamic, dynamic>)
-              .map((k, v) => MapEntry(k.toString(), v as Object?)),
+          (invocation.namedArguments[#body] as Map<dynamic, dynamic>).map(
+            (k, v) => MapEntry(k.toString(), v as Object?),
+          ),
         );
         return <String, dynamic>{
           'response': <String, dynamic>{

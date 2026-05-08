@@ -142,12 +142,12 @@ class _ClientAgentsApprovedAgentsTabState
                 onPressed: widget.isMutating
                     ? null
                     : () => setState(() {
-                          _selected
-                            ..clear()
-                            ..addAll(
-                              widget.agents.map((a) => a.agentId),
-                            );
-                        }),
+                        _selected
+                          ..clear()
+                          ..addAll(
+                            widget.agents.map((a) => a.agentId),
+                          );
+                      }),
               ),
               AppFlatButton(
                 label: l10n.clientAgentsApprovedBulkClearSelection,
@@ -220,10 +220,10 @@ class _ClientAgentsApprovedAgentsTabState
                       onPressed: widget.isMutating
                           ? null
                           : () => unawaited(
-                                widget.onQueueRemoveAccess(
-                                  <String>{agent.agentId},
-                                ),
+                              widget.onQueueRemoveAccess(
+                                <String>{agent.agentId},
                               ),
+                            ),
                     ),
             );
           },

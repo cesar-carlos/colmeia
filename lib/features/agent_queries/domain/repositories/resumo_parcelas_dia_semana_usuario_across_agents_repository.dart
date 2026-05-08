@@ -8,7 +8,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 // Long type name; `dart format` keeps the interface declaration on one line.
 // ignore: one_member_abstracts
 abstract interface class ResumoParcelasDiaSemanaUsuarioAcrossAgentsRepository {
-  Future<AppResult<AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>>>
+  Future<
+    AppResult<AgentQueryExecutionReport<ResumoParcelasDiaSemanaUsuarioRow>>
+  >
   load({
     required String userId,
     required ResumoParcelasDiaSemanaFilter filter,

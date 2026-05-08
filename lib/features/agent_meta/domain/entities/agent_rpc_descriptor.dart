@@ -13,11 +13,11 @@ class AgentRpcDescriptor {
   });
 
   const AgentRpcDescriptor.empty()
-      : methods = const <String>{},
-        openRpcVersion = null,
-        title = null,
-        version = null,
-        raw = const <String, Object?>{};
+    : methods = const <String>{},
+      openRpcVersion = null,
+      title = null,
+      version = null,
+      raw = const <String, Object?>{};
 
   /// Set of method names supported by the agent (e.g. `sql.execute`,
   /// `client_token.getPolicy`).

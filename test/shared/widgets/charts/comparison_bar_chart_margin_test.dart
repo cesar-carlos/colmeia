@@ -102,27 +102,30 @@ void main() {
     },
   );
 
-  testWidgets('resolveComparisonBarChartMargin returns base when no outer labels', (
-    tester,
-  ) async {
-    late EdgeInsets margin;
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: Builder(
-          builder: (context) {
-            margin = resolveComparisonBarChartMargin(
-              context,
-              showDataLabels: true,
-              dataLabelAlignment: ChartDataLabelAlignment.top,
-              dataLabelOffset: null,
-              chartPadding: const EdgeInsets.only(top: 4),
-            );
-            return const SizedBox.shrink();
-          },
+  testWidgets(
+    'resolveComparisonBarChartMargin returns base when no outer labels',
+    (
+      tester,
+    ) async {
+      late EdgeInsets margin;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Builder(
+            builder: (context) {
+              margin = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.top,
+                dataLabelOffset: null,
+                chartPadding: const EdgeInsets.only(top: 4),
+              );
+              return const SizedBox.shrink();
+            },
+          ),
         ),
-      ),
-    );
-    expect(margin.top, 4);
-  });
+      );
+      expect(margin.top, 4);
+    },
+  );
 }

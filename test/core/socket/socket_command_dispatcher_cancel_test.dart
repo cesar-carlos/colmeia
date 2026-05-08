@@ -22,7 +22,10 @@ class _MockSocket extends Mock implements io.Socket {}
 
 class _MockCorrelator extends Mock implements SocketRequestCorrelator {}
 
-Map<String, Object?> _body({String rpcId = 'rpc-1', String method = 'sql.execute'}) {
+Map<String, Object?> _body({
+  String rpcId = 'rpc-1',
+  String method = 'sql.execute',
+}) {
   return <String, Object?>{
     'agentId': 'agent-1',
     'command': <String, Object?>{
@@ -128,7 +131,8 @@ void main() {
         // Outcome stream got the transient with reasonCode=cancelled.
         await Future<void>.delayed(Duration.zero);
         await outcomesSub.cancel();
-        final transients = outcomes.whereType<AgentCommandFailedTransient>()
+        final transients = outcomes
+            .whereType<AgentCommandFailedTransient>()
             .toList();
         check(transients.length).isGreaterOrEqual(1);
         check(transients.last.reasonCode).equals('cancelled');

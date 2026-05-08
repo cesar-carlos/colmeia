@@ -41,11 +41,14 @@ void main() {
     test('throws payload_too_large when over cap', () {
       const tinyCodec = PayloadFrameCodec(maxPayloadBytes: 16);
       check(
-        () => tinyCodec.encodeJson(<String, Object?>{'v': 'x' * 64}),
-      ).throws<PayloadFrameDecodeException>().has(
-        (e) => e.code,
-        'code',
-      ).equals('payload_too_large');
+            () => tinyCodec.encodeJson(<String, Object?>{'v': 'x' * 64}),
+          )
+          .throws<PayloadFrameDecodeException>()
+          .has(
+            (e) => e.code,
+            'code',
+          )
+          .equals('payload_too_large');
     });
 
     test('round-trips through decodeJson', () {
@@ -172,12 +175,12 @@ void main() {
       () {
         final codec = PayloadFrameCodec(
           signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'),
-          verifier:
-              Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
+          verifier: Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
         );
         final result = codec.encodeJson(<String, Object?>{'agentId': 'a'});
-        check(jsonEncode(codec.decodeJson(result.frame)))
-            .equals('{"agentId":"a"}');
+        check(
+          jsonEncode(codec.decodeJson(result.frame)),
+        ).equals('{"agentId":"a"}');
       },
     );
 
@@ -188,8 +191,9 @@ void main() {
           signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'attacker'),
         ).encodeJson(<String, Object?>{'a': 1}).frame;
         final codec = PayloadFrameCodec(
-          verifier:
-              Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'real'),
+          verifier: Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(
+            key: 'real',
+          ),
         );
         check(() => codec.decodeJson(signed))
             .throws<PayloadFrameDecodeException>()
@@ -204,12 +208,11 @@ void main() {
         // The hub today emits unsigned frames by default. Strict
         // builds (defence in depth) flip this on to require every
         // inbound frame to carry a signature.
-        final unsigned = const PayloadFrameCodec()
-            .encodeJson(<String, Object?>{'a': 1})
-            .frame;
+        final unsigned = const PayloadFrameCodec().encodeJson(<String, Object?>{
+          'a': 1,
+        }).frame;
         final strict = PayloadFrameCodec(
-          verifier:
-              Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
+          verifier: Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
           requireSignature: true,
         );
         check(() => strict.decodeJson(unsigned))
@@ -222,15 +225,13 @@ void main() {
     test(
       'requireSignature=false (default) accepts unsigned frames',
       () {
-        final unsigned = const PayloadFrameCodec()
-            .encodeJson(<String, Object?>{'a': 1})
-            .frame;
+        final unsigned = const PayloadFrameCodec().encodeJson(<String, Object?>{
+          'a': 1,
+        }).frame;
         final permissive = PayloadFrameCodec(
-          verifier:
-              Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
+          verifier: Hmac256PayloadFrameSignatureVerifier.fromUtf8Key(key: 'k'),
         );
-        check(jsonEncode(permissive.decodeJson(unsigned)))
-            .equals('{"a":1}');
+        check(jsonEncode(permissive.decodeJson(unsigned))).equals('{"a":1}');
       },
     );
 

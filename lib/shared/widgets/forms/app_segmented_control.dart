@@ -45,7 +45,9 @@ class AppSegmentedControl<T> extends StatelessWidget {
           .toList(growable: false),
       selected: <T>{value},
       showSelectedIcon: false,
-      onSelectionChanged: onChanged == null ? null : (selection) => onChanged!(selection.first),
+      onSelectionChanged: onChanged == null
+          ? null
+          : (selection) => onChanged!(selection.first),
     );
 
     if (expandToFill) {

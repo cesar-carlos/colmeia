@@ -127,25 +127,27 @@ void main() {
       check(events).isEmpty();
     });
 
-    test('repository error is logged and swallowed; poller stays alive',
-        () async {
-      var calls = 0;
-      when(
-        () => repository.loadOnlineAgentIds(userId: any(named: 'userId')),
-      ).thenAnswer((_) async {
-        calls += 1;
-        throw StateError('boom');
-      });
+    test(
+      'repository error is logged and swallowed; poller stays alive',
+      () async {
+        var calls = 0;
+        when(
+          () => repository.loadOnlineAgentIds(userId: any(named: 'userId')),
+        ).thenAnswer((_) async {
+          calls += 1;
+          throw StateError('boom');
+        });
 
-      final poller = buildPoller(interval: const Duration(milliseconds: 30));
-      addTearDown(poller.dispose);
+        final poller = buildPoller(interval: const Duration(milliseconds: 30));
+        addTearDown(poller.dispose);
 
-      poller.start(userId: 'client-1');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+        poller.start(userId: 'client-1');
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      check(calls).isGreaterOrEqual(2);
-      check(poller.isRunning).isTrue();
-    });
+        check(calls).isGreaterOrEqual(2);
+        check(poller.isRunning).isTrue();
+      },
+    );
 
     test('stop cancels the timer and is idempotent', () async {
       when(

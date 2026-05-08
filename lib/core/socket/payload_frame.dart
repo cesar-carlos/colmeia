@@ -111,7 +111,9 @@ class PayloadFrame {
     final enc = map['enc']?.toString();
     final cmp = map['cmp']?.toString();
     final contentType = map['contentType']?.toString();
-    if (schemaVersion == null || enc == null || cmp == null ||
+    if (schemaVersion == null ||
+        enc == null ||
+        cmp == null ||
         contentType == null) {
       return null;
     }

@@ -55,10 +55,9 @@ void main() {
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       ),
     ).thenAnswer(
-      (_) async =>
-          Success<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
-            expectedRows,
-          ),
+      (_) async => Success<List<ResumoVendaProdutoDiarioRow>, AppFailure>(
+        expectedRows,
+      ),
     );
 
     final filter = ResumoParcelaFormaPagamentoDiarioFilter(
@@ -66,7 +65,8 @@ void main() {
       dataVendaFim: DateTime.utc(2026, 12, 31),
     );
 
-    final result = await useCase(userId: 'user-1', 
+    final result = await useCase(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: filter,
       clientToken: 'token',

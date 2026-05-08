@@ -244,9 +244,9 @@ void main() {
         check(result.isError()).isTrue();
         final failure = result.exceptionOrNull()!;
         check(failure).isA<NetworkFailure>();
-        check(failure.userMessage)
-            .isNotNull()
-            .contains('demorou mais que o tempo permitido');
+        check(
+          failure.userMessage,
+        ).isNotNull().contains('demorou mais que o tempo permitido');
         check(failure.context['reason']).equals('race_total_timeout');
         check(failure.context['raceTotalTimeoutMs']).equals(100);
         check(failure.context['plannedTargetCount']).equals(2);

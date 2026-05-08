@@ -58,7 +58,8 @@ void main() {
       dataVendaFim: DateTime.utc(2026, 12, 31),
     );
 
-    final result = await useCase(userId: 'user-1', 
+    final result = await useCase(
+      userId: 'user-1',
       agentId: 'agent-1',
       filter: filter,
       clientToken: 'token',

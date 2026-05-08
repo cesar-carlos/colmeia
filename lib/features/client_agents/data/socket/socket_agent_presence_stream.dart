@@ -49,11 +49,10 @@ class SocketAgentPresenceStream implements AgentPresenceStream {
     required ClientAgentProfileUpdatedListener catalogListener,
     required AgentCommandPresenceHinter commandHinter,
   }) {
-    return SocketAgentPresenceStream.deferred(connection: connection)
-      ..bind(
-        catalogListener: catalogListener,
-        commandHinter: commandHinter,
-      );
+    return SocketAgentPresenceStream.deferred(connection: connection)..bind(
+      catalogListener: catalogListener,
+      commandHinter: commandHinter,
+    );
   }
 
   final ConsumerSocketConnection _connection;
@@ -85,7 +84,8 @@ class SocketAgentPresenceStream implements AgentPresenceStream {
     _catalogListener = catalogListener;
     _commandHinter = commandHinter;
 
-    if (previousListener != null && !identical(previousListener, catalogListener)) {
+    if (previousListener != null &&
+        !identical(previousListener, catalogListener)) {
       // Replacing the bind: detach the previous listener in the
       // background — `dispose()` returns Future<void> that we do not
       // need to await because the new listener takes over immediately.

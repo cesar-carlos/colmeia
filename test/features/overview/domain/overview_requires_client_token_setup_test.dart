@@ -76,17 +76,19 @@ void main() {
       },
     );
 
-    test('is false when there are payment rows even if some agents lack token',
-        () {
-      final o = _overview(
-        hasPaymentMethods: true,
-        missingIds: const <String>['b'],
-        missingNames: const <String>['B'],
-        mainResumoHadPlannedTargets: true,
-      );
-      expect(o.hasRows, isTrue);
-      expect(o.requiresClientTokenSetup, isFalse);
-    });
+    test(
+      'is false when there are payment rows even if some agents lack token',
+      () {
+        final o = _overview(
+          hasPaymentMethods: true,
+          missingIds: const <String>['b'],
+          missingNames: const <String>['B'],
+          mainResumoHadPlannedTargets: true,
+        );
+        expect(o.hasRows, isTrue);
+        expect(o.requiresClientTokenSetup, isFalse);
+      },
+    );
   });
 
   group('Overview.hasAgentsSkippedDueToHubPresence', () {
@@ -121,8 +123,7 @@ void main() {
           agentRankings: const <OverviewAgentRanking>[],
           userRankings: const <OverviewUserRanking>[],
           agentIdsSkippedDueToHubPresence: const <String>['offline-1'],
-          agentNamesSkippedDueToHubPresence:
-              const <String>['Offline Agent 1'],
+          agentNamesSkippedDueToHubPresence: const <String>['Offline Agent 1'],
         );
         expect(o.hasAgentsSkippedDueToHubPresence, isTrue);
         expect(o.hasMissingClientToken, isFalse);

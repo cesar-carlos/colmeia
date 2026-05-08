@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart';
 abstract final class SalesMonthlyPnlChartKeys {
   SalesMonthlyPnlChartKeys._();
 
-  static const ValueKey<String> lineHorizontalScrollShell =
-      ValueKey<String>('salesMonthlyPnl.line.horizontalScrollShell');
+  static const ValueKey<String> lineHorizontalScrollShell = ValueKey<String>(
+    'salesMonthlyPnl.line.horizontalScrollShell',
+  );
 
-  static const ValueKey<String> barHorizontalScrollShell =
-      ValueKey<String>('salesMonthlyPnl.bar.horizontalScrollShell');
+  static const ValueKey<String> barHorizontalScrollShell = ValueKey<String>(
+    'salesMonthlyPnl.bar.horizontalScrollShell',
+  );
 }

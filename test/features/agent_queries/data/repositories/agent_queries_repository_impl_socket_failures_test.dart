@@ -42,10 +42,12 @@ void main() {
       );
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<SessionFailure>();
-      check(failure.context[AgentQueriesFailureContext.transportField])
-          .equals('socket');
-      check(failure.context[AgentQueriesFailureContext.transportCodeField])
-          .equals('unauthorized');
+      check(
+        failure.context[AgentQueriesFailureContext.transportField],
+      ).equals('socket');
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('unauthorized');
     });
 
     test(
@@ -61,8 +63,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<AuthorizationFailure>();
-        check(failure.context[AgentQueriesFailureContext.transportCodeField])
-            .equals('AGENT_ACCESS_DENIED');
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('AGENT_ACCESS_DENIED');
       },
     );
 
@@ -80,9 +83,7 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<AuthorizationFailure>();
-        check(failure.userMessage)
-            .isNotNull()
-            .contains('nao tem acesso');
+        check(failure.userMessage).isNotNull().contains('nao tem acesso');
       },
     );
 
@@ -117,9 +118,7 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<SessionFailure>();
-        check(failure.userMessage)
-            .isNotNull()
-            .contains('sessao expirou');
+        check(failure.userMessage).isNotNull().contains('sessao expirou');
       },
     );
 
@@ -152,8 +151,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<NetworkFailure>();
-        check(failure.context[AgentQueriesFailureContext.transportCodeField])
-            .equals('SERVICE_UNAVAILABLE');
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('SERVICE_UNAVAILABLE');
       },
     );
 
@@ -165,8 +165,9 @@ void main() {
       );
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<NetworkFailure>();
-      check(failure.context[AgentQueriesFailureContext.transportCodeField])
-          .equals('timeout');
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('timeout');
     });
 
     test('maps SocketDispatchDisconnected to NetworkFailure', () async {
@@ -177,8 +178,9 @@ void main() {
       );
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<NetworkFailure>();
-      check(failure.context[AgentQueriesFailureContext.transportCodeField])
-          .equals('disconnected');
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('disconnected');
     });
 
     test(
@@ -192,42 +194,45 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<UnknownFailure>();
-        check(failure.context[AgentQueriesFailureContext.cancelledField])
-            .equals(true);
+        check(
+          failure.context[AgentQueriesFailureContext.cancelledField],
+        ).equals(true);
         check(isCancelledAgentQueryFailure(failure.context)).isTrue();
-        check(failure.context[AgentQueriesFailureContext.transportCodeField])
-            .equals('cancelled');
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('cancelled');
       },
     );
   });
 
   group('AgentQueriesRepositoryImpl Relay failure mapping (BUG #1)', () {
-    test('maps RelayRequestTimeout to NetworkFailure with PT user message',
-        () async {
-      final repo = AgentQueriesRepositoryImpl(
-        _ThrowingDataSource(
-          const RelayRequestTimeout(
-            message: 'no response in 30s',
-            conversationId: 'conv-1',
-            clientRequestId: 'req-1',
+    test(
+      'maps RelayRequestTimeout to NetworkFailure with PT user message',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const RelayRequestTimeout(
+              message: 'no response in 30s',
+              conversationId: 'conv-1',
+              clientRequestId: 'req-1',
+            ),
           ),
-        ),
-      );
-      final failure = _failureOf(await repo.executeSql(request));
-      check(failure).isA<NetworkFailure>();
-      check(failure.userMessage)
-          .isNotNull()
-          .contains('demorou mais');
-      check(failure.context[AgentQueriesFailureContext.transportField])
-          .equals('relay');
-      check(failure.context[AgentQueriesFailureContext.transportCodeField])
-          .equals('timeout');
-      check(failure.context['conversationId']).equals('conv-1');
-      check(failure.context['clientRequestId']).equals('req-1');
-    });
+        );
+        final failure = _failureOf(await repo.executeSql(request));
+        check(failure).isA<NetworkFailure>();
+        check(failure.userMessage).isNotNull().contains('demorou mais');
+        check(
+          failure.context[AgentQueriesFailureContext.transportField],
+        ).equals('relay');
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('timeout');
+        check(failure.context['conversationId']).equals('conv-1');
+        check(failure.context['clientRequestId']).equals('req-1');
+      },
+    );
 
-    test('maps RelayConversationLost to NetworkFailure (transient)',
-        () async {
+    test('maps RelayConversationLost to NetworkFailure (transient)', () async {
       final repo = AgentQueriesRepositoryImpl(
         _ThrowingDataSource(
           const RelayConversationLost(
@@ -238,11 +243,12 @@ void main() {
       );
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<NetworkFailure>();
-      check(failure.userMessage)
-          .isNotNull()
-          .contains('conexao com o servidor caiu');
-      check(failure.context[AgentQueriesFailureContext.transportCodeField])
-          .equals('conversation_lost');
+      check(
+        failure.userMessage,
+      ).isNotNull().contains('conexao com o servidor caiu');
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('conversation_lost');
     });
 
     test(
@@ -255,11 +261,10 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<NetworkFailure>();
-        check(failure.userMessage)
-            .isNotNull()
-            .contains('abrir o canal');
-        check(failure.context[AgentQueriesFailureContext.transportCodeField])
-            .equals('conversation_start_failed');
+        check(failure.userMessage).isNotNull().contains('abrir o canal');
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('conversation_start_failed');
       },
     );
 
@@ -279,9 +284,7 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<AuthorizationFailure>();
-        check(failure.userMessage)
-            .isNotNull()
-            .contains('nao tem acesso');
+        check(failure.userMessage).isNotNull().contains('nao tem acesso');
       },
     );
 
@@ -301,8 +304,7 @@ void main() {
       },
     );
 
-    test('maps RelayRequestRejected(RATE_LIMITED) to NetworkFailure',
-        () async {
+    test('maps RelayRequestRejected(RATE_LIMITED) to NetworkFailure', () async {
       final repo = AgentQueriesRepositoryImpl(
         _ThrowingDataSource(
           const RelayRequestRejected(
@@ -313,8 +315,9 @@ void main() {
       );
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<NetworkFailure>();
-      check(failure.context[AgentQueriesFailureContext.transportCodeField])
-          .equals('RATE_LIMITED');
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('RATE_LIMITED');
     });
 
     test('maps RelayStreamTerminated(aborted) to NetworkFailure', () async {
@@ -329,11 +332,10 @@ void main() {
       );
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<NetworkFailure>();
-      check(failure.userMessage)
-          .isNotNull()
-          .contains('interrompida');
-      check(failure.context[AgentQueriesFailureContext.transportCodeField])
-          .equals('stream_aborted');
+      check(failure.userMessage).isNotNull().contains('interrompida');
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('stream_aborted');
     });
 
     test(
@@ -349,9 +351,7 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<NetworkFailure>();
-        check(failure.userMessage)
-            .isNotNull()
-            .contains('formato invalido');
+        check(failure.userMessage).isNotNull().contains('formato invalido');
       },
     );
 
@@ -369,8 +369,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<UnknownFailure>();
-        check(failure.context[AgentQueriesFailureContext.transportCodeField])
-            .equals('duplicate_request_id');
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('duplicate_request_id');
       },
     );
 
@@ -386,8 +387,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<UnknownFailure>();
-        check(failure.context[AgentQueriesFailureContext.cancelledField])
-            .equals(true);
+        check(
+          failure.context[AgentQueriesFailureContext.cancelledField],
+        ).equals(true);
         check(isCancelledAgentQueryFailure(failure.context)).isTrue();
       },
     );

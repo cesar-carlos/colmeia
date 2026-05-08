@@ -39,6 +39,7 @@ class AppCategoryDonutCardStyle {
     this.titleAccentWidth = 4,
     this.titleAccentHeight = 22,
     this.compactBreakpointWidth,
+
     /// Syncfusion doughnut sweep duration (ms). `0` disables. When null, uses
     /// [defaultDoughnutAnimationDurationMs] unless the platform requests reduced
     /// motion ([MediaQueryData.disableAnimations]).
@@ -46,6 +47,7 @@ class AppCategoryDonutCardStyle {
     /// **Per-screen policy (overview home):** payment mix keeps the default
     /// sweep; category mix passes `0` so the chart does not animate on refresh.
     this.doughnutAnimationDurationMs,
+
     /// When non-null, the legend is placed in a scrollable column with this max
     /// height (useful for many categories beside the chart).
     this.legendMaxHeight,
@@ -325,7 +327,9 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
           final useStacked = constraints.maxWidth < breakpoint;
           final maxH = constraints.maxHeight;
 
-          AppCategoryDonutCardStyle styleForLayout(AppCategoryDonutCardStyle s) {
+          AppCategoryDonutCardStyle styleForLayout(
+            AppCategoryDonutCardStyle s,
+          ) {
             if (!maxH.isFinite) {
               return s;
             }
@@ -333,16 +337,19 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
               final gap = tokens.gapMd;
               final chartPreferred =
                   s.chartMinHeight ?? chartTheme.height * 0.92;
-              var chartH = math.min(
-                chartPreferred,
-                math.max(120, (maxH - gap) * 0.48),
-              ).toDouble();
+              var chartH = math
+                  .min(
+                    chartPreferred,
+                    math.max(120, (maxH - gap) * 0.48),
+                  )
+                  .toDouble();
               const minLegend = 80;
               if (chartH + gap + minLegend > maxH) {
                 chartH = math.max(120, maxH - gap - minLegend).toDouble();
               }
-              final legendSlot =
-                  math.max(minLegend, maxH - chartH - gap).toDouble();
+              final legendSlot = math
+                  .max(minLegend, maxH - chartH - gap)
+                  .toDouble();
               final cappedLegend = s.legendMaxHeight != null
                   ? math.min(s.legendMaxHeight!, legendSlot)
                   : legendSlot;
@@ -395,8 +402,7 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
               );
             }
             final gap = tokens.gapMd;
-            final legendSlot =
-                math.max(80, maxH - chartH - gap).toDouble();
+            final legendSlot = math.max(80, maxH - chartH - gap).toDouble();
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -454,7 +460,8 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
     final card = AppSectionCard(
       child: LayoutBuilder(
         builder: (context, cardConstraints) {
-          final heightBound = cardConstraints.hasBoundedHeight &&
+          final heightBound =
+              cardConstraints.hasBoundedHeight &&
               cardConstraints.maxHeight.isFinite;
 
           return Column(
@@ -621,9 +628,11 @@ class _DonutSection extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final palette = chartTheme.palette;
-    final configuredMs = style.doughnutAnimationDurationMs ??
+    final configuredMs =
+        style.doughnutAnimationDurationMs ??
         AppCategoryDonutCardStyle.defaultDoughnutAnimationDurationMs;
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final animationDuration = (reduceMotion || configuredMs <= 0)
         ? 0.0
         : configuredMs.toDouble();
@@ -668,7 +677,8 @@ class _DonutSection extends StatelessWidget {
               explode: true,
               explodeOffset: '4%',
               explodeIndex: selectedIndex,
-              pointColorMapper: (s, i) => s.color ?? palette[i % palette.length],
+              pointColorMapper: (s, i) =>
+                  s.color ?? palette[i % palette.length],
               onPointTap: (details) {
                 final i = details.pointIndex;
                 if (i != null && i >= 0 && i < segments.length) {

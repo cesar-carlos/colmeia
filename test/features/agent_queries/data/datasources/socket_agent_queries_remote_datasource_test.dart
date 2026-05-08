@@ -87,8 +87,9 @@ void main() {
     );
     sender.errorToThrow = const SocketDispatchTimeout(message: 'boom');
 
-    await check(dataSource.postSqlExecute(request))
-        .throws<SocketDispatchTimeout>();
+    await check(
+      dataSource.postSqlExecute(request),
+    ).throws<SocketDispatchTimeout>();
   });
 
   test('returns the sender response Map verbatim', () async {

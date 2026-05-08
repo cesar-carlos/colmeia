@@ -129,7 +129,8 @@ class OverviewAgentRankingCard extends StatelessWidget {
                     valueBuilder: (a) => a.totalAmount,
                     tooltipLabelBuilder: (a, v) =>
                         '${a.displayName}: ${AppBrFormatters.currency(v)}',
-                    dataLabelBuilder: (a, v) => AppBrFormatters.compactCurrency(v),
+                    dataLabelBuilder: (a, v) =>
+                        AppBrFormatters.compactCurrency(v),
                     style: overviewHomeComparisonBarChartStyle(
                       tokens: fullscreenTokens,
                       kind: OverviewHomeBarChartKind.ranking,
@@ -229,7 +230,8 @@ class OverviewUserRankingCard extends StatelessWidget {
                     valueBuilder: (u) => u.totalAmount,
                     tooltipLabelBuilder: (u, v) =>
                         '${u.userName}: ${AppBrFormatters.currency(v)}',
-                    dataLabelBuilder: (u, v) => AppBrFormatters.compactCurrency(v),
+                    dataLabelBuilder: (u, v) =>
+                        AppBrFormatters.compactCurrency(v),
                     style: overviewHomeComparisonBarChartStyle(
                       tokens: fullscreenTokens,
                       kind: OverviewHomeBarChartKind.ranking,

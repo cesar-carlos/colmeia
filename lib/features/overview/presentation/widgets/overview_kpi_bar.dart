@@ -26,7 +26,8 @@ class _OverviewKpiBarState extends State<OverviewKpiBar> {
     double totalAmount,
     double averageTicket,
     int paymentMethodCount,
-  })? _itemsKey;
+  })?
+  _itemsKey;
 
   List<AppReportSummaryItem>? _items;
 

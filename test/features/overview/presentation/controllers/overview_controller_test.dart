@@ -272,8 +272,9 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         check(discoverRepository.requestedAgentIds).deepEquals(<String>['a1']);
-        check(registry.descriptorFor('a1')!.supportsMethod('sql.execute'))
-            .isTrue();
+        check(
+          registry.descriptorFor('a1')!.supportsMethod('sql.execute'),
+        ).isTrue();
       },
     );
 

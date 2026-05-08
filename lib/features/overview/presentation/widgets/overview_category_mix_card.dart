@@ -56,7 +56,8 @@ class _OverviewCategoryMixCardState extends State<OverviewCategoryMixCard> {
     _sharesRef = widget.shares;
     _fallbackOptRef = widget.fallbackTotalRevenue;
     _localeNameRef = widget.l10n.localeName;
-    final fallback = widget.fallbackTotalRevenue ?? _defaultFallbackTotalRevenue;
+    final fallback =
+        widget.fallbackTotalRevenue ?? _defaultFallbackTotalRevenue;
     _segments = _buildSegments(widget.shares, fallback);
     _centerPrimary = _buildCenterPrimary(widget.shares, fallback);
   }

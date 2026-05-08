@@ -139,8 +139,9 @@ class SyncfusionWaterfallChart<T> extends StatelessWidget {
             selectionBehavior: style.enableTapHighlight
                 ? SelectionBehavior(
                     enable: true,
-                    unselectedOpacity:
-                        style.tapHighlightDimmedOpacity.clamp(0, 1).toDouble(),
+                    unselectedOpacity: style.tapHighlightDimmedOpacity
+                        .clamp(0, 1)
+                        .toDouble(),
                   )
                 : null,
             dataLabelMapper: dataLabels == null

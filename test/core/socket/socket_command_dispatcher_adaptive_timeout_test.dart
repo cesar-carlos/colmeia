@@ -82,7 +82,8 @@ void main() {
     connection = _MockConnection();
     rawSocket = _MockSocket();
     correlator = _RecordingCorrelator();
-    stateController = StreamController<ConsumerSocketConnectionState>.broadcast();
+    stateController =
+        StreamController<ConsumerSocketConnectionState>.broadcast();
 
     when(() => connection.states()).thenAnswer((_) => stateController.stream);
     when(connection.connect).thenAnswer(

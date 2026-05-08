@@ -74,22 +74,25 @@ void main() {
     verify(() => delegate.executeSql(request)).called(2);
   });
 
-  test('transient failure thrice: returns last failure after max attempts',
-      () async {
-    const failure = NetworkFailure(
-      message: 'connection reset',
-      userMessage: 'Connection lost',
-    );
-    when(() => delegate.executeSql(any())).thenAnswer(
-      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
-    );
+  test(
+    'transient failure thrice: returns last failure after max attempts',
+    () async {
+      const failure = NetworkFailure(
+        message: 'connection reset',
+        userMessage: 'Connection lost',
+      );
+      when(() => delegate.executeSql(any())).thenAnswer(
+        (_) async =>
+            const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      );
 
-    final result = await retrying.executeSql(request);
+      final result = await retrying.executeSql(request);
 
-    check(result.isError()).isTrue();
-    check(result.exceptionOrNull()).isA<NetworkFailure>();
-    verify(() => delegate.executeSql(request)).called(3);
-  });
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<NetworkFailure>();
+      verify(() => delegate.executeSql(request)).called(3);
+    },
+  );
 
   test('non-transient failure: delegate called once, no retry', () async {
     const failure = ValidationFailure(
@@ -97,8 +100,7 @@ void main() {
       userMessage: 'Query invalid',
     );
     when(() => delegate.executeSql(any())).thenAnswer(
-      (_) async =>
-          const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
     );
 
     final result = await retrying.executeSql(request);
@@ -115,8 +117,7 @@ void main() {
       retryAfter: Duration(seconds: 30),
     );
     when(() => delegate.executeSql(any())).thenAnswer(
-      (_) async =>
-          const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
     );
 
     final result = await retrying.executeSql(request);
@@ -135,8 +136,7 @@ void main() {
       retryAfter: Duration(seconds: 60),
     );
     when(() => delegate.executeSql(any())).thenAnswer(
-      (_) async =>
-          const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
     );
 
     final result = await retrying.executeSql(request);
@@ -154,8 +154,7 @@ void main() {
       retryable: false,
     );
     when(() => delegate.executeSql(any())).thenAnswer(
-      (_) async =>
-          const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
     );
 
     final result = await retrying.executeSql(request);
@@ -171,8 +170,7 @@ void main() {
       userMessage: 'Please log in again',
     );
     when(() => delegate.executeSql(any())).thenAnswer(
-      (_) async =>
-          const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
     );
 
     final result = await retrying.executeSql(request);
@@ -188,8 +186,7 @@ void main() {
       userMessage: 'You do not have access',
     );
     when(() => delegate.executeSql(any())).thenAnswer(
-      (_) async =>
-          const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
     );
 
     final result = await retrying.executeSql(request);
@@ -205,8 +202,7 @@ void main() {
       userMessage: 'Storage error',
     );
     when(() => delegate.executeSql(any())).thenAnswer(
-      (_) async =>
-          const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
     );
 
     final result = await retrying.executeSql(request);

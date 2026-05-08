@@ -10,9 +10,7 @@ class LoadResumoParcelaFormaPagamentoDiarioAcrossAgentsUseCase {
 
   final ResumoParcelaFormaPagamentoDiarioAcrossAgentsRepository _repository;
 
-  Future<
-    AppResult<AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow>>
-  >
+  Future<AppResult<AgentQueryExecutionReport<ResumoVendaProdutoDiarioRow>>>
   call({
     required String userId,
     required ResumoParcelaFormaPagamentoDiarioFilter filter,

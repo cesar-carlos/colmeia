@@ -153,11 +153,12 @@ class _PaymentTableHeader extends StatelessWidget {
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
 
-    final style = _scaledPaymentSummaryTextStyle(
-      typography.utilityOverline,
-    ).copyWith(
-      color: cs.onSurfaceVariant,
-    );
+    final style =
+        _scaledPaymentSummaryTextStyle(
+          typography.utilityOverline,
+        ).copyWith(
+          color: cs.onSurfaceVariant,
+        );
     final bodyStyle = _scaledPaymentSummaryTextStyle(typography.body);
     final highlightStyle = bodyStyle.copyWith(fontWeight: FontWeight.w600);
 

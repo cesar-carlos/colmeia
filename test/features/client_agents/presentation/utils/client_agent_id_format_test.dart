@@ -53,8 +53,7 @@ bad
       );
     });
 
-    test('rejects bad variant bits (variant slot must start with 8/9/a/b)',
-        () {
+    test('rejects bad variant bits (variant slot must start with 8/9/a/b)', () {
       expect(
         isValidClientAgentId('11111111-1111-4111-1111-111111111111'),
         isFalse,

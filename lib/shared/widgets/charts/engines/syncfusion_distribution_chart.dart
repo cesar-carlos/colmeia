@@ -127,8 +127,7 @@ class _SyncfusionDistributionChartState
             animationDuration: resolveChartAnimationDurationMs(
               context: context,
               styleDuration: null,
-              defaultMs:
-                  AppChartEngineAnimationDefaults.circularSeriesMs,
+              defaultMs: AppChartEngineAnimationDefaults.circularSeriesMs,
             ),
             xValueMapper: (point, _) => point.label,
             yValueMapper: (point, _) => point.value,

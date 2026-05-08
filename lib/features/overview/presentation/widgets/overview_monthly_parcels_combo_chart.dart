@@ -196,7 +196,9 @@ class _OverviewMonthlyParcelsComboChartState
       // outer column labels, so we do not need the full +2* buffer used on
       // comparison column charts — extra height only adds empty band above
       // the bottom legend inside the fixed [SizedBox].
-      height: heightOverride ?? (tokens.chartStandardHeight + tokens.contentSpacing),
+      height:
+          heightOverride ??
+          (tokens.chartStandardHeight + tokens.contentSpacing),
       // Aligned with the bar charts (350 ms): the previous Duration.zero left
       // this card visually static while siblings animated in via staged
       // mounting + 350 ms entrance.
@@ -208,7 +210,8 @@ class _OverviewMonthlyParcelsComboChartState
       showDataLabels: true,
       barDataLabelOffset: Offset(0, tokens.gapSm),
       categoryLabelIntersectAction: AxisLabelIntersectAction.none,
-      horizontalScrollSemanticsHint: l10n.overviewComparisonBarHorizontalScrollHint,
+      horizontalScrollSemanticsHint:
+          l10n.overviewComparisonBarHorizontalScrollHint,
       // Use horizontal scroll (default) instead of category-axis pan: pan kept
       // the chart width fixed but Y-axis was still scaled by the full dataset.
       stickyPrimaryYAxisWhileScrolling: false,
@@ -322,7 +325,8 @@ class _OverviewMonthlyParcelsComboChartState
               return StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fullscreenValuePrimary =
-                      fullscreenDisplay == _OverviewMonthlyParcelDisplay.byParcelValue;
+                      fullscreenDisplay ==
+                      _OverviewMonthlyParcelDisplay.byParcelValue;
                   return LayoutBuilder(
                     builder: (context, constraints) {
                       final availableChartHeight =
@@ -334,20 +338,31 @@ class _OverviewMonthlyParcelsComboChartState
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: <Widget>[
                           AppSegmentedControl<_OverviewMonthlyParcelDisplay>(
-                            options: <AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>>[
-                              AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>(
-                                value: _OverviewMonthlyParcelDisplay.bySalesCount,
-                                label:
-                                    copySnapshot?.switchSalesLabel ??
-                                    l10n.overviewMonthlyParcelsSwitchSalesLabel,
-                              ),
-                              AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>(
-                                value: _OverviewMonthlyParcelDisplay.byParcelValue,
-                                label:
-                                    copySnapshot?.switchParcelValueLabel ??
-                                    l10n.overviewMonthlyParcelsSwitchValueLabel,
-                              ),
-                            ],
+                            options:
+                                <
+                                  AppSegmentedControlOption<
+                                    _OverviewMonthlyParcelDisplay
+                                  >
+                                >[
+                                  AppSegmentedControlOption<
+                                    _OverviewMonthlyParcelDisplay
+                                  >(
+                                    value: _OverviewMonthlyParcelDisplay
+                                        .bySalesCount,
+                                    label:
+                                        copySnapshot?.switchSalesLabel ??
+                                        l10n.overviewMonthlyParcelsSwitchSalesLabel,
+                                  ),
+                                  AppSegmentedControlOption<
+                                    _OverviewMonthlyParcelDisplay
+                                  >(
+                                    value: _OverviewMonthlyParcelDisplay
+                                        .byParcelValue,
+                                    label:
+                                        copySnapshot?.switchParcelValueLabel ??
+                                        l10n.overviewMonthlyParcelsSwitchValueLabel,
+                                  ),
+                                ],
                             value: fullscreenDisplay,
                             onChanged: (v) =>
                                 setFullscreenState(() => fullscreenDisplay = v),
@@ -356,7 +371,9 @@ class _OverviewMonthlyParcelsComboChartState
                           SizedBox(
                             height: availableChartHeight,
                             child: AppComboChart<OverviewMonthlyParcelPoint>(
-                              key: ValueKey<int>(identityHashCode(pointsSnapshot)),
+                              key: ValueKey<int>(
+                                identityHashCode(pointsSnapshot),
+                              ),
                               items: pointsSnapshot,
                               xLabelBuilder: _monthlyXLabel,
                               barValueBuilder: fullscreenValuePrimary
@@ -395,7 +412,9 @@ class _OverviewMonthlyParcelsComboChartState
                                       child: Text(
                                         emptyMessage,
                                         textAlign: TextAlign.center,
-                                        style: Theme.of(context).textTheme.bodyMedium,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodyMedium,
                                       ),
                                     )
                                   : null,

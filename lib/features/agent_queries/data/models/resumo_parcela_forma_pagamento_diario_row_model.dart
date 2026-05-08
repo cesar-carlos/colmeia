@@ -42,8 +42,9 @@ class ResumoVendaProdutoDiarioRowModel {
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodOrigem'),
       ),
       dataVenda: AgentQueriesSqlRowMapReader.readDataVendaCalendarDate(map),
-      anoMesDataVenda:
-          AgentQueriesSqlRowMapReader.readRequiredAnoMesDataVenda(map),
+      anoMesDataVenda: AgentQueriesSqlRowMapReader.readRequiredAnoMesDataVenda(
+        map,
+      ),
       nomeUsuario: AgentQueriesSqlRowMapReader.readRequiredNonEmptyString(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('NomeUsuario'),

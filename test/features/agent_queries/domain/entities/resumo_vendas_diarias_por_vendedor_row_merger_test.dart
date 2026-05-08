@@ -97,26 +97,33 @@ void main() {
             consideredApprovedAgentCount: 2,
             plannedTargets: <AgentQueryTarget>[],
             missingClientTokenTargets: <AgentQueryTarget>[],
-            participants: <AgentQueryExecutionParticipant<
-              ResumoVendasDiariasPorVendedorRow
-            >>[
-              AgentQueryExecutionParticipant<ResumoVendasDiariasPorVendedorRow>(
-                agentId: 'a',
-                displayName: 'a',
-                rows: <ResumoVendasDiariasPorVendedorRow>[
-                  sampleRow(qtd: 2, valor: 3),
+            participants:
+                <
+                  AgentQueryExecutionParticipant<
+                    ResumoVendasDiariasPorVendedorRow
+                  >
+                >[
+                  AgentQueryExecutionParticipant<
+                    ResumoVendasDiariasPorVendedorRow
+                  >(
+                    agentId: 'a',
+                    displayName: 'a',
+                    rows: <ResumoVendasDiariasPorVendedorRow>[
+                      sampleRow(qtd: 2, valor: 3),
+                    ],
+                    elapsedMs: 1,
+                  ),
+                  AgentQueryExecutionParticipant<
+                    ResumoVendasDiariasPorVendedorRow
+                  >(
+                    agentId: 'b',
+                    displayName: 'b',
+                    rows: <ResumoVendasDiariasPorVendedorRow>[
+                      sampleRow(qtd: 1, valor: 7),
+                    ],
+                    elapsedMs: 1,
+                  ),
                 ],
-                elapsedMs: 1,
-              ),
-              AgentQueryExecutionParticipant<ResumoVendasDiariasPorVendedorRow>(
-                agentId: 'b',
-                displayName: 'b',
-                rows: <ResumoVendasDiariasPorVendedorRow>[
-                  sampleRow(qtd: 1, valor: 7),
-                ],
-                elapsedMs: 1,
-              ),
-            ],
             totalElapsedMs: 2,
           );
       check(report.mergedRows.length).equals(2);

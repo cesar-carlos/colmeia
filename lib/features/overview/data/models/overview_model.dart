@@ -226,8 +226,7 @@ class OverviewModel {
           monthlyParcelTrendLoadFailureMessage,
       weekdaySalesTrend: weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
-      weekdaySalesTrendLoadFailureMessage:
-          weekdaySalesTrendLoadFailureMessage,
+      weekdaySalesTrendLoadFailureMessage: weekdaySalesTrendLoadFailureMessage,
       weekdayUserSalesTrend: weekdayUserSalesTrend,
       weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
       weekdayUserSalesTrendLoadFailureMessage:

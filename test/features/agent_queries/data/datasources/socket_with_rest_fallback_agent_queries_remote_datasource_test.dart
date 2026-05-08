@@ -114,8 +114,9 @@ void main() {
 
           final raised = await _capture(fallback.postSqlExecute(request));
           check(raised).isA<SocketDispatchException>();
-          check((raised! as SocketDispatchException).code)
-              .equals(transient.code);
+          check(
+            (raised! as SocketDispatchException).code,
+          ).equals(transient.code);
           // Critical: the transient case MUST NOT pivot — the
           // socket layer's own RetryAfterGate / circuit breaker
           // owns recovery for these.
@@ -125,8 +126,7 @@ void main() {
       },
     );
 
-    test('fallback observability hook firing exception is swallowed',
-        () async {
+    test('fallback observability hook firing exception is swallowed', () async {
       // Observability MUST NOT break the dispatch path that just
       // decided to fall back. Otherwise the user gets the same
       // "blank screen" the fallback was designed to prevent.

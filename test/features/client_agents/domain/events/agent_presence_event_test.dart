@@ -47,10 +47,12 @@ void main() {
         online: false,
         source: 'agents:command_error_offline',
       );
-      check(connectionStatusFromHint(online))
-          .equals(AgentConnectionStatus.online);
-      check(connectionStatusFromHint(offline))
-          .equals(AgentConnectionStatus.offline);
+      check(
+        connectionStatusFromHint(online),
+      ).equals(AgentConnectionStatus.online);
+      check(
+        connectionStatusFromHint(offline),
+      ).equals(AgentConnectionStatus.offline);
     });
   });
 

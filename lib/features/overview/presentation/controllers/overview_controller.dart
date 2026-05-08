@@ -23,8 +23,8 @@ class OverviewController extends ChangeNotifier {
     this._clientAgentsRepository, {
     RetryAfterGate? retryAfterGate,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
-  })  : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
-        _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry {
+  }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+       _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry {
     // Re-publish gate ticks (countdown updates + window expired) through
     // the controller so the home page's retry button reacts without
     // subscribing to the gate directly.
@@ -57,8 +57,7 @@ class OverviewController extends ChangeNotifier {
 
   set activeLocalizations(AppLocalizations value) => _l10n = value;
 
-  AppLocalizations get _s =>
-      _l10n ?? fallbackAppLocalizationsForPlatform();
+  AppLocalizations get _s => _l10n ?? fallbackAppLocalizationsForPlatform();
 
   Overview? _overview;
   bool _isLoadingInitial = false;
@@ -360,7 +359,7 @@ class OverviewController extends ChangeNotifier {
     final refPart = rr == null
         ? ''
         : '|r:${rr.startInclusive.year}-${rr.startInclusive.month}-${rr.startInclusive.day}'
-            ':${rr.endInclusive.year}-${rr.endInclusive.month}-${rr.endInclusive.day}';
+              ':${rr.endInclusive.year}-${rr.endInclusive.month}-${rr.endInclusive.day}';
     return '$userId|$agentPart|${_activeFilter.yearMonth ?? 'default'}$refPart';
   }
 
@@ -409,8 +408,7 @@ class OverviewController extends ChangeNotifier {
     }
     final ids = <String>{
       for (final option in _availableAgents)
-        if (option.agentId.trim().isNotEmpty &&
-            !option.missingLocalClientToken)
+        if (option.agentId.trim().isNotEmpty && !option.missingLocalClientToken)
           option.agentId.trim(),
     };
     if (ids.isEmpty) {

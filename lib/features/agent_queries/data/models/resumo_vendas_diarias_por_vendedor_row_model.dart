@@ -26,8 +26,9 @@ class ResumoVendasDiariasPorVendedorRowModel {
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodFilial'),
       ),
       dataVenda: AgentQueriesSqlRowMapReader.readDataVendaCalendarDate(map),
-      anoMesDataVenda:
-          AgentQueriesSqlRowMapReader.readRequiredAnoMesDataVenda(map),
+      anoMesDataVenda: AgentQueriesSqlRowMapReader.readRequiredAnoMesDataVenda(
+        map,
+      ),
       codVendedor: AgentQueriesSqlRowMapReader.readOptionalIntStrict(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodVendedor'),

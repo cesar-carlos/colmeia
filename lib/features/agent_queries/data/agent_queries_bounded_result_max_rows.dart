@@ -31,6 +31,9 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Daily sales by seller grid rows.
   static const int resumoVendasDiariasPorVendedor = 5000;
 
+  /// One row per company, branch, and calendar day — long ranges × filiais.
+  static const int resumoTotalDiarioVendas = 8000;
+
   /// Suggestion lists for vendedor/bairro/município (`TOP` limits; bridge cap).
   static const int vendasDiariasSuggestionOptions = 128;
 

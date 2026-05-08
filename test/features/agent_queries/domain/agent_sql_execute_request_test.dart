@@ -103,9 +103,11 @@ void main() {
 
     test('rejects namedParams larger than bridge cap', () {
       final tooMany = <String, Object?>{
-        for (var i = 0;
-            i < AgentSqlExecuteRequest.bridgeMaxNamedParameterCount + 1;
-            i++)
+        for (
+          var i = 0;
+          i < AgentSqlExecuteRequest.bridgeMaxNamedParameterCount + 1;
+          i++
+        )
           'p$i': i,
       };
       final r = AgentSqlExecuteRequest(

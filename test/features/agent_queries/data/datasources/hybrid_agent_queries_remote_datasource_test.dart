@@ -8,8 +8,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockBaseDatasource extends Mock implements AgentQueriesRemoteDataSource {
-}
+class _MockBaseDatasource extends Mock
+    implements AgentQueriesRemoteDataSource {}
 
 class _MockRelayDispatcher extends Mock implements RelayCommandDispatcher {}
 

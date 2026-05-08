@@ -108,10 +108,8 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   void _onAuthChanged() {
     final isAuthenticated = widget.authGate.isAuthenticated;
-    final transitionedToAuthenticated =
-        !_wasAuthenticated && isAuthenticated;
-    final transitionedToSignedOut =
-        _wasAuthenticated && !isAuthenticated;
+    final transitionedToAuthenticated = !_wasAuthenticated && isAuthenticated;
+    final transitionedToSignedOut = _wasAuthenticated && !isAuthenticated;
     _wasAuthenticated = isAuthenticated;
 
     if (transitionedToSignedOut) {

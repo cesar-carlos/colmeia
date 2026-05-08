@@ -17,12 +17,15 @@ void main() {
       salesPrefs = SalesPreferences(prefs);
     });
 
-    test('restoreMonthlyPnlBarChartPreferences returns defaults when empty', () {
-      expect(
-        salesPrefs.restoreMonthlyPnlBarChartPreferences(),
-        SalesMonthlyPnlBarChartPreferences.defaults,
-      );
-    });
+    test(
+      'restoreMonthlyPnlBarChartPreferences returns defaults when empty',
+      () {
+        expect(
+          salesPrefs.restoreMonthlyPnlBarChartPreferences(),
+          SalesMonthlyPnlBarChartPreferences.defaults,
+        );
+      },
+    );
 
     test('persistMonthlyPnlBarChartPreferences round-trips', () async {
       const saved = SalesMonthlyPnlBarChartPreferences(
@@ -41,7 +44,10 @@ void main() {
         },
       );
       expect(restored.displayMode, SalesMonthlyPnlBarDisplayMode.amounts);
-      expect(restored.percentMetric, LucratividadePercentMetric.costOverRevenue);
+      expect(
+        restored.percentMetric,
+        LucratividadePercentMetric.costOverRevenue,
+      );
     });
   });
 }

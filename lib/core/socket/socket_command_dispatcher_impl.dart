@@ -485,7 +485,11 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     // Inspect response.item.error (if any) to classify the outcome.
     // This mirrors what the repository's parser will do, but without
     // importing the agent_queries feature.
-    final errorMap = _read(response, const <String>['response', 'item', 'error']);
+    final errorMap = _read(response, const <String>[
+      'response',
+      'item',
+      'error',
+    ]);
     if (errorMap is Map) {
       final code = (errorMap['code'] as Object?)?.toString();
       final reason = (errorMap['reason'] as Object?)?.toString();

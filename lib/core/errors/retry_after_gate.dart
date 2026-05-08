@@ -63,7 +63,9 @@ class RetryAfterGate extends ChangeNotifier {
     if (delta.isNegative || delta == Duration.zero) {
       return null;
     }
-    return Duration(seconds: delta.inSeconds + (delta.inMilliseconds % 1000 > 0 ? 1 : 0));
+    return Duration(
+      seconds: delta.inSeconds + (delta.inMilliseconds % 1000 > 0 ? 1 : 0),
+    );
   }
 
   /// Opens the cooldown window for [retryAfter] starting now. Reuses the

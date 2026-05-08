@@ -6,10 +6,10 @@ import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 ///
 /// Two surfaces are exposed:
 ///
-  /// 1. `sendUnary` — single-shot request that resolves with the same
+/// 1. `sendUnary` — single-shot request that resolves with the same
 ///    `Map<String, dynamic>` shape used by `agents:command` / REST. Use it
 ///    for queries that produce a bounded payload.
-  /// 2. `sendStreaming` (PR-L+ part 2) — opens the request and exposes the
+/// 2. `sendStreaming` (PR-L+ part 2) — opens the request and exposes the
 ///    inbound `relay:rpc.chunk` events as a `Stream<Map<String, dynamic>>`.
 ///    The dispatcher manages backpressure by emitting `relay:rpc.stream.pull`
 ///    automatically with a configurable rolling window. Stream closes when

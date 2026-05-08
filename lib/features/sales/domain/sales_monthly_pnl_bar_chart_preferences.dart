@@ -49,9 +49,9 @@ class SalesMonthlyPnlBarChartPreferences {
 
   static const SalesMonthlyPnlBarChartPreferences defaults =
       SalesMonthlyPnlBarChartPreferences(
-    displayMode: SalesMonthlyPnlBarDisplayMode.amounts,
-    percentMetric: LucratividadePercentMetric.grossMargin,
-  );
+        displayMode: SalesMonthlyPnlBarDisplayMode.amounts,
+        percentMetric: LucratividadePercentMetric.grossMargin,
+      );
 
   Map<String, Object?> toJson() => <String, Object?>{
     'display': displayMode.name,

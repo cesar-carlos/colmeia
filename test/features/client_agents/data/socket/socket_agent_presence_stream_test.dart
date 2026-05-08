@@ -138,8 +138,9 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         check(received.length).equals(2);
-        check(received.whereType<AgentPresenceCatalogUpdated>().length)
-            .equals(1);
+        check(
+          received.whereType<AgentPresenceCatalogUpdated>().length,
+        ).equals(1);
         check(received.whereType<AgentPresenceHint>().length).equals(1);
       },
     );
@@ -195,35 +196,41 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       check(received.length).equals(2);
-      check((received.last as AgentPresenceCatalogUpdated).agentId)
-          .equals('agent-after-reconnect');
+      check(
+        (received.last as AgentPresenceCatalogUpdated).agentId,
+      ).equals('agent-after-reconnect');
     });
 
-    test('dispose tears down listener, hinter and the broadcast controller',
-        () async {
-      final stream = buildStream();
-      final received = <AgentPresenceEvent>[];
-      final sub = stream.events().listen(received.add);
+    test(
+      'dispose tears down listener, hinter and the broadcast controller',
+      () async {
+        final stream = buildStream();
+        final received = <AgentPresenceEvent>[];
+        final sub = stream.events().listen(received.add);
 
-      await stream.dispose();
-      // After dispose the controller is closed; listening returns done.
-      await sub.cancel();
-      // Subsequent socket events / outcomes have nowhere to land without
-      // throwing. Firing here just exercises the no-op guard.
-      wiring.fire(
-        ClientAgentProfileUpdatedListener.eventName,
-        _frame(<String, Object?>{'agent_id': 'late', 'changed_fields': <String>[]}),
-      );
-      outcomes.add(
-        AgentCommandSuccess(
-          agentId: 'late',
-          rpcId: 'late',
-          observedAt: DateTime.utc(2026),
-          elapsed: Duration.zero,
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
-      check(received).isEmpty();
-    });
+        await stream.dispose();
+        // After dispose the controller is closed; listening returns done.
+        await sub.cancel();
+        // Subsequent socket events / outcomes have nowhere to land without
+        // throwing. Firing here just exercises the no-op guard.
+        wiring.fire(
+          ClientAgentProfileUpdatedListener.eventName,
+          _frame(<String, Object?>{
+            'agent_id': 'late',
+            'changed_fields': <String>[],
+          }),
+        );
+        outcomes.add(
+          AgentCommandSuccess(
+            agentId: 'late',
+            rpcId: 'late',
+            observedAt: DateTime.utc(2026),
+            elapsed: Duration.zero,
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        check(received).isEmpty();
+      },
+    );
   });
 }

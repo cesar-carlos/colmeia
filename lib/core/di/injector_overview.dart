@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
@@ -27,6 +28,8 @@ void registerInjectorOverview(GetIt getIt) {
             getIt<LoadResumoParcelasDiaSemanaAcrossAgentsUseCase>(),
         loadResumoParcelasDiaSemanaUsuarioAcrossAgents:
             getIt<LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase>(),
+        loadResumoTotalDiarioVendasAcrossAgents:
+            getIt<LoadResumoTotalDiarioVendasAcrossAgentsUseCase>(),
         loadResumoProdutoVendaLucratividadeMensal:
             getIt<LoadResumoProdutoVendaLucratividadeMensalUseCase>(),
         loadResumoProdutoVendaLucratividade:

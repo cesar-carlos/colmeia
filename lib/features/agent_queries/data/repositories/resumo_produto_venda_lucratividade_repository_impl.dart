@@ -86,7 +86,8 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
 
     final result = await _agentQueriesRepository.executeSql(request);
     return result.fold(
-      (executionResult) => _mapExecution(executionResult, agentId: agentId.trim()),
+      (executionResult) =>
+          _mapExecution(executionResult, agentId: agentId.trim()),
       Failure<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>.new,
     );
   }
@@ -96,7 +97,10 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
     required String agentId,
   }) {
     if (executionResult.rows.isEmpty) {
-      return const Success<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
+      return const Success<
+        List<ResumoProdutoVendaLucratividadeRow>,
+        AppFailure
+      >(
         <ResumoProdutoVendaLucratividadeRow>[],
       );
     }
@@ -110,8 +114,8 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
             'operation': _operation,
             'agentId': agentId,
             'rowCount': executionResult.rows.length,
-            'maxRows':
-                AgentQueriesBoundedResultMaxRows.resumoProdutoVendaLucratividade,
+            'maxRows': AgentQueriesBoundedResultMaxRows
+                .resumoProdutoVendaLucratividade,
           },
         );
       }

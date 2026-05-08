@@ -143,7 +143,10 @@ void main() {
       check(PayloadFrameSignature.tryParse(null)).isNull();
       check(PayloadFrameSignature.tryParse('not a map')).isNull();
       check(
-        PayloadFrameSignature.tryParse(<String, Object?>{'alg': '', 'value': ''}),
+        PayloadFrameSignature.tryParse(<String, Object?>{
+          'alg': '',
+          'value': '',
+        }),
       ).isNull();
     });
 

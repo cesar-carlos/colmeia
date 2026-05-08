@@ -85,12 +85,12 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
             chartBuilder: (fullscreenContext) {
               return LayoutBuilder(
                 builder: (context, constraints) {
-                  final chartSize =
-                      (constraints.biggest.shortestSide * 0.48)
-                          .clamp(260.0, 420.0);
-                  final legendMaxHeight =
-                      (constraints.maxHeight * 0.72)
-                          .clamp(220.0, 520.0);
+                  final chartSize = (constraints.biggest.shortestSide * 0.48)
+                      .clamp(260.0, 420.0);
+                  final legendMaxHeight = (constraints.maxHeight * 0.72).clamp(
+                    220.0,
+                    520.0,
+                  );
                   return AppCategoryDonutCard(
                     title: l10n.overviewPaymentMixTitle,
                     subtitle: l10n.overviewPaymentMixSubtitle,
@@ -101,7 +101,8 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
                     ),
                     segments: segmentsSnapshot,
                     centerPrimaryLabel: centerPrimarySnapshot,
-                    centerSecondaryLabel: l10n.overviewPaymentMixDonutTotalLabel,
+                    centerSecondaryLabel:
+                        l10n.overviewPaymentMixDonutTotalLabel,
                   );
                 },
               );

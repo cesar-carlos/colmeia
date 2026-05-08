@@ -482,6 +482,33 @@ class AppLocalizationsPt extends AppLocalizations {
       'Grafico dos ultimos doze meses de valor em parcelas e vendas';
 
   @override
+  String get overviewDailySalesTitle => 'Vendas por dia';
+
+  @override
+  String get overviewDailySalesSubtitle =>
+      'Totais por dia civil no periodo selecionado (agregado nas filiais no ambito).';
+
+  @override
+  String get overviewDailySalesEmpty =>
+      'Sem dados de vendas diarias neste periodo.';
+
+  @override
+  String get overviewDailySalesLoadFailed =>
+      'Nao foi possivel carregar o grafico de vendas diarias. Tente novamente mais tarde.';
+
+  @override
+  String get overviewDailySalesChartSemantics =>
+      'Grafico de tendencia de vendas e receita por dia';
+
+  @override
+  String get overviewDailySalesRevenueChartSemantics =>
+      'Grafico de tendencia de receita e vendas por dia';
+
+  @override
+  String get overviewLoadingDailySalesSemantics =>
+      'Carregando grafico de vendas diarias';
+
+  @override
   String get overviewWeekdaySalesTitle => 'Vendas por dia da semana';
 
   @override

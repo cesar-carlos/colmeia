@@ -90,29 +90,33 @@ void main() {
       },
     );
 
-    test('records transient_error reason for ConsumerSocketError(transient)',
-        () async {
-      listener.start();
-      stateController.add(
-        const ConsumerSocketError(message: 'boom', transient: true),
-      );
-      await Future<void>.delayed(Duration.zero);
+    test(
+      'records transient_error reason for ConsumerSocketError(transient)',
+      () async {
+        listener.start();
+        stateController.add(
+          const ConsumerSocketError(message: 'boom', transient: true),
+        );
+        await Future<void>.delayed(Duration.zero);
 
-      check(
-        metrics.snapshot().reconnectsTotalByReason['transient_error'],
-      ).equals(1);
-    });
+        check(
+          metrics.snapshot().reconnectsTotalByReason['transient_error'],
+        ).equals(1);
+      },
+    );
 
-    test('records unauthorized reason for terminal unauthorized state',
-        () async {
-      listener.start();
-      stateController.add(const ConsumerSocketUnauthorized());
-      await Future<void>.delayed(Duration.zero);
+    test(
+      'records unauthorized reason for terminal unauthorized state',
+      () async {
+        listener.start();
+        stateController.add(const ConsumerSocketUnauthorized());
+        await Future<void>.delayed(Duration.zero);
 
-      check(
-        metrics.snapshot().reconnectsTotalByReason['unauthorized'],
-      ).equals(1);
-    });
+        check(
+          metrics.snapshot().reconnectsTotalByReason['unauthorized'],
+        ).equals(1);
+      },
+    );
 
     test('records dispatch + outcome from a Success outcome', () async {
       listener.start();

@@ -395,8 +395,7 @@ void main() {
       () => remote.requestAccess(agentIds: any(named: 'agentIds')),
     ).thenAnswer(
       (invocation) async {
-        final ids =
-            invocation.namedArguments[#agentIds]! as Set<String>;
+        final ids = invocation.namedArguments[#agentIds]! as Set<String>;
         check(ids).deepEquals(const <String>{'agent-1', 'agent-2'});
         return ClientRequestAccessResponseDto(
           newRequests: ids.toList(growable: false),

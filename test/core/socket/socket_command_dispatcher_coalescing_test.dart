@@ -52,7 +52,8 @@ void main() {
     connection = _MockConnection();
     rawSocket = _MockSocket();
     correlator = _MockCorrelator();
-    stateController = StreamController<ConsumerSocketConnectionState>.broadcast();
+    stateController =
+        StreamController<ConsumerSocketConnectionState>.broadcast();
     coalescedCount = 0;
 
     when(() => connection.states()).thenAnswer((_) => stateController.stream);
@@ -110,10 +111,12 @@ void main() {
       ).called(1);
       check(coalescedCount).equals(1);
 
-      pending.complete(<String, dynamic>{'response': <String, dynamic>{
-        'type': 'single',
-        'item': <String, dynamic>{'id': 'rpc-A', 'success': true},
-      }});
+      pending.complete(<String, dynamic>{
+        'response': <String, dynamic>{
+          'type': 'single',
+          'item': <String, dynamic>{'id': 'rpc-A', 'success': true},
+        },
+      });
 
       final r1 = await f1;
       final r2 = await f2;
@@ -128,13 +131,15 @@ void main() {
         final completer = Completer<Map<String, dynamic>>();
         // Resolve quickly so each send completes independently.
         scheduleMicrotask(() {
-          completer.complete(<String, dynamic>{'response': <String, dynamic>{
-            'type': 'single',
-            'item': <String, dynamic>{
-              'id': invocation.positionalArguments.first,
-              'success': true,
+          completer.complete(<String, dynamic>{
+            'response': <String, dynamic>{
+              'type': 'single',
+              'item': <String, dynamic>{
+                'id': invocation.positionalArguments.first,
+                'success': true,
+              },
             },
-          }});
+          });
         });
         return completer.future;
       });
@@ -152,9 +157,12 @@ void main() {
       );
       await dispatcher.sendAgentsCommand(
         agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-B', params: const <String, Object?>{
-          'sql': 'SELECT 2',
-        }),
+        body: _body(
+          rpcId: 'rpc-B',
+          params: const <String, Object?>{
+            'sql': 'SELECT 2',
+          },
+        ),
         rpcId: 'rpc-B',
       );
 
@@ -173,13 +181,15 @@ void main() {
       ).thenAnswer((invocation) {
         final completer = Completer<Map<String, dynamic>>();
         scheduleMicrotask(() {
-          completer.complete(<String, dynamic>{'response': <String, dynamic>{
-            'type': 'single',
-            'item': <String, dynamic>{
-              'id': invocation.positionalArguments.first,
-              'success': true,
+          completer.complete(<String, dynamic>{
+            'response': <String, dynamic>{
+              'type': 'single',
+              'item': <String, dynamic>{
+                'id': invocation.positionalArguments.first,
+                'success': true,
+              },
             },
-          }});
+          });
         });
         return completer.future;
       });
@@ -216,13 +226,15 @@ void main() {
       ).thenAnswer((invocation) {
         final completer = Completer<Map<String, dynamic>>();
         scheduleMicrotask(() {
-          completer.complete(<String, dynamic>{'response': <String, dynamic>{
-            'type': 'single',
-            'item': <String, dynamic>{
-              'id': invocation.positionalArguments.first,
-              'success': true,
+          completer.complete(<String, dynamic>{
+            'response': <String, dynamic>{
+              'type': 'single',
+              'item': <String, dynamic>{
+                'id': invocation.positionalArguments.first,
+                'success': true,
+              },
             },
-          }});
+          });
         });
         return completer.future;
       });
@@ -251,46 +263,50 @@ void main() {
       check(coalescedCount).equals(0);
     });
 
-    test('inflight entry is cleared after completion (next call re-emits)',
-        () async {
-      var registerCount = 0;
-      when(
-        () => correlator.register(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((invocation) {
-        registerCount += 1;
-        final completer = Completer<Map<String, dynamic>>();
-        scheduleMicrotask(() {
-          completer.complete(<String, dynamic>{'response': <String, dynamic>{
-            'type': 'single',
-            'item': <String, dynamic>{
-              'id': invocation.positionalArguments.first,
-              'success': true,
-            },
-          }});
+    test(
+      'inflight entry is cleared after completion (next call re-emits)',
+      () async {
+        var registerCount = 0;
+        when(
+          () => correlator.register(any(), timeout: any(named: 'timeout')),
+        ).thenAnswer((invocation) {
+          registerCount += 1;
+          final completer = Completer<Map<String, dynamic>>();
+          scheduleMicrotask(() {
+            completer.complete(<String, dynamic>{
+              'response': <String, dynamic>{
+                'type': 'single',
+                'item': <String, dynamic>{
+                  'id': invocation.positionalArguments.first,
+                  'success': true,
+                },
+              },
+            });
+          });
+          return completer.future;
         });
-        return completer.future;
-      });
 
-      dispatcher = SocketCommandDispatcherImpl(
-        connection: connection,
-        correlator: correlator,
-        onCoalesced: () => coalescedCount += 1,
-      );
+        dispatcher = SocketCommandDispatcherImpl(
+          connection: connection,
+          correlator: correlator,
+          onCoalesced: () => coalescedCount += 1,
+        );
 
-      await dispatcher.sendAgentsCommand(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-A'),
-        rpcId: 'rpc-A',
-      );
-      // First completed; the second send must register again.
-      await dispatcher.sendAgentsCommand(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-B'),
-        rpcId: 'rpc-B',
-      );
+        await dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-A'),
+          rpcId: 'rpc-A',
+        );
+        // First completed; the second send must register again.
+        await dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-B'),
+          rpcId: 'rpc-B',
+        );
 
-      check(registerCount).equals(2);
-      check(coalescedCount).equals(0);
-    });
+        check(registerCount).equals(2);
+        check(coalescedCount).equals(0);
+      },
+    );
   });
 }

@@ -3,7 +3,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 
 extension OverviewLoadLabelsL10n on AppLocalizations {
   OverviewLoadLabels get overviewLoadLabels => OverviewLoadLabels(
-        unknownPaymentMethodLabel: overviewResumoUnknownPaymentMethod,
-        unknownUserNameLabel: overviewResumoUnknownUserName,
-      );
+    unknownPaymentMethodLabel: overviewResumoUnknownPaymentMethod,
+    unknownUserNameLabel: overviewResumoUnknownUserName,
+  );
 }

@@ -12,7 +12,8 @@ import 'package:result_dart/result_dart.dart';
 
 class _MockInner extends Mock implements AgentQueriesRepository {}
 
-class _MockEligibility extends Mock implements AgentSqlExecutionEligibilityPort {}
+class _MockEligibility extends Mock
+    implements AgentSqlExecutionEligibilityPort {}
 
 void main() {
   late _MockInner inner;
@@ -34,20 +35,23 @@ void main() {
     );
   });
 
-  test('delegates without eligibility when requestingUserId is absent', () async {
-    const request = AgentSqlExecuteRequest(agentId: 'a1', sql: 'SELECT 1');
-    when(() => inner.executeSql(any())).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
+  test(
+    'delegates without eligibility when requestingUserId is absent',
+    () async {
+      const request = AgentSqlExecuteRequest(agentId: 'a1', sql: 'SELECT 1');
+      when(() => inner.executeSql(any())).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
 
-    final out = await gated.executeSql(request);
+      final out = await gated.executeSql(request);
 
-    check(out.isSuccess()).isTrue();
-    verifyZeroInteractions(eligibility);
-    verify(() => inner.executeSql(request)).called(1);
-  });
+      check(out.isSuccess()).isTrue();
+      verifyZeroInteractions(eligibility);
+      verify(() => inner.executeSql(request)).called(1);
+    },
+  );
 
   test('denies without calling inner when eligibility rejects', () async {
     const request = AgentSqlExecuteRequest(
@@ -89,7 +93,9 @@ void main() {
           named: 'hubPresenceOnlineAgentIdsSnapshot',
         ),
       ),
-    ).thenAnswer((_) async => const AgentSqlExecutionEligibilityEvaluation.allowed());
+    ).thenAnswer(
+      (_) async => const AgentSqlExecutionEligibilityEvaluation.allowed(),
+    );
     when(() => inner.executeSql(any())).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
         AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),

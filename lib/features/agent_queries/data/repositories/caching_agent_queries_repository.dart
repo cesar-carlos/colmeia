@@ -27,9 +27,9 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     required AgentQueriesRepository delegate,
     Duration cacheTtl = const Duration(seconds: 5),
     int maxCacheSize = 100,
-  })  : _delegate = delegate,
-        _cacheTtl = cacheTtl,
-        _maxCacheSize = maxCacheSize;
+  }) : _delegate = delegate,
+       _cacheTtl = cacheTtl,
+       _maxCacheSize = maxCacheSize;
 
   final AgentQueriesRepository _delegate;
   final Duration _cacheTtl;

@@ -83,7 +83,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
     // --- bar gap / spacing resolution ------------------------------------
     // barGap (absolute px) takes precedence over the relative spacing ratio.
     final resolvedBarWidth =
-        style.barWidth ?? AppChartEngineCartesianBarGeometryDefaults.columnWidthRatio;
+        style.barWidth ??
+        AppChartEngineCartesianBarGeometryDefaults.columnWidthRatio;
 
     double spacingForSlotWidth(double slotWidth) {
       final gap = style.barGap;
@@ -131,9 +132,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           delta != null &&
           delta > 0;
       final tooltipLabelList = tooltipLabels;
-      final useAnnotationValueLabels = dataLabels != null &&
-          style.showDataLabels &&
-          enableInteraction;
+      final useAnnotationValueLabels =
+          dataLabels != null && style.showDataLabels && enableInteraction;
       return SfCartesianChart(
         annotations: useAnnotationValueLabels
             ? _comparisonBarValueLabelAnnotations(
@@ -160,9 +160,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                 zoomMode: ZoomMode.x,
               )
             : null,
-        onDataLabelRender: style.showDataLabels &&
-                enableInteraction &&
-                dataLabels == null
+        onDataLabelRender:
+            style.showDataLabels && enableInteraction && dataLabels == null
             ? (args) {
                 final pointIndex = args.pointIndex;
                 if (pointIndex < 0) {
@@ -241,16 +240,17 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         ),
         primaryYAxis: NumericAxis(
           isVisible: style.showYAxis,
-          rangePadding: style.yAxisRangePadding ??
+          rangePadding:
+              style.yAxisRangePadding ??
               (comparisonBarChartNeedsOuterDataLabelHeadroom(
-                showDataLabels: style.showDataLabels,
-                dataLabelAlignment: _kComparisonBarValueLabelAlignment,
-              )
-              // [ChartRangePadding.normal] often leaves the tallest column flush
-              // with the plot top so outer/annotation value labels clip.
-              // [additionalEnd] extends the axis maximum so labels fit inside the plot.
-              ? ChartRangePadding.additionalEnd
-              : ChartRangePadding.auto),
+                    showDataLabels: style.showDataLabels,
+                    dataLabelAlignment: _kComparisonBarValueLabelAlignment,
+                  )
+                  // [ChartRangePadding.normal] often leaves the tallest column flush
+                  // with the plot top so outer/annotation value labels clip.
+                  // [additionalEnd] extends the axis maximum so labels fit inside the plot.
+                  ? ChartRangePadding.additionalEnd
+                  : ChartRangePadding.auto),
           axisLine: const AxisLine(width: 0),
           // Column charts must anchor at zero when [style.minY] is unset.
           // Otherwise Syncfusion picks a data-relative minimum (often the
@@ -306,12 +306,14 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             selectionBehavior: style.enableTapHighlight && enableInteraction
                 ? SelectionBehavior(
                     enable: true,
-                    unselectedOpacity:
-                        style.tapHighlightDimmedOpacity.clamp(0, 1).toDouble(),
+                    unselectedOpacity: style.tapHighlightDimmedOpacity
+                        .clamp(0, 1)
+                        .toDouble(),
                   )
                 : null,
             dataLabelSettings: DataLabelSettings(
-              isVisible: style.showDataLabels &&
+              isVisible:
+                  style.showDataLabels &&
                   enableInteraction &&
                   !useAnnotationValueLabels,
               textStyle: style.dataLabelTextStyle,
@@ -322,7 +324,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
               margin: style.dataLabelBackgroundColor != null
                   ? const EdgeInsets.symmetric(horizontal: 6, vertical: 8)
                   : const EdgeInsets.all(5),
-              builder: dataLabels != null &&
+              builder:
+                  dataLabels != null &&
                       style.showDataLabels &&
                       enableInteraction &&
                       !useAnnotationValueLabels
@@ -338,12 +341,12 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                         return const SizedBox.shrink();
                       }
                       final explicitColor = style.dataLabelTextStyle?.color;
-                      final textColor =
-                          explicitColor ?? colorScheme.onSurface;
+                      final textColor = explicitColor ?? colorScheme.onSurface;
                       final baseStyle =
                           style.dataLabelTextStyle ?? const TextStyle();
-                      final resolvedTextStyle =
-                          baseStyle.copyWith(color: textColor);
+                      final resolvedTextStyle = baseStyle.copyWith(
+                        color: textColor,
+                      );
                       Widget label = Text(text, style: resolvedTextStyle);
                       final bg = style.dataLabelBackgroundColor;
                       if (bg != null) {
@@ -377,7 +380,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
     }
 
     final minBarWidth =
-        style.minBarWidth ?? AppChartEngineCartesianBarGeometryDefaults.minCategorySlotWidth;
+        style.minBarWidth ??
+        AppChartEngineCartesianBarGeometryDefaults.minCategorySlotWidth;
 
     return SizedBox(
       height: resolvedHeight,
@@ -488,8 +492,9 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
 
           // Slot is scaled by [TextScaler] inside the shell — deduct the
           // resolved height here so accessible text scales don't overflow.
-          final scrollSlot =
-              chartHorizontalScrollBottomTrackSlotHeight(context);
+          final scrollSlot = chartHorizontalScrollBottomTrackSlotHeight(
+            context,
+          );
           final chartBodyHeight = resolvedHeight - scrollSlot;
 
           final sticky = style.stickyPrimaryYAxisWhileScrolling;

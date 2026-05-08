@@ -145,86 +145,86 @@ class _ChartLoadingPlaceholder extends StatelessWidget {
           key: ValueKey<String>('chart-loading-placeholder-${variant.name}'),
           child: switch (variant) {
             ChartLoadingPlaceholderVariant.radial => Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  SizedBox(
-                    width: ringSize,
-                    height: ringSize,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: <Widget>[
-                        Container(
-                          width: ringSize,
-                          height: ringSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: colors.surfaceContainerHighest,
-                          ),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                SizedBox(
+                  width: ringSize,
+                  height: ringSize,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      Container(
+                        width: ringSize,
+                        height: ringSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colors.surfaceContainerHighest,
                         ),
-                        Container(
-                          width: innerRingSize,
-                          height: innerRingSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: indicatorColor.withValues(alpha: 0.12),
-                          ),
+                      ),
+                      Container(
+                        width: innerRingSize,
+                        height: innerRingSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: indicatorColor.withValues(alpha: 0.12),
                         ),
-                        Container(
-                          width: centerSize,
-                          height: centerSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: theme.colorScheme.surface,
-                          ),
+                      ),
+                      Container(
+                        width: centerSize,
+                        height: centerSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.colorScheme.surface,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: tokens.gapMd),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: tokens.gapMd,
-                    runSpacing: tokens.gapSm,
-                    children: List<Widget>.generate(3, buildLegendItem),
-                  ),
-                ],
-              ),
+                ),
+                SizedBox(height: tokens.gapMd),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: tokens.gapMd,
+                  runSpacing: tokens.gapSm,
+                  children: List<Widget>.generate(3, buildLegendItem),
+                ),
+              ],
+            ),
             ChartLoadingPlaceholderVariant.timeSeries => Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  SizedBox(
-                    width: maxWidth,
-                    height: maxHeight * 0.7,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(
-                          tokens.cardRadius,
-                        ),
-                        border: Border.all(
-                          color: colors.outlineVariant.withValues(alpha: 0.18),
-                        ),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                SizedBox(
+                  width: maxWidth,
+                  height: maxHeight * 0.7,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(
+                        tokens.cardRadius,
                       ),
-                      child: CustomPaint(
-                        painter: _TimeSeriesLoadingPlaceholderPainter(
-                          baseColor: colors.surfaceContainerHighest,
-                          accentColor: indicatorColor,
-                          gridColor: colors.outlineVariant.withValues(
-                            alpha: 0.18,
-                          ),
+                      border: Border.all(
+                        color: colors.outlineVariant.withValues(alpha: 0.18),
+                      ),
+                    ),
+                    child: CustomPaint(
+                      painter: _TimeSeriesLoadingPlaceholderPainter(
+                        baseColor: colors.surfaceContainerHighest,
+                        accentColor: indicatorColor,
+                        gridColor: colors.outlineVariant.withValues(
+                          alpha: 0.18,
                         ),
                       ),
                     ),
                   ),
-                  SizedBox(height: tokens.gapMd),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: tokens.gapMd,
-                    runSpacing: tokens.gapSm,
-                    children: List<Widget>.generate(3, buildLegendItem),
-                  ),
-                ],
-              ),
+                ),
+                SizedBox(height: tokens.gapMd),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: tokens.gapMd,
+                  runSpacing: tokens.gapSm,
+                  children: List<Widget>.generate(3, buildLegendItem),
+                ),
+              ],
+            ),
           },
         );
       },
@@ -338,7 +338,9 @@ class _TimeSeriesLoadingPlaceholderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _TimeSeriesLoadingPlaceholderPainter oldDelegate) {
+  bool shouldRepaint(
+    covariant _TimeSeriesLoadingPlaceholderPainter oldDelegate,
+  ) {
     return oldDelegate.baseColor != baseColor ||
         oldDelegate.accentColor != accentColor ||
         oldDelegate.gridColor != gridColor;

@@ -61,9 +61,11 @@ void main() {
         agentId: 'agent-1',
         sql: 'SELECT 1',
         namedParams: <String, Object?>{
-          for (var i = 0;
-              i < AgentSqlExecuteRequest.bridgeMaxNamedParameterCount + 1;
-              i++)
+          for (
+            var i = 0;
+            i < AgentSqlExecuteRequest.bridgeMaxNamedParameterCount + 1;
+            i++
+          )
             'p$i': i,
         },
       );
