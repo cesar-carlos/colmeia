@@ -5,6 +5,7 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/sales/domain/sales_card_descriptor.dart';
+import 'package:colmeia/features/sales/presentation/localization/sales_card_descriptor_l10n.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_hub_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -75,7 +76,7 @@ class SalesHubPage extends StatelessWidget {
                           width: width,
                           child: SalesHubCard(
                             icon: card.icon,
-                            label: _getCardTitle(l10n, card.l10nTitleKey),
+                            label: card.resolvedTitle(l10n),
                             onTap: () {
                               unawaited(
                                 context.pushTo<void>(
@@ -98,16 +99,5 @@ class SalesHubPage extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _getCardTitle(AppLocalizations l10n, String key) {
-    return switch (key) {
-      'salesCardProdutoRankLucroTitle' => l10n.salesCardProdutoRankLucroTitle,
-      'salesCardMonthlyPnlTitle' => l10n.salesCardMonthlyPnlTitle,
-      'salesCardProdutoTendenciaTitle' => l10n.salesCardProdutoTendenciaTitle,
-      'salesCardProdutoTendenciaMediaMovelTitle' =>
-        l10n.salesCardProdutoTendenciaMediaMovelTitle,
-      _ => key,
-    };
   }
 }

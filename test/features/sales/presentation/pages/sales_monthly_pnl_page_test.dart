@@ -6,7 +6,9 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
@@ -14,6 +16,7 @@ import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.da
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
@@ -36,12 +39,16 @@ class _MockLoadAvailableAgentsForSales extends Mock
 class _MockLoadSalesMonthlyPnlLinesUseCase extends Mock
     implements LoadSalesMonthlyPnlLinesUseCase {}
 
+class _MockLoadSalesDailyTotalsUseCase extends Mock
+    implements LoadSalesDailyTotalsUseCase {}
+
 void main() {
   late _MockAuthController authController;
   late _MockSalesPreferences salesPreferences;
   late _MockAgentClientTokenReader tokenReader;
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
   late _MockLoadSalesMonthlyPnlLinesUseCase loadMonthlyPnlLines;
+  late _MockLoadSalesDailyTotalsUseCase loadDailyTotals;
   late OverviewYearMonth currentAnchor;
 
   setUpAll(() {
@@ -61,6 +68,7 @@ void main() {
     tokenReader = _MockAgentClientTokenReader();
     loadAvailableAgentsForSales = _MockLoadAvailableAgentsForSales();
     loadMonthlyPnlLines = _MockLoadSalesMonthlyPnlLinesUseCase();
+    loadDailyTotals = _MockLoadSalesDailyTotalsUseCase();
     currentAnchor = salesMonthlyPnlAnchorMonthChoices().first;
 
     when(() => authController.session).thenReturn(
@@ -75,13 +83,13 @@ void main() {
 
     when(() => salesPreferences.selectedAgentId).thenReturn('agent-1');
     when(
-      () => salesPreferences.restoreMonthlyPnlAnchor(),
+      () => salesPreferences.restoreSalesChartReferenceMonth(),
     ).thenReturn(currentAnchor);
     when(() => salesPreferences.setSelectedAgentId(any())).thenAnswer(
       (_) async {},
     );
     when(
-      () => salesPreferences.persistMonthlyPnlAnchor(any()),
+      () => salesPreferences.persistSalesChartReferenceMonth(any()),
     ).thenAnswer((_) async {});
     when(
       () => salesPreferences.restoreMonthlyPnlBarChartPreferences(),
@@ -108,13 +116,29 @@ void main() {
       ],
     );
 
+    when(
+      () => loadDailyTotals.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        anchor: any(named: 'anchor'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).thenAnswer(
+      (_) async => (
+        points: const <OverviewDailySalesTrendPoint>[],
+        loadFailed: false,
+        loadFailureMessage: null,
+      ),
+    );
+
     getIt
       ..registerSingleton<SalesPreferences>(salesPreferences)
       ..registerSingleton<AgentClientTokenReader>(tokenReader)
       ..registerSingleton<LoadAvailableAgentsForSales>(
         loadAvailableAgentsForSales,
       )
-      ..registerSingleton<LoadSalesMonthlyPnlLinesUseCase>(loadMonthlyPnlLines);
+      ..registerSingleton<LoadSalesMonthlyPnlLinesUseCase>(loadMonthlyPnlLines)
+      ..registerSingleton<LoadSalesDailyTotalsUseCase>(loadDailyTotals);
   });
 
   tearDown(() async {
@@ -212,7 +236,7 @@ void main() {
     final dynamic sheet = tester.widget(
       find.byWidgetPredicate(
         (widget) =>
-            widget.runtimeType.toString() == '_SalesMonthlyPnlFiltersSheet',
+            widget.runtimeType.toString() == 'SalesBranchAnchorMonthFiltersSheet',
       ),
     );
     // The filter sheet widget is private, so the test reads its public callback

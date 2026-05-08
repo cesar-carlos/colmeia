@@ -17,55 +17,30 @@ import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.d
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_branch_anchor_month_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_monthly_pnl_bar_chart_card.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
-import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
-import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
-import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-const int _kSalesMonthlyPnlAnchorChoices = 36;
 const double _kSalesMonthlyPnlMinChartWidth = 560;
 const double _kSalesMonthlyPnlMonthSlotWidth = 72;
 const double _kSalesMonthlyPnlChartHorizontalPadding = 24;
-
-List<OverviewYearMonth> salesMonthlyPnlAnchorMonthChoices() {
-  final now = DateTime.now();
-  final current = OverviewYearMonth.fromDate(now);
-  final list = <OverviewYearMonth>[current];
-  for (var i = 1; i < _kSalesMonthlyPnlAnchorChoices; i++) {
-    var month = now.month - i;
-    var year = now.year;
-    while (month < 1) {
-      month += 12;
-      year -= 1;
-    }
-    list.add(OverviewYearMonth(year: year, month: month));
-  }
-  return list;
-}
-
-String _formatYearMonthLabel(BuildContext context, OverviewYearMonth ym) {
-  final locale = Localizations.localeOf(context).toString();
-  final date = DateTime(ym.year, ym.month);
-  return DateFormat.yMMM(locale).format(date);
-}
 
 String _formatChartMonthShortLabel(
   SalesMonthlyPnlPoint point,
@@ -119,35 +94,6 @@ double _resolveSalesMonthlyPnlChartWidth({
   );
 }
 
-List<AppDropdownOption<OverviewYearMonth>> _anchorMonthDropdownOptions({
-  required BuildContext context,
-  required AppLocalizations l10n,
-  required OverviewYearMonth selected,
-}) {
-  final base = salesMonthlyPnlAnchorMonthChoices();
-  var options = <AppDropdownOption<OverviewYearMonth>>[
-    AppDropdownOption<OverviewYearMonth>(
-      value: base.first,
-      label: l10n.dashboardHomeFiltersCurrentMonth,
-    ),
-    for (var i = 1; i < base.length; i++)
-      AppDropdownOption<OverviewYearMonth>(
-        value: base[i],
-        label: _formatYearMonthLabel(context, base[i]),
-      ),
-  ];
-  if (!options.any((o) => o.value == selected)) {
-    options = <AppDropdownOption<OverviewYearMonth>>[
-      AppDropdownOption<OverviewYearMonth>(
-        value: selected,
-        label: _formatYearMonthLabel(context, selected),
-      ),
-      ...options,
-    ];
-  }
-  return options;
-}
-
 class SalesMonthlyPnlPage extends StatefulWidget {
   const SalesMonthlyPnlPage({super.key});
 
@@ -189,7 +135,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     _clientTokenReader = getIt<AgentClientTokenReader>();
     _selectedAgentId = _prefs.selectedAgentId;
     _anchorYearMonth =
-        _prefs.restoreMonthlyPnlAnchor() ??
+        _prefs.restoreSalesChartReferenceMonth() ??
         OverviewYearMonth.fromDate(DateTime.now());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
@@ -349,7 +295,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     });
     unawaited(_prefs.setSelectedAgentId(normalizedAgentId));
     if (anchor != null) {
-      unawaited(_prefs.persistMonthlyPnlAnchor(anchor));
+      unawaited(_prefs.persistSalesChartReferenceMonth(anchor));
     }
     unawaited(_reload());
   }
@@ -362,7 +308,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
           orElse: () => null,
         );
     final branchName = selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
-    final anchorValue = _formatYearMonthLabel(context, _anchorYearMonth);
+    final anchorValue = formatSalesAnchorMonthLabel(context, _anchorYearMonth);
     return l10n.salesMonthlyPnlFullscreenFilterSummary(
       l10n.salesBranchFilterLabel,
       branchName,
@@ -381,8 +327,9 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
       useSafeArea: true,
       showDragHandle: false,
       builder: (context) {
-        return _SalesMonthlyPnlFiltersSheet(
+        return SalesBranchAnchorMonthFiltersSheet(
           l10n: AppLocalizations.of(context),
+          filtersContext: SalesAnchorMonthFiltersContext.monthlyPnl,
           availableAgents: _availableAgents,
           initialSelectedAgentId: _selectedAgentId,
           initialAnchorYearMonth: _anchorYearMonth,
@@ -457,7 +404,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         );
     final selectedBranchName =
         selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
-    final anchorLabel = _formatYearMonthLabel(context, _anchorYearMonth);
+    final anchorLabel = formatSalesAnchorMonthLabel(context, _anchorYearMonth);
 
     return SingleChildScrollView(
       padding: context.pageScrollPadding(
@@ -529,6 +476,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
                     points: _dailyPoints,
                     loadFailed: _dailyChartLoadFailed,
                     loadFailureMessage: _dailyChartLoadFailureMessage,
+                    useSalesDailyTotalsLabels: true,
                   ),
                 ),
               ],
@@ -758,142 +706,6 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
     return Semantics(
       label: semanticsLabel,
       child: chartSurface,
-    );
-  }
-}
-
-class _SalesMonthlyPnlFiltersSheet extends StatefulWidget {
-  const _SalesMonthlyPnlFiltersSheet({
-    required this.l10n,
-    required this.availableAgents,
-    required this.initialSelectedAgentId,
-    required this.initialAnchorYearMonth,
-    required this.onApply,
-  });
-
-  final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableAgents;
-  final String? initialSelectedAgentId;
-  final OverviewYearMonth initialAnchorYearMonth;
-  final ValueChanged<Map<String, Object?>> onApply;
-
-  @override
-  State<_SalesMonthlyPnlFiltersSheet> createState() =>
-      _SalesMonthlyPnlFiltersSheetState();
-}
-
-class _SalesMonthlyPnlFiltersSheetState
-    extends State<_SalesMonthlyPnlFiltersSheet> {
-  String? _selectedAgentId;
-  late OverviewYearMonth _anchorYearMonth;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedAgentId = widget.initialSelectedAgentId;
-    _anchorYearMonth = widget.initialAnchorYearMonth;
-  }
-
-  void _apply() {
-    final selectedAgentId = _selectedAgentId;
-    if (selectedAgentId == null || selectedAgentId.trim().isEmpty) {
-      return;
-    }
-    widget.onApply(<String, Object?>{
-      'agentId': selectedAgentId,
-      'anchorYearMonth': _anchorYearMonth,
-    });
-    Navigator.of(context).pop();
-  }
-
-  void _clear() {
-    setState(() {
-      _anchorYearMonth = OverviewYearMonth.fromDate(DateTime.now());
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final selectedAgentMissingToken =
-        _selectedAgentId != null &&
-        widget.availableAgents.any(
-          (agent) =>
-              agent.agentId == _selectedAgentId &&
-              agent.missingLocalClientToken,
-        );
-    final monthOptions = _anchorMonthDropdownOptions(
-      context: context,
-      l10n: widget.l10n,
-      selected: _anchorYearMonth,
-    );
-
-    return SalesFiltersSheetScaffold(
-      title: widget.l10n.reportFiltersTitleWithContext(
-        widget.l10n.salesCardMonthlyPnlTitle,
-      ),
-      description: widget.l10n.reportFiltersDescription,
-      primaryActionLabel: widget.l10n.reportFiltersApplyAction,
-      secondaryActionLabel: widget.l10n.reportFiltersClearAction,
-      onPrimaryAction: _apply,
-      onSecondaryAction: _clear,
-      canPrimaryAction: _selectedAgentId != null,
-      bodyBuilder: (scrollController) {
-        return ListView(
-          controller: scrollController,
-          padding: EdgeInsets.fromLTRB(
-            tokens.contentSpacing,
-            0,
-            tokens.contentSpacing,
-            tokens.contentSpacing,
-          ),
-          children: <Widget>[
-            SalesFiltersSectionHeader(
-              title: widget.l10n.salesBranchFilterLabel,
-              subtitle: widget.l10n.salesBranchRequiredMessage,
-              requiredBadgeLabel: widget.l10n.reportFiltersRequiredCount(1),
-            ),
-            SizedBox(height: tokens.gapSm),
-            SalesBranchPickerControl(
-              l10n: widget.l10n,
-              availableBranches: widget.availableAgents,
-              selectedBranchId: _selectedAgentId,
-              showTrailingFilterButton: false,
-              onSelectionChanged: (agentId) {
-                setState(() => _selectedAgentId = agentId);
-              },
-            ),
-            if (selectedAgentMissingToken) ...<Widget>[
-              SizedBox(height: tokens.gapMd),
-              AppInlineErrorPanel(
-                tone: AppInlinePanelTone.informational,
-                message: widget.l10n.salesBranchFilterMissingClientTokenBanner,
-              ),
-            ],
-            SizedBox(height: tokens.sectionSpacing),
-            SalesFiltersSectionHeader(
-              title: widget.l10n.salesMonthlyPnlFilterAnchorMonth,
-            ),
-            SizedBox(height: tokens.gapSm),
-            AppSectionCard(
-              color: theme.colorScheme.surfaceContainerLow,
-              child: AppDropdownField<OverviewYearMonth>(
-                label: widget.l10n.salesMonthlyPnlFilterAnchorMonth,
-                value: _anchorYearMonth,
-                density: AppTextFieldDensity.compact,
-                options: monthOptions,
-                onChanged: (value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(() => _anchorYearMonth = value);
-                },
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }

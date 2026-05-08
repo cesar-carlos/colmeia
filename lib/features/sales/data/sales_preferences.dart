@@ -66,6 +66,14 @@ class SalesPreferences {
   static const int _anchorYearMin = 2000;
   static const int _anchorYearMax = 2100;
 
+  /// Reference month shared by Sales monthly P&L and daily totals (same storage).
+  OverviewYearMonth? restoreSalesChartReferenceMonth() =>
+      restoreMonthlyPnlAnchor();
+
+  /// Persists [anchor] for monthly P&L and daily totals charts.
+  Future<void> persistSalesChartReferenceMonth(OverviewYearMonth anchor) =>
+      persistMonthlyPnlAnchor(anchor);
+
   /// Restores [OverviewYearMonth] anchor for the monthly P&L chart,
   /// or null when nothing valid is stored.
   OverviewYearMonth? restoreMonthlyPnlAnchor() {

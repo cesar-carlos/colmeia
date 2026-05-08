@@ -53,7 +53,10 @@ void main() {
       'Weekday distribution in the selected period (all branches in scope).',
     );
     expect(chart.items, hasLength(7));
-    expect(chart.labelBuilder(points.first), 'Sunday');
+    expect(chart.items.first.weekdayNumber, 2);
+    expect(chart.labelBuilder(chart.items.first), 'Mon');
+    expect(chart.items.last.weekdayNumber, 1);
+    expect(chart.labelBuilder(chart.items.last), 'Sun');
 
     final sundayZero = <OverviewWeekdaySalesTrendPoint>[
       const OverviewWeekdaySalesTrendPoint(

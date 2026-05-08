@@ -561,45 +561,27 @@ class _CategoryDonutCardHeader extends StatelessWidget {
           )
         : null;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final trailing = titleTrailing;
-        final textRow = Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            ?leading,
-            Expanded(child: titleBlock),
-          ],
-        );
+    final trailing = titleTrailing;
+    final textRow = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        ?leading,
+        Expanded(child: titleBlock),
+      ],
+    );
 
-        if (trailing == null) {
-          return textRow;
-        }
+    if (trailing == null) {
+      return textRow;
+    }
 
-        if (constraints.maxWidth < 420) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              textRow,
-              SizedBox(height: tokens.gapSm),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: trailing,
-              ),
-            ],
-          );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            ?leading,
-            Expanded(child: titleBlock),
-            SizedBox(width: tokens.gapSm),
-            trailing,
-          ],
-        );
-      },
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        ?leading,
+        Expanded(child: titleBlock),
+        SizedBox(width: tokens.gapSm),
+        trailing,
+      ],
     );
   }
 }

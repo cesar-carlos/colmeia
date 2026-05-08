@@ -37,8 +37,8 @@ void main() {
       );
 
       check(model.weekdayCategoryLabels).deepEquals(<String>[
-        l10n.overviewWeekdayMonday,
-        l10n.overviewWeekdayWednesday,
+        l10n.overviewDailySalesAxisDowMon,
+        l10n.overviewDailySalesAxisDowWed,
       ]);
       check(model.combinedRemainingUsers).isFalse();
 
@@ -86,7 +86,7 @@ void main() {
       check(model.weekdayCategoryLabels).length.equals(1);
       check(
         model.weekdayCategoryLabels.single,
-      ).equals(l10n.overviewWeekdayMonday);
+      ).equals(l10n.overviewDailySalesAxisDowMon);
       const mondayIdx = 0;
       final others = model.seriesData.last;
       check(others[mondayIdx].salesCount).equals(3);

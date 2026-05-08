@@ -9,6 +9,7 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
@@ -128,7 +129,14 @@ void main() {
     expect(find.text('Sales by weekday'), findsOneWidget);
     expect(find.text('Last 12 months'), findsOneWidget);
 
+    final dailyTitleTopLeft = tester.getTopLeft(find.text('Daily sales'));
     final monthlyTitleTopLeft = tester.getTopLeft(find.text('Last 12 months'));
+    final paymentMixTitleTopLeft = tester.getTopLeft(
+      find.text('Mix by payment method').first,
+    );
+    expect(monthlyTitleTopLeft.dy, greaterThan(dailyTitleTopLeft.dy));
+    expect(monthlyTitleTopLeft.dy, lessThan(paymentMixTitleTopLeft.dy));
+
     final weekdayTitleTopLeft = tester.getTopLeft(
       find.text('Sales by weekday'),
     );
@@ -226,6 +234,13 @@ Overview _overview() {
         anoMes: '2026/03',
         qtdVendas: 42,
         valorParcela: 4200,
+      ),
+    ],
+    dailySalesTrend: <OverviewDailySalesTrendPoint>[
+      OverviewDailySalesTrendPoint(
+        saleDate: DateTime(2026, 3, 15),
+        salesCount: 10,
+        salesAmount: 1000,
       ),
     ],
     weekdaySalesTrend: const <OverviewWeekdaySalesTrendPoint>[

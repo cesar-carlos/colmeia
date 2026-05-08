@@ -43,6 +43,28 @@
   "dashboardSetupRequiredMessage": "Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.",
   "overviewResumoUnknownPaymentMethod": "Forma de pagamento não informada",
   "overviewResumoUnknownUserName": "Utilizador não informado",
+  "overviewDailySalesAxisDowMon": "Segunda",
+  "overviewDailySalesAxisDowTue": "Terça",
+  "overviewDailySalesAxisDowWed": "Quarta",
+  "overviewDailySalesAxisDowThu": "Quinta",
+  "overviewDailySalesAxisDowFri": "Sexta",
+  "overviewDailySalesAxisDowSat": "Sábado",
+  "overviewDailySalesAxisDowSun": "Domingo",
+  "overviewDailySalesTitle": "Vendas por dia",
+  "overviewDailySalesSubtitle": "Totais por dia civil no período selecionado (agregado das filiais no escopo).",
+  "overviewDailySalesEmpty": "Sem dados de vendas diárias neste período.",
+  "overviewDailySalesLoadFailed": "Não foi possível carregar o gráfico de vendas diárias. Tente novamente mais tarde.",
+  "overviewDailySalesChartSemantics": "Gráfico de quantidade de vendas e faturamento por dia",
+  "overviewDailySalesRevenueChartSemantics": "Gráfico de faturamento e quantidade de vendas por dia",
+  "overviewLoadingDailySalesSemantics": "Carregando gráfico de vendas diárias",
+  "overviewDailySalesTooltip": "{date}: {salesCount} vendas - {salesAmount}",
+  "@overviewDailySalesTooltip": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesAmount": {"type": "String"}
+    }
+  },
   "dashboardViewAffectedAgentsList": "Ver lista ({count})",
   "@dashboardViewAffectedAgentsList": {
     "placeholders": {
@@ -221,13 +243,6 @@
       "topSalesAmount": {"type": "String"}
     }
   },
-  "overviewWeekdaySunday": "Domingo",
-  "overviewWeekdayMonday": "Segunda-feira",
-  "overviewWeekdayTuesday": "Terça-feira",
-  "overviewWeekdayWednesday": "Quarta-feira",
-  "overviewWeekdayThursday": "Quinta-feira",
-  "overviewWeekdayFriday": "Sexta-feira",
-  "overviewWeekdaySaturday": "Sábado",
   "overviewWeekdayUserSalesTitle": "Vendas por dia da semana e usuário",
   "overviewWeekdayUserRevenueTitle": "Receita por dia da semana e usuário",
   "overviewWeekdayUserSalesSubtitle": "Dias da semana no eixo horizontal; cada cor é um usuário (ver legenda). Período e âmbito de filiais como no painel.",
@@ -782,7 +797,7 @@
   "overviewLucratividadeMensalMarginSeriesLabel": "Margem %",
   "overviewLoadingLucratividadeMensalSemantics": "Carregando grafico de lucratividade mensal do produto…",
   "salesHubTitle": "Vendas",
-  "salesHubSubtitle": "Acesse e gerencie informacoes comerciais por categoria.",
+  "salesHubSubtitle": "Acesse e gerencie informações comerciais por categoria.",
   "salesBranchFilterLabel": "FILIAIS",
   "salesBranchFilterEmptyHint": "Carregue o relatorio para listar as filiais.",
   "salesBranchFilterSheetTitle": "Selecionar filiais",
@@ -803,8 +818,27 @@
   "salesCardNewPaymentTitle": "Novo Pagamento",
   "salesCardProdutoRankLucroTitle": "Ranking de produtos",
   "salesCardMonthlyPnlTitle": "Resultado mensal",
-  "salesCardProdutoTendenciaTitle": "Tendencia de vendas",
-  "salesCardProdutoTendenciaMediaMovelTitle": "Tendencia de vendas (media movel)",
+  "salesCardResumoTotalDiarioVendasTitle": "Vendas diárias",
+  "salesDailyTotalsChartTitle": "Vendas por dia",
+  "salesDailyTotalsChartTitleAmount": "Faturamento diário",
+  "salesDailyTotalsChartSubtitle": "Totais por dia civil na filial e no mês de referência selecionados.",
+  "salesDailyTotalsChartEmpty": "Sem dados de vendas diárias para esta filial e mês.",
+  "salesDailyTotalsChartLoadFailed": "Não foi possível carregar as vendas diárias desta filial. Tente novamente mais tarde.",
+  "salesDailyTotalsChartSemanticsCount": "Gráfico de quantidade de vendas e faturamento diários da filial selecionada",
+  "salesDailyTotalsChartSemanticsAmount": "Gráfico de faturamento diário e quantidade de vendas da filial selecionada",
+  "salesDailyTotalsChartScopeHint": "Uma filial; os totais seguem o filtro de mês de referência.",
+  "salesDailyTotalsChartTooltip": "{date}: {salesCount} vendas - {salesAmount}",
+  "@salesDailyTotalsChartTooltip": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesAmount": {"type": "String"}
+    }
+  },
+  "salesDailyTotalsMetricSalesCountLabel": "Vendas",
+  "salesDailyTotalsMetricSalesAmountLabel": "Faturamento",
+  "salesCardProdutoTendenciaTitle": "Tendência de vendas",
+  "salesCardProdutoTendenciaMediaMovelTitle": "Tendência de vendas (média móvel)",
   "salesMonthlyPnlPageSubtitle": "Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.",
   "salesMonthlyPnlFilterAnchorMonth": "Mes de referencia",
   "salesMonthlyPnlChartTitle": "Resultado mensal",

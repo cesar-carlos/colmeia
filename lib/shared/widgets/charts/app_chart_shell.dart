@@ -75,8 +75,8 @@ class AppChartShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          LayoutBuilder(
-            builder: (context, constraints) {
+          Builder(
+            builder: (context) {
               final hasTitle = titleWidget != null || title.isNotEmpty;
               final headerText = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,27 +101,12 @@ class AppChartShell extends StatelessWidget {
                 return headerText;
               }
 
-              final useCompactHeader = constraints.maxWidth < 420;
-              if (useCompactHeader) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    headerText,
-                    SizedBox(height: tokens.gapSm),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: trailing,
-                    ),
-                  ],
-                );
-              }
-
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Expanded(child: headerText),
                   SizedBox(width: tokens.gapSm),
-                  Flexible(child: trailing),
+                  trailing,
                 ],
               );
             },

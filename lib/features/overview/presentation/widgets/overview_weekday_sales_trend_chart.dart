@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
+import 'package:colmeia/features/overview/domain/overview_weekday_display_order.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_weekday_sales_trend_l10n.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -45,17 +46,27 @@ class _OverviewWeekdaySalesTrendChartState
   _OverviewWeekdayMetric _metric = _OverviewWeekdayMetric.salesCount;
 
   /// Bars for the selected metric only; zero values are omitted from the plot.
+  /// Order: Monday → Sunday on the axis ([kOverviewApiWeekdayDisplayOrder]).
   List<OverviewWeekdaySalesTrendPoint> _chartPointsNonZero() {
+    List<OverviewWeekdaySalesTrendPoint> filtered;
     if (_metric == _OverviewWeekdayMetric.salesCount) {
-      return [
+      filtered = [
         for (final p in widget.points)
           if (p.salesCount > 0) p,
       ];
+    } else {
+      filtered = [
+        for (final p in widget.points)
+          if (p.salesAmount > 0) p,
+      ];
     }
-    return [
-      for (final p in widget.points)
-        if (p.salesAmount > 0) p,
-    ];
+    filtered.sort(
+      (a, b) => compareOverviewApiWeekdayDisplayOrder(
+        a.weekdayNumber,
+        b.weekdayNumber,
+      ),
+    );
+    return filtered;
   }
 
   List<OverviewWeekdaySalesTrendPoint>? _semanticsPointsRef;

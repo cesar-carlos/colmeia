@@ -15,11 +15,11 @@ import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:flutter/material.dart';
 
-/// Stages the last-12-months combo chart first, then the payment mix donut and
-/// each remaining Syncfusion-heavy chart on separate frames after the
-/// skeleton→data transition so the UI thread is not saturated in a single frame.
-/// Rankings mount in two steps (agent chart, then user chart) to avoid two heavy
-/// bar charts in one burst.
+/// Stages daily sales (ResumoTotalDiarioVendas) first, then the last-12-months combo
+/// chart, then the payment mix donut and each remaining Syncfusion-heavy chart on
+/// separate frames after the skeleton→data transition so the UI thread is not saturated
+/// in a single frame. Rankings mount in steps (agent chart, then user chart, then period
+/// lucratividade) to avoid heavy bar charts in one burst.
 class OverviewHomeStagedBelowKpis extends StatefulWidget {
   const OverviewHomeStagedBelowKpis({
     required this.tokens,
@@ -41,9 +41,9 @@ class OverviewHomeStagedBelowKpis extends StatefulWidget {
 
 class _OverviewHomeStagedBelowKpisState
     extends State<OverviewHomeStagedBelowKpis> {
-  /// 0 = placeholders only. 1 = monthly parcels, 2 = payment mix, 3 = weekday
-  /// sales, 4 = weekday-by-user, 5 = agent ranking, 6 = user ranking,
-  /// 7 = lucratividade, 8 = daily sales trend.
+  /// 0 = placeholders only. 1 = daily sales trend, 2 = monthly parcels,
+  /// 3 = payment mix, 4 = weekday sales, 5 = weekday-by-user, 6 = agent ranking,
+  /// 7 = user ranking, 8 = lucratividade (period).
   int _belowKpisStage = 0;
 
   /// Bumped when a new staged pipeline starts, skeleton cancels it, or on
@@ -180,6 +180,19 @@ class _OverviewHomeStagedBelowKpisState
           AppSkeleton(
             enabled: true,
             showDelay: Duration.zero,
+            loadingSemanticsLabel: l10n.overviewLoadingDailySalesSemantics,
+            child: OverviewDailySalesTrendChart(
+              l10n: l10n,
+              points: displayOverview.dailySalesTrend,
+              loadFailed: displayOverview.dailySalesTrendLoadFailed,
+              loadFailureMessage:
+                  displayOverview.dailySalesTrendLoadFailureMessage,
+            ),
+          ),
+          SizedBox(height: tokens.sectionSpacing),
+          AppSkeleton(
+            enabled: true,
+            showDelay: const Duration(milliseconds: 40),
             loadingSemanticsLabel: l10n.overviewLoadingMonthlyParcelsSemantics,
             child: OverviewMonthlyParcelsComboChart(
               l10n: l10n,
@@ -192,7 +205,7 @@ class _OverviewHomeStagedBelowKpisState
           SizedBox(height: tokens.sectionSpacing),
           AppSkeleton(
             enabled: true,
-            showDelay: const Duration(milliseconds: 40),
+            showDelay: const Duration(milliseconds: 80),
             loadingSemanticsLabel: l10n.overviewLoadingPaymentMixSemantics,
             child: OverviewPaymentMixCard(
               l10n: l10n,
@@ -202,7 +215,7 @@ class _OverviewHomeStagedBelowKpisState
           SizedBox(height: tokens.sectionSpacing),
           AppSkeleton(
             enabled: true,
-            showDelay: const Duration(milliseconds: 80),
+            showDelay: const Duration(milliseconds: 100),
             loadingSemanticsLabel: l10n.overviewLoadingWeekdaySalesSemantics,
             child: OverviewWeekdaySalesTrendChart(
               l10n: l10n,
@@ -215,7 +228,7 @@ class _OverviewHomeStagedBelowKpisState
           SizedBox(height: tokens.sectionSpacing),
           AppSkeleton(
             enabled: true,
-            showDelay: const Duration(milliseconds: 100),
+            showDelay: const Duration(milliseconds: 120),
             loadingSemanticsLabel:
                 l10n.overviewLoadingWeekdayUserSalesSemantics,
             child: OverviewWeekdayUserSalesTrendChart(
@@ -229,7 +242,7 @@ class _OverviewHomeStagedBelowKpisState
           SizedBox(height: tokens.sectionSpacing),
           AppSkeleton(
             enabled: true,
-            showDelay: const Duration(milliseconds: 120),
+            showDelay: const Duration(milliseconds: 140),
             loadingSemanticsLabel: l10n.overviewLoadingRankingsSemantics,
             child: OverviewRankingsSection(
               l10n: l10n,
@@ -240,7 +253,7 @@ class _OverviewHomeStagedBelowKpisState
           SizedBox(height: tokens.sectionSpacing),
           AppSkeleton(
             enabled: true,
-            showDelay: const Duration(milliseconds: 140),
+            showDelay: const Duration(milliseconds: 160),
             loadingSemanticsLabel: l10n.overviewLoadingLucratividadeSemantics,
             child: OverviewLucratividadeChart(
               l10n: l10n,
@@ -249,19 +262,6 @@ class _OverviewHomeStagedBelowKpisState
               loadFailureMessage:
                   displayOverview.lucratividadeTrendLoadFailureMessage,
               overviewApprovedAgentCount: displayOverview.approvedAgentCount,
-            ),
-          ),
-          SizedBox(height: tokens.sectionSpacing),
-          AppSkeleton(
-            enabled: true,
-            showDelay: const Duration(milliseconds: 160),
-            loadingSemanticsLabel: l10n.overviewLoadingDailySalesSemantics,
-            child: OverviewDailySalesTrendChart(
-              l10n: l10n,
-              points: displayOverview.dailySalesTrend,
-              loadFailed: displayOverview.dailySalesTrendLoadFailed,
-              loadFailureMessage:
-                  displayOverview.dailySalesTrendLoadFailureMessage,
             ),
           ),
         ],
@@ -275,6 +275,8 @@ class _OverviewHomeStagedBelowKpisState
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: chartBlockHeight),
           SizedBox(height: tokens.sectionSpacing),
+          SizedBox(height: chartBlockHeight),
+          SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: mixPlaceholderHeight),
           SizedBox(height: tokens.sectionSpacing),
           SizedBox(height: chartBlockHeight),
@@ -285,12 +287,10 @@ class _OverviewHomeStagedBelowKpisState
             height:
                 chartBlockHeight +
                 tokens.sectionSpacing +
-                _userRankingPlaceholderHeight(tokens),
+                _userRankingPlaceholderHeight(tokens) +
+                tokens.sectionSpacing +
+                chartBlockHeight,
           ),
-          SizedBox(height: tokens.sectionSpacing),
-          SizedBox(height: chartBlockHeight),
-          SizedBox(height: tokens.sectionSpacing),
-          SizedBox(height: chartBlockHeight),
         ],
       );
     }
@@ -303,8 +303,27 @@ class _OverviewHomeStagedBelowKpisState
         AppSkeleton(
           enabled: false,
           showDelay: Duration.zero,
-          loadingSemanticsLabel: l10n.overviewLoadingMonthlyParcelsSemantics,
+          loadingSemanticsLabel: l10n.overviewLoadingDailySalesSemantics,
           child: _belowKpisStage >= 1
+              ? _StagedFadeIn(
+                  child: RepaintBoundary(
+                    child: OverviewDailySalesTrendChart(
+                      l10n: l10n,
+                      points: overview.dailySalesTrend,
+                      loadFailed: overview.dailySalesTrendLoadFailed,
+                      loadFailureMessage:
+                          overview.dailySalesTrendLoadFailureMessage,
+                    ),
+                  ),
+                )
+              : SizedBox(height: chartBlockHeight),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppSkeleton(
+          enabled: false,
+          showDelay: const Duration(milliseconds: 40),
+          loadingSemanticsLabel: l10n.overviewLoadingMonthlyParcelsSemantics,
+          child: _belowKpisStage >= 2
               ? _StagedFadeIn(
                   child: RepaintBoundary(
                     child: OverviewMonthlyParcelsComboChart(
@@ -321,9 +340,9 @@ class _OverviewHomeStagedBelowKpisState
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
           enabled: false,
-          showDelay: const Duration(milliseconds: 40),
+          showDelay: const Duration(milliseconds: 80),
           loadingSemanticsLabel: l10n.overviewLoadingPaymentMixSemantics,
-          child: _belowKpisStage >= 2
+          child: _belowKpisStage >= 3
               ? _StagedFadeIn(
                   child: RepaintBoundary(
                     child: OverviewPaymentMixCard(
@@ -337,9 +356,9 @@ class _OverviewHomeStagedBelowKpisState
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
           enabled: false,
-          showDelay: const Duration(milliseconds: 80),
+          showDelay: const Duration(milliseconds: 100),
           loadingSemanticsLabel: l10n.overviewLoadingWeekdaySalesSemantics,
-          child: _belowKpisStage >= 3
+          child: _belowKpisStage >= 4
               ? _StagedFadeIn(
                   child: RepaintBoundary(
                     child: OverviewWeekdaySalesTrendChart(
@@ -356,9 +375,9 @@ class _OverviewHomeStagedBelowKpisState
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
           enabled: false,
-          showDelay: const Duration(milliseconds: 100),
+          showDelay: const Duration(milliseconds: 120),
           loadingSemanticsLabel: l10n.overviewLoadingWeekdayUserSalesSemantics,
-          child: _belowKpisStage >= 4
+          child: _belowKpisStage >= 5
               ? _StagedFadeIn(
                   child: RepaintBoundary(
                     child: OverviewWeekdayUserSalesTrendChart(
@@ -375,9 +394,9 @@ class _OverviewHomeStagedBelowKpisState
         SizedBox(height: tokens.sectionSpacing),
         AppSkeleton(
           enabled: false,
-          showDelay: const Duration(milliseconds: 120),
+          showDelay: const Duration(milliseconds: 140),
           loadingSemanticsLabel: l10n.overviewLoadingRankingsSemantics,
-          child: _belowKpisStage < 5
+          child: _belowKpisStage < 6
               ? SizedBox(
                   height:
                       chartBlockHeight +
@@ -400,7 +419,7 @@ class _OverviewHomeStagedBelowKpisState
                               agentRankings: rankings.agents,
                             ),
                             SizedBox(height: tokens.sectionSpacing),
-                            if (_belowKpisStage >= 6)
+                            if (_belowKpisStage >= 7)
                               _StagedFadeIn(
                                 child: RepaintBoundary(
                                   key: const ValueKey<String>(
@@ -417,7 +436,7 @@ class _OverviewHomeStagedBelowKpisState
                                 height: _userRankingPlaceholderHeight(tokens),
                               ),
                             SizedBox(height: tokens.sectionSpacing),
-                            if (_belowKpisStage >= 7)
+                            if (_belowKpisStage >= 8)
                               _StagedFadeIn(
                                 child: RepaintBoundary(
                                   key: const ValueKey<String>(
@@ -443,25 +462,6 @@ class _OverviewHomeStagedBelowKpisState
                     ),
                   ),
                 ),
-        ),
-        SizedBox(height: tokens.sectionSpacing),
-        AppSkeleton(
-          enabled: false,
-          showDelay: const Duration(milliseconds: 160),
-          loadingSemanticsLabel: l10n.overviewLoadingDailySalesSemantics,
-          child: _belowKpisStage >= 8
-              ? _StagedFadeIn(
-                  child: RepaintBoundary(
-                    child: OverviewDailySalesTrendChart(
-                      l10n: l10n,
-                      points: overview.dailySalesTrend,
-                      loadFailed: overview.dailySalesTrendLoadFailed,
-                      loadFailureMessage:
-                          overview.dailySalesTrendLoadFailureMessage,
-                    ),
-                  ),
-                )
-              : SizedBox(height: chartBlockHeight),
         ),
       ],
     );

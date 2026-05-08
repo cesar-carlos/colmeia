@@ -933,6 +933,58 @@ abstract class AppLocalizations {
   /// **'Loading daily sales chart'**
   String get overviewLoadingDailySalesSemantics;
 
+  /// Tooltip for one daily bar showing sales count and amount.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}: {salesCount} sales - {salesAmount}'**
+  String overviewDailySalesTooltip(
+    String date,
+    String salesCount,
+    String salesAmount,
+  );
+
+  /// Short weekday label (Monday) for overview charts: daily sales x-axis, weekday bars, tooltips — keep in sync across locales.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get overviewDailySalesAxisDowMon;
+
+  /// No description provided for @overviewDailySalesAxisDowTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get overviewDailySalesAxisDowTue;
+
+  /// No description provided for @overviewDailySalesAxisDowWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get overviewDailySalesAxisDowWed;
+
+  /// No description provided for @overviewDailySalesAxisDowThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get overviewDailySalesAxisDowThu;
+
+  /// No description provided for @overviewDailySalesAxisDowFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get overviewDailySalesAxisDowFri;
+
+  /// No description provided for @overviewDailySalesAxisDowSat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get overviewDailySalesAxisDowSat;
+
+  /// No description provided for @overviewDailySalesAxisDowSun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get overviewDailySalesAxisDowSun;
+
   /// Card title when the weekday overview chart is plotting sales count.
   ///
   /// In en, this message translates to:
@@ -1024,48 +1076,6 @@ abstract class AppLocalizations {
     String topWeekday,
     String topSalesAmount,
   );
-
-  /// Localized label for weekday Sunday in the overview chart.
-  ///
-  /// In en, this message translates to:
-  /// **'Sunday'**
-  String get overviewWeekdaySunday;
-
-  /// Localized label for weekday Monday in the overview chart.
-  ///
-  /// In en, this message translates to:
-  /// **'Monday'**
-  String get overviewWeekdayMonday;
-
-  /// Localized label for weekday Tuesday in the overview chart.
-  ///
-  /// In en, this message translates to:
-  /// **'Tuesday'**
-  String get overviewWeekdayTuesday;
-
-  /// Localized label for weekday Wednesday in the overview chart.
-  ///
-  /// In en, this message translates to:
-  /// **'Wednesday'**
-  String get overviewWeekdayWednesday;
-
-  /// Localized label for weekday Thursday in the overview chart.
-  ///
-  /// In en, this message translates to:
-  /// **'Thursday'**
-  String get overviewWeekdayThursday;
-
-  /// Localized label for weekday Friday in the overview chart.
-  ///
-  /// In en, this message translates to:
-  /// **'Friday'**
-  String get overviewWeekdayFriday;
-
-  /// Localized label for weekday Saturday in the overview chart.
-  ///
-  /// In en, this message translates to:
-  /// **'Saturday'**
-  String get overviewWeekdaySaturday;
 
   /// Card title when the per-user weekday overview chart plots sales count.
   ///
@@ -3699,6 +3709,82 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Monthly P&L'**
   String get salesCardMonthlyPnlTitle;
+
+  /// No description provided for @salesCardResumoTotalDiarioVendasTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily sales totals'**
+  String get salesCardResumoTotalDiarioVendasTitle;
+
+  /// No description provided for @salesDailyTotalsChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily sales'**
+  String get salesDailyTotalsChartTitle;
+
+  /// No description provided for @salesDailyTotalsChartTitleAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily revenue'**
+  String get salesDailyTotalsChartTitleAmount;
+
+  /// No description provided for @salesDailyTotalsChartSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals per calendar day for the selected branch and reference month.'**
+  String get salesDailyTotalsChartSubtitle;
+
+  /// No description provided for @salesDailyTotalsChartEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No daily sales data for this branch and month.'**
+  String get salesDailyTotalsChartEmpty;
+
+  /// No description provided for @salesDailyTotalsChartLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load daily sales for this branch. Try again later.'**
+  String get salesDailyTotalsChartLoadFailed;
+
+  /// No description provided for @salesDailyTotalsChartSemanticsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily sales count and revenue chart for the selected branch'**
+  String get salesDailyTotalsChartSemanticsCount;
+
+  /// No description provided for @salesDailyTotalsChartSemanticsAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily revenue and sales count chart for the selected branch'**
+  String get salesDailyTotalsChartSemanticsAmount;
+
+  /// No description provided for @salesDailyTotalsChartScopeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Single branch; totals follow the reference month filter.'**
+  String get salesDailyTotalsChartScopeHint;
+
+  /// Tooltip for daily sales bars on the Sales daily totals screen.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}: {salesCount} sales - {salesAmount}'**
+  String salesDailyTotalsChartTooltip(
+    String date,
+    String salesCount,
+    String salesAmount,
+  );
+
+  /// No description provided for @salesDailyTotalsMetricSalesCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get salesDailyTotalsMetricSalesCountLabel;
+
+  /// No description provided for @salesDailyTotalsMetricSalesAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get salesDailyTotalsMetricSalesAmountLabel;
 
   /// No description provided for @salesCardProdutoTendenciaTitle.
   ///

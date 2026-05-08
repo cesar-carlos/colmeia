@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
+import 'package:colmeia/features/overview/domain/overview_weekday_display_order.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_weekday_sales_trend_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
@@ -40,19 +41,6 @@ class WeekdayUserGroupedChartModel {
   final bool combinedRemainingUsers;
 }
 
-/// API weekday numbers: 1 = Sunday … 7 = Saturday (see [overviewWeekdaySalesLabel]).
-///
-/// Display order: **Monday → Sunday** (ISO-style work week on the axis).
-const List<int> kOverviewWeekdayNumbersInOrder = <int>[
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  1,
-];
-
 /// Maximum simultaneous series (users); remainder are summed into \"Others\".
 const int kWeekdayUserGroupedMaxSeries = 8;
 
@@ -60,7 +48,7 @@ const String _kWeekdayUserGroupedOthersSeriesKey =
     '__colmeia_weekday_user_grouped_others__';
 
 List<String> overviewWeekdayCategoryLabels(AppLocalizations l10n) => <String>[
-  for (final n in kOverviewWeekdayNumbersInOrder)
+  for (final n in kOverviewApiWeekdayDisplayOrder)
     overviewWeekdaySalesLabel(n, l10n),
 ];
 
@@ -72,9 +60,9 @@ WeekdayUserGroupedChartModel buildWeekdayUserGroupedChartModel({
   double minPlottedValueShareOfMax = 0.06,
 }) {
   final labels = overviewWeekdayCategoryLabels(l10n);
-  final dayCount = kOverviewWeekdayNumbersInOrder.length;
+  final dayCount = kOverviewApiWeekdayDisplayOrder.length;
   final indexByWeekday = <int, int>{
-    for (var i = 0; i < dayCount; i++) kOverviewWeekdayNumbersInOrder[i]: i,
+    for (var i = 0; i < dayCount; i++) kOverviewApiWeekdayDisplayOrder[i]: i,
   };
 
   final metricByUser = <String, List<num>>{};

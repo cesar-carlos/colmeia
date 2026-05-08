@@ -496,6 +496,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewLoadingDailySalesSemantics => 'Loading daily sales chart';
 
   @override
+  String overviewDailySalesTooltip(
+    String date,
+    String salesCount,
+    String salesAmount,
+  ) {
+    return '$date: $salesCount sales - $salesAmount';
+  }
+
+  @override
+  String get overviewDailySalesAxisDowMon => 'Mon';
+
+  @override
+  String get overviewDailySalesAxisDowTue => 'Tue';
+
+  @override
+  String get overviewDailySalesAxisDowWed => 'Wed';
+
+  @override
+  String get overviewDailySalesAxisDowThu => 'Thu';
+
+  @override
+  String get overviewDailySalesAxisDowFri => 'Fri';
+
+  @override
+  String get overviewDailySalesAxisDowSat => 'Sat';
+
+  @override
+  String get overviewDailySalesAxisDowSun => 'Sun';
+
+  @override
   String get overviewWeekdaySalesTitle => 'Sales by weekday';
 
   @override
@@ -558,27 +588,6 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return 'Total $totalSalesAmount and $totalSalesCount sales in the selected period. Highest day: $topWeekday with $topSalesAmount.';
   }
-
-  @override
-  String get overviewWeekdaySunday => 'Sunday';
-
-  @override
-  String get overviewWeekdayMonday => 'Monday';
-
-  @override
-  String get overviewWeekdayTuesday => 'Tuesday';
-
-  @override
-  String get overviewWeekdayWednesday => 'Wednesday';
-
-  @override
-  String get overviewWeekdayThursday => 'Thursday';
-
-  @override
-  String get overviewWeekdayFriday => 'Friday';
-
-  @override
-  String get overviewWeekdaySaturday => 'Saturday';
 
   @override
   String get overviewWeekdayUserSalesTitle => 'Sales by weekday and user';
@@ -2212,6 +2221,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesCardMonthlyPnlTitle => 'Monthly P&L';
+
+  @override
+  String get salesCardResumoTotalDiarioVendasTitle => 'Daily sales totals';
+
+  @override
+  String get salesDailyTotalsChartTitle => 'Daily sales';
+
+  @override
+  String get salesDailyTotalsChartTitleAmount => 'Daily revenue';
+
+  @override
+  String get salesDailyTotalsChartSubtitle =>
+      'Totals per calendar day for the selected branch and reference month.';
+
+  @override
+  String get salesDailyTotalsChartEmpty =>
+      'No daily sales data for this branch and month.';
+
+  @override
+  String get salesDailyTotalsChartLoadFailed =>
+      'Could not load daily sales for this branch. Try again later.';
+
+  @override
+  String get salesDailyTotalsChartSemanticsCount =>
+      'Daily sales count and revenue chart for the selected branch';
+
+  @override
+  String get salesDailyTotalsChartSemanticsAmount =>
+      'Daily revenue and sales count chart for the selected branch';
+
+  @override
+  String get salesDailyTotalsChartScopeHint =>
+      'Single branch; totals follow the reference month filter.';
+
+  @override
+  String salesDailyTotalsChartTooltip(
+    String date,
+    String salesCount,
+    String salesAmount,
+  ) {
+    return '$date: $salesCount sales - $salesAmount';
+  }
+
+  @override
+  String get salesDailyTotalsMetricSalesCountLabel => 'Sales';
+
+  @override
+  String get salesDailyTotalsMetricSalesAmountLabel => 'Revenue';
 
   @override
   String get salesCardProdutoTendenciaTitle => 'Sales trend';

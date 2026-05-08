@@ -8,14 +8,14 @@ void main() {
   test('maps weekday numbers to English labels', () {
     final l10n = AppLocalizationsEn();
 
-    check(overviewWeekdaySalesLabel(1, l10n)).equals('Sunday');
-    check(overviewWeekdaySalesLabel(7, l10n)).equals('Saturday');
+    check(overviewWeekdaySalesLabel(1, l10n)).equals('Sun');
+    check(overviewWeekdaySalesLabel(7, l10n)).equals('Sat');
   });
 
   test('maps weekday numbers to Portuguese labels', () {
     final l10n = AppLocalizationsPt();
 
-    check(overviewWeekdaySalesLabel(2, l10n)).equals('Segunda-feira');
-    check(overviewWeekdaySalesLabel(6, l10n)).equals('Sexta-feira');
+    check(overviewWeekdaySalesLabel(2, l10n)).equals('Segunda');
+    check(overviewWeekdaySalesLabel(6, l10n)).equals('Sexta');
   });
 }

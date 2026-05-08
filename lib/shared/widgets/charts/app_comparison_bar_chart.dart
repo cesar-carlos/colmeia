@@ -711,12 +711,36 @@ String formatComparisonBarXAxisLabelCollapsed(
 /// breaks (`\n`). [maxLines] caps height; overflow on the last line uses U+2026.
 ///
 /// Syncfusion renders `\n` in category axis labels as line breaks.
+///
+/// When [raw] contains explicit newline characters, each line is truncated
+/// independently (no word-wrap merge across lines) so callers can stack
+/// structured labels (e.g. date + weekday) without collapsing them.
 String formatComparisonBarXAxisLabelWrapped(
   String raw, {
   int maxCharsPerLine = 14,
   int maxLines = 2,
 }) {
-  final s = raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+  final trimmedOuter = raw.trim();
+  if (trimmedOuter.contains('\n')) {
+    final limit = math.max(4, maxCharsPerLine);
+    final capLines = math.max(1, maxLines);
+    final segments = trimmedOuter
+        .split(RegExp(r'\r?\n'))
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList(growable: false);
+    final out = <String>[];
+    for (var i = 0; i < segments.length && i < capLines; i++) {
+      var seg = segments[i];
+      if (seg.length > limit) {
+        seg = '${seg.substring(0, limit)}\u2026';
+      }
+      out.add(seg);
+    }
+    return out.join('\n');
+  }
+
+  final s = trimmedOuter.replaceAll(RegExp(r'\s+'), ' ');
   if (s.isEmpty) {
     return s;
   }

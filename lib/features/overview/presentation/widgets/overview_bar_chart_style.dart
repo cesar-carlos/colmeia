@@ -9,6 +9,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 enum OverviewHomeBarChartKind {
   payment,
   weekday,
+  daily,
   ranking,
 }
 
@@ -30,14 +31,16 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
   final localeName = l10n.localeName;
   final isRanking = kind == OverviewHomeBarChartKind.ranking;
   final isWeekday = kind == OverviewHomeBarChartKind.weekday;
+  final isDaily = kind == OverviewHomeBarChartKind.daily;
   final isPayment = kind == OverviewHomeBarChartKind.payment;
-  final weekdayRevenue = isWeekday && weekdayUsesCurrencyAxis;
+  final isWeekdayOrDaily = isWeekday || isDaily;
+  final metricRevenueAxis = isWeekdayOrDaily && weekdayUsesCurrencyAxis;
 
   return AppComparisonBarChartStyle(
     animationDuration: const Duration(milliseconds: 350),
     stickyPrimaryYAxisWhileScrolling: false,
     enableTapHighlight: isPayment || isRanking,
-    yAxisFormat: isWeekday
+    yAxisFormat: isWeekdayOrDaily
         ? (weekdayUsesCurrencyAxis
               ? AppBrFormatters.compactCurrencyFormatForLocale(localeName)
               : NumberFormat.decimalPattern(localeName))
@@ -48,31 +51,37 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     showDataLabels: showDataLabels,
     autoRotateXLabels: false,
     wrapXAxisLabelsInTwoLines: true,
-    wrapXAxisCharsPerLine: isRanking || isWeekday || isPayment ? 11 : 12,
-    wrapXAxisMaxLines: isRanking || isWeekday || isPayment ? 3 : 2,
-    chartPadding: isRanking || isWeekday || isPayment
+    wrapXAxisCharsPerLine: isRanking || isWeekday || isDaily || isPayment
+        ? 11
+        : 12,
+    wrapXAxisMaxLines: isRanking || isWeekday || isDaily || isPayment ? 3 : 2,
+    chartPadding: isRanking || isWeekday || isDaily || isPayment
         ? EdgeInsets.only(bottom: tokens.gapSm)
         : null,
     dataLabelOffset: Offset(
       0,
-      weekdayRevenue
+      metricRevenueAxis
           ? tokens.gapMd + tokens.gapSm + tokens.gapXs
           : ((isRanking || isPayment) ? tokens.gapSm : tokens.gapMd),
     ),
-    outerDataLabelTopReserve: weekdayRevenue ? tokens.contentSpacing : 0,
-    yAxisRangePadding: weekdayRevenue ? ChartRangePadding.additionalEnd : null,
-    dataLabelBackgroundColor: weekdayRevenue
+    outerDataLabelTopReserve: metricRevenueAxis ? tokens.contentSpacing : 0,
+    yAxisRangePadding: metricRevenueAxis
+        ? ChartRangePadding.additionalEnd
+        : null,
+    dataLabelBackgroundColor: metricRevenueAxis
         ? weekdayRevenueDataLabelBackground
         : null,
     tooltipLabelMaxChars: 56,
-    minPlottedValueShareOfMax: isRanking ? 0.03 : (isWeekday ? 0.06 : 0.045),
+    minPlottedValueShareOfMax: isRanking
+        ? 0.03
+        : (isWeekdayOrDaily ? 0.06 : 0.045),
     height:
         heightOverride ??
         (isRanking
             ? tokens.chartStandardHeight + tokens.contentSpacing * 2
             : (isPayment
                   ? tokens.chartStandardHeight + tokens.contentSpacing * 2
-                  : (isWeekday
+                  : (isWeekdayOrDaily
                         ? tokens.chartStandardHeight + tokens.contentSpacing * 2
                         : null))),
   );
