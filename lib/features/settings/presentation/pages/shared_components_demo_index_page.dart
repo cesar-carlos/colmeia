@@ -262,6 +262,18 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
           child: Column(
             children: <Widget>[
               _DemoEntryTile(
+                icon: Icons.storefront_rounded,
+                title: 'Mapa de vendas por loja',
+                subtitle:
+                    'Brasil por UF com pontos de lojas, tooltip, detalhe '
+                    'inline e troca entre receita e quantidade de vendas.',
+                badgeText: 'Novo',
+                onTap: () => context.push(
+                  appBrazilStoreSalesMapChartDemoLocation,
+                ),
+              ),
+              const Divider(height: 1),
+              _DemoEntryTile(
                 icon: Icons.map_rounded,
                 title: 'Mapa territorial interativo',
                 subtitle:

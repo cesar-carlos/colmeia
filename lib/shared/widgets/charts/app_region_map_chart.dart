@@ -103,6 +103,8 @@ class AppRegionMapChartStyle {
     this.scopeRootLabel = 'Brasil',
     this.mapLoadingMessage = 'Carregando mapa...',
     this.emptyStateMessage = 'Nenhum dado territorial para exibir.',
+    this.excludeNativeMapSemanticsOnWindows = true,
+    this.mapSemanticsLabel,
     this.metricGroupLabel = 'Métrica',
     this.scopeGroupLabel = 'Escopo',
     this.showGroupLabels = true,
@@ -144,6 +146,15 @@ class AppRegionMapChartStyle {
 
   /// Shown when the chart has no rows and no custom empty placeholder.
   final String emptyStateMessage;
+
+  /// Workaround for a Syncfusion Maps 33.x + Flutter Windows accessibility
+  /// bridge crash while the native map semantics tree is mounted/remounted.
+  final bool excludeNativeMapSemanticsOnWindows;
+
+  /// Optional summary announced for the map surface when native map semantics
+  /// are excluded. When null, the engine builds a summary from the metric,
+  /// regions and markers.
+  final String? mapSemanticsLabel;
 
   /// Overline shown above the metric chips. Set [showGroupLabels] to `false`
   /// to hide both labels.

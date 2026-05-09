@@ -1,6 +1,7 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_area_trend_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_badges_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_brazil_store_sales_map_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_bullet_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_buttons_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_category_donut_card_demo_page.dart';
@@ -82,6 +83,8 @@ const String appPolarChartDemoPath = 'app-polar-chart-demo';
 const String appRadialBarChartDemoPath = 'app-radial-bar-chart-demo';
 const String appSunburstChartDemoPath = 'app-sunburst-chart-demo';
 const String appTreemapChartDemoPath = 'app-treemap-chart-demo';
+const String appBrazilStoreSalesMapChartDemoPath =
+    'app-brazil-store-sales-map-chart-demo';
 const String appRegionMapChartDemoPath = 'app-region-map-chart-demo';
 const String appRegionMapDrilldownDemoPath = 'app-region-map-drilldown-demo';
 const String appReportViewerDemoPath = 'app-report-viewer-demo';
@@ -199,6 +202,9 @@ final String appSunburstChartDemoLocation =
 
 final String appTreemapChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appTreemapChartDemoPath';
+
+final String appBrazilStoreSalesMapChartDemoLocation =
+    '$sharedComponentsDemoIndexLocation/$appBrazilStoreSalesMapChartDemoPath';
 
 final String appRegionMapChartDemoLocation =
     '$sharedComponentsDemoIndexLocation/$appRegionMapChartDemoPath';
@@ -444,6 +450,12 @@ List<RouteBase> buildSettingsRoutes() {
               path: appTreemapChartDemoPath,
               builder: (context, state) {
                 return const AppTreemapChartDemoPage();
+              },
+            ),
+            GoRoute(
+              path: appBrazilStoreSalesMapChartDemoPath,
+              builder: (context, state) {
+                return const AppBrazilStoreSalesMapChartDemoPage();
               },
             ),
             GoRoute(
