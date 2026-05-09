@@ -146,9 +146,18 @@ abstract final class AppBrazilStoreSalesMapData {
     bool enableProximityCluster = false,
     double proximityClusterDistanceDegrees = 0.45,
     int coordinatePrecision = 4,
+    AppBrazilStoreSalesMarkerAggregation markerAggregation =
+        AppBrazilStoreSalesMarkerAggregation.stores,
     String? regionKey,
   }) {
     final validPoints = validMapPoints(points, regionKey: regionKey);
+    if (markerAggregation == AppBrazilStoreSalesMarkerAggregation.municipalities) {
+      return _buildMunicipalityMarkerGroups(
+        validPoints,
+        coordinatePrecision,
+      );
+    }
+
     if (enableProximityCluster && proximityClusterDistanceDegrees > 0) {
       return _buildProximityMarkerGroups(
         validPoints,
@@ -238,6 +247,39 @@ abstract final class AppBrazilStoreSalesMapData {
       point.longitude.toStringAsFixed(safePrecision),
       normalizeUf(point.uf),
     ].join(':');
+  }
+
+  static String _municipalityKey(
+    AppBrazilStoreSalesPoint point,
+    int coordinatePrecision,
+  ) {
+    final municipalityCode = point.municipalityCode?.trim();
+    if (municipalityCode != null && municipalityCode.isNotEmpty) {
+      return 'ibge:${municipalityCode.toUpperCase()}';
+    }
+
+    final city = point.city?.trim();
+    if (city != null && city.isNotEmpty) {
+      return 'city:${city.toUpperCase()}:${normalizeUf(point.uf)}';
+    }
+
+    return 'coordinate:${_coordinateKey(point, coordinatePrecision)}';
+  }
+
+  static List<AppBrazilStoreSalesMarkerGroup> _buildMunicipalityMarkerGroups(
+    List<AppBrazilStoreSalesPoint> validPoints,
+    int coordinatePrecision,
+  ) {
+    final groups = <String, List<AppBrazilStoreSalesPoint>>{};
+    for (final point in validPoints) {
+      final key = _municipalityKey(point, coordinatePrecision);
+      groups.putIfAbsent(key, () => <AppBrazilStoreSalesPoint>[]).add(point);
+    }
+
+    return [
+      for (final points in groups.values)
+        _MutableMarkerGroup.fromPoints(points).toImmutable(),
+    ];
   }
 
   static List<AppBrazilStoreSalesMarkerGroup> _buildProximityMarkerGroups(
@@ -398,6 +440,16 @@ class _MutableMarkerGroup {
       _longitudeTotal = point.longitude,
       _count = 1,
       _points = <AppBrazilStoreSalesPoint>[point];
+
+  factory _MutableMarkerGroup.fromPoints(
+    List<AppBrazilStoreSalesPoint> points,
+  ) {
+    final group = _MutableMarkerGroup(points.first);
+    for (final point in points.skip(1)) {
+      group.add(point);
+    }
+    return group;
+  }
 
   final String uf;
   final List<AppBrazilStoreSalesPoint> _points;

@@ -827,7 +827,7 @@
   "salesLiveMapTitle": "Acompanhar vendas",
   "salesLiveMapSubtitle": "Mapa do Brasil com vendas por filial e atualizacao por filtros.",
   "salesLiveMapSessionExpiredMessage": "Sessao expirada. Entre novamente para consultar.",
-  "salesLiveMapAgentsLabel": "Agentes",
+  "salesLiveMapAgentsLabel": "Filiais",
   "salesLiveMapPeriodLabel": "Periodo",
   "salesLiveMapMapLabel": "Mapa",
   "salesLiveMapParametersLabel": "Parametros",
@@ -839,14 +839,14 @@
       "preSale": {"type": "String"}
     }
   },
-  "salesLiveMapAgentsLoadingSummary": "Carregando agentes",
-  "salesLiveMapAgentsAllWithTokenSummary": "Todos com token ({count})",
+  "salesLiveMapAgentsLoadingSummary": "Carregando filiais",
+  "salesLiveMapAgentsAllWithTokenSummary": "Todas com token ({count})",
   "@salesLiveMapAgentsAllWithTokenSummary": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapAgentsSelectedSummary": "{count} agente(s)",
+  "salesLiveMapAgentsSelectedSummary": "{count} filial(is)",
   "@salesLiveMapAgentsSelectedSummary": {
     "placeholders": {
       "count": {"type": "int"}
@@ -860,6 +860,8 @@
   "salesLiveMapPeriodCustom": "Personalizado",
   "salesLiveMapMapPresetPoints": "Pontos",
   "salesLiveMapMapPresetBubbles": "Bolhas",
+  "salesLiveMapMapPresetMunicipalities": "Municipios",
+  "salesLiveMapMapPresetMunicipalitiesShort": "Municipios",
   "salesLiveMapMapPresetStateBubbles": "Bolhas por UF",
   "salesLiveMapMapPresetStateBubblesShort": "UFs",
   "salesLiveMapMapPresetStoreIcon": "Icone loja",
@@ -882,19 +884,19 @@
     }
   },
   "salesLiveMapPartialTitle": "Acompanhamento parcial",
-  "salesLiveMapPartialFailedAgents": "{count} agente(s) falharam na ultima consulta.",
+  "salesLiveMapPartialFailedAgents": "{count} filial(is) falharam na ultima consulta.",
   "@salesLiveMapPartialFailedAgents": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapPartialMissingTokenAgents": "{count} agente(s) sem client_token local.",
+  "salesLiveMapPartialMissingTokenAgents": "{count} filial(is) sem client_token local.",
   "@salesLiveMapPartialMissingTokenAgents": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapPartialOfflineAgents": "{count} agente(s) fora da presenca do hub.",
+  "salesLiveMapPartialOfflineAgents": "{count} filial(is) fora da presenca do hub.",
   "@salesLiveMapPartialOfflineAgents": {
     "placeholders": {
       "count": {"type": "int"}
@@ -911,7 +913,7 @@
   "salesLiveMapBranchesSectionTitle": "Filiais",
   "salesLiveMapBranchesSectionSubtitle": "Filiais sem token local ficam visiveis, mas bloqueadas.",
   "salesLiveMapSelectAtLeastOneTokenBranch": "Selecione ao menos uma filial com token local.",
-  "salesLiveMapNoApprovedAgents": "Nenhum agente aprovado disponivel para consulta.",
+  "salesLiveMapNoApprovedAgents": "Nenhuma filial aprovada disponivel para consulta.",
   "salesLiveMapSelectAllTokenBacked": "Selecionar todas",
   "salesLiveMapClearSelection": "Desmarcar todas",
   "salesLiveMapMissingLocalToken": "Sem token local",
@@ -928,7 +930,7 @@
   "salesLiveMapKpiRevenue": "Receita total",
   "salesLiveMapKpiSales": "Vendas",
   "salesLiveMapKpiBranchesOnMap": "Filiais no mapa",
-  "salesLiveMapKpiQueriedAgents": "Agentes consultados",
+  "salesLiveMapKpiQueriedAgents": "Filiais consultadas",
   "salesHubSubtitle": "Acesse e gerencie informações comerciais por categoria.",
   "salesBranchFilterLabel": "FILIAIS",
   "salesBranchFilterEmptyHint": "Carregue o relatorio para listar as filiais.",

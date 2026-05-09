@@ -20,6 +20,7 @@ String _shellRouteLabel(AppRoute route, AppLocalizations l10n) {
     AppRoute.dashboard ||
     AppRoute.dashboardStore => l10n.shellNavDashboardLabel,
     AppRoute.sales || AppRoute.salesCard => l10n.shellNavSalesLabel,
+    AppRoute.salesMonitoring => l10n.shellNavSalesMonitoringLabel,
     AppRoute.inventory => l10n.shellNavInventoryLabel,
     AppRoute.settings => l10n.shellNavSettingsLabel,
     AppRoute.agents => l10n.shellNavAgentsLabel,
@@ -39,6 +40,7 @@ String? _shellRouteSubtitle(AppRoute route, AppLocalizations l10n) {
     AppRoute.dashboard ||
     AppRoute.dashboardStore => l10n.shellNavDashboardSubtitle,
     AppRoute.sales || AppRoute.salesCard => l10n.shellNavSalesSubtitle,
+    AppRoute.salesMonitoring => l10n.shellNavSalesMonitoringSubtitle,
     AppRoute.inventory => l10n.shellNavInventorySubtitle,
     AppRoute.settings => l10n.shellNavSettingsSubtitle,
     AppRoute.agents => l10n.shellNavAgentsSubtitle,

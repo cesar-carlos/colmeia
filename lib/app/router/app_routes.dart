@@ -42,6 +42,10 @@ enum AppRoute {
     path: '/sales/:cardId',
     title: 'Vendas',
   ),
+  salesMonitoring(
+    path: '/sales-monitoring',
+    title: 'Acompanhar vendas',
+  ),
   chartFullscreen(
     path: '/charts/fullscreen',
     title: 'Grafico',
@@ -76,6 +80,7 @@ enum AppRoute {
   /// routes listed here. [dashboardStore] shares the index of [dashboard].
   static const List<AppRoute> shellRoutes = <AppRoute>[
     dashboard,
+    salesMonitoring,
     sales,
     inventory,
     agents,
@@ -92,6 +97,8 @@ enum AppRoute {
         return AppRoute.dashboard;
       case AppRoute.salesCard:
         return AppRoute.sales;
+      case AppRoute.salesMonitoring:
+        return this;
       case AppRoute.agentsDetail:
         return AppRoute.agents;
       case AppRoute.dashboard:
@@ -132,6 +139,8 @@ enum AppRoute {
       case AppRoute.sales:
       case AppRoute.salesCard:
         return Icons.point_of_sale_rounded;
+      case AppRoute.salesMonitoring:
+        return Icons.map_rounded;
       case AppRoute.chartFullscreen:
         return Icons.open_in_full_rounded;
       case AppRoute.inventory:
@@ -161,6 +170,8 @@ enum AppRoute {
       case AppRoute.sales:
       case AppRoute.salesCard:
         return Icons.point_of_sale_outlined;
+      case AppRoute.salesMonitoring:
+        return Icons.map_outlined;
       case AppRoute.chartFullscreen:
         return Icons.open_in_full_outlined;
       case AppRoute.inventory:
@@ -232,6 +243,7 @@ enum AppRoute {
         return UserPermission.viewDashboard;
       case AppRoute.sales:
       case AppRoute.salesCard:
+      case AppRoute.salesMonitoring:
         return UserPermission.viewSales;
       case AppRoute.inventory:
         return UserPermission.viewInventory;

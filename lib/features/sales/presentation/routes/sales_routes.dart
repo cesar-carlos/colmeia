@@ -1,6 +1,7 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_daily_totals_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
+import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_rank_lucro_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_page.dart';
@@ -15,6 +16,11 @@ List<RouteBase> buildSalesRoutes() {
       name: AppRoute.sales.name,
       path: AppRoute.sales.path,
       builder: (context, state) => const SalesHubPage(),
+    ),
+    GoRoute(
+      name: AppRoute.salesMonitoring.name,
+      path: AppRoute.salesMonitoring.path,
+      builder: (context, state) => const SalesLiveMapPage(),
     ),
     GoRoute(
       name: AppRoute.salesCard.name,

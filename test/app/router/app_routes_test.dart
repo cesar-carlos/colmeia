@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -34,7 +35,24 @@ void main() {
 
     test('should resolve active shell paths', () {
       check(AppRoute.fromLocation('/sales')).equals(AppRoute.sales);
+      check(AppRoute.fromLocation('/sales-monitoring')).equals(
+        AppRoute.salesMonitoring,
+      );
       check(AppRoute.fromLocation('/inventory')).equals(AppRoute.inventory);
+    });
+
+    test('should keep sales monitoring below dashboard in shell order', () {
+      check(AppRoute.shellRoutes).deepEquals(<AppRoute>[
+        AppRoute.dashboard,
+        AppRoute.salesMonitoring,
+        AppRoute.sales,
+        AppRoute.inventory,
+        AppRoute.agents,
+        AppRoute.settings,
+      ]);
+      check(AppRoute.dashboard.shellNavSelectionIndex).equals(0);
+      check(AppRoute.salesMonitoring.shellNavSelectionIndex).equals(1);
+      check(AppRoute.sales.shellNavSelectionIndex).equals(2);
     });
 
     test('should resolve unknown paths to unmatched sentinel', () {
@@ -50,7 +68,6 @@ void main() {
       check(AppRoute.agents.shellNavSelectionIndex).equals(
         AppRoute.agents.shellIndex,
       );
-      check(AppRoute.dashboard.shellNavSelectionIndex).equals(0);
     });
 
     test('should resolve shell root route for shell details and roots', () {
@@ -58,7 +75,16 @@ void main() {
       check(AppRoute.dashboardStore.shellRootRoute).equals(AppRoute.dashboard);
       check(AppRoute.agentsDetail.shellRootRoute).equals(AppRoute.agents);
       check(AppRoute.sales.shellRootRoute).equals(AppRoute.sales);
+      check(AppRoute.salesMonitoring.shellRootRoute).equals(
+        AppRoute.salesMonitoring,
+      );
       check(AppRoute.login.shellRootRoute).isNull();
+    });
+
+    test('should require sales permission for sales monitoring', () {
+      check(AppRoute.salesMonitoring.requiredPermission).equals(
+        UserPermission.viewSales,
+      );
     });
 
     test('should resolve shell navigation target for drawer and rail taps', () {

@@ -353,4 +353,74 @@ void main() {
       check(report.missingClientTokenAgentIds).deepEquals(<String>['agent-c']);
     },
   );
+
+  test(
+    'executeMapped returns mapped output and forwards plan context to loader',
+    () async {
+      final t = target(agentId: 'agent-b', clientToken: 'tok-b');
+      final resolution = AgentQueryTargetResolution(
+        consideredApprovedTargets: <AgentQueryTarget>[t],
+        missingClientTokenTargets: const <AgentQueryTarget>[],
+        consideredApprovedAgentCount: 1,
+      );
+      final plan = AgentQueryPlan(
+        queryKey: AgentQueryKey.resumoParcelasDiaSemana,
+        strategy: AgentQueryExecutionStrategy.mergeAll,
+        consideredApprovedAgentCount: 1,
+        plannedTargets: <AgentQueryTarget>[t],
+        missingClientTokenTargets: const <AgentQueryTarget>[],
+        bridgeTimeoutMs: 77_000,
+      );
+      when(
+        () => targetResolver.resolve(
+          userId: any(named: 'userId'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            Success<AgentQueryTargetResolution, AppFailure>(resolution),
+      );
+      when(
+        () => planBuilder.build(
+          queryKey: any(named: 'queryKey'),
+          strategy: any(named: 'strategy'),
+          resolution: any(named: 'resolution'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+        ),
+      ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
+
+      final result =
+          await AgentQueryListReportAcrossAgentsCoordinator.executeMapped<
+            List<String>,
+            String
+          >(
+            operation: operation,
+            queryKey: AgentQueryKey.resumoParcelasDiaSemana,
+            userId: userId,
+            targetResolver: targetResolver,
+            planBuilder: planBuilder,
+            executor: executor,
+            bridgeTimeoutMs: 77_000,
+            loadRowsForTarget:
+                ({
+                  required target,
+                  required plan,
+                  required resolution,
+                }) async {
+                  check(target.agentId).equals('agent-b');
+                  check(plan.bridgeTimeoutMs).equals(77_000);
+                  check(resolution.consideredApprovedAgentCount).equals(1);
+                  return const Success<List<String>, AppFailure>(<String>[
+                    'z',
+                    'a',
+                  ]);
+                },
+            mapReport: (report) => report.mergedRows.toList()..sort(),
+          );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrThrow()).deepEquals(const <String>['a', 'z']);
+    },
+  );
 }

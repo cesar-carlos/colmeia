@@ -106,7 +106,7 @@ class AgentQueryExecutionReport<Row> {
       plannedTargets.isEmpty && missingClientTokenTargets.isNotEmpty;
 
   bool get hasPartialFailure =>
-      mergedRows.isNotEmpty &&
+      participants.any((participant) => participant.isSuccess) &&
       participants.any((participant) => !participant.isSuccess);
 
   bool get hasRows => mergedRows.isNotEmpty;

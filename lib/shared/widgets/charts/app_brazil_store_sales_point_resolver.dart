@@ -57,6 +57,10 @@ class AppBrazilStoreSalesPointResolver {
     if (uf == null) {
       return null;
     }
+    final municipalityCode =
+        AppLocationLookupNormalizer.normalizeIbgeMunicipalityCode(
+          source.ibgeMunicipalityCode,
+        );
 
     return AppBrazilStoreSalesPoint(
       id: source.id,
@@ -66,6 +70,7 @@ class AppBrazilStoreSalesPointResolver {
       longitude: location.point.longitude,
       salesAmount: source.salesAmount,
       salesCount: source.salesCount,
+      municipalityCode: municipalityCode,
       city: _resolveCity(source, location),
       subtitle: source.subtitle,
       payload: source.payload,

@@ -1051,7 +1051,7 @@
   "salesLiveMapTitle": "Track sales",
   "salesLiveMapSubtitle": "Brazil map with sales by branch and filter-based refresh.",
   "salesLiveMapSessionExpiredMessage": "Session expired. Sign in again to query.",
-  "salesLiveMapAgentsLabel": "Agents",
+  "salesLiveMapAgentsLabel": "Branches",
   "salesLiveMapPeriodLabel": "Period",
   "salesLiveMapMapLabel": "Map",
   "salesLiveMapParametersLabel": "Parameters",
@@ -1063,14 +1063,14 @@
       "preSale": {"type": "String"}
     }
   },
-  "salesLiveMapAgentsLoadingSummary": "Loading agents",
+  "salesLiveMapAgentsLoadingSummary": "Loading branches",
   "salesLiveMapAgentsAllWithTokenSummary": "All with token ({count})",
   "@salesLiveMapAgentsAllWithTokenSummary": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapAgentsSelectedSummary": "{count} agent(s)",
+  "salesLiveMapAgentsSelectedSummary": "{count} branch(es)",
   "@salesLiveMapAgentsSelectedSummary": {
     "placeholders": {
       "count": {"type": "int"}
@@ -1084,6 +1084,8 @@
   "salesLiveMapPeriodCustom": "Custom",
   "salesLiveMapMapPresetPoints": "Points",
   "salesLiveMapMapPresetBubbles": "Bubbles",
+  "salesLiveMapMapPresetMunicipalities": "Municipalities",
+  "salesLiveMapMapPresetMunicipalitiesShort": "Cities",
   "salesLiveMapMapPresetStateBubbles": "Bubbles by state",
   "salesLiveMapMapPresetStateBubblesShort": "States",
   "salesLiveMapMapPresetStoreIcon": "Store icon",
@@ -1106,19 +1108,19 @@
     }
   },
   "salesLiveMapPartialTitle": "Partial tracking",
-  "salesLiveMapPartialFailedAgents": "{count} agent(s) failed in the last query.",
+  "salesLiveMapPartialFailedAgents": "{count} branch(es) failed in the last query.",
   "@salesLiveMapPartialFailedAgents": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapPartialMissingTokenAgents": "{count} agent(s) without local client_token.",
+  "salesLiveMapPartialMissingTokenAgents": "{count} branch(es) without local client_token.",
   "@salesLiveMapPartialMissingTokenAgents": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapPartialOfflineAgents": "{count} agent(s) outside hub presence.",
+  "salesLiveMapPartialOfflineAgents": "{count} branch(es) outside hub presence.",
   "@salesLiveMapPartialOfflineAgents": {
     "placeholders": {
       "count": {"type": "int"}
@@ -1135,7 +1137,7 @@
   "salesLiveMapBranchesSectionTitle": "Branches",
   "salesLiveMapBranchesSectionSubtitle": "Branches without a local token stay visible, but locked.",
   "salesLiveMapSelectAtLeastOneTokenBranch": "Select at least one branch with a local token.",
-  "salesLiveMapNoApprovedAgents": "No approved agent is available for query.",
+  "salesLiveMapNoApprovedAgents": "No approved branch is available for query.",
   "salesLiveMapSelectAllTokenBacked": "Select all",
   "salesLiveMapClearSelection": "Clear all",
   "salesLiveMapMissingLocalToken": "No local token",
@@ -1152,7 +1154,7 @@
   "salesLiveMapKpiRevenue": "Total revenue",
   "salesLiveMapKpiSales": "Sales",
   "salesLiveMapKpiBranchesOnMap": "Branches on map",
-  "salesLiveMapKpiQueriedAgents": "Queried agents",
+  "salesLiveMapKpiQueriedAgents": "Queried branches",
   "salesBranchFilterLabel": "BRANCHES",
   "salesBranchFilterEmptyHint": "Load the report to list branches.",
   "salesBranchFilterSheetTitle": "Select branches",

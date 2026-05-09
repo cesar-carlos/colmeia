@@ -564,6 +564,7 @@ class _BrazilStoreSalesMapSnapshot {
                   zoomLevel: zoomLevel,
                 ),
             coordinatePrecision: style.clusterCoordinatePrecision,
+            markerAggregation: style.markerAggregation,
             regionKey: activeRegionKey,
           )
         : const <AppBrazilStoreSalesMarkerGroup>[];
@@ -753,6 +754,7 @@ class _BrazilStoreSalesMapSnapshot {
   ) {
     return switch (aggregation) {
       AppBrazilStoreSalesMarkerAggregation.stores => true,
+      AppBrazilStoreSalesMarkerAggregation.municipalities => true,
       AppBrazilStoreSalesMarkerAggregation.states => false,
       AppBrazilStoreSalesMarkerAggregation.storesAndStates => true,
     };
@@ -765,6 +767,7 @@ class _BrazilStoreSalesMapSnapshot {
   ) {
     final showStateBubbles = switch (aggregation) {
       AppBrazilStoreSalesMarkerAggregation.stores => false,
+      AppBrazilStoreSalesMarkerAggregation.municipalities => false,
       AppBrazilStoreSalesMarkerAggregation.states => true,
       AppBrazilStoreSalesMarkerAggregation.storesAndStates => true,
     };
