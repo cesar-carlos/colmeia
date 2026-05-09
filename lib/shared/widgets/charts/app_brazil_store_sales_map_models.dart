@@ -24,6 +24,66 @@ enum AppBrazilStoreSalesMarkerAggregation {
   storesAndStates,
 }
 
+enum AppBrazilStoreSalesMapPreset {
+  standard,
+  bubble,
+  stateBubbles,
+  storeIcon,
+}
+
+extension AppBrazilStoreSalesMapPresetX on AppBrazilStoreSalesMapPreset {
+  String get label => switch (this) {
+    AppBrazilStoreSalesMapPreset.standard => 'Pontos',
+    AppBrazilStoreSalesMapPreset.bubble => 'Bolhas',
+    AppBrazilStoreSalesMapPreset.stateBubbles => 'Bolhas por UF',
+    AppBrazilStoreSalesMapPreset.storeIcon => 'Icone loja',
+  };
+
+  String get tooltip => switch (this) {
+    AppBrazilStoreSalesMapPreset.standard =>
+      'Exibe cada loja como ponto individual no mapa.',
+    AppBrazilStoreSalesMapPreset.bubble =>
+      'Exibe lojas como bolhas proporcionais a metrica ativa.',
+    AppBrazilStoreSalesMapPreset.stateBubbles =>
+      'Agrupa as lojas em bolhas posicionadas no centro de cada UF.',
+    AppBrazilStoreSalesMapPreset.storeIcon =>
+      'Exibe cada loja com icone operacional de unidade.',
+  };
+
+  AppBrazilStoreSalesMapStyle style({
+    double height = 480,
+    bool showStoreDetail = true,
+    bool showMarkerScaleLegend = true,
+    bool enableProximityCluster = false,
+  }) => switch (this) {
+    AppBrazilStoreSalesMapPreset.standard =>
+      AppBrazilStoreSalesMapStyle.standard(
+        height: height,
+        showStoreDetail: showStoreDetail,
+        showMarkerScaleLegend: showMarkerScaleLegend,
+        enableProximityCluster: enableProximityCluster,
+      ),
+    AppBrazilStoreSalesMapPreset.bubble => AppBrazilStoreSalesMapStyle.bubble(
+      height: height,
+      showStoreDetail: showStoreDetail,
+      showMarkerScaleLegend: showMarkerScaleLegend,
+      enableProximityCluster: enableProximityCluster,
+    ),
+    AppBrazilStoreSalesMapPreset.stateBubbles =>
+      AppBrazilStoreSalesMapStyle.stateBubbles(
+        height: height,
+        showMarkerScaleLegend: showMarkerScaleLegend,
+      ),
+    AppBrazilStoreSalesMapPreset.storeIcon =>
+      AppBrazilStoreSalesMapStyle.storeIcon(
+        height: height,
+        showStoreDetail: showStoreDetail,
+        showMarkerScaleLegend: showMarkerScaleLegend,
+        enableProximityCluster: enableProximityCluster,
+      ),
+  };
+}
+
 extension AppBrazilStoreSalesMapMetricX on AppBrazilStoreSalesMapMetric {
   String get key => switch (this) {
     AppBrazilStoreSalesMapMetric.revenue => 'revenue',
@@ -225,6 +285,88 @@ class AppBrazilStoreSalesMapStyle {
   final Color? selectedMarkerStrokeColor;
   final NumberFormat? legendNumberFormat;
   final String emptyStateMessage;
+
+  AppBrazilStoreSalesMapStyle copyWith({
+    double? height,
+    bool? includeEmptyStates,
+    bool? showLegend,
+    bool? showTooltip,
+    bool? enableZoomPan,
+    bool? showDataLabels,
+    bool? showMetricSelector,
+    bool? showRegionFilter,
+    bool? showMarkerScaleLegend,
+    bool? showStoreDetail,
+    bool? highlightSelectedState,
+    bool? collapseSameCoordinateMarkers,
+    bool? enableProximityCluster,
+    double? proximityClusterDistanceDegrees,
+    AppBrazilStoreSalesMarkerVisual? markerVisual,
+    AppBrazilStoreSalesMarkerAggregation? markerAggregation,
+    AppBrazilStoreSalesStateLabelMode? stateLabelMode,
+    bool? showDataQualityNotice,
+    bool? autoFocusSelectedStore,
+    double? selectedStoreZoomLevel,
+    int? clusterCoordinatePrecision,
+    int? maxClusterTooltipStores,
+    double? markerMinSize,
+    double? markerMaxSize,
+    Color? lowValueColor,
+    Color? highValueColor,
+    Color? markerColor,
+    Color? markerStrokeColor,
+    Color? selectedMarkerColor,
+    Color? selectedMarkerStrokeColor,
+    NumberFormat? legendNumberFormat,
+    String? emptyStateMessage,
+  }) {
+    return AppBrazilStoreSalesMapStyle(
+      height: height ?? this.height,
+      includeEmptyStates: includeEmptyStates ?? this.includeEmptyStates,
+      showLegend: showLegend ?? this.showLegend,
+      showTooltip: showTooltip ?? this.showTooltip,
+      enableZoomPan: enableZoomPan ?? this.enableZoomPan,
+      showDataLabels: showDataLabels ?? this.showDataLabels,
+      showMetricSelector: showMetricSelector ?? this.showMetricSelector,
+      showRegionFilter: showRegionFilter ?? this.showRegionFilter,
+      showMarkerScaleLegend:
+          showMarkerScaleLegend ?? this.showMarkerScaleLegend,
+      showStoreDetail: showStoreDetail ?? this.showStoreDetail,
+      highlightSelectedState:
+          highlightSelectedState ?? this.highlightSelectedState,
+      collapseSameCoordinateMarkers:
+          collapseSameCoordinateMarkers ?? this.collapseSameCoordinateMarkers,
+      enableProximityCluster:
+          enableProximityCluster ?? this.enableProximityCluster,
+      proximityClusterDistanceDegrees:
+          proximityClusterDistanceDegrees ??
+          this.proximityClusterDistanceDegrees,
+      markerVisual: markerVisual ?? this.markerVisual,
+      markerAggregation: markerAggregation ?? this.markerAggregation,
+      stateLabelMode: stateLabelMode ?? this.stateLabelMode,
+      showDataQualityNotice:
+          showDataQualityNotice ?? this.showDataQualityNotice,
+      autoFocusSelectedStore:
+          autoFocusSelectedStore ?? this.autoFocusSelectedStore,
+      selectedStoreZoomLevel:
+          selectedStoreZoomLevel ?? this.selectedStoreZoomLevel,
+      clusterCoordinatePrecision:
+          clusterCoordinatePrecision ?? this.clusterCoordinatePrecision,
+      maxClusterTooltipStores:
+          maxClusterTooltipStores ?? this.maxClusterTooltipStores,
+      markerMinSize: markerMinSize ?? this.markerMinSize,
+      markerMaxSize: markerMaxSize ?? this.markerMaxSize,
+      lowValueColor: lowValueColor ?? this.lowValueColor,
+      highValueColor: highValueColor ?? this.highValueColor,
+      markerColor: markerColor ?? this.markerColor,
+      markerStrokeColor: markerStrokeColor ?? this.markerStrokeColor,
+      selectedMarkerColor: selectedMarkerColor ?? this.selectedMarkerColor,
+      selectedMarkerStrokeColor:
+          selectedMarkerStrokeColor ?? this.selectedMarkerStrokeColor,
+      legendNumberFormat: legendNumberFormat ?? this.legendNumberFormat,
+      emptyStateMessage: emptyStateMessage ?? this.emptyStateMessage,
+    );
+  }
 }
 
 @immutable

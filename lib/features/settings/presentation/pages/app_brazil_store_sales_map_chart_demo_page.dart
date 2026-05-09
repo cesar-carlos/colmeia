@@ -4,6 +4,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 
@@ -17,11 +18,13 @@ class AppBrazilStoreSalesMapChartDemoPage extends StatefulWidget {
 
 class _AppBrazilStoreSalesMapChartDemoPageState
     extends State<AppBrazilStoreSalesMapChartDemoPage> {
+  AppBrazilStoreSalesMapPreset _selectedMapPreset = _lastSelectedMapPreset;
   String? _eventSummary;
 
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final selectedMapPreset = _selectedMapPreset;
 
     return ListView(
       padding: EdgeInsets.all(tokens.contentSpacing),
@@ -44,22 +47,62 @@ class _AppBrazilStoreSalesMapChartDemoPageState
           highlights: <String>[
             'Brasil por UF',
             'Markers por loja',
+            'Troca de visual',
             'Filtro por regiao',
             'Cluster por proximidade',
             'Diagnostico de dados',
           ],
         ),
         SizedBox(height: tokens.sectionSpacing),
-        AppBrazilStoreSalesMapChart(
-          title: 'Performance de lojas',
+        AppSectionCardWithHeading(
+          title: 'Tipo do mapa',
           subtitle:
-              'Dados fake agregados por loja. A consulta SQL real deve entrar '
-              'fora do componente visual, entregando esta mesma estrutura.',
-          points: _demoStorePoints,
-          style: const AppBrazilStoreSalesMapStyle.standard(
-            height: 560,
-            enableProximityCluster: true,
+              'Alterne a mesma fonte fake entre pontos, bolhas, bolhas por UF '
+              'e icone de loja.',
+          child: Semantics(
+            label: 'Tipo visual do mapa de vendas por loja',
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final useCompactLabels = constraints.maxWidth < 520;
+                return AppSegmentedControl<AppBrazilStoreSalesMapPreset>(
+                  expandToFill: !useCompactLabels,
+                  options: AppBrazilStoreSalesMapPreset.values
+                      .map(
+                        (preset) =>
+                            AppSegmentedControlOption<
+                              AppBrazilStoreSalesMapPreset
+                            >(
+                              value: preset,
+                              label: preset.demoLabel(
+                                compact: useCompactLabels,
+                              ),
+                              tooltip: preset.tooltip,
+                            ),
+                      )
+                      .toList(growable: false),
+                  value: selectedMapPreset,
+                  onChanged: (preset) {
+                    if (preset == selectedMapPreset) {
+                      return;
+                    }
+                    setState(() {
+                      _selectedMapPreset = preset;
+                      _lastSelectedMapPreset = preset;
+                      _eventSummary = null;
+                    });
+                  },
+                );
+              },
+            ),
           ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppBrazilStoreSalesMapChart(
+          key: ValueKey<AppBrazilStoreSalesMapPreset>(selectedMapPreset),
+          title: selectedMapPreset.demoTitle,
+          subtitle: selectedMapPreset.demoSubtitle,
+          points: selectedMapPreset.demoPoints,
+          style: selectedMapPreset.demoStyle,
           onStoreTap: (event) {
             setState(() {
               _eventSummary =
@@ -97,44 +140,6 @@ class _AppBrazilStoreSalesMapChartDemoPageState
         ),
         SizedBox(height: tokens.sectionSpacing),
         const AppBrazilStoreSalesMapChart(
-          title: 'Opcao visual com bolhas',
-          subtitle:
-              'Mesmo componente com nomes de estados no GeoJSON e markers '
-              'em bolha proporcional, inspirado nos exemplos da Syncfusion.',
-          points: _regionalBubbleStorePoints,
-          style: AppBrazilStoreSalesMapStyle.bubble(
-            height: 460,
-            showStoreDetail: false,
-            showMarkerScaleLegend: false,
-          ),
-        ),
-        SizedBox(height: tokens.sectionSpacing),
-        const AppBrazilStoreSalesMapChart(
-          title: 'Bolhas por UF',
-          subtitle:
-              'Agrupa a metrica no centroide dos estados, mantendo a consulta '
-              'de lojas como fonte dos agregados.',
-          points: _demoStorePoints,
-          style: AppBrazilStoreSalesMapStyle.stateBubbles(
-            height: 440,
-            showMarkerScaleLegend: false,
-          ),
-        ),
-        SizedBox(height: tokens.sectionSpacing),
-        const AppBrazilStoreSalesMapChart(
-          title: 'Opcao visual com icone de loja',
-          subtitle:
-              'Usa o mesmo overlay geografico, mas troca o ponto por um icone '
-              'de loja para leitura operacional.',
-          points: _regionalBubbleStorePoints,
-          style: AppBrazilStoreSalesMapStyle.storeIcon(
-            height: 420,
-            showStoreDetail: false,
-            showMarkerScaleLegend: false,
-          ),
-        ),
-        SizedBox(height: tokens.sectionSpacing),
-        const AppBrazilStoreSalesMapChart(
           title: 'Cenario com valores iguais',
           subtitle:
               'Valida leitura da escala dos markers quando todos os pontos '
@@ -160,6 +165,72 @@ class _AppBrazilStoreSalesMapChartDemoPageState
       ],
     );
   }
+}
+
+AppBrazilStoreSalesMapPreset _lastSelectedMapPreset =
+    AppBrazilStoreSalesMapPreset.standard;
+
+extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
+  String demoLabel({required bool compact}) => switch (this) {
+    AppBrazilStoreSalesMapPreset.standard => compact ? 'Pts' : label,
+    AppBrazilStoreSalesMapPreset.bubble => label,
+    AppBrazilStoreSalesMapPreset.stateBubbles => compact ? 'UF' : label,
+    AppBrazilStoreSalesMapPreset.storeIcon => compact ? 'Loja' : label,
+  };
+
+  String get demoTitle => switch (this) {
+    AppBrazilStoreSalesMapPreset.standard => 'Performance de lojas',
+    AppBrazilStoreSalesMapPreset.bubble => 'Mapa com bolhas de lojas',
+    AppBrazilStoreSalesMapPreset.stateBubbles => 'Mapa com bolhas por UF',
+    AppBrazilStoreSalesMapPreset.storeIcon => 'Mapa com icone de loja',
+  };
+
+  String get demoSubtitle => switch (this) {
+    AppBrazilStoreSalesMapPreset.standard =>
+      'Dados fake agregados por loja. A consulta SQL real deve entrar '
+          'fora do componente visual, entregando esta mesma estrutura.',
+    AppBrazilStoreSalesMapPreset.bubble =>
+      'Mesmo componente com nomes de estados no GeoJSON e markers em '
+          'bolha proporcional, inspirado nos exemplos da Syncfusion.',
+    AppBrazilStoreSalesMapPreset.stateBubbles =>
+      'Agrupa a metrica no centroide dos estados, mantendo a consulta '
+          'de lojas como fonte dos agregados.',
+    AppBrazilStoreSalesMapPreset.storeIcon =>
+      'Usa o mesmo overlay geografico, mas troca o ponto por um icone '
+          'de loja para leitura operacional.',
+  };
+
+  List<AppBrazilStoreSalesPoint> get demoPoints => switch (this) {
+    AppBrazilStoreSalesMapPreset.standard => _demoStorePoints,
+    AppBrazilStoreSalesMapPreset.bubble => _regionalBubbleStorePoints,
+    AppBrazilStoreSalesMapPreset.stateBubbles => _demoStorePoints,
+    AppBrazilStoreSalesMapPreset.storeIcon => _regionalBubbleStorePoints,
+  };
+
+  AppBrazilStoreSalesMapStyle get demoStyle => switch (this) {
+    AppBrazilStoreSalesMapPreset.standard =>
+      AppBrazilStoreSalesMapPreset.standard.style(
+        height: 560,
+        enableProximityCluster: true,
+      ),
+    AppBrazilStoreSalesMapPreset.bubble =>
+      AppBrazilStoreSalesMapPreset.bubble.style(
+        height: 560,
+        showStoreDetail: false,
+        showMarkerScaleLegend: false,
+      ),
+    AppBrazilStoreSalesMapPreset.stateBubbles =>
+      AppBrazilStoreSalesMapPreset.stateBubbles.style(
+        height: 560,
+        showMarkerScaleLegend: false,
+      ),
+    AppBrazilStoreSalesMapPreset.storeIcon =>
+      AppBrazilStoreSalesMapPreset.storeIcon.style(
+        height: 560,
+        showStoreDetail: false,
+        showMarkerScaleLegend: false,
+      ),
+  };
 }
 
 const List<AppBrazilStoreSalesPoint> _demoStorePoints = [
