@@ -7,6 +7,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('applies selected municipality map preset', (tester) async {
+    SalesLiveMapFilter? appliedFilter;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: SalesLiveMapFiltersSheet(
+                l10n: AppLocalizations.of(context),
+                availableAgents: const <OverviewAgentOption>[
+                  OverviewAgentOption(
+                    agentId: 'agent-1',
+                    name: 'Branch with token',
+                  ),
+                ],
+                initialFilter: const SalesLiveMapFilter(),
+                onApply: (filter) => appliedFilter = filter,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.scrollUntilVisible(find.text('Cities'), 240);
+    await tester.tap(find.text('Cities'));
+    await tester.pump();
+    await tester.tap(find.text('Apply filters'));
+    await tester.pump();
+
+    expect(appliedFilter?.mapPreset, SalesLiveMapMapPreset.municipalities);
+  });
+
   testWidgets('does not apply when selected branch has no local token', (
     tester,
   ) async {

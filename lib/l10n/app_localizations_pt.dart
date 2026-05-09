@@ -2324,6 +2324,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapMapPresetBubbles => 'Bolhas';
 
   @override
+  String get salesLiveMapMapPresetMunicipalities => 'Municipios';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalitiesShort => 'Municipios';
+
+  @override
   String get salesLiveMapMapPresetStateBubbles => 'Bolhas por UF';
 
   @override
@@ -5488,6 +5494,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapMapPresetBubbles => 'Bolhas';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalities => 'Municipios';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalitiesShort => 'Municipios';
 
   @override
   String get salesLiveMapMapPresetStateBubbles => 'Bolhas por UF';

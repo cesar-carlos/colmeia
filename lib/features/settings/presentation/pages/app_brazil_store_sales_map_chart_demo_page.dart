@@ -174,6 +174,8 @@ extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
   String demoLabel({required bool compact}) => switch (this) {
     AppBrazilStoreSalesMapPreset.standard => compact ? 'Pts' : label,
     AppBrazilStoreSalesMapPreset.bubble => label,
+    AppBrazilStoreSalesMapPreset.municipalityBubbles =>
+      compact ? 'Mun.' : label,
     AppBrazilStoreSalesMapPreset.stateBubbles => compact ? 'UF' : label,
     AppBrazilStoreSalesMapPreset.storeIcon => compact ? 'Loja' : label,
   };
@@ -181,6 +183,8 @@ extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
   String get demoTitle => switch (this) {
     AppBrazilStoreSalesMapPreset.standard => 'Performance de lojas',
     AppBrazilStoreSalesMapPreset.bubble => 'Mapa com bolhas de lojas',
+    AppBrazilStoreSalesMapPreset.municipalityBubbles =>
+      'Mapa com bolhas por municipio',
     AppBrazilStoreSalesMapPreset.stateBubbles => 'Mapa com bolhas por UF',
     AppBrazilStoreSalesMapPreset.storeIcon => 'Mapa com icone de loja',
   };
@@ -192,6 +196,9 @@ extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
     AppBrazilStoreSalesMapPreset.bubble =>
       'Mesmo componente com nomes de estados no GeoJSON e markers em '
           'bolha proporcional, inspirado nos exemplos da Syncfusion.',
+    AppBrazilStoreSalesMapPreset.municipalityBubbles =>
+      'Agrupa lojas pelo municipio resolvido por IBGE/cidade, somando '
+          'receita e vendas em uma bolha por cidade.',
     AppBrazilStoreSalesMapPreset.stateBubbles =>
       'Agrupa a metrica no centroide dos estados, mantendo a consulta '
           'de lojas como fonte dos agregados.',
@@ -203,6 +210,7 @@ extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
   List<AppBrazilStoreSalesPoint> get demoPoints => switch (this) {
     AppBrazilStoreSalesMapPreset.standard => _demoStorePoints,
     AppBrazilStoreSalesMapPreset.bubble => _regionalBubbleStorePoints,
+    AppBrazilStoreSalesMapPreset.municipalityBubbles => _demoStorePoints,
     AppBrazilStoreSalesMapPreset.stateBubbles => _demoStorePoints,
     AppBrazilStoreSalesMapPreset.storeIcon => _regionalBubbleStorePoints,
   };
@@ -215,6 +223,12 @@ extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
       ),
     AppBrazilStoreSalesMapPreset.bubble =>
       AppBrazilStoreSalesMapPreset.bubble.style(
+        height: 560,
+        showStoreDetail: false,
+        showMarkerScaleLegend: false,
+      ),
+    AppBrazilStoreSalesMapPreset.municipalityBubbles =>
+      AppBrazilStoreSalesMapPreset.municipalityBubbles.style(
         height: 560,
         showStoreDetail: false,
         showMarkerScaleLegend: false,

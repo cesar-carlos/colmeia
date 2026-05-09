@@ -151,7 +151,8 @@ abstract final class AppBrazilStoreSalesMapData {
     String? regionKey,
   }) {
     final validPoints = validMapPoints(points, regionKey: regionKey);
-    if (markerAggregation == AppBrazilStoreSalesMarkerAggregation.municipalities) {
+    if (markerAggregation ==
+        AppBrazilStoreSalesMarkerAggregation.municipalities) {
       return _buildMunicipalityMarkerGroups(
         validPoints,
         coordinatePrecision,
@@ -445,9 +446,7 @@ class _MutableMarkerGroup {
     List<AppBrazilStoreSalesPoint> points,
   ) {
     final group = _MutableMarkerGroup(points.first);
-    for (final point in points.skip(1)) {
-      group.add(point);
-    }
+    points.skip(1).forEach(group.add);
     return group;
   }
 

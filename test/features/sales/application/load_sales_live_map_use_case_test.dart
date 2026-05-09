@@ -177,6 +177,7 @@ void main() {
     check(point.uf).equals('RO');
     check(point.latitude).equals(-11.9355403047646);
     check(point.longitude).equals(-61.9998238962936);
+    check(point.municipalityCode).equals('1100015');
     check(geocoder.lookups.map((input) => input.type).toList()).deepEquals(
       <AppLocationLookupType>[AppLocationLookupType.ibgeMunicipalityCode],
     );

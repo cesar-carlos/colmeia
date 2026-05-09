@@ -48,7 +48,7 @@ void main() {
             selectedAgentIds: const <String>{'agent-b', 'agent-a'},
             periodMode: SalesLiveMapPeriodMode.customRange,
             customDateRange: customRange,
-            mapPreset: SalesLiveMapMapPreset.bubble,
+            mapPreset: SalesLiveMapMapPreset.municipalities,
           ),
         );
 
@@ -57,7 +57,7 @@ void main() {
 
         expect(restored.selectedAgentIds, <String>{'agent-a', 'agent-b'});
         expect(restored.periodMode, SalesLiveMapPeriodMode.customRange);
-        expect(restored.mapPreset, SalesLiveMapMapPreset.bubble);
+        expect(restored.mapPreset, SalesLiveMapMapPreset.municipalities);
         expect(restoredRange.inclusiveCalendarDayCount, 31);
         expect(restoredRange.startInclusive, DateTime(2026, 3, 16));
         expect(restoredRange.endInclusive, DateTime(2026, 4, 15));

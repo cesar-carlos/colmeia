@@ -3807,6 +3807,18 @@ abstract class AppLocalizations {
   /// **'Bubbles'**
   String get salesLiveMapMapPresetBubbles;
 
+  /// No description provided for @salesLiveMapMapPresetMunicipalities.
+  ///
+  /// In en, this message translates to:
+  /// **'Municipalities'**
+  String get salesLiveMapMapPresetMunicipalities;
+
+  /// No description provided for @salesLiveMapMapPresetMunicipalitiesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Cities'**
+  String get salesLiveMapMapPresetMunicipalitiesShort;
+
   /// No description provided for @salesLiveMapMapPresetStateBubbles.
   ///
   /// In en, this message translates to:

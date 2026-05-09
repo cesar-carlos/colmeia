@@ -34,6 +34,7 @@ void main() {
 
       expect(point?.uf, 'MT');
       expect(point?.city, 'Sinop');
+      expect(point?.municipalityCode, '1100015');
       expect(point?.latitude, -11.86);
       expect(point?.longitude, -55.50);
     });
@@ -60,6 +61,7 @@ void main() {
 
       expect(point?.uf, 'RO');
       expect(point?.city, "Alta Floresta D'Oeste");
+      expect(point?.municipalityCode, '1100015');
       expect(point?.latitude, -11.9283);
       expect(point?.longitude, -61.9953);
     });

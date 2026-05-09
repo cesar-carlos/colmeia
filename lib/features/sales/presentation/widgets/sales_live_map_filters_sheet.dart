@@ -263,7 +263,6 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
               color: theme.colorScheme.surfaceContainerLow,
               child: AppSegmentedControl<SalesLiveMapMapPreset>(
                 value: _mapPreset,
-                expandToFill: true,
                 options: <AppSegmentedControlOption<SalesLiveMapMapPreset>>[
                   AppSegmentedControlOption<SalesLiveMapMapPreset>(
                     value: SalesLiveMapMapPreset.standard,
@@ -275,9 +274,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
                   ),
                   AppSegmentedControlOption<SalesLiveMapMapPreset>(
                     value: SalesLiveMapMapPreset.municipalities,
-                    label: widget
-                        .l10n
-                        .salesLiveMapMapPresetMunicipalitiesShort,
+                    label: widget.l10n.salesLiveMapMapPresetMunicipalitiesShort,
                   ),
                   AppSegmentedControlOption<SalesLiveMapMapPreset>(
                     value: SalesLiveMapMapPreset.stateBubbles,

@@ -37,6 +37,23 @@ void main() {
         AppBrazilStoreSalesMarkerAggregation.states,
       );
     });
+
+    test('builds expected municipality bubble style', () {
+      final style = AppBrazilStoreSalesMapPreset.municipalityBubbles.style(
+        height: 510,
+        showMarkerScaleLegend: false,
+      );
+
+      expect(style.height, 510);
+      expect(style.showMarkerScaleLegend, isFalse);
+      expect(style.showStoreDetail, isTrue);
+      expect(style.markerVisual, AppBrazilStoreSalesMarkerVisual.bubble);
+      expect(
+        style.markerAggregation,
+        AppBrazilStoreSalesMarkerAggregation.municipalities,
+      );
+      expect(style.maxClusterTooltipStores, 8);
+    });
   });
 
   group('AppBrazilStoreSalesMapStyle.copyWith', () {

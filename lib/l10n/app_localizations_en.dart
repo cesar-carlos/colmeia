@@ -2289,6 +2289,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesLiveMapMapPresetBubbles => 'Bubbles';
 
   @override
+  String get salesLiveMapMapPresetMunicipalities => 'Municipalities';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalitiesShort => 'Cities';
+
+  @override
   String get salesLiveMapMapPresetStateBubbles => 'Bubbles by state';
 
   @override
