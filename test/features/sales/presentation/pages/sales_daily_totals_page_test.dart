@@ -6,6 +6,7 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
@@ -105,6 +106,21 @@ void main() {
         ),
       ],
     );
+    when(
+      () => loadDailyTotals.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        anchor: any(named: 'anchor'),
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).thenAnswer(
+      (_) async => (
+        points: const <OverviewDailySalesTrendPoint>[],
+        loadFailed: false,
+        loadFailureMessage: null,
+      ),
+    );
 
     getIt
       ..registerSingleton<SalesPreferences>(salesPreferences)
@@ -142,6 +158,42 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets('auto-refresh reloads daily totals after selected interval', (
+    tester,
+  ) async {
+    await _pumpPage(tester, authController: authController);
+    await tester.pumpAndSettle();
+
+    verify(
+      () => loadDailyTotals.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        anchor: any(named: 'anchor'),
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).called(1);
+
+    await tester.tap(find.text('Off'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey<String>('sales-auto-refresh-fiveMinutes')),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(minutes: 5));
+    await tester.pumpAndSettle();
+
+    verify(
+      () => loadDailyTotals.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        anchor: any(named: 'anchor'),
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).called(1);
   });
 }
 

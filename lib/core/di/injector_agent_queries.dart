@@ -52,15 +52,9 @@ import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/adaptive_timeout_agent_queries_repository.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/circuit_breaker_agent_queries_repository.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_chain_factory.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/grupo_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/marca_produto_options_repository_impl.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_produto_rank_lucro_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_media_movel_repository_impl.dart';
@@ -90,7 +84,6 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_d
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_repository_impl.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/retrying_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
@@ -143,6 +136,15 @@ import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
 void registerInjectorAgentQueries(GetIt getIt) {
+  _registerAgentQueryTransport(getIt);
+  _registerAgentQueriesRepositoryChain(getIt);
+  _registerSingleAgentQueryRepositories(getIt);
+  _registerAcrossAgentQueryRepositories(getIt);
+  _registerFilterOptionsRepositories(getIt);
+  _registerStreamingRelay(getIt);
+}
+
+void _registerAgentQueryTransport(GetIt getIt) {
   getIt
     ..registerLazySingleton<AgentSqlExecutionEligibilityPolicy>(
       () => const AgentSqlExecutionEligibilityPolicy(),
@@ -222,74 +224,32 @@ void registerInjectorAgentQueries(GetIt getIt) {
         clientAgentsRepository: getIt<ClientAgentsRepository>(),
         policy: getIt<AgentSqlExecutionEligibilityPolicy>(),
       ),
-    )
-    ..registerLazySingleton<AgentQueriesRepository>(
-      () {
-        // Decorator chain (outermost to innermost):
-        // 1. Gated: validates requestingUserId
-        // 2. CircuitBreaker: fail-fast during hub overload
-        // 3. Caching: returns from cache when possible
-        // 4. Coalescing: deduplicates identical in-flight requests
-        // 5. Metrics: records latency and success/failure stats
-        // 6. AdaptiveTimeout: adjusts timeouts based on history
-        // 7. Retrying: exponential backoff on transient failures
-        // 8. AgentQueriesRepositoryImpl: actual hub/bridge call
-
-        final base = AgentQueriesRepositoryImpl(
-          getIt<AgentQueriesRemoteDataSource>(),
-        );
-
-        final retrying = RetryingAgentQueriesRepository(
-          delegate: base,
-        );
-
-        final adaptiveTimeout = AdaptiveTimeoutAgentQueriesRepository(
-          delegate: retrying,
-        );
-
-        final metrics = MetricsAgentQueriesRepository(
-          delegate: adaptiveTimeout,
-        );
-
-        final coalescing = CoalescingAgentQueriesRepository(
-          delegate: metrics,
-        );
-
-        final caching = CachingAgentQueriesRepository(
-          delegate: coalescing,
-          maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
-        );
-
-        final circuitBreaker = CircuitBreakerAgentQueriesRepository(
-          delegate: caching,
-        );
-
-        final gated = GatedAgentQueriesRepository(
-          delegate: circuitBreaker,
-          eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
-        );
-
-        AppLogger.info(
-          'AgentQueriesRepository decorator chain initialized',
-          context: <String, Object?>{
-            'decorators': [
-              'GatedAgentQueriesRepository',
-              'CircuitBreakerAgentQueriesRepository',
-              'CachingAgentQueriesRepository',
-              'CoalescingAgentQueriesRepository',
-              'MetricsAgentQueriesRepository',
-              'AdaptiveTimeoutAgentQueriesRepository',
-              'RetryingAgentQueriesRepository',
-              'AgentQueriesRepositoryImpl',
-            ],
-            'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
-          },
-        );
-
-        return gated;
-      },
     );
+}
 
+void _registerAgentQueriesRepositoryChain(GetIt getIt) {
+  getIt.registerLazySingleton<AgentQueriesRepository>(
+    () {
+      final chain = AgentQueriesRepositoryChainFactory.build(
+        remoteDataSource: getIt<AgentQueriesRemoteDataSource>(),
+        eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
+        maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
+      );
+
+      AppLogger.info(
+        'AgentQueriesRepository decorator chain initialized',
+        context: <String, Object?>{
+          'decorators': chain.decorators,
+          'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
+        },
+      );
+
+      return chain.repository;
+    },
+  );
+}
+
+void _registerSingleAgentQueryRepositories(GetIt getIt) {
   _registerSingle<MunicipioListRepository, LoadMunicipiosPageUseCase>(
     getIt,
     repo: () => MunicipioListRepositoryImpl(getIt<AgentQueriesRepository>()),
@@ -535,7 +495,9 @@ void registerInjectorAgentQueries(GetIt getIt) {
       getIt<ResumoTotalVendasMunicipioFilialDiarioRepository>(),
     ),
   );
+}
 
+void _registerAcrossAgentQueryRepositories(GetIt getIt) {
   getIt
     ..registerLazySingleton<AgentQueryTargetResolver>(
       () => AgentQueryTargetResolver(
@@ -744,7 +706,11 @@ void registerInjectorAgentQueries(GetIt getIt) {
       () => LoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase(
         getIt<ResumoTotalVendasMunicipioFilialDiarioAcrossAgentsRepository>(),
       ),
-    )
+    );
+}
+
+void _registerFilterOptionsRepositories(GetIt getIt) {
+  getIt
     ..registerLazySingleton<
       ResumoVendasDiariasPorVendedorFilterOptionsRepository
     >(
@@ -841,7 +807,9 @@ void registerInjectorAgentQueries(GetIt getIt) {
             >(),
           ),
     );
+}
 
+void _registerStreamingRelay(GetIt getIt) {
   // PR-L+ p3: streaming companion datasource. Lives next to the
   // unary registrations because both share the same body mapper and
   // are gated by the same env (`SOCKET_RELAY_ENABLED`). Registered

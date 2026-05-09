@@ -3722,6 +3722,24 @@ abstract class AppLocalizations {
   /// **'Daily sales totals'**
   String get salesCardResumoTotalDiarioVendasTitle;
 
+  /// No description provided for @salesAutoRefreshOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get salesAutoRefreshOff;
+
+  /// No description provided for @salesAutoRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh'**
+  String get salesAutoRefreshTooltip;
+
+  /// No description provided for @salesAutoRefreshLastUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {time}'**
+  String salesAutoRefreshLastUpdatedAt(String time);
+
   /// No description provided for @salesDailyTotalsChartTitle.
   ///
   /// In en, this message translates to:

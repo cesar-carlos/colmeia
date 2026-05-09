@@ -2266,6 +2266,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesCardResumoTotalDiarioVendasTitle => 'Vendas diárias';
 
   @override
+  String get salesAutoRefreshOff => 'Desligado';
+
+  @override
+  String get salesAutoRefreshTooltip => 'Atualizacao automatica';
+
+  @override
+  String salesAutoRefreshLastUpdatedAt(String time) {
+    return 'Atualizado $time';
+  }
+
+  @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';
 
   @override
@@ -5172,6 +5183,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesCardResumoTotalDiarioVendasTitle => 'Vendas diárias';
+
+  @override
+  String get salesAutoRefreshOff => 'Desligado';
+
+  @override
+  String get salesAutoRefreshTooltip => 'Atualizacao automatica';
+
+  @override
+  String salesAutoRefreshLastUpdatedAt(String time) {
+    return 'Atualizado $time';
+  }
 
   @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';

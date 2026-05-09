@@ -1048,6 +1048,14 @@
   "salesCardProdutoRankLucroTitle": "Product ranking",
   "salesCardMonthlyPnlTitle": "Monthly P&L",
   "salesCardResumoTotalDiarioVendasTitle": "Daily sales totals",
+  "salesAutoRefreshOff": "Off",
+  "salesAutoRefreshTooltip": "Auto-refresh",
+  "salesAutoRefreshLastUpdatedAt": "Updated {time}",
+  "@salesAutoRefreshLastUpdatedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "salesDailyTotalsChartTitle": "Daily sales",
   "salesDailyTotalsChartTitleAmount": "Daily revenue",
   "salesDailyTotalsChartSubtitle": "Totals per calendar day for the selected branch and reference month.",

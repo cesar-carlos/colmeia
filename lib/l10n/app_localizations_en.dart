@@ -2231,6 +2231,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesCardResumoTotalDiarioVendasTitle => 'Daily sales totals';
 
   @override
+  String get salesAutoRefreshOff => 'Off';
+
+  @override
+  String get salesAutoRefreshTooltip => 'Auto-refresh';
+
+  @override
+  String salesAutoRefreshLastUpdatedAt(String time) {
+    return 'Updated $time';
+  }
+
+  @override
   String get salesDailyTotalsChartTitle => 'Daily sales';
 
   @override

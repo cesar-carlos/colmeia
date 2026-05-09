@@ -1,10 +1,9 @@
-import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
-import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_forma_pagamento_por_mes_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_forma_pagamento_por_mes_sql.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -12,7 +11,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_f
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_forma_pagamento_por_mes_repository.dart';
-import 'package:result_dart/result_dart.dart';
 
 class ResumoParcelasFormaPagamentoPorMesRepositoryImpl
     implements ResumoParcelasFormaPagamentoPorMesRepository {
@@ -39,15 +37,12 @@ class ResumoParcelasFormaPagamentoPorMesRepositoryImpl
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
-      return Failure<List<ResumoParcelasFormaPagamentoPorMesRow>, AppFailure>(
-        ValidationFailure(
-          message: validationError,
-          userMessage: 'Os filtros da consulta sao invalidos.',
-          context: <String, Object?>{
-            'operation': _operation,
-            'agentId': agentId.trim(),
-          },
-        ),
+      return AgentSqlRepositoryExecution.invalidFilters<
+        List<ResumoParcelasFormaPagamentoPorMesRow>
+      >(
+        message: validationError,
+        operation: _operation,
+        agentId: agentId.trim(),
       );
     }
 
@@ -80,55 +75,28 @@ class ResumoParcelasFormaPagamentoPorMesRepositoryImpl
       useRelay: true,
     );
 
-    final result = await _agentQueriesRepository.executeSql(request);
-    return result.fold(
-      (executionResult) => _mapExecutionToRows(
-        executionResult,
-        agentId: agentId.trim(),
-      ),
-      Failure<List<ResumoParcelasFormaPagamentoPorMesRow>, AppFailure>.new,
+    return AgentSqlRepositoryExecution.execute<
+      List<ResumoParcelasFormaPagamentoPorMesRow>
+    >(
+      agentQueriesRepository: _agentQueriesRepository,
+      request: request,
+      operation: _operation,
+      agentId: agentId.trim(),
+      unexpectedRowsLogMessage:
+          'Unexpected row shape for ResumoParcelasFormaPagamentoPorMes',
+      mapExecution: _mapExecutionToRows,
     );
   }
 
-  AppResult<List<ResumoParcelasFormaPagamentoPorMesRow>> _mapExecutionToRows(
-    AgentSqlExecutionResult executionResult, {
-    required String agentId,
-  }) {
-    try {
-      final rows = executionResult.rows
-          .map(
-            (row) => ResumoParcelasFormaPagamentoPorMesRowModel.fromMap(
-              row,
-            ).toEntity(),
-          )
-          .toList(growable: false);
-      return Success<List<ResumoParcelasFormaPagamentoPorMesRow>, AppFailure>(
-        rows,
-      );
-    } on FormatException catch (error, stackTrace) {
-      AppLogger.error(
-        'Unexpected row shape for ResumoParcelasFormaPagamentoPorMes',
-        context: <String, Object?>{
-          'operation': _operation,
-          'agentId': agentId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<List<ResumoParcelasFormaPagamentoPorMesRow>, AppFailure>(
-        UnknownFailure(
-          message: error.message,
-          userMessage:
-              'Resposta do agente estava em formato inesperado. '
-              'Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': _operation,
-            'agentId': agentId,
-          },
-        ),
-      );
-    }
+  List<ResumoParcelasFormaPagamentoPorMesRow> _mapExecutionToRows(
+    AgentSqlExecutionResult executionResult,
+  ) {
+    return executionResult.rows
+        .map(
+          (row) => ResumoParcelasFormaPagamentoPorMesRowModel.fromMap(
+            row,
+          ).toEntity(),
+        )
+        .toList(growable: false);
   }
 }

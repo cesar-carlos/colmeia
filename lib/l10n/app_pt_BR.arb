@@ -825,6 +825,14 @@
   "salesCardProdutoRankLucroTitle": "Ranking de produtos",
   "salesCardMonthlyPnlTitle": "Resultado mensal",
   "salesCardResumoTotalDiarioVendasTitle": "Vendas diárias",
+  "salesAutoRefreshOff": "Desligado",
+  "salesAutoRefreshTooltip": "Atualizacao automatica",
+  "salesAutoRefreshLastUpdatedAt": "Atualizado {time}",
+  "@salesAutoRefreshLastUpdatedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "salesDailyTotalsChartTitle": "Vendas por dia",
   "salesDailyTotalsChartTitleAmount": "Faturamento diário",
   "salesDailyTotalsChartSubtitle": "Totais por dia civil na filial e no mês de referência selecionados.",

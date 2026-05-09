@@ -5,14 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('validation rejects SQL LIKE wildcards in origem', () {
     final withPercent = ResumoVendasProdutoVendidoSqlPeriodoFilter(
-      dataVendaInicio: DateTime.utc(2026, 1, 1),
+      dataVendaInicio: DateTime.utc(2026),
       dataVendaFim: DateTime.utc(2026, 1, 31),
       origem: 'Frente%',
     );
     check(withPercent.validationError()).isNotNull();
 
     final withUnderscore = ResumoVendasProdutoVendidoSqlPeriodoFilter(
-      dataVendaInicio: DateTime.utc(2026, 1, 1),
+      dataVendaInicio: DateTime.utc(2026),
       dataVendaFim: DateTime.utc(2026, 1, 31),
       origem: 'Frente_Loja',
     );
@@ -21,7 +21,7 @@ void main() {
 
   test('validation accepts default exact origem', () {
     final filter = ResumoVendasProdutoVendidoSqlPeriodoFilter(
-      dataVendaInicio: DateTime.utc(2026, 1, 1),
+      dataVendaInicio: DateTime.utc(2026),
       dataVendaFim: DateTime.utc(2026, 1, 31),
     );
     check(filter.validationError()).isNull();
