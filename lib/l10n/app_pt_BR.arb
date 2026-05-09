@@ -147,7 +147,26 @@
   "overviewAgentFilterSheetSearchHint": "Buscar agentes…",
   "overviewHomeBranchFilterSheetTitle": "Selecionar filiais",
   "overviewHomeBranchFilterSheetSearchHint": "Buscar filiais…",
-  "overviewAgentFilterSelectMatching": "Selecionar todos os filtrados",
+  "overviewHomeBranchFilterSelectAll": "Selecionar todos",
+  "overviewHomeBranchFilterSelectAllFullRoster": "Todas as filiais (lista completa)",
+  "overviewHomeBranchFilterDeselectAll": "Desmarcar todos",
+  "overviewHomeBranchFilterSelectMatching": "Selecionar todas as filiais filtradas",
+  "overviewHomeBranchFilterDeselectMatching": "Desmarcar filiais filtradas",
+  "overviewHomeBranchFilterSelectionCount": "{selectedCount} de {totalCount} filiais selecionadas",
+  "@overviewHomeBranchFilterSelectionCount": {
+    "placeholders": {
+      "selectedCount": {"type": "int"},
+      "totalCount": {"type": "int"}
+    }
+  },
+  "overviewHomeBranchFilterApplyRequiresSelectionHint": "Escolha pelo menos uma filial para aplicar.",
+  "overviewHomeBranchFilterSheetUseAllBranches": "Usar todas as filiais",
+  "overviewHomeBranchFilterApplyDisabledSemantics": "Aplicar. Desativado. Selecione pelo menos uma filial.",
+  "overviewHomeBranchFilterRefineAction": "Refinar filiais",
+  "overviewHomeBranchFilterEditAction": "Editar",
+  "overviewHomeBranchFilterApply": "Aplicar",
+  "overviewHomeBranchFilterCancel": "Cancelar",
+  "overviewHomeBranchFilterMissingClientTokenRowSubtitle": "Sem token neste dispositivo para esta filial — consultas SQL são ignoradas.",
   "overviewAgentFilterApply": "Aplicar",
   "overviewAgentFilterCancel": "Cancelar",
   "overviewAgentFilterNoSearchResults": "Nenhum agente corresponde à busca.",
@@ -803,6 +822,113 @@
   "overviewLucratividadeMensalMarginSeriesLabel": "Margem %",
   "overviewLoadingLucratividadeMensalSemantics": "Carregando grafico de lucratividade mensal do produto…",
   "salesHubTitle": "Vendas",
+  "shellNavSalesMonitoringLabel": "Acompanhar vendas",
+  "shellNavSalesMonitoringSubtitle": "Mapa e atualizacao por filtros",
+  "salesLiveMapTitle": "Acompanhar vendas",
+  "salesLiveMapSubtitle": "Mapa do Brasil com vendas por filial e atualizacao por filtros.",
+  "salesLiveMapSessionExpiredMessage": "Sessao expirada. Entre novamente para consultar.",
+  "salesLiveMapAgentsLabel": "Agentes",
+  "salesLiveMapPeriodLabel": "Periodo",
+  "salesLiveMapMapLabel": "Mapa",
+  "salesLiveMapParametersLabel": "Parametros",
+  "salesLiveMapParametersSummary": "{origin} | Financeiro {finance} | Pre-venda {preSale}",
+  "@salesLiveMapParametersSummary": {
+    "placeholders": {
+      "origin": {"type": "String"},
+      "finance": {"type": "String"},
+      "preSale": {"type": "String"}
+    }
+  },
+  "salesLiveMapAgentsLoadingSummary": "Carregando agentes",
+  "salesLiveMapAgentsAllWithTokenSummary": "Todos com token ({count})",
+  "@salesLiveMapAgentsAllWithTokenSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapAgentsSelectedSummary": "{count} agente(s)",
+  "@salesLiveMapAgentsSelectedSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPeriodToday": "Hoje",
+  "salesLiveMapPeriodLastSevenDays": "Ultimos 7 dias",
+  "salesLiveMapPeriodLastSevenDaysShort": "7 dias",
+  "salesLiveMapPeriodCurrentMonth": "Mes atual",
+  "salesLiveMapPeriodCurrentMonthShort": "Mes",
+  "salesLiveMapPeriodCustom": "Personalizado",
+  "salesLiveMapMapPresetPoints": "Pontos",
+  "salesLiveMapMapPresetBubbles": "Bolhas",
+  "salesLiveMapMapPresetStateBubbles": "Bolhas por UF",
+  "salesLiveMapMapPresetStateBubblesShort": "UFs",
+  "salesLiveMapMapPresetStoreIcon": "Icone loja",
+  "salesLiveMapMapPresetStoreIconShort": "Loja",
+  "salesLiveMapLoadErrorTitle": "Nao foi possivel carregar o acompanhamento",
+  "salesLiveMapLoadErrorRetryMessage": "Tente atualizar a consulta novamente.",
+  "salesLiveMapChartTitle": "Vendas por filial no Brasil",
+  "salesLiveMapChartSubtitlePending": "Periodo {period}.",
+  "@salesLiveMapChartSubtitlePending": {
+    "placeholders": {
+      "period": {"type": "String"}
+    }
+  },
+  "salesLiveMapChartSubtitleLoaded": "Periodo {period}. {mappedCount} de {totalCount} filiais posicionadas.",
+  "@salesLiveMapChartSubtitleLoaded": {
+    "placeholders": {
+      "period": {"type": "String"},
+      "mappedCount": {"type": "int"},
+      "totalCount": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialTitle": "Acompanhamento parcial",
+  "salesLiveMapPartialFailedAgents": "{count} agente(s) falharam na ultima consulta.",
+  "@salesLiveMapPartialFailedAgents": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialMissingTokenAgents": "{count} agente(s) sem client_token local.",
+  "@salesLiveMapPartialMissingTokenAgents": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialOfflineAgents": "{count} agente(s) fora da presenca do hub.",
+  "@salesLiveMapPartialOfflineAgents": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialMissingCoordinates": "{count} filial(is) sem coordenada resolvida.",
+  "@salesLiveMapPartialMissingCoordinates": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapFiltersTitle": "Filtros de acompanhamento",
+  "salesLiveMapFiltersDescription": "Escolha filiais, periodo e tipo visual do mapa.",
+  "salesLiveMapBranchesSectionTitle": "Filiais",
+  "salesLiveMapBranchesSectionSubtitle": "Filiais sem token local ficam visiveis, mas bloqueadas.",
+  "salesLiveMapSelectAtLeastOneTokenBranch": "Selecione ao menos uma filial com token local.",
+  "salesLiveMapNoApprovedAgents": "Nenhum agente aprovado disponivel para consulta.",
+  "salesLiveMapSelectAllTokenBacked": "Selecionar todas",
+  "salesLiveMapClearSelection": "Desmarcar todas",
+  "salesLiveMapMissingLocalToken": "Sem token local",
+  "salesLiveMapCustomPeriodLabel": "Periodo personalizado",
+  "salesLiveMapCustomPeriodHelper": "Limite de {maxDays} dias por atualizacao.",
+  "@salesLiveMapCustomPeriodHelper": {
+    "placeholders": {
+      "maxDays": {"type": "int"}
+    }
+  },
+  "salesLiveMapCustomPeriodPickerTitle": "Selecionar periodo",
+  "salesLiveMapMapTypeTitle": "Tipo de mapa",
+  "salesLiveMapMapTypeSubtitle": "Escolha como os pontos e totais devem aparecer.",
+  "salesLiveMapKpiRevenue": "Receita total",
+  "salesLiveMapKpiSales": "Vendas",
+  "salesLiveMapKpiBranchesOnMap": "Filiais no mapa",
+  "salesLiveMapKpiQueriedAgents": "Agentes consultados",
   "salesHubSubtitle": "Acesse e gerencie informações comerciais por categoria.",
   "salesBranchFilterLabel": "FILIAIS",
   "salesBranchFilterEmptyHint": "Carregue o relatorio para listar as filiais.",

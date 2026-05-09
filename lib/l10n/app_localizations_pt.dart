@@ -304,8 +304,58 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewHomeBranchFilterSheetSearchHint => 'Buscar filiais…';
 
   @override
-  String get overviewAgentFilterSelectMatching =>
-      'Selecionar todos os filtrados';
+  String get overviewHomeBranchFilterSelectAll => 'Selecionar todos';
+
+  @override
+  String get overviewHomeBranchFilterSelectAllFullRoster =>
+      'Todas as filiais (lista completa)';
+
+  @override
+  String get overviewHomeBranchFilterDeselectAll => 'Desmarcar todos';
+
+  @override
+  String get overviewHomeBranchFilterSelectMatching =>
+      'Selecionar todas as filiais filtradas';
+
+  @override
+  String get overviewHomeBranchFilterDeselectMatching =>
+      'Desmarcar filiais filtradas';
+
+  @override
+  String overviewHomeBranchFilterSelectionCount(
+    int selectedCount,
+    int totalCount,
+  ) {
+    return '$selectedCount de $totalCount filiais selecionadas';
+  }
+
+  @override
+  String get overviewHomeBranchFilterApplyRequiresSelectionHint =>
+      'Escolha pelo menos uma filial para aplicar.';
+
+  @override
+  String get overviewHomeBranchFilterSheetUseAllBranches =>
+      'Usar todas as filiais';
+
+  @override
+  String get overviewHomeBranchFilterApplyDisabledSemantics =>
+      'Aplicar. Desativado. Selecione pelo menos uma filial.';
+
+  @override
+  String get overviewHomeBranchFilterRefineAction => 'Refinar filiais';
+
+  @override
+  String get overviewHomeBranchFilterEditAction => 'Editar';
+
+  @override
+  String get overviewHomeBranchFilterApply => 'Aplicar';
+
+  @override
+  String get overviewHomeBranchFilterCancel => 'Cancelar';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenRowSubtitle =>
+      'Sem token neste dispositivo para esta filial — consultas SQL são ignoradas.';
 
   @override
   String get overviewAgentFilterApply => 'Aplicar';
@@ -3223,8 +3273,58 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get overviewHomeBranchFilterSheetSearchHint => 'Buscar filiais…';
 
   @override
-  String get overviewAgentFilterSelectMatching =>
-      'Selecionar todos os filtrados';
+  String get overviewHomeBranchFilterSelectAll => 'Selecionar todos';
+
+  @override
+  String get overviewHomeBranchFilterSelectAllFullRoster =>
+      'Todas as filiais (lista completa)';
+
+  @override
+  String get overviewHomeBranchFilterDeselectAll => 'Desmarcar todos';
+
+  @override
+  String get overviewHomeBranchFilterSelectMatching =>
+      'Selecionar todas as filiais filtradas';
+
+  @override
+  String get overviewHomeBranchFilterDeselectMatching =>
+      'Desmarcar filiais filtradas';
+
+  @override
+  String overviewHomeBranchFilterSelectionCount(
+    int selectedCount,
+    int totalCount,
+  ) {
+    return '$selectedCount de $totalCount filiais selecionadas';
+  }
+
+  @override
+  String get overviewHomeBranchFilterApplyRequiresSelectionHint =>
+      'Escolha pelo menos uma filial para aplicar.';
+
+  @override
+  String get overviewHomeBranchFilterSheetUseAllBranches =>
+      'Usar todas as filiais';
+
+  @override
+  String get overviewHomeBranchFilterApplyDisabledSemantics =>
+      'Aplicar. Desativado. Selecione pelo menos uma filial.';
+
+  @override
+  String get overviewHomeBranchFilterRefineAction => 'Refinar filiais';
+
+  @override
+  String get overviewHomeBranchFilterEditAction => 'Editar';
+
+  @override
+  String get overviewHomeBranchFilterApply => 'Aplicar';
+
+  @override
+  String get overviewHomeBranchFilterCancel => 'Cancelar';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenRowSubtitle =>
+      'Sem token neste dispositivo para esta filial — consultas SQL são ignoradas.';
 
   @override
   String get overviewAgentFilterApply => 'Aplicar';

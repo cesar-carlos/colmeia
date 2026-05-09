@@ -609,11 +609,92 @@ abstract class AppLocalizations {
   /// **'Search branches…'**
   String get overviewHomeBranchFilterSheetSearchHint;
 
-  /// No description provided for @overviewAgentFilterSelectMatching.
+  /// No description provided for @overviewHomeBranchFilterSelectAll.
   ///
   /// In en, this message translates to:
-  /// **'Select all matching'**
-  String get overviewAgentFilterSelectMatching;
+  /// **'Select all'**
+  String get overviewHomeBranchFilterSelectAll;
+
+  /// No description provided for @overviewHomeBranchFilterSelectAllFullRoster.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all branches (full list)'**
+  String get overviewHomeBranchFilterSelectAllFullRoster;
+
+  /// No description provided for @overviewHomeBranchFilterDeselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all'**
+  String get overviewHomeBranchFilterDeselectAll;
+
+  /// No description provided for @overviewHomeBranchFilterSelectMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all matching branches'**
+  String get overviewHomeBranchFilterSelectMatching;
+
+  /// No description provided for @overviewHomeBranchFilterDeselectMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all matching branches'**
+  String get overviewHomeBranchFilterDeselectMatching;
+
+  /// No description provided for @overviewHomeBranchFilterSelectionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{selectedCount} of {totalCount} branches selected'**
+  String overviewHomeBranchFilterSelectionCount(
+    int selectedCount,
+    int totalCount,
+  );
+
+  /// No description provided for @overviewHomeBranchFilterApplyRequiresSelectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one branch to apply.'**
+  String get overviewHomeBranchFilterApplyRequiresSelectionHint;
+
+  /// No description provided for @overviewHomeBranchFilterSheetUseAllBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Use all branches'**
+  String get overviewHomeBranchFilterSheetUseAllBranches;
+
+  /// No description provided for @overviewHomeBranchFilterApplyDisabledSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply. Disabled. Select at least one branch.'**
+  String get overviewHomeBranchFilterApplyDisabledSemantics;
+
+  /// No description provided for @overviewHomeBranchFilterRefineAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Refine branches'**
+  String get overviewHomeBranchFilterRefineAction;
+
+  /// No description provided for @overviewHomeBranchFilterEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get overviewHomeBranchFilterEditAction;
+
+  /// No description provided for @overviewHomeBranchFilterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get overviewHomeBranchFilterApply;
+
+  /// No description provided for @overviewHomeBranchFilterCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get overviewHomeBranchFilterCancel;
+
+  /// No description provided for @overviewHomeBranchFilterMissingClientTokenRowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No client token on this device for this branch — SQL queries are skipped.'**
+  String get overviewHomeBranchFilterMissingClientTokenRowSubtitle;
 
   /// No description provided for @overviewAgentFilterApply.
   ///

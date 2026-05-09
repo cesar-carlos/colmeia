@@ -299,7 +299,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewHomeBranchFilterSheetSearchHint => 'Search branches…';
 
   @override
-  String get overviewAgentFilterSelectMatching => 'Select all matching';
+  String get overviewHomeBranchFilterSelectAll => 'Select all';
+
+  @override
+  String get overviewHomeBranchFilterSelectAllFullRoster =>
+      'Select all branches (full list)';
+
+  @override
+  String get overviewHomeBranchFilterDeselectAll => 'Deselect all';
+
+  @override
+  String get overviewHomeBranchFilterSelectMatching =>
+      'Select all matching branches';
+
+  @override
+  String get overviewHomeBranchFilterDeselectMatching =>
+      'Deselect all matching branches';
+
+  @override
+  String overviewHomeBranchFilterSelectionCount(
+    int selectedCount,
+    int totalCount,
+  ) {
+    return '$selectedCount of $totalCount branches selected';
+  }
+
+  @override
+  String get overviewHomeBranchFilterApplyRequiresSelectionHint =>
+      'Choose at least one branch to apply.';
+
+  @override
+  String get overviewHomeBranchFilterSheetUseAllBranches => 'Use all branches';
+
+  @override
+  String get overviewHomeBranchFilterApplyDisabledSemantics =>
+      'Apply. Disabled. Select at least one branch.';
+
+  @override
+  String get overviewHomeBranchFilterRefineAction => 'Refine branches';
+
+  @override
+  String get overviewHomeBranchFilterEditAction => 'Edit';
+
+  @override
+  String get overviewHomeBranchFilterApply => 'Apply';
+
+  @override
+  String get overviewHomeBranchFilterCancel => 'Cancel';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenRowSubtitle =>
+      'No client token on this device for this branch — SQL queries are skipped.';
 
   @override
   String get overviewAgentFilterApply => 'Apply';
