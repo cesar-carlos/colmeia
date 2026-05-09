@@ -2439,6 +2439,43 @@ class AppLocalizationsPt extends AppLocalizations {
       'Escolha como os pontos e totais devem aparecer.';
 
   @override
+  String get salesLiveMapDetailLabel => 'Detalhamento';
+
+  @override
+  String get salesLiveMapDetailSubtitle =>
+      'Escolha o nivel de agregacao mostrado no mapa.';
+
+  @override
+  String get salesLiveMapDetailBranches => 'Filiais';
+
+  @override
+  String get salesLiveMapDetailMunicipalities => 'Municipios';
+
+  @override
+  String get salesLiveMapDetailStates => 'UFs';
+
+  @override
+  String get salesLiveMapVisualLabel => 'Visual';
+
+  @override
+  String get salesLiveMapVisualSubtitle =>
+      'Escolha o estilo dos marcadores para filiais e municipios.';
+
+  @override
+  String get salesLiveMapVisualDot => 'Pontos';
+
+  @override
+  String get salesLiveMapVisualBubble => 'Bolhas';
+
+  @override
+  String get salesLiveMapVisualStoreIcon => 'Icone loja';
+
+  @override
+  String salesLiveMapDetailAutoMunicipalities(int threshold) {
+    return 'Acima de $threshold filiais, municipios sao exibidos automaticamente para melhorar a leitura.';
+  }
+
+  @override
   String get salesLiveMapKpiRevenue => 'Receita total';
 
   @override
@@ -2446,6 +2483,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapKpiBranchesOnMap => 'Filiais no mapa';
+
+  @override
+  String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
 
   @override
   String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
@@ -5611,6 +5651,43 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Escolha como os pontos e totais devem aparecer.';
 
   @override
+  String get salesLiveMapDetailLabel => 'Detalhamento';
+
+  @override
+  String get salesLiveMapDetailSubtitle =>
+      'Escolha o nivel de agregacao mostrado no mapa.';
+
+  @override
+  String get salesLiveMapDetailBranches => 'Filiais';
+
+  @override
+  String get salesLiveMapDetailMunicipalities => 'Municipios';
+
+  @override
+  String get salesLiveMapDetailStates => 'UFs';
+
+  @override
+  String get salesLiveMapVisualLabel => 'Visual';
+
+  @override
+  String get salesLiveMapVisualSubtitle =>
+      'Escolha o estilo dos marcadores para filiais e municipios.';
+
+  @override
+  String get salesLiveMapVisualDot => 'Pontos';
+
+  @override
+  String get salesLiveMapVisualBubble => 'Bolhas';
+
+  @override
+  String get salesLiveMapVisualStoreIcon => 'Icone loja';
+
+  @override
+  String salesLiveMapDetailAutoMunicipalities(int threshold) {
+    return 'Acima de $threshold filiais, municipios sao exibidos automaticamente para melhorar a leitura.';
+  }
+
+  @override
   String get salesLiveMapKpiRevenue => 'Receita total';
 
   @override
@@ -5618,6 +5695,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapKpiBranchesOnMap => 'Filiais no mapa';
+
+  @override
+  String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
 
   @override
   String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';

@@ -25,7 +25,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 720;
-        final columns = isWide ? 4 : 2;
+        final columns = constraints.maxWidth >= 960 ? 5 : (isWide ? 3 : 2);
         final gap = tokens.gapMd;
         final width = math.max<double>(
           0,
@@ -60,6 +60,14 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
                 leading: const Icon(Icons.storefront_outlined),
                 label: l10n.salesLiveMapKpiBranchesOnMap,
                 value: '${result.mappedBranchCount}/${result.totalBranchCount}',
+              ),
+            ),
+            SizedBox(
+              width: width,
+              child: AppMetricStatCard(
+                leading: const Icon(Icons.location_city_outlined),
+                label: l10n.salesLiveMapKpiMunicipalitiesOnMap,
+                value: _integerFormat.format(result.mappedMunicipalityCount),
               ),
             ),
             SizedBox(

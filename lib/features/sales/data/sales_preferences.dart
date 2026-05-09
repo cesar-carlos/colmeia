@@ -188,14 +188,22 @@ class SalesPreferences {
       selectedAgentIds: selectedAgentIds,
       periodMode: mode,
       customDateRange: customDateRange,
-      mapPreset: _salesLiveMapMapPresetFromRaw(raw['map_preset']),
+      detailLevel: _salesLiveMapDetailFromRaw(
+        raw['map_detail'],
+        legacyPreset: raw['map_preset'],
+      ),
+      markerVisual: _salesLiveMapMarkerVisualFromRaw(
+        raw['map_visual'],
+        legacyPreset: raw['map_preset'],
+      ),
     );
   }
 
   Future<void> persistSalesLiveMapFilter(SalesLiveMapFilter filter) async {
     final encoded = <String, Object?>{
       'period_mode': filter.periodMode.name,
-      'map_preset': filter.mapPreset.name,
+      'map_detail': filter.detailLevel.name,
+      'map_visual': filter.markerVisual.name,
     };
 
     final selected = filter.selectedAgentIds;
@@ -295,6 +303,49 @@ class SalesPreferences {
       }
     }
     return SalesLiveMapPeriodMode.today;
+  }
+
+  static SalesLiveMapMapDetail _salesLiveMapDetailFromRaw(
+    Object? raw, {
+    Object? legacyPreset,
+  }) {
+    if (raw is String) {
+      for (final detail in SalesLiveMapMapDetail.values) {
+        if (detail.name == raw) {
+          return detail;
+        }
+      }
+    }
+
+    return switch (_salesLiveMapMapPresetFromRaw(legacyPreset)) {
+      SalesLiveMapMapPreset.municipalities =>
+        SalesLiveMapMapDetail.municipalities,
+      SalesLiveMapMapPreset.stateBubbles => SalesLiveMapMapDetail.states,
+      SalesLiveMapMapPreset.standard ||
+      SalesLiveMapMapPreset.bubble ||
+      SalesLiveMapMapPreset.storeIcon => SalesLiveMapMapDetail.branches,
+    };
+  }
+
+  static SalesLiveMapMarkerVisual _salesLiveMapMarkerVisualFromRaw(
+    Object? raw, {
+    Object? legacyPreset,
+  }) {
+    if (raw is String) {
+      for (final visual in SalesLiveMapMarkerVisual.values) {
+        if (visual.name == raw) {
+          return visual;
+        }
+      }
+    }
+
+    return switch (_salesLiveMapMapPresetFromRaw(legacyPreset)) {
+      SalesLiveMapMapPreset.bubble ||
+      SalesLiveMapMapPreset.municipalities ||
+      SalesLiveMapMapPreset.stateBubbles => SalesLiveMapMarkerVisual.bubble,
+      SalesLiveMapMapPreset.storeIcon => SalesLiveMapMarkerVisual.storeIcon,
+      SalesLiveMapMapPreset.standard => SalesLiveMapMarkerVisual.dot,
+    };
   }
 
   static SalesLiveMapMapPreset _salesLiveMapMapPresetFromRaw(Object? raw) {

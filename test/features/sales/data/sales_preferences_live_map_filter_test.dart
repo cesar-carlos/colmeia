@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
@@ -23,7 +25,8 @@ void main() {
 
       expect(filter.selectedAgentIds, isNull);
       expect(filter.periodMode, SalesLiveMapPeriodMode.today);
-      expect(filter.mapPreset, SalesLiveMapMapPreset.standard);
+      expect(filter.detailLevel, SalesLiveMapMapDetail.branches);
+      expect(filter.markerVisual, SalesLiveMapMarkerVisual.dot);
       expect(range.startInclusive, DateTime(2026, 5, 9));
       expect(range.endInclusive, DateTime(2026, 5, 9));
 
@@ -36,7 +39,7 @@ void main() {
     });
 
     test(
-      'persists selected agents, custom period and map preset',
+      'persists selected agents, custom period, detail and marker visual',
       () async {
         final customRange = OverviewDateRange.fromOrderedEndpoints(
           DateTime(2026, 3),
@@ -48,7 +51,8 @@ void main() {
             selectedAgentIds: const <String>{'agent-b', 'agent-a'},
             periodMode: SalesLiveMapPeriodMode.customRange,
             customDateRange: customRange,
-            mapPreset: SalesLiveMapMapPreset.municipalities,
+            detailLevel: SalesLiveMapMapDetail.municipalities,
+            markerVisual: SalesLiveMapMarkerVisual.bubble,
           ),
         );
 
@@ -57,11 +61,26 @@ void main() {
 
         expect(restored.selectedAgentIds, <String>{'agent-a', 'agent-b'});
         expect(restored.periodMode, SalesLiveMapPeriodMode.customRange);
-        expect(restored.mapPreset, SalesLiveMapMapPreset.municipalities);
+        expect(restored.detailLevel, SalesLiveMapMapDetail.municipalities);
+        expect(restored.markerVisual, SalesLiveMapMarkerVisual.bubble);
         expect(restoredRange.inclusiveCalendarDayCount, 31);
         expect(restoredRange.startInclusive, DateTime(2026, 3, 16));
         expect(restoredRange.endInclusive, DateTime(2026, 4, 15));
       },
     );
+
+    test('restores legacy map preset into detail and marker visual', () async {
+      await prefs.setString(
+        'colmeia_sales_card.${SalesPreferences.salesLiveMapCardId}.filters',
+        jsonEncode(<String, Object?>{
+          'map_preset': SalesLiveMapMapPreset.stateBubbles.name,
+        }),
+      );
+
+      final restored = salesPrefs.restoreSalesLiveMapFilter();
+
+      expect(restored.detailLevel, SalesLiveMapMapDetail.states);
+      expect(restored.markerVisual, SalesLiveMapMarkerVisual.bubble);
+    });
   });
 }

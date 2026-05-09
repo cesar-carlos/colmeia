@@ -3991,6 +3991,72 @@ abstract class AppLocalizations {
   /// **'Choose how points and totals should appear.'**
   String get salesLiveMapMapTypeSubtitle;
 
+  /// No description provided for @salesLiveMapDetailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Detail'**
+  String get salesLiveMapDetailLabel;
+
+  /// No description provided for @salesLiveMapDetailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the aggregation level shown on the map.'**
+  String get salesLiveMapDetailSubtitle;
+
+  /// No description provided for @salesLiveMapDetailBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get salesLiveMapDetailBranches;
+
+  /// No description provided for @salesLiveMapDetailMunicipalities.
+  ///
+  /// In en, this message translates to:
+  /// **'Cities'**
+  String get salesLiveMapDetailMunicipalities;
+
+  /// No description provided for @salesLiveMapDetailStates.
+  ///
+  /// In en, this message translates to:
+  /// **'States'**
+  String get salesLiveMapDetailStates;
+
+  /// No description provided for @salesLiveMapVisualLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Visual'**
+  String get salesLiveMapVisualLabel;
+
+  /// No description provided for @salesLiveMapVisualSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the marker style for branch and city views.'**
+  String get salesLiveMapVisualSubtitle;
+
+  /// No description provided for @salesLiveMapVisualDot.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get salesLiveMapVisualDot;
+
+  /// No description provided for @salesLiveMapVisualBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles'**
+  String get salesLiveMapVisualBubble;
+
+  /// No description provided for @salesLiveMapVisualStoreIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Store icon'**
+  String get salesLiveMapVisualStoreIcon;
+
+  /// No description provided for @salesLiveMapDetailAutoMunicipalities.
+  ///
+  /// In en, this message translates to:
+  /// **'Above {threshold} branches, cities are shown automatically for readability.'**
+  String salesLiveMapDetailAutoMunicipalities(int threshold);
+
   /// No description provided for @salesLiveMapKpiRevenue.
   ///
   /// In en, this message translates to:
@@ -4008,6 +4074,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Branches on map'**
   String get salesLiveMapKpiBranchesOnMap;
+
+  /// No description provided for @salesLiveMapKpiMunicipalitiesOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Cities on map'**
+  String get salesLiveMapKpiMunicipalitiesOnMap;
 
   /// No description provided for @salesLiveMapKpiQueriedAgents.
   ///

@@ -21,24 +21,39 @@ enum SalesLiveMapMapPreset {
   storeIcon,
 }
 
+enum SalesLiveMapMapDetail {
+  branches,
+  municipalities,
+  states,
+}
+
+enum SalesLiveMapMarkerVisual {
+  dot,
+  bubble,
+  storeIcon,
+}
+
 class SalesLiveMapFilter {
   const SalesLiveMapFilter({
     this.selectedAgentIds,
     this.periodMode = SalesLiveMapPeriodMode.today,
     this.customDateRange,
-    this.mapPreset = SalesLiveMapMapPreset.standard,
+    this.detailLevel = SalesLiveMapMapDetail.branches,
+    this.markerVisual = SalesLiveMapMarkerVisual.dot,
   });
 
   final Set<String>? selectedAgentIds;
   final SalesLiveMapPeriodMode periodMode;
   final OverviewDateRange? customDateRange;
-  final SalesLiveMapMapPreset mapPreset;
+  final SalesLiveMapMapDetail detailLevel;
+  final SalesLiveMapMarkerVisual markerVisual;
 
   SalesLiveMapFilter copyWith({
     Object? selectedAgentIds = _sentinel,
     SalesLiveMapPeriodMode? periodMode,
     Object? customDateRange = _sentinel,
-    SalesLiveMapMapPreset? mapPreset,
+    SalesLiveMapMapDetail? detailLevel,
+    SalesLiveMapMarkerVisual? markerVisual,
   }) {
     final nextSelectedAgentIds = selectedAgentIds == _sentinel
         ? this.selectedAgentIds
@@ -51,7 +66,8 @@ class SalesLiveMapFilter {
       customDateRange: customDateRange == _sentinel
           ? this.customDateRange
           : customDateRange as OverviewDateRange?,
-      mapPreset: mapPreset ?? this.mapPreset,
+      detailLevel: detailLevel ?? this.detailLevel,
+      markerVisual: markerVisual ?? this.markerVisual,
     );
   }
 

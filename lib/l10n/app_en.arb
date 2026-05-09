@@ -1151,9 +1151,26 @@
   "salesLiveMapCustomPeriodPickerTitle": "Select period",
   "salesLiveMapMapTypeTitle": "Map type",
   "salesLiveMapMapTypeSubtitle": "Choose how points and totals should appear.",
+  "salesLiveMapDetailLabel": "Detail",
+  "salesLiveMapDetailSubtitle": "Choose the aggregation level shown on the map.",
+  "salesLiveMapDetailBranches": "Branches",
+  "salesLiveMapDetailMunicipalities": "Cities",
+  "salesLiveMapDetailStates": "States",
+  "salesLiveMapVisualLabel": "Visual",
+  "salesLiveMapVisualSubtitle": "Choose the marker style for branch and city views.",
+  "salesLiveMapVisualDot": "Points",
+  "salesLiveMapVisualBubble": "Bubbles",
+  "salesLiveMapVisualStoreIcon": "Store icon",
+  "salesLiveMapDetailAutoMunicipalities": "Above {threshold} branches, cities are shown automatically for readability.",
+  "@salesLiveMapDetailAutoMunicipalities": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
   "salesLiveMapKpiRevenue": "Total revenue",
   "salesLiveMapKpiSales": "Sales",
   "salesLiveMapKpiBranchesOnMap": "Branches on map",
+  "salesLiveMapKpiMunicipalitiesOnMap": "Cities on map",
   "salesLiveMapKpiQueriedAgents": "Queried branches",
   "salesBranchFilterLabel": "BRANCHES",
   "salesBranchFilterEmptyHint": "Load the report to list branches.",

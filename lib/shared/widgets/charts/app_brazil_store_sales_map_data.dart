@@ -169,7 +169,10 @@ abstract final class AppBrazilStoreSalesMapData {
     if (!collapseSameCoordinateMarkers) {
       return [
         for (final point in validPoints)
-          AppBrazilStoreSalesMarkerGroup(points: [point]),
+          AppBrazilStoreSalesMarkerGroup(
+            points: [point],
+            aggregation: markerAggregation,
+          ),
       ];
     }
 
@@ -186,6 +189,7 @@ abstract final class AppBrazilStoreSalesMapData {
             ..sort(
               (left, right) => right.salesAmount.compareTo(left.salesAmount),
             ),
+          aggregation: markerAggregation,
         ),
     ];
   }
@@ -279,7 +283,10 @@ abstract final class AppBrazilStoreSalesMapData {
 
     return [
       for (final points in groups.values)
-        _MutableMarkerGroup.fromPoints(points).toImmutable(),
+        _MutableMarkerGroup.fromPoints(
+          points,
+          aggregation: AppBrazilStoreSalesMarkerAggregation.municipalities,
+        ).toImmutable(),
     ];
   }
 
@@ -342,6 +349,7 @@ abstract final class AppBrazilStoreSalesMapData {
 class AppBrazilStoreSalesMarkerGroup {
   const AppBrazilStoreSalesMarkerGroup({
     required this.points,
+    this.aggregation = AppBrazilStoreSalesMarkerAggregation.stores,
     double? latitude,
     double? longitude,
   }) : _latitude = latitude,
@@ -349,12 +357,16 @@ class AppBrazilStoreSalesMarkerGroup {
        assert(points.length > 0, 'points must not be empty');
 
   final List<AppBrazilStoreSalesPoint> points;
+  final AppBrazilStoreSalesMarkerAggregation aggregation;
   final double? _latitude;
   final double? _longitude;
 
   AppBrazilStoreSalesPoint get primaryPoint => points.first;
 
   bool get isCluster => points.length > 1;
+
+  bool get isMunicipalityAggregate =>
+      aggregation == AppBrazilStoreSalesMarkerAggregation.municipalities;
 
   double get latitude => _latitude ?? primaryPoint.latitude;
 
@@ -433,24 +445,29 @@ class _MutableStateBucket {
 }
 
 class _MutableMarkerGroup {
-  _MutableMarkerGroup(AppBrazilStoreSalesPoint point)
-    : uf = AppBrazilStoreSalesMapData.normalizeUf(point.uf),
-      latitude = point.latitude,
-      longitude = point.longitude,
-      _latitudeTotal = point.latitude,
-      _longitudeTotal = point.longitude,
-      _count = 1,
-      _points = <AppBrazilStoreSalesPoint>[point];
+  _MutableMarkerGroup(
+    AppBrazilStoreSalesPoint point, {
+    this.aggregation = AppBrazilStoreSalesMarkerAggregation.stores,
+  }) : uf = AppBrazilStoreSalesMapData.normalizeUf(point.uf),
+       latitude = point.latitude,
+       longitude = point.longitude,
+       _latitudeTotal = point.latitude,
+       _longitudeTotal = point.longitude,
+       _count = 1,
+       _points = <AppBrazilStoreSalesPoint>[point];
 
   factory _MutableMarkerGroup.fromPoints(
-    List<AppBrazilStoreSalesPoint> points,
-  ) {
-    final group = _MutableMarkerGroup(points.first);
+    List<AppBrazilStoreSalesPoint> points, {
+    AppBrazilStoreSalesMarkerAggregation aggregation =
+        AppBrazilStoreSalesMarkerAggregation.stores,
+  }) {
+    final group = _MutableMarkerGroup(points.first, aggregation: aggregation);
     points.skip(1).forEach(group.add);
     return group;
   }
 
   final String uf;
+  final AppBrazilStoreSalesMarkerAggregation aggregation;
   final List<AppBrazilStoreSalesPoint> _points;
   double latitude;
   double longitude;
@@ -473,6 +490,7 @@ class _MutableMarkerGroup {
         ..sort(
           (left, right) => right.salesAmount.compareTo(left.salesAmount),
         ),
+      aggregation: aggregation,
       latitude: latitude,
       longitude: longitude,
     );

@@ -32,7 +32,8 @@ class SalesLiveMapFiltersSheet extends StatefulWidget {
 class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
   late Set<String> _selectedAgentIds;
   late SalesLiveMapPeriodMode _periodMode;
-  late SalesLiveMapMapPreset _mapPreset;
+  late SalesLiveMapMapDetail _detailLevel;
+  late SalesLiveMapMarkerVisual _markerVisual;
   late DateTimeRange? _customRange;
 
   @override
@@ -43,7 +44,11 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
       widget.initialFilter.selectedAgentIds ?? tokenBacked,
     );
     _periodMode = widget.initialFilter.periodMode;
-    _mapPreset = widget.initialFilter.mapPreset;
+    _detailLevel = widget.initialFilter.detailLevel;
+    _markerVisual = _normalizeMarkerVisual(
+      detailLevel: _detailLevel,
+      markerVisual: widget.initialFilter.markerVisual,
+    );
     _customRange = _dateTimeRangeFrom(
       widget.initialFilter.customDateRange ??
           const SalesLiveMapFilter().resolveDateRange(),
@@ -101,7 +106,11 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
         selectedAgentIds: _normalizedSelectedAgentIds(),
         periodMode: _periodMode,
         customDateRange: customDateRange,
-        mapPreset: _mapPreset,
+        detailLevel: _detailLevel,
+        markerVisual: _normalizeMarkerVisual(
+          detailLevel: _detailLevel,
+          markerVisual: _markerVisual,
+        ),
       ),
     );
     Navigator.of(context).pop();
@@ -112,7 +121,8 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
       final tokenBacked = _tokenBackedAgentIds;
       _selectedAgentIds = Set<String>.from(tokenBacked);
       _periodMode = SalesLiveMapPeriodMode.today;
-      _mapPreset = SalesLiveMapMapPreset.standard;
+      _detailLevel = SalesLiveMapMapDetail.branches;
+      _markerVisual = SalesLiveMapMarkerVisual.dot;
       _customRange = _dateTimeRangeFrom(
         const SalesLiveMapFilter().resolveDateRange(),
       );
@@ -141,6 +151,26 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
         _selectedAgentIds.remove(agent.agentId);
       }
     });
+  }
+
+  void _changeDetailLevel(SalesLiveMapMapDetail detailLevel) {
+    setState(() {
+      _detailLevel = detailLevel;
+      _markerVisual = _normalizeMarkerVisual(
+        detailLevel: detailLevel,
+        markerVisual: _markerVisual,
+      );
+    });
+  }
+
+  static SalesLiveMapMarkerVisual _normalizeMarkerVisual({
+    required SalesLiveMapMapDetail detailLevel,
+    required SalesLiveMapMarkerVisual markerVisual,
+  }) {
+    if (detailLevel == SalesLiveMapMapDetail.states) {
+      return SalesLiveMapMarkerVisual.bubble;
+    }
+    return markerVisual;
   }
 
   @override
@@ -255,39 +285,65 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
             ),
             SizedBox(height: tokens.sectionSpacing),
             SalesFiltersSectionHeader(
-              title: widget.l10n.salesLiveMapMapTypeTitle,
-              subtitle: widget.l10n.salesLiveMapMapTypeSubtitle,
+              title: widget.l10n.salesLiveMapDetailLabel,
+              subtitle: widget.l10n.salesLiveMapDetailSubtitle,
             ),
             SizedBox(height: tokens.gapSm),
             AppSectionCard(
               color: theme.colorScheme.surfaceContainerLow,
-              child: AppSegmentedControl<SalesLiveMapMapPreset>(
-                value: _mapPreset,
-                options: <AppSegmentedControlOption<SalesLiveMapMapPreset>>[
-                  AppSegmentedControlOption<SalesLiveMapMapPreset>(
-                    value: SalesLiveMapMapPreset.standard,
-                    label: widget.l10n.salesLiveMapMapPresetPoints,
+              child: AppSegmentedControl<SalesLiveMapMapDetail>(
+                value: _detailLevel,
+                expandToFill: true,
+                options: <AppSegmentedControlOption<SalesLiveMapMapDetail>>[
+                  AppSegmentedControlOption<SalesLiveMapMapDetail>(
+                    value: SalesLiveMapMapDetail.branches,
+                    label: widget.l10n.salesLiveMapDetailBranches,
                   ),
-                  AppSegmentedControlOption<SalesLiveMapMapPreset>(
-                    value: SalesLiveMapMapPreset.bubble,
-                    label: widget.l10n.salesLiveMapMapPresetBubbles,
+                  AppSegmentedControlOption<SalesLiveMapMapDetail>(
+                    value: SalesLiveMapMapDetail.municipalities,
+                    label: widget.l10n.salesLiveMapDetailMunicipalities,
                   ),
-                  AppSegmentedControlOption<SalesLiveMapMapPreset>(
-                    value: SalesLiveMapMapPreset.municipalities,
-                    label: widget.l10n.salesLiveMapMapPresetMunicipalitiesShort,
-                  ),
-                  AppSegmentedControlOption<SalesLiveMapMapPreset>(
-                    value: SalesLiveMapMapPreset.stateBubbles,
-                    label: widget.l10n.salesLiveMapMapPresetStateBubblesShort,
-                  ),
-                  AppSegmentedControlOption<SalesLiveMapMapPreset>(
-                    value: SalesLiveMapMapPreset.storeIcon,
-                    label: widget.l10n.salesLiveMapMapPresetStoreIconShort,
+                  AppSegmentedControlOption<SalesLiveMapMapDetail>(
+                    value: SalesLiveMapMapDetail.states,
+                    label: widget.l10n.salesLiveMapDetailStates,
                   ),
                 ],
-                onChanged: (preset) => setState(() => _mapPreset = preset),
+                onChanged: _changeDetailLevel,
               ),
             ),
+            if (_detailLevel != SalesLiveMapMapDetail.states) ...<Widget>[
+              SizedBox(height: tokens.sectionSpacing),
+              SalesFiltersSectionHeader(
+                title: widget.l10n.salesLiveMapVisualLabel,
+                subtitle: widget.l10n.salesLiveMapVisualSubtitle,
+              ),
+              SizedBox(height: tokens.gapSm),
+              AppSectionCard(
+                color: theme.colorScheme.surfaceContainerLow,
+                child: AppSegmentedControl<SalesLiveMapMarkerVisual>(
+                  value: _markerVisual,
+                  expandToFill: true,
+                  options:
+                      <AppSegmentedControlOption<SalesLiveMapMarkerVisual>>[
+                        AppSegmentedControlOption<SalesLiveMapMarkerVisual>(
+                          value: SalesLiveMapMarkerVisual.dot,
+                          label: widget.l10n.salesLiveMapVisualDot,
+                        ),
+                        AppSegmentedControlOption<SalesLiveMapMarkerVisual>(
+                          value: SalesLiveMapMarkerVisual.bubble,
+                          label: widget.l10n.salesLiveMapVisualBubble,
+                        ),
+                        AppSegmentedControlOption<SalesLiveMapMarkerVisual>(
+                          value: SalesLiveMapMarkerVisual.storeIcon,
+                          label: widget.l10n.salesLiveMapVisualStoreIcon,
+                        ),
+                      ],
+                  onChanged: (visual) => setState(() {
+                    _markerVisual = visual;
+                  }),
+                ),
+              ),
+            ],
           ],
         );
       },

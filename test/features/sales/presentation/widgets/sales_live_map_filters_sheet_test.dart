@@ -7,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('applies selected municipality map preset', (tester) async {
+  testWidgets('applies selected municipality detail and marker visual', (
+    tester,
+  ) async {
     SalesLiveMapFilter? appliedFilter;
 
     await tester.pumpWidget(
@@ -39,10 +41,14 @@ void main() {
     await tester.scrollUntilVisible(find.text('Cities'), 240);
     await tester.tap(find.text('Cities'));
     await tester.pump();
+    await tester.scrollUntilVisible(find.text('Bubbles'), 240);
+    await tester.tap(find.text('Bubbles'));
+    await tester.pump();
     await tester.tap(find.text('Apply filters'));
     await tester.pump();
 
-    expect(appliedFilter?.mapPreset, SalesLiveMapMapPreset.municipalities);
+    expect(appliedFilter?.detailLevel, SalesLiveMapMapDetail.municipalities);
+    expect(appliedFilter?.markerVisual, SalesLiveMapMarkerVisual.bubble);
   });
 
   testWidgets('does not apply when selected branch has no local token', (

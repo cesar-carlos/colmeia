@@ -35,6 +35,8 @@ class SalesLiveMapPage extends StatefulWidget {
 
 class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     with SalesAutoRefreshStateMixin<SalesLiveMapPage> {
+  static const int _autoMunicipalityDetailPointThreshold = 200;
+
   late final SalesPreferences _prefs;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadSalesLiveMapUseCase _loadLiveMap;
@@ -152,6 +154,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
           totalSalesCount: 0,
           totalBranchCount: 0,
           mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
           queriedAgentCount: 0,
           plannedAgentCount: 0,
           failedAgentCount: 0,
@@ -245,9 +248,19 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                 value: _periodSummary(),
               ),
               SalesCardFilterSummaryItem(
-                label: l10n.salesLiveMapMapLabel,
-                value: _mapPresetLabel(_filter.mapPreset),
+                label: l10n.salesLiveMapDetailLabel,
+                value: _detailLabel(_filter.detailLevel),
               ),
+              if (_filter.detailLevel != SalesLiveMapMapDetail.states)
+                SalesCardFilterSummaryItem(
+                  label: l10n.salesLiveMapVisualLabel,
+                  value: _visualLabel(_filter.markerVisual),
+                ),
+              if (_filter.detailLevel == SalesLiveMapMapDetail.states)
+                SalesCardFilterSummaryItem(
+                  label: l10n.salesLiveMapMapLabel,
+                  value: _visualLabel(SalesLiveMapMarkerVisual.bubble),
+                ),
             ],
             enabled: !_loading,
           ),
@@ -287,7 +300,10 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
               title: l10n.salesLiveMapChartTitle,
               subtitle: _mapSubtitle(result),
               points: result?.points ?? const <AppBrazilStoreSalesPoint>[],
-              style: _mapStyle(_filter.mapPreset),
+              style: _mapStyle(
+                detailLevel: _effectiveDetailLevel(result),
+                markerVisual: _filter.markerVisual,
+              ),
             ),
           ],
         ],
@@ -333,39 +349,87 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     if (result == null) {
       return l10n.salesLiveMapChartSubtitlePending(period);
     }
-    return l10n.salesLiveMapChartSubtitleLoaded(
+    final baseSubtitle = l10n.salesLiveMapChartSubtitleLoaded(
       period,
       result.mappedBranchCount,
       result.totalBranchCount,
     );
+    if (_effectiveDetailLevel(result) == SalesLiveMapMapDetail.municipalities &&
+        _filter.detailLevel == SalesLiveMapMapDetail.branches) {
+      return '$baseSubtitle ${l10n.salesLiveMapDetailAutoMunicipalities(_autoMunicipalityDetailPointThreshold)}';
+    }
+    return baseSubtitle;
   }
 
-  AppBrazilStoreSalesMapStyle _mapStyle(SalesLiveMapMapPreset preset) {
-    final appPreset = switch (preset) {
-      SalesLiveMapMapPreset.standard => AppBrazilStoreSalesMapPreset.standard,
-      SalesLiveMapMapPreset.bubble => AppBrazilStoreSalesMapPreset.bubble,
-      SalesLiveMapMapPreset.municipalities =>
-        AppBrazilStoreSalesMapPreset.municipalityBubbles,
-      SalesLiveMapMapPreset.stateBubbles =>
-        AppBrazilStoreSalesMapPreset.stateBubbles,
-      SalesLiveMapMapPreset.storeIcon => AppBrazilStoreSalesMapPreset.storeIcon,
+  SalesLiveMapMapDetail _effectiveDetailLevel(SalesLiveMapLoadResult? result) {
+    if (_filter.detailLevel == SalesLiveMapMapDetail.branches &&
+        (result?.mappedBranchCount ?? 0) >
+            _autoMunicipalityDetailPointThreshold) {
+      return SalesLiveMapMapDetail.municipalities;
+    }
+    return _filter.detailLevel;
+  }
+
+  AppBrazilStoreSalesMapStyle _mapStyle({
+    required SalesLiveMapMapDetail detailLevel,
+    required SalesLiveMapMarkerVisual markerVisual,
+  }) {
+    final resolvedVisual = detailLevel == SalesLiveMapMapDetail.states
+        ? SalesLiveMapMarkerVisual.bubble
+        : markerVisual;
+    final appMarkerVisual = switch (resolvedVisual) {
+      SalesLiveMapMarkerVisual.dot => AppBrazilStoreSalesMarkerVisual.dot,
+      SalesLiveMapMarkerVisual.bubble => AppBrazilStoreSalesMarkerVisual.bubble,
+      SalesLiveMapMarkerVisual.storeIcon =>
+        AppBrazilStoreSalesMarkerVisual.storeIcon,
     };
-    return appPreset.style(
+    final aggregation = switch (detailLevel) {
+      SalesLiveMapMapDetail.branches =>
+        AppBrazilStoreSalesMarkerAggregation.stores,
+      SalesLiveMapMapDetail.municipalities =>
+        AppBrazilStoreSalesMarkerAggregation.municipalities,
+      SalesLiveMapMapDetail.states =>
+        AppBrazilStoreSalesMarkerAggregation.states,
+    };
+    final (minSize, maxSize) = switch (resolvedVisual) {
+      SalesLiveMapMarkerVisual.dot => (10.0, 24.0),
+      SalesLiveMapMarkerVisual.bubble =>
+        detailLevel == SalesLiveMapMapDetail.states
+            ? (30.0, 76.0)
+            : (34.0, 82.0),
+      SalesLiveMapMarkerVisual.storeIcon => (24.0, 34.0),
+    };
+
+    return AppBrazilStoreSalesMapStyle(
       height: 560,
-      enableProximityCluster: preset != SalesLiveMapMapPreset.stateBubbles,
+      markerVisual: appMarkerVisual,
+      markerAggregation: aggregation,
+      markerMinSize: minSize,
+      markerMaxSize: maxSize,
+      maxClusterTooltipStores:
+          detailLevel == SalesLiveMapMapDetail.municipalities ? 8 : 5,
+      showStoreDetail: detailLevel != SalesLiveMapMapDetail.states,
+      enableProximityCluster: detailLevel == SalesLiveMapMapDetail.branches,
+      stateLabelMode: AppBrazilStoreSalesStateLabelMode.responsive,
     );
   }
 
-  String _mapPresetLabel(SalesLiveMapMapPreset preset) {
+  String _detailLabel(SalesLiveMapMapDetail detailLevel) {
     final l10n = AppLocalizations.of(context);
-    return switch (preset) {
-      SalesLiveMapMapPreset.standard => l10n.salesLiveMapMapPresetPoints,
-      SalesLiveMapMapPreset.bubble => l10n.salesLiveMapMapPresetBubbles,
-      SalesLiveMapMapPreset.municipalities =>
-        l10n.salesLiveMapMapPresetMunicipalities,
-      SalesLiveMapMapPreset.stateBubbles =>
-        l10n.salesLiveMapMapPresetStateBubbles,
-      SalesLiveMapMapPreset.storeIcon => l10n.salesLiveMapMapPresetStoreIcon,
+    return switch (detailLevel) {
+      SalesLiveMapMapDetail.branches => l10n.salesLiveMapDetailBranches,
+      SalesLiveMapMapDetail.municipalities =>
+        l10n.salesLiveMapDetailMunicipalities,
+      SalesLiveMapMapDetail.states => l10n.salesLiveMapDetailStates,
+    };
+  }
+
+  String _visualLabel(SalesLiveMapMarkerVisual visual) {
+    final l10n = AppLocalizations.of(context);
+    return switch (visual) {
+      SalesLiveMapMarkerVisual.dot => l10n.salesLiveMapVisualDot,
+      SalesLiveMapMarkerVisual.bubble => l10n.salesLiveMapVisualBubble,
+      SalesLiveMapMarkerVisual.storeIcon => l10n.salesLiveMapVisualStoreIcon,
     };
   }
 }
@@ -386,6 +450,7 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
               totalSalesCount: 420,
               totalBranchCount: 12,
               mappedBranchCount: 12,
+              mappedMunicipalityCount: 8,
               queriedAgentCount: 3,
               plannedAgentCount: 3,
               failedAgentCount: 0,

@@ -237,6 +237,7 @@ SalesLiveMapLoadResult _loadedResult() {
     totalSalesCount: 12,
     totalBranchCount: 1,
     mappedBranchCount: 1,
+    mappedMunicipalityCount: 1,
     queriedAgentCount: 1,
     plannedAgentCount: 1,
     failedAgentCount: 0,

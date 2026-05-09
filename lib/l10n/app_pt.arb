@@ -927,9 +927,26 @@
   "salesLiveMapCustomPeriodPickerTitle": "Selecionar periodo",
   "salesLiveMapMapTypeTitle": "Tipo de mapa",
   "salesLiveMapMapTypeSubtitle": "Escolha como os pontos e totais devem aparecer.",
+  "salesLiveMapDetailLabel": "Detalhamento",
+  "salesLiveMapDetailSubtitle": "Escolha o nivel de agregacao mostrado no mapa.",
+  "salesLiveMapDetailBranches": "Filiais",
+  "salesLiveMapDetailMunicipalities": "Municipios",
+  "salesLiveMapDetailStates": "UFs",
+  "salesLiveMapVisualLabel": "Visual",
+  "salesLiveMapVisualSubtitle": "Escolha o estilo dos marcadores para filiais e municipios.",
+  "salesLiveMapVisualDot": "Pontos",
+  "salesLiveMapVisualBubble": "Bolhas",
+  "salesLiveMapVisualStoreIcon": "Icone loja",
+  "salesLiveMapDetailAutoMunicipalities": "Acima de {threshold} filiais, municipios sao exibidos automaticamente para melhorar a leitura.",
+  "@salesLiveMapDetailAutoMunicipalities": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
   "salesLiveMapKpiRevenue": "Receita total",
   "salesLiveMapKpiSales": "Vendas",
   "salesLiveMapKpiBranchesOnMap": "Filiais no mapa",
+  "salesLiveMapKpiMunicipalitiesOnMap": "Municipios no mapa",
   "salesLiveMapKpiQueriedAgents": "Filiais consultadas",
   "salesHubSubtitle": "Acesse e gerencie informações comerciais por categoria.",
   "salesBranchFilterLabel": "FILIAIS",

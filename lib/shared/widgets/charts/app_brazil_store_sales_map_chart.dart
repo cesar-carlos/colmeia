@@ -27,6 +27,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.style = const AppBrazilStoreSalesMapStyle(),
     this.onStoreTap,
     this.onStoreClusterTap,
+    this.onMunicipalityTap,
     this.onStateTap,
     this.onDiagnosticsChanged,
   });
@@ -42,6 +43,8 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onStoreTap;
   final ValueChanged<AppBrazilStoreSalesPointClusterTapEvent>?
   onStoreClusterTap;
+  final ValueChanged<AppBrazilStoreSalesMunicipalityTapEvent>?
+  onMunicipalityTap;
   final ValueChanged<AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket>>?
   onStateTap;
   final ValueChanged<AppBrazilStoreSalesMapDiagnostics>? onDiagnosticsChanged;
@@ -94,6 +97,7 @@ class _AppBrazilStoreSalesMapChartState
     final snapshot = _resolveSnapshot(context);
     _emitDiagnosticsIfNeeded(snapshot.diagnostics);
     final selectedPoint = snapshot.selectedPoint;
+    final selectedMarkerGroup = snapshot.selectedMarkerGroup;
     final selectedRegionKey = widget.style.highlightSelectedState
         ? snapshot.selectedStateKey ?? _internalSelectedStateKey
         : null;
@@ -166,7 +170,14 @@ class _AppBrazilStoreSalesMapChartState
             strokeColor: _markerStrokeColor(context),
             visual: widget.style.markerVisual,
           ),
-        if (widget.style.showStoreDetail && selectedPoint != null)
+        if (widget.style.showStoreDetail &&
+            selectedMarkerGroup != null &&
+            selectedMarkerGroup.isMunicipalityAggregate)
+          _SelectedMunicipalityDetail(
+            group: selectedMarkerGroup,
+            metric: _selectedMetric,
+          )
+        else if (widget.style.showStoreDetail && selectedPoint != null)
           _SelectedStoreDetail(
             point: selectedPoint,
             metric: _selectedMetric,
@@ -350,6 +361,21 @@ class _AppBrazilStoreSalesMapChartState
       _snapshot = null;
     });
 
+    if (payload.isMunicipalityAggregate) {
+      widget.onMunicipalityTap?.call(
+        AppBrazilStoreSalesMunicipalityTapEvent(
+          points: payload.points,
+          index: event.index,
+          metric: _selectedMetric,
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          salesAmount: payload.salesAmount,
+          salesCount: payload.salesCount,
+        ),
+      );
+      return;
+    }
+
     if (payload.isCluster) {
       widget.onStoreClusterTap?.call(
         AppBrazilStoreSalesPointClusterTapEvent(
@@ -527,6 +553,7 @@ class _BrazilStoreSalesMapSnapshot {
     required this.buckets,
     required this.mapPoints,
     required this.selectedPoint,
+    required this.selectedMarkerGroup,
     required this.selectedStateKey,
     required this.minMarkerValue,
     required this.maxMarkerValue,
@@ -586,6 +613,7 @@ class _BrazilStoreSalesMapSnapshot {
     final selectedMarkerStrokeColor =
         style.selectedMarkerStrokeColor ?? colorScheme.surface;
     AppBrazilStoreSalesPoint? selectedPoint;
+    AppBrazilStoreSalesMarkerGroup? selectedMarkerGroup;
     var selectedStateKey = requestedStateKey;
     if (selectedStoreId != null) {
       for (final point in AppBrazilStoreSalesMapData.validMapPoints(
@@ -643,6 +671,7 @@ class _BrazilStoreSalesMapSnapshot {
     for (final group in markerGroups) {
       final selected = group.points.any((point) => point.id == selectedStoreId);
       if (selected) {
+        selectedMarkerGroup = group;
         selectedPoint = group.points.firstWhere(
           (point) => point.id == selectedStoreId,
           orElse: () => group.primaryPoint,
@@ -698,6 +727,7 @@ class _BrazilStoreSalesMapSnapshot {
       buckets: buckets,
       mapPoints: mapPoints,
       selectedPoint: selectedPoint,
+      selectedMarkerGroup: selectedMarkerGroup,
       selectedStateKey: selectedStateKey,
       minMarkerValue: minValue,
       maxMarkerValue: maxValue,
@@ -714,6 +744,7 @@ class _BrazilStoreSalesMapSnapshot {
   final List<AppBrazilStoreSalesStateBucket> buckets;
   final List<AppMapPoint> mapPoints;
   final AppBrazilStoreSalesPoint? selectedPoint;
+  final AppBrazilStoreSalesMarkerGroup? selectedMarkerGroup;
   final String? selectedStateKey;
   final num minMarkerValue;
   final num maxMarkerValue;
@@ -1199,6 +1230,141 @@ class _StoreMapMarker extends StatelessWidget {
             ],
           ),
         },
+      ),
+    );
+  }
+}
+
+class _SelectedMunicipalityDetail extends StatelessWidget {
+  const _SelectedMunicipalityDetail({
+    required this.group,
+    required this.metric,
+  });
+
+  final AppBrazilStoreSalesMarkerGroup group;
+  final AppBrazilStoreSalesMapMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final visibleBranches = group.points.take(5).toList(growable: false);
+    final hiddenBranchCount = group.points.length - visibleBranches.length;
+
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.gapMd),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.contentSpacing),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.location_city_outlined,
+                    color: context.appColors.secondary,
+                    size: 20,
+                  ),
+                  SizedBox(width: tokens.gapSm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          group.cityLabel,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(height: tokens.gapXs),
+                        Text(
+                          '${_formatInteger(group.points.length)} '
+                          '${group.points.length == 1 ? 'filial agrupada' : 'filiais agrupadas'}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  AppTagChip(label: metric.label),
+                ],
+              ),
+              SizedBox(height: tokens.gapMd),
+              Wrap(
+                spacing: tokens.gapSm,
+                runSpacing: tokens.gapSm,
+                children: [
+                  AppTagChip(
+                    label: AppBrFormatters.currency(group.salesAmount),
+                    icon: Icons.attach_money,
+                  ),
+                  AppTagChip(
+                    label: '${_formatInteger(group.salesCount)} vendas',
+                    icon: Icons.receipt_long_outlined,
+                  ),
+                  AppTagChip(
+                    label: '${_formatInteger(group.points.length)} filiais',
+                    icon: Icons.storefront_outlined,
+                  ),
+                ],
+              ),
+              if (visibleBranches.isNotEmpty) ...[
+                SizedBox(height: tokens.gapMd),
+                Divider(color: colorScheme.outlineVariant, height: 1),
+                SizedBox(height: tokens.gapSm),
+                for (final point in visibleBranches)
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            point.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        SizedBox(width: tokens.gapSm),
+                        Text(
+                          AppBrFormatters.compactCurrency(point.salesAmount),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                        SizedBox(width: tokens.gapSm),
+                        Text(
+                          '${_formatInteger(point.salesCount)} vendas',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (hiddenBranchCount > 0)
+                  Padding(
+                    padding: EdgeInsets.only(top: tokens.gapXs),
+                    child: Text(
+                      '+ ${_formatInteger(hiddenBranchCount)} filiais',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

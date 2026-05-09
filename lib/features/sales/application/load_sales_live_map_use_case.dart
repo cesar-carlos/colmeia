@@ -15,6 +15,7 @@ class SalesLiveMapLoadResult {
     required this.totalSalesCount,
     required this.totalBranchCount,
     required this.mappedBranchCount,
+    required this.mappedMunicipalityCount,
     required this.queriedAgentCount,
     required this.plannedAgentCount,
     required this.failedAgentCount,
@@ -30,6 +31,7 @@ class SalesLiveMapLoadResult {
   final int totalSalesCount;
   final int totalBranchCount;
   final int mappedBranchCount;
+  final int mappedMunicipalityCount;
   final int queriedAgentCount;
   final int plannedAgentCount;
   final int failedAgentCount;
@@ -105,6 +107,7 @@ class LoadSalesLiveMapUseCase {
     final points = resolved.whereType<AppBrazilStoreSalesPoint>().toList(
       growable: false,
     );
+    final mappedMunicipalityCount = _mappedMunicipalityCount(points);
 
     final loadFailed = report.requiresClientTokenSetup;
     return SalesLiveMapLoadResult(
@@ -119,6 +122,7 @@ class LoadSalesLiveMapUseCase {
       ),
       totalBranchCount: aggregates.length,
       mappedBranchCount: points.length,
+      mappedMunicipalityCount: mappedMunicipalityCount,
       queriedAgentCount: report.participants.length,
       plannedAgentCount: report.plannedTargets.length,
       failedAgentCount: report.failedAgentIds.length,
@@ -142,6 +146,7 @@ class LoadSalesLiveMapUseCase {
       totalSalesCount: 0,
       totalBranchCount: 0,
       mappedBranchCount: 0,
+      mappedMunicipalityCount: 0,
       queriedAgentCount: 0,
       plannedAgentCount: 0,
       failedAgentCount: 0,
@@ -196,6 +201,24 @@ class LoadSalesLiveMapUseCase {
   }
 
   DateTime _resolveNow() => (_now ?? DateTime.now)();
+
+  int _mappedMunicipalityCount(Iterable<AppBrazilStoreSalesPoint> points) {
+    return points.map(_municipalityKeyFor).toSet().length;
+  }
+
+  String _municipalityKeyFor(AppBrazilStoreSalesPoint point) {
+    final municipalityCode = point.municipalityCode?.trim();
+    if (municipalityCode != null && municipalityCode.isNotEmpty) {
+      return 'ibge:${municipalityCode.toUpperCase()}';
+    }
+
+    final city = point.city?.trim();
+    if (city != null && city.isNotEmpty) {
+      return 'city:${city.toUpperCase()}:${point.uf.trim().toUpperCase()}';
+    }
+
+    return 'coordinate:${point.latitude}:${point.longitude}:${point.uf.trim().toUpperCase()}';
+  }
 }
 
 class _SalesLiveMapBranchAggregate {

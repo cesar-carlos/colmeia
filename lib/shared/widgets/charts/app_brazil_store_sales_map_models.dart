@@ -481,3 +481,34 @@ class AppBrazilStoreSalesPointClusterTapEvent {
   final double salesAmount;
   final int salesCount;
 }
+
+class AppBrazilStoreSalesMunicipalityTapEvent {
+  const AppBrazilStoreSalesMunicipalityTapEvent({
+    required this.points,
+    required this.index,
+    required this.metric,
+    required this.latitude,
+    required this.longitude,
+    required this.salesAmount,
+    required this.salesCount,
+  });
+
+  final List<AppBrazilStoreSalesPoint> points;
+  final int index;
+  final AppBrazilStoreSalesMapMetric metric;
+  final double latitude;
+  final double longitude;
+  final double salesAmount;
+  final int salesCount;
+
+  String get uf => points.isEmpty ? '' : points.first.uf.trim().toUpperCase();
+
+  String get city {
+    if (points.isEmpty) {
+      return '';
+    }
+    return points.first.city?.trim() ?? '';
+  }
+
+  int get branchCount => points.length;
+}

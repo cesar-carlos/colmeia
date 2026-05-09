@@ -96,6 +96,7 @@ void main() {
     check(result.totalSalesCount).equals(5);
     check(result.totalBranchCount).equals(1);
     check(result.mappedBranchCount).equals(1);
+    check(result.mappedMunicipalityCount).equals(1);
   });
 
   test(
@@ -140,6 +141,7 @@ void main() {
       );
       check(result.totalBranchCount).equals(2);
       check(result.totalRevenue).equals(350);
+      check(result.mappedMunicipalityCount).equals(1);
     },
   );
 
@@ -178,6 +180,7 @@ void main() {
     check(point.latitude).equals(-11.9355403047646);
     check(point.longitude).equals(-61.9998238962936);
     check(point.municipalityCode).equals('1100015');
+    check(result.mappedMunicipalityCount).equals(1);
     check(geocoder.lookups.map((input) => input.type).toList()).deepEquals(
       <AppLocationLookupType>[AppLocationLookupType.ibgeMunicipalityCode],
     );
@@ -216,6 +219,7 @@ void main() {
 
     check(result.totalBranchCount).equals(1);
     check(result.mappedBranchCount).equals(0);
+    check(result.mappedMunicipalityCount).equals(0);
     check(result.points).isEmpty();
     check(result.hasPartialIssue).isTrue();
   });
@@ -265,6 +269,7 @@ void main() {
 
     check(result.totalRevenue).equals(90);
     check(result.totalSalesCount).equals(2);
+    check(result.mappedMunicipalityCount).equals(1);
     check(result.queriedAgentCount).equals(2);
     check(result.plannedAgentCount).equals(2);
     check(result.failedAgentCount).equals(1);

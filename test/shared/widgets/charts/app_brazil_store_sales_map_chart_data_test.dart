@@ -417,6 +417,45 @@ void main() {
       },
     );
 
+    test(
+      'keeps municipalities with the same name separated by UF',
+      () {
+        final groups = AppBrazilStoreSalesMapData.buildMarkerGroups(
+          const <AppBrazilStoreSalesPoint>[
+            AppBrazilStoreSalesPoint(
+              id: 'bom-jesus-pi',
+              name: 'Loja Bom Jesus PI',
+              uf: 'PI',
+              city: 'Bom Jesus',
+              latitude: -9.0745,
+              longitude: -44.3586,
+              salesAmount: 100,
+              salesCount: 1,
+            ),
+            AppBrazilStoreSalesPoint(
+              id: 'bom-jesus-rs',
+              name: 'Loja Bom Jesus RS',
+              uf: 'RS',
+              city: 'Bom Jesus',
+              latitude: -28.6695,
+              longitude: -50.4301,
+              salesAmount: 250,
+              salesCount: 2,
+            ),
+          ],
+          markerAggregation:
+              AppBrazilStoreSalesMarkerAggregation.municipalities,
+        );
+
+        expect(groups, hasLength(2));
+        expect(
+          groups.map((group) => group.cityLabel).toSet(),
+          <String>{'Bom Jesus / PI', 'Bom Jesus / RS'},
+        );
+        expect(groups.every((group) => group.isCluster), isFalse);
+      },
+    );
+
     test('reduces proximity clustering distance as zoom increases', () {
       expect(
         AppBrazilStoreSalesMapData.proximityClusterDistanceForZoom(

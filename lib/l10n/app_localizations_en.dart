@@ -2403,6 +2403,43 @@ class AppLocalizationsEn extends AppLocalizations {
       'Choose how points and totals should appear.';
 
   @override
+  String get salesLiveMapDetailLabel => 'Detail';
+
+  @override
+  String get salesLiveMapDetailSubtitle =>
+      'Choose the aggregation level shown on the map.';
+
+  @override
+  String get salesLiveMapDetailBranches => 'Branches';
+
+  @override
+  String get salesLiveMapDetailMunicipalities => 'Cities';
+
+  @override
+  String get salesLiveMapDetailStates => 'States';
+
+  @override
+  String get salesLiveMapVisualLabel => 'Visual';
+
+  @override
+  String get salesLiveMapVisualSubtitle =>
+      'Choose the marker style for branch and city views.';
+
+  @override
+  String get salesLiveMapVisualDot => 'Points';
+
+  @override
+  String get salesLiveMapVisualBubble => 'Bubbles';
+
+  @override
+  String get salesLiveMapVisualStoreIcon => 'Store icon';
+
+  @override
+  String salesLiveMapDetailAutoMunicipalities(int threshold) {
+    return 'Above $threshold branches, cities are shown automatically for readability.';
+  }
+
+  @override
   String get salesLiveMapKpiRevenue => 'Total revenue';
 
   @override
@@ -2410,6 +2447,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesLiveMapKpiBranchesOnMap => 'Branches on map';
+
+  @override
+  String get salesLiveMapKpiMunicipalitiesOnMap => 'Cities on map';
 
   @override
   String get salesLiveMapKpiQueriedAgents => 'Queried branches';
