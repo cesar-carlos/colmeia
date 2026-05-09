@@ -23,11 +23,28 @@ class LoadSalesDailyTotalsUseCase {
     required String userId,
     required String agentId,
     required OverviewYearMonth anchor,
+    OverviewDateRange? dailySaleDateRange,
     String? clientToken,
   }) async {
     final trimmedAgentId = agentId.trim();
-    final start = anchor.start;
-    final end = DateTime(anchor.year, anchor.month + 1, 0);
+    final DateTime start;
+    final DateTime end;
+    if (dailySaleDateRange != null) {
+      final r = dailySaleDateRange;
+      start = DateTime(
+        r.startInclusive.year,
+        r.startInclusive.month,
+        r.startInclusive.day,
+      );
+      end = DateTime(
+        r.endInclusive.year,
+        r.endInclusive.month,
+        r.endInclusive.day,
+      );
+    } else {
+      start = anchor.start;
+      end = DateTime(anchor.year, anchor.month + 1, 0);
+    }
     final filter = ResumoTotalDiarioVendasFilter(
       dataVendaInicio: start,
       dataVendaFim: end,

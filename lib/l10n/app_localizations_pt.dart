@@ -2306,6 +2306,75 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesDailyTotalsMetricSalesAmountLabel => 'Faturamento';
 
   @override
+  String salesDailyTotalsChartSubtitleCustomRange(
+    String startDate,
+    String endDate,
+  ) {
+    return 'Totais por dia civil na filial, de $startDate a $endDate.';
+  }
+
+  @override
+  String get salesDailyTotalsChartScopeHintCustomRange =>
+      'Uma filial; os totais diários seguem o intervalo selecionado. Os gráficos mensais continuam usando o mês de referência.';
+
+  @override
+  String get salesDailyTotalsFilterSummaryLabel => 'Totais diários';
+
+  @override
+  String salesDailyTotalsFilterSummaryCustomRangeValue(
+    String startDate,
+    String endDate,
+  ) {
+    return '$startDate – $endDate';
+  }
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodSectionTitle =>
+      'Período dos totais diários';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodSameMonthLabel =>
+      'Mesmo mês de referência';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodCustomRangeLabel =>
+      'Intervalo customizado';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodPickerLabel =>
+      'Intervalo de datas de venda';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodPickerTitle =>
+      'Selecionar período';
+
+  @override
+  String salesDailyTotalsFilterDailyPeriodHelper(int maxDays) {
+    return 'No máximo $maxDays dias corridos.';
+  }
+
+  @override
+  String get salesDailyTotalsFilterMonthlyChartsAnchorHint =>
+      'Os gráficos de resultado mensal usam sempre o mês de referência acima; só os totais diários usam o intervalo abaixo.';
+
+  @override
+  String get salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner =>
+      'Alterar o mês de referência atualiza só os gráficos mensais. Os totais diários seguem as datas de venda abaixo até você ajustar o intervalo ou voltar ao modo mesmo mês.';
+
+  @override
+  String salesDailyTotalsFilterRangeTooLongSnackbar(int maxDays) {
+    return 'Escolha um período de no máximo $maxDays dias.';
+  }
+
+  @override
+  String salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix(
+    String startDate,
+    String endDate,
+  ) {
+    return 'Totais diários: $startDate–$endDate.';
+  }
+
+  @override
   String get salesCardProdutoTendenciaTitle => 'Tendência de vendas';
 
   @override
@@ -5138,6 +5207,75 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesDailyTotalsMetricSalesAmountLabel => 'Faturamento';
+
+  @override
+  String salesDailyTotalsChartSubtitleCustomRange(
+    String startDate,
+    String endDate,
+  ) {
+    return 'Totais por dia civil na filial, de $startDate a $endDate.';
+  }
+
+  @override
+  String get salesDailyTotalsChartScopeHintCustomRange =>
+      'Uma filial; os totais diários seguem o intervalo selecionado. Os gráficos mensais continuam usando o mês de referência.';
+
+  @override
+  String get salesDailyTotalsFilterSummaryLabel => 'Totais diários';
+
+  @override
+  String salesDailyTotalsFilterSummaryCustomRangeValue(
+    String startDate,
+    String endDate,
+  ) {
+    return '$startDate – $endDate';
+  }
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodSectionTitle =>
+      'Período dos totais diários';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodSameMonthLabel =>
+      'Mesmo mês de referência';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodCustomRangeLabel =>
+      'Intervalo customizado';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodPickerLabel =>
+      'Intervalo de datas de venda';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodPickerTitle =>
+      'Selecionar período';
+
+  @override
+  String salesDailyTotalsFilterDailyPeriodHelper(int maxDays) {
+    return 'No máximo $maxDays dias corridos.';
+  }
+
+  @override
+  String get salesDailyTotalsFilterMonthlyChartsAnchorHint =>
+      'Os gráficos de resultado mensal usam sempre o mês de referência acima; só os totais diários usam o intervalo abaixo.';
+
+  @override
+  String get salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner =>
+      'Alterar o mês de referência atualiza só os gráficos mensais. Os totais diários seguem as datas de venda abaixo até você ajustar o intervalo ou voltar ao modo mesmo mês.';
+
+  @override
+  String salesDailyTotalsFilterRangeTooLongSnackbar(int maxDays) {
+    return 'Escolha um período de no máximo $maxDays dias.';
+  }
+
+  @override
+  String salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix(
+    String startDate,
+    String endDate,
+  ) {
+    return 'Totais diários: $startDate–$endDate.';
+  }
 
   @override
   String get salesCardProdutoTendenciaTitle => 'Tendência de vendas';

@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/sales_daily_totals_range_policy.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -92,19 +93,82 @@ class SalesPreferences {
     return OverviewYearMonth(year: y, month: m);
   }
 
+  static const String _dailyTotalsUseCustomRangeKey =
+      'daily_totals_use_custom_range';
+  static const String _dailyTotalsRangeStartMsKey =
+      'daily_totals_range_start_ms';
+  static const String _dailyTotalsRangeEndMsKey = 'daily_totals_range_end_ms';
+
   Future<void> persistMonthlyPnlAnchor(OverviewYearMonth anchor) async {
-    final encoded = <String, Object?>{
-      'anchor_year': anchor.year,
-      'anchor_month': anchor.month,
-    };
-    final store = PersistedPageSessionStore(
-      prefs: _prefs,
-      namespace: 'colmeia_sales_card.$monthlyPnlCardId',
+    final merged = Map<String, Object?>.from(
+      restoreCardFilters(monthlyPnlCardId),
     );
-    await store.persistJsonMap(
-      suffix: 'filters',
-      value: encoded,
+    merged['anchor_year'] = anchor.year;
+    merged['anchor_month'] = anchor.month;
+    await persistCardFilters(monthlyPnlCardId, merged);
+  }
+
+  /// Optional inclusive date range for daily totals only (see filters sheet).
+  /// When absent or the stored flag is false, callers use the anchor month.
+  bool restoreSalesDailyTotalsUseCustomRange() {
+    final raw = restoreCardFilters(monthlyPnlCardId);
+    final v = raw[_dailyTotalsUseCustomRangeKey];
+    return v == true;
+  }
+
+  OverviewDateRange? restoreSalesDailyTotalsDateRange() {
+    final raw = restoreCardFilters(monthlyPnlCardId);
+    if (raw[_dailyTotalsUseCustomRangeKey] != true) {
+      return null;
+    }
+    final startMs = raw[_dailyTotalsRangeStartMsKey];
+    final endMs = raw[_dailyTotalsRangeEndMsKey];
+    if (startMs is! int || endMs is! int) {
+      return null;
+    }
+    final start = DateTime.fromMillisecondsSinceEpoch(startMs);
+    final end = DateTime.fromMillisecondsSinceEpoch(endMs);
+    final range = OverviewDateRange.fromOrderedEndpoints(start, end);
+    return SalesDailyTotalsRangePolicy.normalizedForSalesDailyTotalsPicker(
+      range: range,
     );
+  }
+
+  Future<void> persistSalesDailyTotalsDateRange({
+    required bool useCustomRange,
+    OverviewDateRange? range,
+  }) async {
+    final merged = Map<String, Object?>.from(
+      restoreCardFilters(monthlyPnlCardId),
+    );
+    OverviewDateRange? normalizedCustomForLog;
+    if (!useCustomRange || range == null) {
+      merged
+        ..remove(_dailyTotalsUseCustomRangeKey)
+        ..remove(_dailyTotalsRangeStartMsKey)
+        ..remove(_dailyTotalsRangeEndMsKey);
+    } else {
+      final normalized =
+          SalesDailyTotalsRangePolicy.normalizedForSalesDailyTotalsPicker(
+            range: range,
+          );
+      normalizedCustomForLog = normalized;
+      merged[_dailyTotalsUseCustomRangeKey] = true;
+      merged[_dailyTotalsRangeStartMsKey] =
+          normalized.startInclusive.millisecondsSinceEpoch;
+      merged[_dailyTotalsRangeEndMsKey] =
+          normalized.endInclusive.millisecondsSinceEpoch;
+    }
+    await persistCardFilters(monthlyPnlCardId, merged);
+    if (normalizedCustomForLog != null) {
+      AppLogger.info(
+        'SalesPreferences.persistSalesDailyTotalsDateRange',
+        context: <String, Object?>{
+          'inclusive_day_count':
+              normalizedCustomForLog.inclusiveCalendarDayCount,
+        },
+      );
+    }
   }
 
   static const String _monthlyPnlBarChartSuffix = 'bar_chart';

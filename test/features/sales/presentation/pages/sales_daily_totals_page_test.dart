@@ -78,6 +78,18 @@ void main() {
       () => salesPreferences.persistSalesChartReferenceMonth(any()),
     ).thenAnswer((_) async {});
     when(
+      () => salesPreferences.restoreSalesDailyTotalsUseCustomRange(),
+    ).thenReturn(false);
+    when(
+      () => salesPreferences.restoreSalesDailyTotalsDateRange(),
+    ).thenReturn(null);
+    when(
+      () => salesPreferences.persistSalesDailyTotalsDateRange(
+        useCustomRange: any(named: 'useCustomRange'),
+        range: any(named: 'range'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
       () => tokenReader.readMany(
         userId: any(named: 'userId'),
         agentIds: any(named: 'agentIds'),
@@ -114,6 +126,7 @@ void main() {
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         anchor: any(named: 'anchor'),
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
       ),
     ).thenAnswer((_) => completer.future);

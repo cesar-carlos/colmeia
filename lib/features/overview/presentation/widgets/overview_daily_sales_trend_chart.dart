@@ -27,6 +27,8 @@ class OverviewDailySalesTrendChart extends StatefulWidget {
     this.isLoading = false,
     this.loadFailureMessage,
     this.useSalesDailyTotalsLabels = false,
+    this.salesSubtitleOverride,
+    this.salesScopeHintOverride,
     super.key,
   });
 
@@ -39,6 +41,12 @@ class OverviewDailySalesTrendChart extends StatefulWidget {
   /// When true, chart titles and messages use [DailySalesTrendChartLabels] sales
   /// branch/month strings instead of overview home copy.
   final bool useSalesDailyTotalsLabels;
+
+  /// When [useSalesDailyTotalsLabels] is true, replaces resolved subtitle (e.g. custom date range).
+  final String? salesSubtitleOverride;
+
+  /// When [useSalesDailyTotalsLabels] is true, replaces resolved Semantics scope hint.
+  final String? salesScopeHintOverride;
 
   @override
   State<OverviewDailySalesTrendChart> createState() =>
@@ -93,6 +101,9 @@ class _OverviewDailySalesTrendChartState
     final chartPoints = _chartPointsNonZero();
     final showEmptyPlaceholder = widget.points.isEmpty || chartPoints.isEmpty;
 
+    final resolvedSubtitle = widget.salesSubtitleOverride ?? labels.subtitle;
+    final resolvedScopeHint = widget.salesScopeHintOverride ?? labels.scopeHint;
+
     void openFullscreen() {
       final chartPointsSnapshot = List<OverviewDailySalesTrendPoint>.of(
         chartPoints,
@@ -104,7 +115,7 @@ class _OverviewDailySalesTrendChartState
         context.pushChartFullscreen<void>(
           extra: AppChartFullscreenRouteExtra(
             title: labels.titleForMetric(isSalesCount: isSalesCountSnapshot),
-            subtitle: labels.subtitle,
+            subtitle: resolvedSubtitle,
             chartSemanticsLabel: labels.semanticsForMetric(
               isSalesCount: isSalesCountSnapshot,
             ),
@@ -225,10 +236,10 @@ class _OverviewDailySalesTrendChartState
 
     return Semantics(
       label: labels.semanticsForMetric(isSalesCount: isSalesCount),
-      hint: labels.scopeHint,
+      hint: resolvedScopeHint,
       child: AppComparisonBarChart<OverviewDailySalesTrendPoint>(
         title: labels.titleForMetric(isSalesCount: isSalesCount),
-        subtitle: labels.subtitle,
+        subtitle: resolvedSubtitle,
         onOpenFullscreen: openFullscreen,
         belowSubtitle: AppSegmentedControl<_OverviewDailyMetric>(
           options: <AppSegmentedControlOption<_OverviewDailyMetric>>[

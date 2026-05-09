@@ -2271,6 +2271,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesDailyTotalsMetricSalesAmountLabel => 'Revenue';
 
   @override
+  String salesDailyTotalsChartSubtitleCustomRange(
+    String startDate,
+    String endDate,
+  ) {
+    return 'Totals per calendar day for the selected branch from $startDate through $endDate.';
+  }
+
+  @override
+  String get salesDailyTotalsChartScopeHintCustomRange =>
+      'Single branch; daily totals follow the selected date range. Monthly charts still use the reference month.';
+
+  @override
+  String get salesDailyTotalsFilterSummaryLabel => 'Daily totals';
+
+  @override
+  String salesDailyTotalsFilterSummaryCustomRangeValue(
+    String startDate,
+    String endDate,
+  ) {
+    return '$startDate – $endDate';
+  }
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodSectionTitle =>
+      'Daily totals period';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodSameMonthLabel =>
+      'Same as reference month';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodCustomRangeLabel =>
+      'Custom range';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodPickerLabel => 'Sale date range';
+
+  @override
+  String get salesDailyTotalsFilterDailyPeriodPickerTitle => 'Select period';
+
+  @override
+  String salesDailyTotalsFilterDailyPeriodHelper(int maxDays) {
+    return 'At most $maxDays calendar days.';
+  }
+
+  @override
+  String get salesDailyTotalsFilterMonthlyChartsAnchorHint =>
+      'Monthly P&L charts always use the reference month above; only daily totals use the range below.';
+
+  @override
+  String get salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner =>
+      'Changing the reference month updates monthly charts only. Daily totals follow the sale dates below until you change this range or switch to same month mode.';
+
+  @override
+  String salesDailyTotalsFilterRangeTooLongSnackbar(int maxDays) {
+    return 'Choose a period of at most $maxDays days.';
+  }
+
+  @override
+  String salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix(
+    String startDate,
+    String endDate,
+  ) {
+    return 'Daily totals: $startDate–$endDate.';
+  }
+
+  @override
   String get salesCardProdutoTendenciaTitle => 'Sales trend';
 
   @override

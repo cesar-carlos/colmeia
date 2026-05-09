@@ -3786,6 +3786,99 @@ abstract class AppLocalizations {
   /// **'Revenue'**
   String get salesDailyTotalsMetricSalesAmountLabel;
 
+  /// No description provided for @salesDailyTotalsChartSubtitleCustomRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Totals per calendar day for the selected branch from {startDate} through {endDate}.'**
+  String salesDailyTotalsChartSubtitleCustomRange(
+    String startDate,
+    String endDate,
+  );
+
+  /// No description provided for @salesDailyTotalsChartScopeHintCustomRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Single branch; daily totals follow the selected date range. Monthly charts still use the reference month.'**
+  String get salesDailyTotalsChartScopeHintCustomRange;
+
+  /// No description provided for @salesDailyTotalsFilterSummaryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily totals'**
+  String get salesDailyTotalsFilterSummaryLabel;
+
+  /// No description provided for @salesDailyTotalsFilterSummaryCustomRangeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{startDate} – {endDate}'**
+  String salesDailyTotalsFilterSummaryCustomRangeValue(
+    String startDate,
+    String endDate,
+  );
+
+  /// No description provided for @salesDailyTotalsFilterDailyPeriodSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily totals period'**
+  String get salesDailyTotalsFilterDailyPeriodSectionTitle;
+
+  /// No description provided for @salesDailyTotalsFilterDailyPeriodSameMonthLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Same as reference month'**
+  String get salesDailyTotalsFilterDailyPeriodSameMonthLabel;
+
+  /// No description provided for @salesDailyTotalsFilterDailyPeriodCustomRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom range'**
+  String get salesDailyTotalsFilterDailyPeriodCustomRangeLabel;
+
+  /// No description provided for @salesDailyTotalsFilterDailyPeriodPickerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale date range'**
+  String get salesDailyTotalsFilterDailyPeriodPickerLabel;
+
+  /// No description provided for @salesDailyTotalsFilterDailyPeriodPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select period'**
+  String get salesDailyTotalsFilterDailyPeriodPickerTitle;
+
+  /// No description provided for @salesDailyTotalsFilterDailyPeriodHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'At most {maxDays} calendar days.'**
+  String salesDailyTotalsFilterDailyPeriodHelper(int maxDays);
+
+  /// No description provided for @salesDailyTotalsFilterMonthlyChartsAnchorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly P&L charts always use the reference month above; only daily totals use the range below.'**
+  String get salesDailyTotalsFilterMonthlyChartsAnchorHint;
+
+  /// No description provided for @salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Changing the reference month updates monthly charts only. Daily totals follow the sale dates below until you change this range or switch to same month mode.'**
+  String get salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner;
+
+  /// No description provided for @salesDailyTotalsFilterRangeTooLongSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a period of at most {maxDays} days.'**
+  String salesDailyTotalsFilterRangeTooLongSnackbar(int maxDays);
+
+  /// No description provided for @salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily totals: {startDate}–{endDate}.'**
+  String salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix(
+    String startDate,
+    String endDate,
+  );
+
   /// No description provided for @salesCardProdutoTendenciaTitle.
   ///
   /// In en, this message translates to:

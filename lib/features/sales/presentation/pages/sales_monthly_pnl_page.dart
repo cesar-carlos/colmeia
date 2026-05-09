@@ -111,6 +111,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
   String? _selectedAgentId;
   List<OverviewAgentOption> _availableAgents = <OverviewAgentOption>[];
   late OverviewYearMonth _anchorYearMonth;
+  OverviewDateRange? _dailyTotalsDateRange;
   String? _cachedClientTokenUserId;
   String? _cachedClientTokenAgentId;
   String? _cachedClientToken;
@@ -137,6 +138,9 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
     _anchorYearMonth =
         _prefs.restoreSalesChartReferenceMonth() ??
         OverviewYearMonth.fromDate(DateTime.now());
+    _dailyTotalsDateRange = _prefs.restoreSalesDailyTotalsUseCustomRange()
+        ? _prefs.restoreSalesDailyTotalsDateRange()
+        : null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
     });
@@ -260,6 +264,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         userId: userId,
         agentId: trimmed,
         anchor: anchor,
+        dailySaleDateRange: _dailyTotalsDateRange,
         clientToken: clientToken,
       ),
     ]);
@@ -286,18 +291,37 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         ? null
         : nextAgentId;
     final anchor = next['anchorYearMonth'] as OverviewYearMonth?;
+    final dailyRange = next['dailyTotalsDateRange'] as OverviewDateRange?;
 
     setState(() {
       _selectedAgentId = normalizedAgentId;
       if (anchor != null) {
         _anchorYearMonth = anchor;
       }
+      _dailyTotalsDateRange = dailyRange;
     });
     unawaited(_prefs.setSelectedAgentId(normalizedAgentId));
     if (anchor != null) {
       unawaited(_prefs.persistSalesChartReferenceMonth(anchor));
     }
+    unawaited(
+      _prefs.persistSalesDailyTotalsDateRange(
+        useCustomRange: dailyRange != null,
+        range: dailyRange,
+      ),
+    );
     unawaited(_reload());
+  }
+
+  String _dailyTotalsPeriodSummaryLine(AppLocalizations l10n) {
+    final range = _dailyTotalsDateRange;
+    if (range == null) {
+      return formatSalesAnchorMonthLabel(context, _anchorYearMonth);
+    }
+    return l10n.salesDailyTotalsFilterSummaryCustomRangeValue(
+      AppBrFormatters.shortDate(range.startInclusive),
+      AppBrFormatters.shortDate(range.endInclusive),
+    );
   }
 
   String _monthlyPnlFullscreenFilterSummary(AppLocalizations l10n) {
@@ -309,12 +333,21 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         );
     final branchName = selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
     final anchorValue = formatSalesAnchorMonthLabel(context, _anchorYearMonth);
-    return l10n.salesMonthlyPnlFullscreenFilterSummary(
+    final base = l10n.salesMonthlyPnlFullscreenFilterSummary(
       l10n.salesBranchFilterLabel,
       branchName,
       l10n.salesMonthlyPnlFilterAnchorMonth,
       anchorValue,
     );
+    final range = _dailyTotalsDateRange;
+    if (range == null) {
+      return base;
+    }
+    final suffix = l10n.salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix(
+      AppBrFormatters.shortDate(range.startInclusive),
+      AppBrFormatters.shortDate(range.endInclusive),
+    );
+    return '$base $suffix';
   }
 
   Future<void> _openFiltersSheet() async {
@@ -333,6 +366,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
           availableAgents: _availableAgents,
           initialSelectedAgentId: _selectedAgentId,
           initialAnchorYearMonth: _anchorYearMonth,
+          initialDailyTotalsUseCustomRange: _dailyTotalsDateRange != null,
+          initialDailyTotalsDateRange: _dailyTotalsDateRange,
           onApply: _onFiltersChanged,
         );
       },
@@ -433,6 +468,10 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
                 label: l10n.salesMonthlyPnlFilterAnchorMonth,
                 value: anchorLabel,
               ),
+              SalesCardFilterSummaryItem(
+                label: l10n.salesDailyTotalsFilterSummaryLabel,
+                value: _dailyTotalsPeriodSummaryLine(l10n),
+              ),
             ],
             enabled: !_loading,
           ),
@@ -476,6 +515,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
                   loadFailed: _dailyChartLoadFailed,
                   loadFailureMessage: _dailyChartLoadFailureMessage,
                   isLoading: _loading && _selectedAgentId != null,
+                  dailySaleDateRange: _dailyTotalsDateRange,
                 ),
               ],
             ),

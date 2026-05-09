@@ -837,6 +837,48 @@
   },
   "salesDailyTotalsMetricSalesCountLabel": "Vendas",
   "salesDailyTotalsMetricSalesAmountLabel": "Faturamento",
+  "salesDailyTotalsChartSubtitleCustomRange": "Totais por dia civil na filial, de {startDate} a {endDate}.",
+  "@salesDailyTotalsChartSubtitleCustomRange": {
+    "placeholders": {
+      "startDate": {"type": "String"},
+      "endDate": {"type": "String"}
+    }
+  },
+  "salesDailyTotalsChartScopeHintCustomRange": "Uma filial; os totais diários seguem o intervalo selecionado. Os gráficos mensais continuam usando o mês de referência.",
+  "salesDailyTotalsFilterSummaryLabel": "Totais diários",
+  "salesDailyTotalsFilterSummaryCustomRangeValue": "{startDate} – {endDate}",
+  "@salesDailyTotalsFilterSummaryCustomRangeValue": {
+    "placeholders": {
+      "startDate": {"type": "String"},
+      "endDate": {"type": "String"}
+    }
+  },
+  "salesDailyTotalsFilterDailyPeriodSectionTitle": "Período dos totais diários",
+  "salesDailyTotalsFilterDailyPeriodSameMonthLabel": "Mesmo mês de referência",
+  "salesDailyTotalsFilterDailyPeriodCustomRangeLabel": "Intervalo customizado",
+  "salesDailyTotalsFilterDailyPeriodPickerLabel": "Intervalo de datas de venda",
+  "salesDailyTotalsFilterDailyPeriodPickerTitle": "Selecionar período",
+  "salesDailyTotalsFilterDailyPeriodHelper": "No máximo {maxDays} dias corridos.",
+  "@salesDailyTotalsFilterDailyPeriodHelper": {
+    "placeholders": {
+      "maxDays": {"type": "int"}
+    }
+  },
+  "salesDailyTotalsFilterMonthlyChartsAnchorHint": "Os gráficos de resultado mensal usam sempre o mês de referência acima; só os totais diários usam o intervalo abaixo.",
+  "salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner": "Alterar o mês de referência atualiza só os gráficos mensais. Os totais diários seguem as datas de venda abaixo até você ajustar o intervalo ou voltar ao modo mesmo mês.",
+  "salesDailyTotalsFilterRangeTooLongSnackbar": "Escolha um período de no máximo {maxDays} dias.",
+  "@salesDailyTotalsFilterRangeTooLongSnackbar": {
+    "placeholders": {
+      "maxDays": {"type": "int"}
+    }
+  },
+  "salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix": "Totais diários: {startDate}–{endDate}.",
+  "@salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix": {
+    "placeholders": {
+      "startDate": {"type": "String"},
+      "endDate": {"type": "String"}
+    }
+  },
   "salesCardProdutoTendenciaTitle": "Tendência de vendas",
   "salesCardProdutoTendenciaMediaMovelTitle": "Tendência de vendas (média móvel)",
   "salesMonthlyPnlPageSubtitle": "Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.",

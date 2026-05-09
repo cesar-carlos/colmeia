@@ -1061,6 +1061,48 @@
   },
   "salesDailyTotalsMetricSalesCountLabel": "Sales",
   "salesDailyTotalsMetricSalesAmountLabel": "Revenue",
+  "salesDailyTotalsChartSubtitleCustomRange": "Totals per calendar day for the selected branch from {startDate} through {endDate}.",
+  "@salesDailyTotalsChartSubtitleCustomRange": {
+    "placeholders": {
+      "startDate": {"type": "String"},
+      "endDate": {"type": "String"}
+    }
+  },
+  "salesDailyTotalsChartScopeHintCustomRange": "Single branch; daily totals follow the selected date range. Monthly charts still use the reference month.",
+  "salesDailyTotalsFilterSummaryLabel": "Daily totals",
+  "salesDailyTotalsFilterSummaryCustomRangeValue": "{startDate} – {endDate}",
+  "@salesDailyTotalsFilterSummaryCustomRangeValue": {
+    "placeholders": {
+      "startDate": {"type": "String"},
+      "endDate": {"type": "String"}
+    }
+  },
+  "salesDailyTotalsFilterDailyPeriodSectionTitle": "Daily totals period",
+  "salesDailyTotalsFilterDailyPeriodSameMonthLabel": "Same as reference month",
+  "salesDailyTotalsFilterDailyPeriodCustomRangeLabel": "Custom range",
+  "salesDailyTotalsFilterDailyPeriodPickerLabel": "Sale date range",
+  "salesDailyTotalsFilterDailyPeriodPickerTitle": "Select period",
+  "salesDailyTotalsFilterDailyPeriodHelper": "At most {maxDays} calendar days.",
+  "@salesDailyTotalsFilterDailyPeriodHelper": {
+    "placeholders": {
+      "maxDays": {"type": "int"}
+    }
+  },
+  "salesDailyTotalsFilterMonthlyChartsAnchorHint": "Monthly P&L charts always use the reference month above; only daily totals use the range below.",
+  "salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner": "Changing the reference month updates monthly charts only. Daily totals follow the sale dates below until you change this range or switch to same month mode.",
+  "salesDailyTotalsFilterRangeTooLongSnackbar": "Choose a period of at most {maxDays} days.",
+  "@salesDailyTotalsFilterRangeTooLongSnackbar": {
+    "placeholders": {
+      "maxDays": {"type": "int"}
+    }
+  },
+  "salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix": "Daily totals: {startDate}–{endDate}.",
+  "@salesMonthlyPnlFullscreenDailyTotalsPeriodSuffix": {
+    "placeholders": {
+      "startDate": {"type": "String"},
+      "endDate": {"type": "String"}
+    }
+  },
   "salesCardProdutoTendenciaTitle": "Sales trend",
   "salesCardProdutoTendenciaMediaMovelTitle": "Sales trend (moving average)",
   "salesMonthlyPnlPageSubtitle": "Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.",

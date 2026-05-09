@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
@@ -11,6 +12,7 @@ import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_branch_anchor_month_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
@@ -38,6 +40,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
   String? _selectedAgentId;
   List<OverviewAgentOption> _availableAgents = const <OverviewAgentOption>[];
   late OverviewYearMonth _anchorYearMonth;
+  OverviewDateRange? _dailyTotalsDateRange;
   String? _cachedClientTokenUserId;
   String? _cachedClientTokenAgentId;
   String? _cachedClientToken;
@@ -60,6 +63,9 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
     _anchorYearMonth =
         _prefs.restoreSalesChartReferenceMonth() ??
         OverviewYearMonth.fromDate(DateTime.now());
+    _dailyTotalsDateRange = _prefs.restoreSalesDailyTotalsUseCustomRange()
+        ? _prefs.restoreSalesDailyTotalsDateRange()
+        : null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
     });
@@ -168,6 +174,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
       userId: userId,
       agentId: trimmed,
       anchor: anchor,
+      dailySaleDateRange: _dailyTotalsDateRange,
       clientToken: clientToken,
     );
 
@@ -188,17 +195,25 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
         ? null
         : nextAgentId;
     final anchor = next['anchorYearMonth'] as OverviewYearMonth?;
+    final dailyRange = next['dailyTotalsDateRange'] as OverviewDateRange?;
 
     setState(() {
       _selectedAgentId = normalizedAgentId;
       if (anchor != null) {
         _anchorYearMonth = anchor;
       }
+      _dailyTotalsDateRange = dailyRange;
     });
     unawaited(_prefs.setSelectedAgentId(normalizedAgentId));
     if (anchor != null) {
       unawaited(_prefs.persistSalesChartReferenceMonth(anchor));
     }
+    unawaited(
+      _prefs.persistSalesDailyTotalsDateRange(
+        useCustomRange: dailyRange != null,
+        range: dailyRange,
+      ),
+    );
     unawaited(_reload());
   }
 
@@ -218,6 +233,8 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
           availableAgents: _availableAgents,
           initialSelectedAgentId: _selectedAgentId,
           initialAnchorYearMonth: _anchorYearMonth,
+          initialDailyTotalsUseCustomRange: _dailyTotalsDateRange != null,
+          initialDailyTotalsDateRange: _dailyTotalsDateRange,
           onApply: _onFiltersChanged,
         );
       },
@@ -237,6 +254,11 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
     final selectedBranchName =
         selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
     final anchorLabel = formatSalesAnchorMonthLabel(context, _anchorYearMonth);
+    final dailyRange = _dailyTotalsDateRange;
+    final introSubtitle = salesDailyTotalsEffectiveSubtitle(
+      l10n,
+      dailySaleDateRange: dailyRange,
+    );
 
     return SingleChildScrollView(
       padding: context.pageScrollPadding(
@@ -250,7 +272,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
           AppShellPageIntro(
             sectionLabel: l10n.shellNavSalesLabel,
             title: l10n.salesCardResumoTotalDiarioVendasTitle,
-            subtitle: l10n.salesDailyTotalsChartSubtitle,
+            subtitle: introSubtitle,
           ),
           SizedBox(height: tokens.sectionSpacing),
           SalesCardFilterTrigger(
@@ -264,6 +286,15 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
               SalesCardFilterSummaryItem(
                 label: l10n.salesMonthlyPnlFilterAnchorMonth,
                 value: anchorLabel,
+              ),
+              SalesCardFilterSummaryItem(
+                label: l10n.salesDailyTotalsFilterSummaryLabel,
+                value: dailyRange == null
+                    ? anchorLabel
+                    : l10n.salesDailyTotalsFilterSummaryCustomRangeValue(
+                        AppBrFormatters.shortDate(dailyRange.startInclusive),
+                        AppBrFormatters.shortDate(dailyRange.endInclusive),
+                      ),
               ),
             ],
             enabled: !_loading,
@@ -282,6 +313,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage> {
               loadFailed: _loadFailed,
               loadFailureMessage: _loadFailureMessage,
               isLoading: _loading && _selectedAgentId != null,
+              dailySaleDateRange: _dailyTotalsDateRange,
             ),
         ],
       ),

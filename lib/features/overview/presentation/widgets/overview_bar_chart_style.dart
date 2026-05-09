@@ -69,6 +69,9 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     yAxisRangePadding: metricRevenueAxis
         ? ChartRangePadding.additionalEnd
         : null,
+    // Compact currency labels use annotation widgets with padded containers plus a
+    // negative Y transform; reserved margin can still clip the tallest column.
+    outerDataLabelTopReserve: metricRevenueAxis ? tokens.contentSpacing : 0,
     dataLabelBackgroundColor: metricRevenueAxis
         ? weekdayRevenueDataLabelBackground
         : null,
