@@ -274,15 +274,6 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
               ),
               const Divider(height: 1),
               _DemoEntryTile(
-                icon: Icons.map_rounded,
-                title: 'Mapa territorial interativo',
-                subtitle:
-                    'Navegacao por regiao com troca de metrica, selecao '
-                    'estruturada e integracao com dashboards.',
-                onTap: () => context.push(appRegionMapChartDemoLocation),
-              ),
-              const Divider(height: 1),
-              _DemoEntryTile(
                 icon: Icons.layers_rounded,
                 title: 'Mapa com drill-down territorial',
                 subtitle:
