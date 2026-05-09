@@ -104,8 +104,17 @@ void main() {
     check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.sql).contains('ResumoTotalDiarioVendasInner');
     check(capturedRequest.sql).contains(
-      'CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim',
+      'pv.DataVenda >= CAST(:dataVendaInicio AS DATE)',
     );
+    check(capturedRequest.sql).contains(
+      'DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
+    );
+    check(capturedRequest.sql).contains('pv.Origem = :origem');
+    check(
+      capturedRequest.sql.contains(
+        'CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio',
+      ),
+    ).isFalse();
     check(capturedRequest.sql.contains('WHERE pv.DataVenda BETWEEN')).isFalse();
     expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
   });

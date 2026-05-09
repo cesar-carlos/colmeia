@@ -81,6 +81,7 @@ void main() {
       check(captured.namedParams['searchPattern']).isNull();
       check(captured.namedParams['limit']).equals(20);
       check(captured.bridgeTimeoutMs).equals(120000);
+      check(captured.useRelay).isTrue();
       check(captured.executeOptions!.executionMode?.name).equals('preserve');
       check(
         captured.sql,

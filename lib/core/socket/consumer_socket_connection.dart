@@ -71,6 +71,7 @@ class ConsumerSocketConnection {
   ConsumerSocketConnectionState _state = const ConsumerSocketDisconnected();
 
   Future<ConsumerSocketConnected>? _inFlightConnect;
+  Completer<_ConnectOutcome>? _connectAbortCompleter;
   bool _isDisposed = false;
 
   // ----- Public API -----
@@ -106,8 +107,16 @@ class ConsumerSocketConnection {
     if (_state is ConsumerSocketConnected) {
       return _state as ConsumerSocketConnected;
     }
-    final operation = _connectInternal().whenComplete(() {
-      _inFlightConnect = null;
+    final abortCompleter = Completer<_ConnectOutcome>();
+    _connectAbortCompleter = abortCompleter;
+    late final Future<ConsumerSocketConnected> operation;
+    operation = _connectInternal(abortCompleter.future).whenComplete(() {
+      if (identical(_inFlightConnect, operation)) {
+        _inFlightConnect = null;
+      }
+      if (identical(_connectAbortCompleter, abortCompleter)) {
+        _connectAbortCompleter = null;
+      }
     });
     _inFlightConnect = operation;
     return operation;
@@ -117,6 +126,7 @@ class ConsumerSocketConnection {
   /// invalidation stream — call [SocketAuthTokenProvider.sessionInvalidations]
   /// listeners only on real session loss.
   Future<void> disconnect({String? reason}) async {
+    _cancelInFlightConnect(reason ?? 'disconnect');
     final socket = _socket;
     _socket = null;
     if (socket != null) {
@@ -153,7 +163,9 @@ class ConsumerSocketConnection {
 
   // ----- Internals -----
 
-  Future<ConsumerSocketConnected> _connectInternal() async {
+  Future<ConsumerSocketConnected> _connectInternal(
+    Future<_ConnectOutcome> abortSignal,
+  ) async {
     var attempt = 0;
     var delay = _reconnectInitialDelay;
 
@@ -161,11 +173,17 @@ class ConsumerSocketConnection {
       attempt += 1;
       _setState(ConsumerSocketConnecting(attempt: attempt));
 
-      final outcome = await _connectOnce();
+      final outcome = await _connectOnce(abortSignal);
       switch (outcome) {
         case _ConnectSuccess():
           _setState(outcome.connectedState);
           return outcome.connectedState;
+
+        case _ConnectCancelled():
+          _setState(ConsumerSocketDisconnected(reason: outcome.reason));
+          throw StateError(
+            'Consumer socket connect cancelled: ${outcome.reason}',
+          );
 
         case _ConnectAuthFailure():
           _setState(const ConsumerSocketUnauthorized());
@@ -226,20 +244,34 @@ class ConsumerSocketConnection {
           // amplify the very congestion the hub is trying to drain.
           final serverHint = outcome.retryAfter;
           if (serverHint != null && serverHint > Duration.zero) {
-            await Future<void>.delayed(
-              _clampServerHint(serverHint),
+            final cancelled = await _waitForCancellationOrDelay(
+              abortSignal: abortSignal,
+              delay: _clampServerHint(serverHint),
             );
+            if (cancelled != null) {
+              _setState(ConsumerSocketDisconnected(reason: cancelled.reason));
+              throw StateError(
+                'Consumer socket connect cancelled: ${cancelled.reason}',
+              );
+            }
             // Reset the local backoff floor — the next failure starts
             // from `reconnectInitialDelay` again so a single overload
             // window does not poison subsequent reconnects.
             delay = _reconnectInitialDelay;
           } else {
-            await Future<void>.delayed(
-              SocketReconnectBackoff.jittered(
+            final cancelled = await _waitForCancellationOrDelay(
+              abortSignal: abortSignal,
+              delay: SocketReconnectBackoff.jittered(
                 ceiling: delay,
                 random: _random,
               ),
             );
+            if (cancelled != null) {
+              _setState(ConsumerSocketDisconnected(reason: cancelled.reason));
+              throw StateError(
+                'Consumer socket connect cancelled: ${cancelled.reason}',
+              );
+            }
             delay = SocketReconnectBackoff.nextCeiling(
               current: delay,
               maxDelay: _reconnectMaxDelay,
@@ -258,7 +290,20 @@ class ConsumerSocketConnection {
     return hint;
   }
 
-  Future<_ConnectOutcome> _connectOnce() async {
+  Future<_ConnectCancelled?> _waitForCancellationOrDelay({
+    required Future<_ConnectOutcome> abortSignal,
+    required Duration delay,
+  }) async {
+    final result = await Future.any<Object?>(<Future<Object?>>[
+      Future<void>.delayed(delay),
+      abortSignal,
+    ]);
+    return result is _ConnectCancelled ? result : null;
+  }
+
+  Future<_ConnectOutcome> _connectOnce(
+    Future<_ConnectOutcome> abortSignal,
+  ) async {
     final token = await _tokenProvider.readAccessToken();
     if (token == null) {
       return const _ConnectAuthFailure(reason: 'no_token');
@@ -348,13 +393,23 @@ class ConsumerSocketConnection {
         );
       })
       ..onDisconnect((reason) {
-        // If the disconnect happens after we already moved to `connected`,
-        // emit a clean disconnected state so callers can react.
+        final reasonText = reason?.toString();
         if (identical(_socket, socket)) {
           _socket = null;
         }
+        if (_state is ConsumerSocketConnecting && !readyCompleter.isCompleted) {
+          resolveError(
+            _ConnectTransientFailure(
+              error:
+                  'handshake_disconnected'
+                  '${reasonText == null ? '' : ': $reasonText'}',
+            ),
+          );
+          return;
+        }
+        // If the disconnect happens after we already moved to `connected`,
+        // emit a clean disconnected state so callers can react.
         if (_state is! ConsumerSocketConnecting) {
-          final reasonText = reason?.toString();
           AppLogger.warning(
             'Consumer socket disconnected by remote peer',
             context: <String, Object?>{
@@ -373,6 +428,7 @@ class ConsumerSocketConnection {
       ),
       errorCompleter.future,
       _timeoutFuture(),
+      abortSignal,
     ]);
 
     if (outcome is! _ConnectSuccess) {
@@ -389,6 +445,15 @@ class ConsumerSocketConnection {
       _detachHandshakeListeners(socket, includeDisconnect: false);
     }
     return outcome;
+  }
+
+  void _cancelInFlightConnect(String reason) {
+    final abortCompleter = _connectAbortCompleter;
+    if (abortCompleter != null && !abortCompleter.isCompleted) {
+      abortCompleter.complete(_ConnectCancelled(reason: reason));
+    }
+    _connectAbortCompleter = null;
+    _inFlightConnect = null;
   }
 
   void _detachHandshakeListeners(
@@ -525,6 +590,11 @@ sealed class _ConnectOutcome {
 final class _ConnectSuccess extends _ConnectOutcome {
   const _ConnectSuccess({required this.connectedState});
   final ConsumerSocketConnected connectedState;
+}
+
+final class _ConnectCancelled extends _ConnectOutcome {
+  const _ConnectCancelled({required this.reason});
+  final String reason;
 }
 
 final class _ConnectAuthFailure extends _ConnectOutcome {

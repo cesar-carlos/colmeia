@@ -144,7 +144,10 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       // The original future is still returned to callers. This helper only
       // prevents the cleanup task from reporting a second unhandled error.
     } finally {
-      _inflightByKey.removeWhere((entryKey, _) => entryKey == key);
+      final current = _inflightByKey[key];
+      if (identical(current, future)) {
+        _inflightByKey.remove(key)?.ignore();
+      }
     }
   }
 
@@ -173,6 +176,12 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
           message: message,
           role: _extractMarker(message, 'role='),
           namespace: _extractMarker(message, 'namespace='),
+          cause: e,
+        );
+      }
+      if (message.startsWith('Consumer socket connect cancelled:')) {
+        throw SocketDispatchDisconnected(
+          message: 'Connect cancelled before dispatch: $e',
           cause: e,
         );
       }

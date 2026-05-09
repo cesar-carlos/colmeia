@@ -262,6 +262,7 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
         maxRows:
             AgentQueriesBoundedResultMaxRows.vendasDiariasSuggestionOptions,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

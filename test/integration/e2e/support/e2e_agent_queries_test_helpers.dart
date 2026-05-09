@@ -9,7 +9,7 @@ const String _sessionFailureReason =
 
 const String _acceptableFailureSuffix =
     'should return rows, invalid_policy / '
-    'missing_permission RPC, or transient bridge HTTP 5xx.';
+    'missing_permission RPC, transient bridge HTTP 5xx, or circuit breaker open.';
 
 bool shouldSkipE2eRepositoryTest(String testLabel) {
   final missingKeys = missingE2eRepositoryKeys();

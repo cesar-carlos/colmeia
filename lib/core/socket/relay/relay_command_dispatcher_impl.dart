@@ -166,6 +166,24 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           unawaited(controller.close());
         }
         return;
+      } on SocketDispatchException catch (e) {
+        if (!controller.isClosed) {
+          controller.addError(e);
+          unawaited(controller.close());
+        }
+        return;
+      } on Object catch (e, s) {
+        if (!controller.isClosed) {
+          controller.addError(
+            RelayConversationStartFailure(
+              message: 'failed to prepare relay stream: $e',
+              cause: e,
+              stackTrace: s,
+            ),
+          );
+          unawaited(controller.close());
+        }
+        return;
       }
       _emitRpcRequest(
         conversationId: pending.conversationId,
@@ -787,6 +805,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         },
         error: e,
         stackTrace: s,
+      );
+      _failPending(
+        pending.clientRequestId,
+        RelayConversationLost(
+          message: 'failed to emit relay:rpc.stream.pull: $e',
+          conversationId: pending.conversationId,
+          clientRequestId: pending.clientRequestId,
+          cause: e,
+          stackTrace: s,
+        ),
       );
     }
   }

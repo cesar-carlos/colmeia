@@ -69,6 +69,7 @@ class ResumoParcelaFormaPagamentoRepositoryImpl
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamento,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

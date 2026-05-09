@@ -104,6 +104,14 @@ abstract final class AppEnvironment {
   static bool get hasE2eClientLoginCredentials =>
       e2eClientEmail.isNotEmpty && e2eClientPassword.isNotEmpty;
 
+  static const int defaultAgentSqlCacheMaxSize = 500;
+
+  static int get agentSqlCacheMaxSize => AppEnvironmentResolution.resolveInt(
+    fromDefine: const String.fromEnvironment(EnvKeys.agentSqlCacheMaxSize),
+    fromDotenv: _dotenvMaybe(EnvKeys.agentSqlCacheMaxSize),
+    fallback: defaultAgentSqlCacheMaxSize,
+  ).clamp(1, 5000);
+
   /// Agent bridge + client-auth data for a full stack e2e run.
   static bool get hasE2eAgentBridgeCredentials =>
       hasE2eAgentQueryCredentials && hasE2eClientLoginCredentials;

@@ -20,6 +20,9 @@ abstract final class EnvKeys {
   /// Client-auth password for e2e (use only test accounts; prefer dart-define).
   static const String e2eClientPassword = 'E2E_CLIENT_PASSWORD';
 
+  /// Maximum in-memory successful SQL query results kept before LRU eviction.
+  static const String agentSqlCacheMaxSize = 'AGENT_SQL_CACHE_MAX_SIZE';
+
   // ----- Socket channel (PR-A: infraestrutura de conexão) -----
 
   /// `rest` (default) | `socket`. Selects the agent commands transport.

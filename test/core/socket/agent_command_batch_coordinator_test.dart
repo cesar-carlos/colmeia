@@ -85,6 +85,7 @@ Map<String, Object?> _body({
   String agentId = 'agent-1',
   String rpcId = 'rpc-1',
   String method = 'sql.execute',
+  int? timeoutMs,
   Map<String, Object?> params = const <String, Object?>{
     'sql': 'SELECT 1',
   },
@@ -92,6 +93,7 @@ Map<String, Object?> _body({
 }) {
   return <String, Object?>{
     'agentId': agentId,
+    'timeoutMs': ?timeoutMs,
     'pagination': ?pagination,
     'command': <String, Object?>{
       'jsonrpc': '2.0',
@@ -263,6 +265,60 @@ void main() {
       check(command.length).equals(1);
       check(identical(r1, r2)).isTrue();
     });
+
+    test(
+      'batch preserves bridge timeoutMs while using dispatch timeout locally',
+      () async {
+        final f1 = coordinator.send(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-A', timeoutMs: 15000),
+          rpcId: 'rpc-A',
+          timeout: const Duration(seconds: 20),
+        );
+        final f2 = coordinator.send(
+          agentId: 'agent-1',
+          body: _body(
+            rpcId: 'rpc-B',
+            timeoutMs: 22000,
+            params: const <String, Object?>{'sql': 'SELECT 2'},
+          ),
+          rpcId: 'rpc-B',
+          timeout: const Duration(seconds: 27),
+        );
+
+        await Future.wait(<Future<Map<String, dynamic>>>[f1, f2]);
+
+        check(direct.calls.length).equals(1);
+        final call = direct.calls.single;
+        check(call.timeout).equals(const Duration(seconds: 27));
+        check(call.body['timeoutMs']).equals(22000);
+      },
+    );
+
+    test(
+      'single fallback preserves bridge timeoutMs while using dispatch timeout',
+      () async {
+        final c = AgentCommandBatchCoordinator(
+          directSender: direct,
+          windowDuration: const Duration(milliseconds: 5),
+          minBatchSize: 2,
+        );
+        addTearDown(c.dispose);
+
+        await c.send(
+          agentId: 'agent-1',
+          body: _body(timeoutMs: 15000),
+          rpcId: 'rpc-1',
+          timeout: const Duration(seconds: 20),
+        );
+
+        check(direct.calls.length).equals(1);
+        final call = direct.calls.single;
+        check(call.timeout).equals(const Duration(seconds: 20));
+        check(call.body['timeoutMs']).equals(15000);
+        check(call.body['command']).isA<Map<String, Object?>>();
+      },
+    );
   });
 
   group('automatic bypass', () {

@@ -1,11 +1,11 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_request_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
-import 'package:crypto/crypto.dart';
 
 /// Deduplicates identical requests that are in-flight simultaneously.
 ///
@@ -59,21 +59,30 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
 
     final future = _delegate.executeSql(request);
     _inflight[key] = future;
+    unawaited(_removeInflightWhenComplete(key, future));
 
     return future;
   }
 
   String _buildKey(AgentSqlExecuteRequest request) {
-    final components = <String>[
-      request.agentId,
-      request.sql,
-      jsonEncode(request.namedParams),
-      request.clientToken ?? '',
-      request.bridgeTimeoutMs?.toString() ?? '',
-      request.executeOptions?.executionMode?.name ?? '',
-      request.useRelay.toString(),
-    ];
-    final combined = components.join('|');
-    return md5.convert(utf8.encode(combined)).toString();
+    return AgentQueriesRequestKey.build(request);
+  }
+
+  Future<void> _removeInflightWhenComplete(
+    String key,
+    Future<AppResult<AgentSqlExecutionResult>> future,
+  ) async {
+    try {
+      await future;
+    } on Object {
+      // The delegate contract returns failures as AppResult. If an unexpected
+      // exception escapes, cleanup must still happen and the original future
+      // must keep surfacing that exception to its caller.
+    } finally {
+      final current = _inflight[key];
+      if (identical(current, future)) {
+        _inflight.remove(key)?.ignore();
+      }
+    }
   }
 }

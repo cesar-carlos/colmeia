@@ -32,6 +32,8 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_diario_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_diario_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_use_case.dart';
@@ -46,7 +48,6 @@ import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_re
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/hybrid_agent_queries_remote_datasource.dart';
-import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
@@ -83,6 +84,8 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_produto_
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_produto_venda_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_diario_vendas_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_diario_vendas_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_vendas_municipio_filial_diario_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_vendas_municipio_filial_diario_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
@@ -97,6 +100,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
@@ -127,6 +131,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produt
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produto_venda_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_diario_vendas_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_diario_vendas_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_diario_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_diario_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository.dart';
@@ -149,12 +155,12 @@ void registerInjectorAgentQueries(GetIt getIt) {
         if (AppEnvironment.useFakeBackend) {
           return FakeAgentQueriesRemoteDataSource();
         }
+        final rest = ApiAgentQueriesRemoteDataSource(
+          dio: getIt<Dio>(),
+          bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+        );
         final base = switch (AppEnvironment.agentBridgeTransport) {
           AgentBridgeTransport.socket => () {
-            final rest = ApiAgentQueriesRemoteDataSource(
-              dio: getIt<Dio>(),
-              bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
-            );
             return SocketWithRestFallbackAgentQueriesRemoteDataSource(
               socketDelegate: SocketAgentQueriesRemoteDataSource(
                 sender: getIt<AgentCommandSender>(),
@@ -170,21 +176,33 @@ void registerInjectorAgentQueries(GetIt getIt) {
               ),
             );
           }(),
-          AgentBridgeTransport.rest => ApiAgentQueriesRemoteDataSource(
-            dio: getIt<Dio>(),
-            bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
-          ),
+          AgentBridgeTransport.rest => rest,
         };
         // PR-L+ part 1: wrap with the per-call selector when the relay
         // datasource is available (SOCKET_RELAY_ENABLED=true). Requests
         // with `useRelay: true` flow through the relay channel; everything
         // else stays on the legacy channel byte-for-byte identical.
         final relay = _resolveRelayDatasource(getIt);
+        final relayFallback = relay == null
+            ? null
+            : AppEnvironment.agentBridgeTransport == AgentBridgeTransport.socket
+            ? SocketWithRestFallbackAgentQueriesRemoteDataSource(
+                socketDelegate: relay,
+                restDelegate: rest,
+                onFallback: (trigger) => AppLogger.warning(
+                  'Relay AgentQueriesRemoteDataSource latched to REST fallback',
+                  context: <String, Object?>{
+                    'triggerCode': trigger.code,
+                    'triggerMessage': trigger.message,
+                  },
+                ),
+              )
+            : relay;
         final relayWrapped = relay == null
             ? base
             : HybridAgentQueriesRemoteDataSource(
                 baseDelegate: base,
-                relayDelegate: relay,
+                relayDelegate: relayFallback,
               );
         AppLogger.info(
           'AgentQueriesRemoteDataSource initialized',
@@ -239,6 +257,7 @@ void registerInjectorAgentQueries(GetIt getIt) {
 
         final caching = CachingAgentQueriesRepository(
           delegate: coalescing,
+          maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
         );
 
         final circuitBreaker = CircuitBreakerAgentQueriesRepository(
@@ -263,6 +282,7 @@ void registerInjectorAgentQueries(GetIt getIt) {
               'RetryingAgentQueriesRepository',
               'AgentQueriesRepositoryImpl',
             ],
+            'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
           },
         );
 
@@ -503,6 +523,19 @@ void registerInjectorAgentQueries(GetIt getIt) {
     ),
   );
 
+  _registerSingle<
+    ResumoTotalVendasMunicipioFilialDiarioRepository,
+    LoadResumoTotalVendasMunicipioFilialDiarioUseCase
+  >(
+    getIt,
+    repo: () => ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoTotalVendasMunicipioFilialDiarioUseCase(
+      getIt<ResumoTotalVendasMunicipioFilialDiarioRepository>(),
+    ),
+  );
+
   getIt
     ..registerLazySingleton<AgentQueryTargetResolver>(
       () => AgentQueryTargetResolver(
@@ -548,6 +581,13 @@ void registerInjectorAgentQueries(GetIt getIt) {
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoTotalDiarioVendasRow>>(
       AgentQueryExecutor<ResumoTotalDiarioVendasRow>.new,
+    )
+    ..registerLazySingleton<
+      AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>
+    >(
+      () => AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>(
+        mergeAllConcurrency: 8,
+      ),
     )
     ..registerLazySingleton<ResumoParcelaFormaPagamentoAcrossAgentsRepository>(
       () => ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImpl(
@@ -686,6 +726,26 @@ void registerInjectorAgentQueries(GetIt getIt) {
       ),
     )
     ..registerLazySingleton<
+      ResumoTotalVendasMunicipioFilialDiarioAcrossAgentsRepository
+    >(
+      () => ResumoTotalVendasMunicipioFilialDiarioAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor:
+            getIt<
+              AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>
+            >(),
+        loadResumo: getIt<LoadResumoTotalVendasMunicipioFilialDiarioUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<
+      LoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase
+    >(
+      () => LoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase(
+        getIt<ResumoTotalVendasMunicipioFilialDiarioAcrossAgentsRepository>(),
+      ),
+    )
+    ..registerLazySingleton<
       ResumoVendasDiariasPorVendedorFilterOptionsRepository
     >(
       () => ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl(
@@ -811,21 +871,24 @@ void _registerSingle<R extends Object, U extends Object>(
 }
 
 /// Returns the relay-backed datasource when the relay layer is available.
-/// Prefer the collected streaming adapter when the streaming port is
-/// registered so repositories opting into `useRelay` get the lower-memory
-/// relay wire path without changing their unary `Future<Map>` contract.
+/// Repositories opting into `useRelay` always use the collected streaming
+/// adapter so chunked relay responses materialise into the same unary
+/// `Future<Map>` bridge envelope expected by the existing parser.
 AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
   if (!getIt.isRegistered<RelayCommandDispatcher>()) {
     return null;
   }
-  if (getIt.isRegistered<AgentQueriesStreamingRemoteDataSource>()) {
-    return CollectingRelayStreamingAgentQueriesRemoteDataSource(
-      streamingDelegate: getIt<AgentQueriesStreamingRemoteDataSource>(),
-    );
-  }
-  return RelayAgentQueriesRemoteDataSource(
-    dispatcher: getIt<RelayCommandDispatcher>(),
-    bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
-    compression: AppEnvironment.socketRelayPayloadFrameCompression,
+
+  final streamingDelegate =
+      getIt.isRegistered<AgentQueriesStreamingRemoteDataSource>()
+      ? getIt<AgentQueriesStreamingRemoteDataSource>()
+      : RelayStreamingAgentQueriesRemoteDataSource(
+          dispatcher: getIt<RelayCommandDispatcher>(),
+          bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+          compression: AppEnvironment.socketRelayPayloadFrameCompression,
+        );
+
+  return CollectingRelayStreamingAgentQueriesRemoteDataSource(
+    streamingDelegate: streamingDelegate,
   );
 }

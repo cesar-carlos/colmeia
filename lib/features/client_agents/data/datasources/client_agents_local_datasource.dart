@@ -14,6 +14,7 @@ import 'package:colmeia/features/client_agents/data/models/paginated_agent_catal
 import 'package:colmeia/features/client_agents/data/models/pending_agent_action_dto.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:crypto/crypto.dart';
 
 class ClientAgentsLocalDataSource {
   ClientAgentsLocalDataSource(this._cacheStore);
@@ -404,7 +405,7 @@ class ClientAgentsLocalDataSource {
     }
     final lower = trimmed.toLowerCase();
     final slug = lower.replaceAll(RegExp('[^a-z0-9]+'), '_');
-    final digest = Object.hash(trimmed, trimmed.length).toUnsigned(32);
+    final digest = sha1.convert(utf8.encode(trimmed));
     return '${slug}_h$digest';
   }
 

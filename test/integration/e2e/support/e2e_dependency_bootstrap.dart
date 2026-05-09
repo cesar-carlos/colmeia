@@ -1,13 +1,19 @@
 import 'dart:io';
 
+import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/config/env_keys.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
+import 'package:colmeia/core/di/injector_socket.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/network/app_dio_client.dart';
+import 'package:colmeia/core/network/auth_refresh_coordinator.dart';
+import 'package:colmeia/core/network/auth_session_accessor.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
+import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
@@ -45,6 +51,7 @@ Future<void> e2eSetupDependencies() async {
   await resetDependenciesForTesting();
 
   final dio = AppDioClient.create();
+  final sessionHolder = E2eAuthSessionHolder();
 
   if (AppEnvironment.hasE2eClientLoginCredentials) {
     final loginDio = Dio(AppDioClient.createBaseOptions());
@@ -53,7 +60,7 @@ Future<void> e2eSetupDependencies() async {
       email: AppEnvironment.e2eClientEmail,
       password: AppEnvironment.e2eClientPassword,
     );
-    final sessionHolder = E2eAuthSessionHolder()..value = session;
+    sessionHolder.value = session;
     dio.interceptors.add(
       E2eRefreshingAuthInterceptor(
         dio: dio,
@@ -71,6 +78,9 @@ Future<void> e2eSetupDependencies() async {
     ..registerSingleton<AgentClientTokenReader>(
       E2eStubAgentClientTokenReader(),
     );
+  if (AppEnvironment.agentBridgeTransport == AgentBridgeTransport.socket) {
+    _registerE2eSocketStack(sessionHolder);
+  }
   registerInjectorAgentQueries(getIt);
 
   // Visible in `flutter test` stdout so runs clearly target this agent for sql.execute.
@@ -80,8 +90,28 @@ Future<void> e2eSetupDependencies() async {
     'E2E agent-queries: E2E_AGENT_ID=${AppEnvironment.e2eAgentId} '
     'client_token_loaded=${AppEnvironment.e2eClientToken.isNotEmpty} '
     'api=${AppEnvironment.apiBaseUrl} '
-    'bearer=${AppEnvironment.hasE2eClientLoginCredentials}',
+    'bearer=${AppEnvironment.hasE2eClientLoginCredentials} '
+    'transport=${AppEnvironment.agentBridgeTransport.name}',
   );
+}
+
+void _registerE2eSocketStack(E2eAuthSessionHolder sessionHolder) {
+  final sessionEvents = AuthSessionEvents();
+  final sessionAccessor = _E2eAuthSessionAccessor(sessionHolder);
+  getIt
+    ..registerSingleton<AuthSessionEvents>(
+      sessionEvents,
+      dispose: (events) => events.dispose(),
+    )
+    ..registerSingleton<AuthSessionAccessor>(sessionAccessor)
+    ..registerSingleton<AuthRefreshCoordinator>(
+      AuthRefreshCoordinator(
+        refreshDio: Dio(AppDioClient.createBaseOptions()),
+        sessionAccessor: sessionAccessor,
+        sessionEvents: sessionEvents,
+      ),
+    );
+  registerInjectorSocket(getIt);
 }
 
 List<String> missingE2eBridgeKeys() {
@@ -251,15 +281,31 @@ bool isKnownE2eAgentSqlQueueSaturationFailure(AppFailure failure) {
   return false;
 }
 
+/// Fail-fast while the agent-queries circuit breaker is open (overload
+/// protection): [NetworkFailure] without an underlying Dio cause, but still
+/// an environmental hub-overload signal for E2E smoke runs.
+bool isKnownE2eAgentSqlCircuitBreakerOpenFailure(AppFailure failure) {
+  if (failure is! NetworkFailure) {
+    return false;
+  }
+  final state = failure.context['circuitBreakerState']
+      ?.toString()
+      .trim()
+      .toLowerCase();
+  return state == 'open';
+}
+
 /// Known policy rejection, missing table permission RPC, transient bridge
-/// HTTP 5xx, or HTTP 403 forbidden on agent SQL (environment / hub access).
+/// HTTP 5xx, HTTP 403 forbidden on agent SQL, queue saturation, or circuit
+/// breaker open after hub overload (environment / hub access).
 bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
   return isKnownInvalidPolicyFailure(failure) ||
       isKnownAgentSqlMissingPermissionFailure(failure) ||
       isTransientAgentSqlBridgeHttpFailure(failure) ||
       isKnownE2eAgentSqlHttpForbiddenFailure(failure) ||
       isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(failure) ||
-      isKnownE2eAgentSqlQueueSaturationFailure(failure);
+      isKnownE2eAgentSqlQueueSaturationFailure(failure) ||
+      isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure);
 }
 
 void primeE2eEnvironment() {
@@ -276,6 +322,33 @@ Map<String, String> _processEnvironmentOverrides() {
   final names = <String>[
     EnvKeys.apiBaseUrl,
     EnvKeys.useFakeBackend,
+    EnvKeys.agentBridgeTransport,
+    EnvKeys.socketNamespace,
+    EnvKeys.socketReconnectAttempts,
+    EnvKeys.socketReconnectInitialDelayMs,
+    EnvKeys.socketReconnectMaxDelayMs,
+    EnvKeys.socketRequestTimeoutMs,
+    EnvKeys.socketHandshakeTimeoutMs,
+    EnvKeys.socketWarmUpAfterLogin,
+    EnvKeys.socketMaxInflightPerAgent,
+    EnvKeys.socketCoalescingEnabled,
+    EnvKeys.socketTimeoutAdaptiveEnabled,
+    EnvKeys.socketBatchEnabled,
+    EnvKeys.socketBatchWindowMs,
+    EnvKeys.socketBatchMaxSize,
+    EnvKeys.socketBatchMinSize,
+    EnvKeys.socketRelayEnabled,
+    EnvKeys.socketRelayRequestTimeoutMs,
+    EnvKeys.socketRelayConversationStartTimeoutMs,
+    EnvKeys.socketRelayConversationEndTimeoutMs,
+    EnvKeys.socketRelayPayloadFrameCompression,
+    EnvKeys.socketRelayStreamInitialWindow,
+    EnvKeys.socketRelayStreamRefillThreshold,
+    EnvKeys.socketPresenceListenerEnabled,
+    EnvKeys.socketConnectionReadyCompatMode,
+    EnvKeys.socketPayloadSigningKey,
+    EnvKeys.socketPayloadSigningKeyId,
+    EnvKeys.socketPayloadRequireSignature,
     EnvKeys.e2eAgentId,
     EnvKeys.e2eClientToken,
     EnvKeys.e2eClientEmail,
@@ -305,4 +378,23 @@ String? _readOptionalEnvFile(String path) {
     return null;
   }
   return file.readAsStringSync();
+}
+
+final class _E2eAuthSessionAccessor implements AuthSessionAccessor {
+  _E2eAuthSessionAccessor(this._sessionHolder);
+
+  final E2eAuthSessionHolder _sessionHolder;
+
+  @override
+  Future<AuthSessionModel?> read() async => _sessionHolder.value;
+
+  @override
+  Future<void> save(AuthSessionModel session) async {
+    _sessionHolder.value = session;
+  }
+
+  @override
+  Future<void> clear() async {
+    _sessionHolder.value = null;
+  }
 }

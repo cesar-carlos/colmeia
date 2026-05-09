@@ -623,6 +623,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       await _localDataSource.clearSession();
       await _appCacheStore.clearAll();
+      _sessionEvents?.notifyInvalidated();
       AppLogger.info(
         'User session cleared',
         context: const <String, Object?>{
@@ -642,6 +643,7 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       await _localDataSource.clearSession();
       await _appCacheStore.clearAll();
+      _sessionEvents?.notifyInvalidated();
       return const Success<Unit, AppFailure>(unit);
     } on Object catch (error, stackTrace) {
       AppLogger.error(

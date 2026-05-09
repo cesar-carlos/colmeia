@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:colmeia/app/router/app_navigation.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -527,6 +529,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   AppShellPageIntro(
+                    sectionLabel: l10n.shellNavSalesLabel,
+                    onSectionLabelTap: () => context.goTo(AppRoute.sales),
                     subtitle: l10n.salesProdutoTendenciaMediaMovelPageSubtitle,
                   ),
                   SizedBox(height: tokens.sectionSpacing),

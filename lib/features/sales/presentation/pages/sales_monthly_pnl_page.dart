@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_navigation.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -452,6 +454,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         children: <Widget>[
           AppShellPageIntro(
             sectionLabel: l10n.shellNavSalesLabel,
+            onSectionLabelTap: () => context.goTo(AppRoute.sales),
             title: l10n.salesCardMonthlyPnlTitle,
             subtitle: l10n.salesMonthlyPnlPageSubtitle,
           ),

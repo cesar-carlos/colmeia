@@ -109,6 +109,7 @@ void main() {
     check(capturedRequest.trimmedAgentId).equals('agent-1');
     check(capturedRequest.trimmedClientToken).equals('token-123');
     check(capturedRequest.bridgeTimeoutMs).equals(120000);
+    check(capturedRequest.useRelay).isTrue();
     check(capturedRequest.namedParams['dataVendaInicio']).equals('2026-01-01');
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
     check(capturedRequest.sql).contains('ResumoVendaProdutoDiario');

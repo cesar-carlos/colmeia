@@ -120,6 +120,7 @@ class _InteractiveFactory implements SocketIoClientFactory {
 ConsumerSocketConnection _build({
   required _FakeTokenProvider tokenProvider,
   SocketIoClientFactory? factory,
+  Duration handshakeTimeout = const Duration(milliseconds: 50),
 }) {
   return ConsumerSocketConnection(
     urlResolver: AppSocketUrlResolver(
@@ -128,7 +129,7 @@ ConsumerSocketConnection _build({
     tokenProvider: tokenProvider,
     factory: factory ?? _RecordingFactory(),
     readyDecoder: const JsonOnlyConnectionReadyDecoder(),
-    handshakeTimeout: const Duration(milliseconds: 50),
+    handshakeTimeout: handshakeTimeout,
     maxReconnectAttempts: 1,
     reconnectInitialDelay: const Duration(milliseconds: 1),
     reconnectMaxDelay: const Duration(milliseconds: 1),
@@ -310,6 +311,72 @@ void main() {
         check(last).isA<ConsumerSocketDisconnected>();
         check((last as ConsumerSocketDisconnected).reason).equals(
           'transport close',
+        );
+      },
+    );
+
+    test(
+      'pause cancels in-flight connect without waiting for handshake timeout',
+      () async {
+        final tokens = _FakeTokenProvider(token: 'tok');
+        final factory = _InteractiveFactory();
+        final conn = _build(
+          tokenProvider: tokens,
+          factory: factory,
+          handshakeTimeout: const Duration(seconds: 5),
+        );
+        addTearDown(() async {
+          await conn.dispose();
+          await tokens.dispose();
+        });
+
+        final stopwatch = Stopwatch()..start();
+        final connectFuture = conn.connect();
+        await Future<void>.delayed(Duration.zero);
+        final expectation = check(connectFuture).throws<StateError>();
+
+        await conn.pause();
+        await expectation;
+        stopwatch.stop();
+
+        check(stopwatch.elapsed).isLessThan(const Duration(milliseconds: 200));
+        final state = conn.state;
+        check(state).isA<ConsumerSocketDisconnected>();
+        check((state as ConsumerSocketDisconnected).reason).equals(
+          'app_paused',
+        );
+      },
+    );
+
+    test(
+      'remote disconnect during handshake fails without waiting for timeout',
+      () async {
+        final tokens = _FakeTokenProvider(token: 'tok');
+        final factory = _InteractiveFactory();
+        final conn = _build(
+          tokenProvider: tokens,
+          factory: factory,
+          handshakeTimeout: const Duration(seconds: 5),
+        );
+        addTearDown(() async {
+          await conn.dispose();
+          await tokens.dispose();
+        });
+
+        final stopwatch = Stopwatch()..start();
+        final connectFuture = conn.connect();
+        await Future<void>.delayed(Duration.zero);
+        final expectation = check(connectFuture).throws<StateError>();
+
+        factory.fire('disconnect', 'transport close');
+        await expectation;
+        stopwatch.stop();
+
+        check(stopwatch.elapsed).isLessThan(const Duration(milliseconds: 200));
+        final state = conn.state;
+        check(state).isA<ConsumerSocketError>();
+        check((state as ConsumerSocketError).cause.toString()).contains(
+          'handshake_disconnected: transport close',
         );
       },
     );

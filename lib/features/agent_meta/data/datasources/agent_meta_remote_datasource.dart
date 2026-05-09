@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
 import 'package:colmeia/core/network/bridge_rpc_response.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
+import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_meta/data/models/agent_get_profile_response_dto.dart';
 import 'package:colmeia/features/agent_meta/data/models/client_token_policy_response_dto.dart';
 import 'package:colmeia/features/agent_meta/data/models/rpc_discover_response_dto.dart';
@@ -165,5 +166,133 @@ class SocketAgentMetaRemoteDataSource extends _BridgeAgentMetaRemoteDataSource {
       body: body,
       rpcId: rpcId,
     );
+  }
+}
+
+/// Socket datasource with a permanent REST fallback for socket failures that
+/// are session/server-configuration scoped. This keeps agent metadata aligned
+/// with the SQL bridge path: when the consumer namespace rejects the current
+/// JWT role, or socket auth is exhausted, metadata calls do not become the
+/// only failing part of an otherwise REST-fallback-capable flow.
+class SocketWithRestFallbackAgentMetaRemoteDataSource
+    implements AgentMetaRemoteDataSource {
+  SocketWithRestFallbackAgentMetaRemoteDataSource({
+    required AgentMetaRemoteDataSource socketDelegate,
+    required AgentMetaRemoteDataSource restDelegate,
+    void Function(SocketDispatchException trigger)? onFallback,
+  }) : _socketDelegate = socketDelegate,
+       _restDelegate = restDelegate,
+       _onFallback = onFallback;
+
+  final AgentMetaRemoteDataSource _socketDelegate;
+  final AgentMetaRemoteDataSource _restDelegate;
+  final void Function(SocketDispatchException trigger)? _onFallback;
+
+  bool _latched = false;
+
+  bool get isLatchedToRest => _latched;
+
+  @override
+  String get transportLabel => _latched
+      ? _restDelegate.transportLabel
+      : '${_socketDelegate.transportLabel}+rest_fallback';
+
+  @override
+  Future<AgentGetProfileResponseDto> agentGetProfile({
+    required String agentId,
+    String? clientToken,
+  }) {
+    return _run(
+      socketCall: () => _socketDelegate.agentGetProfile(
+        agentId: agentId,
+        clientToken: clientToken,
+      ),
+      restCall: () => _restDelegate.agentGetProfile(
+        agentId: agentId,
+        clientToken: clientToken,
+      ),
+    );
+  }
+
+  @override
+  Future<ClientTokenPolicyResponseDto> clientTokenGetPolicy({
+    required String agentId,
+    required String clientToken,
+  }) {
+    return _run(
+      socketCall: () => _socketDelegate.clientTokenGetPolicy(
+        agentId: agentId,
+        clientToken: clientToken,
+      ),
+      restCall: () => _restDelegate.clientTokenGetPolicy(
+        agentId: agentId,
+        clientToken: clientToken,
+      ),
+    );
+  }
+
+  @override
+  Future<RpcDiscoverResponseDto> rpcDiscover({
+    required String agentId,
+  }) {
+    return _run(
+      socketCall: () => _socketDelegate.rpcDiscover(agentId: agentId),
+      restCall: () => _restDelegate.rpcDiscover(agentId: agentId),
+    );
+  }
+
+  Future<T> _run<T>({
+    required Future<T> Function() socketCall,
+    required Future<T> Function() restCall,
+  }) async {
+    if (_latched) {
+      return restCall();
+    }
+    try {
+      return await socketCall();
+    } on SocketDispatchNamespaceForbidden catch (trigger) {
+      _latch(trigger, reason: 'namespace_forbidden');
+      return restCall();
+    } on SocketDispatchUnauthorized catch (trigger) {
+      _latch(trigger, reason: 'unauthorized_exhausted');
+      return restCall();
+    }
+  }
+
+  void _latch(
+    SocketDispatchException trigger, {
+    required String reason,
+  }) {
+    if (_latched) {
+      return;
+    }
+    _latched = true;
+    AppLogger.warning(
+      'Agent meta datasource latched to REST fallback '
+      '(socket permanent failure)',
+      context: <String, Object?>{
+        'component': 'SocketWithRestFallbackAgentMetaRemoteDataSource',
+        'reason': reason,
+        'triggerCode': trigger.code,
+        'triggerMessage': trigger.message,
+      },
+      error: trigger,
+    );
+    final hook = _onFallback;
+    if (hook == null) {
+      return;
+    }
+    try {
+      hook(trigger);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Agent meta fallback observability hook threw',
+        context: const <String, Object?>{
+          'component': 'SocketWithRestFallbackAgentMetaRemoteDataSource',
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

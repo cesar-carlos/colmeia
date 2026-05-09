@@ -1,5 +1,6 @@
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/router/shell_section_navigation.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -17,6 +18,7 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.primary = true,
     this.showBrandTitle = true,
+    this.showNavigationDrawer = false,
   });
 
   /// When `false`, sits beside the desktop rail in the body (no duplicate
@@ -24,6 +26,10 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool primary;
 
   final bool showBrandTitle;
+
+  /// When the shell uses a [Scaffold.drawer], set `true` so a back action can
+  /// be shown next to the menu without replacing the default drawer control.
+  final bool showNavigationDrawer;
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -40,8 +46,47 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
           selectAppShellUserSummary,
         );
 
-    final showUserDetails = AppBreakpoints.useRail(context);
+    final useRail = AppBreakpoints.useRail(context);
+    final showUserDetails = useRail;
+    final materialLocalizations = MaterialLocalizations.of(context);
+    final showBack = shellSectionBackVisible(context);
+    final compositeBackAndDrawer = showBack && showNavigationDrawer;
     final titleSpacing = showBrandTitle ? 0.0 : tokens.contentSpacing;
+
+    final Widget? leading;
+    final bool automaticallyImplyLeading;
+    final double? leadingWidth;
+    if (compositeBackAndDrawer) {
+      automaticallyImplyLeading = false;
+      leadingWidth = 112;
+      leading = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          IconButton(
+            tooltip: materialLocalizations.backButtonTooltip,
+            onPressed: () => navigateShellSectionUp(context),
+            icon: const Icon(Icons.arrow_back),
+          ),
+          IconButton(
+            tooltip: materialLocalizations.openAppDrawerTooltip,
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            icon: const Icon(Icons.menu_rounded),
+          ),
+        ],
+      );
+    } else if (showBack) {
+      automaticallyImplyLeading = false;
+      leadingWidth = null;
+      leading = IconButton(
+        tooltip: materialLocalizations.backButtonTooltip,
+        onPressed: () => navigateShellSectionUp(context),
+        icon: const Icon(Icons.arrow_back),
+      );
+    } else {
+      automaticallyImplyLeading = true;
+      leadingWidth = null;
+      leading = null;
+    }
 
     final brandTitle = Row(
       mainAxisSize: MainAxisSize.min,
@@ -68,6 +113,9 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       primary: primary,
       toolbarHeight: preferredSize.height,
+      automaticallyImplyLeading: automaticallyImplyLeading,
+      leading: leading,
+      leadingWidth: leadingWidth,
       titleSpacing: titleSpacing,
       title: title,
       surfaceTintColor: Colors.transparent,

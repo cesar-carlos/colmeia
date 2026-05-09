@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _InMemoryCacheStore implements AppCacheStore {
@@ -116,5 +119,28 @@ void main() {
     );
 
     check(result).isNull();
+  });
+
+  test('catalog cache key uses stable digest for optional search', () async {
+    final store = _InMemoryCacheStore();
+    datasource = ClientAgentsLocalDataSource(store);
+    const payload = PaginatedAgentCatalogResponseDto(
+      agents: [],
+      count: 0,
+      total: 0,
+      page: 1,
+      pageSize: 20,
+    );
+
+    await datasource.saveCatalog(
+      userId: 'user_x',
+      query: const PaginatedQuery(),
+      payload: payload,
+      search: 'A-B',
+    );
+
+    final key = store.keys.single;
+    final expectedDigest = sha1.convert(utf8.encode('A-B')).toString();
+    check(key).contains('a_b_h$expectedDigest');
   });
 }

@@ -71,6 +71,7 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
         maxRows:
             AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamentoDiario,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

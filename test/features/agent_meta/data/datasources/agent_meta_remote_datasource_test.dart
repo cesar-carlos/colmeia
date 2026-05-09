@@ -3,6 +3,9 @@ import 'package:colmeia/core/network/bridge_rpc_response.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_meta/data/datasources/agent_meta_remote_datasource.dart';
+import 'package:colmeia/features/agent_meta/data/models/agent_get_profile_response_dto.dart';
+import 'package:colmeia/features/agent_meta/data/models/client_token_policy_response_dto.dart';
+import 'package:colmeia/features/agent_meta/data/models/rpc_discover_response_dto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeSender implements AgentCommandSender {
@@ -42,6 +45,61 @@ class _FakeSender implements AgentCommandSender {
       throw errorToThrow!;
     }
     return response;
+  }
+}
+
+class _FakeAgentMetaRemoteDataSource implements AgentMetaRemoteDataSource {
+  _FakeAgentMetaRemoteDataSource(this.transportLabel);
+
+  @override
+  final String transportLabel;
+
+  int profileCalls = 0;
+  int policyCalls = 0;
+  int discoverCalls = 0;
+  Exception? errorToThrow;
+
+  @override
+  Future<AgentGetProfileResponseDto> agentGetProfile({
+    required String agentId,
+    String? clientToken,
+  }) async {
+    profileCalls++;
+    _throwIfNeeded();
+    return AgentGetProfileResponseDto(agentId: agentId, name: transportLabel);
+  }
+
+  @override
+  Future<ClientTokenPolicyResponseDto> clientTokenGetPolicy({
+    required String agentId,
+    required String clientToken,
+  }) async {
+    policyCalls++;
+    _throwIfNeeded();
+    return ClientTokenPolicyResponseDto(
+      tokenIdentifier: clientToken,
+      allTables: false,
+      allViews: false,
+      allPermissions: false,
+      tableRules: const <String>[],
+      viewRules: const <String>[],
+      permissionRules: const <String>[],
+      revoked: false,
+    );
+  }
+
+  @override
+  Future<RpcDiscoverResponseDto> rpcDiscover({required String agentId}) async {
+    discoverCalls++;
+    _throwIfNeeded();
+    return RpcDiscoverResponseDto(methods: <String>{transportLabel});
+  }
+
+  void _throwIfNeeded() {
+    final error = errorToThrow;
+    if (error != null) {
+      throw error;
+    }
   }
 }
 
@@ -127,5 +185,57 @@ void main() {
     await check(
       dataSource.rpcDiscover(agentId: 'agent-42'),
     ).throws<BridgeRpcException>();
+  });
+
+  group('SocketWithRestFallbackAgentMetaRemoteDataSource', () {
+    test(
+      'latches to REST after namespace-forbidden socket failure',
+      () async {
+        final socket = _FakeAgentMetaRemoteDataSource('socket')
+          ..errorToThrow = const SocketDispatchNamespaceForbidden(
+            message: 'forbidden',
+          );
+        final rest = _FakeAgentMetaRemoteDataSource('rest');
+        SocketDispatchException? fallbackTrigger;
+        final datasource = SocketWithRestFallbackAgentMetaRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+          onFallback: (trigger) => fallbackTrigger = trigger,
+        );
+
+        final first = await datasource.agentGetProfile(agentId: 'agent-42');
+        final second = await datasource.rpcDiscover(agentId: 'agent-42');
+
+        check(first.name).equals('rest');
+        check(second.methods).contains('rest');
+        check(datasource.isLatchedToRest).isTrue();
+        check(fallbackTrigger).isA<SocketDispatchNamespaceForbidden>();
+        check(socket.profileCalls).equals(1);
+        check(socket.discoverCalls).equals(0);
+        check(rest.profileCalls).equals(1);
+        check(rest.discoverCalls).equals(1);
+      },
+    );
+
+    test('does not fallback for transient socket failures', () async {
+      final socket = _FakeAgentMetaRemoteDataSource('socket')
+        ..errorToThrow = const SocketDispatchTimeout(message: 'timeout');
+      final rest = _FakeAgentMetaRemoteDataSource('rest');
+      final datasource = SocketWithRestFallbackAgentMetaRemoteDataSource(
+        socketDelegate: socket,
+        restDelegate: rest,
+      );
+
+      await check(
+        datasource.clientTokenGetPolicy(
+          agentId: 'agent-42',
+          clientToken: 'token',
+        ),
+      ).throws<SocketDispatchTimeout>();
+
+      check(datasource.isLatchedToRest).isFalse();
+      check(socket.policyCalls).equals(1);
+      check(rest.policyCalls).equals(0);
+    });
   });
 }

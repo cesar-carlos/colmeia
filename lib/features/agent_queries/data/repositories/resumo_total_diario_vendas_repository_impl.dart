@@ -2,6 +2,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
+import 'package:colmeia/features/agent_queries/data/agent_queries_warn_if_sql_rows_at_cap.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_total_diario_vendas_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
@@ -94,6 +95,12 @@ class ResumoTotalDiarioVendasRepositoryImpl
             (row) => ResumoTotalDiarioVendasRowModel.fromMap(row).toEntity(),
           )
           .toList(growable: false);
+      agentQueriesWarnIfSqlRowsAtCap(
+        operation: _operation,
+        agentId: agentId,
+        returnedRowCount: rows.length,
+        maxRows: AgentQueriesBoundedResultMaxRows.resumoTotalDiarioVendas,
+      );
       if (kDebugMode) {
         _logLoadSummary(
           rows,

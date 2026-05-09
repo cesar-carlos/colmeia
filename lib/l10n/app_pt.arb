@@ -28,6 +28,12 @@
   "shellSignOutDialogConfirm": "Sair",
   "shellSignOutDialogMessage": "Você precisará entrar novamente para acessar os dados.",
   "shellNavMainSemantics": "Navegação principal",
+  "shellSectionBreadcrumbSemantics": "Ir para o início da seção {sectionName}",
+  "@shellSectionBreadcrumbSemantics": {
+    "placeholders": {
+      "sectionName": {"type": "String"}
+    }
+  },
   "userPermissionViewDashboard": "Visão geral",
   "userPermissionManageAgents": "Gestão de agentes",
   "userPermissionViewSales": "Vendas (acesso ao módulo)",

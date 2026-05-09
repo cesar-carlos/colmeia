@@ -28,6 +28,7 @@ class _SocketWiring {
   final Map<String, List<Function>> handlers = <String, List<Function>>{};
   final List<({String event, Object? data})> emits =
       <({String event, Object? data})>[];
+  String? throwOnEmitEvent;
 
   void register(_MockSocket socket) {
     when(() => socket.on(any(), any())).thenAnswer((invocation) {
@@ -53,10 +54,12 @@ class _SocketWiring {
       }
     });
     when(() => socket.emit(any(), any<dynamic>())).thenAnswer((invocation) {
-      emits.add((
-        event: invocation.positionalArguments[0] as String,
-        data: invocation.positionalArguments[1],
-      ));
+      final event = invocation.positionalArguments[0] as String;
+      final data = invocation.positionalArguments[1];
+      if (event == throwOnEmitEvent) {
+        throw StateError('emit failed for $event');
+      }
+      emits.add((event: event, data: data));
     });
   }
 
@@ -566,6 +569,52 @@ void main() {
         check(refillPayload['request_id']).equals('srv-stream-id');
         check(refillPayload['stream_id']).equals('stream-from-ack');
         check(refillPayload['window_size']).equals(2);
+      },
+    );
+
+    test(
+      'stream pull emit failure fails pending stream immediately',
+      () async {
+        final dispatcher = buildDispatcher(
+          defaultTimeout: const Duration(seconds: 5),
+        );
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-pull-emit-fails',
+            },
+          },
+          clientRequestId: 'rpc-pull-emit-fails',
+        );
+
+        final errors = <Object>[];
+        final sub = stream.listen((_) {}, onError: errors.add);
+        addTearDown(sub.cancel);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.throwOnEmitEvent = RelayEventNames.rpcStreamPull;
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-pull-emit-fails',
+          'requestId': 'srv-pull-emit-fails',
+          'success': true,
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        check(errors.length).equals(1);
+        check(errors.single).isA<RelayConversationLost>();
+        check((errors.single as RelayConversationLost).message).contains(
+          'relay:rpc.stream.pull',
+        );
       },
     );
 

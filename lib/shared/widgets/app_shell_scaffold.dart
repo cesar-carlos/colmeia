@@ -82,7 +82,7 @@ class AppShellScaffold extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: const AppShellAppBar(),
+      appBar: AppShellAppBar(showNavigationDrawer: showShellNav),
       drawer: showShellNav
           ? AppShellDrawer(
               currentLocation: currentLocation,

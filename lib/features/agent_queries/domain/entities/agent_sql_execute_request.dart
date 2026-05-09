@@ -80,10 +80,11 @@ class AgentSqlExecuteRequest {
   /// datasource selector and stripped before serialization. Defaults to
   /// `false` so existing call sites remain on the legacy channel.
   ///
-  /// Effective only when `SOCKET_RELAY_ENABLED=true` and
-  /// `AGENT_BRIDGE_TRANSPORT=socket`. With other configurations the hybrid
-  /// datasource falls back to its base channel and logs the bypass for
-  /// observability.
+  /// Effective when the relay stack is registered. Socket transport
+  /// (`AGENT_BRIDGE_TRANSPORT=socket`) implies relay availability; non-socket
+  /// builds can also opt in with `SOCKET_RELAY_ENABLED=true`. With other
+  /// configurations the hybrid datasource falls back to its base channel and
+  /// logs the bypass for observability.
   final bool useRelay;
 
   /// JSON-RPC `command.api_version`. Defaults to [kColmeiaAgentApiVersion]

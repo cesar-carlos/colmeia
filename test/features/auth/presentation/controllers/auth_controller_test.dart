@@ -61,5 +61,27 @@ void main() {
         );
       },
     );
+
+    test(
+      'signOut clears session without keeping invalidation error message',
+      () async {
+        when(
+          () => repository.restoreSession(),
+        ).thenAnswer((_) async => Success<AuthSession, AppFailure>(session));
+        when(() => repository.logout()).thenAnswer((_) async {
+          sessionEvents.notifyInvalidated();
+          return const Success<Unit, AppFailure>(unit);
+        });
+
+        await controller.initialize();
+        expect(controller.isAuthenticated, isTrue);
+
+        await controller.signOut();
+
+        expect(controller.session, isNull);
+        expect(controller.isAuthenticated, isFalse);
+        expect(controller.errorMessage, isNull);
+      },
+    );
   });
 }

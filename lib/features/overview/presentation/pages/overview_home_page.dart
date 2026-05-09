@@ -30,6 +30,7 @@ import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class OverviewHomePage extends StatelessWidget {
@@ -355,8 +356,19 @@ class _OverviewHomeIntro extends StatelessWidget {
           selector: (_, c) => _PeriodTagSlice.fromController(c),
           builder: (context, slice, _) {
             final periodLabel = slice?.label(l10n);
+            final router = GoRouter.maybeOf(context);
+            final route = router == null
+                ? AppRoute.dashboard
+                : AppRoute.fromLocation(
+                    GoRouterState.of(context).matchedLocation,
+                  );
+            final storeScoped = route == AppRoute.dashboardStore;
             return AppShellPageIntro(
               eyebrow: l10n.overviewGreetingEyebrow(greetingName),
+              sectionLabel:
+                  storeScoped ? l10n.shellNavDashboardLabel : null,
+              onSectionLabelTap:
+                  storeScoped ? () => context.goTo(AppRoute.dashboard) : null,
               subtitle: l10n.overviewHomeSubtitle,
               footer: periodLabel != null
                   ? AppTagChip(

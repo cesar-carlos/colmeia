@@ -97,6 +97,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavMainSemantics => 'Navegação principal';
 
   @override
+  String shellSectionBreadcrumbSemantics(String sectionName) {
+    return 'Ir para o início da seção $sectionName';
+  }
+
+  @override
   String get userPermissionViewDashboard => 'Visão geral';
 
   @override
@@ -2998,6 +3003,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get shellNavMainSemantics => 'Navegação principal';
+
+  @override
+  String shellSectionBreadcrumbSemantics(String sectionName) {
+    return 'Ir para o início da seção $sectionName';
+  }
 
   @override
   String get userPermissionViewDashboard => 'Visão geral';

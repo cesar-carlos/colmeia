@@ -267,6 +267,12 @@ abstract class AppLocalizations {
   /// **'Main navigation'**
   String get shellNavMainSemantics;
 
+  /// No description provided for @shellSectionBreadcrumbSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to {sectionName} section home'**
+  String shellSectionBreadcrumbSemantics(String sectionName);
+
   /// No description provided for @userPermissionViewDashboard.
   ///
   /// In en, this message translates to:

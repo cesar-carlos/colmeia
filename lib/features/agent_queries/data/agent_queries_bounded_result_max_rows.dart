@@ -34,6 +34,10 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// One row per company, branch, and calendar day — long ranges × filiais.
   static const int resumoTotalDiarioVendas = 8000;
 
+  /// Same cardinality as [resumoTotalDiarioVendas] with branch municipality
+  /// dimensions in each row.
+  static const int resumoTotalVendasMunicipioFilialDiario = 8000;
+
   /// Suggestion lists for vendedor/bairro/município (`TOP` limits; bridge cap).
   static const int vendasDiariasSuggestionOptions = 128;
 

@@ -18,6 +18,7 @@ import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
+import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
@@ -720,6 +721,40 @@ void main() {
   });
 
   group('RelayCommandDispatcherImpl stream pull_response handling', () {
+    test(
+      'sendStreaming forwards permanent socket prepare failures to the stream',
+      () async {
+        when(connection.connect).thenThrow(
+          StateError(
+            'Consumer socket namespace forbidden: '
+            'role=client namespace=/consumers',
+          ),
+        );
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-stream-forbidden',
+            },
+          },
+          clientRequestId: 'rpc-stream-forbidden',
+        );
+
+        await expectLater(
+          stream,
+          emitsInOrder(<Object>[
+            emitsError(isA<SocketDispatchNamespaceForbidden>()),
+            emitsDone,
+          ]),
+        );
+      },
+    );
+
     test(
       'rejects pending stream when pull_response carries success=false',
       () async {

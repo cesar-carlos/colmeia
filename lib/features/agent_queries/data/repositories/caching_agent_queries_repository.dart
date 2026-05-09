@@ -1,11 +1,9 @@
-import 'dart:convert';
-
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_request_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
-import 'package:crypto/crypto.dart';
 
 /// Short-term cache for idempotent SQL queries to reduce redundant hub calls.
 ///
@@ -17,7 +15,7 @@ import 'package:crypto/crypto.dart';
 /// The cache is keyed by (agentId + sql + params + clientToken) to prevent
 /// stale or cross-user data leakage. Cache entries are invalidated when:
 /// - TTL expires (default 5 seconds)
-/// - Maximum cache size is exceeded (LRU eviction, default 100 entries)
+/// - Maximum cache size is exceeded (LRU eviction, default 500 entries)
 /// - Session changes (clientToken mismatch)
 ///
 /// Only successful results are cached. Failures propagate immediately without
@@ -26,7 +24,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   CachingAgentQueriesRepository({
     required AgentQueriesRepository delegate,
     Duration cacheTtl = const Duration(seconds: 5),
-    int maxCacheSize = 100,
+    int maxCacheSize = 500,
   }) : _delegate = delegate,
        _cacheTtl = cacheTtl,
        _maxCacheSize = maxCacheSize;
@@ -118,14 +116,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   }
 
   String _buildKey(AgentSqlExecuteRequest request) {
-    final components = <String>[
-      request.agentId,
-      request.sql,
-      jsonEncode(request.namedParams),
-      request.clientToken ?? '',
-    ];
-    final combined = components.join('|');
-    return md5.convert(utf8.encode(combined)).toString();
+    return AgentQueriesRequestKey.build(request);
   }
 
   /// Clears all cached entries. Useful for testing or explicit cache busting.

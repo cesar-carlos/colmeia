@@ -77,6 +77,7 @@ class ResumoParcelasFormaPagamentoPorMesRepositoryImpl
         maxRows:
             AgentQueriesBoundedResultMaxRows.resumoParcelasFormaPagamentoPorMes,
       ),
+      useRelay: true,
     );
 
     final result = await _agentQueriesRepository.executeSql(request);

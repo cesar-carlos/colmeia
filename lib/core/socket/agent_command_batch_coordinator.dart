@@ -110,6 +110,7 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     final completer = Completer<Map<String, dynamic>>();
     final pending = _PendingRpc(
       rpcId: rpcId,
+      bridgeTimeoutMs: _readBridgeTimeoutMs(body),
       command: _extractCommand(body),
       completer: completer,
       timeout: timeout ?? _defaultTimeout,
@@ -201,7 +202,7 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     final body = _buildSingleBody(
       agentId: agentId,
       command: pending.command,
-      timeout: pending.timeout,
+      bridgeTimeoutMs: pending.bridgeTimeoutMs,
     );
     try {
       final response = await _directSender.send(
@@ -229,7 +230,6 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     final body = _buildBatchBody(
       agentId: agentId,
       items: items,
-      timeout: timeout,
     );
 
     AppLogger.debug(
@@ -449,11 +449,11 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
   Map<String, Object?> _buildSingleBody({
     required String agentId,
     required Map<String, Object?> command,
-    required Duration? timeout,
+    required int? bridgeTimeoutMs,
   }) {
     return <String, Object?>{
       'agentId': agentId,
-      if (timeout != null) 'timeoutMs': timeout.inMilliseconds,
+      'timeoutMs': ?bridgeTimeoutMs,
       'command': command,
     };
   }
@@ -461,11 +461,10 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
   Map<String, Object?> _buildBatchBody({
     required String agentId,
     required List<_PendingRpc> items,
-    required Duration timeout,
   }) {
     return <String, Object?>{
       'agentId': agentId,
-      'timeoutMs': timeout.inMilliseconds,
+      'timeoutMs': ?_resolveBridgeBatchTimeoutMs(items),
       // Body-level pagination is intentionally omitted: it is invalid for
       // batch payloads (hub spec).
       'command': items.map((p) => p.command).toList(growable: false),
@@ -481,11 +480,37 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     }
     return max;
   }
+
+  int? _readBridgeTimeoutMs(Map<String, Object?> body) {
+    final raw = body['timeoutMs'];
+    if (raw is int) {
+      return raw;
+    }
+    if (raw is num) {
+      return raw.toInt();
+    }
+    if (raw is String) {
+      return int.tryParse(raw.trim());
+    }
+    return null;
+  }
+
+  int? _resolveBridgeBatchTimeoutMs(List<_PendingRpc> items) {
+    int? max;
+    for (final item in items) {
+      final value = item.bridgeTimeoutMs;
+      if (value != null && (max == null || value > max)) {
+        max = value;
+      }
+    }
+    return max;
+  }
 }
 
 class _PendingRpc {
   _PendingRpc({
     required this.rpcId,
+    required this.bridgeTimeoutMs,
     required this.command,
     required this.completer,
     required this.timeout,
@@ -493,6 +518,7 @@ class _PendingRpc {
   });
 
   final String rpcId;
+  final int? bridgeTimeoutMs;
   final Map<String, Object?> command;
   final Completer<Map<String, dynamic>> completer;
   final Duration timeout;

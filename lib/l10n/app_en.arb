@@ -28,6 +28,12 @@
   "shellSignOutDialogConfirm": "Sign out",
   "shellSignOutDialogMessage": "You will need to sign in again to access your data.",
   "shellNavMainSemantics": "Main navigation",
+  "shellSectionBreadcrumbSemantics": "Go to {sectionName} section home",
+  "@shellSectionBreadcrumbSemantics": {
+    "placeholders": {
+      "sectionName": {"type": "String"}
+    }
+  },
   "userPermissionViewDashboard": "Overview",
   "userPermissionManageAgents": "Agent management",
   "userPermissionViewSales": "Sales (module access)",

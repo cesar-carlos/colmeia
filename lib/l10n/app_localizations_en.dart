@@ -95,6 +95,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shellNavMainSemantics => 'Main navigation';
 
   @override
+  String shellSectionBreadcrumbSemantics(String sectionName) {
+    return 'Go to $sectionName section home';
+  }
+
+  @override
   String get userPermissionViewDashboard => 'Overview';
 
   @override

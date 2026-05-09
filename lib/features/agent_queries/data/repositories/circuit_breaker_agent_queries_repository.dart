@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -100,13 +101,33 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
   bool _isCircuitBreakingFailure(AppFailure failure) {
     if (failure is NetworkFailure) {
       final statusCode = failure.context['httpStatusCode'] as int?;
+      final transportCode = failure
+          .context[AgentQueriesFailureContext.transportCodeField]
+          ?.toString()
+          .trim()
+          .toLowerCase();
+      final message = failure.message.toLowerCase();
       return statusCode == 503 ||
           statusCode == 502 ||
           statusCode == 504 ||
-          failure.message.contains('timeout') ||
-          failure.message.contains('connection');
+          _isCircuitBreakingTransportCode(transportCode) ||
+          message.contains('timeout') ||
+          message.contains('timed out') ||
+          message.contains('connection') ||
+          message.contains('disconnected');
     }
     return false;
+  }
+
+  bool _isCircuitBreakingTransportCode(String? code) {
+    return code == 'timeout' ||
+        code == 'disconnected' ||
+        code == 'conversation_lost' ||
+        code == 'conversation_start_failed' ||
+        code == 'service_unavailable' ||
+        code == 'unavailable' ||
+        code == 'overload' ||
+        code == 'overloaded';
   }
 
   void _onSuccess() {

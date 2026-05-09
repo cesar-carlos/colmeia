@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_navigation.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -127,6 +129,8 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
               children: <Widget>[
                 AppShellPageIntro(
                   eyebrow: l10n.clientAgentDetailEyebrow,
+                  sectionLabel: l10n.shellNavAgentsLabel,
+                  onSectionLabelTap: () => context.goTo(AppRoute.agents),
                   title: l10n.clientAgentDetailTitle,
                   subtitle: l10n.clientAgentDetailSubtitle,
                   footer: showRefreshFooter

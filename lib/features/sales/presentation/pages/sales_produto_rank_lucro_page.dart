@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_navigation.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
@@ -351,6 +353,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
         children: <Widget>[
           AppShellPageIntro(
             sectionLabel: l10n.shellNavSalesLabel,
+            onSectionLabelTap: () => context.goTo(AppRoute.sales),
             title: l10n.salesCardProdutoRankLucroTitle,
             subtitle: l10n.salesHubSubtitle,
           ),
