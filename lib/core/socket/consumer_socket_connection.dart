@@ -121,6 +121,7 @@ class ConsumerSocketConnection {
     _socket = null;
     if (socket != null) {
       try {
+        _detachHandshakeListeners(socket, includeDisconnect: true);
         socket
           ..disconnect()
           ..dispose();
@@ -349,8 +350,19 @@ class ConsumerSocketConnection {
       ..onDisconnect((reason) {
         // If the disconnect happens after we already moved to `connected`,
         // emit a clean disconnected state so callers can react.
+        if (identical(_socket, socket)) {
+          _socket = null;
+        }
         if (_state is! ConsumerSocketConnecting) {
-          _setState(ConsumerSocketDisconnected(reason: reason?.toString()));
+          final reasonText = reason?.toString();
+          AppLogger.warning(
+            'Consumer socket disconnected by remote peer',
+            context: <String, Object?>{
+              'component': 'ConsumerSocketConnection',
+              'reason': reasonText,
+            },
+          );
+          _setState(ConsumerSocketDisconnected(reason: reasonText));
         }
       })
       ..connect();
@@ -365,6 +377,7 @@ class ConsumerSocketConnection {
 
     if (outcome is! _ConnectSuccess) {
       try {
+        _detachHandshakeListeners(socket, includeDisconnect: true);
         socket
           ..disconnect()
           ..dispose();
@@ -372,13 +385,23 @@ class ConsumerSocketConnection {
         // Already in shutdown path; nothing else to do.
       }
       _socket = null;
+    } else {
+      _detachHandshakeListeners(socket, includeDisconnect: false);
     }
+    return outcome;
+  }
+
+  void _detachHandshakeListeners(
+    io.Socket socket, {
+    required bool includeDisconnect,
+  }) {
     socket
       ..off('connection:ready')
       ..off('app:error')
-      ..off('connect_error')
-      ..off('disconnect');
-    return outcome;
+      ..off('connect_error');
+    if (includeDisconnect) {
+      socket.off('disconnect');
+    }
   }
 
   /// Maps an `app:error` payload received during the handshake into a

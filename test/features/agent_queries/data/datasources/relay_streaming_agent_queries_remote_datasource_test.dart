@@ -165,11 +165,13 @@ void main() {
     });
 
     test(
-      'builds a body that includes the same agentId + sql.execute method',
+      'builds the shared sql.execute body and correlates it with '
+      'clientRequestId',
       () async {
         final dispatcher = _MockRelayDispatcher();
         final captured = <Map<String, Object?>>[];
         String? capturedAgentId;
+        String? capturedClientRequestId;
         when(
           () => dispatcher.sendStreaming(
             agentId: any(named: 'agentId'),
@@ -180,6 +182,8 @@ void main() {
           ),
         ).thenAnswer((invocation) {
           capturedAgentId = invocation.namedArguments[#agentId] as String?;
+          capturedClientRequestId =
+              invocation.namedArguments[#clientRequestId] as String?;
           captured.add(
             (invocation.namedArguments[#body] as Map<dynamic, dynamic>).map(
               (k, v) => MapEntry(k.toString(), v as Object?),
@@ -195,8 +199,15 @@ void main() {
             .streamSqlExecute(
               const AgentSqlExecuteRequest(
                 agentId: 'agent-1',
-                sql: 'SELECT * FROM Cliente',
+                sql: '''
+                  SELECT *
+                    FROM Cliente
+                   WHERE ativo = :ativo
+                ''',
+                namedParams: <String, Object?>{'ativo': true},
                 clientToken: 'token',
+                useRelay: true,
+                payloadFrameCompression: RelayPayloadFrameCompression.always,
               ),
             )
             .toList();
@@ -205,8 +216,18 @@ void main() {
         check(captured.length).equals(1);
         final body = captured.single;
         check(body['agentId']).equals('agent-1');
+        check(body['payloadFrameCompression']).equals('always');
+        check(body.containsKey('useRelay')).isFalse();
         final command = body['command']! as Map<dynamic, dynamic>;
+        check(command['id']).equals(capturedClientRequestId);
         check(command['method']).equals('sql.execute');
+        final params = command['params']! as Map<dynamic, dynamic>;
+        check(params['sql']).equals(
+          'SELECT * FROM Cliente WHERE ativo = :ativo',
+        );
+        check(params['client_token']).equals('token');
+        final namedParams = params['params']! as Map<dynamic, dynamic>;
+        check(namedParams['ativo']).equals(true);
       },
     );
 

@@ -146,11 +146,15 @@ void main() {
             const SocketDispatchAppError(
               message: 'overloaded',
               serverCode: 'SERVICE_UNAVAILABLE',
+              retryAfter: Duration(milliseconds: 750),
             ),
           ),
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<NetworkFailure>();
+        check((failure as NetworkFailure).retryAfter).equals(
+          const Duration(milliseconds: 750),
+        );
         check(
           failure.context[AgentQueriesFailureContext.transportCodeField],
         ).equals('SERVICE_UNAVAILABLE');
@@ -310,11 +314,15 @@ void main() {
           const RelayRequestRejected(
             message: 'too many',
             serverCode: 'RATE_LIMITED',
+            retryAfter: Duration(seconds: 2),
           ),
         ),
       );
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<NetworkFailure>();
+      check((failure as NetworkFailure).retryAfter).equals(
+        const Duration(seconds: 2),
+      );
       check(
         failure.context[AgentQueriesFailureContext.transportCodeField],
       ).equals('RATE_LIMITED');

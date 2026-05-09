@@ -38,9 +38,22 @@ class _SocketWiring {
       handlers.putIfAbsent(name, () => <Function>[]).add(handler);
       return () {};
     });
-    // off(name) and off(name, handler) are void; mocktail tolerates them
-    // unstubbed. We do not need to track removals here because the test
-    // sets fresh wiring per `setUp`.
+    when(() => socket.off(any())).thenAnswer((invocation) {
+      final name = invocation.positionalArguments[0] as String;
+      handlers.remove(name);
+    });
+    when(() => socket.off(any(), any())).thenAnswer((invocation) {
+      final name = invocation.positionalArguments[0] as String;
+      final handler = invocation.positionalArguments[1];
+      if (handler == null) {
+        handlers.remove(name);
+        return;
+      }
+      handlers[name]?.remove(handler);
+      if (handlers[name]?.isEmpty ?? false) {
+        handlers.remove(name);
+      }
+    });
     when(() => socket.emit(any(), any<dynamic>())).thenAnswer((invocation) {
       emits.add((
         event: invocation.positionalArguments[0] as String,
@@ -297,15 +310,100 @@ void main() {
           'error': <String, Object?>{
             'code': 'RATE_LIMITED',
             'message': 'too many requests',
+            'data': <String, Object?>{'retry_after_ms': 1250},
           },
         });
 
         await check(future).throws<RelayRequestRejected>(
-          (subject) =>
-              subject.has((e) => e.code, 'code').equals('RATE_LIMITED'),
+          (subject) => subject
+            ..has((e) => e.code, 'code').equals('RATE_LIMITED')
+            ..has((e) => e.retryAfter, 'retryAfter').equals(
+              const Duration(milliseconds: 1250),
+            ),
         );
       },
     );
+
+    test('reattaches relay listeners after socket reconnect', () async {
+      final socketB = _MockSocket();
+      final wiringB = _SocketWiring()..register(socketB);
+      var currentSocket = socket;
+      when(() => connection.raw).thenAnswer((_) => currentSocket);
+
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final first = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-before-drop',
+          },
+        },
+        clientRequestId: 'rpc-before-drop',
+      );
+      await Future<void>.delayed(Duration.zero);
+      final firstFailure = expectLater(
+        first,
+        throwsA(isA<RelayConversationLost>()),
+      );
+
+      stateController.add(
+        const ConsumerSocketDisconnected(reason: 'transport close'),
+      );
+      await firstFailure;
+
+      currentSocket = socketB;
+      final second = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-after-drop',
+          },
+        },
+        clientRequestId: 'rpc-after-drop',
+      );
+      await Future<void>.delayed(Duration.zero);
+      wiringB.fire(RelayEventNames.conversationStarted, <String, Object?>{
+        'success': true,
+        'conversationId': 'conv-agent-1b',
+        'agentId': 'agent-1',
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      wiringB.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1b',
+        'clientRequestId': 'rpc-after-drop',
+        'requestId': 'srv-after-drop',
+        'success': true,
+      });
+      wiringB.fire(
+        RelayEventNames.rpcResponse,
+        _buildResponseFrame(
+          <String, Object?>{
+            'response': <String, Object?>{
+              'type': 'single',
+              'item': <String, Object?>{
+                'id': 'rpc-after-drop',
+                'success': true,
+              },
+            },
+          },
+          requestId: 'srv-after-drop',
+        ),
+      );
+
+      final result = await second;
+      check(result['response']).isA<Map<dynamic, dynamic>>();
+      check(wiring.handlers[RelayEventNames.rpcResponse]).isNull();
+      check(wiringB.handlers[RelayEventNames.rpcResponse]?.length).equals(1);
+    });
 
     test(
       'terminal_status != completed on rpc.complete fails as RelayStreamTerminated',
@@ -668,6 +766,7 @@ void main() {
           'error': <String, Object?>{
             'code': 'RATE_LIMITED',
             'message': 'pull window exhausted',
+            'data': <String, Object?>{'retryAfterMs': 900},
           },
           'rateLimit': <String, Object?>{
             'remainingCredits': 0,
@@ -681,6 +780,7 @@ void main() {
         check(error).isA<RelayRequestRejected>();
         final rejected = error as RelayRequestRejected;
         check(rejected.code).equals('RATE_LIMITED');
+        check(rejected.retryAfter).equals(const Duration(milliseconds: 900));
       },
     );
 

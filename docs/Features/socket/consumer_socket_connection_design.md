@@ -887,23 +887,25 @@ Outcomes em `RelayRpcSuccess`/`RelayRpcFailure` continuam idênticos
 para presença e métricas.
 
 **Auto-pull rolante.** Ao receber `relay:rpc.accepted`, o dispatcher
-emite imediatamente `relay:rpc.stream.pull` com
-`windowSize = initialWindow` (env `SOCKET_RELAY_STREAM_INITIAL_WINDOW`,
-default 32). A cada chunk decrementa `outstandingCredits`; quando ele
-cai a/abaixo de `refillThreshold` (env
-`SOCKET_RELAY_STREAM_REFILL_THRESHOLD`, default 16), emite um novo
-pull granting `initialWindow - outstanding` créditos para reenchemer
-até a janela cheia.
+emite imediatamente `relay:rpc.stream.pull` com envelope JSON
+`{ conversationId, frame }`. O `frame` e um `PayloadFrame` cujo payload
+logico contem `request_id`, `window_size = initialWindow` (env
+`SOCKET_RELAY_STREAM_INITIAL_WINDOW`, default 32) e, quando o hub ja
+informou, `stream_id`. A cada chunk decrementa `outstandingCredits`;
+quando ele cai a/abaixo de `refillThreshold` (env
+`SOCKET_RELAY_STREAM_REFILL_THRESHOLD`, default 16), emite um novo pull
+granting `initialWindow - outstanding` creditos para reenchemer ate a
+janela cheia, preservando o `stream_id`.
 
 **Casos limite cobertos pelos testes**
 (`test/core/socket/relay/relay_command_dispatcher_streaming_test.dart`):
 
 | Cenário                                              | Comportamento                                                                               |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Pull antes de `accepted`                             | Não emite. Pull só sai após `requestId` conhecido.                                          |
+| Pull antes de `accepted`                             | Não emite. Pull só sai após `requestId` conhecido; o payload usa `request_id`.              |
 | `relay:rpc.response` inesperado num caller streaming | Forward como single-chunk + `close()` (legal sob o protocolo).                              |
 | `terminal_status: aborted`/`error`                   | `addError(RelayStreamTerminated(stream_<status>))` + `close()`.                             |
-| `accepted` com `success: false`                      | `addError(RelayRequestRejected(serverCode: ...))` + `close()`.                              |
+| `accepted` com `success: false`                      | `addError(RelayRequestRejected(serverCode: ..., retryAfter: ...))` + `close()`.             |
 | Timeout                                              | `addError(RelayRequestTimeout)` + `close()`.                                                |
 | `dispatcher.dispose()` mid-stream                    | `addError(RelayDispatcherDisposed)` + `close()`.                                            |
 | `relay:rpc.chunk` num caller unitário                | Conta para diagnóstico (`receivedChunkCount`) e ignora — o `complete` ainda fecha o futuro. |

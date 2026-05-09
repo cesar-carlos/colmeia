@@ -439,9 +439,13 @@ class _SyncfusionRegionMapChartState<T>
                       // Re-tap on already-selected region: deselect,
                       // unless a drill-down would be triggered by this tap.
                       if (regionKey == widget.selectedRegionKey) {
+                        final nextDrill = _nextDrillLevel(
+                          widget.currentDrillLevel,
+                        );
                         final canDrillFurther =
                             widget.style.enableAutoDrillOnTap &&
-                            _nextDrillLevel(widget.currentDrillLevel) != null;
+                            nextDrill != null &&
+                            _shouldAutoDrillTo(nextDrill);
                         if (!canDrillFurther) {
                           widget.onSelectionChanged?.call(
                             AppMapSelectionChangedEvent<T>(
@@ -482,7 +486,8 @@ class _SyncfusionRegionMapChartState<T>
                         final nextDrillLevel = _nextDrillLevel(
                           widget.currentDrillLevel,
                         );
-                        if (nextDrillLevel != null) {
+                        if (nextDrillLevel != null &&
+                            _shouldAutoDrillTo(nextDrillLevel)) {
                           widget.onDrillDownRequested?.call(
                             AppMapDrillDownEvent<T>(
                               item: item,
@@ -700,6 +705,14 @@ class _SyncfusionRegionMapChartState<T>
       AppMapDrillLevel.city => AppMapDrillLevel.custom,
       AppMapDrillLevel.custom => null,
     };
+  }
+
+  bool _shouldAutoDrillTo(AppMapDrillLevel nextLevel) {
+    final ceiling = widget.style.autoDrillCeiling;
+    if (ceiling == null) {
+      return true;
+    }
+    return nextLevel.index <= ceiling.index;
   }
 
   void _emitViewportChangedFromZoom(

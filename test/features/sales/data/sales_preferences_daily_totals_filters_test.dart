@@ -42,22 +42,23 @@ void main() {
       },
     );
 
-    test('persistSalesDailyTotalsDateRange clear removes custom range keys',
-        () async {
-      await salesPrefs.persistSalesDailyTotalsDateRange(
-        useCustomRange: true,
-        range: OverviewDateRange.fromOrderedEndpoints(
-          DateTime(2026, 1, 5),
-          DateTime(2026, 1, 20),
-        ),
-      );
-      await salesPrefs.persistSalesDailyTotalsDateRange(
-        useCustomRange: false,
-        range: null,
-      );
+    test(
+      'persistSalesDailyTotalsDateRange clear removes custom range keys',
+      () async {
+        await salesPrefs.persistSalesDailyTotalsDateRange(
+          useCustomRange: true,
+          range: OverviewDateRange.fromOrderedEndpoints(
+            DateTime(2026, 1, 5),
+            DateTime(2026, 1, 20),
+          ),
+        );
+        await salesPrefs.persistSalesDailyTotalsDateRange(
+          useCustomRange: false,
+        );
 
-      expect(salesPrefs.restoreSalesDailyTotalsUseCustomRange(), isFalse);
-      expect(salesPrefs.restoreSalesDailyTotalsDateRange(), isNull);
-    });
+        expect(salesPrefs.restoreSalesDailyTotalsUseCustomRange(), isFalse);
+        expect(salesPrefs.restoreSalesDailyTotalsDateRange(), isNull);
+      },
+    );
   });
 }

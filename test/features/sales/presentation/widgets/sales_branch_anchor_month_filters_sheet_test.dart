@@ -33,14 +33,16 @@ void main() {
                     OverviewAgentOption(agentId: 'a', name: 'Branch A'),
                   ],
                   initialSelectedAgentId: 'a',
-                  initialAnchorYearMonth:
-                      const OverviewYearMonth(year: 2026, month: 3),
+                  initialAnchorYearMonth: const OverviewYearMonth(
+                    year: 2026,
+                    month: 3,
+                  ),
                   initialDailyTotalsUseCustomRange: true,
                   initialDailyTotalsDateRange:
                       OverviewDateRange.fromOrderedEndpoints(
-                    DateTime(2026, 3, 1),
-                    DateTime(2026, 3, 12),
-                  ),
+                        DateTime(2026, 3),
+                        DateTime(2026, 3, 12),
+                      ),
                   onApply: (_) {},
                 );
               },
@@ -60,7 +62,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(l10n.salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner),
+        find.text(
+          l10n.salesDailyTotalsFilterCustomRangeAnchorIndependenceBanner,
+        ),
         findsOneWidget,
       );
     },

@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/retrying_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -236,9 +239,84 @@ void main() {
     verify(() => delegate.executeSql(request)).called(2);
   });
 
-  test('exponential backoff: 200ms then 400ms delays', () async {
-    final retryingWithDelay = RetryingAgentQueriesRepository(
+  group('AgentQueriesRetryBackoff', () {
+    test('uses exponential ceilings from the initial delay', () {
+      check(
+        AgentQueriesRetryBackoff.ceiling(
+          initialDelay: const Duration(milliseconds: 200),
+          failedAttempt: 1,
+        ),
+      ).equals(const Duration(milliseconds: 200));
+      check(
+        AgentQueriesRetryBackoff.ceiling(
+          initialDelay: const Duration(milliseconds: 200),
+          failedAttempt: 2,
+        ),
+      ).equals(const Duration(milliseconds: 400));
+      check(
+        AgentQueriesRetryBackoff.ceiling(
+          initialDelay: const Duration(milliseconds: 200),
+          failedAttempt: 3,
+        ),
+      ).equals(const Duration(milliseconds: 800));
+    });
+
+    test('full jitter samples inside zero and ceiling inclusive', () {
+      const ceiling = Duration(milliseconds: 400);
+      final random = math.Random(42);
+
+      for (var i = 0; i < 256; i++) {
+        final sample = AgentQueriesRetryBackoff.fullJitter(
+          ceiling: ceiling,
+          random: random,
+        );
+        check(sample.inMilliseconds).isGreaterOrEqual(0);
+        check(sample.inMilliseconds).isLessOrEqual(ceiling.inMilliseconds);
+      }
+    });
+
+    test('seeded random keeps retry jitter deterministic in tests', () {
+      final a = math.Random(7);
+      final b = math.Random(7);
+      const ceiling = Duration(milliseconds: 400);
+
+      for (var i = 0; i < 16; i++) {
+        check(
+          AgentQueriesRetryBackoff.fullJitter(
+            ceiling: ceiling,
+            random: a,
+          ),
+        ).equals(
+          AgentQueriesRetryBackoff.fullJitter(
+            ceiling: ceiling,
+            random: b,
+          ),
+        );
+      }
+    });
+
+    test('zero or invalid ceilings collapse to Duration.zero', () {
+      final random = math.Random(1);
+      check(
+        AgentQueriesRetryBackoff.ceiling(
+          initialDelay: Duration.zero,
+          failedAttempt: 1,
+        ),
+      ).equals(Duration.zero);
+      check(
+        AgentQueriesRetryBackoff.fullJitter(
+          ceiling: const Duration(milliseconds: -1),
+          random: random,
+        ),
+      ).equals(Duration.zero);
+    });
+  });
+
+  test('transient retries accept an injected random source', () async {
+    final retryingWithRandom = RetryingAgentQueriesRepository(
       delegate: delegate,
+      initialRetryDelay: Duration.zero,
+      random: math.Random(123),
     );
     const failure = NetworkFailure(
       message: 'service unavailable',
@@ -248,14 +326,9 @@ void main() {
       (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
     );
 
-    final stopwatch = Stopwatch()..start();
-    final result = await retryingWithDelay.executeSql(request);
-    stopwatch.stop();
+    final result = await retryingWithRandom.executeSql(request);
 
     check(result.isError()).isTrue();
     verify(() => delegate.executeSql(request)).called(3);
-    final elapsed = stopwatch.elapsedMilliseconds;
-    check(elapsed).isGreaterOrEqual(600);
-    check(elapsed).isLessThan(800);
   });
 }

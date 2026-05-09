@@ -11,6 +11,7 @@ import 'package:colmeia/core/socket/socket_coalesce_key.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_request_correlator.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Default implementation of [SocketCommandDispatcher].
 ///
@@ -62,7 +63,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       <String, Future<Map<String, dynamic>>>{};
 
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
-  bool _listenersAttached = false;
+  io.Socket? _attachedSocket;
   bool _isDisposed = false;
 
   /// Per-pending metadata used to enrich outcomes after the correlator
@@ -127,10 +128,24 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     );
     _inflightByKey[key] = future;
     // Always remove the entry once the future settles; do not surface
-    // bookkeeping errors as request failures. The whenComplete return is
+    // bookkeeping errors as request failures. The cleanup task is
     // intentionally fire-and-forget — callers track `future`, not this.
-    unawaited(future.whenComplete(() => _inflightByKey.remove(key)));
+    unawaited(_clearCoalescingEntryWhenDone(key, future));
     return future;
+  }
+
+  Future<void> _clearCoalescingEntryWhenDone(
+    String key,
+    Future<Map<String, dynamic>> future,
+  ) async {
+    try {
+      await future;
+    } on Object {
+      // The original future is still returned to callers. This helper only
+      // prevents the cleanup task from reporting a second unhandled error.
+    } finally {
+      _inflightByKey.removeWhere((entryKey, _) => entryKey == key);
+    }
   }
 
   Future<Map<String, dynamic>> _dispatchAgentsCommand({
@@ -341,20 +356,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     _isDisposed = true;
     await _stateSub?.cancel();
     _stateSub = null;
-    if (_listenersAttached) {
-      try {
-        _connection.raw
-          ..off(_eventCommandResponse)
-          ..off(_eventAppError);
-      }
-      // ConsumerSocketConnection.raw throws StateError when already torn
-      // down; that's expected during dispose.
-      // ignore: avoid_catching_errors
-      on StateError catch (_) {
-        // Connection may already be torn down.
-      }
-      _listenersAttached = false;
-    }
+    _detachListeners();
     await _correlator.dispose();
     if (!_outcomes.isClosed) {
       await _outcomes.close();
@@ -365,13 +367,38 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   // ----- Internals -----
 
   void _ensureListenersAttached() {
-    if (_listenersAttached) {
+    final socket = _connection.raw;
+    if (identical(_attachedSocket, socket)) {
       return;
     }
-    _listenersAttached = true;
-    _connection.raw
+    _detachListeners();
+    socket
       ..on(_eventCommandResponse, _onCommandResponse)
       ..on(_eventAppError, _onAppError);
+    _attachedSocket = socket;
+    AppLogger.debug(
+      'Attached agents:command listeners to active socket',
+      context: <String, Object?>{
+        'component': 'SocketCommandDispatcherImpl',
+        'socketIdentity': identityHashCode(socket),
+      },
+    );
+  }
+
+  void _detachListeners() {
+    final socket = _attachedSocket;
+    if (socket == null) {
+      return;
+    }
+    try {
+      socket
+        ..off(_eventCommandResponse)
+        ..off(_eventAppError);
+    } on Object catch (_) {
+      // Socket is already being torn down; the next connect will attach
+      // listeners to the new raw socket instance.
+    }
+    _attachedSocket = null;
   }
 
   void _onCommandResponse(Object? raw) {
@@ -425,6 +452,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       case ConsumerSocketDisconnected():
       case ConsumerSocketError():
       case ConsumerSocketUnauthorized():
+        _detachListeners();
         _correlator.failAll(
           const SocketDispatchDisconnected(
             message: 'Socket transitioned away from connected',

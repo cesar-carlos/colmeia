@@ -69,9 +69,14 @@ final class RelayRequestRejected extends RelayDispatchException {
   const RelayRequestRejected({
     required super.message,
     required String serverCode,
+    this.retryAfter,
     super.conversationId,
     super.clientRequestId,
   }) : super(code: serverCode);
+
+  /// Optional hub backoff hint propagated from `retryAfterMs` /
+  /// `retry_after_ms` fields on relay rejection payloads.
+  final Duration? retryAfter;
 }
 
 /// Hub closed the request stream with a terminal status other than

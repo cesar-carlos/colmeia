@@ -197,6 +197,11 @@ much higher than 30 s of grep.
      (overview tabs do this).
    - Logs should show `relay:conversation.start` / `started`,
      successive `relay:rpc.chunk`, then `relay:rpc.complete`.
+   - Inspect one outbound `relay:rpc.stream.pull`: it must be
+     `{ conversationId, frame }`, with `frame` decoded as `PayloadFrame`
+     containing `request_id`, `window_size` and `stream_id` once the hub
+     has returned one. Raw `requestId` / `windowSize` at the top level is
+     a stale client contract.
    - In overload, the `relay:rpc.stream.pull_response` carries
      `success: false` with `RATE_LIMITED` — the dispatcher honors it
      by failing the stream and surfacing a `Retry-After` countdown

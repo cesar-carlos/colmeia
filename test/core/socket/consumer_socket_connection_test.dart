@@ -8,6 +8,7 @@ import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/socket_auth_token_provider.dart';
 import 'package:colmeia/core/socket/socket_io_client_factory.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Fake provider that does not require AuthSessionAccessor / Dio plumbing.
@@ -68,9 +69,57 @@ class _RecordingFactory implements SocketIoClientFactory {
   }
 }
 
+class _MockSocket extends Mock implements io.Socket {}
+
+class _InteractiveFactory implements SocketIoClientFactory {
+  _InteractiveFactory() {
+    when(() => socket.on(any(), any())).thenAnswer((invocation) {
+      final event = invocation.positionalArguments[0] as String;
+      final handler = invocation.positionalArguments[1] as Function;
+      handlers.putIfAbsent(event, () => <Function>[]).add(handler);
+      return () => handlers[event]?.remove(handler);
+    });
+    when(() => socket.off(any())).thenAnswer((invocation) {
+      final event = invocation.positionalArguments[0] as String;
+      handlers.remove(event);
+    });
+    when(() => socket.off(any(), any())).thenAnswer((invocation) {
+      final event = invocation.positionalArguments[0] as String;
+      final handler = invocation.positionalArguments[1];
+      if (handler == null) {
+        handlers.remove(event);
+        return;
+      }
+      handlers[event]?.remove(handler);
+      if (handlers[event]?.isEmpty ?? false) {
+        handlers.remove(event);
+      }
+    });
+    when(socket.connect).thenReturn(socket);
+    when(socket.disconnect).thenReturn(socket);
+    when(socket.dispose).thenAnswer((_) {});
+  }
+
+  final _MockSocket socket = _MockSocket();
+  final Map<String, List<Function>> handlers = <String, List<Function>>{};
+  final List<({String url, String accessToken})> calls = [];
+
+  @override
+  io.Socket create({required String url, required String accessToken}) {
+    calls.add((url: url, accessToken: accessToken));
+    return socket;
+  }
+
+  void fire(String event, Object? payload) {
+    for (final handler in List<Function>.of(handlers[event] ?? <Function>[])) {
+      Function.apply(handler, <Object?>[payload]);
+    }
+  }
+}
+
 ConsumerSocketConnection _build({
   required _FakeTokenProvider tokenProvider,
-  _RecordingFactory? factory,
+  SocketIoClientFactory? factory,
 }) {
   return ConsumerSocketConnection(
     urlResolver: AppSocketUrlResolver(
@@ -87,6 +136,10 @@ ConsumerSocketConnection _build({
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(() {});
+  });
+
   group('ConsumerSocketConnection', () {
     test('starts disconnected and isConnected is false', () {
       final tokens = _FakeTokenProvider(token: 'tok');
@@ -220,5 +273,45 @@ void main() {
 
       await check(conn.connect()).throws<StateError>();
     });
+
+    test(
+      'successful connection keeps remote disconnect listener active',
+      () async {
+        final tokens = _FakeTokenProvider(token: 'tok');
+        final factory = _InteractiveFactory();
+        final conn = _build(tokenProvider: tokens, factory: factory);
+        addTearDown(() async {
+          await conn.dispose();
+          await tokens.dispose();
+        });
+
+        final emitted = <ConsumerSocketConnectionState>[];
+        final sub = conn.states().listen(emitted.add);
+        addTearDown(sub.cancel);
+
+        final future = conn.connect();
+        await Future<void>.delayed(Duration.zero);
+        factory.fire('connection:ready', <String, Object?>{
+          'id': 'socket-1',
+          'message': 'ready',
+          'user': <String, Object?>{},
+          'hub_instance_id': 'hub-a',
+        });
+
+        final connected = await future;
+        check(connected.socketId).equals('socket-1');
+        check(conn.isConnected).isTrue();
+
+        factory.fire('disconnect', 'transport close');
+        await Future<void>.delayed(Duration.zero);
+
+        check(conn.isConnected).isFalse();
+        final last = emitted.last;
+        check(last).isA<ConsumerSocketDisconnected>();
+        check((last as ConsumerSocketDisconnected).reason).equals(
+          'transport close',
+        );
+      },
+    );
   });
 }

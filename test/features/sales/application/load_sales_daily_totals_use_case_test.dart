@@ -53,7 +53,7 @@ void main() {
       );
     });
 
-    final anchor = OverviewYearMonth(year: 2026, month: 5);
+    const anchor = OverviewYearMonth(year: 2026, month: 5);
     final result = await useCase(
       userId: 'u',
       agentId: 'a',
@@ -98,7 +98,7 @@ void main() {
     final result = await useCase(
       userId: 'u',
       agentId: 'a',
-      anchor: OverviewYearMonth(year: 2026, month: 1),
+      anchor: const OverviewYearMonth(year: 2026, month: 1),
       dailySaleDateRange: range,
     );
 

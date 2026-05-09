@@ -258,6 +258,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           serverCode: error.code,
           cause: error,
           stackTrace: stackTrace,
+          retryAfter: error.retryAfter,
           baseContext: <String, Object?>{
             'operation': 'executeAgentSql',
             'agentId': request.trimmedAgentId,
@@ -339,6 +340,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           serverCode: error.code,
           cause: error,
           stackTrace: stackTrace,
+          retryAfter: error.retryAfter,
           baseContext: <String, Object?>{
             'operation': 'executeAgentSql',
             'agentId': request.trimmedAgentId,
@@ -614,6 +616,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
     required Object cause,
     required StackTrace stackTrace,
     required Map<String, Object?> baseContext,
+    Duration? retryAfter,
   }) {
     if (isSocketAuthenticationFailedCode(serverCode)) {
       return SessionFailure(
@@ -638,6 +641,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
       userMessage:
           'O servidor nao conseguiu processar a consulta agora. '
           'Tente novamente.',
+      retryAfter: retryAfter,
       cause: cause,
       stackTrace: stackTrace,
       context: baseContext,

@@ -11,6 +11,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
+import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
@@ -34,6 +35,22 @@ class _SocketWiring {
       final handler = invocation.positionalArguments[1] as Function;
       handlers.putIfAbsent(name, () => <Function>[]).add(handler);
       return () {};
+    });
+    when(() => socket.off(any())).thenAnswer((invocation) {
+      final name = invocation.positionalArguments[0] as String;
+      handlers.remove(name);
+    });
+    when(() => socket.off(any(), any())).thenAnswer((invocation) {
+      final name = invocation.positionalArguments[0] as String;
+      final handler = invocation.positionalArguments[1];
+      if (handler == null) {
+        handlers.remove(name);
+        return;
+      }
+      handlers[name]?.remove(handler);
+      if (handlers[name]?.isEmpty ?? false) {
+        handlers.remove(name);
+      }
     });
     when(() => socket.emit(any(), any<dynamic>())).thenAnswer((invocation) {
       emits.add((
@@ -65,6 +82,24 @@ Map<String, Object?> _frame(Object? data, {required String requestId}) {
     compressedSize: encoded.length,
     requestId: requestId,
   ).toMap();
+}
+
+Map<String, dynamic> _decodePullPayload(Object? raw) {
+  if (raw is! Map) {
+    fail('Expected relay pull envelope Map, got $raw');
+  }
+  final envelope = raw.map(
+    (key, value) => MapEntry<String, Object?>(key.toString(), value),
+  );
+  final frame = PayloadFrame.tryParse(envelope['frame']);
+  check(frame).isNotNull();
+  final decoded = const PayloadFrameCodec().decodeJson(frame!);
+  if (decoded is! Map) {
+    fail('Expected relay pull PayloadFrame Map, got $decoded');
+  }
+  return decoded.map(
+    (key, value) => MapEntry<String, dynamic>(key.toString(), value),
+  );
 }
 
 void main() {
@@ -197,8 +232,10 @@ void main() {
         check(pulls.length).equals(1);
         final firstPull = pulls.single.data! as Map<String, Object?>;
         check(firstPull['conversationId']).equals('conv-agent-1');
-        check(firstPull['requestId']).equals('srv-req-1');
-        check(firstPull['windowSize']).equals(4);
+        check(firstPull['frame']).isA<Map<String, Object?>>();
+        final firstPullPayload = _decodePullPayload(firstPull);
+        check(firstPullPayload['request_id']).equals('srv-req-1');
+        check(firstPullPayload['window_size']).equals(4);
 
         // Stream three chunks. With initial=4 and refill_threshold=2:
         //   chunk 1 → outstanding=3 (no refill)
@@ -209,7 +246,11 @@ void main() {
           wiring.fire(
             RelayEventNames.rpcChunk,
             _frame(
-              <String, Object?>{'row': i, 'value': 'r$i'},
+              <String, Object?>{
+                'row': i,
+                'value': 'r$i',
+                if (i == 0) 'stream_id': 'stream-1',
+              },
               requestId: 'srv-req-1',
             ),
           );
@@ -227,7 +268,10 @@ void main() {
         check(allPullsAfterChunks.length).equals(2);
         final refillEnvelope =
             allPullsAfterChunks.last.data! as Map<String, Object?>;
-        check(refillEnvelope['windowSize']).equals(2);
+        final refillPayload = _decodePullPayload(refillEnvelope);
+        check(refillPayload['request_id']).equals('srv-req-1');
+        check(refillPayload['stream_id']).equals('stream-1');
+        check(refillPayload['window_size']).equals(2);
 
         // Complete with healthy terminal_status closes the stream normally.
         // Since PR-L+ p3.5 the complete payload is forwarded as the
@@ -464,6 +508,106 @@ void main() {
 
         check(errors.length).equals(1);
         check(errors.single).isA<RelayDispatcherDisposed>();
+      },
+    );
+
+    test(
+      'streamId from pull_response is included in subsequent pull frames',
+      () async {
+        final dispatcher = buildDispatcher();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-stream-id',
+            },
+          },
+          clientRequestId: 'rpc-stream-id',
+        );
+        final sub = stream.listen((_) {});
+        addTearDown(sub.cancel);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-stream-id',
+          'requestId': 'srv-stream-id',
+          'success': true,
+        });
+        wiring.fire(RelayEventNames.rpcStreamPullResponse, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-stream-id',
+          'requestId': 'srv-stream-id',
+          'streamId': 'stream-from-ack',
+          'success': true,
+          'windowSize': 4,
+        });
+
+        for (var i = 0; i < 2; i++) {
+          wiring.fire(
+            RelayEventNames.rpcChunk,
+            _frame(<String, Object?>{'row': i}, requestId: 'srv-stream-id'),
+          );
+        }
+
+        final pulls = wiring.emits
+            .where((e) => e.event == RelayEventNames.rpcStreamPull)
+            .toList();
+        check(pulls.length).equals(2);
+        final refillPayload = _decodePullPayload(pulls.last.data);
+        check(refillPayload['request_id']).equals('srv-stream-id');
+        check(refillPayload['stream_id']).equals('stream-from-ack');
+        check(refillPayload['window_size']).equals(2);
+      },
+    );
+
+    test(
+      'socket disconnect fails pending stream immediately',
+      () async {
+        final dispatcher = buildDispatcher(
+          defaultTimeout: const Duration(seconds: 5),
+        );
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-drop',
+            },
+          },
+          clientRequestId: 'rpc-drop',
+        );
+
+        final errors = <Object>[];
+        final sub = stream.listen((_) {}, onError: errors.add);
+        addTearDown(sub.cancel);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        stateController.add(
+          const ConsumerSocketDisconnected(reason: 'transport close'),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        check(errors.length).equals(1);
+        check(errors.single).isA<RelayConversationLost>();
+        check(
+          (errors.single as RelayConversationLost).message,
+        ).contains('transport close');
       },
     );
   });

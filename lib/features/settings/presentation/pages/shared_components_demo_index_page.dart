@@ -272,11 +272,10 @@ class SharedComponentsDemoIndexPage extends StatelessWidget {
               const Divider(height: 1),
               _DemoEntryTile(
                 icon: Icons.layers_rounded,
-                title: 'Mapa com drill-down (simulado)',
+                title: 'Mapa com drill-down territorial',
                 subtitle:
-                    'Exemplo de navegacao entre niveis territoriais '
-                    '(regiao -> estado) com eventos tipados.',
-                badgeText: 'Novo',
+                    'AppRegionMapChart com GeoJSON, fonte de dados injetada e '
+                    'navegacao regiao → estado (dados fake).',
                 onTap: () => context.push(appRegionMapDrilldownDemoLocation),
               ),
             ],

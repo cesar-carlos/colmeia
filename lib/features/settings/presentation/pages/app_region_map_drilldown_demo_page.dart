@@ -1,39 +1,30 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_data_source.dart';
+import 'package:colmeia/shared/widgets/charts/app_region_map_explorer.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/forms/app_slider_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:result_dart/result_dart.dart';
 
-class AppRegionMapDrillDownDemoPage extends StatefulWidget {
+class AppRegionMapDrillDownDemoPage extends StatelessWidget {
   const AppRegionMapDrillDownDemoPage({super.key});
 
-  @override
-  State<AppRegionMapDrillDownDemoPage> createState() =>
-      _AppRegionMapDrillDownDemoPageState();
-}
-
-class _AppRegionMapDrillDownDemoPageState
-    extends State<AppRegionMapDrillDownDemoPage> {
   static final _BrazilTerritoryDataSource _dataSource =
       _BrazilTerritoryDataSource();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colors = Theme.of(context).colorScheme;
 
     return ListView(
       padding: EdgeInsets.only(
@@ -52,691 +43,128 @@ class _AppRegionMapDrillDownDemoPageState
               'fonte de dados injetada.',
         ),
         SizedBox(height: tokens.sectionSpacing),
-        _SafeTerritoryExplorer(
-          dataSource: _dataSource,
-          filtersBuilder: _buildFilters,
-          onPointTap: (event) {
-            final store = event.point.payload! as _TerritoryStore;
-            ScaffoldMessenger.of(context)
-              ..clearSnackBars()
-              ..showSnackBar(
-                SnackBar(
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                  content: Text(
-                    '${store.name} - ${store.cityLabel}: '
-                    '${AppBrFormatters.compactCurrency(store.revenue)}',
-                  ),
-                ),
-              );
+        Builder(
+          builder: (context) {
+            return AppRegionMapExplorer<_TerritoryMapRow, _TerritoryFilters>(
+              dataSource: _dataSource,
+              initialFilters: const _TerritoryFilters(),
+              initialMapDefinition:
+                  _BrazilTerritoryDataSource.warmupMapDefinition,
+              regionKeyBuilder: (item) => item.id,
+              regionLabelBuilder: (item) => item.name,
+              filtersBuilder: _drillDownDemoFilters,
+              title: 'Performance territorial',
+              subtitle:
+                  'Toque no mapa ou use a navegação por região para filtrar.',
+              style: AppRegionMapChartStyle(
+                enableAutoDrillOnTap: true,
+                autoDrillCeiling: AppMapDrillLevel.state,
+                selectionColor: colors.primary.withValues(alpha: 0.22),
+              ),
+              onPointTap: (event) {
+                final store = event.point.payload! as _TerritoryStore;
+                ScaffoldMessenger.of(context)
+                  ..clearSnackBars()
+                  ..showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                      content: Text(
+                        '${store.name} - ${store.cityLabel}: '
+                        '${AppBrFormatters.compactCurrency(store.revenue)}',
+                      ),
+                    ),
+                  );
+              },
+            );
           },
         ),
       ],
     );
   }
-
-  Widget _buildFilters(
-    BuildContext context,
-    _TerritoryFilters filters,
-    ValueChanged<_TerritoryFilters> onFiltersChanged,
-    ({bool isLoading}) state,
-  ) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-
-    return AbsorbPointer(
-      absorbing: state.isLoading,
-      child: Opacity(
-        opacity: state.isLoading ? 0.6 : 1,
-        child: AppSectionCardWithHeading(
-          title: 'Filtros da fonte',
-          subtitle: 'Período, canal e corte mínimo de receita.',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              AppSegmentedControl<_SalesPeriod>(
-                options: const <AppSegmentedControlOption<_SalesPeriod>>[
-                  AppSegmentedControlOption<_SalesPeriod>(
-                    value: _SalesPeriod.month,
-                    label: 'Mês',
-                  ),
-                  AppSegmentedControlOption<_SalesPeriod>(
-                    value: _SalesPeriod.quarter,
-                    label: 'Trimestre',
-                  ),
-                  AppSegmentedControlOption<_SalesPeriod>(
-                    value: _SalesPeriod.year,
-                    label: 'Ano',
-                  ),
-                ],
-                value: filters.period,
-                onChanged: (selection) {
-                  onFiltersChanged(filters.copyWith(period: selection));
-                },
-              ),
-              SizedBox(height: tokens.gapSm),
-              AppSegmentedControl<_SalesChannel>(
-                options: const <AppSegmentedControlOption<_SalesChannel>>[
-                  AppSegmentedControlOption<_SalesChannel>(
-                    value: _SalesChannel.all,
-                    label: 'Todos canais',
-                  ),
-                  AppSegmentedControlOption<_SalesChannel>(
-                    value: _SalesChannel.store,
-                    label: 'Loja física',
-                  ),
-                  AppSegmentedControlOption<_SalesChannel>(
-                    value: _SalesChannel.digital,
-                    label: 'Digital',
-                  ),
-                ],
-                value: filters.channel,
-                onChanged: (selection) {
-                  onFiltersChanged(filters.copyWith(channel: selection));
-                },
-              ),
-              SizedBox(height: tokens.gapMd),
-              AppSliderField(
-                label: 'Receita mínima por recorte',
-                valueLabelBuilder: AppBrFormatters.compactCurrency,
-                helperText: filters.minRevenue == 0
-                    ? 'Use 0 para ver todos os recortes.'
-                    : null,
-                value: filters.minRevenue,
-                min: 0,
-                max: 2400000,
-                divisions: 12,
-                enabled: !state.isLoading,
-                // Sem `onChanged`: o slider mantem o thumb animado pelo
-                // estado interno e so emite o valor canonico no fim do
-                // arrasto, evitando rebuilds em cascata do explorer e do
-                // mapa a cada tick.
-                onChangeEnd: (value) {
-                  onFiltersChanged(filters.copyWith(minRevenue: value));
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
-class _SafeTerritoryExplorer extends StatefulWidget {
-  const _SafeTerritoryExplorer({
-    required this.dataSource,
-    required this.filtersBuilder,
-    required this.onPointTap,
-  });
+Widget _drillDownDemoFilters(
+  BuildContext context,
+  _TerritoryFilters filters,
+  ValueChanged<_TerritoryFilters> onFiltersChanged,
+  ({bool isLoading}) state,
+) {
+  final theme = Theme.of(context);
+  final tokens = theme.extension<AppThemeTokens>()!;
 
-  final _BrazilTerritoryDataSource dataSource;
-  final Widget Function(
-    BuildContext context,
-    _TerritoryFilters filters,
-    ValueChanged<_TerritoryFilters> onFiltersChanged,
-    ({bool isLoading}) state,
-  )
-  filtersBuilder;
-  final ValueChanged<AppMapPointTapEvent> onPointTap;
-
-  @override
-  State<_SafeTerritoryExplorer> createState() => _SafeTerritoryExplorerState();
-}
-
-class _SafeTerritoryExplorerState extends State<_SafeTerritoryExplorer> {
-  _TerritoryFilters _filters = const _TerritoryFilters();
-  AppMapDrillLevel _drillLevel = AppMapDrillLevel.region;
-  String? _focusedRegionKey;
-  String? _selectedRegionKey;
-  String? _selectedMetricKey;
-  AppRegionMapDataSnapshot<_TerritoryMapRow>? _snapshot;
-  String? _loadErrorMessage;
-  bool _isLoading = false;
-  int _requestToken = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_loadData());
-  }
-
-  @override
-  void dispose() {
-    _requestToken += 1;
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final filters = widget.filtersBuilder(
-      context,
-      _filters,
-      _handleFiltersChanged,
-      (isLoading: _isLoading),
-    );
-    final snapshot = _snapshot;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        filters,
-        SizedBox(height: tokens.gapMd),
-        if (snapshot == null && _loadErrorMessage != null)
-          AppInlineErrorPanel(
-            title: 'Erro ao carregar',
-            message: _loadErrorMessage!,
-            onRetry: () {
-              setState(() => _loadErrorMessage = null);
-              unawaited(_loadData());
-            },
-            variant: AppInlineErrorPanelVariant.plain,
-          )
-        else if (snapshot == null)
-          const _TerritoryLoadingCard()
-        else
-          _TerritoryMapCard(
-            snapshot: snapshot,
-            drillLevel: _drillLevel,
-            selectedRegionKey: _selectedRegionKey,
-            selectedMetric: _resolveMetric(snapshot),
-            selectedMetricKey: _resolveMetric(snapshot).key,
-            isLoading: _isLoading,
-            onMetricChanged: _handleMetricChanged,
-            onScopeSelected: _handleScopeSelected,
-            onShapeTap: _handleShapeTap,
-            onPointTap: widget.onPointTap,
-          ),
-      ],
-    );
-  }
-
-  AppMapMetric<_TerritoryMapRow> _resolveMetric(
-    AppRegionMapDataSnapshot<_TerritoryMapRow> snapshot,
-  ) {
-    final requestedKey =
-        _selectedMetricKey ??
-        snapshot.selectedMetricKey ??
-        snapshot.metrics.first.key;
-    return snapshot.metrics.firstWhere(
-      (metric) => metric.key == requestedKey,
-      orElse: () => snapshot.metrics.first,
-    );
-  }
-
-  Future<void> _loadData({bool resetSelection = false}) async {
-    final token = ++_requestToken;
-    setState(() => _isLoading = true);
-
-    final result = await widget.dataSource.load(
-      AppRegionMapDataQuery<_TerritoryFilters>(
-        drillLevel: _drillLevel,
-        focusedRegionKey: _focusedRegionKey,
-        filters: _filters,
-        selectedMetricKey: _selectedMetricKey,
-      ),
-    );
-
-    if (!mounted || token != _requestToken) {
-      return;
-    }
-
-    result.fold(
-      (snapshot) {
-        if (!mounted || token != _requestToken) {
-          return;
-        }
-        setState(() {
-          _snapshot = snapshot;
-          _isLoading = false;
-          _loadErrorMessage = null;
-          _selectedMetricKey = snapshot.selectedMetricKey;
-          if (resetSelection) {
-            _selectedRegionKey = null;
-          }
-        });
-      },
-      (failure) {
-        if (!mounted || token != _requestToken) {
-          return;
-        }
-        setState(() {
-          _isLoading = false;
-          _loadErrorMessage = failure.displayMessage;
-        });
-      },
-    );
-  }
-
-  void _handleFiltersChanged(_TerritoryFilters filters) {
-    setState(() {
-      _filters = filters;
-      _drillLevel = AppMapDrillLevel.region;
-      _focusedRegionKey = null;
-      _selectedRegionKey = null;
-      _selectedMetricKey = null;
-    });
-    unawaited(_loadData(resetSelection: true));
-  }
-
-  void _handleMetricChanged(String metricKey) {
-    setState(() => _selectedMetricKey = metricKey);
-  }
-
-  void _handleScopeSelected(String? scopeKey) {
-    setState(() {
-      _drillLevel = scopeKey == null
-          ? AppMapDrillLevel.region
-          : AppMapDrillLevel.state;
-      _focusedRegionKey = scopeKey;
-      _selectedRegionKey = null;
-      _selectedMetricKey = null;
-    });
-    unawaited(_loadData(resetSelection: true));
-  }
-
-  void _handleShapeTap(_TerritoryMapRow item) {
-    if (_drillLevel == AppMapDrillLevel.region) {
-      setState(() {
-        _drillLevel = AppMapDrillLevel.state;
-        _focusedRegionKey = item.id;
-        _selectedRegionKey = null;
-        _selectedMetricKey = null;
-      });
-      unawaited(_loadData(resetSelection: true));
-      return;
-    }
-
-    setState(() {
-      _selectedRegionKey = _selectedRegionKey == item.id ? null : item.id;
-    });
-  }
-}
-
-class _TerritoryLoadingCard extends StatelessWidget {
-  const _TerritoryLoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    return AppSectionCardWithHeading(
-      title: 'Performance territorial',
-      subtitle: 'Toque no mapa ou use a navegação por região para filtrar.',
-      child: SizedBox(
-        height: 260,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const CircularProgressIndicator(strokeWidth: 3),
-              SizedBox(height: tokens.gapMd),
-              Text(
-                'Carregando mapa...',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TerritoryMapCard extends StatelessWidget {
-  const _TerritoryMapCard({
-    required this.snapshot,
-    required this.drillLevel,
-    required this.selectedMetric,
-    required this.selectedMetricKey,
-    required this.isLoading,
-    required this.onMetricChanged,
-    required this.onScopeSelected,
-    required this.onShapeTap,
-    required this.onPointTap,
-    this.selectedRegionKey,
-  });
-
-  final AppRegionMapDataSnapshot<_TerritoryMapRow> snapshot;
-  final AppMapDrillLevel drillLevel;
-  final String? selectedRegionKey;
-  final AppMapMetric<_TerritoryMapRow> selectedMetric;
-  final String selectedMetricKey;
-  final bool isLoading;
-  final ValueChanged<String> onMetricChanged;
-  final ValueChanged<String?> onScopeSelected;
-  final ValueChanged<_TerritoryMapRow> onShapeTap;
-  final ValueChanged<AppMapPointTapEvent> onPointTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    return AppSectionCardWithHeading(
-      title: 'Performance territorial',
-      subtitle: 'Toque no mapa ou use a navegação por região para filtrar.',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (snapshot.metrics.length > 1) ...<Widget>[
-            AppSegmentedControl<String>(
-              options: snapshot.metrics
-                  .map(
-                    (metric) => AppSegmentedControlOption<String>(
-                      value: metric.key,
-                      label: metric.label,
-                    ),
-                  )
-                  .toList(growable: false),
-              value: selectedMetricKey,
-              onChanged: onMetricChanged,
+  return AbsorbPointer(
+    absorbing: state.isLoading,
+    child: Opacity(
+      opacity: state.isLoading ? 0.6 : 1,
+      child: AppSectionCardWithHeading(
+        title: 'Filtros da fonte',
+        subtitle: 'Período, canal e corte mínimo de receita.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppSegmentedControl<_SalesPeriod>(
+              options: const <AppSegmentedControlOption<_SalesPeriod>>[
+                AppSegmentedControlOption<_SalesPeriod>(
+                  value: _SalesPeriod.month,
+                  label: 'Mês',
+                ),
+                AppSegmentedControlOption<_SalesPeriod>(
+                  value: _SalesPeriod.quarter,
+                  label: 'Trimestre',
+                ),
+                AppSegmentedControlOption<_SalesPeriod>(
+                  value: _SalesPeriod.year,
+                  label: 'Ano',
+                ),
+              ],
+              value: filters.period,
+              onChanged: (selection) {
+                onFiltersChanged(filters.copyWith(period: selection));
+              },
+            ),
+            SizedBox(height: tokens.gapSm),
+            AppSegmentedControl<_SalesChannel>(
+              options: const <AppSegmentedControlOption<_SalesChannel>>[
+                AppSegmentedControlOption<_SalesChannel>(
+                  value: _SalesChannel.all,
+                  label: 'Todos canais',
+                ),
+                AppSegmentedControlOption<_SalesChannel>(
+                  value: _SalesChannel.store,
+                  label: 'Loja física',
+                ),
+                AppSegmentedControlOption<_SalesChannel>(
+                  value: _SalesChannel.digital,
+                  label: 'Digital',
+                ),
+              ],
+              value: filters.channel,
+              onChanged: (selection) {
+                onFiltersChanged(filters.copyWith(channel: selection));
+              },
             ),
             SizedBox(height: tokens.gapMd),
+            AppSliderField(
+              label: 'Receita mínima por recorte',
+              valueLabelBuilder: AppBrFormatters.compactCurrency,
+              helperText: filters.minRevenue == 0
+                  ? 'Use 0 para ver todos os recortes.'
+                  : null,
+              value: filters.minRevenue,
+              min: 0,
+              max: 2400000,
+              divisions: 12,
+              enabled: !state.isLoading,
+              onChangeEnd: (value) {
+                onFiltersChanged(filters.copyWith(minRevenue: value));
+              },
+            ),
           ],
-          _TerritoryScopeChips(
-            activeScopeKey: snapshot.activeScopeKey,
-            scopes: snapshot.availableScopes,
-            onScopeSelected: onScopeSelected,
-          ),
-          SizedBox(height: tokens.gapMd),
-          if (isLoading) const LinearProgressIndicator(minHeight: 2),
-          _TerritorySketchMap(
-            snapshot: snapshot,
-            drillLevel: drillLevel,
-            selectedRegionKey: selectedRegionKey,
-            metric: selectedMetric,
-            onShapeTap: onShapeTap,
-            onPointTap: onPointTap,
-          ),
-          SizedBox(height: tokens.gapSm),
-          _TerritoryMetricLegend(
-            items: snapshot.items,
-            metric: selectedMetric,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TerritoryScopeChips extends StatelessWidget {
-  const _TerritoryScopeChips({
-    required this.activeScopeKey,
-    required this.scopes,
-    required this.onScopeSelected,
-  });
-
-  final String? activeScopeKey;
-  final List<AppMapScopeOption> scopes;
-  final ValueChanged<String?> onScopeSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: <Widget>[
-        ChoiceChip(
-          label: const Text('Brasil'),
-          selected: activeScopeKey == null,
-          onSelected: (_) => onScopeSelected(null),
-        ),
-        for (final scope in scopes)
-          ChoiceChip(
-            label: Text(scope.label),
-            selected: activeScopeKey == scope.key,
-            onSelected: (_) => onScopeSelected(scope.key),
-          ),
-      ],
-    );
-  }
-}
-
-class _TerritorySketchMap extends StatelessWidget {
-  const _TerritorySketchMap({
-    required this.snapshot,
-    required this.drillLevel,
-    required this.metric,
-    required this.onShapeTap,
-    required this.onPointTap,
-    this.selectedRegionKey,
-  });
-
-  static const double _west = -74;
-  static const double _east = -34;
-  static const double _south = -34;
-  static const double _north = 6;
-
-  final AppRegionMapDataSnapshot<_TerritoryMapRow> snapshot;
-  final AppMapDrillLevel drillLevel;
-  final String? selectedRegionKey;
-  final AppMapMetric<_TerritoryMapRow> metric;
-  final ValueChanged<_TerritoryMapRow> onShapeTap;
-  final ValueChanged<AppMapPointTapEvent> onPointTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final itemsByKey = <String, _TerritoryMapRow>{
-      for (final item in snapshot.items) item.id: item,
-    };
-    final values = snapshot.items.map(
-      (item) => metric.valueBuilder(item).toDouble(),
-    );
-    final minValue = values.isEmpty ? 0.0 : values.reduce(math.min);
-    final maxValue = values.isEmpty ? 0.0 : values.reduce(math.max);
-    final range = (maxValue - minValue).abs() < 0.0001
-        ? 1.0
-        : maxValue - minValue;
-
-    Color colorFor(_TerritoryMapRow item) {
-      final normalized =
-          ((metric.valueBuilder(item).toDouble() - minValue) / range).clamp(
-            0.0,
-            1.0,
-          );
-      return Color.lerp(
-        colors.primaryContainer.withValues(alpha: 0.35),
-        colors.primary,
-        normalized,
-      )!;
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final height = math.max(260, width * 0.72).toDouble();
-        final visibleBoxes = _stateShapeBoxes
-            .where((box) {
-              return snapshot.activeScopeKey == null ||
-                  box.regionId == snapshot.activeScopeKey;
-            })
-            .toList(growable: false);
-
-        return SizedBox(
-          height: height,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerLow.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Stack(
-              children: <Widget>[
-                for (final box in visibleBoxes)
-                  _buildShape(
-                    context,
-                    box: box,
-                    width: width,
-                    height: height,
-                    item:
-                        itemsByKey[drillLevel == AppMapDrillLevel.region
-                            ? box.regionId
-                            : box.uf],
-                    colorFor: colorFor,
-                  ),
-                for (final (index, point) in snapshot.points.indexed)
-                  _buildPoint(
-                    context,
-                    point: point,
-                    index: index,
-                    width: width,
-                    height: height,
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildShape(
-    BuildContext context, {
-    required _StateShapeBox box,
-    required double width,
-    required double height,
-    required _TerritoryMapRow? item,
-    required Color Function(_TerritoryMapRow item) colorFor,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    final key = drillLevel == AppMapDrillLevel.region ? box.regionId : box.uf;
-    final selected = selectedRegionKey == key;
-    final left = ((box.west - _west) / (_east - _west)) * width;
-    final top = ((_north - box.north) / (_north - _south)) * height;
-    final boxWidth = ((box.east - box.west) / (_east - _west)) * width;
-    final boxHeight = ((box.north - box.south) / (_north - _south)) * height;
-
-    final label = drillLevel == AppMapDrillLevel.region
-        ? _regionNamesById[box.regionId] ?? box.regionId
-        : box.uf;
-    final valueLabel = item == null
-        ? label
-        : metric.tooltipBuilder?.call(item) ??
-              '$label: ${metric.valueBuilder(item).toStringAsFixed(1)}';
-
-    return Positioned(
-      left: left,
-      top: top,
-      width: math.max(18, boxWidth),
-      height: math.max(18, boxHeight),
-      child: Tooltip(
-        message: valueLabel,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(10),
-            onTap: item == null ? null : () => onShapeTap(item),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: item == null
-                    ? colors.surfaceContainerHighest
-                    : colorFor(item),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: selected ? colors.primary : colors.outlineVariant,
-                  width: selected ? 2.4 : 0.8,
-                ),
-              ),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.fade,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: colors.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildPoint(
-    BuildContext context, {
-    required AppMapPoint point,
-    required int index,
-    required double width,
-    required double height,
-  }) {
-    final style = point.style ?? const AppMapMarkerStyle(size: 12);
-    final left = ((point.longitude - _west) / (_east - _west)) * width;
-    final top = ((_north - point.latitude) / (_north - _south)) * height;
-    final colors = Theme.of(context).colorScheme;
-
-    return Positioned(
-      left: left - style.size / 2,
-      top: top - style.size / 2,
-      width: style.size,
-      height: style.size,
-      child: Tooltip(
-        message: point.tooltip ?? point.label ?? '',
-        child: GestureDetector(
-          onTap: () =>
-              onPointTap(AppMapPointTapEvent(point: point, index: index)),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: style.color ?? colors.secondary,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: style.strokeColor ?? colors.surface,
-                width: style.strokeWidth,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TerritoryMetricLegend extends StatelessWidget {
-  const _TerritoryMetricLegend({required this.items, required this.metric});
-
-  final List<_TerritoryMapRow> items;
-  final AppMapMetric<_TerritoryMapRow> metric;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final colors = Theme.of(context).colorScheme;
-    final values = items.map((item) => metric.valueBuilder(item).toDouble());
-    final minValue = values.isEmpty ? 0.0 : values.reduce(math.min);
-    final maxValue = values.isEmpty ? 0.0 : values.reduce(math.max);
-
-    String format(double value) {
-      if (metric.key == 'revenue') {
-        return AppBrFormatters.compactCurrency(value);
-      }
-      return value.toStringAsFixed(1);
-    }
-
-    return Row(
-      children: <Widget>[
-        Text(format(minValue), style: Theme.of(context).textTheme.bodySmall),
-        SizedBox(width: tokens.gapSm),
-        Expanded(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: <Color>[
-                  colors.primaryContainer.withValues(alpha: 0.35),
-                  colors.primary,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const SizedBox(height: 10),
-          ),
-        ),
-        SizedBox(width: tokens.gapSm),
-        Text(format(maxValue), style: Theme.of(context).textTheme.bodySmall),
-      ],
-    );
-  }
+    ),
+  );
 }
 
 enum _SalesPeriod {
@@ -1137,6 +565,9 @@ class _BrazilTerritoryDataSource
     shapeDataField: 'UF',
     regionLevel: AppMapRegionLevel.state,
   );
+
+  /// Region-layer GeoJSON for [AppRegionMapExplorer.initialMapDefinition].
+  static AppMapDefinition get warmupMapDefinition => _regionMap;
 
   static const AppMapViewport _brazilViewport = AppMapViewport(
     zoomLevel: 1.4,

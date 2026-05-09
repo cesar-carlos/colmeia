@@ -86,6 +86,7 @@ class AppRegionMapChartStyle {
     this.enableZoomPan = true,
     this.enableDoubleTapZooming = false,
     this.enableAutoDrillOnTap = false,
+    this.autoDrillCeiling,
     this.minZoomLevel = 1,
     this.maxZoomLevel = 8,
     this.selectionColor,
@@ -116,6 +117,11 @@ class AppRegionMapChartStyle {
   final bool enableZoomPan;
   final bool enableDoubleTapZooming;
   final bool enableAutoDrillOnTap;
+
+  /// When set, auto drill-on-tap never advances beyond this granularity (e.g.
+  /// cap at [AppMapDrillLevel.state] so UF taps select instead of drilling to city).
+  final AppMapDrillLevel? autoDrillCeiling;
+
   final double minZoomLevel;
   final double maxZoomLevel;
   final Color? selectionColor;

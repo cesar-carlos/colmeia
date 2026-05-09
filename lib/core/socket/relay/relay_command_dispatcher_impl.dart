@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
@@ -10,7 +11,9 @@ import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
+import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Default `RelayCommandDispatcher`. Wraps a `ConsumerSocketConnection`
 /// (for `emit`) and a `RelayConversationManager` (for the conversation
@@ -39,7 +42,9 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
        _defaultCompression = defaultCompression,
        _defaultStreamInitialWindow = defaultStreamInitialWindow,
        _defaultStreamRefillThreshold = defaultStreamRefillThreshold,
-       _outcomes = StreamController<RelayRpcOutcome>.broadcast();
+       _outcomes = StreamController<RelayRpcOutcome>.broadcast() {
+    _stateSub = _connection.states().listen(_onConnectionState);
+  }
 
   final ConsumerSocketConnection _connection;
   final RelayConversationManager _conversationManager;
@@ -61,7 +66,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   /// Populated only after `relay:rpc.accepted`.
   final Map<String, String> _clientIdByRequestId = <String, String>{};
 
-  bool _listenersAttached = false;
+  StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
+  io.Socket? _attachedSocket;
   bool _isDisposed = false;
 
   @override
@@ -179,23 +185,9 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
     _isDisposed = true;
-    if (_listenersAttached) {
-      try {
-        _connection.raw
-          ..off(RelayEventNames.rpcAccepted)
-          ..off(RelayEventNames.rpcResponse)
-          ..off(RelayEventNames.rpcChunk)
-          ..off(RelayEventNames.rpcComplete)
-          ..off(RelayEventNames.rpcStreamPullResponse);
-      }
-      // ConsumerSocketConnection.raw throws StateError when already torn
-      // down; that's expected during dispose.
-      // ignore: avoid_catching_errors
-      on StateError catch (_) {
-        // Connection may already be torn down.
-      }
-      _listenersAttached = false;
-    }
+    await _stateSub?.cancel();
+    _stateSub = null;
+    _detachListeners();
     final pending = _pendingByClientId.values.toList(growable: false);
     _pendingByClientId.clear();
     _clientIdByRequestId.clear();
@@ -381,16 +373,82 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   }
 
   void _ensureListenersAttached() {
-    if (_listenersAttached) {
+    final socket = _connection.raw;
+    if (identical(_attachedSocket, socket)) {
       return;
     }
-    _listenersAttached = true;
-    _connection.raw
+    _detachListeners();
+    socket
       ..on(RelayEventNames.rpcAccepted, _onAccepted)
       ..on(RelayEventNames.rpcResponse, _onResponseFrame)
       ..on(RelayEventNames.rpcChunk, _onChunkFrame)
       ..on(RelayEventNames.rpcComplete, _onCompleteFrame)
       ..on(RelayEventNames.rpcStreamPullResponse, _onStreamPullResponse);
+    _attachedSocket = socket;
+    AppLogger.debug(
+      'Attached relay listeners to active socket',
+      context: <String, Object?>{
+        'component': 'RelayCommandDispatcherImpl',
+        'socketIdentity': identityHashCode(socket),
+      },
+    );
+  }
+
+  void _detachListeners() {
+    final socket = _attachedSocket;
+    if (socket == null) {
+      return;
+    }
+    try {
+      socket
+        ..off(RelayEventNames.rpcAccepted)
+        ..off(RelayEventNames.rpcResponse)
+        ..off(RelayEventNames.rpcChunk)
+        ..off(RelayEventNames.rpcComplete)
+        ..off(RelayEventNames.rpcStreamPullResponse);
+    } on Object catch (_) {
+      // Socket is already being torn down; the next relay send will attach
+      // listeners to the fresh raw socket instance.
+    }
+    _attachedSocket = null;
+  }
+
+  void _onConnectionState(ConsumerSocketConnectionState state) {
+    switch (state) {
+      case ConsumerSocketDisconnected(:final reason):
+        _detachListeners();
+        _failAllPending(
+          (entry) => RelayConversationLost(
+            message:
+                'relay conversation lost because socket disconnected'
+                '${reason == null ? '' : ' (reason=$reason)'}',
+            conversationId: entry.conversationId,
+            clientRequestId: entry.clientRequestId,
+          ),
+        );
+      case ConsumerSocketError(:final message, :final cause):
+        _detachListeners();
+        _failAllPending(
+          (entry) => RelayConversationLost(
+            message: 'relay conversation lost after socket error: $message',
+            conversationId: entry.conversationId,
+            clientRequestId: entry.clientRequestId,
+            cause: cause,
+          ),
+        );
+      case ConsumerSocketUnauthorized():
+        _detachListeners();
+        _failAllPending(
+          (entry) => RelayConversationLost(
+            message: 'relay conversation lost because socket is unauthorized',
+            conversationId: entry.conversationId,
+            clientRequestId: entry.clientRequestId,
+          ),
+        );
+      case ConsumerSocketConnected():
+      case ConsumerSocketConnecting():
+        break;
+    }
   }
 
   /// JSON-only ack for `relay:rpc.stream.pull`. Carries either:
@@ -429,11 +487,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         RelayRequestRejected(
           message: message,
           serverCode: code,
+          retryAfter: extractRetryAfterFromAppError(map),
           conversationId: pending.conversationId,
           clientRequestId: clientRequestId,
         ),
       );
       return;
+    }
+    final streamId = _extractStreamId(map);
+    if (streamId != null) {
+      pending.streamId = streamId;
     }
     final granted =
         _toIntOrNull(map['windowSize']) ?? _toIntOrNull(map['window_size']);
@@ -501,6 +564,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         RelayRequestRejected(
           message: message,
           serverCode: code,
+          retryAfter: extractRetryAfterFromAppError(map),
           conversationId: pending.conversationId,
           clientRequestId: clientRequestId,
         ),
@@ -676,6 +740,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
     // rpc.chunk
+    _captureStreamId(pending, logical);
     pending.controller.add(logical);
     pending.outstandingCredits = (pending.outstandingCredits - 1).clamp(
       0,
@@ -697,15 +762,22 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
     final requestId = pending.requestId;
-    final envelope = <String, Object?>{
-      'conversationId': pending.conversationId,
-      'requestId': ?requestId,
-      'windowSize': credits,
-    };
     try {
+      final encoded = _codec.encodeJson(
+        <String, Object?>{
+          'request_id': requestId ?? pending.clientRequestId,
+          if (pending.streamId != null) 'stream_id': pending.streamId,
+          'window_size': credits,
+        },
+        requestId: requestId ?? pending.clientRequestId,
+      );
+      final envelope = <String, Object?>{
+        'conversationId': pending.conversationId,
+        'frame': encoded.frame.toMap(),
+      };
       _connection.raw.emit(RelayEventNames.rpcStreamPull, envelope);
       pending.outstandingCredits += credits;
-    } on Object catch (e) {
+    } on Object catch (e, s) {
       AppLogger.warning(
         'failed to emit relay:rpc.stream.pull',
         context: <String, Object?>{
@@ -713,6 +785,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           'clientRequestId': pending.clientRequestId,
           'error': e.toString(),
         },
+        error: e,
+        stackTrace: s,
       );
     }
   }
@@ -723,6 +797,25 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
 
   bool _isHealthyTerminal(String status) =>
       status == 'completed' || status == 'success';
+
+  void _captureStreamId(
+    _PendingStream pending,
+    Map<String, dynamic> logical,
+  ) {
+    final streamId = _extractStreamId(logical);
+    if (streamId != null) {
+      pending.streamId = streamId;
+    }
+  }
+
+  String? _extractStreamId(Map<String, Object?> map) {
+    final value = map['stream_id'] ?? map['streamId'];
+    if (value == null) {
+      return null;
+    }
+    final text = value.toString();
+    return text.isEmpty ? null : text;
+  }
 
   _PendingRelay? _pendingFromFrame(Object? raw) {
     final frame = PayloadFrame.tryParse(raw);
@@ -830,6 +923,15 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           exception: exception,
         ),
       );
+    }
+  }
+
+  void _failAllPending(
+    RelayDispatchException Function(_PendingRelay entry) buildException,
+  ) {
+    final pending = _pendingByClientId.values.toList(growable: false);
+    for (final entry in pending) {
+      _failPending(entry.clientRequestId, buildException(entry));
     }
   }
 
@@ -956,6 +1058,10 @@ class _PendingStream extends _PendingRelay {
   /// Outstanding credits the hub still has authorised to send. Decremented
   /// per chunk received and replenished when `_grantPull` succeeds.
   int outstandingCredits = 0;
+
+  /// Server stream identifier returned by pull acks or chunk payloads.
+  /// Included on subsequent pull frames when present.
+  String? streamId;
 
   @override
   bool failExternally(RelayDispatchException exception) {

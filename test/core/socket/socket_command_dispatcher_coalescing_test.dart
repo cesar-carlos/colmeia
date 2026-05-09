@@ -4,6 +4,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher_impl.dart';
+import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_request_correlator.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -39,6 +40,7 @@ void main() {
     registerFallbackValue(const ConsumerSocketDisconnected());
     registerFallbackValue(<String, Object?>{});
     registerFallbackValue(Duration.zero);
+    registerFallbackValue(() {});
   });
 
   late _MockConnection connection;
@@ -308,5 +310,99 @@ void main() {
         check(coalescedCount).equals(0);
       },
     );
+
+    test('reattaches listeners when the raw socket instance changes', () async {
+      final socketB = _MockSocket();
+      final handlersA = <String, List<Function>>{};
+      final handlersB = <String, List<Function>>{};
+
+      void wire(_MockSocket socket, Map<String, List<Function>> handlers) {
+        when(() => socket.on(any(), any())).thenAnswer((invocation) {
+          final event = invocation.positionalArguments[0] as String;
+          final handler = invocation.positionalArguments[1] as Function;
+          handlers.putIfAbsent(event, () => <Function>[]).add(handler);
+          return () => handlers[event]?.remove(handler);
+        });
+        when(() => socket.off(any())).thenAnswer((invocation) {
+          final event = invocation.positionalArguments[0] as String;
+          handlers.remove(event);
+        });
+        when(() => socket.off(any(), any())).thenAnswer((invocation) {
+          final event = invocation.positionalArguments[0] as String;
+          final handler = invocation.positionalArguments[1];
+          if (handler == null) {
+            handlers.remove(event);
+            return;
+          }
+          handlers[event]?.remove(handler);
+          if (handlers[event]?.isEmpty ?? false) {
+            handlers.remove(event);
+          }
+        });
+      }
+
+      void fire(
+        Map<String, List<Function>> handlers,
+        String event,
+        Object? payload,
+      ) {
+        for (final handler in List<Function>.of(
+          handlers[event] ?? <Function>[],
+        )) {
+          Function.apply(handler, <Object?>[payload]);
+        }
+      }
+
+      wire(rawSocket, handlersA);
+      wire(socketB, handlersB);
+
+      var currentSocket = rawSocket;
+      when(() => connection.raw).thenAnswer((_) => currentSocket);
+      final realCorrelator = SocketRequestCorrelator(
+        sweepInterval: const Duration(seconds: 30),
+      );
+      dispatcher = SocketCommandDispatcherImpl(
+        connection: connection,
+        correlator: realCorrelator,
+        defaultTimeout: const Duration(milliseconds: 250),
+      );
+
+      final first = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: _body(rpcId: 'rpc-A'),
+        rpcId: 'rpc-A',
+      );
+      await Future<void>.delayed(Duration.zero);
+      final firstFailure = expectLater(
+        first,
+        throwsA(isA<SocketDispatchDisconnected>()),
+      );
+
+      stateController.add(
+        const ConsumerSocketDisconnected(reason: 'transport close'),
+      );
+      await firstFailure;
+
+      currentSocket = socketB;
+      final second = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: _body(rpcId: 'rpc-B'),
+        rpcId: 'rpc-B',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      fire(handlersB, 'agents:command_response', <String, dynamic>{
+        'rpcId': 'rpc-B',
+        'response': <String, dynamic>{
+          'type': 'single',
+          'item': <String, dynamic>{'id': 'rpc-B', 'success': true},
+        },
+      });
+
+      final response = await second;
+      check(response['rpcId']).equals('rpc-B');
+      verify(() => rawSocket.off('agents:command_response')).called(1);
+      verify(() => socketB.on('agents:command_response', any())).called(1);
+    });
   });
 }
