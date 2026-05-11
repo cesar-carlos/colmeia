@@ -122,8 +122,46 @@ void main() {
 
       final r1 = await f1;
       final r2 = await f2;
-      // Both consumers receive the SAME Map instance (truly shared).
-      check(identical(r1, r2)).isTrue();
+      check(identical(f1, f2)).isFalse();
+      check(r1).deepEquals(r2);
+    });
+
+    test('coalesced follower can be cancelled without cancelling leader', () async {
+      final pending = Completer<Map<String, dynamic>>();
+      when(
+        () => correlator.register(any(), timeout: any(named: 'timeout')),
+      ).thenAnswer((_) => pending.future);
+
+      dispatcher = SocketCommandDispatcherImpl(
+        connection: connection,
+        correlator: correlator,
+      );
+
+      final f1 = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: _body(rpcId: 'rpc-A'),
+        rpcId: 'rpc-A',
+      );
+      final f2 = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: _body(rpcId: 'rpc-B'),
+        rpcId: 'rpc-B',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      dispatcher.cancel('rpc-B');
+
+      await check(f2).throws<SocketDispatchCancelled>();
+      verifyNever(() => correlator.failWith(any(), any()));
+
+      pending.complete(<String, dynamic>{
+        'response': <String, dynamic>{
+          'type': 'single',
+          'item': <String, dynamic>{'id': 'rpc-A', 'success': true},
+        },
+      });
+
+      await f1;
     });
 
     test('different params do NOT coalesce', () async {

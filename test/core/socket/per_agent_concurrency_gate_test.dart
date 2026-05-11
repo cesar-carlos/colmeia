@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -105,5 +107,63 @@ void main() {
       gate.release('a');
       check(gate.inflightFor('a')).equals(0);
     });
+
+    test(
+      'throws StateError when waiter queue exceeds maxWaitersPerAgent',
+      () async {
+        final gate = PerAgentConcurrencyGate(
+          maxInflightPerAgent: 1,
+          maxWaitersPerAgent: 1,
+        );
+        await gate.acquire('a');
+        final waiter = gate.acquire('a');
+        await expectLater(
+          () => gate.acquire('a'),
+          throwsA(isA<StateError>()),
+        );
+        gate.release('a');
+        await waiter;
+      },
+    );
+
+    test('invokes onWaiterQueueRejected when waiter queue is full', () async {
+      var rejected = 0;
+      final gate = PerAgentConcurrencyGate(
+        maxInflightPerAgent: 1,
+        maxWaitersPerAgent: 1,
+        onWaiterQueueRejected: () => rejected++,
+      );
+      await gate.acquire('a');
+      final waiter = gate.acquire('a');
+      await expectLater(
+        () => gate.acquire('a'),
+        throwsA(isA<StateError>()),
+      );
+      check(rejected).equals(1);
+      gate.release('a');
+      await waiter;
+    });
+
+    test(
+      'queued acquire fails with TimeoutException after maxWaitForSlot',
+      () async {
+        var timeouts = 0;
+        final gate = PerAgentConcurrencyGate(
+          maxInflightPerAgent: 1,
+          maxWaitForSlot: const Duration(milliseconds: 50),
+          onAcquireWaitTimeout: () => timeouts++,
+        );
+        await gate.acquire('a');
+        final queued = gate.acquire('a');
+        await expectLater(
+          queued,
+          throwsA(isA<TimeoutException>()),
+        );
+        check(timeouts).equals(1);
+        gate.release('a');
+        await gate.acquire('a');
+        gate.release('a');
+      },
+    );
   });
 }

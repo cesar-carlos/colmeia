@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource.dart';
@@ -67,6 +69,54 @@ void main() {
         check(result['execution_id']).equals('exec-1');
       },
     );
+
+    test('serializes postSqlExecute for the same agent id', () async {
+      final delegate = _MockStreamingDatasource();
+      final firstStreamStarted = Completer<void>();
+      var streamSqlExecuteCalls = 0;
+      when(() => delegate.streamSqlExecute(any())).thenAnswer((_) {
+        streamSqlExecuteCalls++;
+        final id = streamSqlExecuteCalls;
+        final controller = StreamController<Map<String, dynamic>>();
+        unawaited(
+          (() async {
+            if (id == 1) {
+              firstStreamStarted.complete();
+              await Future<void>.delayed(const Duration(milliseconds: 60));
+            } else {
+              await firstStreamStarted.future;
+              await Future<void>.delayed(const Duration(milliseconds: 5));
+            }
+            controller.add(<String, dynamic>{
+              'request_id': 'r$id',
+              'total_rows': 0,
+            });
+            await controller.close();
+          })(),
+        );
+        return controller.stream;
+      });
+
+      final adapter = CollectingRelayStreamingAgentQueriesRemoteDataSource(
+        streamingDelegate: delegate,
+      );
+
+      const agentReq = AgentSqlExecuteRequest(agentId: 'same-agent', sql: 'q');
+      final first = adapter.postSqlExecute(agentReq);
+      await firstStreamStarted.future;
+      check(streamSqlExecuteCalls).equals(1);
+
+      final second = adapter.postSqlExecute(
+        const AgentSqlExecuteRequest(agentId: 'same-agent', sql: 'q2'),
+      );
+      await Future<void>.delayed(Duration.zero);
+      check(streamSqlExecuteCalls).equals(1);
+
+      await first;
+      await Future<void>.delayed(Duration.zero);
+      check(streamSqlExecuteCalls).equals(2);
+      await second;
+    });
 
     test('propagates stream errors as Future errors', () async {
       final delegate = _MockStreamingDatasource();

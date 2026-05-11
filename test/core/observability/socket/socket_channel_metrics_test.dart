@@ -18,6 +18,9 @@ void main() {
       check(snap.dispatchMsByKey).isEmpty();
       check(snap.outcomesTotal).isEmpty();
       check(snap.reconnectsTotalByReason).isEmpty();
+      check(snap.gateWaiterQueueRejectedTotal).equals(0);
+      check(snap.gateAcquireWaitTimeoutTotal).equals(0);
+      check(snap.relayStreamingUnhandledErrorTotal).equals(0);
     });
 
     test('handshake histogram aggregates count, mean and percentiles', () {
@@ -135,17 +138,35 @@ void main() {
       check(metrics.snapshot().coalescedTotal).equals(3);
     });
 
+    test('gate and relay streaming counters increment', () {
+      metrics
+        ..recordGateWaiterQueueRejected()
+        ..recordGateAcquireWaitTimeout()
+        ..recordRelayStreamingUnhandledError()
+        ..recordRelayStreamingUnhandledError();
+      final snap = metrics.snapshot();
+      check(snap.gateWaiterQueueRejectedTotal).equals(1);
+      check(snap.gateAcquireWaitTimeoutTotal).equals(1);
+      check(snap.relayStreamingUnhandledErrorTotal).equals(2);
+    });
+
     test('reset clears every counter and reservoir', () {
       metrics
         ..recordHandshake(elapsed: const Duration(milliseconds: 5))
         ..recordReconnect(reason: 'app_paused')
         ..recordCoalesced()
+        ..recordGateWaiterQueueRejected()
+        ..recordGateAcquireWaitTimeout()
+        ..recordRelayStreamingUnhandledError()
         ..reset();
 
       final snap = metrics.snapshot();
       check(snap.handshakeMs.count).equals(0);
       check(snap.reconnectsTotalByReason).isEmpty();
       check(snap.coalescedTotal).equals(0);
+      check(snap.gateWaiterQueueRejectedTotal).equals(0);
+      check(snap.gateAcquireWaitTimeoutTotal).equals(0);
+      check(snap.relayStreamingUnhandledErrorTotal).equals(0);
     });
   });
 }

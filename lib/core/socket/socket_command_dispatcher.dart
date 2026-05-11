@@ -29,9 +29,10 @@ abstract interface class SocketCommandDispatcher {
   /// - `SocketDispatchDuplicateId` when [rpcId] is already pending.
   /// When [coalesce] is `true` (default) and another in-flight call has
   /// the canonical same body (`SocketCoalesceKey`), this method returns
-  /// **the same Future** without firing a second `agents:command` emit.
-  /// Pass `false` to force every call to hit the wire — useful for
-  /// non-idempotent operations and for tests that need ordering control.
+  /// a **new** [Future] that completes with the same outcome as the
+  /// leader request (single `agents:command` emit). Each [rpcId] can be
+  /// cancelled independently via [cancel] without cancelling other
+  /// coalesced waiters.
   Future<Map<String, dynamic>> sendAgentsCommand({
     required String agentId,
     required Map<String, Object?> body,
@@ -48,6 +49,10 @@ abstract interface class SocketCommandDispatcher {
   /// `Future` settled by `sendAgentsCommand` errors with
   /// `SocketDispatchCancelled`; the outcome stream emits a single
   /// `AgentCommandFailedTransient` with `reasonCode: 'cancelled'`.
+  ///
+  /// For coalesced followers (same body key as an in-flight leader),
+  /// only that waiter's future is cancelled; the hub request continues
+  /// for other waiters sharing the coalesce key.
   ///
   /// Idempotent: cancelling an unknown or already-completed `rpcId` is
   /// a silent no-op. Useful as the dispose-time hook for controllers

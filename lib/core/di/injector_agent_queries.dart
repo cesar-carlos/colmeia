@@ -84,6 +84,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_d
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
@@ -187,8 +188,7 @@ void _registerAgentQueryTransport(GetIt getIt) {
         final relay = _resolveRelayDatasource(getIt);
         final relayFallback = relay == null
             ? null
-            : AppEnvironment.agentBridgeTransport == AgentBridgeTransport.socket
-            ? SocketWithRestFallbackAgentQueriesRemoteDataSource(
+            : SocketWithRestFallbackAgentQueriesRemoteDataSource(
                 socketDelegate: relay,
                 restDelegate: rest,
                 onFallback: (trigger) => AppLogger.warning(
@@ -196,10 +196,10 @@ void _registerAgentQueryTransport(GetIt getIt) {
                   context: <String, Object?>{
                     'triggerCode': trigger.code,
                     'triggerMessage': trigger.message,
+                    'transport': AppEnvironment.agentBridgeTransport.name,
                   },
                 ),
-              )
-            : relay;
+              );
         final relayWrapped = relay == null
             ? base
             : HybridAgentQueriesRemoteDataSource(
@@ -211,9 +211,10 @@ void _registerAgentQueryTransport(GetIt getIt) {
           context: <String, Object?>{
             'transport': AppEnvironment.agentBridgeTransport.name,
             'relayEnabled': relay != null,
-            'fallbackEnabled':
+            'baseUsesSocketRestFallback':
                 AppEnvironment.agentBridgeTransport ==
                 AgentBridgeTransport.socket,
+            'relayUsesSocketRestFallback': relay != null,
           },
         );
         return relayWrapped;
@@ -856,7 +857,13 @@ AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
           compression: AppEnvironment.socketRelayPayloadFrameCompression,
         );
 
+  final maxBufferedRows = AppEnvironment.socketStreamSqlCollectorMaxBufferedRows;
+  final collector = maxBufferedRows > 0
+      ? BridgeShapedSqlExecuteCollector(maxBufferedRows: maxBufferedRows)
+      : const BridgeShapedSqlExecuteCollector();
+
   return CollectingRelayStreamingAgentQueriesRemoteDataSource(
     streamingDelegate: streamingDelegate,
+    collector: collector,
   );
 }

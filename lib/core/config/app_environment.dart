@@ -209,6 +209,44 @@ abstract final class AppEnvironment {
         fallback: defaultSocketMaxInflightPerAgent,
       );
 
+  /// When [socketMaxInflightPerAgent] is enabled, limits how many extra
+  /// `acquire` calls may wait per agent. `0` keeps the legacy unbounded
+  /// waiter queue.
+  static const int defaultSocketMaxInflightWaitersPerAgent = 0;
+
+  static int get socketMaxInflightWaitersPerAgent =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketMaxInflightWaitersPerAgent,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketMaxInflightWaitersPerAgent),
+        fallback: defaultSocketMaxInflightWaitersPerAgent,
+      );
+
+  /// Max milliseconds a caller may wait in the gate queue. `0` = unlimited.
+  static const int defaultSocketMaxInflightAcquireWaitMs = 0;
+
+  static int get socketMaxInflightAcquireWaitMs =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketMaxInflightAcquireWaitMs,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketMaxInflightAcquireWaitMs),
+        fallback: defaultSocketMaxInflightAcquireWaitMs,
+      );
+
+  /// Row cap for streaming SQL collector materialisation. `0` = unlimited.
+  static const int defaultSocketStreamSqlCollectorMaxBufferedRows = 0;
+
+  static int get socketStreamSqlCollectorMaxBufferedRows =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketStreamSqlCollectorMaxBufferedRows,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketStreamSqlCollectorMaxBufferedRows),
+        fallback: defaultSocketStreamSqlCollectorMaxBufferedRows,
+      );
+
   /// Whether the dispatcher should coalesce concurrent identical requests
   /// (review §5.1, P1). Default `true`; set `false` as a kill switch.
   static bool get socketCoalescingEnabled =>

@@ -1,6 +1,16 @@
 import 'dart:async';
 
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+
+/// Notified when a wire response targets an [rpcId] that no longer has a
+/// pending registration (typically the client timeout fired first).
+typedef SocketCorrelatorOrphanWireCallback =
+    void Function({
+      required String rpcId,
+      required String operation,
+      required int responseFieldCount,
+    });
 
 /// Maps `rpcId` → pending [Completer]. Owns timers and a periodic stale
 /// sweep as defense-in-depth (e.g., when a [Timer] is delayed by an OS
@@ -13,11 +23,14 @@ import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 class SocketRequestCorrelator {
   SocketRequestCorrelator({
     Duration sweepInterval = const Duration(minutes: 1),
-  }) : _sweepInterval = sweepInterval {
+    SocketCorrelatorOrphanWireCallback? onOrphanWireResponse,
+  }) : _sweepInterval = sweepInterval,
+       _onOrphanWireResponse = onOrphanWireResponse {
     _sweepTimer = Timer.periodic(_sweepInterval, (_) => _sweepStale());
   }
 
   final Duration _sweepInterval;
+  final SocketCorrelatorOrphanWireCallback? _onOrphanWireResponse;
   Timer? _sweepTimer;
 
   final Map<String, _PendingRequest> _pending = <String, _PendingRequest>{};
@@ -67,10 +80,16 @@ class SocketRequestCorrelator {
   }
 
   /// Resolves the pending request with the normalized JSON response.
-  /// Late responses (timeout already fired) are silently dropped.
+  /// Late responses (timeout already fired) are dropped after debug logging
+  /// and invoking the orphan-wire callback (when wired).
   void completeWith(String rpcId, Map<String, dynamic> response) {
     final entry = _pending.remove(rpcId);
     if (entry == null) {
+      _emitOrphanWire(
+        rpcId: rpcId,
+        operation: 'completeWith',
+        responseFieldCount: response.length,
+      );
       return;
     }
     entry.timer.cancel();
@@ -83,6 +102,11 @@ class SocketRequestCorrelator {
   void failWith(String rpcId, Object error, [StackTrace? stack]) {
     final entry = _pending.remove(rpcId);
     if (entry == null) {
+      _emitOrphanWire(
+        rpcId: rpcId,
+        operation: 'failWith',
+        responseFieldCount: 0,
+      );
       return;
     }
     entry.timer.cancel();
@@ -134,6 +158,30 @@ class SocketRequestCorrelator {
       failWith(
         id,
         SocketDispatchTimeout(message: 'Stale request swept: rpcId=$id'),
+      );
+    }
+  }
+
+  void _emitOrphanWire({
+    required String rpcId,
+    required String operation,
+    required int responseFieldCount,
+  }) {
+    AppLogger.debug(
+      'Socket correlator dropped wire response (no pending rpcId)',
+      context: <String, Object?>{
+        'component': 'SocketRequestCorrelator',
+        'operation': operation,
+        'rpcId': rpcId,
+        'responseFieldCount': responseFieldCount,
+      },
+    );
+    final hook = _onOrphanWireResponse;
+    if (hook != null) {
+      hook(
+        rpcId: rpcId,
+        operation: operation,
+        responseFieldCount: responseFieldCount,
       );
     }
   }

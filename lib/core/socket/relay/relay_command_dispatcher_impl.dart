@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
+import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
@@ -30,6 +32,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     required ConsumerSocketConnection connection,
     required RelayConversationManager conversationManager,
     PayloadFrameCodec? codec,
+    PerAgentConcurrencyGate? concurrencyGate,
+    SocketChannelMetrics? channelMetrics,
     Duration defaultTimeout = const Duration(seconds: 30),
     RelayPayloadFrameCompression defaultCompression =
         RelayPayloadFrameCompression.auto,
@@ -38,6 +42,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   }) : _connection = connection,
        _conversationManager = conversationManager,
        _codec = codec ?? const PayloadFrameCodec(),
+       _concurrencyGate = concurrencyGate,
+       _channelMetrics = channelMetrics,
        _defaultTimeout = defaultTimeout,
        _defaultCompression = defaultCompression,
        _defaultStreamInitialWindow = defaultStreamInitialWindow,
@@ -49,6 +55,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   final ConsumerSocketConnection _connection;
   final RelayConversationManager _conversationManager;
   final PayloadFrameCodec _codec;
+  final PerAgentConcurrencyGate? _concurrencyGate;
+  final SocketChannelMetrics? _channelMetrics;
   final Duration _defaultTimeout;
   final RelayPayloadFrameCompression _defaultCompression;
   final int _defaultStreamInitialWindow;
@@ -102,6 +110,23 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
             );
           },
     );
+    final gate = _concurrencyGate;
+    if (gate != null) {
+      try {
+        await gate.acquire(pending.agentId);
+      } on Object catch (e, s) {
+        _failPending(
+          clientRequestId,
+          RelayConversationStartFailure(
+            message: 'relay concurrency gate acquire failed: $e',
+            cause: e,
+            stackTrace: s,
+          ),
+        );
+        return pending.completer.future;
+      }
+      pending.relayPerAgentSlotRelease = () => gate.release(pending.agentId);
+    }
     _emitRpcRequest(
       conversationId: pending.conversationId,
       clientRequestId: clientRequestId,
@@ -123,76 +148,107 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) {
-    final controller = StreamController<Map<String, dynamic>>.broadcast();
+    final controller = StreamController<Map<String, dynamic>>();
 
-    // Run the async preparation in the background and forward errors to
-    // the controller so the caller observes everything via the stream.
-    // The Future is intentionally fire-and-forget — observers consume the
-    // stream, not this future.
-    // ignore: discarded_futures
-    Future<void>(() async {
-      final window = initialWindowSize ?? _defaultStreamInitialWindow;
-      final threshold = refillThreshold ?? _defaultStreamRefillThreshold;
-      final _PendingStream pending;
-      try {
-        pending = await _prepareSend<_PendingStream>(
-          agentId: agentId,
-          clientRequestId: clientRequestId,
-          timeout: timeout,
-          makePending:
-              ({
-                required resolvedAgentId,
-                required resolvedConversationId,
-                required resolvedMethod,
-                required stopwatch,
-              }) {
-                return _PendingStream(
-                  agentId: resolvedAgentId,
-                  conversationId: resolvedConversationId,
-                  clientRequestId: clientRequestId,
-                  method: resolvedMethod,
-                  stopwatch: stopwatch,
-                  controller: controller,
-                  initialWindow: window,
-                  refillThreshold: threshold,
-                );
-              },
-        );
-      } on RelayDispatchException catch (e) {
-        if (!controller.isClosed) {
-          controller.addError(e);
-          // close() returns Future<void>; subscribers observe the error
-          // via the stream subscription, no need to await here.
-          unawaited(controller.close());
-        }
-        return;
-      } on SocketDispatchException catch (e) {
-        if (!controller.isClosed) {
-          controller.addError(e);
-          unawaited(controller.close());
-        }
-        return;
-      } on Object catch (e, s) {
-        if (!controller.isClosed) {
-          controller.addError(
-            RelayConversationStartFailure(
-              message: 'failed to prepare relay stream: $e',
-              cause: e,
-              stackTrace: s,
-            ),
-          );
-          unawaited(controller.close());
-        }
+    void reportUnhandledStreamError(Object error, StackTrace stack) {
+      _channelMetrics?.recordRelayStreamingUnhandledError();
+      if (controller.isClosed) {
         return;
       }
-      _emitRpcRequest(
-        conversationId: pending.conversationId,
-        clientRequestId: clientRequestId,
-        body: body,
-        compression: compression,
-        pending: pending,
+      controller.addError(
+        RelayConversationStartFailure(
+          message: 'unhandled relay stream error: $error',
+          cause: error,
+          stackTrace: stack,
+        ),
       );
-    });
+      unawaited(controller.close());
+    }
+
+    unawaited(
+      (() async {
+        final window = initialWindowSize ?? _defaultStreamInitialWindow;
+        final threshold = refillThreshold ?? _defaultStreamRefillThreshold;
+        final _PendingStream pending;
+        try {
+          pending = await _prepareSend<_PendingStream>(
+            agentId: agentId,
+            clientRequestId: clientRequestId,
+            timeout: timeout,
+            makePending:
+                ({
+                  required resolvedAgentId,
+                  required resolvedConversationId,
+                  required resolvedMethod,
+                  required stopwatch,
+                }) {
+                  return _PendingStream(
+                    agentId: resolvedAgentId,
+                    conversationId: resolvedConversationId,
+                    clientRequestId: clientRequestId,
+                    method: resolvedMethod,
+                    stopwatch: stopwatch,
+                    controller: controller,
+                    initialWindow: window,
+                    refillThreshold: threshold,
+                  );
+                },
+          );
+        } on RelayDispatchException catch (e) {
+          if (!controller.isClosed) {
+            controller.addError(e);
+            // close() returns Future<void>; subscribers observe the error
+            // via the stream subscription, no need to await here.
+            unawaited(controller.close());
+          }
+          return;
+        } on SocketDispatchException catch (e) {
+          if (!controller.isClosed) {
+            controller.addError(e);
+            unawaited(controller.close());
+          }
+          return;
+        } on Object catch (e, s) {
+          if (!controller.isClosed) {
+            controller.addError(
+              RelayConversationStartFailure(
+                message: 'failed to prepare relay stream: $e',
+                cause: e,
+                stackTrace: s,
+              ),
+            );
+            unawaited(controller.close());
+          }
+          return;
+        }
+        final gate = _concurrencyGate;
+        if (gate != null) {
+          try {
+            await gate.acquire(pending.agentId);
+          } on Object catch (e, s) {
+            _failPending(
+              clientRequestId,
+              RelayConversationStartFailure(
+                message: 'relay concurrency gate acquire failed: $e',
+                cause: e,
+                stackTrace: s,
+              ),
+            );
+            return;
+          }
+          pending.relayPerAgentSlotRelease = () => gate.release(pending.agentId);
+        }
+        _emitRpcRequest(
+          conversationId: pending.conversationId,
+          clientRequestId: clientRequestId,
+          body: body,
+          compression: compression,
+          pending: pending,
+        );
+      })().catchError((Object error, StackTrace stack) async {
+        reportUnhandledStreamError(error, stack);
+      }),
+    );
 
     return controller.stream;
   }
@@ -218,6 +274,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           clientRequestId: entry.clientRequestId,
         ),
       );
+      _releaseRelayGateSlot(entry);
     }
     if (!_outcomes.isClosed) {
       await _outcomes.close();
@@ -887,6 +944,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       entry.completer.complete(response);
       _outcomes.add(_buildSuccessOutcome(entry));
     }
+    _releaseRelayGateSlot(entry);
   }
 
   void _completeStreamPending(_PendingStream entry) {
@@ -907,6 +965,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       unawaited(entry.controller.close());
       _outcomes.add(_buildSuccessOutcome(entry));
     }
+    _releaseRelayGateSlot(entry);
   }
 
   RelayRpcSuccess _buildSuccessOutcome(_PendingRelay entry) {
@@ -923,6 +982,14 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     );
   }
 
+  void _releaseRelayGateSlot(_PendingRelay entry) {
+    final release = entry.relayPerAgentSlotRelease;
+    if (release != null) {
+      entry.relayPerAgentSlotRelease = null;
+      release();
+    }
+  }
+
   void _failPending(
     String clientRequestId,
     RelayDispatchException exception,
@@ -931,6 +998,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (entry == null) {
       return;
     }
+    _releaseRelayGateSlot(entry);
     final requestId = entry.requestId;
     if (requestId != null) {
       _clientIdByRequestId.remove(requestId);
@@ -1025,6 +1093,9 @@ sealed class _PendingRelay {
   bool deduplicated = false;
   bool replayed = false;
   Timer? timeoutTimer;
+
+  /// Invoked once when the per-agent relay slot is finished.
+  void Function()? relayPerAgentSlotRelease;
 
   /// Reports an external failure to the consumer (Future or Stream).
   /// Returns `true` when the failure was actually delivered (i.e. the

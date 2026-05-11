@@ -215,4 +215,57 @@ AGENT_BRIDGE_TRANSPORT=rest
     check(restAdapter.calls).equals(2);
     check(sender.calls).equals(0);
   });
+
+  test(
+    'REST transport with relay still wraps relay with REST latch on '
+    'permanent socket failure',
+    () async {
+      dotenv.loadFromString(
+        envString: '''
+API_BASE_URL=http://localhost
+USE_FAKE_BACKEND=false
+AGENT_BRIDGE_TRANSPORT=rest
+SOCKET_RELAY_ENABLED=true
+''',
+      );
+      final getIt = GetIt.asNewInstance();
+      addTearDown(getIt.reset);
+      final sender = _ThrowingAgentCommandSender();
+      final relay = _FakeRelayCommandDispatcher(
+        streamError: const SocketDispatchNamespaceForbidden(
+          message: 'forbidden',
+          role: 'client',
+          namespace: '/consumers',
+        ),
+      );
+      final restAdapter = _RestAdapter();
+      final dio = Dio()..httpClientAdapter = restAdapter;
+      getIt
+        ..registerLazySingleton<Dio>(() => dio)
+        ..registerLazySingleton<AgentCommandSender>(() => sender)
+        ..registerLazySingleton<RelayCommandDispatcher>(() => relay);
+
+      registerInjectorAgentQueries(getIt);
+
+      final datasource = getIt<AgentQueriesRemoteDataSource>();
+      await datasource.postSqlExecute(
+        const AgentSqlExecuteRequest(
+          agentId: 'agent-1',
+          sql: 'SELECT 1',
+          useRelay: true,
+        ),
+      );
+      await datasource.postSqlExecute(
+        const AgentSqlExecuteRequest(
+          agentId: 'agent-1',
+          sql: 'SELECT 1',
+          useRelay: true,
+        ),
+      );
+
+      check(relay.streamingCalls).equals(1);
+      check(restAdapter.calls).equals(2);
+      check(sender.calls).equals(0);
+    },
+  );
 }

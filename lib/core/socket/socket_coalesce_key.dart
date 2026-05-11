@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
+
 /// Pure helper that produces a **stable** identifier for an
 /// `agents:command` body so identical concurrent requests can be
 /// deduplicated by the dispatcher (review §5.1, P1).
@@ -40,10 +42,11 @@ abstract final class SocketCoalesceKey {
       'pagination': pagination,
       'timeoutMs': timeoutMs,
     };
-    return jsonEncode(_sortDeep(canonical));
+    final wire = jsonEncode(_sortDeep(canonical));
+    return sha256.convert(utf8.encode(wire)).toString();
   }
 
-  /// Recursively sorts every map by key so that `jsonEncode` is
+  /// Recursively sorts every map by key so that the wire form is
   /// deterministic regardless of insertion order.
   static Object? _sortDeep(Object? value) {
     if (value is Map) {

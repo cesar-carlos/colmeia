@@ -11,6 +11,11 @@ class SocketMetricsSnapshot {
     required this.batchSizeDistribution,
     required this.batchPartialFailureTotal,
     required this.batchBypassTotalByReason,
+    this.correlatorOrphanCompleteTotal = 0,
+    this.correlatorOrphanFailTotal = 0,
+    this.gateWaiterQueueRejectedTotal = 0,
+    this.gateAcquireWaitTimeoutTotal = 0,
+    this.relayStreamingUnhandledErrorTotal = 0,
   });
 
   /// Histogram across **all** completed handshakes since process start
@@ -49,6 +54,21 @@ class SocketMetricsSnapshot {
   /// `caller_opt_out`, `disabled`).
   final Map<String, int> batchBypassTotalByReason;
 
+  /// `completeWith` calls that arrived after the pending entry was gone.
+  final int correlatorOrphanCompleteTotal;
+
+  /// `failWith` calls that arrived after the pending entry was gone.
+  final int correlatorOrphanFailTotal;
+
+  /// Per-agent gate refused a waiter because the queue was full.
+  final int gateWaiterQueueRejectedTotal;
+
+  /// Queued gate acquire timed out before a slot was granted.
+  final int gateAcquireWaitTimeoutTotal;
+
+  /// Relay `sendStreaming` async error surfaced via the error handler.
+  final int relayStreamingUnhandledErrorTotal;
+
   Map<String, Object?> toJson() {
     return <String, Object?>{
       'handshakeMs': handshakeMs.toJson(),
@@ -63,6 +83,11 @@ class SocketMetricsSnapshot {
       'batchSizeDistribution': batchSizeDistribution.toJson(),
       'batchPartialFailureTotal': batchPartialFailureTotal,
       'batchBypassTotalByReason': batchBypassTotalByReason,
+      'correlatorOrphanCompleteTotal': correlatorOrphanCompleteTotal,
+      'correlatorOrphanFailTotal': correlatorOrphanFailTotal,
+      'gateWaiterQueueRejectedTotal': gateWaiterQueueRejectedTotal,
+      'gateAcquireWaitTimeoutTotal': gateAcquireWaitTimeoutTotal,
+      'relayStreamingUnhandledErrorTotal': relayStreamingUnhandledErrorTotal,
     };
   }
 }

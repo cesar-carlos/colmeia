@@ -75,8 +75,20 @@ void registerInjectorSocket(GetIt getIt) {
       ),
       dispose: (connection) => connection.dispose(),
     )
+    ..registerLazySingleton<SocketChannelMetrics>(SocketChannelMetrics.new)
     ..registerLazySingleton<SocketRequestCorrelator>(
-      SocketRequestCorrelator.new,
+      () => SocketRequestCorrelator(
+        onOrphanWireResponse:
+            ({
+              required rpcId,
+              required operation,
+              required responseFieldCount,
+            }) {
+              getIt<SocketChannelMetrics>().recordCorrelatorOrphanWire(
+                operation: operation,
+              );
+            },
+      ),
       dispose: (correlator) => correlator.dispose(),
     )
     ..registerLazySingleton<SocketCommandDispatcher>(
@@ -93,7 +105,6 @@ void registerInjectorSocket(GetIt getIt) {
       ),
       dispose: (dispatcher) => dispatcher.dispose(),
     )
-    ..registerLazySingleton<SocketChannelMetrics>(SocketChannelMetrics.new)
     ..registerLazySingleton<SocketMetricsListener>(
       () => SocketMetricsListener(
         connection: getIt<ConsumerSocketConnection>(),
@@ -117,8 +128,22 @@ void registerInjectorSocket(GetIt getIt) {
   // and dispatches with no per-agent throttling.
   final ceiling = AppEnvironment.socketMaxInflightPerAgent;
   if (ceiling > 0) {
+    final waitersCap = AppEnvironment.socketMaxInflightWaitersPerAgent;
+    final acquireWaitMs = AppEnvironment.socketMaxInflightAcquireWaitMs;
     getIt.registerLazySingleton<PerAgentConcurrencyGate>(
-      () => PerAgentConcurrencyGate(maxInflightPerAgent: ceiling),
+      () => PerAgentConcurrencyGate(
+        maxInflightPerAgent: ceiling,
+        maxWaitersPerAgent: waitersCap > 0 ? waitersCap : null,
+        maxWaitForSlot: acquireWaitMs > 0
+            ? Duration(milliseconds: acquireWaitMs)
+            : null,
+        onWaiterQueueRejected: () {
+          getIt<SocketChannelMetrics>().recordGateWaiterQueueRejected();
+        },
+        onAcquireWaitTimeout: () {
+          getIt<SocketChannelMetrics>().recordGateAcquireWaitTimeout();
+        },
+      ),
     );
   }
 
@@ -162,6 +187,8 @@ void registerInjectorSocket(GetIt getIt) {
               AppEnvironment.socketRelayStreamInitialWindow,
           defaultStreamRefillThreshold:
               AppEnvironment.socketRelayStreamRefillThreshold,
+          concurrencyGate: _resolveConcurrencyGate(getIt),
+          channelMetrics: getIt<SocketChannelMetrics>(),
         ),
         dispose: (dispatcher) => dispatcher.dispose(),
       );

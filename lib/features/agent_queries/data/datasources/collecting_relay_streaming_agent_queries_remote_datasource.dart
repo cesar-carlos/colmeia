@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+
+void _ignoreChainedError(Object error, StackTrace stackTrace) {}
 
 /// Adapter that lets a repository **already wired to the unary
 /// `AgentQueriesRemoteDataSource` port** benefit from the relay
@@ -22,6 +26,11 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 /// The repository keeps using `AgentQueriesRemoteDataSource`; the DI
 /// swap chooses which transport (REST, `agents:command`, relay
 /// unitary, **relay-collected**) actually runs.
+///
+/// [postSqlExecute] for the same [AgentSqlExecuteRequest.agentId] is
+/// **serialized**: a second call waits until the first `collect` fully
+/// completes. That avoids overlapping `streamSqlExecute` sessions and
+/// unbounded memory when many futures are started for one agent.
 class CollectingRelayStreamingAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   CollectingRelayStreamingAgentQueriesRemoteDataSource({
@@ -34,10 +43,26 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
   final AgentQueriesStreamingRemoteDataSource _streamingDelegate;
   final StreamingSqlExecuteCollector _collector;
 
+  final Map<String, Future<dynamic>> _postSqlTailByAgentId =
+      <String, Future<dynamic>>{};
+
   @override
   Future<Map<String, dynamic>> postSqlExecute(
     AgentSqlExecuteRequest request,
   ) {
-    return _collector.collect(_streamingDelegate.streamSqlExecute(request));
+    final agentId = request.agentId;
+    final previous = _postSqlTailByAgentId[agentId] ?? Future<void>.value();
+    final mapped = previous
+        .then<void>((_) {}, onError: _ignoreChainedError)
+        .then(
+          (_) => _collector.collect(
+            _streamingDelegate.streamSqlExecute(request),
+          ),
+        );
+    _postSqlTailByAgentId[agentId] = mapped.then<void>(
+      (_) {},
+      onError: _ignoreChainedError,
+    );
+    return mapped;
   }
 }

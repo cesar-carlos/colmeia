@@ -59,6 +59,10 @@ abstract interface class RelayCommandDispatcher {
   ///   PayloadFrame on response/chunk) raises a `RelayDispatchException`
   ///   on the stream and closes it.
   ///
+  /// The returned stream is **single-subscription** — attach a listener
+  /// immediately after this call returns so chunks are not dropped while
+  /// the dispatcher is already forwarding events.
+  ///
   /// Cancelling the returned subscription does **not** notify the hub
   /// (the relay protocol has no client-side cancel today). The dispatcher
   /// drops further chunks and lets the request settle; combined with the

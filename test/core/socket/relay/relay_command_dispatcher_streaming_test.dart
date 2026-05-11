@@ -199,8 +199,16 @@ void main() {
           clientRequestId: 'rpc-1',
         );
 
+        final streamClosed = Completer<void>();
         final received = <Map<String, dynamic>>[];
-        final sub = stream.listen(received.add);
+        final sub = stream.listen(
+          received.add,
+          onDone: () {
+            if (!streamClosed.isCompleted) {
+              streamClosed.complete();
+            }
+          },
+        );
         addTearDown(sub.cancel);
 
         // Pump twice: one for await manager.obtain chain, one for emit.
@@ -299,8 +307,7 @@ void main() {
         check(completePayload['total_rows']).equals(3);
         check(completePayload['execution_id']).equals('exec-1');
 
-        // Wait for the broadcast stream to close cleanly.
-        await stream.toList().timeout(const Duration(milliseconds: 100));
+        await streamClosed.future.timeout(const Duration(milliseconds: 100));
       },
     );
 
@@ -376,8 +383,16 @@ void main() {
           },
           clientRequestId: 'rpc-resp',
         );
+        final streamClosed = Completer<void>();
         final received = <Map<String, dynamic>>[];
-        final sub = stream.listen(received.add);
+        final sub = stream.listen(
+          received.add,
+          onDone: () {
+            if (!streamClosed.isCompleted) {
+              streamClosed.complete();
+            }
+          },
+        );
         addTearDown(sub.cancel);
 
         await Future<void>.delayed(Duration.zero);
@@ -402,7 +417,7 @@ void main() {
           ),
         );
 
-        await stream.toList().timeout(const Duration(milliseconds: 100));
+        await streamClosed.future.timeout(const Duration(milliseconds: 100));
         check(received.length).equals(1);
         check(received.single['response']).isA<Map<dynamic, dynamic>>();
       },

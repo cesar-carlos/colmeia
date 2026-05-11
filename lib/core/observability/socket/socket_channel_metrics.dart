@@ -34,6 +34,11 @@ class SocketChannelMetrics {
   int _coalescedTotal = 0;
   int _batchEmissionsTotal = 0;
   int _batchPartialFailureTotal = 0;
+  int _correlatorOrphanCompleteTotal = 0;
+  int _correlatorOrphanFailTotal = 0;
+  int _gateWaiterQueueRejectedTotal = 0;
+  int _gateAcquireWaitTimeoutTotal = 0;
+  int _relayStreamingUnhandledErrorTotal = 0;
   final _ReservoirHistogram _batchSizeDistribution;
   final Map<String, int> _batchBypassByReason;
 
@@ -96,6 +101,31 @@ class SocketChannelMetrics {
     _batchBypassByReason[reason] = (_batchBypassByReason[reason] ?? 0) + 1;
   }
 
+  /// Late wire response after the correlator dropped the pending entry
+  /// ([operation] is `completeWith` or `failWith`).
+  void recordCorrelatorOrphanWire({required String operation}) {
+    if (operation == 'completeWith') {
+      _correlatorOrphanCompleteTotal += 1;
+    } else if (operation == 'failWith') {
+      _correlatorOrphanFailTotal += 1;
+    }
+  }
+
+  /// Waiter refused because the per-agent gate queue is at cap.
+  void recordGateWaiterQueueRejected() {
+    _gateWaiterQueueRejectedTotal += 1;
+  }
+
+  /// Queued gate acquire exceeded the configured max wait duration.
+  void recordGateAcquireWaitTimeout() {
+    _gateAcquireWaitTimeoutTotal += 1;
+  }
+
+  /// Unhandled async error in relay `sendStreaming` setup.
+  void recordRelayStreamingUnhandledError() {
+    _relayStreamingUnhandledErrorTotal += 1;
+  }
+
   // ----- Inspection API -----
 
   /// Snapshot of all the current values. Cheap to compute; safe for the
@@ -118,6 +148,11 @@ class SocketChannelMetrics {
       batchBypassTotalByReason: Map<String, int>.unmodifiable(
         _batchBypassByReason,
       ),
+      correlatorOrphanCompleteTotal: _correlatorOrphanCompleteTotal,
+      correlatorOrphanFailTotal: _correlatorOrphanFailTotal,
+      gateWaiterQueueRejectedTotal: _gateWaiterQueueRejectedTotal,
+      gateAcquireWaitTimeoutTotal: _gateAcquireWaitTimeoutTotal,
+      relayStreamingUnhandledErrorTotal: _relayStreamingUnhandledErrorTotal,
     );
   }
 
@@ -132,6 +167,11 @@ class SocketChannelMetrics {
     _coalescedTotal = 0;
     _batchEmissionsTotal = 0;
     _batchPartialFailureTotal = 0;
+    _correlatorOrphanCompleteTotal = 0;
+    _correlatorOrphanFailTotal = 0;
+    _gateWaiterQueueRejectedTotal = 0;
+    _gateAcquireWaitTimeoutTotal = 0;
+    _relayStreamingUnhandledErrorTotal = 0;
     _batchSizeDistribution.clear();
     _batchBypassByReason.clear();
   }

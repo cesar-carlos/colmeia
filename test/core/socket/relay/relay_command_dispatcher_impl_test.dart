@@ -13,6 +13,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
+import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
@@ -137,11 +138,13 @@ void main() {
 
   Future<RelayCommandDispatcherImpl> dispatcherFor({
     Duration defaultTimeout = const Duration(milliseconds: 500),
+    PerAgentConcurrencyGate? concurrencyGate,
   }) async {
     final dispatcher = RelayCommandDispatcherImpl(
       connection: connection,
       conversationManager: manager,
       defaultTimeout: defaultTimeout,
+      concurrencyGate: concurrencyGate,
     );
     return dispatcher;
   }
@@ -162,6 +165,117 @@ void main() {
     final conversation = await future;
     return conversation.conversationId!;
   }
+
+  group('RelayCommandDispatcherImpl per-agent concurrency gate', () {
+    test(
+      'defers second unary emit until first completes when gate allows one slot',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        final dispatcher = await dispatcherFor(concurrencyGate: gate);
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final f1 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-a',
+            },
+          },
+          clientRequestId: 'rpc-a',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        check(
+          wiring.emits
+              .where((e) => e.event == RelayEventNames.rpcRequest)
+              .length,
+        ).equals(1);
+
+        final f2 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-b',
+            },
+          },
+          clientRequestId: 'rpc-b',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        check(
+          wiring.emits
+              .where((e) => e.event == RelayEventNames.rpcRequest)
+              .length,
+        ).equals(1);
+        check(gate.waitingFor('agent-1')).equals(1);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-a',
+          'requestId': 'srv-a',
+          'success': true,
+        });
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'item': <String, Object?>{
+                  'id': 'rpc-a',
+                  'success': true,
+                  'result': <String, Object?>{'rows': <Object?>[]},
+                },
+              },
+            },
+            requestId: 'srv-a',
+          ),
+        );
+
+        await f1;
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        check(
+          wiring.emits
+              .where((e) => e.event == RelayEventNames.rpcRequest)
+              .length,
+        ).equals(2);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-b',
+          'requestId': 'srv-b',
+          'success': true,
+        });
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'item': <String, Object?>{
+                  'id': 'rpc-b',
+                  'success': true,
+                  'result': <String, Object?>{'rows': <Object?>[]},
+                },
+              },
+            },
+            requestId: 'srv-b',
+          ),
+        );
+
+        await f2;
+      },
+    );
+  });
 
   group('RelayCommandDispatcherImpl.sendUnary', () {
     test('emits relay:rpc.request and resolves on rpc.response', () async {

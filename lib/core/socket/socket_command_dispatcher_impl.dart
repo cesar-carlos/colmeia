@@ -62,6 +62,17 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   final Map<String, Future<Map<String, dynamic>>> _inflightByKey =
       <String, Future<Map<String, dynamic>>>{};
 
+  /// Leader `rpcId` for each active coalesce `key` (registered in correlator).
+  final Map<String, String> _coalesceLeaderRpcIdByKey = <String, String>{};
+
+  /// Followers of a coalesced flight: separate [Future] per `rpcId` for
+  /// targeted cancellation without cancelling the shared hub request.
+  final Map<String, Completer<Map<String, dynamic>>> _coalesceAwaiterByRpcId =
+      <String, Completer<Map<String, dynamic>>>{};
+
+  /// Follower `rpcId` → coalesce `key`.
+  final Map<String, String> _coalesceAwaiterKeyByRpcId = <String, String>{};
+
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
   io.Socket? _attachedSocket;
   bool _isDisposed = false;
@@ -111,14 +122,49 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     final existing = _inflightByKey[key];
     if (existing != null) {
       _onCoalesced?.call();
+      final leaderRpcId = _coalesceLeaderRpcIdByKey[key];
       AppLogger.debug(
         'Coalesced agents:command into in-flight request',
         context: <String, Object?>{
           'component': 'SocketCommandDispatcherImpl',
           'agentId': agentId,
+          'followerRpcId': rpcId,
+          'leaderRpcId': leaderRpcId,
         },
       );
-      return existing;
+      final followerCompleter = Completer<Map<String, dynamic>>();
+      final methodFollower = _extractMethod(body);
+      final followerStopwatch = Stopwatch()..start();
+      _meta[rpcId] = _PendingMeta(
+        agentId: agentId,
+        stopwatch: followerStopwatch,
+        method: methodFollower,
+      );
+      _coalesceAwaiterByRpcId[rpcId] = followerCompleter;
+      _coalesceAwaiterKeyByRpcId[rpcId] = key;
+      unawaited(
+        existing
+            .then<void>(
+              (value) {
+                followerStopwatch.stop();
+                if (!followerCompleter.isCompleted) {
+                  followerCompleter.complete(value);
+                }
+              },
+              onError: (Object error, StackTrace stack) {
+                followerStopwatch.stop();
+                if (!followerCompleter.isCompleted) {
+                  followerCompleter.completeError(error, stack);
+                }
+              },
+            )
+            .whenComplete(() {
+              _meta.remove(rpcId);
+              _coalesceAwaiterByRpcId.remove(rpcId);
+              _coalesceAwaiterKeyByRpcId.remove(rpcId);
+            }),
+      );
+      return followerCompleter.future;
     }
     final future = _dispatchAgentsCommand(
       agentId: agentId,
@@ -127,6 +173,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       timeout: timeout,
     );
     _inflightByKey[key] = future;
+    _coalesceLeaderRpcIdByKey[key] = rpcId;
     // Always remove the entry once the future settles; do not surface
     // bookkeeping errors as request failures. The cleanup task is
     // intentionally fire-and-forget — callers track `future`, not this.
@@ -147,6 +194,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       final current = _inflightByKey[key];
       if (identical(current, future)) {
         _inflightByKey.remove(key)?.ignore();
+        _coalesceLeaderRpcIdByKey.remove(key);
       }
     }
   }
@@ -335,6 +383,29 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     if (_isDisposed) {
       return;
     }
+    final followerCompleter = _coalesceAwaiterByRpcId.remove(rpcId);
+    if (followerCompleter != null) {
+      _coalesceAwaiterKeyByRpcId.remove(rpcId);
+      final metaFollower = _meta.remove(rpcId);
+      if (metaFollower != null) {
+        metaFollower.stopwatch.stop();
+        _emitTransient(
+          agentId: metaFollower.agentId,
+          rpcId: rpcId,
+          elapsed: metaFollower.stopwatch.elapsed,
+          reasonCode: 'cancelled',
+          method: metaFollower.method,
+        );
+      }
+      if (!followerCompleter.isCompleted) {
+        followerCompleter.completeError(
+          SocketDispatchCancelled(
+            message: 'Request cancelled by caller (reason=$reason)',
+          ),
+        );
+      }
+      return;
+    }
     final meta = _meta[rpcId];
     if (meta == null) {
       // Not pending — could be already settled or never registered.
@@ -367,6 +438,16 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     _stateSub = null;
     _detachListeners();
     await _correlator.dispose();
+    for (final c in _coalesceAwaiterByRpcId.values) {
+      if (!c.isCompleted) {
+        c.completeError(
+          const SocketDispatchDisconnected(message: 'Dispatcher disposed'),
+        );
+      }
+    }
+    _coalesceAwaiterByRpcId.clear();
+    _coalesceAwaiterKeyByRpcId.clear();
+    _coalesceLeaderRpcIdByKey.clear();
     if (!_outcomes.isClosed) {
       await _outcomes.close();
     }

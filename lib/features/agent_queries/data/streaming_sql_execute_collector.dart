@@ -55,8 +55,16 @@ abstract interface class StreamingSqlExecuteCollector {
 /// arrive, the result is an empty success envelope so callers can
 /// distinguish "agent ran but found nothing" from "transport failure"
 /// (the latter surfaces as a stream error and never reaches `collect`).
+///
+/// When [maxBufferedRows] is set, buffered row count across chunks must
+/// not exceed it — otherwise [collect] throws [StateError] to cap
+/// client memory for very large result sets (prefer true streaming in
+/// the domain when this trips).
 class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
-  const BridgeShapedSqlExecuteCollector();
+  const BridgeShapedSqlExecuteCollector({this.maxBufferedRows});
+
+  /// Maximum rows buffered from chunk `rows` arrays. `null` = unlimited.
+  final int? maxBufferedRows;
 
   @override
   Future<Map<String, dynamic>> collect(
@@ -79,6 +87,13 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
       final maybeRows = chunk['rows'];
       if (maybeRows is List) {
         rows.addAll(maybeRows);
+        final cap = maxBufferedRows;
+        if (cap != null && rows.length > cap) {
+          throw StateError(
+            'BridgeShapedSqlExecuteCollector buffered row cap exceeded '
+            '(maxBufferedRows=$cap, currentRows=${rows.length})',
+          );
+        }
         final cols = chunk['column_metadata'];
         if (cols is List && columnMetadata == null) {
           columnMetadata = List<Object?>.from(cols);

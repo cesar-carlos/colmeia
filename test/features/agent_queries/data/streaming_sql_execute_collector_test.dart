@@ -122,6 +122,26 @@ void main() {
       check(result['row_count']).equals(0);
     });
 
+    test('throws when buffered rows exceed maxBufferedRows', () async {
+      const capped = BridgeShapedSqlExecuteCollector(maxBufferedRows: 2);
+      final stream = Stream<Map<String, dynamic>>.fromIterable(
+        <Map<String, dynamic>>[
+          <String, dynamic>{
+            'request_id': 'r',
+            'rows': <Object?>[
+              <String, Object?>{'a': 1},
+              <String, Object?>{'a': 2},
+              <String, Object?>{'a': 3},
+            ],
+          },
+        ],
+      );
+      await expectLater(
+        () => capped.collect(stream),
+        throwsA(isA<StateError>()),
+      );
+    });
+
     test('errors on the stream propagate to the caller', () async {
       final stream = streamOf(
         <Map<String, dynamic>>[

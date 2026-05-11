@@ -86,9 +86,68 @@ void main() {
       check(correlator.pendingCount).equals(0);
     });
 
-    test('completeWith for unknown id is a no-op', () {
-      correlator.completeWith('ghost', <String, dynamic>{'late': true});
-      check(correlator.pendingCount).equals(0);
+    test('completeWith for unknown id invokes orphan hook and stays empty', () {
+      final orphans = <String>[];
+      final c = SocketRequestCorrelator(
+        onOrphanWireResponse:
+            ({
+              required rpcId,
+              required operation,
+              required responseFieldCount,
+            }) {
+              orphans.add('$operation|$rpcId|$responseFieldCount');
+            },
+      );
+      addTearDown(() async {
+        await c.dispose();
+      });
+      c.completeWith('ghost', <String, dynamic>{'late': true, 'x': 2});
+      check(orphans.single).equals('completeWith|ghost|2');
+      check(c.pendingCount).equals(0);
+    });
+
+    test('failWith for unknown id invokes orphan hook', () {
+      final orphans = <String>[];
+      final c = SocketRequestCorrelator(
+        onOrphanWireResponse:
+            ({
+              required rpcId,
+              required operation,
+              required responseFieldCount,
+            }) {
+              orphans.add('$operation|$rpcId|$responseFieldCount');
+            },
+      );
+      addTearDown(() async {
+        await c.dispose();
+      });
+      c.failWith('ghost', const SocketDispatchDisconnected(message: 'late'));
+      check(orphans.single).equals('failWith|ghost|0');
+      check(c.pendingCount).equals(0);
+    });
+
+    test('orphan completeWith after timeout triggers hook', () async {
+      final orphans = <String>[];
+      final c = SocketRequestCorrelator(
+        onOrphanWireResponse:
+            ({
+              required rpcId,
+              required operation,
+              required responseFieldCount,
+            }) {
+              orphans.add(operation);
+            },
+      );
+      addTearDown(() async {
+        await c.dispose();
+      });
+      final pending = c.register(
+        'rpc-late',
+        timeout: const Duration(milliseconds: 20),
+      );
+      await check(pending).throws<SocketDispatchTimeout>();
+      c.completeWith('rpc-late', <String, dynamic>{'ok': true});
+      check(orphans).deepEquals(<String>['completeWith']);
     });
 
     test('timeout fires SocketDispatchTimeout', () async {

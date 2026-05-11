@@ -64,6 +64,24 @@ abstract final class EnvKeys {
   static const String socketMaxInflightPerAgent =
       'SOCKET_MAX_INFLIGHT_PER_AGENT';
 
+  /// Optional cap on how many `PerAgentConcurrencyGate.acquire` calls may
+  /// wait in the per-agent queue when in-flight work is at ceiling. `0`
+  /// (default) means unlimited waiters (legacy behaviour). Set a positive
+  /// value to bound memory under burst load.
+  static const String socketMaxInflightWaitersPerAgent =
+      'SOCKET_MAX_INFLIGHT_WAITERS_PER_AGENT';
+
+  /// Max time (ms) a caller may wait in the per-agent gate queue for a
+  /// slot. `0` (default) means no limit (legacy behaviour).
+  static const String socketMaxInflightAcquireWaitMs =
+      'SOCKET_MAX_INFLIGHT_ACQUIRE_WAIT_MS';
+
+  /// Max rows buffered by `BridgeShapedSqlExecuteCollector` when
+  /// materialising relay streaming into a unary map. `0` = unlimited
+  /// (default). Set a positive cap to avoid OOM on huge result sets.
+  static const String socketStreamSqlCollectorMaxBufferedRows =
+      'SOCKET_STREAM_SQL_COLLECTOR_MAX_BUFFERED_ROWS';
+
   /// Kill switch for in-flight request coalescing inside the dispatcher.
   /// When `true` (default), two concurrent `sendAgentsCommand` calls with
   /// the same canonical body share the same `Future` and produce a single
