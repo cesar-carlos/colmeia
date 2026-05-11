@@ -8,9 +8,11 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report_resumo_parcelas.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
@@ -33,6 +35,7 @@ import 'package:colmeia/features/overview/data/mappers/overview_monthly_parcel_m
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_user_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
+import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -70,7 +73,8 @@ Overview _overviewMergeCachedWithFreshReportSlice({
         freshReportOverview.agentIdsSkippedDueToHubPresence,
     agentNamesSkippedDueToHubPresence:
         freshReportOverview.agentNamesSkippedDueToHubPresence,
-    mainResumoHadPlannedTargets: freshReportOverview.mainResumoHadPlannedTargets,
+    mainResumoHadPlannedTargets:
+        freshReportOverview.mainResumoHadPlannedTargets,
   );
 }
 
@@ -101,6 +105,16 @@ class _OverviewProgressivePatch {
   final Overview Function(Overview overview) apply;
 }
 
+class _OverviewBatchSectionFailure {
+  const _OverviewBatchSectionFailure({
+    required this.loadFailed,
+    this.message,
+  });
+
+  final bool loadFailed;
+  final String? message;
+}
+
 class OverviewRepositoryImpl implements OverviewRepository {
   OverviewRepositoryImpl({
     required OverviewLocalDataSource localDataSource,
@@ -118,6 +132,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     loadResumoProdutoVendaLucratividadeMensal,
     required LoadResumoProdutoVendaLucratividadeUseCase
     loadResumoProdutoVendaLucratividade,
+    required OverviewBatchLoader batchLoader,
+    bool useBatchOverviewLoading = true,
     DateTime Function()? now,
   }) : _localDataSource = localDataSource,
        _resumoAcrossAgentsRepository = resumoAcrossAgentsRepository,
@@ -133,6 +149,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
            loadResumoProdutoVendaLucratividadeMensal,
        _loadResumoProdutoVendaLucratividade =
            loadResumoProdutoVendaLucratividade,
+       _batchLoader = batchLoader,
+       _useBatchOverviewLoading = useBatchOverviewLoading,
        _now = now ?? DateTime.now;
 
   final OverviewLocalDataSource _localDataSource;
@@ -150,6 +168,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
   _loadResumoProdutoVendaLucratividadeMensal;
   final LoadResumoProdutoVendaLucratividadeUseCase
   _loadResumoProdutoVendaLucratividade;
+  final OverviewBatchLoader _batchLoader;
+  final bool _useBatchOverviewLoading;
   final DateTime Function() _now;
 
   static const String _sourceAgentIdsContextField = 'sourceAgentIds';
@@ -196,6 +216,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         OverviewProgressiveSection.userRanking,
       };
 
+  bool get _usesBatchOverviewLoading => _useBatchOverviewLoading;
+
   @override
   Future<AppResult<Overview>> loadOverview({
     required String userId,
@@ -233,6 +255,16 @@ class OverviewRepositoryImpl implements OverviewRepository {
     OverviewFilter filter = const OverviewFilter(),
     OverviewLoadLabels? rowLabels,
   }) async* {
+    if (_usesBatchOverviewLoading) {
+      yield* _loadOverviewProgressivelyBatch(
+        userId: userId,
+        policy: policy,
+        filter: filter,
+        rowLabels: rowLabels,
+      );
+      return;
+    }
+
     final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
     final period = _buildPeriod(filter);
     final selectedNorm = _normalizeSelectedAgentIds(filter.selectedAgentIds);
@@ -598,6 +630,417 @@ class OverviewRepositoryImpl implements OverviewRepository {
       );
       yield _asProgressiveResult(recovered);
     }
+  }
+
+  Stream<AppResult<OverviewProgressiveSnapshot>>
+  _loadOverviewProgressivelyBatch({
+    required String userId,
+    required OverviewLoadPolicy policy,
+    required OverviewFilter filter,
+    OverviewLoadLabels? rowLabels,
+  }) async* {
+    final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
+    final period = _buildPeriod(filter);
+    final last12Range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
+      filter,
+      clock: _now,
+    );
+    final mensalFilter = ResumoParcelasMensalFilter(
+      dataVendaInicio: last12Range.dataVendaInicio,
+      dataVendaFim: last12Range.dataVendaFim,
+    );
+    final weekdayFilter = ResumoParcelasDiaSemanaFilter(
+      dataVendaInicio: period.start,
+      dataVendaFim: period.end,
+    );
+    final dailyTotalFilter = ResumoTotalDiarioVendasFilter(
+      dataVendaInicio: period.start,
+      dataVendaFim: period.end,
+    );
+    final executionStrategy = _resolveExecutionStrategy(filter);
+
+    try {
+      final loadResult = await _batchLoader.load(
+        userId: userId,
+        filter: filter,
+        periodStart: period.start,
+        periodEnd: period.end,
+        last12Range: last12Range,
+        mensalFilter: mensalFilter,
+        weekdayFilter: weekdayFilter,
+        dailyTotalFilter: dailyTotalFilter,
+        executionStrategy: executionStrategy,
+      );
+      final loaded = loadResult.getOrNull();
+      if (loaded == null) {
+        final failure = _mapOverviewFailure(
+          loadResult.exceptionOrNull()!,
+          userId: userId,
+        );
+        final recovered = await _recoverOrFail(
+          failure: failure,
+          userId: userId,
+          policy: policy,
+          period: period,
+          sourceAgentIds: _resolveFailureSourceAgentIds(
+            failure,
+            fallbackSelectedAgentIds: filter.selectedAgentIds,
+          ),
+        );
+        yield _asProgressiveResult(recovered);
+        return;
+      }
+
+      final batchResults = loaded.targetResults;
+      final report = loaded.mainResumoReport;
+
+      final sourceAgentIds = report.consideredApprovedAgentCount == 0
+          ? null
+          : _resolveSourceAgentIds(report);
+      final successfulMainResults = batchResults
+          .where((result) => result.mainFailure == null)
+          .toList(growable: false);
+      if (loaded.plan.plannedTargets.isNotEmpty &&
+          successfulMainResults.isEmpty) {
+        final firstMainFailure = batchResults
+            .map((result) => result.mainFailure)
+            .whereType<AppFailure>()
+            .first;
+        final failure = _mapOverviewFailure(
+          firstMainFailure,
+          userId: userId,
+        );
+        final recovered = await _recoverOrFail(
+          failure: failure,
+          userId: userId,
+          policy: policy,
+          period: period,
+          sourceAgentIds: sourceAgentIds,
+        );
+        yield _asProgressiveResult(recovered);
+        return;
+      }
+
+      var shouldSaveFinalOverview = report.consideredApprovedAgentCount > 0;
+      var overview = _buildOverview(
+        _mapOverviewRows(report.mergedRows),
+        rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
+        agentDisplayNamesById: _resolveAgentDisplayNames(report),
+        periodStart: period.start,
+        periodEnd: period.end,
+        approvedAgentCount: report.consideredApprovedAgentCount,
+        rowLabels: resolvedRowLabels,
+        agentIdsExcludedFromQueryFailure: report.failedAgentIds,
+        agentNamesExcludedFromQueryFailure: report.failedAgentNames,
+        agentIdsMissingClientToken: report.missingClientTokenAgentIds,
+        agentNamesMissingClientToken: report.missingClientTokenAgentNames,
+        agentIdsSkippedDueToHubPresence: report.skippedDueToHubPresenceAgentIds,
+        agentNamesSkippedDueToHubPresence:
+            report.skippedDueToHubPresenceAgentNames,
+        monthlyParcelTrend: _batchMonthlyPoints(
+          batchResults,
+          mensalFilter,
+        ),
+        monthlyParcelTrendLoadFailed: _batchSectionFailure(
+          batchResults,
+          (result) => result.monthlyFailure,
+        ).loadFailed,
+        monthlyParcelTrendLoadFailureMessage: _batchSectionFailure(
+          batchResults,
+          (result) => result.monthlyFailure,
+        ).message,
+        weekdaySalesTrend: _batchWeekdayPoints(batchResults),
+        weekdaySalesTrendLoadFailed: _batchSectionFailure(
+          batchResults,
+          (result) => result.weekdayFailure,
+        ).loadFailed,
+        weekdaySalesTrendLoadFailureMessage: _batchSectionFailure(
+          batchResults,
+          (result) => result.weekdayFailure,
+        ).message,
+        dailySalesTrend: _batchDailyPoints(batchResults, dailyTotalFilter),
+        dailySalesTrendLoadFailed: _batchSectionFailure(
+          batchResults,
+          (result) => result.dailyFailure,
+        ).loadFailed,
+        dailySalesTrendLoadFailureMessage: _batchSectionFailure(
+          batchResults,
+          (result) => result.dailyFailure,
+        ).message,
+        weekdayUserSalesTrend: _batchWeekdayUserPoints(batchResults),
+        weekdayUserSalesTrendLoadFailed: _batchSectionFailure(
+          batchResults,
+          (result) => result.weekdayUserFailure,
+        ).loadFailed,
+        weekdayUserSalesTrendLoadFailureMessage: _batchSectionFailure(
+          batchResults,
+          (result) => result.weekdayUserFailure,
+        ).message,
+        lucratividadeTrend: _batchLucratividadePoints(batchResults),
+        lucratividadeTrendLoadFailed: _batchSectionFailure(
+          batchResults,
+          (result) => result.lucratividadeFailure,
+        ).loadFailed,
+        lucratividadeTrendLoadFailureMessage: _batchSectionFailure(
+          batchResults,
+          (result) => result.lucratividadeFailure,
+        ).message,
+        lucratividadePartialFailureAgentNames:
+            _batchLucratividadePartialFailureAgentNames(batchResults),
+        lucratividadeMensalTrend: _batchLucratividadeMensalRows(batchResults),
+        lucratividadeMensalTrendLoadFailed: _batchSectionFailure(
+          batchResults,
+          (result) => result.lucratividadeMensalFailure,
+        ).loadFailed,
+        lucratividadeMensalTrendLoadFailureMessage: _batchSectionFailure(
+          batchResults,
+          (result) => result.lucratividadeMensalFailure,
+        ).message,
+        mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
+        partialQueryFailureDetails: <OverviewAgentQueryFailureDetail>[
+          ...overviewPartialFailuresFromParticipants(report.participants),
+          ..._batchLucratividadePartialFailureDetails(batchResults),
+        ],
+      );
+
+      if (report.requiresClientTokenSetup && sourceAgentIds != null) {
+        final freshReportOverview = overview;
+        final cachedEntity = await _readCachedOverviewForMissingClientTokens(
+          userId: userId,
+          policy: policy,
+          period: period,
+          expectedSortedAgentIds: sourceAgentIds,
+          agentIdsMissingClientToken: report.missingClientTokenAgentIds,
+          agentNamesMissingClientToken: report.missingClientTokenAgentNames,
+        );
+        if (cachedEntity != null) {
+          overview = _overviewMergeCachedWithFreshReportSlice(
+            cachedEntity: cachedEntity,
+            freshReportOverview: freshReportOverview,
+          );
+          shouldSaveFinalOverview = false;
+        }
+      }
+
+      if (shouldSaveFinalOverview && sourceAgentIds != null) {
+        await _saveOverviewCache(
+          userId: userId,
+          overview: overview,
+          sourceAgentIds: sourceAgentIds,
+        );
+      }
+
+      AppLogger.info(
+        'Overview loaded from agent query batch',
+        context: <String, Object?>{
+          'operation': 'loadOverview',
+          'userId': userId,
+          'agentCount': report.consideredApprovedAgentCount,
+          'plannedAgentCount': report.plannedTargets.length,
+          'periodStart': period.start.toIso8601String(),
+          'periodEnd': period.end.toIso8601String(),
+          'paymentMethods': overview.paymentMethods.length,
+          'partialQueryFailures':
+              overview.agentIdsExcludedFromQueryFailure.length,
+          'agentsMissingClientToken':
+              overview.agentIdsMissingClientToken.length,
+        },
+      );
+
+      yield Success<OverviewProgressiveSnapshot, AppFailure>(
+        _snapshotFor(
+          overview: overview,
+          completedSections: _allProgressiveSections,
+          isFinal: true,
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      final failure = mapToAppFailure(
+        error,
+        stackTrace: stackTrace,
+        fallbackMessage: 'Unable to load overview',
+        fallbackUserMessage: 'Unable to load the overview.',
+        context: <String, Object?>{
+          'operation': 'loadOverview',
+          'userId': userId,
+          'policy': policy.name,
+          OverviewFailureUiKey.field: OverviewFailureUiKey.loadFailed,
+        },
+      );
+      final recovered = await _recoverOrFail(
+        failure: failure,
+        userId: userId,
+        policy: policy,
+        period: period,
+        sourceAgentIds: _resolveFailureSourceAgentIds(
+          failure,
+          fallbackSelectedAgentIds: filter.selectedAgentIds,
+        ),
+        error: error,
+        stackTrace: stackTrace,
+      );
+      yield _asProgressiveResult(recovered);
+    }
+  }
+
+  List<OverviewMonthlyParcelPoint> _batchMonthlyPoints(
+    List<OverviewBatchTargetResult> results,
+    ResumoParcelasMensalFilter filter,
+  ) {
+    final report = _batchReport<ResumoParcelasMensalRow>(
+      results,
+      (result) => result.monthlyRows,
+      (result) => result.monthlyFailure,
+    );
+    return overviewMonthlyParcelPointsFromRows(
+      report.chartRowsFilledPeriod(filter),
+    );
+  }
+
+  List<OverviewWeekdaySalesTrendPoint> _batchWeekdayPoints(
+    List<OverviewBatchTargetResult> results,
+  ) {
+    final report = _batchReport<ResumoParcelasDiaSemanaRow>(
+      results,
+      (result) => result.weekdayRows,
+      (result) => result.weekdayFailure,
+    );
+    return overviewWeekdaySalesTrendPointsFromRows(report.chartRowsWeek);
+  }
+
+  List<OverviewDailySalesTrendPoint> _batchDailyPoints(
+    List<OverviewBatchTargetResult> results,
+    ResumoTotalDiarioVendasFilter filter,
+  ) {
+    final report = _batchReport<ResumoTotalDiarioVendasRow>(
+      results,
+      (result) => result.dailyRows,
+      (result) => result.dailyFailure,
+    );
+    return overviewDailySalesTrendPointsFromRows(
+      report.chartRowsFilledPeriod(filter),
+    );
+  }
+
+  List<OverviewWeekdayUserSalesTrendPoint> _batchWeekdayUserPoints(
+    List<OverviewBatchTargetResult> results,
+  ) {
+    final report = _batchReport<ResumoParcelasDiaSemanaUsuarioRow>(
+      results,
+      (result) => result.weekdayUserRows,
+      (result) => result.weekdayUserFailure,
+    );
+    return overviewWeekdayUserSalesTrendPointsFromRows(
+      report.aggregatedMergedRows,
+    );
+  }
+
+  List<ResumoProdutoVendaLucratividadeRow> _batchLucratividadePoints(
+    List<OverviewBatchTargetResult> results,
+  ) {
+    final rows = <ResumoProdutoVendaLucratividadeRow>[];
+    for (final result in results) {
+      if (result.lucratividadeFailure != null) {
+        continue;
+      }
+      rows.add(
+        _aggregateLucratividadeBranchesForAgent(
+          branches: result.lucratividadeRows,
+          chartAxisLabel: result.target.displayName,
+        ),
+      );
+    }
+    return rows;
+  }
+
+  List<ResumoProdutoVendaLucratividadeMensalRow> _batchLucratividadeMensalRows(
+    List<OverviewBatchTargetResult> results,
+  ) {
+    return results
+        .where((result) => result.lucratividadeMensalFailure == null)
+        .expand((result) => result.lucratividadeMensalRows)
+        .toList(growable: false);
+  }
+
+  List<String> _batchLucratividadePartialFailureAgentNames(
+    List<OverviewBatchTargetResult> results,
+  ) {
+    final names =
+        results
+            .where((result) => result.lucratividadeFailure != null)
+            .map((result) => result.target.displayName)
+            .toList(growable: false)
+          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return names;
+  }
+
+  List<OverviewAgentQueryFailureDetail>
+  _batchLucratividadePartialFailureDetails(
+    List<OverviewBatchTargetResult> results,
+  ) {
+    final details = <OverviewAgentQueryFailureDetail>[];
+    for (final result in results) {
+      final failure = result.lucratividadeFailure;
+      if (failure == null) {
+        continue;
+      }
+      details.add(
+        overviewLucratividadePartialFailureDetail(
+          agentId: result.target.agentId,
+          displayName: result.target.displayName,
+          failure: failure,
+        ),
+      );
+    }
+    details.sort(
+      (a, b) => a.displayName.toLowerCase().compareTo(
+        b.displayName.toLowerCase(),
+      ),
+    );
+    return details;
+  }
+
+  AgentQueryExecutionReport<Row> _batchReport<Row>(
+    List<OverviewBatchTargetResult> results,
+    List<Row> Function(OverviewBatchTargetResult result) rowsOf,
+    AppFailure? Function(OverviewBatchTargetResult result) failureOf,
+  ) {
+    return AgentQueryExecutionReport<Row>(
+      queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
+      strategy: _resolveExecutionStrategy(const OverviewFilter()),
+      consideredApprovedAgentCount: results.length,
+      plannedTargets: results.map((result) => result.target).toList(),
+      missingClientTokenTargets: const <AgentQueryTarget>[],
+      totalElapsedMs: 0,
+      participants: results
+          .map(
+            (result) => AgentQueryExecutionParticipant<Row>(
+              agentId: result.target.agentId,
+              displayName: result.target.displayName,
+              rows: rowsOf(result),
+              elapsedMs: result.elapsedMs,
+              sourceRowCount: rowsOf(result).length,
+              failure: failureOf(result),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+
+  _OverviewBatchSectionFailure _batchSectionFailure(
+    List<OverviewBatchTargetResult> results,
+    AppFailure? Function(OverviewBatchTargetResult result) failureOf,
+  ) {
+    for (final result in results) {
+      final failure = failureOf(result);
+      if (failure != null) {
+        return _OverviewBatchSectionFailure(
+          loadFailed: true,
+          message: failure.userMessage,
+        );
+      }
+    }
+    return const _OverviewBatchSectionFailure(loadFailed: false);
   }
 
   Future<void> _drainOverviewFutures({
@@ -1105,7 +1548,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
           points: bundle.rows,
           loadFailed: totalWaveFailure != null,
           loadFailureMessage: totalWaveFailure,
-          lucratividadePartialFailureAgentNames: bundle.partialFailureAgentNames,
+          lucratividadePartialFailureAgentNames:
+              bundle.partialFailureAgentNames,
           lucratividadePartialFailureDetails: bundle.partialFailureDetails,
         );
       },
@@ -1123,9 +1567,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
           loadFailed: true,
           loadFailureMessage: failure.userMessage,
           lucratividadePartialFailureAgentNames: const <String>[],
-          lucratividadePartialFailureDetails: const <
-            OverviewAgentQueryFailureDetail
-          >[],
+          lucratividadePartialFailureDetails:
+              const <OverviewAgentQueryFailureDetail>[],
         );
       },
     );

@@ -133,6 +133,32 @@ void main() {
       );
     });
 
+    test('should attach 400 response body to network failure context', () {
+      final failure = mapToAppFailure(
+        DioException(
+          requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+          response: Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+            statusCode: 400,
+            data: <String, dynamic>{
+              'message': 'Invalid sql.executeBatch payload',
+              'detail': 'commands[1].params exceeds bridge limit',
+            },
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+
+      check(failure).isA<NetworkFailure>();
+      check(failure.context['httpStatusCode']).equals(400);
+      final body =
+          failure.context[DioHttpFailureContext.responseBodyField]! as Map;
+      check(body['message']).equals('Invalid sql.executeBatch payload');
+      check(body['detail']).equals(
+        'commands[1].params exceeds bridge limit',
+      );
+    });
+
     test(
       'should map 409 AGENT_DOCUMENT_CONFLICT to validation failure',
       () {

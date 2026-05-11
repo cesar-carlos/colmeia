@@ -1,6 +1,7 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 
 /// Wraps a primary (socket) datasource with a permanent REST
@@ -11,6 +12,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 ///   non-empty `stream_id` / `streamId` on `agents:command`. Colmeia does not
 ///   pull `agents:command_stream_*` on this path; one REST retry
 ///   materialises the same `sql.execute` per hub contract.
+///   The same one-shot REST retry applies to **batch** (`postSqlExecuteBatch`).
 /// * [SocketDispatchNamespaceForbidden] — the hub's
 ///   `SOCKET_CONSUMER_ROLES` does not include the JWT role. Until
 ///   the server admin fixes the env + restarts, every dispatch will
@@ -93,6 +95,36 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     // verbatim — the socket layer's RetryAfterGate / circuit
     // breaker / user retry handle those better than a permanent
     // pivot would.
+  }
+
+  @override
+  Future<Map<String, dynamic>> postSqlExecuteBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) async {
+    if (_latched) {
+      return _restDelegate.postSqlExecuteBatch(request);
+    }
+    try {
+      return await _socketDelegate.postSqlExecuteBatch(request);
+    } on SocketDispatchLegacyStreamingUnsupported catch (trigger) {
+      AppLogger.warning(
+        'Agent queries batch: hub chose legacy socket streaming; '
+        'retrying once on REST',
+        context: <String, Object?>{
+          'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
+          'triggerCode': trigger.code,
+          'streamId': trigger.streamId,
+        },
+        error: trigger,
+      );
+      return _restDelegate.postSqlExecuteBatch(request);
+    } on SocketDispatchNamespaceForbidden catch (trigger) {
+      _latch(trigger, reason: 'namespace_forbidden');
+      return _restDelegate.postSqlExecuteBatch(request);
+    } on SocketDispatchUnauthorized catch (trigger) {
+      _latch(trigger, reason: 'unauthorized_exhausted');
+      return _restDelegate.postSqlExecuteBatch(request);
+    }
   }
 
   void _latch(

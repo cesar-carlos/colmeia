@@ -1,5 +1,7 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -90,6 +92,39 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     return result;
   }
 
+  @override
+  Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) async {
+    final adaptiveTimeout = _calculateBatchAdaptiveTimeout(request);
+    final adjustedRequest = adaptiveTimeout == null
+        ? request
+        : AgentSqlExecuteBatchRequest(
+            agentId: request.agentId,
+            commands: request.commands,
+            clientToken: request.clientToken,
+            requestingUserId: request.requestingUserId,
+            hubPresenceOnlineAgentIdsSnapshot:
+                request.hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                request.hubConnectedFromApprovedCatalogRow,
+            bridgeTimeoutMs: adaptiveTimeout.inMilliseconds,
+            options: request.options,
+            useRelay: request.useRelay,
+            apiVersion: request.apiVersion,
+            payloadFrameCompression: request.payloadFrameCompression,
+          );
+
+    final stopwatch = Stopwatch()..start();
+    final result = await _delegate.executeSqlBatch(adjustedRequest);
+    stopwatch.stop();
+
+    if (result.isSuccess()) {
+      _recordLatency(request.trimmedAgentId, stopwatch.elapsed);
+    }
+    return result;
+  }
+
   Duration? _calculateAdaptiveTimeout(AgentSqlExecuteRequest request) {
     if (request.bridgeTimeoutMs == null) {
       return null;
@@ -115,6 +150,27 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     );
 
     return bounded;
+  }
+
+  Duration? _calculateBatchAdaptiveTimeout(
+    AgentSqlExecuteBatchRequest request,
+  ) {
+    if (request.bridgeTimeoutMs == null) {
+      return null;
+    }
+    final history = _latencies[request.trimmedAgentId];
+    if (history == null || history.isEmpty) {
+      return null;
+    }
+    final sum = history.fold<int>(
+      0,
+      (sum, duration) => sum + duration.inMilliseconds,
+    );
+    final avgMs = sum / history.length;
+    return Duration(milliseconds: (avgMs * _safetyMultiplier).toInt()).clamp(
+      _minTimeout,
+      _maxTimeout,
+    );
   }
 
   void _recordLatency(String agentId, Duration latency) {

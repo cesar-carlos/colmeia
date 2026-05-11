@@ -158,7 +158,8 @@ void registerInjectorSocket(GetIt getIt) {
   // SOCKET_RELAY_ENABLED). We register both the conversation manager and the
   // dispatcher only when needed so REST builds do not pay for PayloadFrame
   // allocations or extra listeners.
-  if (AppEnvironment.socketRelayEnabled) {
+  if (AppEnvironment.socketRelayEnabled &&
+      !AppEnvironment.e2eDisableRelayDispatch) {
     getIt
       ..registerLazySingleton<RelayConversationManager>(
         () => RelayConversationManager(

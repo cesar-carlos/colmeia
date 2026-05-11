@@ -63,6 +63,8 @@ abstract final class _En {
       "This agent's database access configuration is invalid.";
   static const executionNotFound = 'The requested execution was not found.';
   static const executionCancelled = 'The query was cancelled.';
+  static const batchUnsupported =
+      'This agent does not support batched SQL queries yet.';
   static const generic = 'The query could not be completed on the agent.';
 }
 
@@ -130,6 +132,25 @@ AgentSqlRpcUserMessageResolution resolveAgentSqlRpcUserMessage(
   final reasonLower = reason?.toLowerCase();
   final categoryLower = category?.toLowerCase();
   final messageLower = details.message.toLowerCase();
+  final methodLower =
+      _nonEmptyStringFromMap(data, 'method')?.toLowerCase() ??
+      _nonEmptyStringFromMap(data, 'rpc_method')?.toLowerCase() ??
+      _nonEmptyStringFromMap(data, 'rpcMethod')?.toLowerCase();
+
+  final isSqlExecuteBatchUnsupported =
+      (code == -32601 ||
+          reasonLower == 'method_not_found' ||
+          reasonLower == 'method_not_supported' ||
+          reasonLower == 'unsupported_method' ||
+          messageLower.contains('method not found') ||
+          messageLower.contains('unsupported method')) &&
+      (methodLower == 'sql.executebatch' ||
+          messageLower.contains('sql.executebatch'));
+  if (isSqlExecuteBatchUnsupported) {
+    return const AgentSqlRpcUserMessageResolution(
+      userMessage: _En.batchUnsupported,
+    );
+  }
 
   final isAuthenticationFailure =
       code == -32001 ||

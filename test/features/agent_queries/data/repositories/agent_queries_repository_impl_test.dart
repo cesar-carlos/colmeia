@@ -3,7 +3,9 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,7 +25,114 @@ void main() {
         sql: 'SELECT 1',
       ),
     );
+    registerFallbackValue(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'fallback-agent',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
+      ),
+    );
   });
+
+  test(
+    'executeSqlBatch returns per-item failures as successful result',
+    () async {
+      const request = AgentSqlExecuteBatchRequest(
+        agentId: 'agent-1',
+        clientToken: 'token-1',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+          AgentSqlExecuteBatchCommand(sql: 'SELECT broken'),
+        ],
+      );
+      when(
+        () => remoteDataSource.postSqlExecuteBatch(any()),
+      ).thenAnswer((_) async {
+        return <String, dynamic>{
+          'response': <String, dynamic>{
+            'success': true,
+            'item': <String, dynamic>{
+              'success': true,
+              'result': <String, dynamic>{
+                'items': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'index': 0,
+                    'ok': true,
+                    'rows': <Map<String, dynamic>>[
+                      <String, dynamic>{'value': 1},
+                    ],
+                    'row_count': 1,
+                  },
+                  <String, dynamic>{
+                    'index': 1,
+                    'ok': false,
+                    'rows': <Map<String, dynamic>>[],
+                    'row_count': 0,
+                    'error': 'bad sql',
+                  },
+                ],
+              },
+            },
+          },
+        };
+      });
+
+      final result = await repository.executeSqlBatch(request);
+
+      check(result.isSuccess()).isTrue();
+      final batch = result.getOrThrow();
+      check(batch).isA<AgentSqlBatchExecutionResult>();
+      check(batch.items.length).equals(2);
+      check(batch.items.first.rows.single['value']).equals(1);
+      check(batch.items.last.ok).isFalse();
+      check(batch.items.last.error).equals('bad sql');
+      verify(() => remoteDataSource.postSqlExecuteBatch(request)).called(1);
+    },
+  );
+
+  test(
+    'executeSqlBatch maps method-not-found to explicit unsupported message',
+    () async {
+      const request = AgentSqlExecuteBatchRequest(
+        agentId: 'agent-1',
+        clientToken: 'token-1',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
+      );
+      when(
+        () => remoteDataSource.postSqlExecuteBatch(any()),
+      ).thenAnswer(
+        (_) async => <String, dynamic>{
+          'response': <String, dynamic>{
+            'success': false,
+            'item': <String, dynamic>{
+              'success': false,
+              'error': <String, dynamic>{
+                'code': -32601,
+                'message': 'Method not found: sql.executeBatch',
+                'data': <String, dynamic>{
+                  'reason': 'method_not_found',
+                  'method': 'sql.executeBatch',
+                },
+              },
+            },
+          },
+        },
+      );
+
+      final result = await repository.executeSqlBatch(request);
+
+      check(result.isError()).isTrue();
+      final failure = result.exceptionOrNull();
+      check(failure).isA<RpcFailure>();
+      check(failure!.displayMessage).equals(
+        'This agent does not support batched SQL queries yet.',
+      );
+      check(failure.context[AgentSqlRpcFailureUiKey.field]).isNull();
+    },
+  );
 
   setUp(() {
     remoteDataSource = _MockAgentQueriesRemoteDataSource();

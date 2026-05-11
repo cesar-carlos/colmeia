@@ -2,6 +2,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'e2e_dependency_bootstrap.dart';
+export 'e2e_dependency_bootstrap.dart'
+    show runE2eAppResult, runE2eAppResultWithHubRetry;
 
 const String _sessionFailureReason =
     'Unexpected HTTP 401 after client login '
@@ -9,7 +11,8 @@ const String _sessionFailureReason =
 
 const String _acceptableFailureSuffix =
     'should return rows, invalid_policy / '
-    'missing_permission RPC, transient bridge HTTP 5xx, or circuit breaker open.';
+    'missing_permission RPC, transient bridge HTTP 5xx / socket / relay '
+    'transport overload, or circuit breaker open.';
 
 bool shouldSkipE2eRepositoryTest(String testLabel) {
   final missingKeys = missingE2eRepositoryKeys();

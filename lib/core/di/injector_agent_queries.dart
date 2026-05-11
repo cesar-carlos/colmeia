@@ -44,12 +44,14 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execution_eligibility_checker.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/hybrid_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
@@ -159,6 +161,9 @@ void _registerAgentQueryTransport(GetIt getIt) {
     )
     ..registerLazySingleton<AgentSqlExecuteRequestToBridgeBody>(
       () => const AgentSqlExecuteRequestToBridgeBody(),
+    )
+    ..registerLazySingleton<AgentSqlExecuteBatchRequestToBridgeBody>(
+      () => const AgentSqlExecuteBatchRequestToBridgeBody(),
     )
     ..registerLazySingleton<AgentQueriesRemoteDataSource>(
       () {
@@ -912,8 +917,16 @@ AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
       ? BridgeShapedSqlExecuteCollector(maxBufferedRows: maxBufferedRows)
       : const BridgeShapedSqlExecuteCollector();
 
+  final batchDelegate = RelayAgentQueriesRemoteDataSource(
+    dispatcher: getIt<RelayCommandDispatcher>(),
+    bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+    batchBodyMapper: getIt<AgentSqlExecuteBatchRequestToBridgeBody>(),
+    compression: AppEnvironment.socketRelayPayloadFrameCompression,
+  );
+
   return CollectingRelayStreamingAgentQueriesRemoteDataSource(
     streamingDelegate: streamingDelegate,
+    batchDelegate: batchDelegate,
     collector: collector,
   );
 }

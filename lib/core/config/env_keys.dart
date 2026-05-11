@@ -20,6 +20,11 @@ abstract final class EnvKeys {
   /// Client-auth password for e2e (use only test accounts; prefer dart-define).
   static const String e2eClientPassword = 'E2E_CLIENT_PASSWORD';
 
+  /// When true, VM E2E skips registering relay dispatchers on top of the
+  /// consumer socket so `HybridAgentQueriesRemoteDataSource` bypasses relay
+  /// for every `useRelay: true` request (base `agents:command` / REST only).
+  static const String e2eDisableRelayDispatch = 'E2E_DISABLE_RELAY_DISPATCH';
+
   /// Maximum in-memory successful SQL query results kept before LRU eviction.
   static const String agentSqlCacheMaxSize = 'AGENT_SQL_CACHE_MAX_SIZE';
 

@@ -4,7 +4,9 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -122,5 +124,12 @@ final class _QueueAgentQueriesRepository implements AgentQueriesRepository {
   ) {
     callCount++;
     return _handlers.removeAt(0)(request);
+  }
+
+  @override
+  Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) async {
+    throw UnimplementedError();
   }
 }

@@ -104,6 +104,21 @@ abstract final class AppEnvironment {
   static bool get hasE2eClientLoginCredentials =>
       e2eClientEmail.isNotEmpty && e2eClientPassword.isNotEmpty;
 
+  /// VM E2E / local harness only: skip relay dispatcher registration
+  /// even when [socketRelayEnabled] is true for socket transport, so
+  /// the hybrid agent-queries datasource falls back to the base channel for
+  /// all `useRelay: true` calls (see bypass log in hybrid datasource). Use when
+  /// the hub relay path hangs or is unavailable while still exercising
+  /// `agents:command` over `/consumers`.
+  static bool get e2eDisableRelayDispatch =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.e2eDisableRelayDispatch,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.e2eDisableRelayDispatch),
+        fallback: false,
+      );
+
   static const int defaultAgentSqlCacheMaxSize = 500;
 
   static int get agentSqlCacheMaxSize => AppEnvironmentResolution.resolveInt(

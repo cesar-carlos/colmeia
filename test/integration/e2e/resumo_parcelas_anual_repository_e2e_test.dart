@@ -43,13 +43,15 @@ void main() {
           final periodEnd = DateTime(today.year, today.month, today.day);
           final periodStart = periodEnd.subtract(const Duration(days: 14));
 
-          final result = await repository.load(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ResumoParcelasAnualFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
+          final result = await runE2eAppResult(
+            () => repository.load(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ResumoParcelasAnualFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+              ),
             ),
           );
 

@@ -4,6 +4,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -79,6 +81,40 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
         'Agent SQL execute failed, will retry',
         context: <String, Object?>{
           'operation': 'executeAgentSql',
+          'agentId': request.trimmedAgentId,
+          'attempt': attempt,
+          'failureType': failure.runtimeType.toString(),
+          'retryDelayMs': delay.inMilliseconds,
+        },
+      );
+
+      await Future<void>.delayed(delay);
+      attempt++;
+    }
+  }
+
+  @override
+  Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) async {
+    var attempt = 1;
+    while (true) {
+      final result = await _delegate.executeSqlBatch(request);
+
+      if (result.isSuccess()) {
+        return result;
+      }
+
+      final failure = result.exceptionOrNull()!;
+      if (attempt >= _maxAttempts || !_shouldRetry(failure)) {
+        return result;
+      }
+
+      final delay = _calculateBackoffDelay(attempt);
+      AppLogger.debug(
+        'Agent SQL batch execute failed, will retry',
+        context: <String, Object?>{
+          'operation': 'executeAgentSqlBatch',
           'agentId': request.trimmedAgentId,
           'attempt': attempt,
           'failureType': failure.runtimeType.toString(),

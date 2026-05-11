@@ -385,6 +385,7 @@ AppFailure mapToAppFailure(
         context: <String, Object?>{
           ...context,
           'httpStatusCode': statusCode,
+          ..._dioHttpResponseBodyContext(responseData),
         },
       );
     }
@@ -394,7 +395,11 @@ AppFailure mapToAppFailure(
       retryAfter: retryAfter,
       cause: error,
       stackTrace: stackTrace,
-      context: context,
+      context: <String, Object?>{
+        ...context,
+        'httpStatusCode': ?statusCode,
+        ..._dioHttpResponseBodyContext(responseData),
+      },
     );
   }
 

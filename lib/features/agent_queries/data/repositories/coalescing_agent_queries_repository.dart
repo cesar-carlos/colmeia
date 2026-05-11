@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_request_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -62,6 +64,15 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
     unawaited(_removeInflightWhenComplete(key, future));
 
     return future;
+  }
+
+  @override
+  Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) {
+    // Pass through in v1: heterogeneous batch payloads need an explicit
+    // coalescing key policy before sharing in-flight results is safe.
+    return _delegate.executeSqlBatch(request);
   }
 
   String _buildKey(AgentSqlExecuteRequest request) {

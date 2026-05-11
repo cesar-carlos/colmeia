@@ -2,6 +2,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -96,6 +98,55 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
     }
 
     return result;
+  }
+
+  @override
+  Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) async {
+    final openFailure = _openCircuitFailure<AgentSqlBatchExecutionResult>();
+    if (openFailure != null) {
+      return openFailure;
+    }
+
+    final result = await _delegate.executeSqlBatch(request);
+    if (result.isSuccess()) {
+      _onSuccess();
+      return result;
+    }
+
+    final failure = result.exceptionOrNull()!;
+    if (_isCircuitBreakingFailure(failure)) {
+      _onFailure(failure);
+    }
+    return result;
+  }
+
+  AppResult<T>? _openCircuitFailure<T extends Object>() {
+    if (_state != _CircuitState.open) {
+      return null;
+    }
+    final now = DateTime.now();
+    if (_openedAt != null && now.difference(_openedAt!) >= _cooldownPeriod) {
+      _state = _CircuitState.halfOpen;
+      return null;
+    }
+    return Failure<T, AppFailure>(
+      NetworkFailure(
+        message: 'Circuit breaker open: hub overload protection active',
+        userMessage:
+            'O servidor esta temporariamente indisponivel. '
+            'Tente novamente em alguns instantes.',
+        context: <String, Object?>{
+          'circuitBreakerState': 'open',
+          'consecutiveFailures': _consecutiveFailures,
+          'cooldownRemainingMs': _openedAt == null
+              ? 0
+              : (_cooldownPeriod.inMilliseconds -
+                    now.difference(_openedAt!).inMilliseconds),
+        },
+      ),
+    );
   }
 
   bool _isCircuitBreakingFailure(AppFailure failure) {

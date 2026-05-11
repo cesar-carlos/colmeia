@@ -42,13 +42,15 @@ void main() {
           final periodEnd = DateTime(today.year, today.month, today.day);
           final periodStart = DateTime(today.year - 1, today.month);
 
-          final result = await repository.loadAll(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ResumoProdutoVendaLucratividadeMensalFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
+          final result = await runE2eAppResult(
+            () => repository.loadAll(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ResumoProdutoVendaLucratividadeMensalFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+              ),
             ),
           );
 

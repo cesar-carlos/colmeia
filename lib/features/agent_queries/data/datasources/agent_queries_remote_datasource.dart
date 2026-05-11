@@ -1,16 +1,21 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_http_receive_timeout.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
 // Split into API vs fake implementations for DI; more methods may follow.
-// ignore: one_member_abstracts
 abstract interface class AgentQueriesRemoteDataSource {
   Future<Map<String, dynamic>> postSqlExecute(AgentSqlExecuteRequest request);
+
+  Future<Map<String, dynamic>> postSqlExecuteBatch(
+    AgentSqlExecuteBatchRequest request,
+  );
 }
 
 class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
@@ -18,11 +23,15 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     required Dio dio,
     AgentSqlExecuteRequestToBridgeBody bodyMapper =
         const AgentSqlExecuteRequestToBridgeBody(),
+    AgentSqlExecuteBatchRequestToBridgeBody batchBodyMapper =
+        const AgentSqlExecuteBatchRequestToBridgeBody(),
   }) : _dio = dio,
-       _bodyMapper = bodyMapper;
+       _bodyMapper = bodyMapper,
+       _batchBodyMapper = batchBodyMapper;
 
   final Dio _dio;
   final AgentSqlExecuteRequestToBridgeBody _bodyMapper;
+  final AgentSqlExecuteBatchRequestToBridgeBody _batchBodyMapper;
   static const Uuid _uuid = Uuid();
 
   @override
@@ -59,6 +68,40 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
         'Agent SQL bridge returned empty JSON object',
         context: <String, Object?>{
           'operation': 'postSqlExecute',
+          'path': AgentCommandsApiRoutes.commands,
+          'statusCode': response.statusCode,
+        },
+      );
+    }
+
+    return payload ?? const <String, dynamic>{};
+  }
+
+  @override
+  Future<Map<String, dynamic>> postSqlExecuteBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) async {
+    final rpcId = _uuid.v4();
+    final body = _batchBodyMapper.build(request: request, rpcId: rpcId);
+
+    final receiveTimeout = agentSqlHttpReceiveTimeout(
+      bridgeTimeoutMs: request.bridgeTimeoutMs,
+    );
+    final response = await _dio.post<Map<String, dynamic>>(
+      AgentCommandsApiRoutes.commands,
+      data: body,
+      options: Options(
+        receiveTimeout: receiveTimeout,
+        sendTimeout: receiveTimeout,
+      ),
+    );
+
+    final payload = response.data;
+    if (payload == null) {
+      AppLogger.warning(
+        'Agent SQL batch bridge returned null JSON body',
+        context: <String, Object?>{
+          'operation': 'postSqlExecuteBatch',
           'path': AgentCommandsApiRoutes.commands,
           'statusCode': response.statusCode,
         },
@@ -121,6 +164,52 @@ class FakeAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
             'row_count': 1,
             'affected_rows': 0,
             'pagination': ?paginationResult,
+          },
+        },
+      },
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> postSqlExecuteBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) async {
+    return <String, dynamic>{
+      'mode': 'bridge',
+      'agentId': request.trimmedAgentId,
+      'requestId': 'fake-batch-request',
+      'response': <String, dynamic>{
+        'type': 'single',
+        'success': true,
+        'item': <String, dynamic>{
+          'id': 'fake-batch-rpc',
+          'success': true,
+          'result': <String, dynamic>{
+            'execution_id': 'fake-batch-exec',
+            'started_at': DateTime.now().toUtc().toIso8601String(),
+            'finished_at': DateTime.now().toUtc().toIso8601String(),
+            'items': <Map<String, dynamic>>[
+              for (var i = 0; i < request.commands.length; i++)
+                <String, dynamic>{
+                  'index': i,
+                  'ok': true,
+                  'rows': <Map<String, dynamic>>[
+                    <String, dynamic>{
+                      'sql_preview': normalizeSqlForBatchRpc(
+                        request.commands[i].trimmedSql,
+                      ),
+                      'fake': true,
+                      'named_params_empty':
+                          request.commands[i].namedParams.isEmpty,
+                    },
+                  ],
+                  'row_count': 1,
+                  'affected_rows': 0,
+                },
+            ],
+            'total_commands': request.commands.length,
+            'successful_commands': request.commands.length,
+            'failed_commands': 0,
           },
         },
       },

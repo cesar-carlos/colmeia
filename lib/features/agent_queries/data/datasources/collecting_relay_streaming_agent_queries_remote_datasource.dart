@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 
 void _ignoreChainedError(Object error, StackTrace stackTrace) {}
@@ -35,12 +36,15 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   CollectingRelayStreamingAgentQueriesRemoteDataSource({
     required AgentQueriesStreamingRemoteDataSource streamingDelegate,
+    AgentQueriesRemoteDataSource? batchDelegate,
     StreamingSqlExecuteCollector collector =
         const BridgeShapedSqlExecuteCollector(),
   }) : _streamingDelegate = streamingDelegate,
+       _batchDelegate = batchDelegate,
        _collector = collector;
 
   final AgentQueriesStreamingRemoteDataSource _streamingDelegate;
+  final AgentQueriesRemoteDataSource? _batchDelegate;
   final StreamingSqlExecuteCollector _collector;
 
   final Map<String, Future<dynamic>> _postSqlTailByAgentId =
@@ -64,5 +68,19 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
       onError: _ignoreChainedError,
     );
     return mapped;
+  }
+
+  @override
+  Future<Map<String, dynamic>> postSqlExecuteBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) {
+    final batchDelegate = _batchDelegate;
+    if (batchDelegate == null) {
+      throw UnsupportedError(
+        'Collected relay streaming does not support sql.executeBatch '
+        'without a batch delegate',
+      );
+    }
+    return batchDelegate.postSqlExecuteBatch(request);
   }
 }

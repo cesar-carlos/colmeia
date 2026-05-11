@@ -6,6 +6,7 @@ import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +24,13 @@ class _ThrowingDataSource implements AgentQueriesRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(AgentSqlExecuteRequest request) {
+    throw error;
+  }
+
+  @override
+  Future<Map<String, dynamic>> postSqlExecuteBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) {
     throw error;
   }
 }

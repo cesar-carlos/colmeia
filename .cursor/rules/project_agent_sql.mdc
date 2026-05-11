@@ -7,20 +7,24 @@ globs: ["lib/features/agent_queries/**/*.dart", "test/features/agent_queries/**/
 
 ## Escopo
 
-Esta rule cobre apenas consultas SQL enviadas ao backend via `sql.execute`.
+Esta rule cobre consultas SQL enviadas ao backend via `sql.execute` ou
+`sql.executeBatch`.
 
 ## Payload RPC
 
 - Consultas agregadas com cardinalidade limitada podem definir `max_rows` em
-  `AgentSqlExecuteOptions` como rede de seguranca (ex. constantes em
+  `AgentSqlExecuteOptions` / `AgentSqlExecuteBatchOptions` como rede de
+  seguranca (ex. constantes em
   `lib/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart`)
 - Pode manter a SQL multiline nos arquivos de query para legibilidade
 - Antes de enviar o payload para `POST /agents/commands`, normalize a SQL para
   linha unica
 - Nao envie `\n`, `\r\n` ou blocos de whitespace multiline no campo
-  `command.params.sql`
+  `command.params.sql` nem em `command.params.commands[].sql`
 - Preserve `client_token`, `params` nomeados e `options` do RPC; a
   normalizacao deve mudar apenas o formato da string SQL
+- Para `sql.executeBatch`, falhas por item (`ok: false`) fazem parte do
+  resultado de dominio; falha RPC/bridge continua virando `Failure`
 
 ## Politica e escopo SQL
 
@@ -31,13 +35,14 @@ Esta rule cobre apenas consultas SQL enviadas ao backend via `sql.execute`.
 ## Testes
 
 - Quando tocar o datasource de `agent_queries`, cubra em teste o payload final
-  enviado ao bridge
+  enviado ao bridge, incluindo `sql.executeBatch` quando aplicavel
 - Garanta explicitamente que uma SQL multiline de entrada sai normalizada para
-  linha unica no body enviado
+  linha unica no body enviado; em batch, valide isso por comando
 
 ## Teste E2E obrigatorio para repositorios SQL
 
-- **Todo `*RepositoryImpl` que chama `_agentQueriesRepository.executeSql`
+- **Todo `*RepositoryImpl` que chama `_agentQueriesRepository.executeSql` ou
+  `_agentQueriesRepository.executeSqlBatch`
   deve ter um arquivo E2E correspondente** em
   `test/integration/e2e/*_repository_e2e_test.dart`
 - Crie o arquivo E2E no mesmo PR ou commit que adicionar o repositorio; nao

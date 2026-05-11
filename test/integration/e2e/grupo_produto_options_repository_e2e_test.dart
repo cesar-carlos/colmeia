@@ -28,10 +28,12 @@ void main() {
 
           final repository = getIt<GrupoProdutoOptionsRepository>();
 
-          final result = await repository.loadAll(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
+          final result = await runE2eAppResult(
+            () => repository.loadAll(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+            ),
           );
 
           result.fold(
@@ -64,11 +66,13 @@ void main() {
           await setupE2eDependenciesWithTearDown();
 
           final useCase = getIt<LoadGrupoProdutoOptionsUseCase>();
-          final result = await useCase(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            page: 2,
-            clientToken: AppEnvironment.e2eClientToken,
+          final result = await runE2eAppResult(
+            () => useCase(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              page: 2,
+              clientToken: AppEnvironment.e2eClientToken,
+            ),
           );
 
           result.fold(
@@ -100,10 +104,12 @@ void main() {
           await setupE2eDependenciesWithTearDown();
 
           final repository = getIt<GrupoProdutoOptionsRepository>();
-          final baseline = await repository.loadAll(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
+          final baseline = await runE2eAppResult(
+            () => repository.loadAll(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+            ),
           );
 
           if (baseline.isError()) {
@@ -124,11 +130,15 @@ void main() {
           final filterToken = buildContainsToken(
             baselineRows.first.nomeGrupoProduto,
           );
-          final filtered = await repository.loadAll(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            searchTerm: filterToken,
-            clientToken: AppEnvironment.e2eClientToken,
+          final filtered = await runE2eAppResultWithHubRetry(
+            () => repository.loadAll(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              searchTerm: filterToken,
+              clientToken: AppEnvironment.e2eClientToken,
+            ),
+            actionLabel: 'grupo_options_filtered_loadAll',
+            maxAttempts: 4,
           );
 
           filtered.fold(

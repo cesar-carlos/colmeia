@@ -38,13 +38,15 @@ void main() {
           final repository =
               getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>();
 
-          final result = await repository.loadPage(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
-              quantidadeDias: 7,
-              pageSize: 10,
+          final result = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
+                quantidadeDias: 7,
+                pageSize: 10,
+              ),
             ),
           );
 
@@ -93,13 +95,15 @@ void main() {
               getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>();
 
           const smallPageSize = 5;
-          final first = await repository.loadPage(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
-              quantidadeDias: 7,
-              pageSize: smallPageSize,
+          final first = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
+                quantidadeDias: 7,
+                pageSize: smallPageSize,
+              ),
             ),
           );
 
@@ -120,15 +124,18 @@ void main() {
           }
 
           final totalCount = page1.totalCount;
-          final second = await repository.loadPage(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
-              quantidadeDias: 7,
-              page: 2,
-              pageSize: smallPageSize,
+          final second = await runE2eAppResultWithHubRetry(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
+                quantidadeDias: 7,
+                page: 2,
+                pageSize: smallPageSize,
+              ),
             ),
+            actionLabel: 'produto_vendido_tendencia_media_movel_loadPage_page2',
           );
 
           second.fold(
@@ -166,12 +173,14 @@ void main() {
         final repository =
             getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>();
 
-        final result = await repository.loadSummary(
-          userId: 'user-1',
-          agentId: AppEnvironment.e2eAgentId,
-          clientToken: AppEnvironment.e2eClientToken,
-          filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
-            quantidadeDias: 7,
+        final result = await runE2eAppResult(
+          () => repository.loadSummary(
+            userId: 'user-1',
+            agentId: AppEnvironment.e2eAgentId,
+            clientToken: AppEnvironment.e2eClientToken,
+            filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
+              quantidadeDias: 7,
+            ),
           ),
         );
 

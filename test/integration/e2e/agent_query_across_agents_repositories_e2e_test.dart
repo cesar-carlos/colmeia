@@ -45,13 +45,15 @@ void main() {
         final formaPagamento =
             getIt<LoadResumoParcelaFormaPagamentoAcrossAgentsUseCase>();
         _expectReport(
-          await formaPagamento(
-            userId: 'e2e-agent-query-user',
-            filter: ResumoParcelaFormaPagamentoFilter(
-              dataVendaInicio: period.start,
-              dataVendaFim: period.end,
+          await runE2eAppResult(
+            () => formaPagamento(
+              userId: 'e2e-agent-query-user',
+              filter: ResumoParcelaFormaPagamentoFilter(
+                dataVendaInicio: period.start,
+                dataVendaFim: period.end,
+              ),
+              bridgeTimeoutMs: 300000,
             ),
-            bridgeTimeoutMs: 300000,
           ),
           (row) {
             expect(row.codEmpresa, greaterThan(0));
@@ -69,13 +71,15 @@ void main() {
         final formaPagamentoDiario =
             getIt<LoadResumoParcelaFormaPagamentoDiarioAcrossAgentsUseCase>();
         _expectReport(
-          await formaPagamentoDiario(
-            userId: 'e2e-agent-query-user',
-            filter: ResumoParcelaFormaPagamentoDiarioFilter(
-              dataVendaInicio: period.start,
-              dataVendaFim: period.end,
+          await runE2eAppResult(
+            () => formaPagamentoDiario(
+              userId: 'e2e-agent-query-user',
+              filter: ResumoParcelaFormaPagamentoDiarioFilter(
+                dataVendaInicio: period.start,
+                dataVendaFim: period.end,
+              ),
+              bridgeTimeoutMs: 300000,
             ),
-            bridgeTimeoutMs: 300000,
           ),
           (row) {
             expect(row.codEmpresa, greaterThan(0));
@@ -92,13 +96,15 @@ void main() {
         final formaPagamentoPorMes =
             getIt<LoadResumoParcelasFormaPagamentoPorMesAcrossAgentsUseCase>();
         _expectReport(
-          await formaPagamentoPorMes(
-            userId: 'e2e-agent-query-user',
-            filter: ResumoParcelasFormaPagamentoPorMesFilter(
-              dataVendaInicio: period.start,
-              dataVendaFim: period.end,
+          await runE2eAppResult(
+            () => formaPagamentoPorMes(
+              userId: 'e2e-agent-query-user',
+              filter: ResumoParcelasFormaPagamentoPorMesFilter(
+                dataVendaInicio: period.start,
+                dataVendaFim: period.end,
+              ),
+              bridgeTimeoutMs: 300000,
             ),
-            bridgeTimeoutMs: 300000,
           ),
           (row) {
             expect(row.codEmpresa, greaterThan(0));
@@ -128,13 +134,15 @@ void main() {
 
           final anual = getIt<LoadResumoParcelasAnualAcrossAgentsUseCase>();
           _expectReport(
-            await anual(
-              userId: 'e2e-agent-query-user',
-              filter: ResumoParcelasAnualFilter(
-                dataVendaInicio: yearStart,
-                dataVendaFim: period.end,
+            await runE2eAppResult(
+              () => anual(
+                userId: 'e2e-agent-query-user',
+                filter: ResumoParcelasAnualFilter(
+                  dataVendaInicio: yearStart,
+                  dataVendaFim: period.end,
+                ),
+                bridgeTimeoutMs: 300000,
               ),
-              bridgeTimeoutMs: 300000,
             ),
             (row) {
               expect(row.codEmpresa, greaterThan(0));
@@ -148,13 +156,15 @@ void main() {
           final diaSemanaUsuario =
               getIt<LoadResumoParcelasDiaSemanaUsuarioAcrossAgentsUseCase>();
           _expectReport(
-            await diaSemanaUsuario(
-              userId: 'e2e-agent-query-user',
-              filter: ResumoParcelasDiaSemanaFilter(
-                dataVendaInicio: period.start,
-                dataVendaFim: period.end,
+            await runE2eAppResult(
+              () => diaSemanaUsuario(
+                userId: 'e2e-agent-query-user',
+                filter: ResumoParcelasDiaSemanaFilter(
+                  dataVendaInicio: period.start,
+                  dataVendaFim: period.end,
+                ),
+                bridgeTimeoutMs: 300000,
               ),
-              bridgeTimeoutMs: 300000,
             ),
             (row) {
               expect(row.codEmpresa, greaterThan(0));
@@ -170,13 +180,15 @@ void main() {
           final totalDiario =
               getIt<LoadResumoTotalDiarioVendasAcrossAgentsUseCase>();
           _expectReport(
-            await totalDiario(
-              userId: 'e2e-agent-query-user',
-              filter: ResumoTotalDiarioVendasFilter(
-                dataVendaInicio: period.start,
-                dataVendaFim: period.end,
+            await runE2eAppResult(
+              () => totalDiario(
+                userId: 'e2e-agent-query-user',
+                filter: ResumoTotalDiarioVendasFilter(
+                  dataVendaInicio: period.start,
+                  dataVendaFim: period.end,
+                ),
+                bridgeTimeoutMs: 300000,
               ),
-              bridgeTimeoutMs: 300000,
             ),
             (row) {
               expect(row.codEmpresa, greaterThan(0));
@@ -189,13 +201,15 @@ void main() {
           final vendedor =
               getIt<LoadResumoVendasDiariasPorVendedorAcrossAgentsUseCase>();
           _expectReport(
-            await vendedor(
-              userId: 'e2e-agent-query-user',
-              filter: ResumoVendasDiariasPorVendedorFilter(
-                dataVendaInicio: period.start,
-                dataVendaFim: period.end,
+            await runE2eAppResult(
+              () => vendedor(
+                userId: 'e2e-agent-query-user',
+                filter: ResumoVendasDiariasPorVendedorFilter(
+                  dataVendaInicio: period.start,
+                  dataVendaFim: period.end,
+                ),
+                bridgeTimeoutMs: 300000,
               ),
-              bridgeTimeoutMs: 300000,
             ),
             (row) {
               expect(row.codEmpresa, greaterThan(0));
@@ -229,12 +243,14 @@ void main() {
                 LoadResumoVendasDiariasPorVendedorVendedorOptionsAcrossAgentsUseCase
               >();
           _expectList(
-            await vendedorOptions(
-              userId: 'e2e-agent-query-user',
-              dataVendaInicio: period.start,
-              dataVendaFim: period.end,
-              limit: 5,
-              bridgeTimeoutMs: 300000,
+            await runE2eAppResult(
+              () => vendedorOptions(
+                userId: 'e2e-agent-query-user',
+                dataVendaInicio: period.start,
+                dataVendaFim: period.end,
+                limit: 5,
+                bridgeTimeoutMs: 300000,
+              ),
             ),
             (option) {
               expect(option.codVendedor, greaterThan(0));
@@ -247,12 +263,14 @@ void main() {
                 LoadResumoVendasDiariasPorVendedorBairroOptionsAcrossAgentsUseCase
               >();
           _expectList(
-            await bairroOptions(
-              userId: 'e2e-agent-query-user',
-              dataVendaInicio: period.start,
-              dataVendaFim: period.end,
-              limit: 5,
-              bridgeTimeoutMs: 300000,
+            await runE2eAppResult(
+              () => bairroOptions(
+                userId: 'e2e-agent-query-user',
+                dataVendaInicio: period.start,
+                dataVendaFim: period.end,
+                limit: 5,
+                bridgeTimeoutMs: 300000,
+              ),
             ),
             (option) => expect(option.value, isNotEmpty),
           );
@@ -262,12 +280,14 @@ void main() {
                 LoadResumoVendasDiariasPorVendedorMunicipioOptionsAcrossAgentsUseCase
               >();
           _expectList(
-            await municipioOptions(
-              userId: 'e2e-agent-query-user',
-              dataVendaInicio: period.start,
-              dataVendaFim: period.end,
-              limit: 5,
-              bridgeTimeoutMs: 300000,
+            await runE2eAppResult(
+              () => municipioOptions(
+                userId: 'e2e-agent-query-user',
+                dataVendaInicio: period.start,
+                dataVendaFim: period.end,
+                limit: 5,
+                bridgeTimeoutMs: 300000,
+              ),
             ),
             (option) => expect(option.value, isNotEmpty),
           );

@@ -3,17 +3,22 @@ import 'dart:async';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
@@ -27,10 +32,12 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
+import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
 import 'package:colmeia/features/overview/data/repositories/overview_repository_impl.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
@@ -67,6 +74,12 @@ class _MockLoadResumoProdutoVendaLucratividadeMensal extends Mock
 class _MockLoadResumoProdutoVendaLucratividade extends Mock
     implements LoadResumoProdutoVendaLucratividadeUseCase {}
 
+class _MockAgentQueryTargetResolver extends Mock
+    implements AgentQueryTargetResolver {}
+
+class _MockAgentQueriesRepository extends Mock
+    implements AgentQueriesRepository {}
+
 void main() {
   late _MockOverviewLocalDataSource local;
   late _MockResumoAcrossAgentsRepository resumoAcrossAgentsRepository;
@@ -82,6 +95,8 @@ void main() {
   loadResumoProdutoVendaLucratividadeMensal;
   late _MockLoadResumoProdutoVendaLucratividade
   loadResumoProdutoVendaLucratividade;
+  late _MockAgentQueryTargetResolver batchTargetResolver;
+  late _MockAgentQueriesRepository batchAgentQueriesRepository;
 
   final fixedNow = DateTime(2026, 4, 8);
 
@@ -93,6 +108,14 @@ void main() {
       ),
     );
     registerFallbackValue(AgentQueryExecutionStrategy.mergeAll);
+    registerFallbackValue(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'agent-fallback',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
+      ),
+    );
     registerFallbackValue(
       ResumoParcelasMensalFilter(
         dataVendaInicio: DateTime(2025, 5),
@@ -170,6 +193,8 @@ void main() {
     );
     loadResumoProdutoVendaLucratividade =
         _MockLoadResumoProdutoVendaLucratividade();
+    batchTargetResolver = _MockAgentQueryTargetResolver();
+    batchAgentQueriesRepository = _MockAgentQueriesRepository();
     when(
       () => loadResumoProdutoVendaLucratividade(
         userId: any(named: 'userId'),
@@ -266,7 +291,9 @@ void main() {
     ).thenAnswer((_) async => null);
   });
 
-  OverviewRepositoryImpl makeRepository() {
+  OverviewRepositoryImpl makeRepository({
+    bool useBatchOverviewLoading = false,
+  }) {
     return OverviewRepositoryImpl(
       localDataSource: local,
       resumoAcrossAgentsRepository: resumoAcrossAgentsRepository,
@@ -281,11 +308,267 @@ void main() {
       loadResumoProdutoVendaLucratividadeMensal:
           loadResumoProdutoVendaLucratividadeMensal,
       loadResumoProdutoVendaLucratividade: loadResumoProdutoVendaLucratividade,
+      batchLoader: OverviewBatchLoader(
+        targetResolver: batchTargetResolver,
+        planBuilder: const AgentQueryPlanBuilder(),
+        agentQueriesRepository: batchAgentQueriesRepository,
+      ),
+      useBatchOverviewLoading: useBatchOverviewLoading,
       now: () => fixedNow,
     );
   }
 
   group('OverviewRepositoryImpl', () {
+    test('batch load resolves targets once and emits final snapshot', () async {
+      const target = AgentQueryTarget(
+        agentId: 'agent-1',
+        displayName: 'Agent 1',
+        connectionStatus: AgentConnectionStatus.online,
+        clientToken: 'token-1',
+        hubConnectedFromApprovedCatalogRow: true,
+      );
+      when(
+        () => batchTargetResolver.resolve(
+          userId: any(named: 'userId'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+        ),
+      ).thenAnswer(
+        (_) async => const Success<AgentQueryTargetResolution, AppFailure>(
+          AgentQueryTargetResolution(
+            consideredApprovedTargets: <AgentQueryTarget>[target],
+            missingClientTokenTargets: <AgentQueryTarget>[],
+            consideredApprovedAgentCount: 1,
+            selectedAgentIds: <String>{'agent-1'},
+            hubPresenceOnlineAgentIdsSnapshot: <String>{'agent-1'},
+          ),
+        ),
+      );
+      when(
+        () => batchAgentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            totalCommands: 7,
+            successfulCommands: 7,
+            failedCommands: 0,
+            items: List<AgentSqlBatchExecutionItem>.generate(
+              7,
+              (index) => AgentSqlBatchExecutionItem(
+                index: index,
+                ok: true,
+                rows: const <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final repository = makeRepository(useBatchOverviewLoading: true);
+      final snapshots = await repository
+          .loadOverviewProgressively(
+            userId: 'user-1',
+            filter: const OverviewFilter(
+              selectedAgentIds: <String>{'agent-1'},
+            ),
+          )
+          .toList();
+
+      check(snapshots.length).equals(1);
+      final snapshot = snapshots.single.getOrThrow();
+      check(snapshot.isFinal).isTrue();
+      check(snapshot.pendingSections).isEmpty();
+      check(snapshot.completedSections.length).equals(10);
+
+      verify(
+        () => batchTargetResolver.resolve(
+          userId: 'user-1',
+          selectedAgentIds: const <String>{'agent-1'},
+        ),
+      ).called(1);
+      final capturedRequest =
+          verify(
+                () => batchAgentQueriesRepository.executeSqlBatch(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteBatchRequest;
+      check(capturedRequest.agentId).equals('agent-1');
+      check(capturedRequest.clientToken).equals('token-1');
+      check(capturedRequest.commands.length).equals(7);
+    });
+
+    test(
+      'batch load marks only a secondary section when its item fails',
+      () async {
+        const target = AgentQueryTarget(
+          agentId: 'agent-1',
+          displayName: 'Agent 1',
+          connectionStatus: AgentConnectionStatus.online,
+          clientToken: 'token-1',
+          hubConnectedFromApprovedCatalogRow: true,
+        );
+        when(
+          () => batchTargetResolver.resolve(
+            userId: any(named: 'userId'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+          ),
+        ).thenAnswer(
+          (_) async => const Success<AgentQueryTargetResolution, AppFailure>(
+            AgentQueryTargetResolution(
+              consideredApprovedTargets: <AgentQueryTarget>[target],
+              missingClientTokenTargets: <AgentQueryTarget>[],
+              consideredApprovedAgentCount: 1,
+              selectedAgentIds: <String>{'agent-1'},
+              hubPresenceOnlineAgentIdsSnapshot: <String>{'agent-1'},
+            ),
+          ),
+        );
+        when(
+          () => batchAgentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer(
+          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: 7,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[_mainBatchRow()],
+              },
+              failedIndexes: const <int>{1},
+            ),
+          ),
+        );
+
+        final repository = makeRepository(useBatchOverviewLoading: true);
+        final result = await repository.loadOverview(
+          userId: 'user-1',
+          filter: const OverviewFilter(
+            selectedAgentIds: <String>{'agent-1'},
+          ),
+        );
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.kpis.totalSalesCount).equals(1);
+        check(overview.monthlyParcelTrendLoadFailed).isTrue();
+        check(overview.weekdaySalesTrendLoadFailed).isFalse();
+        check(overview.dailySalesTrendLoadFailed).isFalse();
+      },
+    );
+
+    test(
+      'batch load fails when the main resumo fails for every agent',
+      () async {
+        const target = AgentQueryTarget(
+          agentId: 'agent-1',
+          displayName: 'Agent 1',
+          connectionStatus: AgentConnectionStatus.online,
+          clientToken: 'token-1',
+          hubConnectedFromApprovedCatalogRow: true,
+        );
+        when(
+          () => batchTargetResolver.resolve(
+            userId: any(named: 'userId'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+          ),
+        ).thenAnswer(
+          (_) async => const Success<AgentQueryTargetResolution, AppFailure>(
+            AgentQueryTargetResolution(
+              consideredApprovedTargets: <AgentQueryTarget>[target],
+              missingClientTokenTargets: <AgentQueryTarget>[],
+              consideredApprovedAgentCount: 1,
+              selectedAgentIds: <String>{'agent-1'},
+              hubPresenceOnlineAgentIdsSnapshot: <String>{'agent-1'},
+            ),
+          ),
+        );
+        when(
+          () => batchAgentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer(
+          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(commandCount: 7, failedIndexes: const <int>{0}),
+          ),
+        );
+
+        final repository = makeRepository(useBatchOverviewLoading: true);
+        final snapshots = await repository
+            .loadOverviewProgressively(
+              userId: 'user-1',
+              filter: const OverviewFilter(
+                selectedAgentIds: <String>{'agent-1'},
+              ),
+            )
+            .toList();
+
+        check(snapshots.length).equals(1);
+        check(snapshots.single.isError()).isTrue();
+        check(snapshots.single.exceptionOrNull()).isA<RpcFailure>();
+      },
+    );
+
+    test(
+      'batch load omits monthly lucratividade for multiple selected agents',
+      () async {
+        const first = AgentQueryTarget(
+          agentId: 'agent-1',
+          displayName: 'Agent 1',
+          connectionStatus: AgentConnectionStatus.online,
+          clientToken: 'token-1',
+          hubConnectedFromApprovedCatalogRow: true,
+        );
+        const second = AgentQueryTarget(
+          agentId: 'agent-2',
+          displayName: 'Agent 2',
+          connectionStatus: AgentConnectionStatus.online,
+          clientToken: 'token-2',
+          hubConnectedFromApprovedCatalogRow: true,
+        );
+        when(
+          () => batchTargetResolver.resolve(
+            userId: any(named: 'userId'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+          ),
+        ).thenAnswer(
+          (_) async => const Success<AgentQueryTargetResolution, AppFailure>(
+            AgentQueryTargetResolution(
+              consideredApprovedTargets: <AgentQueryTarget>[first, second],
+              missingClientTokenTargets: <AgentQueryTarget>[],
+              consideredApprovedAgentCount: 2,
+              selectedAgentIds: <String>{'agent-1', 'agent-2'},
+              hubPresenceOnlineAgentIdsSnapshot: <String>{'agent-1', 'agent-2'},
+            ),
+          ),
+        );
+        when(
+          () => batchAgentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer(
+          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: 6,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[_mainBatchRow()],
+              },
+            ),
+          ),
+        );
+
+        final repository = makeRepository(useBatchOverviewLoading: true);
+        final result = await repository.loadOverview(
+          userId: 'user-1',
+          filter: const OverviewFilter(
+            selectedAgentIds: <String>{'agent-1', 'agent-2'},
+          ),
+        );
+
+        check(result.isSuccess()).isTrue();
+        final captured = verify(
+          () => batchAgentQueriesRepository.executeSqlBatch(captureAny()),
+        ).captured;
+        check(captured.length).equals(2);
+        for (final raw in captured) {
+          final request = raw as AgentSqlExecuteBatchRequest;
+          check(request.commands.length).equals(6);
+        }
+      },
+    );
+
     test('returns ValidationFailure when no approved agents exist', () async {
       _stubLoad(
         resumoAcrossAgentsRepository,
@@ -1078,18 +1361,21 @@ void main() {
                   clientToken: null,
                 ),
               ],
-              participants: <AgentQueryExecutionParticipant<
-                ResumoParcelaFormaPagamentoRow
-              >>[
-                _failureParticipant(
-                  agentId: 'agent-42',
-                  displayName: 'Agente cacheado',
-                  failure: const ValidationFailure(
-                    message: 'rpc rejected',
-                    userMessage: 'Consulta indisponível para este agente.',
-                  ),
-                ),
-              ],
+              participants:
+                  <
+                    AgentQueryExecutionParticipant<
+                      ResumoParcelaFormaPagamentoRow
+                    >
+                  >[
+                    _failureParticipant(
+                      agentId: 'agent-42',
+                      displayName: 'Agente cacheado',
+                      failure: const ValidationFailure(
+                        message: 'rpc rejected',
+                        userMessage: 'Consulta indisponível para este agente.',
+                      ),
+                    ),
+                  ],
             ),
           ),
         );
@@ -1131,7 +1417,10 @@ void main() {
           ),
         ).thenAnswer(
           (_) async =>
-              const Failure<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
+              const Failure<
+                List<ResumoProdutoVendaLucratividadeRow>,
+                AppFailure
+              >(
                 RpcFailure(
                   message: 'bridge error',
                   userMessage: 'Não foi possível carregar lucratividade.',
@@ -1152,23 +1441,26 @@ void main() {
               plannedTargets: <AgentQueryTarget>[
                 _target('agent-42', name: 'Loja Centro'),
               ],
-              participants: <AgentQueryExecutionParticipant<
-                ResumoParcelaFormaPagamentoRow
-              >>[
-                _successParticipant(
-                  agentId: 'agent-42',
-                  displayName: 'Loja Centro',
-                  rows: <ResumoParcelaFormaPagamentoRow>[
-                    _row(
-                      userName: 'Caixa',
-                      code: 'PIX',
-                      description: 'Pix',
-                      salesCount: 1,
-                      amount: 100,
+              participants:
+                  <
+                    AgentQueryExecutionParticipant<
+                      ResumoParcelaFormaPagamentoRow
+                    >
+                  >[
+                    _successParticipant(
+                      agentId: 'agent-42',
+                      displayName: 'Loja Centro',
+                      rows: <ResumoParcelaFormaPagamentoRow>[
+                        _row(
+                          userName: 'Caixa',
+                          code: 'PIX',
+                          description: 'Pix',
+                          salesCount: 1,
+                          amount: 100,
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ],
             ),
           ),
         );
@@ -1186,7 +1478,8 @@ void main() {
         check(overview.partialQueryFailureDetails).isNotEmpty();
         check(
           overview.partialQueryFailureDetails.any(
-            (d) => d.source == OverviewAgentQueryFailureSource.lucratividadePeriod,
+            (d) =>
+                d.source == OverviewAgentQueryFailureSource.lucratividadePeriod,
           ),
         ).isTrue();
       },
@@ -1680,6 +1973,44 @@ ResumoParcelaFormaPagamentoRow _row({
     qtdVendas: salesCount,
     valorParcela: amount,
   );
+}
+
+AgentSqlBatchExecutionResult _batchResult({
+  required int commandCount,
+  Map<int, List<Map<String, dynamic>>> rowsByIndex =
+      const <int, List<Map<String, dynamic>>>{},
+  Set<int> failedIndexes = const <int>{},
+}) {
+  return AgentSqlBatchExecutionResult(
+    totalCommands: commandCount,
+    successfulCommands: commandCount - failedIndexes.length,
+    failedCommands: failedIndexes.length,
+    items: List<AgentSqlBatchExecutionItem>.generate(
+      commandCount,
+      (index) => AgentSqlBatchExecutionItem(
+        index: index,
+        ok: !failedIndexes.contains(index),
+        rows: rowsByIndex[index] ?? const <Map<String, dynamic>>[],
+        rowCount: rowsByIndex[index]?.length ?? 0,
+        error: failedIndexes.contains(index) ? 'batch item failed' : null,
+      ),
+    ),
+  );
+}
+
+Map<String, dynamic> _mainBatchRow() {
+  return <String, dynamic>{
+    'CodEmpresa': 1,
+    'CodFilial': 1,
+    'NomeUsuario': 'Caixa',
+    'AnoDataVenda': 2026,
+    'MesDataVenda': 4,
+    'AnoMesDataVenda': '2026/04',
+    'CodFormaPagamento': 'PIX',
+    'DescricaoFormaPagamento': 'Pix',
+    'QtdVendas': 1,
+    'ValorParcela': 100.0,
+  };
 }
 
 OverviewModel _cachedModel() {

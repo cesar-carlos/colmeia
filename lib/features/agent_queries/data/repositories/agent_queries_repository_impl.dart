@@ -8,6 +8,8 @@ import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_re
 import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -624,6 +626,121 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           stackTrace: stackTrace,
           context: <String, Object?>{
             'operation': 'executeAgentSql',
+            'agentId': request.trimmedAgentId,
+          },
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) async {
+    final validationError = request.validationError();
+    if (validationError != null) {
+      return Failure<AgentSqlBatchExecutionResult, AppFailure>(
+        ValidationFailure(
+          message: validationError,
+          userMessage: 'Os parametros do lote do agente sao invalidos.',
+          context: <String, Object?>{
+            'operation': 'executeAgentSqlBatch',
+            'agentId': request.trimmedAgentId,
+          },
+        ),
+      );
+    }
+
+    try {
+      final payload = await _remoteDataSource.postSqlExecuteBatch(request);
+      final result = AgentSqlBridgeResponse.parseBatchSuccess(payload);
+      AppLogger.info(
+        'Agent SQL batch execute completed',
+        context: <String, Object?>{
+          'operation': 'executeAgentSqlBatch',
+          'agentId': request.trimmedAgentId,
+          'totalCommands': result.totalCommands,
+          'failedCommands': result.failedCommands,
+        },
+      );
+      return Success<AgentSqlBatchExecutionResult, AppFailure>(result);
+    } on AgentSqlRpcException catch (error, stackTrace) {
+      final resolution = resolveAgentSqlRpcUserMessage(error.details);
+      final failureContext = <String, Object?>{
+        'operation': 'executeAgentSqlBatch',
+        'agentId': request.trimmedAgentId,
+        'rpcCode': error.details.code,
+        'reason': error.details.reason,
+        'category': error.details.category,
+        'correlationId': error.details.correlationId,
+      };
+      if (resolution.uiKey != null) {
+        failureContext[AgentSqlRpcFailureUiKey.field] = resolution.uiKey;
+      }
+      if (resolution.preferBridgeUserMessage) {
+        failureContext[AgentSqlRpcFailureUiKey.preferBridgeUserMessageField] =
+            true;
+      }
+      final errorData = error.details.errorData;
+      if (errorData != null) {
+        failureContext[AgentSqlRpcFailureUiKey.errorDataField] = errorData;
+      }
+      return Failure<AgentSqlBatchExecutionResult, AppFailure>(
+        RpcFailure(
+          message: error.details.message,
+          userMessage: resolution.userMessage,
+          rpcCode: error.details.code,
+          retryable: error.details.retryable,
+          reason: error.details.reason,
+          category: error.details.category,
+          technicalMessage: error.details.technicalMessage,
+          correlationId: error.details.correlationId,
+          timestamp: error.details.timestamp,
+          retryAfter: _readRetryAfterFromErrorData(error.details.errorData),
+          cause: error,
+          stackTrace: stackTrace,
+          context: failureContext,
+        ),
+      );
+    } on FormatException catch (error, stackTrace) {
+      return Failure<AgentSqlBatchExecutionResult, AppFailure>(
+        UnknownFailure(
+          message: error.message,
+          userMessage:
+              'Resposta do servidor estava em formato inesperado. '
+              'Tente novamente.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            'operation': 'executeAgentSqlBatch',
+            'agentId': request.trimmedAgentId,
+          },
+        ),
+      );
+    } on DioException catch (error, stackTrace) {
+      final failure = mapToAppFailure(
+        error,
+        stackTrace: stackTrace,
+        fallbackMessage: 'Agent SQL batch request failed',
+        fallbackUserMessage:
+            'Nao foi possivel executar o lote no agente. Tente novamente.',
+        context: <String, Object?>{
+          'operation': 'executeAgentSqlBatch',
+          'agentId': request.trimmedAgentId,
+        },
+      );
+      return Failure<AgentSqlBatchExecutionResult, AppFailure>(failure);
+    } on Object catch (error, stackTrace) {
+      return Failure<AgentSqlBatchExecutionResult, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unexpected error during agent SQL batch execute',
+          fallbackUserMessage:
+              'Ocorreu um erro inesperado ao consultar o agente. '
+              'Tente novamente.',
+          context: <String, Object?>{
+            'operation': 'executeAgentSqlBatch',
             'agentId': request.trimmedAgentId,
           },
         ),

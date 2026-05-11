@@ -3,8 +3,22 @@
 # E2E hits the real Agent SQL bridge; default parallel test workers overload
 # the API/SQL queue. Prefer: `flutter test test/integration/e2e --concurrency=1`
 # or `flutter test --tags=e2e --concurrency=1`.
+# `e2eSetupDependencies` retries transient hub errors on `/client-auth/login`
+# and full setup (see e2e_dependency_bootstrap.dart); with
+# `AGENT_BRIDGE_TRANSPORT=socket` it also warms `/consumers` when
+# `SOCKET_WARM_UP_AFTER_LOGIN` is true (default). Heavy parallel runs may
+# still need `--concurrency=1`.
+# Optional: `E2E_LOG_TRANSIENT=1` in process env logs mapped hub 503/timeout
+# lines from runE2eAppResult (see e2e_dependency_bootstrap.dart).
+#
+# Socket + relay hits the real hub with longer tail latency than REST-only;
+# the default 30s test timeout caused false failures (tearDown disposed relay
+# while work was still in flight). Tag timeout keeps VM E2E stable.
+# If relay RPCs hang against your hub, set E2E_DISABLE_RELAY_DISPATCH=true
+# (see AppEnvironment.e2eDisableRelayDispatch and assets/env/.env.example).
 tags:
   e2e:
     description: >
       Repository smoke tests against the real Agent SQL bridge; requires
       E2E_* credentials (see test/integration/e2e/support/).
+    timeout: 5m

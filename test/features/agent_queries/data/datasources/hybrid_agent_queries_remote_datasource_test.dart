@@ -4,6 +4,7 @@ import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/hybrid_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -25,9 +26,22 @@ AgentSqlExecuteRequest _request({
   );
 }
 
+AgentSqlExecuteBatchRequest _batchRequest({
+  bool useRelay = false,
+}) {
+  return AgentSqlExecuteBatchRequest(
+    agentId: 'agent-1',
+    commands: const <AgentSqlExecuteBatchCommand>[
+      AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+    ],
+    useRelay: useRelay,
+  );
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_request());
+    registerFallbackValue(_batchRequest());
     registerFallbackValue(<String, Object?>{});
     registerFallbackValue(Duration.zero);
     registerFallbackValue(RelayPayloadFrameCompression.auto);
@@ -139,6 +153,52 @@ void main() {
         verify(() => base.postSqlExecute(any())).called(1);
       },
     );
+
+    test('routes batch useRelay=true through the relay dispatcher', () async {
+      final base = _MockBaseDatasource();
+      final dispatcher = _MockRelayDispatcher();
+      final relay = RelayAgentQueriesRemoteDataSource(dispatcher: dispatcher);
+
+      when(
+        () => dispatcher.sendUnary(
+          agentId: any(named: 'agentId'),
+          body: any(named: 'body'),
+          clientRequestId: any(named: 'clientRequestId'),
+          timeout: any(named: 'timeout'),
+          compression: any(named: 'compression'),
+        ),
+      ).thenAnswer((invocation) async {
+        final body = invocation.namedArguments[#body] as Map<dynamic, dynamic>;
+        final command = body['command']! as Map<dynamic, dynamic>;
+        return <String, dynamic>{
+          'response': <String, dynamic>{
+            'type': 'single',
+            'item': <String, dynamic>{
+              'success': true,
+              'method': command['method'],
+            },
+          },
+        };
+      });
+
+      final hybrid = HybridAgentQueriesRemoteDataSource(
+        baseDelegate: base,
+        relayDelegate: relay,
+      );
+
+      await hybrid.postSqlExecuteBatch(_batchRequest(useRelay: true));
+
+      verify(
+        () => dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: any(named: 'body'),
+          clientRequestId: any(named: 'clientRequestId'),
+          timeout: any(named: 'timeout'),
+          compression: any(named: 'compression'),
+        ),
+      ).called(1);
+      verifyNever(() => base.postSqlExecuteBatch(any()));
+    });
   });
 
   group('AgentSqlExecuteRequest.useRelay', () {

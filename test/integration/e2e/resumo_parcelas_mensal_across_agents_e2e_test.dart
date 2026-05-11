@@ -50,10 +50,12 @@ void main() {
           );
 
           final useCase = getIt<LoadResumoParcelasMensalAcrossAgentsUseCase>();
-          final result = await useCase(
-            userId: 'e2e-overview-user',
-            filter: filter,
-            bridgeTimeoutMs: 300000,
+          final result = await runE2eAppResult(
+            () => useCase(
+              userId: 'e2e-overview-user',
+              filter: filter,
+              bridgeTimeoutMs: 300000,
+            ),
           );
 
           result.fold(

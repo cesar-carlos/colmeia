@@ -6,6 +6,7 @@ import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart'
     show AppFailure, SessionFailure;
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
@@ -39,12 +40,14 @@ void main() {
           expect(AppEnvironment.apiBaseUrl, isNotEmpty);
 
           final repo = getIt<AgentQueriesRepository>();
-          final result = await repo.executeSql(
-            AgentSqlExecuteRequest(
-              agentId: AppEnvironment.e2eAgentId,
-              clientToken: AppEnvironment.e2eClientToken,
-              sql: 'SELECT * FROM Cliente ORDER BY CodCliente',
-              pagination: const AgentSqlPagePagination(page: 1, pageSize: 10),
+          final result = await runE2eAppResult(
+            () => repo.executeSql(
+              AgentSqlExecuteRequest(
+                agentId: AppEnvironment.e2eAgentId,
+                clientToken: AppEnvironment.e2eClientToken,
+                sql: 'SELECT * FROM Cliente ORDER BY CodCliente',
+                pagination: const AgentSqlPagePagination(page: 1, pageSize: 10),
+              ),
             ),
           );
 
@@ -77,6 +80,72 @@ void main() {
               }
               fail(
                 'Bridge e2e failed with ${failure.runtimeType}: '
+                '${failure.displayMessage}',
+              );
+            },
+          );
+        },
+      );
+
+      test(
+        'executeSqlBatch runs multiple SQL commands in one bridge call',
+        () async {
+          final missingKeys = missingE2eRepositoryKeys();
+          if (missingKeys.isNotEmpty) {
+            // E2E skip hint; `print` is intentional for local diagnostics.
+            // ignore: avoid_print
+            print(
+              'SKIP agent_sql_bridge_batch_e2e: missing ${missingKeys.join(', ')}. '
+              'Set them in assets/env/local.env, process env, or --dart-define.',
+            );
+            return;
+          }
+
+          await e2eSetupDependencies();
+          addTearDown(e2eTeardownDependencies);
+
+          final repo = getIt<AgentQueriesRepository>();
+          final result = await runE2eAppResult(
+            () => repo.executeSqlBatch(
+              AgentSqlExecuteBatchRequest(
+                agentId: AppEnvironment.e2eAgentId,
+                clientToken: AppEnvironment.e2eClientToken,
+                commands: const <AgentSqlExecuteBatchCommand>[
+                  AgentSqlExecuteBatchCommand(
+                    sql:
+                        'SELECT TOP 1 CodCliente FROM Cliente ORDER BY CodCliente',
+                  ),
+                  AgentSqlExecuteBatchCommand(
+                    sql: 'SELECT TOP 1 Nome FROM Cliente ORDER BY CodCliente',
+                  ),
+                ],
+              ),
+            ),
+          );
+
+          result.fold(
+            (success) {
+              expect(success.items.length, 2);
+              expect(success.items.every((item) => item.ok), isTrue);
+              expect(success.items.first.rows, isNotEmpty);
+              expect(success.items.last.rows, isNotEmpty);
+            },
+            (failure) {
+              expect(failure, isA<AppFailure>());
+              if (AppEnvironment.hasE2eAgentBridgeCredentials) {
+                expect(
+                  failure,
+                  isNot(isA<SessionFailure>()),
+                  reason:
+                      'Unexpected HTTP 401 after client login '
+                      'for sql.executeBatch.',
+                );
+              }
+              if (isAcceptableE2eAgentSqlRepositoryFailure(failure)) {
+                return;
+              }
+              fail(
+                'Bridge batch e2e failed with ${failure.runtimeType}: '
                 '${failure.displayMessage}',
               );
             },

@@ -42,13 +42,15 @@ void main() {
           final periodStart = DateTime(2026);
           final periodEnd = DateTime(2026, 3, 31);
 
-          final result = await repository.loadAll(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ResumoProdutoVendaLucratividadeFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
+          final result = await runE2eAppResult(
+            () => repository.loadAll(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ResumoProdutoVendaLucratividadeFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+              ),
             ),
           );
 
@@ -109,13 +111,15 @@ void main() {
           final periodStart = DateTime(2026);
           final periodEnd = DateTime(2026, 3, 31);
 
-          final result = await useCase(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ResumoProdutoVendaLucratividadeFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
+          final result = await runE2eAppResult(
+            () => useCase(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ResumoProdutoVendaLucratividadeFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+              ),
             ),
           );
 

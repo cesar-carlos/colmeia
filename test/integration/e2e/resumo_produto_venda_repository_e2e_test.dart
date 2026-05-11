@@ -42,13 +42,15 @@ void main() {
           final periodEnd = DateTime(today.year, today.month, today.day);
           final periodStart = periodEnd.subtract(const Duration(days: 14));
 
-          final result = await repository.loadPage(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ResumoProdutoVendaFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
+          final result = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ResumoProdutoVendaFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+              ),
             ),
           );
 
@@ -112,14 +114,16 @@ void main() {
           final periodStart = periodEnd.subtract(const Duration(days: 14));
 
           const smallPageSize = 10;
-          final first = await repository.loadPage(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ResumoProdutoVendaFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
-              pageSize: smallPageSize,
+          final first = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ResumoProdutoVendaFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+                pageSize: smallPageSize,
+              ),
             ),
           );
 
@@ -140,16 +144,19 @@ void main() {
           }
 
           final totalCount = page1.totalCount;
-          final second = await repository.loadPage(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ResumoProdutoVendaFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
-              page: 2,
-              pageSize: smallPageSize,
+          final second = await runE2eAppResultWithHubRetry(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ResumoProdutoVendaFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+                page: 2,
+                pageSize: smallPageSize,
+              ),
             ),
+            actionLabel: 'resumo_produto_venda_loadPage_page2',
           );
 
           second.fold(
@@ -208,16 +215,18 @@ void main() {
           final periodStart = periodEnd.subtract(const Duration(days: 14));
 
           const homePageSize = 15;
-          final result = await repository.loadPage(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ResumoProdutoVendaFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
-              pageSize: homePageSize,
-              sortBy: ResumoProdutoVendaSortBy.qtdVendas,
-              sortDirection: ResumoProdutoVendaSortDirection.descending,
+          final result = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ResumoProdutoVendaFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+                pageSize: homePageSize,
+                sortBy: ResumoProdutoVendaSortBy.qtdVendas,
+                sortDirection: ResumoProdutoVendaSortDirection.descending,
+              ),
             ),
           );
 

@@ -78,4 +78,53 @@ void main() {
       ),
     );
   });
+
+  test(
+    'should parse sql.executeBatch items without promoting item failure',
+    () {
+      final result = AgentSqlBridgeResponse.parseBatchSuccess(<String, dynamic>{
+        'response': <String, dynamic>{
+          'success': true,
+          'item': <String, dynamic>{
+            'success': true,
+            'result': <String, dynamic>{
+              'execution_id': 'exec-batch-1',
+              'items': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'index': 0,
+                  'ok': true,
+                  'rows': <Map<String, dynamic>>[
+                    <String, dynamic>{'id': 1},
+                  ],
+                  'row_count': 1,
+                  'affected_rows': 0,
+                  'column_metadata': <Map<String, dynamic>>[
+                    <String, dynamic>{'name': 'id'},
+                  ],
+                },
+                <String, dynamic>{
+                  'index': 1,
+                  'ok': false,
+                  'rows': <Map<String, dynamic>>[],
+                  'row_count': 0,
+                  'error': 'bad sql',
+                },
+              ],
+            },
+          },
+        },
+      });
+
+      check(result.executionId).equals('exec-batch-1');
+      check(result.totalCommands).equals(2);
+      check(result.successfulCommands).equals(1);
+      check(result.failedCommands).equals(1);
+      check(result.items.first.ok).isTrue();
+      check(result.items.first.rows.single['id']).equals(1);
+      check(result.items.first.affectedRows).equals(0);
+      check(result.items.first.columnMetadata.single['name']).equals('id');
+      check(result.items.last.ok).isFalse();
+      check(result.items.last.error).equals('bad sql');
+    },
+  );
 }

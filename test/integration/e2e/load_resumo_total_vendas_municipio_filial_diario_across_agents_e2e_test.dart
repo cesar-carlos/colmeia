@@ -39,13 +39,15 @@ void main() {
               getIt<
                 LoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase
               >();
-          final result = await useCase(
-            userId: 'e2e-user',
-            filter: ResumoTotalVendasMunicipioFilialDiarioFilter(
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
+          final result = await runE2eAppResult(
+            () => useCase(
+              userId: 'e2e-user',
+              filter: ResumoTotalVendasMunicipioFilialDiarioFilter(
+                dataVendaInicio: periodStart,
+                dataVendaFim: periodEnd,
+              ),
+              bridgeTimeoutMs: 300000,
             ),
-            bridgeTimeoutMs: 300000,
           );
 
           result.fold(

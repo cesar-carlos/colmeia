@@ -36,15 +36,17 @@ void main() {
 
           final repository = getIt<ProdutoVendidoTendenciaDeVendaRepository>();
 
-          final result = await repository.loadAll(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ProdutoVendidoTendenciaDeVendaFilter(
-              periodoAtualInicio: DateTime(2026, 3),
-              periodoAtualFim: DateTime(2026, 3, 31),
-              periodoAnteriorInicio: DateTime(2026, 2),
-              periodoAnteriorFim: DateTime(2026, 2, 28),
+          final result = await runE2eAppResult(
+            () => repository.loadAll(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ProdutoVendidoTendenciaDeVendaFilter(
+                periodoAtualInicio: DateTime(2026, 3),
+                periodoAtualFim: DateTime(2026, 3, 31),
+                periodoAnteriorInicio: DateTime(2026, 2),
+                periodoAnteriorFim: DateTime(2026, 2, 28),
+              ),
             ),
           );
 
@@ -102,16 +104,19 @@ void main() {
 
           final useCase = getIt<LoadProdutoVendidoTendenciaDeVendaUseCase>();
 
-          final result = await useCase(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: ProdutoVendidoTendenciaDeVendaFilter(
-              periodoAtualInicio: DateTime(2026, 3),
-              periodoAtualFim: DateTime(2026, 3, 31),
-              periodoAnteriorInicio: DateTime(2026, 2),
-              periodoAnteriorFim: DateTime(2026, 2, 28),
+          final result = await runE2eAppResultWithHubRetry(
+            () => useCase(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: ProdutoVendidoTendenciaDeVendaFilter(
+                periodoAtualInicio: DateTime(2026, 3),
+                periodoAtualFim: DateTime(2026, 3, 31),
+                periodoAnteriorInicio: DateTime(2026, 2),
+                periodoAnteriorFim: DateTime(2026, 2, 28),
+              ),
             ),
+            actionLabel: 'load_produto_vendido_tendencia_de_venda_use_case',
           );
 
           result.fold(

@@ -39,11 +39,13 @@ void main() {
 
           final repository = getIt<MunicipioListRepository>();
 
-          final result = await repository.loadPage(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            filter: const MunicipioListFilter(),
+          final result = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: const MunicipioListFilter(),
+            ),
           );
 
           result.fold(

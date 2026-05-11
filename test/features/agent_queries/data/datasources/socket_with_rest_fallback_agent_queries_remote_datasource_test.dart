@@ -3,6 +3,7 @@ import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_outbound_compression.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -52,6 +53,33 @@ void main() {
 
         final response = await fallback.postSqlExecute(request);
         check(response['response']).equals('materialised-from-rest');
+        check(socket.callCount).equals(1);
+        check(rest.callCount).equals(1);
+        check(fallback.isLatchedToRest).isFalse();
+      },
+    );
+
+    test(
+      'legacy streaming unsupported on batch retries once on REST without '
+      'latching',
+      () async {
+        final batchRequest = _batchRequest();
+        final socket = _RecordingDataSource(
+          throwOn: const SocketDispatchLegacyStreamingUnsupported(
+            message: 'stream',
+            streamId: 's-batch',
+          ),
+        );
+        final rest = _RecordingDataSource(
+          response: <String, dynamic>{'response': 'batch-from-rest'},
+        );
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+        );
+
+        final response = await fallback.postSqlExecuteBatch(batchRequest);
+        check(response['response']).equals('batch-from-rest');
         check(socket.callCount).equals(1);
         check(rest.callCount).equals(1);
         check(fallback.isLatchedToRest).isFalse();
@@ -197,6 +225,20 @@ class _RecordingDataSource implements AgentQueriesRemoteDataSource {
       response ?? const <String, dynamic>{},
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> postSqlExecuteBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) {
+    callCount += 1;
+    final toThrow = throwOn;
+    if (toThrow != null) {
+      return Future<Map<String, dynamic>>.error(toThrow);
+    }
+    return Future<Map<String, dynamic>>.value(
+      response ?? const <String, dynamic>{},
+    );
+  }
 }
 
 AgentSqlExecuteRequest _request(String sql) {
@@ -206,6 +248,17 @@ AgentSqlExecuteRequest _request(String sql) {
     clientToken: 'token',
     bridgeTimeoutMs: 1000,
     outboundCompression: AgentOutboundCompression.auto,
+  );
+}
+
+AgentSqlExecuteBatchRequest _batchRequest() {
+  return const AgentSqlExecuteBatchRequest(
+    agentId: '00000000-0000-0000-0000-000000000001',
+    commands: <AgentSqlExecuteBatchCommand>[
+      AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+    ],
+    clientToken: 'token',
+    bridgeTimeoutMs: 1000,
   );
 }
 

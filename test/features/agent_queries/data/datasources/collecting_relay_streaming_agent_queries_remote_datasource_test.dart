@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:checks/checks.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,10 +12,21 @@ import 'package:mocktail/mocktail.dart';
 class _MockStreamingDatasource extends Mock
     implements AgentQueriesStreamingRemoteDataSource {}
 
+class _MockRemoteDatasource extends Mock
+    implements AgentQueriesRemoteDataSource {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(
       const AgentSqlExecuteRequest(agentId: 'a', sql: 'SELECT 1'),
+    );
+    registerFallbackValue(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'a',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
+      ),
     );
   });
 
@@ -137,5 +150,36 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test(
+      'delegates sql.executeBatch to the configured batch datasource',
+      () async {
+        final streaming = _MockStreamingDatasource();
+        final batch = _MockRemoteDatasource();
+        when(
+          () => batch.postSqlExecuteBatch(any()),
+        ).thenAnswer(
+          (_) async => <String, dynamic>{'response': 'batch-from-relay'},
+        );
+
+        final adapter = CollectingRelayStreamingAgentQueriesRemoteDataSource(
+          streamingDelegate: streaming,
+          batchDelegate: batch,
+        );
+
+        final response = await adapter.postSqlExecuteBatch(
+          const AgentSqlExecuteBatchRequest(
+            agentId: 'agent-1',
+            commands: <AgentSqlExecuteBatchCommand>[
+              AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+            ],
+          ),
+        );
+
+        check(response['response']).equals('batch-from-relay');
+        verify(() => batch.postSqlExecuteBatch(any())).called(1);
+        verifyNever(() => streaming.streamSqlExecute(any()));
+      },
+    );
   });
 }

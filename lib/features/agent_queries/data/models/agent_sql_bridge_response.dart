@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_pagination_result.dart';
 
@@ -93,6 +94,94 @@ abstract final class AgentSqlBridgeResponse {
       executionId: executionId,
       affectedRows: affectedRows,
       pagination: pagination,
+    );
+  }
+
+  static AgentSqlBatchExecutionResult parseBatchSuccess(
+    Map<String, dynamic> json,
+  ) {
+    final response = json['response'];
+    if (response is! Map<String, dynamic>) {
+      throw const FormatException('Bridge response missing "response" object');
+    }
+
+    if (response['success'] != true) {
+      throw AgentSqlRpcException(_readRpcErrorDetails(response));
+    }
+
+    final item = response['item'];
+    if (item is! Map<String, dynamic>) {
+      throw const FormatException('Bridge response missing "item" object');
+    }
+
+    if (item['success'] != true) {
+      throw AgentSqlRpcException(_readItemErrorDetails(item));
+    }
+
+    final result = item['result'];
+    if (result is! Map<String, dynamic>) {
+      throw const FormatException('Bridge item missing "result" object');
+    }
+
+    final rawItems = result['items'];
+    if (rawItems is! List<dynamic>) {
+      throw const FormatException('Batch result missing "items" array');
+    }
+
+    final items = <AgentSqlBatchExecutionItem>[
+      for (final rawItem in rawItems) _parseBatchItem(rawItem),
+    ];
+    final derivedSuccessfulCommands = items.where((item) => item.ok).length;
+    final derivedFailedCommands = items.length - derivedSuccessfulCommands;
+
+    return AgentSqlBatchExecutionResult(
+      executionId: result['execution_id']?.toString(),
+      totalCommands: _readInt(result['total_commands']) ?? rawItems.length,
+      successfulCommands:
+          _readInt(result['successful_commands']) ?? derivedSuccessfulCommands,
+      failedCommands:
+          _readInt(result['failed_commands']) ?? derivedFailedCommands,
+      items: items,
+    );
+  }
+
+  static AgentSqlBatchExecutionItem _parseBatchItem(Object? rawItem) {
+    if (rawItem is! Map) {
+      throw const FormatException('Batch item must be an object');
+    }
+    final item = Map<String, dynamic>.from(rawItem);
+    final rawRows = item['rows'];
+    final rows = <Map<String, dynamic>>[];
+    if (rawRows is List<dynamic>) {
+      for (final row in rawRows) {
+        if (row is Map<String, dynamic>) {
+          rows.add(row);
+        } else if (row is Map) {
+          rows.add(Map<String, dynamic>.from(row));
+        }
+      }
+    }
+
+    final rawMetadata = item['column_metadata'];
+    final metadata = <Map<String, dynamic>>[];
+    if (rawMetadata is List<dynamic>) {
+      for (final column in rawMetadata) {
+        if (column is Map<String, dynamic>) {
+          metadata.add(column);
+        } else if (column is Map) {
+          metadata.add(Map<String, dynamic>.from(column));
+        }
+      }
+    }
+
+    return AgentSqlBatchExecutionItem(
+      index: _readInt(item['index']) ?? 0,
+      ok: item['ok'] == true,
+      rows: rows,
+      rowCount: _readInt(item['row_count']) ?? rows.length,
+      affectedRows: _readInt(item['affected_rows']),
+      error: item['error']?.toString(),
+      columnMetadata: metadata,
     );
   }
 

@@ -7,10 +7,15 @@ import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/di/injector_socket.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/network/app_dio_client.dart';
 import 'package:colmeia/core/network/auth_refresh_coordinator.dart';
 import 'package:colmeia/core/network/auth_session_accessor.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
+import 'package:colmeia/core/network/dio_transient_hub_error.dart';
+import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
+import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
@@ -18,12 +23,18 @@ import 'package:colmeia/features/client_agents/domain/repositories/agent_client_
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:result_dart/result_dart.dart';
 
 import 'e2e_refreshing_auth_interceptor.dart';
 import 'e2e_stub_client_agents_for_agent_queries.dart';
 
 /// Prints once per VM so skipped E2E tests still show which agent id is configured.
 bool _e2eAnnouncedConfiguredAgentId = false;
+
+bool _e2eLogTransientHubErrors() {
+  final raw = Platform.environment['E2E_LOG_TRANSIENT']?.toLowerCase().trim();
+  return raw == '1' || raw == 'true' || raw == 'yes';
+}
 
 /// Loads bundled env and registers `Dio` plus the agent-queries stack only.
 ///
@@ -48,15 +59,40 @@ Future<void> e2eSetupDependencies() async {
       'E2E requires API_BASE_URL (dart-define or bundled default.env).',
     );
   }
-  await resetDependenciesForTesting();
 
+  // Full `flutter test` runs many E2E workers; each test calls setup and
+  // `POST /client-auth/login` again. Hub 503 on login must reset DI and
+  // retry — it is outside [runE2eAppResult], which only wraps repository calls.
+  const maxSetupAttempts = 3;
+  for (var setupAttempt = 0; setupAttempt < maxSetupAttempts; setupAttempt++) {
+    if (setupAttempt > 0) {
+      await Future<void>.delayed(
+        Duration(milliseconds: 500 * setupAttempt),
+      );
+    }
+    await resetDependenciesForTesting();
+    try {
+      await _e2eSetupDependenciesBody();
+      return;
+    } on DioException catch (e, st) {
+      if (!isTransientHubDioException(e) ||
+          setupAttempt == maxSetupAttempts - 1) {
+        Error.throwWithStackTrace(e, st);
+      }
+    }
+  }
+  throw StateError('e2eSetupDependencies exhausted transient setup retries');
+}
+
+Future<void> _e2eSetupDependenciesBody() async {
   final dio = AppDioClient.create();
   final sessionHolder = E2eAuthSessionHolder();
 
   if (AppEnvironment.hasE2eClientLoginCredentials) {
     final loginDio = Dio(AppDioClient.createBaseOptions());
     final authRemote = ApiAuthRemoteDataSource(loginDio);
-    final session = await authRemote.login(
+    final session = await _e2eClientLoginWithHubTransientRetries(
+      authRemote,
       email: AppEnvironment.e2eClientEmail,
       password: AppEnvironment.e2eClientPassword,
     );
@@ -82,6 +118,7 @@ Future<void> e2eSetupDependencies() async {
     _registerE2eSocketStack(sessionHolder);
   }
   registerInjectorAgentQueries(getIt);
+  await _e2eWarmConsumerSocketAfterQueriesRegistered();
 
   // Visible in `flutter test` stdout so runs clearly target this agent for sql.execute.
   // E2E_CLIENT_TOKEN is not printed (secret); only whether it was loaded from env.
@@ -91,7 +128,8 @@ Future<void> e2eSetupDependencies() async {
     'client_token_loaded=${AppEnvironment.e2eClientToken.isNotEmpty} '
     'api=${AppEnvironment.apiBaseUrl} '
     'bearer=${AppEnvironment.hasE2eClientLoginCredentials} '
-    'transport=${AppEnvironment.agentBridgeTransport.name}',
+    'transport=${AppEnvironment.agentBridgeTransport.name} '
+    'relay_dispatch_disabled=${AppEnvironment.e2eDisableRelayDispatch}',
   );
 }
 
@@ -112,6 +150,46 @@ void _registerE2eSocketStack(E2eAuthSessionHolder sessionHolder) {
       ),
     );
   registerInjectorSocket(getIt);
+}
+
+/// Mirrors the app post-login consumer-socket warm-up when
+/// [AppEnvironment.socketWarmUpAfterLogin] is true (default): connects once
+/// so the first repository call does not pay handshake alone.
+Future<void> _e2eWarmConsumerSocketAfterQueriesRegistered() async {
+  if (AppEnvironment.agentBridgeTransport != AgentBridgeTransport.socket) {
+    return;
+  }
+  if (!AppEnvironment.socketWarmUpAfterLogin) {
+    return;
+  }
+  if (!getIt.isRegistered<ConsumerSocketConnection>()) {
+    return;
+  }
+  const maxAttempts = 3;
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) {
+      await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+    }
+    try {
+      await getIt<ConsumerSocketConnection>().connect();
+      return;
+      // ConsumerSocketConnection uses StateError with stable message prefixes
+      // for connect outcomes (see consumer_socket_connection.dart).
+      // ignore: avoid_catching_errors
+    } on StateError catch (e, st) {
+      final msg = e.message;
+      if (msg.startsWith('Consumer socket namespace forbidden:') ||
+          msg.startsWith('Consumer socket unauthorized:')) {
+        Error.throwWithStackTrace(e, st);
+      }
+      final retryable =
+          msg.startsWith('Consumer socket connect cancelled:') ||
+          msg.startsWith('Consumer socket reconnect exhausted:');
+      if (!retryable || attempt == maxAttempts - 1) {
+        Error.throwWithStackTrace(e, st);
+      }
+    }
+  }
 }
 
 List<String> missingE2eBridgeKeys() {
@@ -177,17 +255,159 @@ bool isTransientAgentSqlBridgeHttpFailure(AppFailure failure) {
   if (cause is! DioException) {
     return false;
   }
-  final statusCode = cause.response?.statusCode;
-  if (statusCode != null) {
-    return statusCode >= 500 && statusCode < 600;
+  return isTransientHubDioException(cause);
+}
+
+bool _e2eIsTransientHubOverloadAppErrorCode(String code) {
+  switch (code.toUpperCase()) {
+    case 'SERVICE_UNAVAILABLE':
+    case 'OVERLOADED':
+    case 'HUB_OVERLOAD':
+    case 'RATE_LIMITED':
+    case 'TEMPORARILY_UNAVAILABLE':
+      return true;
+    default:
+      return false;
   }
-  return switch (cause.type) {
-    DioExceptionType.connectionTimeout ||
-    DioExceptionType.sendTimeout ||
-    DioExceptionType.receiveTimeout ||
-    DioExceptionType.connectionError => true,
-    _ => false,
-  };
+}
+
+/// True for hub overload / transport blips on **either** REST (503 / timeouts
+/// on the underlying [DioException]) **or** socket/relay paths where the
+/// repository surfaced a [NetworkFailure] whose [AppFailure.cause] is a
+/// dispatch exception (timeouts, disconnect, `app:error` overload codes).
+///
+/// Used by [runE2eAppResultWithHubRetry] and [isAcceptableE2eAgentSqlRepositoryFailure].
+/// See also [isTransientAgentSqlBridgeHttpFailure] (HTTP-only subset).
+bool isTransientE2eAgentSqlBridgeTransportFailure(AppFailure failure) {
+  if (isTransientAgentSqlBridgeHttpFailure(failure)) {
+    return true;
+  }
+  if (failure is! NetworkFailure) {
+    return false;
+  }
+  final cause = failure.cause;
+  if (cause is SocketDispatchTimeout) {
+    return true;
+  }
+  if (cause is SocketDispatchDisconnected) {
+    return true;
+  }
+  if (cause is SocketDispatchAppError &&
+      _e2eIsTransientHubOverloadAppErrorCode(cause.code)) {
+    return true;
+  }
+  if (cause is RelayRequestTimeout ||
+      cause is RelayConversationLost ||
+      cause is RelayDecodeFailure) {
+    return true;
+  }
+  if (cause is RelayRequestRejected &&
+      _e2eIsTransientHubOverloadAppErrorCode(cause.code)) {
+    return true;
+  }
+  return false;
+}
+
+Future<AuthSessionModel> _e2eClientLoginWithHubTransientRetries(
+  ApiAuthRemoteDataSource authRemote, {
+  required String email,
+  required String password,
+}) async {
+  const maxAttempts = 6;
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) {
+      final backoffMs = (250 * (1 << (attempt - 1))).clamp(250, 4000);
+      await Future<void>.delayed(Duration(milliseconds: backoffMs));
+    }
+    try {
+      return await authRemote.login(email: email, password: password);
+    } on DioException catch (e, st) {
+      if (!isTransientHubDioException(e) || attempt == maxAttempts - 1) {
+        Error.throwWithStackTrace(e, st);
+      }
+    }
+  }
+  throw StateError('E2E login retry loop exited without result');
+}
+
+/// Wraps repository / use-case calls so uncaught [DioException] from HTTP 5xx
+/// or transport timeouts become an [AppResult] failure that
+/// [isTransientE2eAgentSqlBridgeTransportFailure] /
+/// [isAcceptableE2eAgentSqlRepositoryFailure] recognise (full `flutter test`
+/// runs E2E in parallel with other suites and can hit hub 503s).
+///
+/// Set `E2E_LOG_TRANSIENT=1` in the process environment to print one line per
+/// transient mapping (HTTP status, Dio type, optional action label).
+Future<AppResult<T>> runE2eAppResult<T extends Object>(
+  Future<AppResult<T>> Function() action, {
+  String? actionLabel,
+}) async {
+  try {
+    return await action();
+  } on DioException catch (e, st) {
+    if (isTransientHubDioException(e)) {
+      if (_e2eLogTransientHubErrors()) {
+        final label = actionLabel ?? 'unspecified';
+        // E2E diagnostics only when E2E_LOG_TRANSIENT is set; stdout is intentional.
+        // ignore: avoid_print -- E2E diagnostics should appear in CI logs.
+        print(
+          'E2E transient hub: action=$label '
+          'http=${e.response?.statusCode} dioType=${e.type.name}',
+        );
+      }
+      final status = e.response?.statusCode;
+      final suffix = actionLabel != null ? ' ($actionLabel)' : '';
+      return Failure<T, AppFailure>(
+        NetworkFailure(
+          message: 'E2E transient HTTP transport$suffix',
+          userMessage: status != null ? 'Hub HTTP $status' : null,
+          cause: e,
+          stackTrace: st,
+        ),
+      );
+    }
+    rethrow;
+  }
+}
+
+/// Retries when the first attempt returns a hub transient [NetworkFailure]
+/// (503 / timeouts) wrapped by [runE2eAppResult], e.g. a second repository page
+/// after a successful first page.
+///
+/// Also retries when the repository returned a transient **socket or relay**
+/// [NetworkFailure] (see [isTransientE2eAgentSqlBridgeTransportFailure]), not
+/// only HTTP [DioException] causes.
+Future<AppResult<T>> runE2eAppResultWithHubRetry<T extends Object>(
+  Future<AppResult<T>> Function() action, {
+  String? actionLabel,
+  int maxAttempts = 3,
+}) async {
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    if (attempt > 0) {
+      await Future<void>.delayed(Duration(milliseconds: 350 * attempt));
+    }
+    final attemptLabel = actionLabel == null
+        ? null
+        : attempt == 0
+        ? actionLabel
+        : '${actionLabel}_attempt_${attempt + 1}';
+    final result = await runE2eAppResult(
+      action,
+      actionLabel: attemptLabel,
+    );
+    if (result.isSuccess()) {
+      return result;
+    }
+    final failure = result.exceptionOrNull();
+    if (failure == null) {
+      return result;
+    }
+    if (!isTransientE2eAgentSqlBridgeTransportFailure(failure) ||
+        attempt == maxAttempts - 1) {
+      return result;
+    }
+  }
+  throw StateError('runE2eAppResultWithHubRetry exhausted attempts');
 }
 
 String? _agentSqlOdbcReason(AppFailure failure) {
@@ -296,16 +516,55 @@ bool isKnownE2eAgentSqlCircuitBreakerOpenFailure(AppFailure failure) {
 }
 
 /// Known policy rejection, missing table permission RPC, transient bridge
-/// HTTP 5xx, HTTP 403 forbidden on agent SQL, queue saturation, or circuit
-/// breaker open after hub overload (environment / hub access).
+/// HTTP 5xx or socket/relay transport overload, HTTP 403 forbidden on agent
+/// SQL, queue saturation, or circuit breaker open after hub overload
+/// (environment / hub access).
 bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
   return isKnownInvalidPolicyFailure(failure) ||
       isKnownAgentSqlMissingPermissionFailure(failure) ||
-      isTransientAgentSqlBridgeHttpFailure(failure) ||
+      isTransientE2eAgentSqlBridgeTransportFailure(failure) ||
       isKnownE2eAgentSqlHttpForbiddenFailure(failure) ||
       isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(failure) ||
       isKnownE2eAgentSqlQueueSaturationFailure(failure) ||
       isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure);
+}
+
+String e2eAgentSqlFailureDiagnostic(AppFailure failure) {
+  final context = failure.context;
+  final parts = <String>[
+    'type=${failure.runtimeType}',
+    'message=${failure.displayMessage}',
+  ];
+  final httpStatus = context['httpStatusCode'];
+  if (httpStatus != null) {
+    parts.add('httpStatus=$httpStatus');
+  }
+  if (failure is RpcFailure) {
+    parts
+      ..add('rpcCode=${failure.rpcCode}')
+      ..add('reason=${failure.reason}')
+      ..add('category=${failure.category}');
+  }
+  final uiKey = context[AgentSqlRpcFailureUiKey.field];
+  if (uiKey != null) {
+    parts.add('uiKey=$uiKey');
+  }
+  final responseBody =
+      context[DioHttpFailureContext.responseBodyField] ??
+      context[AgentSqlRpcFailureUiKey.errorDataField];
+  if (responseBody != null) {
+    parts.add('response=${_e2eDiagnosticValue(responseBody)}');
+  }
+  return parts.join(' ');
+}
+
+String _e2eDiagnosticValue(Object? value) {
+  final raw = value.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+  const maxLen = 1200;
+  if (raw.length <= maxLen) {
+    return raw;
+  }
+  return '${raw.substring(0, maxLen)}...';
 }
 
 void primeE2eEnvironment() {
@@ -356,6 +615,7 @@ Map<String, String> _processEnvironmentOverrides() {
     EnvKeys.e2eClientToken,
     EnvKeys.e2eClientEmail,
     EnvKeys.e2eClientPassword,
+    EnvKeys.e2eDisableRelayDispatch,
   ];
   final overrides = <String, String>{};
   for (final name in names) {

@@ -1,5 +1,6 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 
 /// Per-call routing datasource that dispatches each [AgentSqlExecuteRequest]
@@ -59,5 +60,36 @@ class HybridAgentQueriesRemoteDataSource
       },
     );
     return relay.postSqlExecute(request);
+  }
+
+  @override
+  Future<Map<String, dynamic>> postSqlExecuteBatch(
+    AgentSqlExecuteBatchRequest request,
+  ) {
+    if (!request.useRelay) {
+      return _baseDelegate.postSqlExecuteBatch(request);
+    }
+    final relay = _relayDelegate;
+    if (relay == null) {
+      AppLogger.warning(
+        'HybridAgentQueriesRemoteDataSource bypassing relay batch request '
+        '(relay datasource not registered)',
+        context: <String, Object?>{
+          'component': 'HybridAgentQueriesRemoteDataSource',
+          'agentId': request.trimmedAgentId,
+          'reason': 'relay_datasource_missing',
+        },
+      );
+      return _baseDelegate.postSqlExecuteBatch(request);
+    }
+    AppLogger.debug(
+      'HybridAgentQueriesRemoteDataSource routing sql.executeBatch through '
+      'relay',
+      context: <String, Object?>{
+        'component': 'HybridAgentQueriesRemoteDataSource',
+        'agentId': request.trimmedAgentId,
+      },
+    );
+    return relay.postSqlExecuteBatch(request);
   }
 }

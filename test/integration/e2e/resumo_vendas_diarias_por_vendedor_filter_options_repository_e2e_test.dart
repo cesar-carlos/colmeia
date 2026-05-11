@@ -49,12 +49,14 @@ void main() {
           final repository =
               getIt<ResumoVendasDiariasPorVendedorFilterOptionsRepository>();
 
-          final result = await repository.loadVendedorOptions(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            dataVendaInicio: periodStart,
-            dataVendaFim: periodEnd,
+          final result = await runE2eAppResult(
+            () => repository.loadVendedorOptions(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              dataVendaInicio: periodStart,
+              dataVendaFim: periodEnd,
+            ),
           );
 
           result.fold(
@@ -105,12 +107,15 @@ void main() {
           final repository =
               getIt<ResumoVendasDiariasPorVendedorFilterOptionsRepository>();
 
-          final result = await repository.loadBairroOptions(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            dataVendaInicio: periodStart,
-            dataVendaFim: periodEnd,
+          final result = await runE2eAppResultWithHubRetry(
+            () => repository.loadBairroOptions(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              dataVendaInicio: periodStart,
+              dataVendaFim: periodEnd,
+            ),
+            actionLabel: 'resumo_vendas_diarias_opts_bairro',
           );
 
           result.fold(
@@ -160,12 +165,15 @@ void main() {
           final repository =
               getIt<ResumoVendasDiariasPorVendedorFilterOptionsRepository>();
 
-          final result = await repository.loadMunicipioOptions(
-            userId: 'user-1',
-            agentId: AppEnvironment.e2eAgentId,
-            clientToken: AppEnvironment.e2eClientToken,
-            dataVendaInicio: periodStart,
-            dataVendaFim: periodEnd,
+          final result = await runE2eAppResultWithHubRetry(
+            () => repository.loadMunicipioOptions(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              dataVendaInicio: periodStart,
+              dataVendaFim: periodEnd,
+            ),
+            actionLabel: 'resumo_vendas_diarias_opts_municipio',
           );
 
           result.fold(
