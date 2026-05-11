@@ -185,6 +185,52 @@ class AppLocalizationsEn extends AppLocalizations {
       'This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.';
 
   @override
+  String get overviewHomeAlertErrorDetailsButton => 'Error details';
+
+  @override
+  String get overviewHomeAlertDetailsCopiedSnackbar => 'Copied to clipboard';
+
+  @override
+  String get overviewHomeAlertFailureSourcePaymentResumo =>
+      'Payment summary query';
+
+  @override
+  String get overviewHomeAlertFailureSourceLucratividadePeriod =>
+      'Profitability (period) query';
+
+  @override
+  String get overviewHomeAlertDetailsUserLine => 'What happened';
+
+  @override
+  String get overviewHomeAlertDetailsTechnicalLine => 'Technical';
+
+  @override
+  String get overviewHomeAlertDetailsNoEntries =>
+      'No diagnostic rows are available for this alert.';
+
+  @override
+  String get overviewHomeAlertDetailsStaleIntro =>
+      'These figures come from the last successful overview stored on this device.\n\n';
+
+  @override
+  String get overviewHomeAlertErrorDetailsSemanticsLabel =>
+      'Opens a sheet with the full diagnostic text. You can select and copy it.';
+
+  @override
+  String get overviewHomeAlertDetailsCopySemanticsLabel =>
+      'Copy diagnostic text to the clipboard';
+
+  @override
+  String overviewHomeAlertDetailsAgentSemanticSummary(
+    String agentName,
+    String agentId,
+    String sourceLabel,
+    String userMessage,
+  ) {
+    return '$agentName, agent id $agentId. $sourceLabel. $userMessage.';
+  }
+
+  @override
   String get dashboardPaymentSummaryTitle => 'Summary by payment method';
 
   @override

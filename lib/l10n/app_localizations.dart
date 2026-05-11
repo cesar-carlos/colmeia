@@ -417,6 +417,77 @@ abstract class AppLocalizations {
   /// **'This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.'**
   String get dashboardMultiAgentAggregationMessage;
 
+  /// No description provided for @overviewHomeAlertErrorDetailsButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Error details'**
+  String get overviewHomeAlertErrorDetailsButton;
+
+  /// No description provided for @overviewHomeAlertDetailsCopiedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get overviewHomeAlertDetailsCopiedSnackbar;
+
+  /// No description provided for @overviewHomeAlertFailureSourcePaymentResumo.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment summary query'**
+  String get overviewHomeAlertFailureSourcePaymentResumo;
+
+  /// No description provided for @overviewHomeAlertFailureSourceLucratividadePeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Profitability (period) query'**
+  String get overviewHomeAlertFailureSourceLucratividadePeriod;
+
+  /// No description provided for @overviewHomeAlertDetailsUserLine.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened'**
+  String get overviewHomeAlertDetailsUserLine;
+
+  /// No description provided for @overviewHomeAlertDetailsTechnicalLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical'**
+  String get overviewHomeAlertDetailsTechnicalLine;
+
+  /// No description provided for @overviewHomeAlertDetailsNoEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'No diagnostic rows are available for this alert.'**
+  String get overviewHomeAlertDetailsNoEntries;
+
+  /// No description provided for @overviewHomeAlertDetailsStaleIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'These figures come from the last successful overview stored on this device.\n\n'**
+  String get overviewHomeAlertDetailsStaleIntro;
+
+  /// No description provided for @overviewHomeAlertErrorDetailsSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens a sheet with the full diagnostic text. You can select and copy it.'**
+  String get overviewHomeAlertErrorDetailsSemanticsLabel;
+
+  /// No description provided for @overviewHomeAlertDetailsCopySemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy diagnostic text to the clipboard'**
+  String get overviewHomeAlertDetailsCopySemanticsLabel;
+
+  /// No description provided for @overviewHomeAlertDetailsAgentSemanticSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{agentName}, agent id {agentId}. {sourceLabel}. {userMessage}.'**
+  String overviewHomeAlertDetailsAgentSemanticSummary(
+    String agentName,
+    String agentId,
+    String sourceLabel,
+    String userMessage,
+  );
+
   /// No description provided for @dashboardPaymentSummaryTitle.
   ///
   /// In en, this message translates to:

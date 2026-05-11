@@ -34,6 +34,7 @@ import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_tr
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_user_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
@@ -45,19 +46,49 @@ import 'package:colmeia/features/overview/domain/entities/overview_progressive_s
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
+import 'package:colmeia/features/overview/domain/overview_agent_query_failure_mapper.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
+/// When the overview falls back to cached KPIs because no agent could run the
+/// main resumo (missing local `client_token`), keep chart payloads from cache
+/// but preserve **this request's** resumo report metadata (partial failures,
+/// skipped/offline agent ids) so alerts and diagnostics stay accurate.
+Overview _overviewMergeCachedWithFreshReportSlice({
+  required Overview cachedEntity,
+  required Overview freshReportOverview,
+}) {
+  return cachedEntity.copyWith(
+    partialQueryFailureDetails: freshReportOverview.partialQueryFailureDetails,
+    agentIdsExcludedFromQueryFailure:
+        freshReportOverview.agentIdsExcludedFromQueryFailure,
+    agentNamesExcludedFromQueryFailure:
+        freshReportOverview.agentNamesExcludedFromQueryFailure,
+    agentIdsSkippedDueToHubPresence:
+        freshReportOverview.agentIdsSkippedDueToHubPresence,
+    agentNamesSkippedDueToHubPresence:
+        freshReportOverview.agentNamesSkippedDueToHubPresence,
+    mainResumoHadPlannedTargets: freshReportOverview.mainResumoHadPlannedTargets,
+  );
+}
+
 class _LucratividadeLoadBundle {
   const _LucratividadeLoadBundle({
     required this.rows,
     this.partialFailureAgentNames = const <String>[],
+    this.partialFailureDetails = const <OverviewAgentQueryFailureDetail>[],
+    this.allAgentsFailedUserMessage,
   });
 
   final List<ResumoProdutoVendaLucratividadeRow> rows;
   final List<String> partialFailureAgentNames;
+  final List<OverviewAgentQueryFailureDetail> partialFailureDetails;
+
+  /// Non-null when every per-agent lucratividade call failed: [rows] is empty
+  /// but [partialFailureAgentNames] lists each agent for the partial-failure UX.
+  final String? allAgentsFailedUserMessage;
 }
 
 class _OverviewProgressivePatch {
@@ -329,6 +360,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
         agentNamesSkippedDueToHubPresence:
             report.skippedDueToHubPresenceAgentNames,
         mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
+        partialQueryFailureDetails: overviewPartialFailuresFromParticipants(
+          report.participants,
+        ),
       );
 
       final completedSections = <OverviewProgressiveSection>{
@@ -336,7 +370,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
       };
 
       if (report.requiresClientTokenSetup && sourceAgentIds != null) {
-        final cachedOverview = await _readCachedOverviewForMissingClientTokens(
+        final freshReportOverview = overview;
+        final cachedEntity = await _readCachedOverviewForMissingClientTokens(
           userId: userId,
           policy: policy,
           period: period,
@@ -344,8 +379,11 @@ class OverviewRepositoryImpl implements OverviewRepository {
           agentIdsMissingClientToken: report.missingClientTokenAgentIds,
           agentNamesMissingClientToken: report.missingClientTokenAgentNames,
         );
-        if (cachedOverview != null) {
-          overview = cachedOverview;
+        if (cachedEntity != null) {
+          overview = _overviewMergeCachedWithFreshReportSlice(
+            cachedEntity: cachedEntity,
+            freshReportOverview: freshReportOverview,
+          );
           shouldSaveFinalOverview = false;
         }
       }
@@ -463,6 +501,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
               lucratividadeTrendLoadFailureMessage: lvc.loadFailureMessage,
               lucratividadePartialFailureAgentNames:
                   lvc.lucratividadePartialFailureAgentNames,
+              partialQueryFailureDetails: <OverviewAgentQueryFailureDetail>[
+                ...overview.partialQueryFailureDetails,
+                ...lvc.lucratividadePartialFailureDetails,
+              ],
             ),
           ),
         ),
@@ -975,6 +1017,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     return Future.wait(futures).then((results) {
       final aggregated = <ResumoProdutoVendaLucratividadeRow>[];
       final partialFailures = <String>[];
+      final partialFailureDetails = <OverviewAgentQueryFailureDetail>[];
       AppFailure? firstFailure;
       for (var i = 0; i < targets.length; i++) {
         final target = targets[i];
@@ -995,6 +1038,13 @@ class OverviewRepositoryImpl implements OverviewRepository {
           (failure) {
             firstFailure ??= failure;
             partialFailures.add(label);
+            partialFailureDetails.add(
+              overviewLucratividadePartialFailureDetail(
+                agentId: agentId,
+                displayName: label,
+                failure: failure,
+              ),
+            );
             AppLogger.warning(
               'Overview: lucratividade query failed for one agent',
               context: <String, Object?>{
@@ -1006,18 +1056,30 @@ class OverviewRepositoryImpl implements OverviewRepository {
           },
         );
       }
-      if (aggregated.isEmpty && firstFailure != null) {
-        return Failure<_LucratividadeLoadBundle, AppFailure>(
-          firstFailure!,
-        );
-      }
       partialFailures.sort(
         (a, b) => a.toLowerCase().compareTo(b.toLowerCase()),
       );
+      partialFailureDetails.sort(
+        (a, b) => a.displayName.toLowerCase().compareTo(
+          b.displayName.toLowerCase(),
+        ),
+      );
+      if (aggregated.isEmpty && firstFailure != null) {
+        final waveFailure = firstFailure!;
+        return Success<_LucratividadeLoadBundle, AppFailure>(
+          _LucratividadeLoadBundle(
+            rows: const <ResumoProdutoVendaLucratividadeRow>[],
+            partialFailureAgentNames: partialFailures,
+            partialFailureDetails: partialFailureDetails,
+            allAgentsFailedUserMessage: waveFailure.userMessage,
+          ),
+        );
+      }
       return Success<_LucratividadeLoadBundle, AppFailure>(
         _LucratividadeLoadBundle(
           rows: aggregated,
           partialFailureAgentNames: partialFailures,
+          partialFailureDetails: partialFailureDetails,
         ),
       );
     });
@@ -1029,6 +1091,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       bool loadFailed,
       String? loadFailureMessage,
       List<String> lucratividadePartialFailureAgentNames,
+      List<OverviewAgentQueryFailureDetail> lucratividadePartialFailureDetails,
     })
   >
   _resolveLucratividadeTrend(
@@ -1036,12 +1099,16 @@ class OverviewRepositoryImpl implements OverviewRepository {
   ) async {
     final result = await future;
     return result.fold(
-      (bundle) => (
-        points: bundle.rows,
-        loadFailed: false,
-        loadFailureMessage: null,
-        lucratividadePartialFailureAgentNames: bundle.partialFailureAgentNames,
-      ),
+      (bundle) {
+        final totalWaveFailure = bundle.allAgentsFailedUserMessage;
+        return (
+          points: bundle.rows,
+          loadFailed: totalWaveFailure != null,
+          loadFailureMessage: totalWaveFailure,
+          lucratividadePartialFailureAgentNames: bundle.partialFailureAgentNames,
+          lucratividadePartialFailureDetails: bundle.partialFailureDetails,
+        );
+      },
       (failure) {
         AppLogger.warning(
           'Overview: lucratividade (period) query failed',
@@ -1056,6 +1123,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
           loadFailed: true,
           loadFailureMessage: failure.userMessage,
           lucratividadePartialFailureAgentNames: const <String>[],
+          lucratividadePartialFailureDetails: const <
+            OverviewAgentQueryFailureDetail
+          >[],
         );
       },
     );
@@ -1517,6 +1587,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     String? lucratividadeTrendLoadFailureMessage,
     List<String> lucratividadePartialFailureAgentNames = const <String>[],
     bool mainResumoHadPlannedTargets = false,
+    List<OverviewAgentQueryFailureDetail> partialQueryFailureDetails =
+        const <OverviewAgentQueryFailureDetail>[],
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final userBuckets = <String, _UserAggregate>{};
@@ -1646,6 +1718,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       agentIdsSkippedDueToHubPresence: agentIdsSkippedDueToHubPresence,
       agentNamesSkippedDueToHubPresence: agentNamesSkippedDueToHubPresence,
       mainResumoHadPlannedTargets: mainResumoHadPlannedTargets,
+      partialQueryFailureDetails: partialQueryFailureDetails,
     );
   }
 

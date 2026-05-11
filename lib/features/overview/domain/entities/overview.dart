@@ -1,5 +1,6 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
@@ -46,6 +47,7 @@ class Overview {
     this.agentIdsSkippedDueToHubPresence = const <String>[],
     this.agentNamesSkippedDueToHubPresence = const <String>[],
     this.mainResumoHadPlannedTargets = false,
+    this.partialQueryFailureDetails = const <OverviewAgentQueryFailureDetail>[],
   });
 
   final DateTime periodStart;
@@ -169,6 +171,10 @@ class Overview {
   /// [hasRows] so empty periods are not confused with “no token on device”.
   final bool mainResumoHadPlannedTargets;
 
+  /// Per-agent failure messages from the main payment resumo merge and/or
+  /// lucratividade-by-agent wave. Not persisted in local overview cache.
+  final List<OverviewAgentQueryFailureDetail> partialQueryFailureDetails;
+
   bool get hasRows => paymentMethods.isNotEmpty;
 
   bool get hasPartialAgentQueryFailure =>
@@ -236,6 +242,7 @@ class Overview {
     String? lucratividadeTrendLoadFailureMessage,
     List<String>? lucratividadePartialFailureAgentNames,
     bool? mainResumoHadPlannedTargets,
+    List<OverviewAgentQueryFailureDetail>? partialQueryFailureDetails,
   }) {
     return Overview(
       periodStart: periodStart ?? this.periodStart,
@@ -307,6 +314,8 @@ class Overview {
           this.agentNamesSkippedDueToHubPresence,
       mainResumoHadPlannedTargets:
           mainResumoHadPlannedTargets ?? this.mainResumoHadPlannedTargets,
+      partialQueryFailureDetails:
+          partialQueryFailureDetails ?? this.partialQueryFailureDetails,
     );
   }
 }

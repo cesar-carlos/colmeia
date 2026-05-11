@@ -63,6 +63,25 @@
   "dashboardAffectedAgentsSheetTitleOffline": "Agents reported offline by the hub",
   "dashboardMultiAgentAggregationTitle": "Multiple agents",
   "dashboardMultiAgentAggregationMessage": "This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.",
+  "overviewHomeAlertErrorDetailsButton": "Error details",
+  "overviewHomeAlertDetailsCopiedSnackbar": "Copied to clipboard",
+  "overviewHomeAlertFailureSourcePaymentResumo": "Payment summary query",
+  "overviewHomeAlertFailureSourceLucratividadePeriod": "Profitability (period) query",
+  "overviewHomeAlertDetailsUserLine": "What happened",
+  "overviewHomeAlertDetailsTechnicalLine": "Technical",
+  "overviewHomeAlertDetailsNoEntries": "No diagnostic rows are available for this alert.",
+  "overviewHomeAlertDetailsStaleIntro": "These figures come from the last successful overview stored on this device.\n\n",
+  "overviewHomeAlertErrorDetailsSemanticsLabel": "Opens a sheet with the full diagnostic text. You can select and copy it.",
+  "overviewHomeAlertDetailsCopySemanticsLabel": "Copy diagnostic text to the clipboard",
+  "overviewHomeAlertDetailsAgentSemanticSummary": "{agentName}, agent id {agentId}. {sourceLabel}. {userMessage}.",
+  "@overviewHomeAlertDetailsAgentSemanticSummary": {
+    "placeholders": {
+      "agentName": {"type": "String"},
+      "agentId": {"type": "String"},
+      "sourceLabel": {"type": "String"},
+      "userMessage": {"type": "String"}
+    }
+  },
   "dashboardPaymentSummaryTitle": "Summary by payment method",
   "dashboardPaymentSummarySubtitle": "Sales, average ticket, and share of revenue by method.",
   "dashboardPaymentSummaryEmptyTitle": "No payment methods",

@@ -85,6 +85,25 @@
   "dashboardAffectedAgentsSheetTitleOffline": "Agentes reportados como offline pelo hub",
   "dashboardMultiAgentAggregationTitle": "Varios agentes",
   "dashboardMultiAgentAggregationMessage": "Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.",
+  "overviewHomeAlertErrorDetailsButton": "Detalhes do erro",
+  "overviewHomeAlertDetailsCopiedSnackbar": "Copiado para a área de transferência",
+  "overviewHomeAlertFailureSourcePaymentResumo": "Consulta resumo por forma de pagamento",
+  "overviewHomeAlertFailureSourceLucratividadePeriod": "Consulta lucratividade (período)",
+  "overviewHomeAlertDetailsUserLine": "O que ocorreu",
+  "overviewHomeAlertDetailsTechnicalLine": "Detalhe técnico",
+  "overviewHomeAlertDetailsNoEntries": "Não há linhas de diagnóstico para este aviso.",
+  "overviewHomeAlertDetailsStaleIntro": "Estes números vêm do último resumo obtido com sucesso neste aparelho.\n\n",
+  "overviewHomeAlertErrorDetailsSemanticsLabel": "Abre uma folha com o texto de diagnóstico completo. Pode selecionar e copiar.",
+  "overviewHomeAlertDetailsCopySemanticsLabel": "Copia o texto de diagnóstico para a área de transferência",
+  "overviewHomeAlertDetailsAgentSemanticSummary": "{agentName}, identificador do agente {agentId}. {sourceLabel}. {userMessage}.",
+  "@overviewHomeAlertDetailsAgentSemanticSummary": {
+    "placeholders": {
+      "agentName": {"type": "String"},
+      "agentId": {"type": "String"},
+      "sourceLabel": {"type": "String"},
+      "userMessage": {"type": "String"}
+    }
+  },
   "dashboardPaymentSummaryTitle": "Resumo por forma de pagamento",
   "dashboardPaymentSummarySubtitle": "Detalhamento de vendas, ticket medio e participacao.",
   "dashboardPaymentSummaryEmptyTitle": "Sem formas de pagamento",

@@ -189,6 +189,53 @@ class AppLocalizationsPt extends AppLocalizations {
       'Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
 
   @override
+  String get overviewHomeAlertErrorDetailsButton => 'Detalhes do erro';
+
+  @override
+  String get overviewHomeAlertDetailsCopiedSnackbar =>
+      'Copiado para a área de transferência';
+
+  @override
+  String get overviewHomeAlertFailureSourcePaymentResumo =>
+      'Consulta resumo por forma de pagamento';
+
+  @override
+  String get overviewHomeAlertFailureSourceLucratividadePeriod =>
+      'Consulta lucratividade (período)';
+
+  @override
+  String get overviewHomeAlertDetailsUserLine => 'O que ocorreu';
+
+  @override
+  String get overviewHomeAlertDetailsTechnicalLine => 'Detalhe técnico';
+
+  @override
+  String get overviewHomeAlertDetailsNoEntries =>
+      'Não há linhas de diagnóstico para este aviso.';
+
+  @override
+  String get overviewHomeAlertDetailsStaleIntro =>
+      'Estes números vêm do último resumo obtido com sucesso neste aparelho.\n\n';
+
+  @override
+  String get overviewHomeAlertErrorDetailsSemanticsLabel =>
+      'Abre uma folha com o texto de diagnóstico completo. Pode selecionar e copiar.';
+
+  @override
+  String get overviewHomeAlertDetailsCopySemanticsLabel =>
+      'Copia o texto de diagnóstico para a área de transferência';
+
+  @override
+  String overviewHomeAlertDetailsAgentSemanticSummary(
+    String agentName,
+    String agentId,
+    String sourceLabel,
+    String userMessage,
+  ) {
+    return '$agentName, identificador do agente $agentId. $sourceLabel. $userMessage.';
+  }
+
+  @override
   String get dashboardPaymentSummaryTitle => 'Resumo por forma de pagamento';
 
   @override
@@ -3406,6 +3453,53 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get dashboardMultiAgentAggregationMessage =>
       'Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
+
+  @override
+  String get overviewHomeAlertErrorDetailsButton => 'Detalhes do erro';
+
+  @override
+  String get overviewHomeAlertDetailsCopiedSnackbar =>
+      'Copiado para a área de transferência';
+
+  @override
+  String get overviewHomeAlertFailureSourcePaymentResumo =>
+      'Consulta resumo por forma de pagamento';
+
+  @override
+  String get overviewHomeAlertFailureSourceLucratividadePeriod =>
+      'Consulta lucratividade (período)';
+
+  @override
+  String get overviewHomeAlertDetailsUserLine => 'O que ocorreu';
+
+  @override
+  String get overviewHomeAlertDetailsTechnicalLine => 'Detalhe técnico';
+
+  @override
+  String get overviewHomeAlertDetailsNoEntries =>
+      'Não há linhas de diagnóstico para este aviso.';
+
+  @override
+  String get overviewHomeAlertDetailsStaleIntro =>
+      'Estes números vêm do último resumo obtido com sucesso neste aparelho.\n\n';
+
+  @override
+  String get overviewHomeAlertErrorDetailsSemanticsLabel =>
+      'Abre uma folha com o texto de diagnóstico completo. Pode selecionar e copiar.';
+
+  @override
+  String get overviewHomeAlertDetailsCopySemanticsLabel =>
+      'Copia o texto de diagnóstico para a área de transferência';
+
+  @override
+  String overviewHomeAlertDetailsAgentSemanticSummary(
+    String agentName,
+    String agentId,
+    String sourceLabel,
+    String userMessage,
+  ) {
+    return '$agentName, identificador do agente $agentId. $sourceLabel. $userMessage.';
+  }
 
   @override
   String get dashboardPaymentSummaryTitle => 'Resumo por forma de pagamento';

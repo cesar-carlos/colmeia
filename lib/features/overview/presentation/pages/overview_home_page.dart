@@ -234,6 +234,7 @@ class _OverviewAlertsSection extends StatelessWidget {
     return Selector<OverviewController, _AlertsSlice>(
       selector: (_, c) => _AlertsSlice(
         errorMessage: c.errorMessage,
+        errorDiagnosticBody: c.errorDiagnosticBody,
         overview: c.overview,
         missingTokenNames: c.missingTokenAgentNamesNormalized,
         partialFailureNames: c.partialQueryFailureAgentNamesNormalized,
@@ -252,10 +253,11 @@ class _OverviewAlertsSection extends StatelessWidget {
           overview: slice.overview,
           missingTokenAgentNamesNormalized: slice.missingTokenNames,
           partialFailureAgentNamesNormalized: slice.partialFailureNames,
+          onOpenAgents: () => context.goTo(AppRoute.agents),
+          errorDiagnosticBody: slice.errorDiagnosticBody,
           skippedDueToHubPresenceAgentNamesNormalized:
               slice.skippedDueToHubPresenceNames,
           retryCountdownLabel: retryCountdown,
-          onOpenAgents: () => context.goTo(AppRoute.agents),
           onRetryOverview: sessionUserId == null
               ? null
               : () {
@@ -471,6 +473,7 @@ class _FilterSlice {
 class _AlertsSlice {
   const _AlertsSlice({
     required this.errorMessage,
+    required this.errorDiagnosticBody,
     required this.overview,
     required this.missingTokenNames,
     required this.partialFailureNames,
@@ -479,6 +482,7 @@ class _AlertsSlice {
   });
 
   final String? errorMessage;
+  final String? errorDiagnosticBody;
   final Overview? overview;
   final List<String> missingTokenNames;
   final List<String> partialFailureNames;
@@ -495,6 +499,7 @@ class _AlertsSlice {
     if (identical(this, other)) return true;
     return other is _AlertsSlice &&
         errorMessage == other.errorMessage &&
+        errorDiagnosticBody == other.errorDiagnosticBody &&
         identical(overview, other.overview) &&
         retryRemainingSeconds == other.retryRemainingSeconds &&
         listEquals(missingTokenNames, other.missingTokenNames) &&
@@ -508,6 +513,7 @@ class _AlertsSlice {
   @override
   int get hashCode => Object.hash(
     errorMessage,
+    errorDiagnosticBody,
     overview,
     retryRemainingSeconds,
     Object.hashAll(missingTokenNames),

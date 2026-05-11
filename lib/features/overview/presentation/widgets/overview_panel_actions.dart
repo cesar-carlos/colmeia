@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,9 @@ class OverviewPanelActions extends StatelessWidget {
     required this.manageAgentsLabel,
     this.onRetry,
     this.onManageAgents,
+    this.onShowDetails,
+    this.detailsLabel,
+    this.detailsSemanticsLabel,
     this.retryLabel,
     this.primaryLabel,
     this.retryDisabledLabel,
@@ -17,6 +21,11 @@ class OverviewPanelActions extends StatelessWidget {
 
   final VoidCallback? onRetry;
   final VoidCallback? onManageAgents;
+  final VoidCallback? onShowDetails;
+  final String? detailsLabel;
+
+  /// Screen reader label for [onShowDetails]. Defaults to [detailsLabel].
+  final String? detailsSemanticsLabel;
   final String? retryLabel;
   final String? primaryLabel;
   final String manageAgentsLabel;
@@ -30,6 +39,11 @@ class OverviewPanelActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(
+      onShowDetails == null ||
+          (detailsLabel != null && detailsLabel!.trim().isNotEmpty),
+      'detailsLabel is required and non-empty when onShowDetails is set',
+    );
     assert(
       onRetry == null ||
           retryDisabledLabel != null ||
@@ -47,6 +61,14 @@ class OverviewPanelActions extends StatelessWidget {
           AppPrimaryButton(
             label: disabledLabel ?? primaryLabel ?? retryLabel!,
             onPressed: disabledLabel != null ? null : onRetry,
+          ),
+        if (onShowDetails != null &&
+            detailsLabel != null &&
+            detailsLabel!.trim().isNotEmpty)
+          AppFlatButton(
+            label: detailsLabel!.trim(),
+            onPressed: onShowDetails,
+            semanticsLabel: (detailsSemanticsLabel ?? detailsLabel)!.trim(),
           ),
         if (onManageAgents != null)
           (!showRetryButton

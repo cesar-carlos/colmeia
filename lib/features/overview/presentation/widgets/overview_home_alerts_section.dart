@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_alert_detail_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_panel_actions.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -9,6 +10,21 @@ import 'package:colmeia/shared/widgets/actions/app_text_action_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:flutter/material.dart';
+
+String _overviewAlertsBulletAgentList(List<String> names) {
+  if (names.isEmpty) {
+    return '';
+  }
+  return names.map((n) => '- $n').join('\n');
+}
+
+String _overviewAlertsComposeLoadError(String msg, String? diagnostic) {
+  final d = diagnostic?.trim();
+  if (d == null || d.isEmpty) {
+    return msg;
+  }
+  return '$msg\n\n$d';
+}
 
 /// Single surface for overview banners: same logical order as the previous
 /// stacked [AppInlineErrorPanel] list.
@@ -20,6 +36,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
     required this.missingTokenAgentNamesNormalized,
     required this.partialFailureAgentNamesNormalized,
     required this.onOpenAgents,
+    this.errorDiagnosticBody,
     this.skippedDueToHubPresenceAgentNamesNormalized = const <String>[],
     this.onRetryOverview,
     this.retryCountdownLabel,
@@ -31,6 +48,8 @@ class OverviewHomeAlertsSection extends StatelessWidget {
   final Overview? overview;
   final List<String> missingTokenAgentNamesNormalized;
   final List<String> partialFailureAgentNamesNormalized;
+  final VoidCallback onOpenAgents;
+  final String? errorDiagnosticBody;
 
   /// Display names for the dedicated "agentes offline" banner — agents
   /// that DO have a stored client_token but were skipped at dispatch
@@ -39,7 +58,6 @@ class OverviewHomeAlertsSection extends StatelessWidget {
   /// only rendered when this list is non-empty AND the underlying
   /// [Overview.hasAgentsSkippedDueToHubPresence] flag is true.
   final List<String> skippedDueToHubPresenceAgentNamesNormalized;
-  final VoidCallback onOpenAgents;
   final VoidCallback? onRetryOverview;
 
   /// Label rendered on the "Retry" button while the overview controller
@@ -93,6 +111,19 @@ class OverviewHomeAlertsSection extends StatelessWidget {
           actions: OverviewPanelActions(
             onRetry: onRetryOverview,
             onManageAgents: onOpenAgents,
+            onShowDetails: () => unawaited(
+              showOverviewAlertPlainDetailSheet(
+                context: context,
+                title: l10n.overviewLoadErrorTitle,
+                body: _overviewAlertsComposeLoadError(
+                  msg,
+                  errorDiagnosticBody,
+                ),
+              ),
+            ),
+            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
+            detailsSemanticsLabel:
+                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
             retryLabel: l10n.appInlineErrorRetry,
             // Render the button as disabled with a countdown while the
             // controller's `RetryAfterGate` is closed. The callback
@@ -124,12 +155,33 @@ class OverviewHomeAlertsSection extends StatelessWidget {
             onManageAgents: onOpenAgents,
             primaryLabel: l10n.clientAgentsPageTitle,
             manageAgentsLabel: l10n.clientAgentsPageTitle,
+            onShowDetails: () {
+              final parts = <String>[l10n.dashboardSetupRequiredMessage];
+              final bullets = _overviewAlertsBulletAgentList(
+                missingTokenAgentNamesNormalized,
+              );
+              if (bullets.isNotEmpty) {
+                parts
+                  ..add('')
+                  ..add(bullets);
+              }
+              unawaited(
+                showOverviewAlertPlainDetailSheet(
+                  context: context,
+                  title: l10n.dashboardSetupRequiredTitle,
+                  body: parts.join('\n'),
+                ),
+              );
+            },
+            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
+            detailsSemanticsLabel:
+                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
           ),
         ),
       );
     }
 
-    if (o?.isStaleCache == true) {
+    if (o != null && o.isStaleCache) {
       gapIfNeeded();
       children.add(
         AppInlineErrorPanel(
@@ -138,9 +190,35 @@ class OverviewHomeAlertsSection extends StatelessWidget {
           message: l10n.overviewStaleCacheMessage,
           actions: OverviewPanelActions(
             onRetry: onRetryOverview,
-            onManageAgents: o?.hasMissingClientToken == true
-                ? onOpenAgents
-                : null,
+            onManageAgents: o.hasMissingClientToken ? onOpenAgents : null,
+            onShowDetails: () {
+              final parts = <String>[
+                l10n.overviewHomeAlertDetailsStaleIntro.trimRight(),
+                l10n.overviewStaleCacheTitle,
+                l10n.overviewStaleCacheMessage,
+              ];
+              if (o.hasMissingClientToken) {
+                final bullets = _overviewAlertsBulletAgentList(
+                  missingTokenAgentNamesNormalized,
+                );
+                if (bullets.isNotEmpty) {
+                  parts
+                    ..add('')
+                    ..add(l10n.dashboardMissingClientTokenTitle)
+                    ..add(bullets);
+                }
+              }
+              unawaited(
+                showOverviewAlertPlainDetailSheet(
+                  context: context,
+                  title: l10n.overviewStaleCacheTitle,
+                  body: parts.join('\n'),
+                ),
+              );
+            },
+            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
+            detailsSemanticsLabel:
+                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
             retryLabel: l10n.appInlineErrorRetry,
             manageAgentsLabel: l10n.clientAgentsPageTitle,
           ),
@@ -166,6 +244,27 @@ class OverviewHomeAlertsSection extends StatelessWidget {
             onManageAgents: onOpenAgents,
             primaryLabel: l10n.clientAgentsPageTitle,
             manageAgentsLabel: l10n.clientAgentsPageTitle,
+            onShowDetails: () {
+              final parts = <String>[l10n.dashboardMissingClientTokenMessage];
+              final bullets = _overviewAlertsBulletAgentList(
+                missingTokenAgentNamesNormalized,
+              );
+              if (bullets.isNotEmpty) {
+                parts
+                  ..add('')
+                  ..add(bullets);
+              }
+              unawaited(
+                showOverviewAlertPlainDetailSheet(
+                  context: context,
+                  title: l10n.dashboardMissingClientTokenTitle,
+                  body: parts.join('\n'),
+                ),
+              );
+            },
+            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
+            detailsSemanticsLabel:
+                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
           ),
         ),
       );
@@ -188,6 +287,27 @@ class OverviewHomeAlertsSection extends StatelessWidget {
           actions: OverviewPanelActions(
             onRetry: onRetryOverview,
             onManageAgents: onOpenAgents,
+            onShowDetails: () {
+              final parts = <String>[l10n.dashboardAgentsOfflineMessage];
+              final bullets = _overviewAlertsBulletAgentList(
+                skippedDueToHubPresenceAgentNamesNormalized,
+              );
+              if (bullets.isNotEmpty) {
+                parts
+                  ..add('')
+                  ..add(bullets);
+              }
+              unawaited(
+                showOverviewAlertPlainDetailSheet(
+                  context: context,
+                  title: l10n.dashboardAgentsOfflineTitle,
+                  body: parts.join('\n'),
+                ),
+              );
+            },
+            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
+            detailsSemanticsLabel:
+                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
             retryLabel: l10n.appInlineErrorRetry,
             manageAgentsLabel: l10n.clientAgentsPageTitle,
           ),
@@ -213,6 +333,39 @@ class OverviewHomeAlertsSection extends StatelessWidget {
           actions: OverviewPanelActions(
             onRetry: onRetryOverview,
             onManageAgents: onOpenAgents,
+            onShowDetails: () {
+              if (o.partialQueryFailureDetails.isNotEmpty) {
+                unawaited(
+                  showOverviewPartialFailureDetailsSheet(
+                    context: context,
+                    l10n: l10n,
+                    details: o.partialQueryFailureDetails,
+                  ),
+                );
+                return;
+              }
+              final parts = <String>[
+                l10n.dashboardPartialAgentQueriesMessage,
+              ];
+              final bullets = _overviewAlertsBulletAgentList(
+                partialFailureAgentNamesNormalized,
+              );
+              if (bullets.isNotEmpty) {
+                parts
+                  ..add('')
+                  ..add(bullets);
+              }
+              unawaited(
+                showOverviewAlertPlainDetailSheet(
+                  context: context,
+                  title: sheetTitlePartialFailure,
+                  body: parts.join('\n'),
+                ),
+              );
+            },
+            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
+            detailsSemanticsLabel:
+                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
             retryLabel: l10n.appInlineErrorRetry,
             manageAgentsLabel: l10n.clientAgentsPageTitle,
           ),

@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_r
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
@@ -54,6 +55,7 @@ class OverviewController extends ChangeNotifier {
   bool _isLoadingInitial = false;
   bool _isRefreshing = false;
   String? _errorMessage;
+  String? _errorDiagnosticBody;
   String? _requestedOverviewSignature;
   String? _loadedOverviewSignature;
   int _loadGeneration = 0;
@@ -146,6 +148,9 @@ class OverviewController extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
   bool get hasContent => _overview != null;
   String? get errorMessage => _errorMessage;
+
+  /// Technical lines for the last full overview load failure (no stack trace).
+  String? get errorDiagnosticBody => _errorDiagnosticBody;
   Set<OverviewProgressiveSection> get completedOverviewSections =>
       _completedOverviewSections;
 
@@ -315,6 +320,7 @@ class OverviewController extends ChangeNotifier {
       _completedOverviewSections = const <OverviewProgressiveSection>{};
     }
     _errorMessage = null;
+    _errorDiagnosticBody = null;
     _notifyListenersIfAlive();
 
     if (loadingMode == OverviewLoadingMode.progressive) {
@@ -347,6 +353,8 @@ class OverviewController extends ChangeNotifier {
         OverviewProgressiveSection.values,
       );
       _loadedOverviewSignature = signature;
+      _errorMessage = null;
+      _errorDiagnosticBody = null;
       await _updateAvailableAgents(overview, userId);
       AppLogger.info(
         'Overview loaded in controller',
@@ -375,6 +383,7 @@ class OverviewController extends ChangeNotifier {
           _retryAfterGate.arm(retryAfter);
         }
         _errorMessage = failureMessageBuilder(failure);
+        _errorDiagnosticBody = overviewAppFailureDiagnosticBody(failure);
         AppLogger.warning(
           'Overview load failed in controller',
           context: <String, Object?>{
@@ -425,6 +434,7 @@ class OverviewController extends ChangeNotifier {
         _overview = snapshot.overview;
         _completedOverviewSections = snapshot.completedSections;
         _errorMessage = null;
+        _errorDiagnosticBody = null;
         if (snapshot.isFinal) {
           _loadedOverviewSignature = signature;
           await _updateAvailableAgents(snapshot.overview, userId);
@@ -481,6 +491,7 @@ class OverviewController extends ChangeNotifier {
       _retryAfterGate.arm(retryAfter);
     }
     _errorMessage = failureMessageBuilder(failure);
+    _errorDiagnosticBody = overviewAppFailureDiagnosticBody(failure);
     AppLogger.warning(
       'Overview load failed in controller',
       context: <String, Object?>{

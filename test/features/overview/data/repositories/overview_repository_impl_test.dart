@@ -32,6 +32,7 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/data/repositories/overview_repository_impl.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
@@ -1052,6 +1053,142 @@ void main() {
         );
         check(overview.monthlyParcelTrendLoadFailed).isFalse();
         check(overview.monthlyParcelTrend).isNotEmpty();
+      },
+    );
+
+    test(
+      'missing-token cache fallback keeps fresh resumo report diagnostic '
+      'metadata from participants',
+      () async {
+        when(
+          () => local.readOverview(userId: any(named: 'userId')),
+        ).thenAnswer((_) async => _cachedModel());
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              consideredApprovedAgentCount: 1,
+              missingClientTokenTargets: <AgentQueryTarget>[
+                _target(
+                  'agent-42',
+                  name: 'Agente cacheado',
+                  clientToken: null,
+                ),
+              ],
+              participants: <AgentQueryExecutionParticipant<
+                ResumoParcelaFormaPagamentoRow
+              >>[
+                _failureParticipant(
+                  agentId: 'agent-42',
+                  displayName: 'Agente cacheado',
+                  failure: const ValidationFailure(
+                    message: 'rpc rejected',
+                    userMessage: 'Consulta indisponível para este agente.',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.isStaleCache).isTrue();
+        check(overview.kpis.totalSalesCount).equals(50);
+        check(overview.partialQueryFailureDetails).isNotEmpty();
+        check(overview.partialQueryFailureDetails.single.agentId).equals(
+          'agent-42',
+        );
+        check(overview.agentIdsExcludedFromQueryFailure.single).equals(
+          'agent-42',
+        );
+      },
+    );
+
+    test(
+      'when every lucratividade-by-agent query fails, overview still records '
+      'per-agent diagnostics and chart load-failed state',
+      () async {
+        when(
+          () => loadResumoProdutoVendaLucratividade(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+            filter: any(named: 'filter'),
+            clientToken: any(named: 'clientToken'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: any(
+              named: 'hubConnectedFromApprovedCatalogRow',
+            ),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const Failure<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
+                RpcFailure(
+                  message: 'bridge error',
+                  userMessage: 'Não foi possível carregar lucratividade.',
+                  rpcCode: -1,
+                  retryable: false,
+                ),
+              ),
+        );
+
+        _stubLoad(
+          resumoAcrossAgentsRepository,
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>,
+            AppFailure
+          >(
+            _report(
+              consideredApprovedAgentCount: 1,
+              plannedTargets: <AgentQueryTarget>[
+                _target('agent-42', name: 'Loja Centro'),
+              ],
+              participants: <AgentQueryExecutionParticipant<
+                ResumoParcelaFormaPagamentoRow
+              >>[
+                _successParticipant(
+                  agentId: 'agent-42',
+                  displayName: 'Loja Centro',
+                  rows: <ResumoParcelaFormaPagamentoRow>[
+                    _row(
+                      userName: 'Caixa',
+                      code: 'PIX',
+                      description: 'Pix',
+                      salesCount: 1,
+                      amount: 100,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final repository = makeRepository();
+        final result = await repository.loadOverview(userId: 'user-1');
+
+        check(result.isSuccess()).isTrue();
+        final overview = result.getOrThrow();
+        check(overview.lucratividadeTrendLoadFailed).isTrue();
+        check(overview.lucratividadeTrendLoadFailureMessage).equals(
+          'Não foi possível carregar lucratividade.',
+        );
+        check(overview.hasLucratividadePartialFailure).isTrue();
+        check(overview.partialQueryFailureDetails).isNotEmpty();
+        check(
+          overview.partialQueryFailureDetails.any(
+            (d) => d.source == OverviewAgentQueryFailureSource.lucratividadePeriod,
+          ),
+        ).isTrue();
       },
     );
 
