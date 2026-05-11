@@ -169,4 +169,57 @@ void main() {
       );
     },
   );
+
+  test(
+    'agents:command_response correlates when only top-level JSON-RPC id is '
+    'present (hub batch / plug-style envelope)',
+    () async {
+      const rpcId = 'rpc-jsonrpc-id-only';
+      final body = <String, Object?>{
+        'agentId': 'agent-1',
+        'command': <String, Object?>{
+          'jsonrpc': '2.0',
+          'method': 'sql.executeBatch',
+          'id': rpcId,
+          'params': const <String, Object?>{
+            'commands': <Map<String, Object?>>[
+              <String, Object?>{'sql': 'SELECT 1'},
+            ],
+          },
+        },
+      };
+
+      final future = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: body,
+        rpcId: rpcId,
+        timeout: const Duration(seconds: 2),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      check(commandResponseHandler).isNotNull();
+
+      final expected = <String, dynamic>{
+        'mode': 'bridge',
+        'agentId': 'agent-1',
+        'id': rpcId,
+        'response': <String, dynamic>{
+          'type': 'batch',
+          'success': true,
+          'items': <Object?>[
+            <String, dynamic>{
+              'id': rpcId,
+              'success': true,
+              'result': <String, dynamic>{'rows': <Object?>[]},
+            },
+          ],
+        },
+      };
+
+      commandResponseHandler!(expected);
+
+      final got = await future;
+      check(got).equals(expected);
+    },
+  );
 }

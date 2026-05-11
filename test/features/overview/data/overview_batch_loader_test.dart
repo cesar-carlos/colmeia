@@ -118,7 +118,7 @@ void main() {
         check(request.agentId).equals('agent-1');
         check(request.clientToken).equals('token-1');
         check(request.requestingUserId).equals('user-1');
-        check(request.useRelay).isTrue();
+        check(request.useRelay).isFalse();
         check(request.bridgeTimeoutMs).equals(
           OverviewBatchLoader.overviewBatchBridgeTimeoutMs,
         );

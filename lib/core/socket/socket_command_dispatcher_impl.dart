@@ -592,13 +592,27 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     final candidates = <Object?>[
       map['rpcId'],
       map['requestId'],
+      // JSON-RPC 2.0 request id echo (plug hubs often mirror `command.id`
+      // here; `sql.executeBatch` batch envelopes may omit `rpcId`/`requestId`).
+      map['id'],
       _read(map, const <String>['response', 'item', 'id']),
       _read(map, const <String>['command', 'id']),
     ];
     for (final candidate in candidates) {
-      if (candidate is String && candidate.isNotEmpty) {
-        return candidate;
+      final resolved = _coerceRpcId(candidate);
+      if (resolved != null) {
+        return resolved;
       }
+    }
+    return null;
+  }
+
+  static String? _coerceRpcId(Object? candidate) {
+    if (candidate is String && candidate.isNotEmpty) {
+      return candidate;
+    }
+    if (candidate is num) {
+      return candidate.toString();
     }
     return null;
   }

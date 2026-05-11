@@ -394,6 +394,7 @@ void main() {
       check(capturedRequest.agentId).equals('agent-1');
       check(capturedRequest.clientToken).equals('token-1');
       check(capturedRequest.commands.length).equals(7);
+      check(capturedRequest.useRelay).isFalse();
     });
 
     test(

@@ -250,6 +250,9 @@ class OverviewBatchLoader {
       dailyTotalFilter: dailyTotalFilter,
       includeLucratividadeMensal: includeLucratividadeMensal,
     );
+    // `sql.executeBatch` is a unary bridge call. Keep the overview on the
+    // configured base transport (REST or `agents:command`) until relay batch
+    // has the same real-world timeout behaviour for the full home command set.
     final result = await _agentQueriesRepository.executeSqlBatch(
       AgentSqlExecuteBatchRequest(
         agentId: target.agentId,
@@ -265,7 +268,6 @@ class OverviewBatchLoader {
           maxRows: overviewBatchMaxRows,
           transaction: false,
         ),
-        useRelay: true,
       ),
     );
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;

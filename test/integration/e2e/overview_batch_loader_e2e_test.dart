@@ -1,4 +1,5 @@
 @Tags(['e2e'])
+@Timeout(Duration(minutes: 7))
 library;
 
 import 'package:colmeia/core/config/app_environment.dart';
@@ -97,7 +98,7 @@ void main() {
               );
               expect(
                 countingRepository.lastBatchRequest?.useRelay,
-                isTrue,
+                isFalse,
               );
               expect(success.targetResults.length, 1);
               expect(success.plan.plannedTargets.length, 1);
