@@ -34,6 +34,8 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_diario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_diario_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_use_case.dart';
@@ -80,6 +82,8 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_di
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_diario_vendas_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_vendas_municipio_filial_diario_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_vendas_municipio_filial_diario_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_vendas_municipio_filial_periodo_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_vendas_municipio_filial_periodo_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
@@ -95,6 +99,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_f
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
@@ -127,6 +132,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_diario_vendas_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_diario_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_diario_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_periodo_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_periodo_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository.dart';
@@ -175,6 +182,8 @@ void _registerAgentQueryTransport(GetIt getIt) {
                 context: <String, Object?>{
                   'triggerCode': trigger.code,
                   'triggerMessage': trigger.message,
+                  'agentBridgeTransport':
+                      AppEnvironment.agentBridgeTransport.name,
                 },
               ),
             );
@@ -496,6 +505,19 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
       getIt<ResumoTotalVendasMunicipioFilialDiarioRepository>(),
     ),
   );
+
+  _registerSingle<
+    ResumoTotalVendasMunicipioFilialPeriodoRepository,
+    LoadResumoTotalVendasMunicipioFilialPeriodoUseCase
+  >(
+    getIt,
+    repo: () => ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoTotalVendasMunicipioFilialPeriodoUseCase(
+      getIt<ResumoTotalVendasMunicipioFilialPeriodoRepository>(),
+    ),
+  );
 }
 
 void _registerAcrossAgentQueryRepositories(GetIt getIt) {
@@ -549,6 +571,13 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
       AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>
     >(
       () => AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>(
+        mergeAllConcurrency: 8,
+      ),
+    )
+    ..registerLazySingleton<
+      AgentQueryExecutor<ResumoTotalVendasMunicipioFilialPeriodoRow>
+    >(
+      () => AgentQueryExecutor<ResumoTotalVendasMunicipioFilialPeriodoRow>(
         mergeAllConcurrency: 8,
       ),
     )
@@ -707,6 +736,26 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
       () => LoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase(
         getIt<ResumoTotalVendasMunicipioFilialDiarioAcrossAgentsRepository>(),
       ),
+    )
+    ..registerLazySingleton<
+      ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepository
+    >(
+      () => ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor:
+            getIt<
+              AgentQueryExecutor<ResumoTotalVendasMunicipioFilialPeriodoRow>
+            >(),
+        loadResumo: getIt<LoadResumoTotalVendasMunicipioFilialPeriodoUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<
+      LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
+    >(
+      () => LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase(
+        getIt<ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepository>(),
+      ),
     );
 }
 
@@ -857,7 +906,8 @@ AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
           compression: AppEnvironment.socketRelayPayloadFrameCompression,
         );
 
-  final maxBufferedRows = AppEnvironment.socketStreamSqlCollectorMaxBufferedRows;
+  final maxBufferedRows =
+      AppEnvironment.socketStreamSqlCollectorMaxBufferedRows;
   final collector = maxBufferedRows > 0
       ? BridgeShapedSqlExecuteCollector(maxBufferedRows: maxBufferedRows)
       : const BridgeShapedSqlExecuteCollector();

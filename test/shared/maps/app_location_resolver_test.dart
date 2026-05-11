@@ -18,10 +18,17 @@ void main() {
       );
       expect(
         AppLocationLookupNormalizer.cacheKeyForCityUf(
-          city: ' Sao José do Rio Preto ',
+          city: ' S\u00E3o Jos\u00E9 do Rio Preto ',
           uf: ' sp ',
         ),
         'location_geocode_city_uf_SAO_JOSE_DO_RIO_PRETO_SP',
+      );
+      expect(
+        AppLocationLookupNormalizer.cacheKeyForCityUf(
+          city: ' Tangar\u00E1 da Serra ',
+          uf: 'mt',
+        ),
+        'location_geocode_city_uf_TANGARA_DA_SERRA_MT',
       );
       expect(
         AppLocationLookupNormalizer.cacheKeyForUf(' mt '),
@@ -34,6 +41,14 @@ void main() {
       expect(
         AppLocationLookupNormalizer.cacheKeyForIbgeMunicipality('1100015'),
         'location_geocode_ibge_1100015',
+      );
+      expect(
+        AppLocationLookupNormalizer.cacheKeyForIbgeMunicipality('5107958.0'),
+        'location_geocode_ibge_5107958',
+      );
+      expect(
+        AppLocationLookupNormalizer.cacheKeyForIbgeMunicipality('5107958,0'),
+        'location_geocode_ibge_5107958',
       );
     });
 
@@ -129,6 +144,10 @@ void main() {
       );
       final centroid = index.lookupByIbgeCode('1100015');
       final newestMunicipality = index.lookupByIbgeCode('5101837');
+      final tangara = index.lookupByCityUf(
+        city: 'Tangar\u00E1 da Serra',
+        uf: 'MT',
+      );
       final missing = index.lookupByIbgeCode('9999999');
 
       expect(AppBrazilMunicipalityCentroidIndex.sourceLicense, 'MIT');
@@ -157,6 +176,7 @@ void main() {
       expect(newestMunicipality?.name, startsWith('Boa Esperan'));
       expect(newestMunicipality?.uf, 'MT');
       expect(newestMunicipality?.region, 'Centro-Oeste');
+      expect(tangara?.ibgeCode, '5107958');
       expect(index.values.every((centroid) => centroid.point.isValid), isTrue);
       expect(index.values.every((centroid) => centroid.uf.length == 2), isTrue);
       expect(missing, isNull);

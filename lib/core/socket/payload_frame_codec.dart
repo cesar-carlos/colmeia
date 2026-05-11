@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_signer.dart';
+import 'package:flutter/foundation.dart' show compute;
 
 /// Result of encoding a logical JSON value into a [PayloadFrame].
 class PayloadFrameEncodeResult {
@@ -44,17 +45,31 @@ class PayloadFrameDecodeException implements Exception {
 /// - Inbound frames are validated against `maxPayloadBytes` and a max
 ///   inflation ratio, mirroring `PAYLOAD_FRAME_MAX_INFLATION_RATIO` on the
 ///   server.
+/// - [decodeJsonAsync] can offload **gzip decode**, large **gzip encode**
+///   ([encodeJsonAsync]), and large **jsonDecode** to worker isolates (see
+///   [workerIsolatesEnabled] and the `*IsolateThresholdBytes` fields).
 ///
 /// Defaults match the production hub:
 ///
 /// - 1 KiB compression threshold (`COMPRESSION_THRESHOLD` snippet).
 /// - 10 MiB hard cap on both compressed and decoded sizes.
 /// - 20× inflation ceiling for gzip payloads.
+///
+/// Large payloads may use [decodeJsonAsync] / [encodeJsonAsync] so gzip and
+/// JSON parsing can run off the UI isolate when thresholds are met and
+/// [workerIsolatesEnabled] is true.
 class PayloadFrameCodec {
   const PayloadFrameCodec({
     this.compressionThresholdBytes = defaultCompressionThresholdBytes,
     this.maxPayloadBytes = defaultMaxPayloadBytes,
     this.maxInflationRatio = defaultMaxInflationRatio,
+    this.workerIsolatesEnabled = true,
+    this.gzipDecodeIsolateThresholdBytes =
+        defaultGzipDecodeIsolateThresholdBytes,
+    this.gzipEncodeIsolateThresholdBytes =
+        defaultGzipEncodeIsolateThresholdBytes,
+    this.jsonDecodeIsolateThresholdBytes =
+        defaultJsonDecodeIsolateThresholdBytes,
     this.signer,
     this.verifier,
     this.requireSignature = false,
@@ -100,9 +115,51 @@ class PayloadFrameCodec {
   /// 20× — server-side gzip inflation guard.
   static const int defaultMaxInflationRatio = 20;
 
+  /// When inbound [PayloadFrame.cmp] is gzip and `payload.length` is at or
+  /// above this threshold, [decodeJsonAsync] runs `gzip.decode` via Flutter
+  /// `compute` instead of blocking the UI isolate. Sync [decodeJson] always
+  /// decodes on the calling isolate (handshake-sized payloads).
+  static const int defaultGzipDecodeIsolateThresholdBytes = 16 * 1024;
+
+  /// Raw JSON UTF-8 size at or above this value may use a worker isolate for
+  /// outbound `gzip.encode` when [workerIsolatesEnabled] is true.
+  static const int defaultGzipEncodeIsolateThresholdBytes = 64 * 1024;
+
+  /// Materialised JSON UTF-8 size at or above this value may use a worker
+  /// isolate for `jsonDecode` in [decodeJsonAsync].
+  static const int defaultJsonDecodeIsolateThresholdBytes = 256 * 1024;
+
   final int compressionThresholdBytes;
   final int maxPayloadBytes;
   final int maxInflationRatio;
+
+  /// When `false`, no worker-isolate paths run (gzip encode/decode, JSON
+  /// decode) regardless of thresholds.
+  final bool workerIsolatesEnabled;
+
+  /// See [defaultGzipDecodeIsolateThresholdBytes].
+  final int gzipDecodeIsolateThresholdBytes;
+
+  /// See [defaultGzipEncodeIsolateThresholdBytes].
+  final int gzipEncodeIsolateThresholdBytes;
+
+  /// See [defaultJsonDecodeIsolateThresholdBytes].
+  final int jsonDecodeIsolateThresholdBytes;
+
+  /// Whether [decodeJsonAsync] would use a worker isolate for gzip inflation
+  /// on this [frame], given the codec configuration (for metrics).
+  bool usesWorkerIsolateForGzipDecode(PayloadFrame frame) {
+    return workerIsolatesEnabled &&
+        frame.cmp == PayloadFrame.compressionGzip &&
+        frame.payload.length >= gzipDecodeIsolateThresholdBytes;
+  }
+
+  /// Whether [decodeJsonAsync] would use a worker isolate for `jsonDecode`
+  /// after bytes are materialised (for metrics; uses [PayloadFrame.originalSize]).
+  bool usesWorkerIsolateForJsonDecode(PayloadFrame frame) {
+    return workerIsolatesEnabled &&
+        frame.originalSize >= jsonDecodeIsolateThresholdBytes;
+  }
 
   /// Encodes [data] with auto-gzip selection.
   ///
@@ -134,6 +191,67 @@ class PayloadFrameCodec {
       }
     }
 
+    return _finishEncode(
+      encoded: encoded,
+      wire: wire,
+      cmp: cmp,
+      requestId: requestId,
+      traceId: traceId,
+      signature: signature,
+    );
+  }
+
+  /// Same contract as [encodeJson], but may run `gzip.encode` on a worker
+  /// isolate when the raw JSON is at least [gzipEncodeIsolateThresholdBytes]
+  /// and [workerIsolatesEnabled] is true.
+  Future<PayloadFrameEncodeResult> encodeJsonAsync(
+    Object? data, {
+    String? requestId,
+    String? traceId,
+    PayloadFrameSignature? signature,
+  }) async {
+    final encoded = Uint8List.fromList(utf8.encode(jsonEncode(data)));
+    if (encoded.length > maxPayloadBytes) {
+      throw PayloadFrameDecodeException(
+        'payload_too_large',
+        'JSON UTF-8 size ${encoded.length} exceeds cap $maxPayloadBytes',
+      );
+    }
+
+    var wire = encoded;
+    var cmp = PayloadFrame.compressionNone;
+    if (encoded.length >= compressionThresholdBytes) {
+      final Uint8List compressed;
+      if (workerIsolatesEnabled &&
+          encoded.length >= gzipEncodeIsolateThresholdBytes) {
+        compressed = await compute(_payloadFrameCodecGzipEncode, encoded);
+      } else {
+        compressed = Uint8List.fromList(gzip.encode(encoded));
+      }
+      if (compressed.length < encoded.length) {
+        wire = compressed;
+        cmp = PayloadFrame.compressionGzip;
+      }
+    }
+
+    return _finishEncode(
+      encoded: encoded,
+      wire: wire,
+      cmp: cmp,
+      requestId: requestId,
+      traceId: traceId,
+      signature: signature,
+    );
+  }
+
+  PayloadFrameEncodeResult _finishEncode({
+    required Uint8List encoded,
+    required Uint8List wire,
+    required String cmp,
+    String? requestId,
+    String? traceId,
+    PayloadFrameSignature? signature,
+  }) {
     // Sign **after** the gzip pass so the HMAC covers the exact bytes
     // the hub will ingest — `validateFrameSignature` on the hub side
     // hashes the wire payload, not the JSON. Caller-provided signature
@@ -180,7 +298,33 @@ class PayloadFrameCodec {
   ///   tampering / truncated transfers);
   /// - gzip output exceeds [maxInflationRatio] times the compressed size;
   /// - the inner UTF-8 stream is not valid JSON.
+  ///
+  /// Gzip inflation always runs on the **calling** isolate. For large inbound
+  /// gzip frames use [decodeJsonAsync].
   Object? decodeJson(PayloadFrame frame) {
+    _assertFrameDecodePreconditions(frame);
+    final jsonBytes = _materializeJsonBytesSync(frame);
+    return _jsonDecodeUtf8(jsonBytes);
+  }
+
+  /// Same contract as [decodeJson], but may run `gzip.decode` on a worker
+  /// isolate when `cmp == gzip` and the compressed payload length is at
+  /// least [gzipDecodeIsolateThresholdBytes].
+  Future<Object?> decodeJsonAsync(PayloadFrame frame) async {
+    _assertFrameDecodePreconditions(frame);
+    final jsonBytes = await _materializeJsonBytesAsync(frame);
+    if (workerIsolatesEnabled &&
+        jsonBytes.length >= jsonDecodeIsolateThresholdBytes) {
+      try {
+        return await compute(_payloadFrameCodecJsonDecodeUtf8, jsonBytes);
+      } on FormatException catch (e) {
+        throw PayloadFrameDecodeException('json_decode_failed', e.message);
+      }
+    }
+    return _jsonDecodeUtf8(jsonBytes);
+  }
+
+  void _assertFrameDecodePreconditions(PayloadFrame frame) {
     if (frame.schemaVersion != PayloadFrame.supportedSchemaVersion) {
       throw PayloadFrameDecodeException(
         'unsupported_schema_version',
@@ -227,15 +371,10 @@ class PayloadFrameCodec {
         'original size ${frame.originalSize} exceeds cap $maxPayloadBytes',
       );
     }
-
-    // Verify the signature **before** the gzip pass: HMAC covers the
-    // wire bytes the hub actually emitted (and we already validated
-    // size/shape above), so cheap rejection happens before we burn
-    // CPU on inflation. Skips silently when the codec was built
-    // without a verifier — same path as the legacy unsigned mode.
     _verifySignatureIfConfigured(frame);
+  }
 
-    Uint8List jsonBytes;
+  Uint8List _materializeJsonBytesSync(PayloadFrame frame) {
     if (frame.cmp == PayloadFrame.compressionGzip) {
       if (frame.compressedSize > 0 &&
           frame.originalSize / frame.compressedSize > maxInflationRatio) {
@@ -245,6 +384,67 @@ class PayloadFrameCodec {
               '> max $maxInflationRatio',
         );
       }
+      try {
+        final jsonBytes = Uint8List.fromList(gzip.decode(frame.payload));
+        if (jsonBytes.length != frame.originalSize) {
+          throw PayloadFrameDecodeException(
+            'original_size_mismatch',
+            'reported ${frame.originalSize}, actual ${jsonBytes.length}',
+          );
+        }
+        return jsonBytes;
+      } on FormatException catch (e) {
+        throw PayloadFrameDecodeException(
+          'gzip_decode_failed',
+          e.message,
+        );
+      } on PayloadFrameDecodeException {
+        rethrow;
+      } on Object catch (e) {
+        throw PayloadFrameDecodeException(
+          'gzip_decode_failed',
+          e.toString(),
+        );
+      }
+    }
+    if (frame.payload.length != frame.originalSize) {
+      throw PayloadFrameDecodeException(
+        'original_size_mismatch',
+        'reported ${frame.originalSize}, actual ${frame.payload.length}',
+      );
+    }
+    return frame.payload;
+  }
+
+  Future<Uint8List> _materializeJsonBytesAsync(PayloadFrame frame) async {
+    if (frame.cmp != PayloadFrame.compressionGzip) {
+      return _materializeJsonBytesSync(frame);
+    }
+    if (frame.compressedSize > 0 &&
+        frame.originalSize / frame.compressedSize > maxInflationRatio) {
+      throw PayloadFrameDecodeException(
+        'inflation_ratio_exceeded',
+        'ratio ${frame.originalSize / frame.compressedSize} '
+            '> max $maxInflationRatio',
+      );
+    }
+    final Uint8List jsonBytes;
+    if (workerIsolatesEnabled &&
+        frame.payload.length >= gzipDecodeIsolateThresholdBytes) {
+      try {
+        jsonBytes = await compute(_payloadFrameCodecGzipDecode, frame.payload);
+      } on FormatException catch (e) {
+        throw PayloadFrameDecodeException(
+          'gzip_decode_failed',
+          e.message,
+        );
+      } on Object catch (e) {
+        throw PayloadFrameDecodeException(
+          'gzip_decode_failed',
+          e.toString(),
+        );
+      }
+    } else {
       try {
         jsonBytes = Uint8List.fromList(gzip.decode(frame.payload));
       } on FormatException catch (e) {
@@ -258,22 +458,17 @@ class PayloadFrameCodec {
           e.toString(),
         );
       }
-      if (jsonBytes.length != frame.originalSize) {
-        throw PayloadFrameDecodeException(
-          'original_size_mismatch',
-          'reported ${frame.originalSize}, actual ${jsonBytes.length}',
-        );
-      }
-    } else {
-      if (frame.payload.length != frame.originalSize) {
-        throw PayloadFrameDecodeException(
-          'original_size_mismatch',
-          'reported ${frame.originalSize}, actual ${frame.payload.length}',
-        );
-      }
-      jsonBytes = frame.payload;
     }
+    if (jsonBytes.length != frame.originalSize) {
+      throw PayloadFrameDecodeException(
+        'original_size_mismatch',
+        'reported ${frame.originalSize}, actual ${jsonBytes.length}',
+      );
+    }
+    return jsonBytes;
+  }
 
+  Object? _jsonDecodeUtf8(Uint8List jsonBytes) {
     try {
       return jsonDecode(utf8.decode(jsonBytes));
     } on FormatException catch (e) {
@@ -342,4 +537,17 @@ class PayloadFrameCodec {
         );
     }
   }
+}
+
+/// Top-level worker for Flutter `compute` — isolate must not capture codec state.
+Uint8List _payloadFrameCodecGzipDecode(Uint8List compressed) {
+  return Uint8List.fromList(gzip.decode(compressed));
+}
+
+Uint8List _payloadFrameCodecGzipEncode(Uint8List rawJsonUtf8) {
+  return Uint8List.fromList(gzip.encode(rawJsonUtf8));
+}
+
+Object? _payloadFrameCodecJsonDecodeUtf8(Uint8List jsonBytes) {
+  return jsonDecode(utf8.decode(jsonBytes));
 }

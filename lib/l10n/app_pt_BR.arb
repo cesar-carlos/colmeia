@@ -921,6 +921,12 @@
       "count": {"type": "int"}
     }
   },
+  "salesLiveMapPartialRowCapReached": "{count} agente(s) atingiram o limite de linhas da consulta; o mapa pode estar incompleto.",
+  "@salesLiveMapPartialRowCapReached": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "salesLiveMapPartialMissingCoordinates": "{count} filial(is) sem coordenada resolvida.",
   "@salesLiveMapPartialMissingCoordinates": {
     "placeholders": {
@@ -966,8 +972,20 @@
   "salesLiveMapKpiRevenue": "Receita total",
   "salesLiveMapKpiSales": "Vendas",
   "salesLiveMapKpiBranchesOnMap": "Filiais no mapa",
+  "salesLiveMapKpiBranchesOnMapTooltip": "Geo: {providedCount} informada | {ibgeCount} IBGE | {cepCount} CEP | {cityUfCount} cidade/UF | {capitalUfCount} capital/UF | {stateUfCount} UF | {missingCount} sem coordenada",
+  "@salesLiveMapKpiBranchesOnMapTooltip": {
+    "placeholders": {
+      "providedCount": { "type": "int" },
+      "ibgeCount": { "type": "int" },
+      "cepCount": { "type": "int" },
+      "cityUfCount": { "type": "int" },
+      "capitalUfCount": { "type": "int" },
+      "stateUfCount": { "type": "int" },
+      "missingCount": { "type": "int" }
+    }
+  },
   "salesLiveMapKpiMunicipalitiesOnMap": "Municipios no mapa",
-  "salesLiveMapKpiQueriedAgents": "Filiais consultadas",
+  "salesLiveMapKpiQueriedAgents": "Agentes consultados",
   "salesHubSubtitle": "Acesse e gerencie informações comerciais por categoria.",
   "salesBranchFilterLabel": "FILIAIS",
   "salesBranchFilterEmptyHint": "Carregue o relatorio para listar as filiais.",

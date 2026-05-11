@@ -243,7 +243,9 @@ abstract final class AppEnvironment {
         fromDefine: const String.fromEnvironment(
           EnvKeys.socketStreamSqlCollectorMaxBufferedRows,
         ),
-        fromDotenv: _dotenvMaybe(EnvKeys.socketStreamSqlCollectorMaxBufferedRows),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.socketStreamSqlCollectorMaxBufferedRows,
+        ),
         fallback: defaultSocketStreamSqlCollectorMaxBufferedRows,
       );
 
@@ -451,6 +453,54 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketPayloadRequireSignature),
         fallback: false,
+      );
+
+  static bool get socketPayloadWorkerIsolatesEnabled =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketPayloadWorkerIsolatesEnabled,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketPayloadWorkerIsolatesEnabled),
+        fallback: true,
+      );
+
+  static int get socketPayloadGzipDecodeIsolateThresholdBytes =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketPayloadGzipDecodeIsolateThresholdBytes,
+        ),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.socketPayloadGzipDecodeIsolateThresholdBytes,
+        ),
+        fallback: 16 * 1024,
+      );
+
+  static const int defaultSocketPayloadGzipEncodeIsolateThresholdBytes =
+      64 * 1024;
+
+  static int get socketPayloadGzipEncodeIsolateThresholdBytes =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketPayloadGzipEncodeIsolateThresholdBytes,
+        ),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.socketPayloadGzipEncodeIsolateThresholdBytes,
+        ),
+        fallback: defaultSocketPayloadGzipEncodeIsolateThresholdBytes,
+      );
+
+  static const int defaultSocketPayloadJsonDecodeIsolateThresholdBytes =
+      256 * 1024;
+
+  static int get socketPayloadJsonDecodeIsolateThresholdBytes =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketPayloadJsonDecodeIsolateThresholdBytes,
+        ),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.socketPayloadJsonDecodeIsolateThresholdBytes,
+        ),
+        fallback: defaultSocketPayloadJsonDecodeIsolateThresholdBytes,
       );
 
   static String? _dotenvMaybe(String key) {

@@ -85,6 +85,11 @@ class AgentSqlExecuteRequest {
   /// builds can also opt in with `SOCKET_RELAY_ENABLED=true`. With other
   /// configurations the hybrid datasource falls back to its base channel and
   /// logs the bypass for observability.
+  ///
+  /// With `AGENT_BRIDGE_TRANSPORT=socket`, prefer `true` for dashboard-style
+  /// SQL that may stream large row sets: the legacy `agents:command` path does
+  /// not implement `agents:stream_pull` / chunk events — relay matches the hub
+  /// contract (`plug_server/docs/api_rest_bridge.md`).
   final bool useRelay;
 
   /// JSON-RPC `command.api_version`. Defaults to [kColmeiaAgentApiVersion]

@@ -1,6 +1,6 @@
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_diario_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
@@ -36,7 +36,7 @@ void registerInjectorSales(GetIt getIt) {
     )
     ..registerFactory<LoadSalesLiveMapUseCase>(
       () => LoadSalesLiveMapUseCase(
-        getIt<LoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase>(),
+        getIt<LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase>(),
         AppBrazilStoreSalesPointResolver(
           locationResolver: getIt<AppLocationResolver>(),
         ),

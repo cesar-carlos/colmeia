@@ -512,6 +512,28 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       );
       return;
     }
+    if (_isLegacyStreamingResponse(map)) {
+      final streamId = _legacyStreamId(map);
+      AppLogger.warning(
+        'agents:command_response uses legacy stream_id on unary path; not supported',
+        context: <String, Object?>{
+          'component': 'SocketCommandDispatcherImpl',
+          'rpcId': rpcId,
+          'streamId': streamId,
+        },
+      );
+      _correlator.failWith(
+        rpcId,
+        SocketDispatchLegacyStreamingUnsupported(
+          message:
+              'Hub returned stream_id=$streamId on the legacy agents:command '
+              'path. Colmeia does not implement agents:stream_pull for this '
+              'channel. Use relay (useRelay: true) or REST for this query.',
+          streamId: streamId,
+        ),
+      );
+      return;
+    }
     _correlator.completeWith(rpcId, map);
   }
 
@@ -581,6 +603,28 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     return null;
   }
 
+  /// True when the hub signalled progressive streaming on the legacy
+  /// `agents:command` channel via a non-empty `stream_id` / `streamId` in the
+  /// JSON-RPC `result`. Colmeia does not implement `agents:stream_pull` or
+  /// chunk events on this path — even a first chunk with partial `rows` would
+  /// be incomplete without pull, so any `stream_id` is treated as unsupported.
+  bool _isLegacyStreamingResponse(Map<String, dynamic> map) {
+    final streamId = _legacyStreamId(map);
+    return streamId != null && streamId.isNotEmpty;
+  }
+
+  String? _legacyStreamId(Map<String, dynamic> map) {
+    final result = _read(map, const <String>['response', 'item', 'result']);
+    if (result is! Map) {
+      return null;
+    }
+    final value = result['stream_id'] ?? result['streamId'];
+    if (value is String && value.isNotEmpty) {
+      return value;
+    }
+    return null;
+  }
+
   Object? _read(Map<String, dynamic> map, List<String> path) {
     Object? current = map;
     for (final key in path) {
@@ -591,6 +635,13 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       }
     }
     return current;
+  }
+
+  void _safeAddOutcome(AgentCommandOutcome outcome) {
+    if (_outcomes.isClosed) {
+      return;
+    }
+    _outcomes.add(outcome);
   }
 
   void _emitOutcomeFromResponse({
@@ -614,7 +665,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       final classification = _classifyRpcError(code: code, reason: reason);
       switch (classification) {
         case _RpcErrorClass.offline:
-          _outcomes.add(
+          _safeAddOutcome(
             AgentCommandFailedOffline(
               agentId: agentId,
               rpcId: rpcId,
@@ -626,7 +677,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
           );
           return;
         case _RpcErrorClass.auth:
-          _outcomes.add(
+          _safeAddOutcome(
             AgentCommandFailedAuth(
               agentId: agentId,
               rpcId: rpcId,
@@ -638,7 +689,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
           );
           return;
         case _RpcErrorClass.transient:
-          _outcomes.add(
+          _safeAddOutcome(
             AgentCommandFailedTransient(
               agentId: agentId,
               rpcId: rpcId,
@@ -652,7 +703,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       }
     }
 
-    _outcomes.add(
+    _safeAddOutcome(
       AgentCommandSuccess(
         agentId: agentId,
         rpcId: rpcId,
@@ -674,7 +725,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       final classification = _classifyRpcError(code: exception.code);
       switch (classification) {
         case _RpcErrorClass.offline:
-          _outcomes.add(
+          _safeAddOutcome(
             AgentCommandFailedOffline(
               agentId: agentId,
               rpcId: rpcId,
@@ -686,7 +737,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
           );
           return;
         case _RpcErrorClass.auth:
-          _outcomes.add(
+          _safeAddOutcome(
             AgentCommandFailedAuth(
               agentId: agentId,
               rpcId: rpcId,
@@ -719,10 +770,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     String? method,
     Object? cause,
   }) {
-    if (_outcomes.isClosed) {
-      return;
-    }
-    _outcomes.add(
+    _safeAddOutcome(
       AgentCommandFailedTransient(
         agentId: agentId,
         rpcId: rpcId,

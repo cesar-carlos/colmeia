@@ -38,6 +38,9 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// dimensions in each row.
   static const int resumoTotalVendasMunicipioFilialDiario = 8000;
 
+  /// One row per company and branch for the sales live map period aggregate.
+  static const int resumoTotalVendasMunicipioFilialPeriodo = 2000;
+
   /// Suggestion lists for vendedor/bairro/município (`TOP` limits; bridge cap).
   static const int vendasDiariasSuggestionOptions = 128;
 

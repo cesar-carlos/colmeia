@@ -134,6 +134,8 @@ void main() {
             longitude: -56,
             salesAmount: 100,
             salesCount: 1,
+            locationResolution:
+                AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
           ),
           const AppBrazilStoreSalesPoint(
             id: 'bad-latitude',
@@ -143,6 +145,8 @@ void main() {
             longitude: -56,
             salesAmount: 100,
             salesCount: 1,
+            locationResolution:
+                AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
           ),
           const AppBrazilStoreSalesPoint(
             id: 'bad-longitude',
@@ -188,6 +192,8 @@ void main() {
             longitude: -56,
             salesAmount: 100,
             salesCount: 1,
+            locationResolution:
+                AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
           ),
           AppBrazilStoreSalesPoint(
             id: 'bad-coordinate',
@@ -225,6 +231,8 @@ void main() {
       expect(diagnostics.invalidCoordinateCount, 1);
       expect(diagnostics.unknownUfCount, 1);
       expect(diagnostics.filteredByRegionCount, 1);
+      expect(diagnostics.resolvedByIbgeMunicipalityCodeCount, 1);
+      expect(diagnostics.unknownResolutionCount, 0);
       expect(diagnostics.discardedPointCount, 3);
       expect(diagnostics.hasDiscardedPoints, isTrue);
     });

@@ -23,6 +23,13 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 /// (`accepted` / `response` / `chunk` / `complete`) once per connection and
 /// fans them out by `client_request_id` / `requestId`.
 ///
+/// `relay:rpc.response`, `relay:rpc.chunk`, and `relay:rpc.complete` payloads
+/// are decoded with [PayloadFrameCodec.decodeJsonAsync] on a **per-request
+/// chain** so chunk ordering and credit refills stay consistent. Wire
+/// handlers return immediately; tests and tools must flush the event queue
+/// (e.g. `pumpEventQueue` from `flutter_test`) before asserting on side
+/// effects that follow decode.
+///
 /// Two pending kinds share the same routing path:
 ///
 /// - [_PendingUnary] — single-shot request (`sendUnary`).
@@ -73,6 +80,35 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   /// Reverse index from server-assigned `requestId` to `client_request_id`.
   /// Populated only after `relay:rpc.accepted`.
   final Map<String, String> _clientIdByRequestId = <String, String>{};
+
+  /// Client request ids currently pending per `conversationId`. Used for
+  /// O(1) routing in [_pendingFromFrame] when the hub omits `requestId` on
+  /// the frame and exactly one RPC is in flight for that conversation.
+  final Map<String, Set<String>> _pendingClientIdsByConversationId =
+      <String, Set<String>>{};
+
+  void _registerPendingConversation(
+    String conversationId,
+    String clientRequestId,
+  ) {
+    _pendingClientIdsByConversationId
+        .putIfAbsent(conversationId, () => <String>{})
+        .add(clientRequestId);
+  }
+
+  void _unregisterPendingConversation(
+    String conversationId,
+    String clientRequestId,
+  ) {
+    final set = _pendingClientIdsByConversationId[conversationId];
+    if (set == null) {
+      return;
+    }
+    set.remove(clientRequestId);
+    if (set.isEmpty) {
+      _pendingClientIdsByConversationId.remove(conversationId);
+    }
+  }
 
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
   io.Socket? _attachedSocket;
@@ -127,7 +163,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       }
       pending.relayPerAgentSlotRelease = () => gate.release(pending.agentId);
     }
-    _emitRpcRequest(
+    await _emitRpcRequestAsync(
       conversationId: pending.conversationId,
       clientRequestId: clientRequestId,
       body: body,
@@ -236,9 +272,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
             );
             return;
           }
-          pending.relayPerAgentSlotRelease = () => gate.release(pending.agentId);
+          pending.relayPerAgentSlotRelease = () =>
+              gate.release(pending.agentId);
         }
-        _emitRpcRequest(
+        await _emitRpcRequestAsync(
           conversationId: pending.conversationId,
           clientRequestId: clientRequestId,
           body: body,
@@ -265,6 +302,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     final pending = _pendingByClientId.values.toList(growable: false);
     _pendingByClientId.clear();
     _clientIdByRequestId.clear();
+    _pendingClientIdsByConversationId.clear();
     for (final entry in pending) {
       entry.timeoutTimer?.cancel();
       entry.failExternally(
@@ -367,6 +405,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       stopwatch: stopwatch,
     );
     _pendingByClientId[clientRequestId] = pending;
+    _registerPendingConversation(conversationId, clientRequestId);
 
     final effectiveTimeout = timeout ?? _defaultTimeout;
     pending.timeoutTimer = Timer(effectiveTimeout, () {
@@ -388,24 +427,25 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   /// Callers stash the typed pending; this method only knows how to
   /// translate a logical body into the wire envelope and surface
   /// transport-level failures back through [_failPending].
-  void _emitRpcRequest({
+  Future<void> _emitRpcRequestAsync({
     required String conversationId,
     required String clientRequestId,
     required Map<String, Object?> body,
     required RelayPayloadFrameCompression compression,
     required _PendingRelay pending,
-  }) {
+  }) async {
     pending.method ??= _extractMethod(body);
     PayloadFrameEncodeResult encoded;
     try {
       // The client_request_id in the JSON-RPC `id` field is what makes the
       // hub idempotent, so we mirror it on the envelope `requestId` for
       // observability — the hub ignores envelope.requestId on inbound.
-      encoded = _codec.encodeJson(
+      encoded = await _codec.encodeJsonAsync(
         body,
         requestId: clientRequestId,
       );
     } on PayloadFrameDecodeException catch (e, s) {
+      _channelMetrics?.recordRelayDecodeFailure(code: e.code);
       _failPending(
         clientRequestId,
         RelayDecodeFailure(
@@ -660,29 +700,103 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     // would buffer chunks server-side and possibly abort the stream when
     // the buffer cap is hit.
     if (pending is _PendingStream) {
-      _grantPull(pending, pending.initialWindow);
+      pending.streamAcceptedAtElapsed = pending.stopwatch.elapsed;
+      _enqueueRelayFrameWork(
+        pending,
+        () => _grantPullAsync(pending, pending.initialWindow),
+      );
     }
   }
 
+  void _enqueueRelayFrameWork(
+    _PendingRelay pending,
+    Future<void> Function() work,
+  ) {
+    pending.frameRoutingChain = pending.frameRoutingChain.then<void>(
+      (_) async {
+        if (_isDisposed) {
+          return;
+        }
+        if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
+          return;
+        }
+        try {
+          await work();
+        } on Object catch (e, s) {
+          AppLogger.warning(
+            'relay pending async work failed',
+            context: <String, Object?>{
+              'component': 'RelayCommandDispatcherImpl',
+              'clientRequestId': pending.clientRequestId,
+              'error': e.toString(),
+            },
+            error: e,
+            stackTrace: s,
+          );
+        }
+      },
+    );
+  }
+
   void _onResponseFrame(Object? raw) {
-    _routeFrame(raw, eventName: 'rpc.response');
-  }
-
-  void _onChunkFrame(Object? raw) {
-    _routeFrame(raw, eventName: 'rpc.chunk');
-  }
-
-  void _onCompleteFrame(Object? raw) {
-    _routeFrame(raw, eventName: 'rpc.complete');
-  }
-
-  void _routeFrame(Object? raw, {required String eventName}) {
     final pending = _pendingFromFrame(raw);
     if (pending == null) {
       return;
     }
+    _enqueueRelayFrameWork(
+      pending,
+      () => _routeFrameAsyncForPending(
+        pending,
+        raw,
+        eventName: 'rpc.response',
+      ),
+    );
+  }
+
+  void _onChunkFrame(Object? raw) {
+    final pending = _pendingFromFrame(raw);
+    if (pending == null) {
+      return;
+    }
+    _enqueueRelayFrameWork(
+      pending,
+      () => _routeFrameAsyncForPending(
+        pending,
+        raw,
+        eventName: 'rpc.chunk',
+      ),
+    );
+  }
+
+  void _onCompleteFrame(Object? raw) {
+    final pending = _pendingFromFrame(raw);
+    if (pending == null) {
+      return;
+    }
+    _enqueueRelayFrameWork(
+      pending,
+      () => _routeFrameAsyncForPending(
+        pending,
+        raw,
+        eventName: 'rpc.complete',
+      ),
+    );
+  }
+
+  Future<void> _routeFrameAsyncForPending(
+    _PendingRelay pending,
+    Object? raw, {
+    required String eventName,
+  }) async {
+    if (_isDisposed) {
+      return;
+    }
+    if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
+      return;
+    }
     final frame = PayloadFrame.tryParse(raw);
     if (frame == null) {
+      _channelMetrics?.recordRelayDecodeFailure(code: 'malformed_frame');
       _failPending(
         pending.clientRequestId,
         RelayDecodeFailure(
@@ -695,10 +809,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
 
+    final decodeSw = Stopwatch()..start();
     Object? decoded;
     try {
-      decoded = _codec.decodeJson(frame);
+      decoded = await _codec.decodeJsonAsync(frame);
     } on PayloadFrameDecodeException catch (e, s) {
+      decodeSw.stop();
+      _channelMetrics?.recordRelayPayloadDecodeWallClock(
+        elapsed: decodeSw.elapsed,
+      );
+      _channelMetrics?.recordRelayDecodeFailure(code: e.code);
       _failPending(
         pending.clientRequestId,
         RelayDecodeFailure(
@@ -712,8 +832,19 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       );
       return;
     }
+    decodeSw.stop();
+    _channelMetrics?.recordRelayPayloadDecodeWallClock(
+      elapsed: decodeSw.elapsed,
+    );
+    if (_codec.usesWorkerIsolateForGzipDecode(frame)) {
+      _channelMetrics?.recordRelayPayloadGzipDecodeIsolate();
+    }
+    if (_codec.usesWorkerIsolateForJsonDecode(frame)) {
+      _channelMetrics?.recordRelayPayloadJsonDecodeIsolate();
+    }
 
     if (decoded is! Map) {
+      _channelMetrics?.recordRelayDecodeFailure(code: 'malformed_payload');
       _failPending(
         pending.clientRequestId,
         RelayDecodeFailure(
@@ -730,10 +861,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     );
 
     switch (pending) {
-      case _PendingUnary():
-        _routeUnary(pending, eventName, logical);
-      case _PendingStream():
-        _routeStream(pending, eventName, logical);
+      case final _PendingUnary unary:
+        _routeUnary(unary, eventName, logical);
+      case final _PendingStream stream:
+        await _routeStreamAsync(stream, eventName, logical);
     }
   }
 
@@ -774,11 +905,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     _completePending(pending.clientRequestId, logical);
   }
 
-  void _routeStream(
+  Future<void> _routeStreamAsync(
     _PendingStream pending,
     String eventName,
     Map<String, dynamic> logical,
-  ) {
+  ) async {
     if (pending.controller.isClosed) {
       return;
     }
@@ -815,6 +946,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
     // rpc.chunk
+    if (!pending.streamFirstChunkMetricRecorded) {
+      pending.streamFirstChunkMetricRecorded = true;
+      final acceptedAt = pending.streamAcceptedAtElapsed;
+      final metrics = _channelMetrics;
+      if (acceptedAt != null && metrics != null) {
+        metrics.recordRelayAcceptToFirstChunkWallClock(
+          elapsed: pending.stopwatch.elapsed - acceptedAt,
+        );
+      }
+    }
     _captureStreamId(pending, logical);
     pending.controller.add(logical);
     pending.outstandingCredits = (pending.outstandingCredits - 1).clamp(
@@ -824,7 +965,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (pending.outstandingCredits <= pending.refillThreshold) {
       final delta = pending.initialWindow - pending.outstandingCredits;
       if (delta > 0) {
-        _grantPull(pending, delta);
+        await _grantPullAsync(pending, delta);
       }
     }
   }
@@ -832,13 +973,13 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   /// Emits `relay:rpc.stream.pull` to grant [credits] more chunk credits.
   /// Updates the local outstanding-credit counter so the next refill
   /// computation is consistent.
-  void _grantPull(_PendingStream pending, int credits) {
+  Future<void> _grantPullAsync(_PendingStream pending, int credits) async {
     if (credits <= 0) {
       return;
     }
     final requestId = pending.requestId;
     try {
-      final encoded = _codec.encodeJson(
+      final encoded = await _codec.encodeJsonAsync(
         <String, Object?>{
           'request_id': requestId ?? pending.clientRequestId,
           if (pending.streamId != null) 'stream_id': pending.streamId,
@@ -920,17 +1061,25 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (conversationId == null) {
       return null;
     }
-    final candidates = _pendingByClientId.values
-        .where((entry) => entry.conversationId == conversationId)
-        .toList(growable: false);
-    if (candidates.length == 1) {
-      return candidates.single;
+    final solo = _pendingClientIdsByConversationId[conversationId];
+    if (solo == null || solo.length != 1) {
+      return null;
     }
-    return null;
+    return _pendingByClientId[solo.single];
+  }
+
+  void _safeAddRelayOutcome(RelayRpcOutcome outcome) {
+    if (_outcomes.isClosed) {
+      return;
+    }
+    _outcomes.add(outcome);
   }
 
   void _completePending(String clientRequestId, Map<String, dynamic> response) {
     final entry = _pendingByClientId.remove(clientRequestId);
+    if (entry != null) {
+      _unregisterPendingConversation(entry.conversationId, clientRequestId);
+    }
     if (entry is! _PendingUnary) {
       return;
     }
@@ -942,7 +1091,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     entry.stopwatch.stop();
     if (!entry.completer.isCompleted) {
       entry.completer.complete(response);
-      _outcomes.add(_buildSuccessOutcome(entry));
+      _safeAddRelayOutcome(_buildSuccessOutcome(entry));
     }
     _releaseRelayGateSlot(entry);
   }
@@ -952,6 +1101,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (removed == null) {
       return;
     }
+    _unregisterPendingConversation(
+      removed.conversationId,
+      entry.clientRequestId,
+    );
     final requestId = entry.requestId;
     if (requestId != null) {
       _clientIdByRequestId.remove(requestId);
@@ -963,7 +1116,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       // the buffered events. The dispatcher does not need to wait — the
       // success outcome below is the public signal callers act on.
       unawaited(entry.controller.close());
-      _outcomes.add(_buildSuccessOutcome(entry));
+      _safeAddRelayOutcome(_buildSuccessOutcome(entry));
     }
     _releaseRelayGateSlot(entry);
   }
@@ -998,6 +1151,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (entry == null) {
       return;
     }
+    _unregisterPendingConversation(entry.conversationId, clientRequestId);
     _releaseRelayGateSlot(entry);
     final requestId = entry.requestId;
     if (requestId != null) {
@@ -1007,7 +1161,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     entry.stopwatch.stop();
     final emitted = entry.failExternally(exception);
     if (emitted) {
-      _outcomes.add(
+      _safeAddRelayOutcome(
         RelayRpcFailure(
           agentId: entry.agentId,
           conversationId: entry.conversationId,
@@ -1094,6 +1248,9 @@ sealed class _PendingRelay {
   bool replayed = false;
   Timer? timeoutTimer;
 
+  /// Serializes async frame handling and initial pull emission per request.
+  Future<void> frameRoutingChain = Future<void>.value();
+
   /// Invoked once when the per-agent relay slot is finished.
   void Function()? relayPerAgentSlotRelease;
 
@@ -1161,6 +1318,11 @@ class _PendingStream extends _PendingRelay {
   /// Server stream identifier returned by pull acks or chunk payloads.
   /// Included on subsequent pull frames when present.
   String? streamId;
+
+  /// [Stopwatch.elapsed] when `relay:rpc.accepted` succeeded (streaming only).
+  Duration? streamAcceptedAtElapsed;
+
+  bool streamFirstChunkMetricRecorded = false;
 
   @override
   bool failExternally(RelayDispatchException exception) {

@@ -16,6 +16,7 @@ class AppBrazilStoreSalesPointSource {
     this.cep,
     this.ibgeMunicipalityCode,
     this.preferCapitalFallback = false,
+    this.allowUfFallback = true,
     this.subtitle,
     this.payload,
   });
@@ -31,6 +32,7 @@ class AppBrazilStoreSalesPointSource {
   final String? cep;
   final String? ibgeMunicipalityCode;
   final bool preferCapitalFallback;
+  final bool allowUfFallback;
   final String? subtitle;
   final Object? payload;
 }
@@ -45,20 +47,29 @@ class AppBrazilStoreSalesPointResolver {
   Future<AppBrazilStoreSalesPoint?> resolve(
     AppBrazilStoreSalesPointSource source,
   ) async {
-    AppResolvedLocation? location;
-    for (final input in _lookupInputsFor(source)) {
-      final resolved = await _locationResolver.resolve(input);
-      if (resolved != null && resolved.point.isValid) {
-        location = resolved;
-        break;
-      }
-    }
+    final resolved = await resolveWithDetails(source);
+    return resolved?.point;
+  }
 
-    if (location == null) {
+  Future<AppBrazilStoreSalesResolvedPoint?> resolveWithDetails(
+    AppBrazilStoreSalesPointSource source,
+  ) {
+    return _resolveWithDetails(source);
+  }
+
+  Future<AppBrazilStoreSalesResolvedPoint?> _resolveWithDetails(
+    AppBrazilStoreSalesPointSource source, {
+    Map<String, Future<_ResolvedLocationLookup?>>? locationCache,
+  }) async {
+    final lookup = await _resolveLocationLookup(
+      source,
+      locationCache: locationCache,
+    );
+    if (lookup == null) {
       return null;
     }
 
-    final uf = _resolveUf(source, location);
+    final uf = _resolveUf(source, lookup.location);
     if (uf == null) {
       return null;
     }
@@ -67,18 +78,23 @@ class AppBrazilStoreSalesPointResolver {
           source.ibgeMunicipalityCode,
         );
 
-    return AppBrazilStoreSalesPoint(
-      id: source.id,
-      name: source.name,
-      uf: uf,
-      latitude: location.point.latitude,
-      longitude: location.point.longitude,
-      salesAmount: source.salesAmount,
-      salesCount: source.salesCount,
-      municipalityCode: municipalityCode,
-      city: _resolveCity(source, location),
-      subtitle: source.subtitle,
-      payload: source.payload,
+    return AppBrazilStoreSalesResolvedPoint(
+      point: AppBrazilStoreSalesPoint(
+        id: source.id,
+        name: source.name,
+        uf: uf,
+        latitude: lookup.location.point.latitude,
+        longitude: lookup.location.point.longitude,
+        salesAmount: source.salesAmount,
+        salesCount: source.salesCount,
+        municipalityCode: municipalityCode,
+        city: _resolveCity(source, lookup.location),
+        locationResolution: _resolutionFor(lookup.lookupType),
+        subtitle: source.subtitle,
+        payload: source.payload,
+      ),
+      location: lookup.location,
+      lookupType: lookup.lookupType,
     );
   }
 
@@ -87,13 +103,76 @@ class AppBrazilStoreSalesPointResolver {
   ) async {
     final points = <AppBrazilStoreSalesPoint>[];
     for (final source in sources) {
-      final point = await resolve(source);
-      if (point != null) {
-        points.add(point);
+      final resolved = await resolveWithDetails(source);
+      if (resolved != null) {
+        points.add(resolved.point);
       }
     }
 
     return points;
+  }
+
+  Future<List<AppBrazilStoreSalesResolvedPoint>> resolveAllWithDetails(
+    Iterable<AppBrazilStoreSalesPointSource> sources,
+  ) async {
+    final points = <AppBrazilStoreSalesResolvedPoint>[];
+    final locationCache = <String, Future<_ResolvedLocationLookup?>>{};
+    for (final source in sources) {
+      final resolved = await _resolveWithDetails(
+        source,
+        locationCache: locationCache,
+      );
+      if (resolved != null) {
+        points.add(resolved);
+      }
+    }
+
+    return points;
+  }
+
+  Future<_ResolvedLocationLookup?> _resolveLocationLookup(
+    AppBrazilStoreSalesPointSource source, {
+    Map<String, Future<_ResolvedLocationLookup?>>? locationCache,
+  }) async {
+    for (final input in _lookupInputsFor(source)) {
+      final cacheKey = _lookupInputCacheKey(input);
+      final resolved = cacheKey == null || locationCache == null
+          ? await _resolveLookupInput(input)
+          : await locationCache.putIfAbsent(
+              cacheKey,
+              () => _resolveLookupInput(input),
+            );
+      if (resolved != null) {
+        return resolved;
+      }
+    }
+
+    return null;
+  }
+
+  Future<_ResolvedLocationLookup?> _resolveLookupInput(
+    AppLocationLookupInput input,
+  ) async {
+    final resolved = await _locationResolver.resolve(input);
+    if (resolved == null || !resolved.point.isValid) {
+      return null;
+    }
+
+    return _ResolvedLocationLookup(
+      location: resolved,
+      lookupType: input.type,
+    );
+  }
+
+  String? _lookupInputCacheKey(AppLocationLookupInput input) {
+    if (input.type == AppLocationLookupType.geoPoint) {
+      final point = input.geoPoint;
+      return point == null
+          ? null
+          : 'provided:${point.latitude}:${point.longitude}';
+    }
+
+    return AppLocationLookupNormalizer.cacheKeyFor(input);
   }
 
   List<AppLocationLookupInput> _lookupInputsFor(
@@ -114,11 +193,6 @@ class AppBrazilStoreSalesPointResolver {
       );
     }
 
-    final cep = AppLocationLookupNormalizer.normalizeCep(source.cep);
-    if (cep != null) {
-      inputs.add(AppLocationLookupInput.cep(cep: cep));
-    }
-
     final ibgeCode = AppLocationLookupNormalizer.normalizeIbgeMunicipalityCode(
       source.ibgeMunicipalityCode,
     );
@@ -130,6 +204,11 @@ class AppBrazilStoreSalesPointResolver {
       );
     }
 
+    final cep = AppLocationLookupNormalizer.normalizeCep(source.cep);
+    if (cep != null) {
+      inputs.add(AppLocationLookupInput.cep(cep: cep));
+    }
+
     final city = AppLocationLookupNormalizer.normalizeCity(source.city);
     if (city != null && uf != null) {
       inputs.add(AppLocationLookupInput.cityUf(city: source.city!, uf: uf));
@@ -139,7 +218,7 @@ class AppBrazilStoreSalesPointResolver {
       inputs.add(AppLocationLookupInput.capitalUf(uf: uf));
     }
 
-    if (uf != null) {
+    if (source.allowUfFallback && uf != null) {
       inputs.add(AppLocationLookupInput.uf(uf: uf));
     }
 
@@ -177,4 +256,44 @@ class AppBrazilStoreSalesPointResolver {
 
     return null;
   }
+
+  AppBrazilStoreSalesLocationResolution? _resolutionFor(
+    AppLocationLookupType? lookupType,
+  ) {
+    return switch (lookupType) {
+      AppLocationLookupType.geoPoint =>
+        AppBrazilStoreSalesLocationResolution.providedGeoPoint,
+      AppLocationLookupType.ibgeMunicipalityCode =>
+        AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+      AppLocationLookupType.cep => AppBrazilStoreSalesLocationResolution.cep,
+      AppLocationLookupType.cityUf =>
+        AppBrazilStoreSalesLocationResolution.cityUf,
+      AppLocationLookupType.capitalUf =>
+        AppBrazilStoreSalesLocationResolution.capitalUf,
+      AppLocationLookupType.uf => AppBrazilStoreSalesLocationResolution.stateUf,
+      null => null,
+    };
+  }
+}
+
+class AppBrazilStoreSalesResolvedPoint {
+  const AppBrazilStoreSalesResolvedPoint({
+    required this.point,
+    required this.location,
+    required this.lookupType,
+  });
+
+  final AppBrazilStoreSalesPoint point;
+  final AppResolvedLocation location;
+  final AppLocationLookupType? lookupType;
+}
+
+class _ResolvedLocationLookup {
+  const _ResolvedLocationLookup({
+    required this.location,
+    required this.lookupType,
+  });
+
+  final AppResolvedLocation location;
+  final AppLocationLookupType lookupType;
 }

@@ -123,3 +123,22 @@ final class SocketDispatchCancelled extends SocketDispatchException {
     super.stackTrace,
   }) : super(code: 'cancelled');
 }
+
+/// The hub returned a `sql.execute` result that enters **legacy** Socket
+/// streaming (non-empty `stream_id` / `streamId` in the JSON-RPC `result` on
+/// `agents:command_response`). Colmeia does not implement
+/// `agents:command_stream_*` / `agents:stream_pull` on this path — callers
+/// should use relay (`AgentSqlExecuteRequest.useRelay: true`) or REST.
+///
+/// See `plug_server/docs/api_rest_bridge.md` (consumer streaming matrix).
+final class SocketDispatchLegacyStreamingUnsupported
+    extends SocketDispatchException {
+  const SocketDispatchLegacyStreamingUnsupported({
+    required super.message,
+    this.streamId,
+    super.cause,
+    super.stackTrace,
+  }) : super(code: 'legacy_streaming_unsupported');
+
+  final String? streamId;
+}

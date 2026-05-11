@@ -25,6 +25,15 @@ enum AppBrazilStoreSalesMarkerAggregation {
   storesAndStates,
 }
 
+enum AppBrazilStoreSalesLocationResolution {
+  providedGeoPoint,
+  ibgeMunicipalityCode,
+  cep,
+  cityUf,
+  capitalUf,
+  stateUf,
+}
+
 enum AppBrazilStoreSalesMapPreset {
   standard,
   bubble,
@@ -128,6 +137,7 @@ class AppBrazilStoreSalesPoint {
     required this.salesCount,
     this.municipalityCode,
     this.city,
+    this.locationResolution,
     this.subtitle,
     this.payload,
   });
@@ -141,6 +151,7 @@ class AppBrazilStoreSalesPoint {
   final int salesCount;
   final String? municipalityCode;
   final String? city;
+  final AppBrazilStoreSalesLocationResolution? locationResolution;
   final String? subtitle;
   final Object? payload;
 }
@@ -165,6 +176,7 @@ class AppBrazilStoreSalesStateBucket {
   final int storeCount;
 }
 
+@immutable
 class AppBrazilStoreSalesMapStyle {
   const AppBrazilStoreSalesMapStyle({
     this.height = 480,
@@ -396,6 +408,83 @@ class AppBrazilStoreSalesMapStyle {
       emptyStateMessage: emptyStateMessage ?? this.emptyStateMessage,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is AppBrazilStoreSalesMapStyle &&
+        height == other.height &&
+        includeEmptyStates == other.includeEmptyStates &&
+        showLegend == other.showLegend &&
+        showTooltip == other.showTooltip &&
+        enableZoomPan == other.enableZoomPan &&
+        showDataLabels == other.showDataLabels &&
+        showMetricSelector == other.showMetricSelector &&
+        showRegionFilter == other.showRegionFilter &&
+        showMarkerScaleLegend == other.showMarkerScaleLegend &&
+        showStoreDetail == other.showStoreDetail &&
+        highlightSelectedState == other.highlightSelectedState &&
+        collapseSameCoordinateMarkers == other.collapseSameCoordinateMarkers &&
+        enableProximityCluster == other.enableProximityCluster &&
+        proximityClusterDistanceDegrees ==
+            other.proximityClusterDistanceDegrees &&
+        markerVisual == other.markerVisual &&
+        markerAggregation == other.markerAggregation &&
+        stateLabelMode == other.stateLabelMode &&
+        showDataQualityNotice == other.showDataQualityNotice &&
+        autoFocusSelectedStore == other.autoFocusSelectedStore &&
+        selectedStoreZoomLevel == other.selectedStoreZoomLevel &&
+        clusterCoordinatePrecision == other.clusterCoordinatePrecision &&
+        maxClusterTooltipStores == other.maxClusterTooltipStores &&
+        markerMinSize == other.markerMinSize &&
+        markerMaxSize == other.markerMaxSize &&
+        lowValueColor == other.lowValueColor &&
+        highValueColor == other.highValueColor &&
+        markerColor == other.markerColor &&
+        markerStrokeColor == other.markerStrokeColor &&
+        selectedMarkerColor == other.selectedMarkerColor &&
+        selectedMarkerStrokeColor == other.selectedMarkerStrokeColor &&
+        legendNumberFormat == other.legendNumberFormat &&
+        emptyStateMessage == other.emptyStateMessage;
+  }
+
+  @override
+  int get hashCode => Object.hashAll(<Object?>[
+    height,
+    includeEmptyStates,
+    showLegend,
+    showTooltip,
+    enableZoomPan,
+    showDataLabels,
+    showMetricSelector,
+    showRegionFilter,
+    showMarkerScaleLegend,
+    showStoreDetail,
+    highlightSelectedState,
+    collapseSameCoordinateMarkers,
+    enableProximityCluster,
+    proximityClusterDistanceDegrees,
+    markerVisual,
+    markerAggregation,
+    stateLabelMode,
+    showDataQualityNotice,
+    autoFocusSelectedStore,
+    selectedStoreZoomLevel,
+    clusterCoordinatePrecision,
+    maxClusterTooltipStores,
+    markerMinSize,
+    markerMaxSize,
+    lowValueColor,
+    highValueColor,
+    markerColor,
+    markerStrokeColor,
+    selectedMarkerColor,
+    selectedMarkerStrokeColor,
+    legendNumberFormat,
+    emptyStateMessage,
+  ]);
 }
 
 @immutable
@@ -406,6 +495,13 @@ class AppBrazilStoreSalesMapDiagnostics {
     required this.invalidCoordinateCount,
     required this.unknownUfCount,
     required this.filteredByRegionCount,
+    this.resolvedByProvidedGeoPointCount = 0,
+    this.resolvedByIbgeMunicipalityCodeCount = 0,
+    this.resolvedByCepCount = 0,
+    this.resolvedByCityUfCount = 0,
+    this.resolvedByCapitalUfCount = 0,
+    this.resolvedByStateUfCount = 0,
+    this.unknownResolutionCount = 0,
   });
 
   final int totalPointCount;
@@ -413,6 +509,13 @@ class AppBrazilStoreSalesMapDiagnostics {
   final int invalidCoordinateCount;
   final int unknownUfCount;
   final int filteredByRegionCount;
+  final int resolvedByProvidedGeoPointCount;
+  final int resolvedByIbgeMunicipalityCodeCount;
+  final int resolvedByCepCount;
+  final int resolvedByCityUfCount;
+  final int resolvedByCapitalUfCount;
+  final int resolvedByStateUfCount;
+  final int unknownResolutionCount;
 
   int get discardedPointCount =>
       invalidCoordinateCount + unknownUfCount + filteredByRegionCount;
@@ -429,7 +532,16 @@ class AppBrazilStoreSalesMapDiagnostics {
         validPointCount == other.validPointCount &&
         invalidCoordinateCount == other.invalidCoordinateCount &&
         unknownUfCount == other.unknownUfCount &&
-        filteredByRegionCount == other.filteredByRegionCount;
+        filteredByRegionCount == other.filteredByRegionCount &&
+        resolvedByProvidedGeoPointCount ==
+            other.resolvedByProvidedGeoPointCount &&
+        resolvedByIbgeMunicipalityCodeCount ==
+            other.resolvedByIbgeMunicipalityCodeCount &&
+        resolvedByCepCount == other.resolvedByCepCount &&
+        resolvedByCityUfCount == other.resolvedByCityUfCount &&
+        resolvedByCapitalUfCount == other.resolvedByCapitalUfCount &&
+        resolvedByStateUfCount == other.resolvedByStateUfCount &&
+        unknownResolutionCount == other.unknownResolutionCount;
   }
 
   @override
@@ -439,6 +551,13 @@ class AppBrazilStoreSalesMapDiagnostics {
     invalidCoordinateCount,
     unknownUfCount,
     filteredByRegionCount,
+    resolvedByProvidedGeoPointCount,
+    resolvedByIbgeMunicipalityCodeCount,
+    resolvedByCepCount,
+    resolvedByCityUfCount,
+    resolvedByCapitalUfCount,
+    resolvedByStateUfCount,
+    unknownResolutionCount,
   );
 }
 

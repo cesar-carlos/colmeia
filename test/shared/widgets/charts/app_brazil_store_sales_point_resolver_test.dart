@@ -4,6 +4,7 @@ import 'package:colmeia/shared/maps/app_brazil_municipality_centroid_index.dart'
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
 import 'package:colmeia/shared/maps/app_location_models.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -36,6 +37,10 @@ void main() {
       expect(point?.uf, 'MT');
       expect(point?.city, 'Sinop');
       expect(point?.municipalityCode, '1100015');
+      expect(
+        point?.locationResolution,
+        AppBrazilStoreSalesLocationResolution.providedGeoPoint,
+      );
       expect(point?.latitude, -11.86);
       expect(point?.longitude, -55.50);
     });
@@ -54,7 +59,7 @@ void main() {
         const AppBrazilStoreSalesPointSource(
           id: 'store-2',
           name: 'Loja IBGE',
-          ibgeMunicipalityCode: '1100015',
+          ibgeMunicipalityCode: '1100015.0',
           salesAmount: 250,
           salesCount: 4,
         ),
@@ -63,11 +68,15 @@ void main() {
       expect(point?.uf, 'RO');
       expect(point?.city, "Alta Floresta D'Oeste");
       expect(point?.municipalityCode, '1100015');
+      expect(
+        point?.locationResolution,
+        AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+      );
       expect(point?.latitude, -11.9283);
       expect(point?.longitude, -61.9953);
     });
 
-    test('uses cached CEP before IBGE when CEP is available', () async {
+    test('uses IBGE before cached CEP when both are available', () async {
       final cacheStore = _FakeCacheStore();
       final cache = AppLocationGeocodeCache(cacheStore);
       await cache.write(
@@ -95,8 +104,6 @@ void main() {
         const AppBrazilStoreSalesPointSource(
           id: 'store-cep',
           name: 'Loja CEP',
-          uf: 'SP',
-          city: 'Sao Paulo',
           cep: '01001-000',
           ibgeMunicipalityCode: '1100015',
           salesAmount: 250,
@@ -104,11 +111,15 @@ void main() {
         ),
       );
 
-      expect(point?.uf, 'SP');
-      expect(point?.city, 'Sao Paulo');
-      expect(point?.latitude, -23.5505);
-      expect(point?.longitude, -46.6333);
+      expect(point?.uf, 'RO');
+      expect(point?.city, "Alta Floresta D'Oeste");
+      expect(point?.latitude, -11.9283);
+      expect(point?.longitude, -61.9953);
       expect(point?.municipalityCode, '1100015');
+      expect(
+        point?.locationResolution,
+        AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+      );
     });
 
     test('can fallback to capital when only UF is available', () async {
@@ -134,8 +145,33 @@ void main() {
 
       expect(point?.uf, 'MT');
       expect(point?.city, 'Cuiaba');
+      expect(
+        point?.locationResolution,
+        AppBrazilStoreSalesLocationResolution.capitalUf,
+      );
       expect(point?.latitude, -15.601);
       expect(point?.longitude, -56.0974);
+    });
+
+    test('can disable UF fallback for branch-level positioning', () async {
+      final resolver = AppBrazilStoreSalesPointResolver(
+        locationResolver: AppLocationResolver(
+          cache: AppLocationGeocodeCache(_FakeCacheStore()),
+        ),
+      );
+
+      final point = await resolver.resolve(
+        const AppBrazilStoreSalesPointSource(
+          id: 'store-uf',
+          name: 'Loja UF',
+          uf: 'MT',
+          allowUfFallback: false,
+          salesAmount: 80,
+          salesCount: 1,
+        ),
+      );
+
+      expect(point, isNull);
     });
 
     test('returns null when no location key can be built', () async {
@@ -155,6 +191,42 @@ void main() {
       );
 
       expect(point, isNull);
+    });
+
+    test('memoizes repeated lookups in resolveAllWithDetails', () async {
+      final geocoder = _CountingGeocoder();
+      final resolver = AppBrazilStoreSalesPointResolver(
+        locationResolver: AppLocationResolver(
+          cache: AppLocationGeocodeCache(_FakeCacheStore()),
+          geocoders: <AppLocationGeocoder>[geocoder],
+        ),
+      );
+
+      final points = await resolver.resolveAllWithDetails(
+        const <AppBrazilStoreSalesPointSource>[
+          AppBrazilStoreSalesPointSource(
+            id: 'store-a',
+            name: 'Loja A',
+            ibgeMunicipalityCode: '5103403',
+            salesAmount: 10,
+            salesCount: 1,
+          ),
+          AppBrazilStoreSalesPointSource(
+            id: 'store-b',
+            name: 'Loja B',
+            ibgeMunicipalityCode: '5103403',
+            salesAmount: 20,
+            salesCount: 2,
+          ),
+        ],
+      );
+
+      expect(points.map((item) => item.point.id), <String>[
+        'store-a',
+        'store-b',
+      ]);
+      expect(points.map((item) => item.point.salesAmount), <double>[10, 20]);
+      expect(geocoder.lookupCount, 1);
     });
   });
 }
@@ -225,5 +297,28 @@ class _FakeCacheStore implements AppCacheStore {
   @override
   Future<void> removeString(String key) async {
     values.remove(key);
+  }
+}
+
+class _CountingGeocoder implements AppLocationGeocoder {
+  int lookupCount = 0;
+
+  @override
+  String get providerId => 'counting';
+
+  @override
+  Future<AppResolvedLocation?> resolve(AppLocationLookupInput input) async {
+    lookupCount += 1;
+    if (input.ibgeMunicipalityCode != '5103403') {
+      return null;
+    }
+
+    return const AppResolvedLocation(
+      point: AppGeoPoint(latitude: -15.601, longitude: -56.0974),
+      precision: AppLocationPrecision.city,
+      source: AppLocationSource.staticBrazilMunicipalityCentroid,
+      cacheKey: 'location_geocode_ibge_5103403',
+      metadata: <String, Object?>{'uf': 'MT', 'city': 'Cuiaba'},
+    );
   }
 }

@@ -267,6 +267,36 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           },
         ),
       );
+    } on SocketDispatchLegacyStreamingUnsupported catch (error, stackTrace) {
+      AppLogger.warning(
+        'Agent SQL legacy socket streaming not supported on this path',
+        context: <String, Object?>{
+          'operation': 'executeAgentSql',
+          'agentId': request.trimmedAgentId,
+          AgentQueriesFailureContext.transportField: 'socket',
+          AgentQueriesFailureContext.transportCodeField: error.code,
+          'streamId': error.streamId,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Failure<AgentSqlExecutionResult, AppFailure>(
+        UnknownFailure(
+          message: error.message,
+          userMessage:
+              'Esta consulta precisa do canal relay ou REST. '
+              'Use relay (useRelay) ou altere o transporte do bridge.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            'operation': 'executeAgentSql',
+            'agentId': request.trimmedAgentId,
+            AgentQueriesFailureContext.transportField: 'socket',
+            AgentQueriesFailureContext.transportCodeField: error.code,
+            'streamId': error.streamId,
+          },
+        ),
+      );
     } on SocketDispatchException catch (error, stackTrace) {
       AppLogger.warning(
         'Agent SQL Socket dispatch failed',

@@ -6,7 +6,6 @@ import 'package:colmeia/app/router/app_router.dart';
 import 'package:colmeia/app/socket_lifecycle_observer.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/app/web_url_strategy.dart';
-import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_dotenv_loader.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
@@ -49,9 +48,7 @@ Future<void> bootstrap() async {
   await runAppWithOptionalSentry(() async {
     await setupDependencies();
     await getIt<WindowsAutoUpdateController>().initialize();
-    if (resolvedTransport == AgentBridgeTransport.socket) {
-      // Activate metrics only when the socket channel is enabled. On REST
-      // builds the listener stays unregistered (lazy singleton).
+    if (AppEnvironment.socketRelayEnabled) {
       getIt<SocketMetricsListener>().start();
     }
     runApp(const ColmeiaBootstrap());
@@ -104,12 +101,13 @@ class ColmeiaBootstrap extends StatelessWidget {
       ],
       child: Builder(
         builder: (context) {
-          // Only materialise ConsumerSocketConnection on socket builds.
-          // REST-only builds do not need to wire (or even instantiate) the
-          // socket stack here; the observer becomes a no-op for the
-          // socket-bound actions when the connection is null.
           final transport = AppEnvironment.agentBridgeTransport;
-          final connection = transport == AgentBridgeTransport.socket
+          // Materialise the consumer socket for lifecycle when the app uses
+          // Socket.IO for relay and/or the bridge (`socketRelayEnabled` is
+          // true for `AGENT_BRIDGE_TRANSPORT=socket` or explicit
+          // `SOCKET_RELAY_ENABLED=true` with REST bridge).
+          final needsSocket = AppEnvironment.socketRelayEnabled;
+          final connection = needsSocket
               ? getIt<ConsumerSocketConnection>()
               : null;
           return SocketLifecycleObserver(

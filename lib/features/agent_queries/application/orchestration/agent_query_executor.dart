@@ -6,12 +6,18 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:result_dart/result_dart.dart';
 
 typedef AgentQueryTargetLoader<Row> =
     Future<AppResult<List<Row>>> Function(AgentQueryTarget target);
+
+typedef AgentQueryLoadedRowsTargetLoader<Row> =
+    Future<AppResult<AgentQueryLoadedRows<Row>>> Function(
+      AgentQueryTarget target,
+    );
 
 /// Runs agent-query plans. Merge-all issues parallel bridge calls in waves
 /// (`Future.wait`). Race fires all loads but keeps only the first success for
@@ -49,6 +55,24 @@ class AgentQueryExecutor<Row> {
     required AgentQueryPlan plan,
     required AgentQueryTargetLoader<Row> loadTarget,
   }) {
+    return executeLoadedRows(
+      plan: plan,
+      loadTarget: (target) async {
+        final result = await loadTarget(target);
+        return result.fold(
+          (rows) => Success<AgentQueryLoadedRows<Row>, AppFailure>(
+            AgentQueryLoadedRows<Row>(rows: rows),
+          ),
+          Failure<AgentQueryLoadedRows<Row>, AppFailure>.new,
+        );
+      },
+    );
+  }
+
+  Future<AppResult<AgentQueryExecutionReport<Row>>> executeLoadedRows({
+    required AgentQueryPlan plan,
+    required AgentQueryLoadedRowsTargetLoader<Row> loadTarget,
+  }) {
     return switch (plan.strategy) {
       AgentQueryExecutionStrategy.singleSource => _executeSingleSource(
         plan: plan,
@@ -67,7 +91,7 @@ class AgentQueryExecutor<Row> {
 
   Future<AppResult<AgentQueryExecutionReport<Row>>> _executeSingleSource({
     required AgentQueryPlan plan,
-    required AgentQueryTargetLoader<Row> loadTarget,
+    required AgentQueryLoadedRowsTargetLoader<Row> loadTarget,
   }) async {
     if (plan.plannedTargets.isEmpty) {
       return Success<AgentQueryExecutionReport<Row>, AppFailure>(
@@ -103,7 +127,7 @@ class AgentQueryExecutor<Row> {
 
   Future<AppResult<AgentQueryExecutionReport<Row>>> _executeMergeAll({
     required AgentQueryPlan plan,
-    required AgentQueryTargetLoader<Row> loadTarget,
+    required AgentQueryLoadedRowsTargetLoader<Row> loadTarget,
   }) async {
     if (plan.plannedTargets.isEmpty) {
       return Success<AgentQueryExecutionReport<Row>, AppFailure>(
@@ -170,7 +194,7 @@ class AgentQueryExecutor<Row> {
 
   Future<AppResult<AgentQueryExecutionReport<Row>>> _executeRace({
     required AgentQueryPlan plan,
-    required AgentQueryTargetLoader<Row> loadTarget,
+    required AgentQueryLoadedRowsTargetLoader<Row> loadTarget,
   }) async {
     if (plan.plannedTargets.isEmpty) {
       return Success<AgentQueryExecutionReport<Row>, AppFailure>(
@@ -347,7 +371,7 @@ class AgentQueryExecutor<Row> {
   >
   _loadParticipant({
     required AgentQueryTarget target,
-    required AgentQueryTargetLoader<Row> loadTarget,
+    required AgentQueryLoadedRowsTargetLoader<Row> loadTarget,
   }) async {
     final stopwatch = Stopwatch()..start();
     try {
@@ -355,11 +379,12 @@ class AgentQueryExecutor<Row> {
       stopwatch.stop();
 
       return result.fold(
-        (rows) => (
+        (loadedRows) => (
           participant: AgentQueryExecutionParticipant<Row>(
             agentId: target.agentId,
             displayName: target.displayName,
-            rows: rows,
+            rows: loadedRows.rows,
+            sourceRowCount: loadedRows.sourceRowCount,
             elapsedMs: stopwatch.elapsedMilliseconds,
           ),
           failure: null,

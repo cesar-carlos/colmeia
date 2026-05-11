@@ -14,6 +14,7 @@ void main() {
   group('SocketChannelMetrics', () {
     test('empty snapshot reports zeroed histograms and empty counters', () {
       final snap = metrics.snapshot();
+      check(snap.relayDebugLogFields()).isEmpty();
       check(snap.handshakeMs).equals(HistogramSnapshot.empty);
       check(snap.dispatchMsByKey).isEmpty();
       check(snap.outcomesTotal).isEmpty();
@@ -21,6 +22,11 @@ void main() {
       check(snap.gateWaiterQueueRejectedTotal).equals(0);
       check(snap.gateAcquireWaitTimeoutTotal).equals(0);
       check(snap.relayStreamingUnhandledErrorTotal).equals(0);
+      check(snap.relayPayloadDecodeWallClockMs).equals(HistogramSnapshot.empty);
+      check(snap.relayAcceptToFirstChunkMs).equals(HistogramSnapshot.empty);
+      check(snap.relayGzipDecodeIsolateTotal).equals(0);
+      check(snap.relayJsonDecodeIsolateTotal).equals(0);
+      check(snap.relayDecodeFailureTotalByCode).isEmpty();
     });
 
     test('handshake histogram aggregates count, mean and percentiles', () {
@@ -148,6 +154,46 @@ void main() {
       check(snap.gateWaiterQueueRejectedTotal).equals(1);
       check(snap.gateAcquireWaitTimeoutTotal).equals(1);
       check(snap.relayStreamingUnhandledErrorTotal).equals(2);
+      check(
+        snap.relayDebugLogFields()['relayStreamingUnhandledErrors'],
+      ).equals(2);
+    });
+
+    test('relay payload decode metrics record and reset', () {
+      metrics
+        ..recordRelayPayloadDecodeWallClock(
+          elapsed: const Duration(milliseconds: 3),
+        )
+        ..recordRelayPayloadGzipDecodeIsolate()
+        ..recordRelayPayloadJsonDecodeIsolate()
+        ..recordRelayDecodeFailure(code: 'gzip_decode_failed')
+        ..recordRelayAcceptToFirstChunkWallClock(
+          elapsed: const Duration(milliseconds: 12),
+        );
+      final snap = metrics.snapshot();
+      check(snap.relayPayloadDecodeWallClockMs.count).equals(1);
+      check(snap.relayGzipDecodeIsolateTotal).equals(1);
+      check(snap.relayJsonDecodeIsolateTotal).equals(1);
+      check(snap.relayDecodeFailureTotalByCode['gzip_decode_failed']).equals(1);
+      check(snap.relayAcceptToFirstChunkMs.count).equals(1);
+
+      final debugFields = snap.relayDebugLogFields();
+      check(debugFields['relayGzipDecodeIsolateUses']).equals(1);
+      check(debugFields['relayJsonDecodeIsolateUses']).equals(1);
+      check(
+        (debugFields['relayDecodeFailureByCode']
+            as Map<String, int>)['gzip_decode_failed'],
+      ).equals(1);
+      check(debugFields['relayPayloadDecodeWallClockMs']).isNotNull();
+      check(debugFields['relayAcceptToFirstChunkMs']).isNotNull();
+
+      metrics.reset();
+      final cleared = metrics.snapshot();
+      check(cleared.relayPayloadDecodeWallClockMs.count).equals(0);
+      check(cleared.relayGzipDecodeIsolateTotal).equals(0);
+      check(cleared.relayJsonDecodeIsolateTotal).equals(0);
+      check(cleared.relayDecodeFailureTotalByCode).isEmpty();
+      check(cleared.relayAcceptToFirstChunkMs.count).equals(0);
     });
 
     test('reset clears every counter and reservoir', () {
@@ -158,6 +204,11 @@ void main() {
         ..recordGateWaiterQueueRejected()
         ..recordGateAcquireWaitTimeout()
         ..recordRelayStreamingUnhandledError()
+        ..recordRelayPayloadDecodeWallClock(
+          elapsed: const Duration(milliseconds: 1),
+        )
+        ..recordRelayPayloadGzipDecodeIsolate()
+        ..recordRelayDecodeFailure(code: 'malformed_frame')
         ..reset();
 
       final snap = metrics.snapshot();
@@ -167,6 +218,9 @@ void main() {
       check(snap.gateWaiterQueueRejectedTotal).equals(0);
       check(snap.gateAcquireWaitTimeoutTotal).equals(0);
       check(snap.relayStreamingUnhandledErrorTotal).equals(0);
+      check(snap.relayPayloadDecodeWallClockMs.count).equals(0);
+      check(snap.relayGzipDecodeIsolateTotal).equals(0);
+      check(snap.relayDecodeFailureTotalByCode).isEmpty();
     });
   });
 }

@@ -5,10 +5,9 @@ import 'package:colmeia/core/socket/payload_frame_codec.dart';
 
 /// Logical payload carried by the `connection:ready` event after handshake.
 ///
-/// Hub source (today): JSON object with `id`, `message`, `user`. Future:
-/// `PayloadFrame` envelope (Phase 2). The decoder below tolerates both
-/// shapes during the compatibility window — see
-/// `docs/Features/consumer_socket_connection_design.md` §10.
+/// The hub sends a JSON object with `id`, `message`, `user` inside either a
+/// [PayloadFrame] envelope (supported contract) or raw JSON during the
+/// compatibility window — see [ConnectionReadyDecoder] implementations.
 class ConnectionReadyPayload {
   const ConnectionReadyPayload({
     required this.socketId,
@@ -25,8 +24,6 @@ class ConnectionReadyPayload {
 
 /// Port: returns `null` when the input cannot be interpreted. Callers
 /// treat `null` as a handshake failure (transient).
-// PR-A keeps a single method; Phase 2 will add `decodeStrict()` when
-// PayloadFrame becomes mandatory.
 // ignore: one_member_abstracts
 abstract interface class ConnectionReadyDecoder {
   ConnectionReadyPayload? decode(Object? raw);

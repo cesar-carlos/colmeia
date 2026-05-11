@@ -7,6 +7,7 @@ import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
+import 'package:flutter/foundation.dart';
 
 /// Glue that subscribes to [ConsumerSocketConnection] state transitions
 /// and [SocketCommandDispatcher] outcomes and feeds them into a
@@ -84,10 +85,20 @@ class SocketMetricsListener {
       case ConsumerSocketDisconnected(:final reason):
         _connectingStartedAt = null;
         _metrics.recordReconnect(reason: reason ?? 'disconnected');
+        _debugLogRelaySliceIfNonEmpty(
+          'disconnected',
+          extra: <String, Object?>{
+            'disconnectReason': reason ?? 'disconnected',
+          },
+        );
       case ConsumerSocketError(:final transient, :final cause):
         _connectingStartedAt = null;
         _metrics.recordReconnect(
           reason: transient ? 'transient_error' : 'fatal_error',
+        );
+        _debugLogRelaySliceIfNonEmpty(
+          'error',
+          extra: <String, Object?>{'transient': transient},
         );
         // One breadcrumb is more useful than a histogram entry alone.
         AppLogger.warning(
@@ -101,7 +112,30 @@ class SocketMetricsListener {
       case ConsumerSocketUnauthorized():
         _connectingStartedAt = null;
         _metrics.recordReconnect(reason: 'unauthorized');
+        _debugLogRelaySliceIfNonEmpty('unauthorized');
     }
+  }
+
+  void _debugLogRelaySliceIfNonEmpty(
+    String socketEvent, {
+    Map<String, Object?> extra = const <String, Object?>{},
+  }) {
+    if (!kDebugMode) {
+      return;
+    }
+    final fields = _metrics.snapshot().relayDebugLogFields();
+    if (fields.isEmpty) {
+      return;
+    }
+    AppLogger.debug(
+      'Socket metrics: relay diagnostics at $socketEvent',
+      context: <String, Object?>{
+        'component': 'SocketMetricsListener',
+        'socketEvent': socketEvent,
+        ...extra,
+        ...fields,
+      },
+    );
   }
 
   void _onOutcome(AgentCommandOutcome outcome) {

@@ -8,7 +8,8 @@
 > collector + adapter, PR-M p1/p2/p3 presença em 3 camadas) +
 > Fase 2.5 (smokes e2e com `SELECT 1` removidos — política do banco; ver §0.2.1) +
 > auditoria de boot (B1 flash de login no cold start, B2 race do warm-up,
-> S1 `connection` nullable em REST-only, S2 sign-out gated por transport) +
+> S1 `connection` nullable quando `socketRelayEnabled` é falso, S2 sign-out
+> só pausa socket quando `connection` não nula) +
 > auditoria de error handling (#1 mapeamento de `RelayDispatchException`,
 > #2 widening de auth-like codes em socket+relay, #2b cancelled benign,
 > #3 race total timeout defensivo, #4 propagação de `RpcFailure.userMessage`
@@ -260,9 +261,9 @@ testes nesta entrega:
 | #      | Tipo     | Sintoma original                                                                                                                                                                                                                                                                                                    | Fix                                                                                                                                                                                                                                                                                                                            |
 | ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **B1** | UX bug   | Cold start com sessão restaurada **flashava a tela de login** antes de redirecionar para o dashboard, porque `resolveAuthRedirect` decidia com `isAuthenticated == false` enquanto `isRestoringSession == true`.                                                                                                    | `resolveAuthRedirect` ganhou parâmetro `isRestoringSession` (default `false`); enquanto `isRestoringSession && !isAuthenticated`, o guard retorna `null` (segura a navegação). O `refreshListenable` re-avalia assim que o restore termina. `redirectWithAuthGuard` passa `authController.isRestoringSession` automaticamente. |
-| **B2** | Race     | Em hot-reload (e em alguns cold-starts rápidos), o restore podia resolver **antes** de `SocketLifecycleObserver.initState` rodar; `_wasAuthenticated` virava `true` na entrada e a transição `false → true` nunca disparava ⇒ socket ficava cold até a primeira query, ignorando `SOCKET_WARM_UP_AFTER_LOGIN=true`. | `_SocketLifecycleObserverState.initState` agora chama `_safeResume(reason: 'mount_already_authenticated')` quando o gate já está autenticado, o transporte é socket, e `warmUpAfterLogin` é `true`.                                                                                                                            |
-| **S1** | Subótimo | `bootstrap.dart` chamava `getIt<ConsumerSocketConnection>()` **mesmo em builds REST-only**, materializando todo o stack socket sem necessidade.                                                                                                                                                                     | `SocketLifecycleObserver.connection` virou `nullable`; `bootstrap.dart` só resolve `ConsumerSocketConnection` quando `transport == socket`. Em REST-only o observer fica como no-op para todas as ações de socket.                                                                                                             |
-| **S2** | Subótimo | `_onAuthChanged` chamava `_safePause(reason: 'signed_out')` no logout **independente do transport**, gerando log/método inútil em builds REST.                                                                                                                                                                      | Pause em sign-out gated por `_isSocketTransport` (transport socket **e** connection não-nula). Comportamento equivalente em socket; silencioso em REST.                                                                                                                                                                        |
+| **B2** | Race     | Em hot-reload (e em alguns cold-starts rápidos), o restore podia resolver **antes** de `SocketLifecycleObserver.initState` rodar; `_wasAuthenticated` virava `true` na entrada e a transição `false → true` nunca disparava ⇒ socket ficava cold até a primeira query, ignorando `SOCKET_WARM_UP_AFTER_LOGIN=true`. | `_SocketLifecycleObserverState.initState` chama `_safeResume(reason: 'mount_already_authenticated')` quando o gate já está autenticado, há `connection` materializado (ver S1), e `warmUpAfterLogin` é `true`.                                                                                                                |
+| **S1** | Subótimo | `bootstrap.dart` chamava `getIt<ConsumerSocketConnection>()` **mesmo em builds REST-only**, materializando todo o stack socket sem necessidade.                                                                                                                                                                     | `SocketLifecycleObserver.connection` é `nullable`. `bootstrap.dart` resolve `ConsumerSocketConnection` quando `AppEnvironment.socketRelayEnabled` (`AGENT_BRIDGE_TRANSPORT=socket` **ou** `SOCKET_RELAY_ENABLED=true`). REST-only **sem** relay mantém `connection == null` ⇒ observer no-op.                                  |
+| **S2** | Subótimo | `_onAuthChanged` chamava `_safePause(reason: 'signed_out')` no logout **independente do transport**, gerando log/método inútil em builds REST.                                                                                                                                                                      | Pause em sign-out só quando `_shouldManageSocket` (`connection != null`). Silencioso quando não há socket a gerir (REST-only sem relay).                                                                                                                                                                                         |
 
 Arquivos tocados nesta entrega:
 
@@ -272,9 +273,15 @@ Arquivos tocados nesta entrega:
 | App (lifecycle observer) | `lib/app/socket_lifecycle_observer.dart`                                                                                                                                                                                           |
 | App (composição)         | `lib/app/bootstrap.dart`                                                                                                                                                                                                           |
 | Tests (guard)            | `test/features/auth/presentation/routes/auth_redirect_test.dart` (+5 cenários: hold em rota protegida / guest-only / unmatched durante restore; resume normal pós-restore; redirect para login pós-restore sem sessão)             |
-| Tests (observer)         | `test/app/socket_lifecycle_observer_test.dart` (+5 cenários: warm-up no mount-já-autenticado; warm-up desligado no mount; mount em REST não dispara warm-up; conexão `null` é no-op universal; sign-out em REST não chama `pause`) |
+| Tests (observer)         | `test/app/socket_lifecycle_observer_test.dart` — warm-up no mount já autenticado; warm-up desligado; `connection == null` ⇒ no-op; REST com `connection` não nulo (relay) aplica pause/resume; sign-out sem socket não chama `pause` |
 
 **Notas de impacto operacional:**
+
+- **Relay opcional (`SOCKET_RELAY_ENABLED`) com bridge REST**: o mesmo
+  `ConsumerSocketConnection` ao `/consumers` pode ser materializado para
+  relay; `SocketLifecycleObserver` e `SocketMetricsListener` seguem
+  `AppEnvironment.socketRelayEnabled`, não apenas `AGENT_BRIDGE_TRANSPORT ==
+  socket`.
 
 - B1 é o fix de maior impacto visível (UX): zero flicker de login no
   cold start com sessão válida. Sem mudança de contrato — o parâmetro
@@ -354,11 +361,11 @@ Arquivos tocados nesta entrega:
   transição clássica `null → authenticated`). Sem isso, em prática o
   warm-up só funcionava de forma confiável em hot-restart com login
   manual.
-- S1 deixa o REST-only build verdadeiramente REST-only no boot — não
-  cria `Socket.IO` client, não toca `AppEnvironment.socketEndpoint`,
-  não materializa `SocketCommandDispatcher`. Reduz superfície de
-  falha em builds que não querem socket.
-- S2 é cosmético mas elimina ruído de logging em REST-only.
+- S1 evita materializar `ConsumerSocketConnection` e o stack Socket.IO no
+  boot quando `AppEnvironment.socketRelayEnabled` é falso (REST-only **sem**
+  relay). Com `SOCKET_RELAY_ENABLED=true` e bridge REST, o socket ainda é
+  criado para relay — ver §0.4.
+- S2 é cosmético mas elimina ruído de logging quando não há `connection`.
 
 Cobertura: **31 testes ✅** nas 2 suites tocadas (16 em `auth_redirect_test`,
 15 em `socket_lifecycle_observer_test`). Sweep `flutter analyze` limpo
@@ -843,8 +850,8 @@ registerInjectorPresentation(getIt);
 
 | Evento                                                    | Ação esperada                                                                                                                                                                                                                                                                                                               |
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| App inicia, sessão restaurada                             | Em REST-only: nada. Em socket: warm-up oportunista no `SocketLifecycleObserver.initState` quando o gate já está autenticado **e** `SOCKET_WARM_UP_AFTER_LOGIN=true` (fix B2/§0.4 — antes a transição `null → authenticated` podia ser perdida no cold start). Sem warm-up, a conexão fica lazy até o primeiro `executeSql`. |
-| Login concluído                                           | **Warm-up oportunista** quando `AGENT_BRIDGE_TRANSPORT=socket` e `SOCKET_WARM_UP_AFTER_LOGIN=true`: o `SocketLifecycleObserver` observa a transição `false → true` no `AuthenticationGate` e chama `connection.resume()` (single-flight + idempotente).                                                                     |
+| App inicia, sessão restaurada                             | Sem `connection` materializado (`socketRelayEnabled` falso): nada. Com `connection` não nulo e `SOCKET_WARM_UP_AFTER_LOGIN=true`: warm-up oportunista no `SocketLifecycleObserver.initState` quando o gate já está autenticado (fix B2/§0.4 — antes a transição `null → authenticated` podia ser perdida no cold start). Sem warm-up, a conexão fica lazy até o primeiro uso. |
+| Login concluído                                           | **Warm-up oportunista** quando há `connection`, `SOCKET_WARM_UP_AFTER_LOGIN=true`, e o `AuthenticationGate` faz `false → true`: o observer chama `connection.resume()` (single-flight + idempotente). Não depende só de `AGENT_BRIDGE_TRANSPORT=socket` — relay sobre REST também se qualifica.                                                                     |
 | 401 em request socket                                     | `AuthRefreshCoordinator.refreshAccessToken()` → reconectar com novo token; se falhar, `AuthSessionEvents.notifyInvalidated()`.                                                                                                                                                                                              |
 | `AuthSessionEvents.invalidated` (logout, refresh fail)    | `ConsumerSocketConnection.disconnect()`.                                                                                                                                                                                                                                                                                    |
 | App em background (`AppLifecycleState.paused`/`detached`) | `connection.pause()` desconecta — decisão deliberada por **mobile economy** (bateria/dados). Detalhado em `consumer_socket_connection_design.md` §9.                                                                                                                                                                        |

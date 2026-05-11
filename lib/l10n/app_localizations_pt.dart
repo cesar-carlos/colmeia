@@ -2432,6 +2432,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String salesLiveMapPartialRowCapReached(int count) {
+    return '$count agente(s) atingiram o limite de linhas da consulta; o mapa pode estar incompleto.';
+  }
+
+  @override
   String salesLiveMapPartialMissingCoordinates(int count) {
     return '$count filial(is) sem coordenada resolvida.';
   }
@@ -2536,10 +2541,23 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapKpiBranchesOnMap => 'Filiais no mapa';
 
   @override
+  String salesLiveMapKpiBranchesOnMapTooltip(
+    int providedCount,
+    int ibgeCount,
+    int cepCount,
+    int cityUfCount,
+    int capitalUfCount,
+    int stateUfCount,
+    int missingCount,
+  ) {
+    return 'Geo: $providedCount informada | $ibgeCount IBGE | $cepCount CEP | $cityUfCount cidade/UF | $capitalUfCount capital/UF | $stateUfCount UF | $missingCount sem coordenada';
+  }
+
+  @override
   String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
 
   @override
-  String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
+  String get salesLiveMapKpiQueriedAgents => 'Agentes consultados';
 
   @override
   String get salesBranchFilterLabel => 'FILIAIS';
@@ -5698,6 +5716,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
+  String salesLiveMapPartialRowCapReached(int count) {
+    return '$count agente(s) atingiram o limite de linhas da consulta; o mapa pode estar incompleto.';
+  }
+
+  @override
   String salesLiveMapPartialMissingCoordinates(int count) {
     return '$count filial(is) sem coordenada resolvida.';
   }
@@ -5802,10 +5825,23 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapKpiBranchesOnMap => 'Filiais no mapa';
 
   @override
+  String salesLiveMapKpiBranchesOnMapTooltip(
+    int providedCount,
+    int ibgeCount,
+    int cepCount,
+    int cityUfCount,
+    int capitalUfCount,
+    int stateUfCount,
+    int missingCount,
+  ) {
+    return 'Geo: $providedCount informada | $ibgeCount IBGE | $cepCount CEP | $cityUfCount cidade/UF | $capitalUfCount capital/UF | $stateUfCount UF | $missingCount sem coordenada';
+  }
+
+  @override
   String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
 
   @override
-  String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
+  String get salesLiveMapKpiQueriedAgents => 'Agentes consultados';
 
   @override
   String get salesBranchFilterLabel => 'FILIAIS';

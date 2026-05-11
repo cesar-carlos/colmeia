@@ -95,6 +95,25 @@ Map<String, Object?> _buildResponseFrame(
   ).toMap();
 }
 
+/// Like [_buildResponseFrame] but omits `requestId` on the frame and sets
+/// top-level `conversationId` (hub path when `requestId` is dropped).
+Map<String, Object?> _buildResponseFrameWithoutRequestId(
+  Object? data, {
+  required String conversationId,
+  bool useGzip = false,
+}) {
+  final encoded = Uint8List.fromList(utf8.encode(jsonEncode(data)));
+  final wire = useGzip ? Uint8List.fromList(gzip.encode(encoded)) : encoded;
+  final frame = PayloadFrame(
+    payload: wire,
+    originalSize: encoded.length,
+    compressedSize: wire.length,
+    cmp: useGzip ? PayloadFrame.compressionGzip : PayloadFrame.compressionNone,
+  ).toMap();
+  frame['conversationId'] = conversationId;
+  return frame;
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(<String, Object?>{});
@@ -350,6 +369,132 @@ void main() {
       check(outcomes.length).equals(1);
       check(outcomes.single).isA<RelayRpcSuccess>();
     });
+
+    test(
+      'rpc.response without frame requestId routes when exactly one pending '
+      'exists for the conversation',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'agentId': 'agent-1',
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-no-frame-rq',
+              'params': <String, Object?>{'sql': 'SELECT 1'},
+            },
+          },
+          clientRequestId: 'rpc-no-frame-rq',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-no-frame-rq',
+          'success': true,
+        });
+
+        final response = <String, Object?>{
+          'response': <String, Object?>{
+            'type': 'single',
+            'item': <String, Object?>{
+              'id': 'rpc-no-frame-rq',
+              'success': true,
+              'result': <String, Object?>{'rows': <Object?>[]},
+            },
+          },
+        };
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrameWithoutRequestId(
+            response,
+            conversationId: 'conv-agent-1',
+          ),
+        );
+
+        final result = await future;
+        check(result['response']).isA<Map<dynamic, dynamic>>();
+      },
+    );
+
+    test(
+      'rpc.response without frame requestId is ignored when two pendings '
+      'share the conversation (both timeout)',
+      () async {
+        final dispatcher = await dispatcherFor(
+          defaultTimeout: const Duration(milliseconds: 150),
+        );
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final f1 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-amb-a',
+            },
+          },
+          clientRequestId: 'rpc-amb-a',
+        );
+        final f2 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-amb-b',
+            },
+          },
+          clientRequestId: 'rpc-amb-b',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-amb-a',
+          'success': true,
+        });
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-amb-b',
+          'success': true,
+        });
+
+        final orphan = <String, Object?>{
+          'response': <String, Object?>{
+            'type': 'single',
+            'item': <String, Object?>{
+              'id': 'rpc-amb-a',
+              'success': true,
+              'result': <String, Object?>{'rows': <Object?>[]},
+            },
+          },
+        };
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrameWithoutRequestId(
+            orphan,
+            conversationId: 'conv-agent-1',
+          ),
+        );
+
+        await Future.wait<void>(<Future<void>>[
+          expectLater(f1, throwsA(isA<RelayRequestTimeout>())),
+          expectLater(f2, throwsA(isA<RelayRequestTimeout>())),
+        ]);
+      },
+    );
 
     test(
       'completes on relay:rpc.complete when the hub bundles a response',

@@ -46,6 +46,103 @@ abstract final class AppBrazilStoreSalesMapData {
         .toList(growable: false);
   }
 
+  static AppBrazilStoreSalesMapPreparedData prepareSnapshotData(
+    Iterable<AppBrazilStoreSalesPoint> points, {
+    bool includeEmptyStates = true,
+    String? regionKey,
+  }) {
+    final validPoints = <AppBrazilStoreSalesPoint>[];
+    final buckets = <String, _MutableStateBucket>{};
+    final includedUfs = _includedUfCodes(regionKey);
+
+    if (includeEmptyStates) {
+      for (final uf in includedUfs) {
+        buckets[uf] = _MutableStateBucket.fromUf(uf);
+      }
+    }
+
+    var totalPointCount = 0;
+    var validPointCount = 0;
+    var invalidCoordinateCount = 0;
+    var unknownUfCount = 0;
+    var filteredByRegionCount = 0;
+    var resolvedByProvidedGeoPointCount = 0;
+    var resolvedByIbgeMunicipalityCodeCount = 0;
+    var resolvedByCepCount = 0;
+    var resolvedByCityUfCount = 0;
+    var resolvedByCapitalUfCount = 0;
+    var resolvedByStateUfCount = 0;
+    var unknownResolutionCount = 0;
+
+    for (final point in points) {
+      totalPointCount += 1;
+      final uf = normalizeUf(point.uf);
+      if (!isKnownUf(uf)) {
+        unknownUfCount += 1;
+        continue;
+      }
+
+      if (includedUfs.contains(uf)) {
+        buckets.putIfAbsent(uf, () => _MutableStateBucket.fromUf(uf))
+          ..salesAmount += point.salesAmount
+          ..salesCount += point.salesCount
+          ..storeCount += 1;
+      }
+
+      if (!hasValidCoordinates(point)) {
+        invalidCoordinateCount += 1;
+        continue;
+      }
+
+      if (!pointMatchesRegion(point, regionKey)) {
+        filteredByRegionCount += 1;
+        continue;
+      }
+
+      validPointCount += 1;
+      validPoints.add(point);
+      switch (point.locationResolution) {
+        case AppBrazilStoreSalesLocationResolution.providedGeoPoint:
+          resolvedByProvidedGeoPointCount += 1;
+        case AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode:
+          resolvedByIbgeMunicipalityCodeCount += 1;
+        case AppBrazilStoreSalesLocationResolution.cep:
+          resolvedByCepCount += 1;
+        case AppBrazilStoreSalesLocationResolution.cityUf:
+          resolvedByCityUfCount += 1;
+        case AppBrazilStoreSalesLocationResolution.capitalUf:
+          resolvedByCapitalUfCount += 1;
+        case AppBrazilStoreSalesLocationResolution.stateUf:
+          resolvedByStateUfCount += 1;
+        case null:
+          unknownResolutionCount += 1;
+      }
+    }
+
+    return AppBrazilStoreSalesMapPreparedData(
+      validPoints: validPoints,
+      buckets: <AppBrazilStoreSalesStateBucket>[
+        for (final uf in includedUfs)
+          if (buckets.containsKey(uf)) buckets[uf]!.toImmutable(),
+      ],
+      diagnostics: AppBrazilStoreSalesMapDiagnostics(
+        totalPointCount: totalPointCount,
+        validPointCount: validPointCount,
+        invalidCoordinateCount: invalidCoordinateCount,
+        unknownUfCount: unknownUfCount,
+        filteredByRegionCount: filteredByRegionCount,
+        resolvedByProvidedGeoPointCount: resolvedByProvidedGeoPointCount,
+        resolvedByIbgeMunicipalityCodeCount:
+            resolvedByIbgeMunicipalityCodeCount,
+        resolvedByCepCount: resolvedByCepCount,
+        resolvedByCityUfCount: resolvedByCityUfCount,
+        resolvedByCapitalUfCount: resolvedByCapitalUfCount,
+        resolvedByStateUfCount: resolvedByStateUfCount,
+        unknownResolutionCount: unknownResolutionCount,
+      ),
+    );
+  }
+
   static AppBrazilStoreSalesMapDiagnostics buildDiagnostics(
     Iterable<AppBrazilStoreSalesPoint> points, {
     String? regionKey,
@@ -55,6 +152,13 @@ abstract final class AppBrazilStoreSalesMapData {
     var invalidCoordinateCount = 0;
     var unknownUfCount = 0;
     var filteredByRegionCount = 0;
+    var resolvedByProvidedGeoPointCount = 0;
+    var resolvedByIbgeMunicipalityCodeCount = 0;
+    var resolvedByCepCount = 0;
+    var resolvedByCityUfCount = 0;
+    var resolvedByCapitalUfCount = 0;
+    var resolvedByStateUfCount = 0;
+    var unknownResolutionCount = 0;
 
     for (final point in points) {
       totalPointCount += 1;
@@ -74,6 +178,22 @@ abstract final class AppBrazilStoreSalesMapData {
       }
 
       validPointCount += 1;
+      switch (point.locationResolution) {
+        case AppBrazilStoreSalesLocationResolution.providedGeoPoint:
+          resolvedByProvidedGeoPointCount += 1;
+        case AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode:
+          resolvedByIbgeMunicipalityCodeCount += 1;
+        case AppBrazilStoreSalesLocationResolution.cep:
+          resolvedByCepCount += 1;
+        case AppBrazilStoreSalesLocationResolution.cityUf:
+          resolvedByCityUfCount += 1;
+        case AppBrazilStoreSalesLocationResolution.capitalUf:
+          resolvedByCapitalUfCount += 1;
+        case AppBrazilStoreSalesLocationResolution.stateUf:
+          resolvedByStateUfCount += 1;
+        case null:
+          unknownResolutionCount += 1;
+      }
     }
 
     return AppBrazilStoreSalesMapDiagnostics(
@@ -82,6 +202,13 @@ abstract final class AppBrazilStoreSalesMapData {
       invalidCoordinateCount: invalidCoordinateCount,
       unknownUfCount: unknownUfCount,
       filteredByRegionCount: filteredByRegionCount,
+      resolvedByProvidedGeoPointCount: resolvedByProvidedGeoPointCount,
+      resolvedByIbgeMunicipalityCodeCount: resolvedByIbgeMunicipalityCodeCount,
+      resolvedByCepCount: resolvedByCepCount,
+      resolvedByCityUfCount: resolvedByCityUfCount,
+      resolvedByCapitalUfCount: resolvedByCapitalUfCount,
+      resolvedByStateUfCount: resolvedByStateUfCount,
+      unknownResolutionCount: unknownResolutionCount,
     );
   }
 
@@ -151,6 +278,25 @@ abstract final class AppBrazilStoreSalesMapData {
     String? regionKey,
   }) {
     final validPoints = validMapPoints(points, regionKey: regionKey);
+    return buildMarkerGroupsFromValidPoints(
+      validPoints,
+      collapseSameCoordinateMarkers: collapseSameCoordinateMarkers,
+      enableProximityCluster: enableProximityCluster,
+      proximityClusterDistanceDegrees: proximityClusterDistanceDegrees,
+      coordinatePrecision: coordinatePrecision,
+      markerAggregation: markerAggregation,
+    );
+  }
+
+  static List<AppBrazilStoreSalesMarkerGroup> buildMarkerGroupsFromValidPoints(
+    List<AppBrazilStoreSalesPoint> validPoints, {
+    bool collapseSameCoordinateMarkers = true,
+    bool enableProximityCluster = false,
+    double proximityClusterDistanceDegrees = 0.45,
+    int coordinatePrecision = 4,
+    AppBrazilStoreSalesMarkerAggregation markerAggregation =
+        AppBrazilStoreSalesMarkerAggregation.stores,
+  }) {
     if (markerAggregation ==
         AppBrazilStoreSalesMarkerAggregation.municipalities) {
       return _buildMunicipalityMarkerGroups(
@@ -344,6 +490,18 @@ abstract final class AppBrazilStoreSalesMapData {
           (longitudeDistance * longitudeDistance),
     );
   }
+}
+
+class AppBrazilStoreSalesMapPreparedData {
+  const AppBrazilStoreSalesMapPreparedData({
+    required this.validPoints,
+    required this.buckets,
+    required this.diagnostics,
+  });
+
+  final List<AppBrazilStoreSalesPoint> validPoints;
+  final List<AppBrazilStoreSalesStateBucket> buckets;
+  final AppBrazilStoreSalesMapDiagnostics diagnostics;
 }
 
 class AppBrazilStoreSalesMarkerGroup {

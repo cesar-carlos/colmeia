@@ -34,6 +34,31 @@ void main() {
     );
 
     test(
+      'legacy streaming unsupported retries once on REST without latching',
+      () async {
+        final socket = _RecordingDataSource(
+          throwOn: const SocketDispatchLegacyStreamingUnsupported(
+            message: 'stream',
+            streamId: 's-1',
+          ),
+        );
+        final rest = _RecordingDataSource(
+          response: <String, dynamic>{'response': 'materialised-from-rest'},
+        );
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+        );
+
+        final response = await fallback.postSqlExecute(request);
+        check(response['response']).equals('materialised-from-rest');
+        check(socket.callCount).equals(1);
+        check(rest.callCount).equals(1);
+        check(fallback.isLatchedToRest).isFalse();
+      },
+    );
+
+    test(
       'namespace forbidden latches to REST and replays the call there '
       '(plus all subsequent calls go straight to REST)',
       () async {

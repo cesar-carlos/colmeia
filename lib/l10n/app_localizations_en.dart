@@ -2395,6 +2395,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String salesLiveMapPartialRowCapReached(int count) {
+    return '$count agent(s) reached the query row limit; the map may be incomplete.';
+  }
+
+  @override
   String salesLiveMapPartialMissingCoordinates(int count) {
     return '$count branch(es) without resolved coordinates.';
   }
@@ -2499,10 +2504,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesLiveMapKpiBranchesOnMap => 'Branches on map';
 
   @override
+  String salesLiveMapKpiBranchesOnMapTooltip(
+    int providedCount,
+    int ibgeCount,
+    int cepCount,
+    int cityUfCount,
+    int capitalUfCount,
+    int stateUfCount,
+    int missingCount,
+  ) {
+    return 'Geo: $providedCount provided | $ibgeCount IBGE | $cepCount ZIP | $cityUfCount city/state | $capitalUfCount capital/state | $stateUfCount state | $missingCount without coordinates';
+  }
+
+  @override
   String get salesLiveMapKpiMunicipalitiesOnMap => 'Cities on map';
 
   @override
-  String get salesLiveMapKpiQueriedAgents => 'Queried branches';
+  String get salesLiveMapKpiQueriedAgents => 'Queried agents';
 
   @override
   String get salesBranchFilterLabel => 'BRANCHES';

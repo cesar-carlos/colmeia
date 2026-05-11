@@ -201,6 +201,28 @@ abstract final class EnvKeys {
   /// emits signed frames only when `PAYLOAD_SIGN_OUTBOUND=true`).
   static const String socketPayloadRequireSignature =
       'SOCKET_PAYLOAD_REQUIRE_SIGNATURE';
+
+  /// When `false`, `PayloadFrameCodec` never uses worker isolates for gzip
+  /// encode/decode or large `jsonDecode` (everything stays on the UI
+  /// isolate). Default `true`.
+  static const String socketPayloadWorkerIsolatesEnabled =
+      'SOCKET_PAYLOAD_WORKER_ISOLATES_ENABLED';
+
+  /// Minimum compressed gzip size (bytes) before inbound gzip inflation may
+  /// run on a worker isolate. Default matches
+  /// `PayloadFrameCodec.defaultGzipDecodeIsolateThresholdBytes` (16 KiB).
+  static const String socketPayloadGzipDecodeIsolateThresholdBytes =
+      'SOCKET_PAYLOAD_GZIP_DECODE_ISOLATE_THRESHOLD_BYTES';
+
+  /// Minimum raw JSON UTF-8 size (bytes) before outbound `gzip.encode` may
+  /// run on a worker isolate. Default 65536.
+  static const String socketPayloadGzipEncodeIsolateThresholdBytes =
+      'SOCKET_PAYLOAD_GZIP_ENCODE_ISOLATE_THRESHOLD_BYTES';
+
+  /// Minimum materialised JSON UTF-8 size (bytes) before `jsonDecode` may
+  /// run on a worker isolate. Default 262144 (256 KiB).
+  static const String socketPayloadJsonDecodeIsolateThresholdBytes =
+      'SOCKET_PAYLOAD_JSON_DECODE_ISOLATE_THRESHOLD_BYTES';
 }
 
 /// Asset paths for bundled env files (`loadAppDotenv`).

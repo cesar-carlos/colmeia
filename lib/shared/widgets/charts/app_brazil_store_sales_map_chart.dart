@@ -574,28 +574,25 @@ class _BrazilStoreSalesMapSnapshot {
     required double zoomLevel,
     required AppBrazilStoreSalesMapStyle style,
   }) {
-    final diagnostics = AppBrazilStoreSalesMapData.buildDiagnostics(
-      points,
-      regionKey: activeRegionKey,
-    );
-    final buckets = AppBrazilStoreSalesMapData.buildStateBuckets(
+    final preparedData = AppBrazilStoreSalesMapData.prepareSnapshotData(
       points,
       includeEmptyStates: style.includeEmptyStates,
       regionKey: activeRegionKey,
     );
+    final diagnostics = preparedData.diagnostics;
+    final buckets = preparedData.buckets;
     final markerGroups = _showsStoreMarkers(style.markerAggregation)
-        ? AppBrazilStoreSalesMapData.buildMarkerGroups(
-            points,
+        ? AppBrazilStoreSalesMapData.buildMarkerGroupsFromValidPoints(
+            preparedData.validPoints,
             collapseSameCoordinateMarkers: style.collapseSameCoordinateMarkers,
             enableProximityCluster: style.enableProximityCluster,
             proximityClusterDistanceDegrees:
                 AppBrazilStoreSalesMapData.proximityClusterDistanceForZoom(
                   baseDistanceDegrees: style.proximityClusterDistanceDegrees,
                   zoomLevel: zoomLevel,
-                ),
+            ),
             coordinatePrecision: style.clusterCoordinatePrecision,
             markerAggregation: style.markerAggregation,
-            regionKey: activeRegionKey,
           )
         : const <AppBrazilStoreSalesMarkerGroup>[];
     final stateBubbleBuckets = _stateBubbleBuckets(
@@ -619,10 +616,7 @@ class _BrazilStoreSalesMapSnapshot {
     AppBrazilStoreSalesMarkerGroup? selectedMarkerGroup;
     var selectedStateKey = requestedStateKey;
     if (selectedStoreId != null) {
-      for (final point in AppBrazilStoreSalesMapData.validMapPoints(
-        points,
-        regionKey: activeRegionKey,
-      )) {
+      for (final point in preparedData.validPoints) {
         if (point.id == selectedStoreId) {
           selectedPoint = point;
           selectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(point.uf);

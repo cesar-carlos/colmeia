@@ -27,6 +27,8 @@ void registerInjectorAgentMeta(GetIt getIt) {
               context: <String, Object?>{
                 'triggerCode': trigger.code,
                 'triggerMessage': trigger.message,
+                'agentBridgeTransport':
+                    AppEnvironment.agentBridgeTransport.name,
               },
             ),
           ),

@@ -139,12 +139,12 @@ void main() {
     );
 
     testWidgets(
-      'transport=rest disables every lifecycle action',
+      'transport=rest with null connection disables every lifecycle action',
       (tester) async {
         authGate.setAuthenticated(value: true);
         await _pumpObserver(
           tester,
-          connection: connection,
+          connection: null,
           authGate: authGate,
           transport: AgentBridgeTransport.rest,
           warmUpAfterLogin: true,
@@ -161,6 +161,26 @@ void main() {
         );
         await tester.pump();
         verifyNever(() => connection.resume());
+      },
+    );
+
+    testWidgets(
+      'REST transport still pauses a non-null connection (relay socket path)',
+      (tester) async {
+        authGate.setAuthenticated(value: true);
+        await _pumpObserver(
+          tester,
+          connection: connection,
+          authGate: authGate,
+          transport: AgentBridgeTransport.rest,
+          warmUpAfterLogin: true,
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.paused,
+        );
+        await tester.pump();
+        verify(() => connection.pause()).called(1);
       },
     );
 
@@ -296,12 +316,13 @@ void main() {
     );
 
     testWidgets(
-      'mount-already-authenticated does not warm up on REST transport',
+      'mount-already-authenticated does not warm up on REST transport '
+      '(no consumer connection wired)',
       (tester) async {
         authGate.setAuthenticated(value: true);
         await _pumpObserver(
           tester,
-          connection: connection,
+          connection: null,
           authGate: authGate,
           transport: AgentBridgeTransport.rest,
           warmUpAfterLogin: true,
@@ -348,12 +369,12 @@ void main() {
     );
 
     testWidgets(
-      'sign-out on REST transport does not call pause',
+      'sign-out on REST transport with null connection does not call pause',
       (tester) async {
         authGate.setAuthenticated(value: true);
         await _pumpObserver(
           tester,
-          connection: connection,
+          connection: null,
           authGate: authGate,
           transport: AgentBridgeTransport.rest,
           warmUpAfterLogin: true,

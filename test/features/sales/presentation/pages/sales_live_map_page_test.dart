@@ -255,6 +255,7 @@ SalesLiveMapLoadResult _loadedResult() {
     failedAgentCount: 0,
     missingClientTokenAgentCount: 0,
     skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
     refreshedAt: DateTime(2026, 5, 9, 12),
   );
 }

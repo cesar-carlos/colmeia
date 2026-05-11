@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_ta
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
@@ -73,6 +74,63 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     );
   }
 
+  static Future<AppResult<AgentQueryExecutionReport<Row>>>
+  executeLoadedRows<Filter, Row>({
+    required String operation,
+    required AgentQueryKey queryKey,
+    required String userId,
+    required Filter filter,
+    required AgentQueryTargetResolver targetResolver,
+    required AgentQueryPlanBuilder planBuilder,
+    required AgentQueryExecutor<Row> executor,
+    required Future<AppResult<AgentQueryLoadedRows<Row>>> Function({
+      required String userId,
+      required String agentId,
+      required Filter filter,
+      String? clientToken,
+      int? bridgeTimeoutMs,
+      Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+      bool? hubConnectedFromApprovedCatalogRow,
+    })
+    loadRowsForTarget,
+    Set<String>? selectedAgentIds,
+    AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
+    int? bridgeTimeoutMs,
+    int? raceMaxSources,
+  }) async {
+    return executeLoadedMapped<AgentQueryExecutionReport<Row>, Row>(
+      operation: operation,
+      queryKey: queryKey,
+      userId: userId,
+      targetResolver: targetResolver,
+      planBuilder: planBuilder,
+      executor: executor,
+      selectedAgentIds: selectedAgentIds,
+      strategy: strategy,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      raceMaxSources: raceMaxSources,
+      loadRowsForTarget:
+          ({
+            required target,
+            required plan,
+            required resolution,
+          }) {
+            return loadRowsForTarget(
+              userId: userId,
+              agentId: target.agentId,
+              filter: filter,
+              clientToken: target.clientToken,
+              bridgeTimeoutMs: plan.bridgeTimeoutMs,
+              hubPresenceOnlineAgentIdsSnapshot:
+                  resolution.hubPresenceOnlineAgentIdsSnapshot,
+              hubConnectedFromApprovedCatalogRow:
+                  target.hubConnectedFromApprovedCatalogRow,
+            );
+          },
+      mapReport: (report) => report,
+    );
+  }
+
   static Future<AppResult<Output>> executeMapped<Output extends Object, Row>({
     required String operation,
     required AgentQueryKey queryKey,
@@ -81,6 +139,69 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     required AgentQueryPlanBuilder planBuilder,
     required AgentQueryExecutor<Row> executor,
     required Future<AppResult<List<Row>>> Function({
+      required AgentQueryTarget target,
+      required AgentQueryPlan plan,
+      required AgentQueryTargetResolution resolution,
+    })
+    loadRowsForTarget,
+    required Output Function(AgentQueryExecutionReport<Row> report) mapReport,
+    Set<String>? selectedAgentIds,
+    AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
+    int? bridgeTimeoutMs,
+    int? raceMaxSources,
+    String successLogMessage = 'Agent query executed across agents',
+    Map<String, Object?> Function(
+      AgentQueryExecutionReport<Row> report,
+      Output mapped,
+    )?
+    successContext,
+  }) async {
+    return executeLoadedMapped<Output, Row>(
+      operation: operation,
+      queryKey: queryKey,
+      userId: userId,
+      targetResolver: targetResolver,
+      planBuilder: planBuilder,
+      executor: executor,
+      selectedAgentIds: selectedAgentIds,
+      strategy: strategy,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      raceMaxSources: raceMaxSources,
+      loadRowsForTarget:
+          ({
+            required target,
+            required plan,
+            required resolution,
+          }) async {
+            final result = await loadRowsForTarget(
+              target: target,
+              plan: plan,
+              resolution: resolution,
+            );
+            return result.fold(
+              (rows) => Success<AgentQueryLoadedRows<Row>, AppFailure>(
+                AgentQueryLoadedRows<Row>(rows: rows),
+              ),
+              Failure<AgentQueryLoadedRows<Row>, AppFailure>.new,
+            );
+          },
+      mapReport: mapReport,
+      successLogMessage: successLogMessage,
+      successContext: successContext,
+    );
+  }
+
+  static Future<AppResult<Output>> executeLoadedMapped<
+    Output extends Object,
+    Row
+  >({
+    required String operation,
+    required AgentQueryKey queryKey,
+    required String userId,
+    required AgentQueryTargetResolver targetResolver,
+    required AgentQueryPlanBuilder planBuilder,
+    required AgentQueryExecutor<Row> executor,
+    required Future<AppResult<AgentQueryLoadedRows<Row>>> Function({
       required AgentQueryTarget target,
       required AgentQueryPlan plan,
       required AgentQueryTargetResolution resolution,
@@ -160,7 +281,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       return Failure<Output, AppFailure>(failure);
     }
 
-    final executionResult = await executor.execute(
+    final executionResult = await executor.executeLoadedRows(
       plan: plan,
       loadTarget: (target) => loadRowsForTarget(
         target: target,

@@ -1,34 +1,36 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_diario_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
 import 'package:colmeia/shared/maps/app_location_models.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
-class _MockLoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase
+class _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
     extends Mock
-    implements LoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase {}
+    implements LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {}
 
 void main() {
   const userId = 'user-1';
   final now = DateTime(2026, 5, 9, 14);
 
-  late _MockLoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase
+  late _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
   loadAcrossAgents;
   late _MemoryCacheStore cacheStore;
   late _StaticBrazilTestGeocoder geocoder;
@@ -36,7 +38,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(
-      ResumoTotalVendasMunicipioFilialDiarioFilter(
+      ResumoTotalVendasMunicipioFilialPeriodoFilter(
         dataVendaInicio: DateTime.utc(2026),
         dataVendaFim: DateTime.utc(2026, 12, 31),
       ),
@@ -46,7 +48,7 @@ void main() {
 
   setUp(() {
     loadAcrossAgents =
-        _MockLoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase();
+        _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase();
     cacheStore = _MemoryCacheStore();
     geocoder = _StaticBrazilTestGeocoder();
     final locationResolver = AppLocationResolver(
@@ -69,12 +71,12 @@ void main() {
         participants:
             <
               AgentQueryExecutionParticipant<
-                ResumoTotalVendasMunicipioFilialDiarioRow
+                ResumoTotalVendasMunicipioFilialPeriodoRow
               >
             >[
               _participant(
                 'agent-a',
-                rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
                   _row(totalVenda: 120, qtdVendas: 2),
                   _row(totalVenda: 80, qtdVendas: 3),
                 ],
@@ -115,18 +117,18 @@ void main() {
           participants:
               <
                 AgentQueryExecutionParticipant<
-                  ResumoTotalVendasMunicipioFilialDiarioRow
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
                 >
               >[
                 _participant(
                   'agent-a',
-                  rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
                     _row(totalVenda: 100),
                   ],
                 ),
                 _participant(
                   'agent-b',
-                  rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
                     _row(totalVenda: 250, qtdVendas: 4),
                   ],
                 ),
@@ -156,12 +158,12 @@ void main() {
         participants:
             <
               AgentQueryExecutionParticipant<
-                ResumoTotalVendasMunicipioFilialDiarioRow
+                ResumoTotalVendasMunicipioFilialPeriodoRow
               >
             >[
               _participant(
                 'agent-a',
-                rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
                   _row(nomeFilial: 'Loja 1', totalVenda: 100),
                   _row(codFilial: 2, nomeFilial: 'Loja 2', totalVenda: 300),
                 ],
@@ -196,12 +198,12 @@ void main() {
         participants:
             <
               AgentQueryExecutionParticipant<
-                ResumoTotalVendasMunicipioFilialDiarioRow
+                ResumoTotalVendasMunicipioFilialPeriodoRow
               >
             >[
               _participant(
                 'agent-a',
-                rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
                   _row(totalVenda: 100),
                 ],
               ),
@@ -237,12 +239,12 @@ void main() {
         participants:
             <
               AgentQueryExecutionParticipant<
-                ResumoTotalVendasMunicipioFilialDiarioRow
+                ResumoTotalVendasMunicipioFilialPeriodoRow
               >
             >[
               _participant(
                 'agent-a',
-                rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
                   _row(
                     nomeMunicipioFilial: "ALTA FLORESTA D'OESTE",
                     ufMunicipioFilial: 'RO',
@@ -264,7 +266,14 @@ void main() {
     check(point.latitude).equals(-11.9355403047646);
     check(point.longitude).equals(-61.9998238962936);
     check(point.municipalityCode).equals('1100015');
+    check(point.locationResolution).equals(
+      AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+    );
     check(result.mappedMunicipalityCount).equals(1);
+    check(
+      result.locationDiagnostics.resolvedByIbgeMunicipalityCodeCount,
+    ).equals(1);
+    check(result.locationDiagnostics.unresolvedBranchCount).equals(0);
     check(geocoder.lookups.map((input) => input.type).toList()).deepEquals(
       <AppLocationLookupType>[AppLocationLookupType.ibgeMunicipalityCode],
     );
@@ -279,12 +288,12 @@ void main() {
         participants:
             <
               AgentQueryExecutionParticipant<
-                ResumoTotalVendasMunicipioFilialDiarioRow
+                ResumoTotalVendasMunicipioFilialPeriodoRow
               >
             >[
               _participant(
                 'agent-a',
-                rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
                   _row(
                     nomeMunicipioFilial: 'Municipio sem cadastro',
                     ufMunicipioFilial: 'XX',
@@ -308,6 +317,48 @@ void main() {
     check(result.hasPartialIssue).isTrue();
   });
 
+  test(
+    'nao posiciona filial no centro da UF sem municipio resolvivel',
+    () async {
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(
+                      nomeMunicipioFilial: 'Municipio sem cadastro',
+                      codigoIbgeMunicipioFilial: null,
+                    ),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final result = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      check(result.totalBranchCount).equals(1);
+      check(result.mappedBranchCount).equals(0);
+      check(result.points).isEmpty();
+      check(result.locationDiagnostics.resolvedByStateUfCount).equals(0);
+      check(result.locationDiagnostics.unresolvedBranchCount).equals(1);
+      check(geocoder.lookups.map((input) => input.type).toList()).deepEquals(
+        <AppLocationLookupType>[AppLocationLookupType.cityUf],
+      );
+    },
+  );
+
   test('calcula KPIs e falhas parciais do report', () async {
     _stubReport(
       loadAcrossAgents,
@@ -325,18 +376,18 @@ void main() {
         participants:
             <
               AgentQueryExecutionParticipant<
-                ResumoTotalVendasMunicipioFilialDiarioRow
+                ResumoTotalVendasMunicipioFilialPeriodoRow
               >
             >[
               _participant(
                 'agent-a',
-                rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
                   _row(totalVenda: 90, qtdVendas: 2),
                 ],
               ),
               _participant(
                 'agent-b',
-                rows: const <ResumoTotalVendasMunicipioFilialDiarioRow>[],
+                rows: const <ResumoTotalVendasMunicipioFilialPeriodoRow>[],
                 failure: const NetworkFailure(
                   message: 'down',
                   userMessage: 'Agente indisponivel.',
@@ -362,11 +413,46 @@ void main() {
     check(result.hasPartialIssue).isTrue();
     check(result.refreshedAt).equals(now);
   });
+
+  test(
+    'sinaliza consulta possivelmente truncada pelo limite de linhas',
+    () async {
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: List<ResumoTotalVendasMunicipioFilialPeriodoRow>.filled(
+                    AgentQueriesBoundedResultMaxRows
+                        .resumoTotalVendasMunicipioFilialPeriodo,
+                    _row(totalVenda: 1),
+                  ),
+                ),
+              ],
+        ),
+      );
+
+      final result = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      check(result.rowCapReachedAgentCount).equals(1);
+      check(result.hasPartialIssue).isTrue();
+    },
+  );
 }
 
 void _stubReport(
-  _MockLoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase useCase,
-  AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialDiarioRow> report,
+  _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase useCase,
+  AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow> report,
 ) {
   when(
     () => useCase(
@@ -380,15 +466,15 @@ void _stubReport(
   ).thenAnswer(
     (_) async =>
         Success<
-          AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialDiarioRow>,
+          AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>,
           AppFailure
         >(report),
   );
 }
 
-AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialDiarioRow> _report({
+AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow> _report({
   required List<
-    AgentQueryExecutionParticipant<ResumoTotalVendasMunicipioFilialDiarioRow>
+    AgentQueryExecutionParticipant<ResumoTotalVendasMunicipioFilialPeriodoRow>
   >
   participants,
   List<AgentQueryTarget> plannedTargets = const <AgentQueryTarget>[],
@@ -396,8 +482,8 @@ AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialDiarioRow> _report({
   List<AgentQueryTarget> skippedDueToHubPresenceTargets =
       const <AgentQueryTarget>[],
 }) {
-  return AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialDiarioRow>(
-    queryKey: AgentQueryKey.resumoTotalVendasMunicipioFilialDiario,
+  return AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>(
+    queryKey: AgentQueryKey.resumoTotalVendasMunicipioFilialPeriodo,
     strategy: AgentQueryExecutionStrategy.mergeAll,
     consideredApprovedAgentCount:
         plannedTargets.length + missingClientTokenTargets.length,
@@ -409,14 +495,14 @@ AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialDiarioRow> _report({
   );
 }
 
-AgentQueryExecutionParticipant<ResumoTotalVendasMunicipioFilialDiarioRow>
+AgentQueryExecutionParticipant<ResumoTotalVendasMunicipioFilialPeriodoRow>
 _participant(
   String agentId, {
-  required List<ResumoTotalVendasMunicipioFilialDiarioRow> rows,
+  required List<ResumoTotalVendasMunicipioFilialPeriodoRow> rows,
   AppFailure? failure,
 }) {
   return AgentQueryExecutionParticipant<
-    ResumoTotalVendasMunicipioFilialDiarioRow
+    ResumoTotalVendasMunicipioFilialPeriodoRow
   >(
     agentId: agentId,
     displayName: 'Agente $agentId',
@@ -426,7 +512,7 @@ _participant(
   );
 }
 
-ResumoTotalVendasMunicipioFilialDiarioRow _row({
+ResumoTotalVendasMunicipioFilialPeriodoRow _row({
   int codEmpresa = 1,
   int codFilial = 1,
   String nomeFilial = 'Loja matriz',
@@ -438,7 +524,7 @@ ResumoTotalVendasMunicipioFilialDiarioRow _row({
   int qtdVendas = 1,
   double totalVenda = 10,
 }) {
-  return ResumoTotalVendasMunicipioFilialDiarioRow(
+  return ResumoTotalVendasMunicipioFilialPeriodoRow(
     codEmpresa: codEmpresa,
     codFilial: codFilial,
     nomeFilial: nomeFilial,
@@ -448,7 +534,6 @@ ResumoTotalVendasMunicipioFilialDiarioRow _row({
     ufMunicipioFilial: ufMunicipioFilial,
     codigoIbgeMunicipioFilial: codigoIbgeMunicipioFilial,
     cepFilial: cepFilial,
-    dataVenda: DateTime(2026, 5, 9),
     qtdVendas: qtdVendas,
     totalVenda: totalVenda,
   );

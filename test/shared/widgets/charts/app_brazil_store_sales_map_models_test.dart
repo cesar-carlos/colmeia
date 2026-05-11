@@ -95,4 +95,22 @@ void main() {
       expect(copied.markerVisual, style.markerVisual);
     });
   });
+
+  group('AppBrazilStoreSalesMapStyle equality', () {
+    test('compares structurally equivalent styles', () {
+      const first = AppBrazilStoreSalesMapStyle(
+        height: 560,
+        markerVisual: AppBrazilStoreSalesMarkerVisual.bubble,
+        markerAggregation: AppBrazilStoreSalesMarkerAggregation.municipalities,
+      );
+      const second = AppBrazilStoreSalesMapStyle(
+        height: 560,
+        markerVisual: AppBrazilStoreSalesMarkerVisual.bubble,
+        markerAggregation: AppBrazilStoreSalesMarkerAggregation.municipalities,
+      );
+
+      expect(first, second);
+      expect(first.hashCode, second.hashCode);
+    });
+  });
 }

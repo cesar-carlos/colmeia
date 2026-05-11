@@ -60,6 +60,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
                 leading: const Icon(Icons.storefront_outlined),
                 label: l10n.salesLiveMapKpiBranchesOnMap,
                 value: '${result.mappedBranchCount}/${result.totalBranchCount}',
+                tooltipMessage: _branchesOnMapTooltip(l10n),
               ),
             ),
             SizedBox(
@@ -82,6 +83,23 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  String? _branchesOnMapTooltip(AppLocalizations l10n) {
+    final diagnostics = result.locationDiagnostics;
+    if (!diagnostics.hasAnySignal) {
+      return null;
+    }
+
+    return l10n.salesLiveMapKpiBranchesOnMapTooltip(
+      diagnostics.resolvedByProvidedGeoPointCount,
+      diagnostics.resolvedByIbgeMunicipalityCodeCount,
+      diagnostics.resolvedByCepCount,
+      diagnostics.resolvedByCityUfCount,
+      diagnostics.resolvedByCapitalUfCount,
+      diagnostics.resolvedByStateUfCount,
+      diagnostics.unresolvedBranchCount,
     );
   }
 }

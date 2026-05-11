@@ -20,6 +20,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+import 'relay_frame_routing_test_utils.dart';
+
 class _MockConnection extends Mock implements ConsumerSocketConnection {}
 
 class _MockSocket extends Mock implements io.Socket {}
@@ -236,6 +238,7 @@ void main() {
           'requestId': 'srv-req-1',
           'success': true,
         });
+        await flushRelayFrameRouting();
 
         final pulls = wiring.emits
             .where((e) => e.event == RelayEventNames.rpcStreamPull)
@@ -266,10 +269,10 @@ void main() {
             ),
           );
         }
-        // Broadcast stream delivery is microtask-scheduled; pump a couple
-        // times to flush the three pending adds.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        // Chunk routing is async (`decodeJsonAsync`); drain microtasks before
+        // asserting on stream items and refill pulls.
+        await flushRelayFrameRouting();
+
         check(received.length).equals(3);
         check(received[1]['row']).equals(1);
 
@@ -347,6 +350,7 @@ void main() {
           'requestId': 'srv-req-abort',
           'success': true,
         });
+        await flushRelayFrameRouting();
         wiring.fire(
           RelayEventNames.rpcComplete,
           _frame(
@@ -404,6 +408,7 @@ void main() {
           'requestId': 'srv-resp',
           'success': true,
         });
+        await flushRelayFrameRouting();
         wiring.fire(
           RelayEventNames.rpcResponse,
           _frame(
@@ -417,6 +422,7 @@ void main() {
           ),
         );
 
+        await flushRelayFrameRouting();
         await streamClosed.future.timeout(const Duration(milliseconds: 100));
         check(received.length).equals(1);
         check(received.single['response']).isA<Map<dynamic, dynamic>>();
@@ -560,6 +566,7 @@ void main() {
           'requestId': 'srv-stream-id',
           'success': true,
         });
+        await flushRelayFrameRouting();
         wiring.fire(RelayEventNames.rpcStreamPullResponse, <String, Object?>{
           'conversationId': 'conv-agent-1',
           'clientRequestId': 'rpc-stream-id',
@@ -575,6 +582,7 @@ void main() {
             _frame(<String, Object?>{'row': i}, requestId: 'srv-stream-id'),
           );
         }
+        await flushRelayFrameRouting();
 
         final pulls = wiring.emits
             .where((e) => e.event == RelayEventNames.rpcStreamPull)
@@ -623,7 +631,7 @@ void main() {
           'requestId': 'srv-pull-emit-fails',
           'success': true,
         });
-        await Future<void>.delayed(Duration.zero);
+        await flushRelayFrameRouting();
 
         check(errors.length).equals(1);
         check(errors.single).isA<RelayConversationLost>();

@@ -250,6 +250,17 @@ class SocketWithRestFallbackAgentMetaRemoteDataSource
     }
     try {
       return await socketCall();
+    } on SocketDispatchLegacyStreamingUnsupported catch (trigger) {
+      AppLogger.warning(
+        'Agent meta: hub chose legacy socket streaming; retrying once on REST',
+        context: <String, Object?>{
+          'component': 'SocketWithRestFallbackAgentMetaRemoteDataSource',
+          'triggerCode': trigger.code,
+          'streamId': trigger.streamId,
+        },
+        error: trigger,
+      );
+      return restCall();
     } on SocketDispatchNamespaceForbidden catch (trigger) {
       _latch(trigger, reason: 'namespace_forbidden');
       return restCall();

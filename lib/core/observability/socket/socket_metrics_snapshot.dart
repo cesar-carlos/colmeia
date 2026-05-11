@@ -1,5 +1,6 @@
 /// Read-only snapshot of `SocketChannelMetrics`. Useful for diagnostics,
-/// snapshot tests and manual inspection in debug builds.
+/// snapshot tests, manual inspection in debug builds, and compact relay
+/// slices via [relayDebugLogFields].
 class SocketMetricsSnapshot {
   const SocketMetricsSnapshot({
     required this.handshakeMs,
@@ -16,6 +17,11 @@ class SocketMetricsSnapshot {
     this.gateWaiterQueueRejectedTotal = 0,
     this.gateAcquireWaitTimeoutTotal = 0,
     this.relayStreamingUnhandledErrorTotal = 0,
+    this.relayPayloadDecodeWallClockMs = HistogramSnapshot.empty,
+    this.relayAcceptToFirstChunkMs = HistogramSnapshot.empty,
+    this.relayGzipDecodeIsolateTotal = 0,
+    this.relayJsonDecodeIsolateTotal = 0,
+    this.relayDecodeFailureTotalByCode = const <String, int>{},
   });
 
   /// Histogram across **all** completed handshakes since process start
@@ -69,6 +75,23 @@ class SocketMetricsSnapshot {
   /// Relay `sendStreaming` async error surfaced via the error handler.
   final int relayStreamingUnhandledErrorTotal;
 
+  /// Wall-clock time for `PayloadFrameCodec.decodeJsonAsync` on relay
+  /// `rpc.response` / `rpc.chunk` / `rpc.complete` (ms, reservoir).
+  final HistogramSnapshot relayPayloadDecodeWallClockMs;
+
+  /// Time from successful `relay:rpc.accepted` to first delivered chunk
+  /// on streaming RPCs (ms, reservoir).
+  final HistogramSnapshot relayAcceptToFirstChunkMs;
+
+  /// Inbound gzip frames decoded via a worker isolate.
+  final int relayGzipDecodeIsolateTotal;
+
+  /// Frames whose JSON parse ran on a worker isolate.
+  final int relayJsonDecodeIsolateTotal;
+
+  /// Counts of decode failures by stable `code` (e.g. `gzip_decode_failed`).
+  final Map<String, int> relayDecodeFailureTotalByCode;
+
   Map<String, Object?> toJson() {
     return <String, Object?>{
       'handshakeMs': handshakeMs.toJson(),
@@ -88,8 +111,54 @@ class SocketMetricsSnapshot {
       'gateWaiterQueueRejectedTotal': gateWaiterQueueRejectedTotal,
       'gateAcquireWaitTimeoutTotal': gateAcquireWaitTimeoutTotal,
       'relayStreamingUnhandledErrorTotal': relayStreamingUnhandledErrorTotal,
+      'relayPayloadDecodeWallClockMs': relayPayloadDecodeWallClockMs.toJson(),
+      'relayAcceptToFirstChunkMs': relayAcceptToFirstChunkMs.toJson(),
+      'relayGzipDecodeIsolateTotal': relayGzipDecodeIsolateTotal,
+      'relayJsonDecodeIsolateTotal': relayJsonDecodeIsolateTotal,
+      'relayDecodeFailureTotalByCode': relayDecodeFailureTotalByCode,
     };
   }
+
+  /// Relay-only fields for debug logs (for example when the consumer socket
+  /// disconnects). Skips histograms with no samples and counters still at
+  /// zero so `flutter logs` stays readable.
+  Map<String, Object?> relayDebugLogFields() {
+    final out = <String, Object?>{};
+    if (relayStreamingUnhandledErrorTotal != 0) {
+      out['relayStreamingUnhandledErrors'] = relayStreamingUnhandledErrorTotal;
+    }
+    if (relayGzipDecodeIsolateTotal != 0) {
+      out['relayGzipDecodeIsolateUses'] = relayGzipDecodeIsolateTotal;
+    }
+    if (relayJsonDecodeIsolateTotal != 0) {
+      out['relayJsonDecodeIsolateUses'] = relayJsonDecodeIsolateTotal;
+    }
+    if (relayDecodeFailureTotalByCode.isNotEmpty) {
+      out['relayDecodeFailureByCode'] = Map<String, int>.from(
+        relayDecodeFailureTotalByCode,
+      );
+    }
+    final decodeMs = relayPayloadDecodeWallClockMs;
+    if (decodeMs.count > 0) {
+      out['relayPayloadDecodeWallClockMs'] = _histogramDebugMap(decodeMs);
+    }
+    final firstChunk = relayAcceptToFirstChunkMs;
+    if (firstChunk.count > 0) {
+      out['relayAcceptToFirstChunkMs'] = _histogramDebugMap(firstChunk);
+    }
+    return out;
+  }
+}
+
+Map<String, Object?> _histogramDebugMap(HistogramSnapshot h) {
+  return <String, Object?>{
+    'count': h.count,
+    'mean': h.mean,
+    'p50': h.p50,
+    'p95': h.p95,
+    'p99': h.p99,
+    'max': h.max,
+  };
 }
 
 /// Compact percentile view computed from an in-memory reservoir. The

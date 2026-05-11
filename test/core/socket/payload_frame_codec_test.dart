@@ -89,6 +89,46 @@ void main() {
         check(jsonEncode(decoded)).equals(jsonEncode(value));
       },
     );
+
+    test(
+      'decodeJsonAsync round-trips gzip using isolate when threshold is 0',
+      () async {
+        const codec = PayloadFrameCodec(gzipDecodeIsolateThresholdBytes: 0);
+        final rows = List<Map<String, Object?>>.generate(
+          200,
+          (i) => <String, Object?>{
+            'id': i,
+            'name': 'agent-$i',
+            'tag': 'sample-payload-row-${i % 7}',
+          },
+        );
+        final value = <String, Object?>{'rows': rows};
+        final encoded = codec.encodeJson(value);
+        check(encoded.frame.cmp).equals(PayloadFrame.compressionGzip);
+        final decoded = await codec.decodeJsonAsync(encoded.frame);
+        check(jsonEncode(decoded)).equals(jsonEncode(value));
+      },
+    );
+
+    test(
+      'encodeJsonAsync round-trips gzip using isolate when encode threshold is 0',
+      () async {
+        const codec = PayloadFrameCodec(gzipEncodeIsolateThresholdBytes: 0);
+        final rows = List<Map<String, Object?>>.generate(
+          200,
+          (i) => <String, Object?>{
+            'id': i,
+            'name': 'agent-$i',
+            'tag': 'sample-payload-row-${i % 7}',
+          },
+        );
+        final value = <String, Object?>{'rows': rows};
+        final encoded = await codec.encodeJsonAsync(value);
+        check(encoded.frame.cmp).equals(PayloadFrame.compressionGzip);
+        final decoded = codec.decodeJson(encoded.frame);
+        check(jsonEncode(decoded)).equals(jsonEncode(value));
+      },
+    );
   });
 
   group('PayloadFrameCodec.encodeJson — signing', () {

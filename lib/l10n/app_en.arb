@@ -1145,6 +1145,12 @@
       "count": {"type": "int"}
     }
   },
+  "salesLiveMapPartialRowCapReached": "{count} agent(s) reached the query row limit; the map may be incomplete.",
+  "@salesLiveMapPartialRowCapReached": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "salesLiveMapPartialMissingCoordinates": "{count} branch(es) without resolved coordinates.",
   "@salesLiveMapPartialMissingCoordinates": {
     "placeholders": {
@@ -1190,8 +1196,20 @@
   "salesLiveMapKpiRevenue": "Total revenue",
   "salesLiveMapKpiSales": "Sales",
   "salesLiveMapKpiBranchesOnMap": "Branches on map",
+  "salesLiveMapKpiBranchesOnMapTooltip": "Geo: {providedCount} provided | {ibgeCount} IBGE | {cepCount} ZIP | {cityUfCount} city/state | {capitalUfCount} capital/state | {stateUfCount} state | {missingCount} without coordinates",
+  "@salesLiveMapKpiBranchesOnMapTooltip": {
+    "placeholders": {
+      "providedCount": { "type": "int" },
+      "ibgeCount": { "type": "int" },
+      "cepCount": { "type": "int" },
+      "cityUfCount": { "type": "int" },
+      "capitalUfCount": { "type": "int" },
+      "stateUfCount": { "type": "int" },
+      "missingCount": { "type": "int" }
+    }
+  },
   "salesLiveMapKpiMunicipalitiesOnMap": "Cities on map",
-  "salesLiveMapKpiQueriedAgents": "Queried branches",
+  "salesLiveMapKpiQueriedAgents": "Queried agents",
   "salesBranchFilterLabel": "BRANCHES",
   "salesBranchFilterEmptyHint": "Load the report to list branches.",
   "salesBranchFilterSheetTitle": "Select branches",

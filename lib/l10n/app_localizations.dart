@@ -3972,6 +3972,12 @@ abstract class AppLocalizations {
   /// **'{count} branch(es) outside hub presence.'**
   String salesLiveMapPartialOfflineAgents(int count);
 
+  /// No description provided for @salesLiveMapPartialRowCapReached.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} agent(s) reached the query row limit; the map may be incomplete.'**
+  String salesLiveMapPartialRowCapReached(int count);
+
   /// No description provided for @salesLiveMapPartialMissingCoordinates.
   ///
   /// In en, this message translates to:
@@ -4152,6 +4158,20 @@ abstract class AppLocalizations {
   /// **'Branches on map'**
   String get salesLiveMapKpiBranchesOnMap;
 
+  /// No description provided for @salesLiveMapKpiBranchesOnMapTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Geo: {providedCount} provided | {ibgeCount} IBGE | {cepCount} ZIP | {cityUfCount} city/state | {capitalUfCount} capital/state | {stateUfCount} state | {missingCount} without coordinates'**
+  String salesLiveMapKpiBranchesOnMapTooltip(
+    int providedCount,
+    int ibgeCount,
+    int cepCount,
+    int cityUfCount,
+    int capitalUfCount,
+    int stateUfCount,
+    int missingCount,
+  );
+
   /// No description provided for @salesLiveMapKpiMunicipalitiesOnMap.
   ///
   /// In en, this message translates to:
@@ -4161,7 +4181,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapKpiQueriedAgents.
   ///
   /// In en, this message translates to:
-  /// **'Queried branches'**
+  /// **'Queried agents'**
   String get salesLiveMapKpiQueriedAgents;
 
   /// No description provided for @salesBranchFilterLabel.

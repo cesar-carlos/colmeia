@@ -21,7 +21,9 @@ class SocketChannelMetrics {
       _outcomesTotal = <String, int>{},
       _reconnectsByReason = <String, int>{},
       _batchSizeDistribution = _ReservoirHistogram(reservoirSize),
-      _batchBypassByReason = <String, int>{};
+      _batchBypassByReason = <String, int>{},
+      _relayPayloadDecodeWallClockMs = _ReservoirHistogram(reservoirSize),
+      _relayAcceptToFirstChunkMs = _ReservoirHistogram(reservoirSize);
 
   /// Maximum number of samples kept per histogram. 1024 is the sweet spot
   /// for memory vs accuracy in client-side aggregation.
@@ -39,6 +41,11 @@ class SocketChannelMetrics {
   int _gateWaiterQueueRejectedTotal = 0;
   int _gateAcquireWaitTimeoutTotal = 0;
   int _relayStreamingUnhandledErrorTotal = 0;
+  final _ReservoirHistogram _relayPayloadDecodeWallClockMs;
+  final _ReservoirHistogram _relayAcceptToFirstChunkMs;
+  int _relayGzipDecodeIsolateTotal = 0;
+  int _relayJsonDecodeIsolateTotal = 0;
+  final Map<String, int> _relayDecodeFailureByCode = <String, int>{};
   final _ReservoirHistogram _batchSizeDistribution;
   final Map<String, int> _batchBypassByReason;
 
@@ -126,6 +133,32 @@ class SocketChannelMetrics {
     _relayStreamingUnhandledErrorTotal += 1;
   }
 
+  /// Wall time spent in `decodeJsonAsync` for one relay frame.
+  void recordRelayPayloadDecodeWallClock({required Duration elapsed}) {
+    _relayPayloadDecodeWallClockMs.add(elapsed.inMicroseconds / 1000.0);
+  }
+
+  /// Inbound gzip decoded via worker isolate for this frame.
+  void recordRelayPayloadGzipDecodeIsolate() {
+    _relayGzipDecodeIsolateTotal += 1;
+  }
+
+  /// JSON parse ran on a worker isolate for this frame.
+  void recordRelayPayloadJsonDecodeIsolate() {
+    _relayJsonDecodeIsolateTotal += 1;
+  }
+
+  /// Relay decode failure with stable `code` from `PayloadFrameCodec`.
+  void recordRelayDecodeFailure({required String code}) {
+    _relayDecodeFailureByCode[code] =
+        (_relayDecodeFailureByCode[code] ?? 0) + 1;
+  }
+
+  /// Elapsed from successful stream accept to first chunk delivered.
+  void recordRelayAcceptToFirstChunkWallClock({required Duration elapsed}) {
+    _relayAcceptToFirstChunkMs.add(elapsed.inMicroseconds / 1000.0);
+  }
+
   // ----- Inspection API -----
 
   /// Snapshot of all the current values. Cheap to compute; safe for the
@@ -153,6 +186,13 @@ class SocketChannelMetrics {
       gateWaiterQueueRejectedTotal: _gateWaiterQueueRejectedTotal,
       gateAcquireWaitTimeoutTotal: _gateAcquireWaitTimeoutTotal,
       relayStreamingUnhandledErrorTotal: _relayStreamingUnhandledErrorTotal,
+      relayPayloadDecodeWallClockMs: _relayPayloadDecodeWallClockMs.snapshot(),
+      relayAcceptToFirstChunkMs: _relayAcceptToFirstChunkMs.snapshot(),
+      relayGzipDecodeIsolateTotal: _relayGzipDecodeIsolateTotal,
+      relayJsonDecodeIsolateTotal: _relayJsonDecodeIsolateTotal,
+      relayDecodeFailureTotalByCode: Map<String, int>.unmodifiable(
+        _relayDecodeFailureByCode,
+      ),
     );
   }
 
@@ -172,6 +212,11 @@ class SocketChannelMetrics {
     _gateWaiterQueueRejectedTotal = 0;
     _gateAcquireWaitTimeoutTotal = 0;
     _relayStreamingUnhandledErrorTotal = 0;
+    _relayGzipDecodeIsolateTotal = 0;
+    _relayJsonDecodeIsolateTotal = 0;
+    _relayDecodeFailureByCode.clear();
+    _relayPayloadDecodeWallClockMs.clear();
+    _relayAcceptToFirstChunkMs.clear();
     _batchSizeDistribution.clear();
     _batchBypassByReason.clear();
   }

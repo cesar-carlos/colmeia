@@ -161,6 +161,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
           failedAgentCount: 0,
           missingClientTokenAgentCount: 0,
           skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
           loadFailed: true,
           loadFailureMessage: AppLocalizations.of(
             context,
@@ -500,6 +501,7 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
               failedAgentCount: 0,
               missingClientTokenAgentCount: 0,
               skippedOfflineAgentCount: 0,
+              rowCapReachedAgentCount: 0,
               refreshedAt: null,
             ),
           ),
@@ -535,6 +537,10 @@ class _SalesLiveMapAttentionPanel extends StatelessWidget {
       if (result.skippedOfflineAgentCount > 0)
         l10n.salesLiveMapPartialOfflineAgents(
           result.skippedOfflineAgentCount,
+        ),
+      if (result.rowCapReachedAgentCount > 0)
+        l10n.salesLiveMapPartialRowCapReached(
+          result.rowCapReachedAgentCount,
         ),
       if (result.mappedBranchCount < result.totalBranchCount)
         l10n.salesLiveMapPartialMissingCoordinates(

@@ -29,7 +29,15 @@
   faz, compartilhado entre REST e Socket — ver plano principal §6.7).
 - Conectar/desconectar o socket (delegado a `ConsumerSocketConnection`).
 - Decidir entre REST e Socket (o switch fica na DI, plano principal §7).
-- Tratar streaming (`relay:rpc.chunk`/`relay:rpc.complete`) — Fase 2.
+- Tratar streaming **relay** (`relay:rpc.chunk` / `relay:rpc.complete`) — isso
+  vive no `RelayCommandDispatcherImpl`.
+- Consumir streaming **legado** `agents:command_stream_*` /
+  `agents:stream_pull`: quando o hub devolve `stream_id` / `streamId` no
+  `result` do primeiro `agents:command_response` (com ou sem linhas parciais),
+  o dispatcher falha com `SocketDispatchLegacyStreamingUnsupported` — o
+  cliente não puxa chunks nesse canal. O datasource com fallback REST pode
+  repetir o mesmo `sql.execute` via HTTP, que materializa o resultado. Para
+  novas consultas, prefira `useRelay: true`.
 
 ---
 

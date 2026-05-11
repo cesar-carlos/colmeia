@@ -13,10 +13,10 @@ import 'package:flutter/widgets.dart';
 ///    the app is in background.
 /// 2. The auth lifecycle (post-login warm-up): when the
 ///    [AuthenticationGate] moves from "no session" to "authenticated" and
-///    the build is configured with `AGENT_BRIDGE_TRANSPORT=socket` and
-///    `SOCKET_WARM_UP_AFTER_LOGIN=true`, we eagerly call
-///    [ConsumerSocketConnection.connect] (via `resume()`) so the first SQL
-///    query does not pay the handshake cost.
+///    the build wires a non-null [connection] (socket bridge and/or relay
+///    over `/consumers`) with `SOCKET_WARM_UP_AFTER_LOGIN=true`, we eagerly
+///    call [ConsumerSocketConnection.connect] (via `resume()`) so the first
+///    SQL query does not pay the handshake cost.
 /// 3. The cold-start / hot-reload race: if the auth restore completes
 ///    BEFORE this observer mounts (so the auth gate is already
 ///    authenticated at `initState`), we still warm the socket up once,
@@ -42,9 +42,11 @@ class SocketLifecycleObserver extends StatefulWidget {
     super.key,
   });
 
-  /// The consumer socket connection. May be `null` on REST-only builds; in
-  /// that case the observer skips every pause/resume call regardless of
-  /// other inputs (the [transport] gate is the canonical authority).
+  /// The consumer socket connection. May be `null` when no `/consumers`
+  /// session should be managed (typical REST-only builds without relay).
+  /// When non-null, pause/resume/warm-up run regardless of [transport] so
+  /// relay-over-socket (`SOCKET_RELAY_ENABLED` with REST bridge) still
+  /// respects app lifecycle.
   final ConsumerSocketConnection? connection;
   final AuthenticationGate authGate;
   final AgentBridgeTransport transport;
@@ -87,7 +89,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!_isSocketTransport) {
+    if (!_shouldManageSocket) {
       return;
     }
     switch (state) {
@@ -113,9 +115,9 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     _wasAuthenticated = isAuthenticated;
 
     if (transitionedToSignedOut) {
-      // Sign-out only needs to touch the socket on socket builds. On REST
-      // builds there is no live connection to release.
-      if (_isSocketTransport) {
+      // Sign-out only needs to touch the socket when a live connection is
+      // wired (socket bridge and/or relay).
+      if (_shouldManageSocket) {
         unawaited(_safePause(reason: 'signed_out'));
       }
       return;
@@ -126,12 +128,10 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     }
   }
 
-  bool get _isSocketTransport =>
-      widget.transport == AgentBridgeTransport.socket &&
-      widget.connection != null;
+  bool get _shouldManageSocket => widget.connection != null;
 
   bool _shouldWarmUpEagerly() {
-    return _isSocketTransport &&
+    return _shouldManageSocket &&
         widget.warmUpAfterLogin &&
         widget.authGate.isAuthenticated;
   }

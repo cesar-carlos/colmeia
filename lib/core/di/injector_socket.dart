@@ -257,13 +257,30 @@ AgentLatencyOracle? _resolveLatencyOracle(GetIt getIt) {
 /// while the default (permissive) tolerates unsigned ones — matching
 /// the hub's own opt-in policy controlled by `PAYLOAD_SIGN_OUTBOUND`.
 PayloadFrameCodec _buildPayloadFrameCodec() {
+  final worker = AppEnvironment.socketPayloadWorkerIsolatesEnabled;
+  final gzipDecodeThreshold =
+      AppEnvironment.socketPayloadGzipDecodeIsolateThresholdBytes;
+  final gzipEncodeThreshold =
+      AppEnvironment.socketPayloadGzipEncodeIsolateThresholdBytes;
+  final jsonDecodeThreshold =
+      AppEnvironment.socketPayloadJsonDecodeIsolateThresholdBytes;
+
   final key = AppEnvironment.socketPayloadSigningKey;
   if (key.isEmpty) {
-    return const PayloadFrameCodec();
+    return PayloadFrameCodec(
+      workerIsolatesEnabled: worker,
+      gzipDecodeIsolateThresholdBytes: gzipDecodeThreshold,
+      gzipEncodeIsolateThresholdBytes: gzipEncodeThreshold,
+      jsonDecodeIsolateThresholdBytes: jsonDecodeThreshold,
+    );
   }
   final keyId = AppEnvironment.socketPayloadSigningKeyId;
   final normalizedKeyId = keyId.isEmpty ? null : keyId;
   return PayloadFrameCodec(
+    workerIsolatesEnabled: worker,
+    gzipDecodeIsolateThresholdBytes: gzipDecodeThreshold,
+    gzipEncodeIsolateThresholdBytes: gzipEncodeThreshold,
+    jsonDecodeIsolateThresholdBytes: jsonDecodeThreshold,
     signer: Hmac256PayloadFrameSigner.fromUtf8Key(
       key: key,
       keyId: normalizedKeyId,
