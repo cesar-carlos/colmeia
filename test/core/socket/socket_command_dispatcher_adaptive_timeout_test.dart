@@ -24,6 +24,9 @@ class _RecordingCorrelator implements SocketRequestCorrelator {
   String? get solePendingRpcIdWhenUnambiguous => null;
 
   @override
+  bool hasPendingRpcId(String rpcId) => false;
+
+  @override
   Future<Map<String, dynamic>> register(
     String rpcId, {
     required Duration timeout,

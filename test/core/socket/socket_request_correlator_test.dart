@@ -133,6 +133,18 @@ void main() {
       },
     );
 
+    test('hasPendingRpcId reflects correlator registration', () async {
+      check(correlator.hasPendingRpcId('z')).isFalse();
+      final pending = correlator.register(
+        'z',
+        timeout: const Duration(seconds: 5),
+      );
+      check(correlator.hasPendingRpcId('z')).isTrue();
+      correlator.completeWith('z', <String, dynamic>{});
+      await pending;
+      check(correlator.hasPendingRpcId('z')).isFalse();
+    });
+
     test('completeWith for unknown id invokes orphan hook and stays empty', () {
       final orphans = <String>[];
       final c = SocketRequestCorrelator(

@@ -277,4 +277,137 @@ void main() {
       check(got).equals(bridgeOnly);
     },
   );
+
+  test(
+    'agents:command_response accepts List payload wrapping the bridge map',
+    () async {
+      const rpcId = 'rpc-list-wrap';
+      final body = <String, Object?>{
+        'agentId': 'agent-1',
+        'command': <String, Object?>{
+          'jsonrpc': '2.0',
+          'method': 'sql.executeBatch',
+          'id': rpcId,
+          'params': const <String, Object?>{
+            'commands': <Map<String, Object?>>[
+              <String, Object?>{'sql': 'SELECT 1'},
+            ],
+          },
+        },
+      };
+
+      final future = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: body,
+        rpcId: rpcId,
+        timeout: const Duration(seconds: 2),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      check(commandResponseHandler).isNotNull();
+
+      final inner = <String, dynamic>{
+        'response': <String, dynamic>{
+          'success': true,
+          'item': <String, dynamic>{
+            'success': true,
+            'result': <String, dynamic>{
+              'items': <Object?>[
+                <String, dynamic>{
+                  'index': 0,
+                  'ok': true,
+                  'rows': <Object?>[],
+                  'row_count': 0,
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      commandResponseHandler!(<Object?>[inner]);
+
+      final got = await future;
+      check(got).equals(inner);
+    },
+  );
+
+  test(
+    'agents:command_response correlates sole pending sql.executeBatch when '
+    'hub sends flat {success,error} envelope without response',
+    () async {
+      const rpcId = 'rpc-flat-success';
+      final body = <String, Object?>{
+        'agentId': 'agent-1',
+        'command': <String, Object?>{
+          'jsonrpc': '2.0',
+          'method': 'sql.executeBatch',
+          'id': rpcId,
+          'params': const <String, Object?>{
+            'commands': <Map<String, Object?>>[
+              <String, Object?>{'sql': 'SELECT 1'},
+            ],
+          },
+        },
+      };
+
+      final future = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: body,
+        rpcId: rpcId,
+        timeout: const Duration(seconds: 2),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      check(commandResponseHandler).isNotNull();
+
+      final flat = <String, dynamic>{'success': true, 'error': null};
+      commandResponseHandler!(flat);
+
+      final got = await future;
+      check(got).equals(flat);
+    },
+  );
+
+  test(
+    'flat top-level bridge failure fails sole pending sql.executeBatch rpc',
+    () async {
+      const rpcId = 'rpc-flat-fail';
+      final body = <String, Object?>{
+        'agentId': 'agent-1',
+        'command': <String, Object?>{
+          'jsonrpc': '2.0',
+          'method': 'sql.executeBatch',
+          'id': rpcId,
+          'params': const <String, Object?>{
+            'commands': <Map<String, Object?>>[
+              <String, Object?>{'sql': 'SELECT 1'},
+            ],
+          },
+        },
+      };
+
+      final future = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: body,
+        rpcId: rpcId,
+        timeout: const Duration(seconds: 2),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      check(commandResponseHandler).isNotNull();
+
+      commandResponseHandler!(
+        <String, dynamic>{
+          'success': false,
+          'error': <String, dynamic>{
+            'code': -32001,
+            'message': 'nope',
+          },
+        },
+      );
+
+      await expectLater(future, throwsA(isA<SocketDispatchAppError>()));
+    },
+  );
 }

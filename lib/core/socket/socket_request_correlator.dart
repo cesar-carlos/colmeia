@@ -47,6 +47,9 @@ class SocketRequestCorrelator {
   String? get solePendingRpcIdWhenUnambiguous =>
       _pending.length == 1 ? _pending.keys.single : null;
 
+  /// Whether [rpcId] is currently registered with a pending completer.
+  bool hasPendingRpcId(String rpcId) => _pending.containsKey(rpcId);
+
   /// Registers a new request with [rpcId] and arms a timeout. Throws
   /// [SocketDispatchDuplicateId] when [rpcId] is already pending.
   Future<Map<String, dynamic>> register(

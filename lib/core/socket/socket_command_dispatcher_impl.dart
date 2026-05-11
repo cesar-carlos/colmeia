@@ -492,7 +492,10 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   }
 
   void _onCommandResponse(Object? raw) {
-    final map = _toStringKeyedMap(raw);
+    final normalizedRaw = _normalizeCommandResponseRaw(raw);
+    final map = _unwrapAgentsCommandResponseEnvelope(
+      _toStringKeyedMap(normalizedRaw),
+    );
     if (map == null) {
       AppLogger.warning(
         'agents:command_response is not a Map',
@@ -503,12 +506,21 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       return;
     }
     var rpcId = _extractRpcId(map);
-    rpcId ??= _solePendingRpcIdForBridgeExecuteBatchWire(map);
+    rpcId ??= _disambiguateSqlExecuteBatchRpcId(map);
+    if (rpcId == null && _failFlatTopLevelBridgeIfPossible(map)) {
+      return;
+    }
     if (rpcId == null) {
       AppLogger.warning(
         'agents:command_response missing rpcId',
-        context: const <String, Object?>{
+        context: <String, Object?>{
           'component': 'SocketCommandDispatcherImpl',
+          'topLevelKeys': map.keys.take(32).join(','),
+          'pendingCount': _correlator.pendingCount,
+          'batchDispatchMetaCount': _meta.values
+              .where((m) => m.method == 'sql.executeBatch')
+              .length,
+          'rawRuntimeType': raw.runtimeType.toString(),
         },
       );
       return;
@@ -589,6 +601,46 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     return null;
   }
 
+  /// Socket.IO may deliver `agents:command_response` as a single-arg Map or
+  /// as a multi-arg list (first Map wins).
+  Object? _normalizeCommandResponseRaw(Object? raw) {
+    if (raw is List<dynamic>) {
+      if (raw.length == 1) {
+        return raw.first;
+      }
+      for (final Object? element in raw) {
+        if (element is Map) {
+          return element;
+        }
+      }
+      return null;
+    }
+    return raw;
+  }
+
+  /// Some hubs wrap the REST bridge envelope under `result` / `data` /
+  /// `payload` instead of emitting it at the event root.
+  Map<String, dynamic>? _unwrapAgentsCommandResponseEnvelope(
+    Map<String, dynamic>? map,
+  ) {
+    if (map == null) {
+      return null;
+    }
+    if (map['response'] is Map) {
+      return map;
+    }
+    for (final wrapKey in <String>['result', 'data', 'payload']) {
+      final inner = map[wrapKey];
+      if (inner is Map) {
+        final nested = _toStringKeyedMap(inner);
+        if (nested != null && nested['response'] is Map) {
+          return nested;
+        }
+      }
+    }
+    return map;
+  }
+
   String? _extractRpcId(Map<String, dynamic> map) {
     final candidates = <Object?>[
       map['rpcId'],
@@ -620,21 +672,203 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     return null;
   }
 
-  /// REST parity `sql.executeBatch` success shape (`parseBatchSuccess`) without
-  /// top-level correlation fields — some hubs emit this verbatim on socket.
-  bool _looksLikeBridgeSqlExecuteBatchSuccess(Map<String, dynamic> map) {
+  /// Some hubs mirror REST-only `sql.executeBatch` bodies on
+  /// `agents:command_response` without `rpcId` / `requestId` / JSON-RPC `id`.
+  ///
+  /// When that happens we may still disambiguate:
+  ///
+  /// * If exactly one in-flight **correlator** pending is a `sql.executeBatch`
+  ///   (dispatcher metadata plus `SocketRequestCorrelator.hasPendingRpcId`),
+  ///   use that pending id. Coalesced followers share the leader's hub flight but
+  ///   only the leader is registered in the correlator — filtering avoids
+  ///   treating followers as separate batch flights.
+  /// * If that payload matches a known batch wire shape, correlate
+  ///   immediately; else when the correlator's `pendingCount` is `1`
+  ///   and the map looks like a generic bridge success (`response` map, no
+  ///   top-level `error`), correlate to that sole batch leader.
+  /// * If there is no batch metadata match but the correlator has exactly one
+  ///   pending request and the payload matches a known batch wire shape, use
+  ///   that sole pending id (legacy path).
+  List<String> _pendingSqlExecuteBatchRpcIdsInCorrelator() {
+    return _meta.entries
+        .where(
+          (e) =>
+              e.value.method == 'sql.executeBatch' &&
+              _correlator.hasPendingRpcId(e.key),
+        )
+        .map((e) => e.key)
+        .toList(growable: false);
+  }
+
+  String? _disambiguateSqlExecuteBatchRpcId(Map<String, dynamic> map) {
+    final pendingBatchRpcIds = _pendingSqlExecuteBatchRpcIdsInCorrelator();
+
+    if (pendingBatchRpcIds.length == 1) {
+      final inferred = pendingBatchRpcIds.single;
+      if (_isCorrelatableSqlExecuteBatchWireEnvelope(map)) {
+        AppLogger.debug(
+          'agents:command_response correlated via sql.executeBatch dispatch '
+          'metadata (hub omitted correlation fields; batch wire shape)',
+          context: <String, Object?>{
+            'component': 'SocketCommandDispatcherImpl',
+            'rpcId': inferred,
+          },
+        );
+        return inferred;
+      }
+      if (_correlator.pendingCount == 1 &&
+          map['error'] == null &&
+          (map['response'] is Map || _flatTopLevelBridgeSuccess(map))) {
+        AppLogger.debug(
+          'agents:command_response correlated via sql.executeBatch dispatch '
+          'metadata (hub omitted correlation fields; sole pending bridge '
+          'envelope)',
+          context: <String, Object?>{
+            'component': 'SocketCommandDispatcherImpl',
+            'rpcId': inferred,
+          },
+        );
+        return inferred;
+      }
+      return null;
+    }
+
+    if (pendingBatchRpcIds.isEmpty) {
+      if (!_isCorrelatableSqlExecuteBatchWireEnvelope(map)) {
+        return null;
+      }
+      final sole = _correlator.solePendingRpcIdWhenUnambiguous;
+      if (sole != null) {
+        AppLogger.debug(
+          'agents:command_response correlated via sole pending rpcId '
+          '(batch envelope without wire id; no batch method in metadata)',
+          context: <String, Object?>{
+            'component': 'SocketCommandDispatcherImpl',
+            'rpcId': sole,
+          },
+        );
+      }
+      return sole;
+    }
+    return null;
+  }
+
+  /// Plug hubs sometimes emit `{success, error}` at the root with no
+  /// `response` object on `agents:command_response`.
+  bool _flatTopLevelBridgeSuccess(Map<String, dynamic> map) {
+    if (map['response'] != null) {
+      return false;
+    }
+    if (map['success'] != true) {
+      return false;
+    }
+    final err = map['error'];
+    if (err == null) {
+      return true;
+    }
+    if (err is Map && err.isEmpty) {
+      return true;
+    }
+    if (err is String && err.isEmpty) {
+      return true;
+    }
+    return false;
+  }
+
+  bool _flatTopLevelBridgeFailure(Map<String, dynamic> map) {
+    if (map['response'] != null) {
+      return false;
+    }
+    if (map['success'] == false) {
+      return true;
+    }
+    final err = map['error'];
+    if (err is Map && err.isNotEmpty) {
+      return true;
+    }
+    if (err is String && err.isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
+  bool _failFlatTopLevelBridgeIfPossible(Map<String, dynamic> map) {
+    if (!_flatTopLevelBridgeFailure(map)) {
+      return false;
+    }
+    final leaders = _pendingSqlExecuteBatchRpcIdsInCorrelator();
+    if (leaders.length != 1) {
+      return false;
+    }
+    _correlator.failWith(leaders.single, _flatBridgeFailureException(map));
+    return true;
+  }
+
+  Object _flatBridgeFailureException(Map<String, dynamic> map) {
+    final err = map['error'];
+    if (err is Map<String, dynamic>) {
+      final code = err['code']?.toString() ?? 'bridge_error';
+      final message =
+          err['message']?.toString() ?? err['reason']?.toString() ?? code;
+      return SocketDispatchAppError(message: message, serverCode: code);
+    }
+    if (err is Map) {
+      final m = Map<String, dynamic>.from(err);
+      final code = m['code']?.toString() ?? 'bridge_error';
+      final message =
+          m['message']?.toString() ?? m['reason']?.toString() ?? code;
+      return SocketDispatchAppError(message: message, serverCode: code);
+    }
+    return const SocketDispatchDecodeFailure(
+      message:
+          'agents:command_response flat bridge failure without structured error',
+    );
+  }
+
+  /// REST `parseBatchSuccess` parity (`response.item.result.items`) or
+  /// coordinator-style `response.type == batch` with `items`.
+  ///
+  /// Omits strict `success: true` checks: some hubs leave flags out on
+  /// success paths while still returning `items`.
+  bool _isCorrelatableSqlExecuteBatchWireEnvelope(Map<String, dynamic> map) {
+    if (_bridgeRestParityBatchWireShape(map)) {
+      return true;
+    }
+    if (_coordinatorBatchWireShape(map)) {
+      return true;
+    }
+    return _flatSqlExecuteBatchResponseWireShape(map);
+  }
+
+  /// `response.items` without `response.type == batch` and without the
+  /// nested `item.result.items` REST shape — observed on some plug hubs.
+  bool _flatSqlExecuteBatchResponseWireShape(Map<String, dynamic> map) {
     final response = map['response'];
     if (response is! Map) {
       return false;
     }
-    if (response['success'] != true) {
+    if (response['success'] == false) {
+      return false;
+    }
+    if (response['type'] == 'batch') {
+      return false;
+    }
+    return response['items'] is List;
+  }
+
+  bool _bridgeRestParityBatchWireShape(Map<String, dynamic> map) {
+    final response = map['response'];
+    if (response is! Map) {
+      return false;
+    }
+    if (response['success'] == false) {
       return false;
     }
     final item = response['item'];
     if (item is! Map) {
       return false;
     }
-    if (item['success'] != true) {
+    if (item['success'] == false) {
       return false;
     }
     final result = item['result'];
@@ -644,29 +878,18 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     return result['items'] is List;
   }
 
-  /// When the hub omits wire correlation ids, only safe if a single RPC is
-  /// in flight **and** the payload matches a batch bridge success envelope.
-  String? _solePendingRpcIdForBridgeExecuteBatchWire(
-    Map<String, dynamic> map,
-  ) {
-    if (_correlator.pendingCount != 1) {
-      return null;
+  bool _coordinatorBatchWireShape(Map<String, dynamic> map) {
+    final response = map['response'];
+    if (response is! Map) {
+      return false;
     }
-    if (!_looksLikeBridgeSqlExecuteBatchSuccess(map)) {
-      return null;
+    if (response['type'] != 'batch') {
+      return false;
     }
-    final sole = _correlator.solePendingRpcIdWhenUnambiguous;
-    if (sole != null) {
-      AppLogger.debug(
-        'agents:command_response correlated via sole pending rpcId '
-        '(bridge sql.executeBatch envelope without wire id)',
-        context: <String, Object?>{
-          'component': 'SocketCommandDispatcherImpl',
-          'rpcId': sole,
-        },
-      );
+    if (response['success'] == false) {
+      return false;
     }
-    return sole;
+    return response['items'] is List;
   }
 
   /// True when the hub signalled progressive streaming on the legacy
