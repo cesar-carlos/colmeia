@@ -17,6 +17,10 @@ void main() {
         AppBrazilStoreSalesMarkerAggregation.stores,
       );
       expect(
+        style.selectedMarkerDetailPlacement,
+        AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay,
+      );
+      expect(
         style.stateLabelMode,
         AppBrazilStoreSalesStateLabelMode.responsive,
       );
@@ -82,6 +86,8 @@ void main() {
         height: 360,
         showLegend: false,
         markerAggregation: AppBrazilStoreSalesMarkerAggregation.storesAndStates,
+        selectedMarkerDetailPlacement:
+            AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap,
         markerMaxSize: 44,
       );
 
@@ -90,6 +96,10 @@ void main() {
       expect(
         copied.markerAggregation,
         AppBrazilStoreSalesMarkerAggregation.storesAndStates,
+      );
+      expect(
+        copied.selectedMarkerDetailPlacement,
+        AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap,
       );
       expect(copied.markerMaxSize, 44);
       expect(copied.markerVisual, style.markerVisual);

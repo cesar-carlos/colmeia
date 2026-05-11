@@ -25,6 +25,12 @@ enum AppBrazilStoreSalesMarkerAggregation {
   storesAndStates,
 }
 
+enum AppBrazilStoreSalesSelectedMarkerDetailPlacement {
+  overlay,
+  belowMap,
+  hidden,
+}
+
 enum AppBrazilStoreSalesLocationResolution {
   providedGeoPoint,
   ibgeMunicipalityCode,
@@ -195,6 +201,8 @@ class AppBrazilStoreSalesMapStyle {
     this.proximityClusterDistanceDegrees = 0.45,
     this.markerVisual = AppBrazilStoreSalesMarkerVisual.dot,
     this.markerAggregation = AppBrazilStoreSalesMarkerAggregation.stores,
+    this.selectedMarkerDetailPlacement =
+        AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay,
     this.stateLabelMode = AppBrazilStoreSalesStateLabelMode.uf,
     this.showDataQualityNotice = true,
     this.autoFocusSelectedStore = true,
@@ -310,6 +318,8 @@ class AppBrazilStoreSalesMapStyle {
   final double proximityClusterDistanceDegrees;
   final AppBrazilStoreSalesMarkerVisual markerVisual;
   final AppBrazilStoreSalesMarkerAggregation markerAggregation;
+  final AppBrazilStoreSalesSelectedMarkerDetailPlacement
+  selectedMarkerDetailPlacement;
   final AppBrazilStoreSalesStateLabelMode stateLabelMode;
   final bool showDataQualityNotice;
   final bool autoFocusSelectedStore;
@@ -344,6 +354,8 @@ class AppBrazilStoreSalesMapStyle {
     double? proximityClusterDistanceDegrees,
     AppBrazilStoreSalesMarkerVisual? markerVisual,
     AppBrazilStoreSalesMarkerAggregation? markerAggregation,
+    AppBrazilStoreSalesSelectedMarkerDetailPlacement?
+    selectedMarkerDetailPlacement,
     AppBrazilStoreSalesStateLabelMode? stateLabelMode,
     bool? showDataQualityNotice,
     bool? autoFocusSelectedStore,
@@ -384,6 +396,8 @@ class AppBrazilStoreSalesMapStyle {
           this.proximityClusterDistanceDegrees,
       markerVisual: markerVisual ?? this.markerVisual,
       markerAggregation: markerAggregation ?? this.markerAggregation,
+      selectedMarkerDetailPlacement:
+          selectedMarkerDetailPlacement ?? this.selectedMarkerDetailPlacement,
       stateLabelMode: stateLabelMode ?? this.stateLabelMode,
       showDataQualityNotice:
           showDataQualityNotice ?? this.showDataQualityNotice,
@@ -432,6 +446,7 @@ class AppBrazilStoreSalesMapStyle {
             other.proximityClusterDistanceDegrees &&
         markerVisual == other.markerVisual &&
         markerAggregation == other.markerAggregation &&
+        selectedMarkerDetailPlacement == other.selectedMarkerDetailPlacement &&
         stateLabelMode == other.stateLabelMode &&
         showDataQualityNotice == other.showDataQualityNotice &&
         autoFocusSelectedStore == other.autoFocusSelectedStore &&
@@ -468,6 +483,7 @@ class AppBrazilStoreSalesMapStyle {
     proximityClusterDistanceDegrees,
     markerVisual,
     markerAggregation,
+    selectedMarkerDetailPlacement,
     stateLabelMode,
     showDataQualityNotice,
     autoFocusSelectedStore,
