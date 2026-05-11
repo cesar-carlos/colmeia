@@ -2256,7 +2256,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String salesLiveMapAgentsAllWithTokenSummary(int count) {
-    return 'All with token ($count)';
+    return 'All ($count)';
   }
 
   @override
@@ -2365,7 +2365,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesLiveMapBranchesSectionSubtitle =>
-      'Branches without a local token stay visible, but locked.';
+      'The list appears after the first map refresh.';
 
   @override
   String get salesLiveMapSelectAtLeastOneTokenBranch =>
@@ -2374,6 +2374,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get salesLiveMapNoApprovedAgents =>
       'No approved branch is available for query.';
+
+  @override
+  String get salesLiveMapBranchesLoadBeforeSelection =>
+      'Refresh the map once to list available branches.';
 
   @override
   String get salesLiveMapSelectAllTokenBacked => 'Select all';
@@ -2526,6 +2530,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesAutoRefreshTooltip => 'Auto-refresh';
+
+  @override
+  String get salesAutoRefreshNow => 'Refresh now';
 
   @override
   String salesAutoRefreshLastUpdatedAt(String time) {

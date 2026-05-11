@@ -3750,7 +3750,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapAgentsAllWithTokenSummary.
   ///
   /// In en, this message translates to:
-  /// **'All with token ({count})'**
+  /// **'All ({count})'**
   String salesLiveMapAgentsAllWithTokenSummary(int count);
 
   /// No description provided for @salesLiveMapAgentsSelectedSummary.
@@ -3928,7 +3928,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapBranchesSectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Branches without a local token stay visible, but locked.'**
+  /// **'The list appears after the first map refresh.'**
   String get salesLiveMapBranchesSectionSubtitle;
 
   /// No description provided for @salesLiveMapSelectAtLeastOneTokenBranch.
@@ -3942,6 +3942,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No approved branch is available for query.'**
   String get salesLiveMapNoApprovedAgents;
+
+  /// No description provided for @salesLiveMapBranchesLoadBeforeSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh the map once to list available branches.'**
+  String get salesLiveMapBranchesLoadBeforeSelection;
 
   /// No description provided for @salesLiveMapSelectAllTokenBacked.
   ///
@@ -4224,6 +4230,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto-refresh'**
   String get salesAutoRefreshTooltip;
+
+  /// No description provided for @salesAutoRefreshNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh now'**
+  String get salesAutoRefreshNow;
 
   /// No description provided for @salesAutoRefreshLastUpdatedAt.
   ///

@@ -233,6 +233,18 @@ SalesLiveMapLoadResult _loadedResult() {
         city: 'Cuiaba',
       ),
     ],
+    branchOptions: const <SalesLiveMapBranchOption>[
+      SalesLiveMapBranchOption(
+        id: 'agent-1-1-1',
+        agentId: 'agent-1',
+        agentName: 'Branch One',
+        codEmpresa: 1,
+        codFilial: 1,
+        name: 'Branch One',
+        city: 'Cuiaba',
+        uf: 'MT',
+      ),
+    ],
     totalRevenue: 1200,
     totalSalesCount: 12,
     totalBranchCount: 1,

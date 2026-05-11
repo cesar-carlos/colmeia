@@ -9,6 +9,7 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
   const SalesAutoRefreshActionsRow({
     required this.value,
     required this.onChanged,
+    required this.onRefreshNow,
     required this.enabled,
     required this.lastUpdatedAt,
     required this.l10n,
@@ -17,6 +18,7 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
 
   final SalesAutoRefreshInterval? value;
   final ValueChanged<SalesAutoRefreshInterval?> onChanged;
+  final VoidCallback onRefreshNow;
   final bool enabled;
   final DateTime? lastUpdatedAt;
   final AppLocalizations l10n;
@@ -44,6 +46,11 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+          TextButton.icon(
+            onPressed: enabled ? onRefreshNow : null,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: Text(l10n.salesAutoRefreshNow),
+          ),
           SalesAutoRefreshControl(
             value: value,
             onChanged: onChanged,

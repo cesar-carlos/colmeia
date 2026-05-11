@@ -185,9 +185,25 @@ class CurrentUserContextController extends ChangeNotifier {
   }
 
   List<AppRoute> _computeAvailableShellRoutes() {
-    return List<AppRoute>.unmodifiable(
-      AppRoute.shellRoutes.where(canAccessRoute),
-    );
+    final available = <AppRoute>[];
+    for (final route in AppRoute.shellRoutes) {
+      if (canAccessRoute(route)) {
+        available.add(route);
+        continue;
+      }
+      final requiredPermission = route.requiredPermission;
+      if (kDebugMode && requiredPermission != null) {
+        AppLogger.debug(
+          'Shell route hidden by missing permission',
+          context: <String, Object?>{
+            'operation': 'computeAvailableShellRoutes',
+            'route': route.name,
+            'requiredPermission': requiredPermission.name,
+          },
+        );
+      }
+    }
+    return List<AppRoute>.unmodifiable(available);
   }
 
   void _handleAuthStateChanged() {

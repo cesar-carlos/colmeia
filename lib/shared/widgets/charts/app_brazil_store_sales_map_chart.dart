@@ -29,6 +29,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.onStoreClusterTap,
     this.onMunicipalityTap,
     this.onStateTap,
+    this.onMetricChanged,
     this.onDiagnosticsChanged,
   });
 
@@ -47,6 +48,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   onMunicipalityTap;
   final ValueChanged<AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket>>?
   onStateTap;
+  final ValueChanged<AppBrazilStoreSalesMapMetric>? onMetricChanged;
   final ValueChanged<AppBrazilStoreSalesMapDiagnostics>? onDiagnosticsChanged;
 
   @override
@@ -302,6 +304,7 @@ class _AppBrazilStoreSalesMapChartState
       _selectedMetric = metric;
       _snapshot = null;
     });
+    widget.onMetricChanged?.call(metric);
   }
 
   void _handleScopeChanged(AppMapScopeChangedEvent event) {

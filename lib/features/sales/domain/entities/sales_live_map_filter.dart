@@ -1,5 +1,6 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 
 const int kSalesLiveMapMaxCustomRangeInclusiveDays = 31;
 const String kSalesLiveMapDefaultOrigem = 'FrenteLoja';
@@ -36,38 +37,51 @@ enum SalesLiveMapMarkerVisual {
 class SalesLiveMapFilter {
   const SalesLiveMapFilter({
     this.selectedAgentIds,
+    this.selectedBranchIds,
     this.periodMode = SalesLiveMapPeriodMode.today,
     this.customDateRange,
     this.detailLevel = SalesLiveMapMapDetail.branches,
     this.markerVisual = SalesLiveMapMarkerVisual.dot,
+    this.metric = AppBrazilStoreSalesMapMetric.revenue,
   });
 
   final Set<String>? selectedAgentIds;
+  final Set<String>? selectedBranchIds;
   final SalesLiveMapPeriodMode periodMode;
   final OverviewDateRange? customDateRange;
   final SalesLiveMapMapDetail detailLevel;
   final SalesLiveMapMarkerVisual markerVisual;
+  final AppBrazilStoreSalesMapMetric metric;
 
   SalesLiveMapFilter copyWith({
     Object? selectedAgentIds = _sentinel,
+    Object? selectedBranchIds = _sentinel,
     SalesLiveMapPeriodMode? periodMode,
     Object? customDateRange = _sentinel,
     SalesLiveMapMapDetail? detailLevel,
     SalesLiveMapMarkerVisual? markerVisual,
+    AppBrazilStoreSalesMapMetric? metric,
   }) {
     final nextSelectedAgentIds = selectedAgentIds == _sentinel
         ? this.selectedAgentIds
         : selectedAgentIds as Set<String>?;
+    final nextSelectedBranchIds = selectedBranchIds == _sentinel
+        ? this.selectedBranchIds
+        : selectedBranchIds as Set<String>?;
     return SalesLiveMapFilter(
       selectedAgentIds: nextSelectedAgentIds == null
           ? null
           : Set<String>.unmodifiable(nextSelectedAgentIds),
+      selectedBranchIds: nextSelectedBranchIds == null
+          ? null
+          : Set<String>.unmodifiable(nextSelectedBranchIds),
       periodMode: periodMode ?? this.periodMode,
       customDateRange: customDateRange == _sentinel
           ? this.customDateRange
           : customDateRange as OverviewDateRange?,
       detailLevel: detailLevel ?? this.detailLevel,
       markerVisual: markerVisual ?? this.markerVisual,
+      metric: metric ?? this.metric,
     );
   }
 
@@ -111,6 +125,31 @@ class SalesLiveMapFilter {
   static DateTime _day(DateTime value) {
     return DateTime(value.year, value.month, value.day);
   }
+}
+
+class SalesLiveMapBranchOption {
+  const SalesLiveMapBranchOption({
+    required this.id,
+    required this.agentId,
+    required this.agentName,
+    required this.codEmpresa,
+    required this.codFilial,
+    required this.name,
+    required this.city,
+    required this.uf,
+  });
+
+  final String id;
+  final String agentId;
+  final String agentName;
+  final int codEmpresa;
+  final int codFilial;
+  final String name;
+  final String city;
+  final String uf;
+
+  String get subtitle =>
+      '$city/$uf - Agente $agentName - Empresa $codEmpresa - Filial $codFilial';
 }
 
 const Object _sentinel = Object();

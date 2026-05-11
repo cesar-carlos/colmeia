@@ -2,6 +2,7 @@ import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/shared/maps/app_brazil_municipality_asset_geocoder.dart';
 import 'package:colmeia/shared/maps/app_brazil_municipality_centroid_index.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
+import 'package:colmeia/shared/maps/app_location_models.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,6 +65,50 @@ void main() {
       expect(point?.municipalityCode, '1100015');
       expect(point?.latitude, -11.9283);
       expect(point?.longitude, -61.9953);
+    });
+
+    test('uses cached CEP before IBGE when CEP is available', () async {
+      final cacheStore = _FakeCacheStore();
+      final cache = AppLocationGeocodeCache(cacheStore);
+      await cache.write(
+        const AppResolvedLocation(
+          point: AppGeoPoint(latitude: -23.5505, longitude: -46.6333),
+          precision: AppLocationPrecision.cep,
+          source: AppLocationSource.geocodingProvider,
+          cacheKey: 'location_geocode_cep_01001000',
+          metadata: <String, Object?>{
+            'uf': 'SP',
+            'city': 'Sao Paulo',
+          },
+        ),
+      );
+      final resolver = AppBrazilStoreSalesPointResolver(
+        locationResolver: AppLocationResolver(
+          cache: cache,
+          geocoders: <AppLocationGeocoder>[
+            _municipalityGeocoder(),
+          ],
+        ),
+      );
+
+      final point = await resolver.resolve(
+        const AppBrazilStoreSalesPointSource(
+          id: 'store-cep',
+          name: 'Loja CEP',
+          uf: 'SP',
+          city: 'Sao Paulo',
+          cep: '01001-000',
+          ibgeMunicipalityCode: '1100015',
+          salesAmount: 250,
+          salesCount: 4,
+        ),
+      );
+
+      expect(point?.uf, 'SP');
+      expect(point?.city, 'Sao Paulo');
+      expect(point?.latitude, -23.5505);
+      expect(point?.longitude, -46.6333);
+      expect(point?.municipalityCode, '1100015');
     });
 
     test('can fallback to capital when only UF is available', () async {

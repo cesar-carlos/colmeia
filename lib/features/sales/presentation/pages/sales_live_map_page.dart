@@ -150,6 +150,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
         _loading = false;
         _result = SalesLiveMapLoadResult(
           points: const <AppBrazilStoreSalesPoint>[],
+          branchOptions: const <SalesLiveMapBranchOption>[],
           totalRevenue: 0,
           totalSalesCount: 0,
           totalBranchCount: 0,
@@ -196,6 +197,8 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       builder: (context) => SalesLiveMapFiltersSheet(
         l10n: AppLocalizations.of(context),
         availableAgents: _availableAgents,
+        availableBranches:
+            _result?.branchOptions ?? const <SalesLiveMapBranchOption>[],
         initialFilter: _filter,
         onApply: _onFilterChanged,
       ),
@@ -203,14 +206,38 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   }
 
   void _onFilterChanged(SalesLiveMapFilter filter) {
+    final normalizedFilter = _normalizeFilterForSelectedBranches(filter);
     setState(() {
-      _filter = filter;
+      _filter = normalizedFilter;
     });
-    unawaited(_prefs.persistSalesLiveMapFilter(filter));
+    unawaited(_prefs.persistSalesLiveMapFilter(normalizedFilter));
     if (!canScheduleSalesAutoRefresh) {
       disableSalesAutoRefresh();
     }
     unawaited(_reload());
+  }
+
+  SalesLiveMapFilter _normalizeFilterForSelectedBranches(
+    SalesLiveMapFilter filter,
+  ) {
+    final selectedBranchIds = filter.selectedBranchIds;
+    if (selectedBranchIds == null || selectedBranchIds.isEmpty) {
+      return filter.copyWith(selectedAgentIds: null);
+    }
+
+    final branches =
+        _result?.branchOptions ?? const <SalesLiveMapBranchOption>[];
+    final selectedAgents = branches
+        .where((branch) => selectedBranchIds.contains(branch.id))
+        .map((branch) => branch.agentId)
+        .toSet();
+    if (selectedAgents.isEmpty) {
+      return filter;
+    }
+
+    return filter.copyWith(
+      selectedAgentIds: Set<String>.unmodifiable(selectedAgents),
+    );
   }
 
   @override
@@ -241,7 +268,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
             summaryItems: <SalesCardFilterSummaryItem>[
               SalesCardFilterSummaryItem(
                 label: l10n.salesLiveMapAgentsLabel,
-                value: _filiaisSummary(),
+                value: _filiaisSummary(result),
               ),
               SalesCardFilterSummaryItem(
                 label: l10n.salesLiveMapPeriodLabel,
@@ -268,6 +295,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
           SalesAutoRefreshActionsRow(
             value: salesAutoRefreshInterval,
             onChanged: setSalesAutoRefreshInterval,
+            onRefreshNow: () => unawaited(_reload()),
             enabled: canScheduleSalesAutoRefresh,
             lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
             l10n: l10n,
@@ -300,10 +328,12 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
               title: l10n.salesLiveMapChartTitle,
               subtitle: _mapSubtitle(result),
               points: result?.points ?? const <AppBrazilStoreSalesPoint>[],
+              initialMetric: _filter.metric,
               style: _mapStyle(
                 detailLevel: _effectiveDetailLevel(result),
                 markerVisual: _filter.markerVisual,
               ),
+              onMetricChanged: _onMapMetricChanged,
             ),
           ],
         ],
@@ -311,19 +341,32 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     );
   }
 
-  String _filiaisSummary() {
+  String _filiaisSummary(SalesLiveMapLoadResult? result) {
     final l10n = AppLocalizations.of(context);
-    if (_availableAgents.isEmpty) {
+    final branchOptions =
+        result?.branchOptions ?? const <SalesLiveMapBranchOption>[];
+    if (branchOptions.isEmpty) {
+      if (_availableAgents.isEmpty) {
+        return l10n.salesLiveMapAgentsLoadingSummary;
+      }
       return l10n.salesLiveMapAgentsLoadingSummary;
     }
-    final selected = _filter.selectedAgentIds;
-    final tokenBackedCount = _availableAgents
-        .where((agent) => !agent.missingLocalClientToken)
-        .length;
+    final selected = _filter.selectedBranchIds;
     if (selected == null) {
-      return l10n.salesLiveMapAgentsAllWithTokenSummary(tokenBackedCount);
+      return l10n.salesLiveMapAgentsAllWithTokenSummary(branchOptions.length);
     }
     return l10n.salesLiveMapAgentsSelectedSummary(selected.length);
+  }
+
+  void _onMapMetricChanged(AppBrazilStoreSalesMapMetric metric) {
+    if (_filter.metric == metric) {
+      return;
+    }
+    final next = _filter.copyWith(metric: metric);
+    setState(() {
+      _filter = next;
+    });
+    unawaited(_prefs.persistSalesLiveMapFilter(next));
   }
 
   String _periodSummary() {
@@ -446,6 +489,7 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
           const SalesLiveMapKpiGrid(
             result: SalesLiveMapLoadResult(
               points: <AppBrazilStoreSalesPoint>[],
+              branchOptions: <SalesLiveMapBranchOption>[],
               totalRevenue: 128000,
               totalSalesCount: 420,
               totalBranchCount: 12,

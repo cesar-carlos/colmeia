@@ -13,6 +13,7 @@ class AppBrazilStoreSalesPointSource {
     this.city,
     this.latitude,
     this.longitude,
+    this.cep,
     this.ibgeMunicipalityCode,
     this.preferCapitalFallback = false,
     this.subtitle,
@@ -27,6 +28,7 @@ class AppBrazilStoreSalesPointSource {
   final String? city;
   final double? latitude;
   final double? longitude;
+  final String? cep;
   final String? ibgeMunicipalityCode;
   final bool preferCapitalFallback;
   final String? subtitle;
@@ -43,13 +45,16 @@ class AppBrazilStoreSalesPointResolver {
   Future<AppBrazilStoreSalesPoint?> resolve(
     AppBrazilStoreSalesPointSource source,
   ) async {
-    final input = _lookupInputFor(source);
-    if (input == null) {
-      return null;
+    AppResolvedLocation? location;
+    for (final input in _lookupInputsFor(source)) {
+      final resolved = await _locationResolver.resolve(input);
+      if (resolved != null && resolved.point.isValid) {
+        location = resolved;
+        break;
+      }
     }
 
-    final location = await _locationResolver.resolve(input);
-    if (location == null || !location.point.isValid) {
+    if (location == null) {
       return null;
     }
 
@@ -91,9 +96,10 @@ class AppBrazilStoreSalesPointResolver {
     return points;
   }
 
-  AppLocationLookupInput? _lookupInputFor(
+  List<AppLocationLookupInput> _lookupInputsFor(
     AppBrazilStoreSalesPointSource source,
   ) {
+    final inputs = <AppLocationLookupInput>[];
     final latitude = source.latitude;
     final longitude = source.longitude;
     final uf = AppLocationLookupNormalizer.normalizeUf(source.uf);
@@ -101,34 +107,43 @@ class AppBrazilStoreSalesPointResolver {
         longitude != null &&
         uf != null &&
         AppGeoPoint(latitude: latitude, longitude: longitude).isValid) {
-      return AppLocationLookupInput.geoPoint(
-        geoPoint: AppGeoPoint(latitude: latitude, longitude: longitude),
+      inputs.add(
+        AppLocationLookupInput.geoPoint(
+          geoPoint: AppGeoPoint(latitude: latitude, longitude: longitude),
+        ),
       );
+    }
+
+    final cep = AppLocationLookupNormalizer.normalizeCep(source.cep);
+    if (cep != null) {
+      inputs.add(AppLocationLookupInput.cep(cep: cep));
     }
 
     final ibgeCode = AppLocationLookupNormalizer.normalizeIbgeMunicipalityCode(
       source.ibgeMunicipalityCode,
     );
     if (ibgeCode != null) {
-      return AppLocationLookupInput.ibgeMunicipalityCode(
-        ibgeMunicipalityCode: ibgeCode,
+      inputs.add(
+        AppLocationLookupInput.ibgeMunicipalityCode(
+          ibgeMunicipalityCode: ibgeCode,
+        ),
       );
     }
 
     final city = AppLocationLookupNormalizer.normalizeCity(source.city);
     if (city != null && uf != null) {
-      return AppLocationLookupInput.cityUf(city: source.city!, uf: uf);
+      inputs.add(AppLocationLookupInput.cityUf(city: source.city!, uf: uf));
     }
 
     if (source.preferCapitalFallback && uf != null) {
-      return AppLocationLookupInput.capitalUf(uf: uf);
+      inputs.add(AppLocationLookupInput.capitalUf(uf: uf));
     }
 
     if (uf != null) {
-      return AppLocationLookupInput.uf(uf: uf);
+      inputs.add(AppLocationLookupInput.uf(uf: uf));
     }
 
-    return null;
+    return inputs;
   }
 
   String? _resolveUf(

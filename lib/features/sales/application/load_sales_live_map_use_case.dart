@@ -11,6 +11,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resol
 class SalesLiveMapLoadResult {
   const SalesLiveMapLoadResult({
     required this.points,
+    required this.branchOptions,
     required this.totalRevenue,
     required this.totalSalesCount,
     required this.totalBranchCount,
@@ -27,6 +28,7 @@ class SalesLiveMapLoadResult {
   });
 
   final List<AppBrazilStoreSalesPoint> points;
+  final List<SalesLiveMapBranchOption> branchOptions;
   final double totalRevenue;
   final int totalSalesCount;
   final int totalBranchCount;
@@ -77,7 +79,7 @@ class LoadSalesLiveMapUseCase {
         );
 
     return result.fold(
-      (report) => _mapReport(report, refreshedAt: now),
+      (report) => _mapReport(report, filter: filter, refreshedAt: now),
       (failure) {
         AppLogger.warning(
           'Sales live map query failed',
@@ -97,10 +99,15 @@ class LoadSalesLiveMapUseCase {
   Future<SalesLiveMapLoadResult> _mapReport(
     AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialDiarioRow>
     report, {
+    required SalesLiveMapFilter filter,
     required DateTime refreshedAt,
   }) async {
     final aggregates = _aggregateRows(report.participants);
-    final sources = aggregates
+    final branchOptions = aggregates
+        .map((aggregate) => aggregate.toBranchOption())
+        .toList(growable: false);
+    final visibleAggregates = _filterAggregatesByBranch(aggregates, filter);
+    final sources = visibleAggregates
         .map((aggregate) => aggregate.toPointSource())
         .toList(growable: false);
     final resolved = await Future.wait(sources.map(_pointResolver.resolve));
@@ -112,15 +119,16 @@ class LoadSalesLiveMapUseCase {
     final loadFailed = report.requiresClientTokenSetup;
     return SalesLiveMapLoadResult(
       points: points,
-      totalRevenue: aggregates.fold<double>(
+      branchOptions: branchOptions,
+      totalRevenue: visibleAggregates.fold<double>(
         0,
         (total, aggregate) => total + aggregate.totalVenda,
       ),
-      totalSalesCount: aggregates.fold<int>(
+      totalSalesCount: visibleAggregates.fold<int>(
         0,
         (total, aggregate) => total + aggregate.qtdVendas,
       ),
-      totalBranchCount: aggregates.length,
+      totalBranchCount: visibleAggregates.length,
       mappedBranchCount: points.length,
       mappedMunicipalityCount: mappedMunicipalityCount,
       queriedAgentCount: report.participants.length,
@@ -142,6 +150,7 @@ class LoadSalesLiveMapUseCase {
   }) {
     return SalesLiveMapLoadResult(
       points: const <AppBrazilStoreSalesPoint>[],
+      branchOptions: const <SalesLiveMapBranchOption>[],
       totalRevenue: 0,
       totalSalesCount: 0,
       totalBranchCount: 0,
@@ -198,6 +207,20 @@ class LoadSalesLiveMapUseCase {
         },
       );
     return aggregates;
+  }
+
+  List<_SalesLiveMapBranchAggregate> _filterAggregatesByBranch(
+    List<_SalesLiveMapBranchAggregate> aggregates,
+    SalesLiveMapFilter filter,
+  ) {
+    final selectedBranchIds = filter.selectedBranchIds;
+    if (selectedBranchIds == null || selectedBranchIds.isEmpty) {
+      return aggregates;
+    }
+
+    return aggregates
+        .where((aggregate) => selectedBranchIds.contains(aggregate.id))
+        .toList(growable: false);
   }
 
   DateTime _resolveNow() => (_now ?? DateTime.now)();
@@ -292,9 +315,23 @@ class _SalesLiveMapBranchAggregate {
       salesCount: qtdVendas,
       uf: ufMunicipioFilial,
       city: nomeMunicipioFilial,
+      cep: cepFilial,
       ibgeMunicipalityCode: codigoIbgeMunicipioFilial,
       subtitle: 'Agente $agentName - Empresa $codEmpresa - Filial $codFilial',
       payload: this,
+    );
+  }
+
+  SalesLiveMapBranchOption toBranchOption() {
+    return SalesLiveMapBranchOption(
+      id: id,
+      agentId: agentId,
+      agentName: agentName,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+      name: name,
+      city: nomeMunicipioFilial,
+      uf: ufMunicipioFilial,
     );
   }
 }

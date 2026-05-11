@@ -967,6 +967,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
             SalesAutoRefreshActionsRow(
               value: salesAutoRefreshInterval,
               onChanged: setSalesAutoRefreshInterval,
+              onRefreshNow: () => unawaited(_reload()),
               enabled: canScheduleSalesAutoRefresh,
               lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
               l10n: l10n,

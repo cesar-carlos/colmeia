@@ -2291,7 +2291,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String salesLiveMapAgentsAllWithTokenSummary(int count) {
-    return 'Todas com token ($count)';
+    return 'Todas ($count)';
   }
 
   @override
@@ -2401,7 +2401,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapBranchesSectionSubtitle =>
-      'Filiais sem token local ficam visiveis, mas bloqueadas.';
+      'A lista aparece depois da primeira atualizacao do mapa.';
 
   @override
   String get salesLiveMapSelectAtLeastOneTokenBranch =>
@@ -2410,6 +2410,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesLiveMapNoApprovedAgents =>
       'Nenhuma filial aprovada disponivel para consulta.';
+
+  @override
+  String get salesLiveMapBranchesLoadBeforeSelection =>
+      'Atualize o mapa uma vez para listar as filiais disponiveis.';
 
   @override
   String get salesLiveMapSelectAllTokenBacked => 'Selecionar todas';
@@ -2563,6 +2567,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesAutoRefreshTooltip => 'Atualizacao automatica';
+
+  @override
+  String get salesAutoRefreshNow => 'Atualizar agora';
 
   @override
   String salesAutoRefreshLastUpdatedAt(String time) {
@@ -5503,7 +5510,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String salesLiveMapAgentsAllWithTokenSummary(int count) {
-    return 'Todas com token ($count)';
+    return 'Todas ($count)';
   }
 
   @override
@@ -5613,7 +5620,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapBranchesSectionSubtitle =>
-      'Filiais sem token local ficam visiveis, mas bloqueadas.';
+      'A lista aparece depois da primeira atualizacao do mapa.';
 
   @override
   String get salesLiveMapSelectAtLeastOneTokenBranch =>
@@ -5622,6 +5629,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesLiveMapNoApprovedAgents =>
       'Nenhuma filial aprovada disponivel para consulta.';
+
+  @override
+  String get salesLiveMapBranchesLoadBeforeSelection =>
+      'Atualize o mapa uma vez para listar as filiais disponiveis.';
 
   @override
   String get salesLiveMapSelectAllTokenBacked => 'Selecionar todas';
@@ -5775,6 +5786,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesAutoRefreshTooltip => 'Atualizacao automatica';
+
+  @override
+  String get salesAutoRefreshNow => 'Atualizar agora';
 
   @override
   String salesAutoRefreshLastUpdatedAt(String time) {

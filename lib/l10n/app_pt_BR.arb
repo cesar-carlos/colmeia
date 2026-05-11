@@ -840,7 +840,7 @@
     }
   },
   "salesLiveMapAgentsLoadingSummary": "Carregando filiais",
-  "salesLiveMapAgentsAllWithTokenSummary": "Todas com token ({count})",
+  "salesLiveMapAgentsAllWithTokenSummary": "Todas ({count})",
   "@salesLiveMapAgentsAllWithTokenSummary": {
     "placeholders": {
       "count": {"type": "int"}
@@ -911,9 +911,10 @@
   "salesLiveMapFiltersTitle": "Filtros de acompanhamento",
   "salesLiveMapFiltersDescription": "Escolha filiais, periodo e tipo visual do mapa.",
   "salesLiveMapBranchesSectionTitle": "Filiais",
-  "salesLiveMapBranchesSectionSubtitle": "Filiais sem token local ficam visiveis, mas bloqueadas.",
+  "salesLiveMapBranchesSectionSubtitle": "A lista aparece depois da primeira atualizacao do mapa.",
   "salesLiveMapSelectAtLeastOneTokenBranch": "Selecione ao menos uma filial com token local.",
   "salesLiveMapNoApprovedAgents": "Nenhuma filial aprovada disponivel para consulta.",
+  "salesLiveMapBranchesLoadBeforeSelection": "Atualize o mapa uma vez para listar as filiais disponiveis.",
   "salesLiveMapSelectAllTokenBacked": "Selecionar todas",
   "salesLiveMapClearSelection": "Desmarcar todas",
   "salesLiveMapMissingLocalToken": "Sem token local",
@@ -972,6 +973,7 @@
   "salesCardResumoTotalDiarioVendasTitle": "Vendas diárias",
   "salesAutoRefreshOff": "Desligado",
   "salesAutoRefreshTooltip": "Atualizacao automatica",
+  "salesAutoRefreshNow": "Atualizar agora",
   "salesAutoRefreshLastUpdatedAt": "Atualizado {time}",
   "@salesAutoRefreshLastUpdatedAt": {
     "placeholders": {

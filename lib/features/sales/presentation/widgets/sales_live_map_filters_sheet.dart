@@ -14,6 +14,7 @@ class SalesLiveMapFiltersSheet extends StatefulWidget {
   const SalesLiveMapFiltersSheet({
     required this.l10n,
     required this.availableAgents,
+    required this.availableBranches,
     required this.initialFilter,
     required this.onApply,
     super.key,
@@ -21,6 +22,7 @@ class SalesLiveMapFiltersSheet extends StatefulWidget {
 
   final AppLocalizations l10n;
   final List<OverviewAgentOption> availableAgents;
+  final List<SalesLiveMapBranchOption> availableBranches;
   final SalesLiveMapFilter initialFilter;
   final ValueChanged<SalesLiveMapFilter> onApply;
 
@@ -30,7 +32,7 @@ class SalesLiveMapFiltersSheet extends StatefulWidget {
 }
 
 class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
-  late Set<String> _selectedAgentIds;
+  late Set<String> _selectedBranchIds;
   late SalesLiveMapPeriodMode _periodMode;
   late SalesLiveMapMapDetail _detailLevel;
   late SalesLiveMapMarkerVisual _markerVisual;
@@ -39,9 +41,9 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
   @override
   void initState() {
     super.initState();
-    final tokenBacked = _tokenBackedAgentIds;
-    _selectedAgentIds = Set<String>.from(
-      widget.initialFilter.selectedAgentIds ?? tokenBacked,
+    final branchIds = _branchIds;
+    _selectedBranchIds = Set<String>.from(
+      widget.initialFilter.selectedBranchIds ?? branchIds,
     );
     _periodMode = widget.initialFilter.periodMode;
     _detailLevel = widget.initialFilter.detailLevel;
@@ -60,10 +62,28 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
       .map((agent) => agent.agentId)
       .toSet();
 
-  bool get _hasSelectedTokenBackedAgent =>
-      _selectedAgentIds.any(_tokenBackedAgentIds.contains);
+  Set<String> get _branchIds =>
+      widget.availableBranches.map((branch) => branch.id).toSet();
 
-  bool get _canApply => _hasSelectedTokenBackedAgent && _canApplyCustomRange;
+  bool get _hasSelectableBranchData => widget.availableBranches.isNotEmpty;
+
+  bool get _hasSelectedBranch =>
+      !_hasSelectableBranchData || _selectedBranchIds.any(_branchIds.contains);
+
+  bool get _hasSelectedTokenBackedAgent {
+    if (_hasSelectableBranchData) {
+      return _selectedBranchIds
+          .map(_agentIdForBranchId)
+          .whereType<String>()
+          .any(_tokenBackedAgentIds.contains);
+    }
+    return _tokenBackedAgentIds.isNotEmpty;
+  }
+
+  bool get _canApply =>
+      _hasSelectedBranch &&
+      _hasSelectedTokenBackedAgent &&
+      _canApplyCustomRange;
 
   bool get _canApplyCustomRange {
     if (_periodMode != SalesLiveMapPeriodMode.customRange) {
@@ -104,6 +124,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
     widget.onApply(
       SalesLiveMapFilter(
         selectedAgentIds: _normalizedSelectedAgentIds(),
+        selectedBranchIds: _normalizedSelectedBranchIds(),
         periodMode: _periodMode,
         customDateRange: customDateRange,
         detailLevel: _detailLevel,
@@ -111,6 +132,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
           detailLevel: _detailLevel,
           markerVisual: _markerVisual,
         ),
+        metric: widget.initialFilter.metric,
       ),
     );
     Navigator.of(context).pop();
@@ -118,8 +140,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
 
   void _clear() {
     setState(() {
-      final tokenBacked = _tokenBackedAgentIds;
-      _selectedAgentIds = Set<String>.from(tokenBacked);
+      _selectedBranchIds = Set<String>.from(_branchIds);
       _periodMode = SalesLiveMapPeriodMode.today;
       _detailLevel = SalesLiveMapMapDetail.branches;
       _markerVisual = SalesLiveMapMarkerVisual.dot;
@@ -130,25 +151,51 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
   }
 
   Set<String>? _normalizedSelectedAgentIds() {
-    final tokenBacked = _tokenBackedAgentIds;
-    final selectedTokenBacked = _selectedAgentIds.where(tokenBacked.contains);
-    if (tokenBacked.isNotEmpty &&
-        selectedTokenBacked.length == tokenBacked.length &&
-        selectedTokenBacked.every(tokenBacked.contains)) {
+    final selectedBranches = _normalizedSelectedBranchIds();
+    if (selectedBranches == null) {
       return null;
     }
-    return Set<String>.unmodifiable(selectedTokenBacked);
+
+    final selectedAgents = selectedBranches
+        .map(_agentIdForBranchId)
+        .whereType<String>()
+        .toSet();
+    return selectedAgents.isEmpty
+        ? null
+        : Set<String>.unmodifiable(selectedAgents);
   }
 
-  void _toggleAgent(OverviewAgentOption agent, bool? checked) {
-    if (agent.missingLocalClientToken) {
-      return;
+  Set<String>? _normalizedSelectedBranchIds() {
+    final branchIds = _branchIds;
+    if (branchIds.isEmpty) {
+      return _selectedBranchIds.isEmpty
+          ? null
+          : Set<String>.unmodifiable(_selectedBranchIds);
     }
+    final selectedBranches = _selectedBranchIds
+        .where(branchIds.contains)
+        .toSet();
+    if (selectedBranches.length == branchIds.length) {
+      return null;
+    }
+    return Set<String>.unmodifiable(selectedBranches);
+  }
+
+  String? _agentIdForBranchId(String branchId) {
+    for (final branch in widget.availableBranches) {
+      if (branch.id == branchId) {
+        return branch.agentId;
+      }
+    }
+    return null;
+  }
+
+  void _toggleBranch(SalesLiveMapBranchOption branch, bool? checked) {
     setState(() {
       if (checked ?? false) {
-        _selectedAgentIds.add(agent.agentId);
+        _selectedBranchIds.add(branch.id);
       } else {
-        _selectedAgentIds.remove(agent.agentId);
+        _selectedBranchIds.remove(branch.id);
       }
     });
   }
@@ -204,21 +251,22 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
               subtitle: widget.l10n.salesLiveMapBranchesSectionSubtitle,
             ),
             SizedBox(height: tokens.gapSm),
-            _AgentSelectionPanel(
+            _BranchSelectionPanel(
               l10n: widget.l10n,
-              agents: widget.availableAgents,
-              selectedAgentIds: _selectedAgentIds,
-              onChanged: ({required agent, required checked}) {
-                _toggleAgent(agent, checked);
+              branches: widget.availableBranches,
+              selectedBranchIds: _selectedBranchIds,
+              onChanged: ({required branch, required checked}) {
+                _toggleBranch(branch, checked);
               },
-              onSelectAllTokenBacked: () {
-                setState(() => _selectedAgentIds = _tokenBackedAgentIds);
+              onSelectAllBranches: () {
+                setState(() => _selectedBranchIds = _branchIds);
               },
               onClearSelection: () {
-                setState(_selectedAgentIds.clear);
+                setState(_selectedBranchIds.clear);
               },
             ),
-            if (!_hasSelectedTokenBackedAgent) ...<Widget>[
+            if (!_hasSelectedBranch ||
+                !_hasSelectedTokenBackedAgent) ...<Widget>[
               SizedBox(height: tokens.gapMd),
               AppInlineErrorPanel(
                 tone: AppInlinePanelTone.informational,
@@ -358,35 +406,35 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
   }
 }
 
-class _AgentSelectionPanel extends StatelessWidget {
-  const _AgentSelectionPanel({
+class _BranchSelectionPanel extends StatelessWidget {
+  const _BranchSelectionPanel({
     required this.l10n,
-    required this.agents,
-    required this.selectedAgentIds,
+    required this.branches,
+    required this.selectedBranchIds,
     required this.onChanged,
-    required this.onSelectAllTokenBacked,
+    required this.onSelectAllBranches,
     required this.onClearSelection,
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> agents;
-  final Set<String> selectedAgentIds;
+  final List<SalesLiveMapBranchOption> branches;
+  final Set<String> selectedBranchIds;
   final void Function({
-    required OverviewAgentOption agent,
+    required SalesLiveMapBranchOption branch,
     required bool? checked,
   })
   onChanged;
-  final VoidCallback onSelectAllTokenBacked;
+  final VoidCallback onSelectAllBranches;
   final VoidCallback onClearSelection;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    if (agents.isEmpty) {
+    if (branches.isEmpty) {
       return AppInlineErrorPanel(
         tone: AppInlinePanelTone.informational,
-        message: l10n.salesLiveMapNoApprovedAgents,
+        message: l10n.salesLiveMapBranchesLoadBeforeSelection,
       );
     }
 
@@ -401,34 +449,33 @@ class _AgentSelectionPanel extends StatelessWidget {
             runSpacing: tokens.gapXs,
             children: <Widget>[
               TextButton.icon(
-                onPressed: onSelectAllTokenBacked,
+                onPressed: onSelectAllBranches,
                 icon: const Icon(Icons.done_all_rounded),
                 label: Text(l10n.salesLiveMapSelectAllTokenBacked),
               ),
               TextButton.icon(
-                onPressed: selectedAgentIds.isEmpty ? null : onClearSelection,
+                onPressed: selectedBranchIds.isEmpty ? null : onClearSelection,
                 icon: const Icon(Icons.remove_done_rounded),
                 label: Text(l10n.salesLiveMapClearSelection),
               ),
             ],
           ),
           SizedBox(height: tokens.gapXs),
-          for (final agent in agents)
+          for (final branch in branches)
             CheckboxListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              value: selectedAgentIds.contains(agent.agentId),
-              onChanged: agent.missingLocalClientToken
-                  ? null
-                  : (checked) => onChanged(agent: agent, checked: checked),
+              value: selectedBranchIds.contains(branch.id),
+              onChanged: (checked) => onChanged(
+                branch: branch,
+                checked: checked,
+              ),
               title: Text(
-                agent.name,
+                branch.name,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              subtitle: agent.missingLocalClientToken
-                  ? Text(l10n.salesLiveMapMissingLocalToken)
-                  : null,
+              subtitle: Text(branch.subtitle),
             ),
         ],
       ),

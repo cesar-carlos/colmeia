@@ -1064,7 +1064,7 @@
     }
   },
   "salesLiveMapAgentsLoadingSummary": "Loading branches",
-  "salesLiveMapAgentsAllWithTokenSummary": "All with token ({count})",
+  "salesLiveMapAgentsAllWithTokenSummary": "All ({count})",
   "@salesLiveMapAgentsAllWithTokenSummary": {
     "placeholders": {
       "count": {"type": "int"}
@@ -1135,9 +1135,10 @@
   "salesLiveMapFiltersTitle": "Tracking filters",
   "salesLiveMapFiltersDescription": "Choose branches, period, and map view type.",
   "salesLiveMapBranchesSectionTitle": "Branches",
-  "salesLiveMapBranchesSectionSubtitle": "Branches without a local token stay visible, but locked.",
+  "salesLiveMapBranchesSectionSubtitle": "The list appears after the first map refresh.",
   "salesLiveMapSelectAtLeastOneTokenBranch": "Select at least one branch with a local token.",
   "salesLiveMapNoApprovedAgents": "No approved branch is available for query.",
+  "salesLiveMapBranchesLoadBeforeSelection": "Refresh the map once to list available branches.",
   "salesLiveMapSelectAllTokenBacked": "Select all",
   "salesLiveMapClearSelection": "Clear all",
   "salesLiveMapMissingLocalToken": "No local token",
@@ -1195,6 +1196,7 @@
   "salesCardResumoTotalDiarioVendasTitle": "Daily sales totals",
   "salesAutoRefreshOff": "Off",
   "salesAutoRefreshTooltip": "Auto-refresh",
+  "salesAutoRefreshNow": "Refresh now",
   "salesAutoRefreshLastUpdatedAt": "Updated {time}",
   "@salesAutoRefreshLastUpdatedAt": {
     "placeholders": {

@@ -5,6 +5,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_daily_totals_range_policy.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SalesPreferences {
@@ -179,6 +180,9 @@ class SalesPreferences {
     final selectedAgentIds = _salesLiveMapSelectedAgentIdsFromRaw(
       raw['selected_agent_ids'],
     );
+    final selectedBranchIds = _salesLiveMapSelectedAgentIdsFromRaw(
+      raw['selected_branch_ids'],
+    );
     final customDateRange = _salesLiveMapCustomRangeFromRaw(
       startMs: raw['custom_range_start_ms'],
       endMs: raw['custom_range_end_ms'],
@@ -186,6 +190,7 @@ class SalesPreferences {
 
     return SalesLiveMapFilter(
       selectedAgentIds: selectedAgentIds,
+      selectedBranchIds: selectedBranchIds,
       periodMode: mode,
       customDateRange: customDateRange,
       detailLevel: _salesLiveMapDetailFromRaw(
@@ -196,6 +201,7 @@ class SalesPreferences {
         raw['map_visual'],
         legacyPreset: raw['map_preset'],
       ),
+      metric: _salesLiveMapMetricFromRaw(raw['metric']),
     );
   }
 
@@ -210,6 +216,12 @@ class SalesPreferences {
     if (selected != null && selected.isNotEmpty) {
       encoded['selected_agent_ids'] = (List<String>.from(selected)..sort());
     }
+    final selectedBranches = filter.selectedBranchIds;
+    if (selectedBranches != null && selectedBranches.isNotEmpty) {
+      encoded['selected_branch_ids'] = (List<String>.from(selectedBranches)
+        ..sort());
+    }
+    encoded['metric'] = filter.metric.name;
 
     final customRange = filter.customDateRange;
     if (filter.periodMode == SalesLiveMapPeriodMode.customRange &&
@@ -357,6 +369,17 @@ class SalesPreferences {
       }
     }
     return SalesLiveMapMapPreset.standard;
+  }
+
+  static AppBrazilStoreSalesMapMetric _salesLiveMapMetricFromRaw(Object? raw) {
+    if (raw is String) {
+      for (final metric in AppBrazilStoreSalesMapMetric.values) {
+        if (metric.name == raw) {
+          return metric;
+        }
+      }
+    }
+    return AppBrazilStoreSalesMapMetric.revenue;
   }
 
   static Set<String>? _salesLiveMapSelectedAgentIdsFromRaw(Object? raw) {

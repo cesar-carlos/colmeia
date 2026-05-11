@@ -97,6 +97,9 @@ void main() {
     check(result.totalBranchCount).equals(1);
     check(result.mappedBranchCount).equals(1);
     check(result.mappedMunicipalityCount).equals(1);
+    check(result.branchOptions.map((branch) => branch.id).toList()).deepEquals(
+      <String>['agent-a-1-1'],
+    );
   });
 
   test(
@@ -144,6 +147,87 @@ void main() {
       check(result.mappedMunicipalityCount).equals(1);
     },
   );
+
+  test('filtra pontos e KPIs pelas filiais selecionadas', () async {
+    _stubReport(
+      loadAcrossAgents,
+      _report(
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+        participants:
+            <
+              AgentQueryExecutionParticipant<
+                ResumoTotalVendasMunicipioFilialDiarioRow
+              >
+            >[
+              _participant(
+                'agent-a',
+                rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                  _row(nomeFilial: 'Loja 1', totalVenda: 100),
+                  _row(codFilial: 2, nomeFilial: 'Loja 2', totalVenda: 300),
+                ],
+              ),
+            ],
+      ),
+    );
+
+    final result = await useCase(
+      userId: userId,
+      filter: const SalesLiveMapFilter(
+        selectedAgentIds: <String>{'agent-a'},
+        selectedBranchIds: <String>{'agent-a-1-2'},
+      ),
+    );
+
+    check(result.branchOptions.map((branch) => branch.id).toSet()).deepEquals(
+      <String>{'agent-a-1-1', 'agent-a-1-2'},
+    );
+    check(result.points.map((point) => point.id).toList()).deepEquals(
+      <String>['agent-a-1-2'],
+    );
+    check(result.totalBranchCount).equals(1);
+    check(result.totalRevenue).equals(300);
+  });
+
+  test('repassa apenas agentes selecionados para reduzir consulta', () async {
+    _stubReport(
+      loadAcrossAgents,
+      _report(
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+        participants:
+            <
+              AgentQueryExecutionParticipant<
+                ResumoTotalVendasMunicipioFilialDiarioRow
+              >
+            >[
+              _participant(
+                'agent-a',
+                rows: <ResumoTotalVendasMunicipioFilialDiarioRow>[
+                  _row(totalVenda: 100),
+                ],
+              ),
+            ],
+      ),
+    );
+
+    await useCase(
+      userId: userId,
+      filter: const SalesLiveMapFilter(
+        selectedAgentIds: <String>{'agent-a'},
+      ),
+    );
+
+    final captured = verify(
+      () => loadAcrossAgents.call(
+        userId: 'user-1',
+        filter: any(named: 'filter'),
+        selectedAgentIds: captureAny(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+      ),
+    ).captured.single;
+    check(captured as Set<String>).deepEquals(<String>{'agent-a'});
+  });
 
   test('resolve ponto por CodigoIBGEMunicipioFilial', () async {
     _stubReport(
@@ -350,6 +434,7 @@ ResumoTotalVendasMunicipioFilialDiarioRow _row({
   String nomeMunicipioFilial = 'SINOP',
   String ufMunicipioFilial = 'MT',
   String? codigoIbgeMunicipioFilial = '5107909',
+  String? cepFilial,
   int qtdVendas = 1,
   double totalVenda = 10,
 }) {
@@ -362,6 +447,7 @@ ResumoTotalVendasMunicipioFilialDiarioRow _row({
     nomeMunicipioFilial: nomeMunicipioFilial,
     ufMunicipioFilial: ufMunicipioFilial,
     codigoIbgeMunicipioFilial: codigoIbgeMunicipioFilial,
+    cepFilial: cepFilial,
     dataVenda: DateTime(2026, 5, 9),
     qtdVendas: qtdVendas,
     totalVenda: totalVenda,

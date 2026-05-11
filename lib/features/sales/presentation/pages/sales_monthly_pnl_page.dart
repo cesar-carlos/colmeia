@@ -493,6 +493,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
           SalesAutoRefreshActionsRow(
             value: salesAutoRefreshInterval,
             onChanged: setSalesAutoRefreshInterval,
+            onRefreshNow: () => unawaited(_reload()),
             enabled: canScheduleSalesAutoRefresh,
             lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
             l10n: l10n,
