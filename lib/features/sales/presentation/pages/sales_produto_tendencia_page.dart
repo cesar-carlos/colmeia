@@ -23,6 +23,8 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
@@ -206,7 +208,8 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
       _SalesProdutoTendenciaPageState();
 }
 
-class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
+class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
+    with SalesAutoRefreshStateMixin<SalesProdutoTendenciaPage> {
   static const String _cardId = 'produto_tendencia_venda';
   static const List<int> _pageSizeOptions = <int>[10, 20, 50, 100];
 
@@ -334,7 +337,14 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
     unawaited(_reload());
   }
 
-  Future<void> _reload() async {
+  Future<void> _reload() => reloadWithSalesAutoRefresh();
+
+  @override
+  bool get canScheduleSalesAutoRefresh =>
+      _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
+
+  @override
+  Future<void> performSalesAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
@@ -372,6 +382,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
         _summaryRows = const <ProdutoVendidoTendenciaDeVendaSummaryRow>[];
         _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
       });
+      disableSalesAutoRefresh();
       return;
     }
 
@@ -951,6 +962,14 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage> {
                 ),
               ],
               enabled: !_loading,
+            ),
+            SizedBox(height: tokens.gapMd),
+            SalesAutoRefreshActionsRow(
+              value: salesAutoRefreshInterval,
+              onChanged: setSalesAutoRefreshInterval,
+              enabled: canScheduleSalesAutoRefresh,
+              lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
+              l10n: l10n,
             ),
             if (activeFilterChipLabels.isNotEmpty) ...<Widget>[
               SizedBox(height: tokens.gapMd),

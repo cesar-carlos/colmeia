@@ -21,6 +21,9 @@ import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.da
 import 'package:colmeia/features/auth/data/datasources/fake_auth_remote_datasource.dart';
 import 'package:colmeia/features/user_context/data/datasources/user_context_local_datasource.dart';
 import 'package:colmeia/features/user_context/data/datasources/user_context_remote_datasource.dart';
+import 'package:colmeia/shared/maps/app_brazil_municipality_asset_geocoder.dart';
+import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
+import 'package:colmeia/shared/maps/app_location_resolver.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
@@ -34,6 +37,17 @@ Future<void> registerInjectorCore(GetIt getIt) async {
 
   getIt
     ..registerSingleton<AppCacheStore>(HiveAppCacheStore(kvCacheBox))
+    ..registerLazySingleton<AppLocationGeocodeCache>(
+      () => AppLocationGeocodeCache(getIt<AppCacheStore>()),
+    )
+    ..registerLazySingleton<AppLocationResolver>(
+      () => AppLocationResolver(
+        cache: getIt<AppLocationGeocodeCache>(),
+        geocoders: const <AppLocationGeocoder>[
+          AppBrazilMunicipalityAssetGeocoder(),
+        ],
+      ),
+    )
     ..registerSingleton<SharedPreferences>(sharedPreferences)
     ..registerSingleton<AppUserPreferencesStore>(
       AppUserPreferencesStore(sharedPreferences),

@@ -21,6 +21,8 @@ import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_widgets.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -39,7 +41,8 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
 }
 
 class _SalesProdutoTendenciaMediaMovelPageState
-    extends State<SalesProdutoTendenciaMediaMovelPage> {
+    extends State<SalesProdutoTendenciaMediaMovelPage>
+    with SalesAutoRefreshStateMixin<SalesProdutoTendenciaMediaMovelPage> {
   static const String _cardId = 'produto_tendencia_venda_media_movel';
   static const List<int> _pageSizeOptions = <int>[10, 20, 50, 100];
 
@@ -162,7 +165,14 @@ class _SalesProdutoTendenciaMediaMovelPageState
     unawaited(_reload());
   }
 
-  Future<void> _reload() async {
+  Future<void> _reload() => reloadWithSalesAutoRefresh();
+
+  @override
+  bool get canScheduleSalesAutoRefresh =>
+      _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
+
+  @override
+  Future<void> performSalesAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
@@ -208,6 +218,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
             const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[];
         _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
       });
+      disableSalesAutoRefresh();
       return;
     }
 
@@ -578,6 +589,14 @@ class _SalesProdutoTendenciaMediaMovelPageState
                     buttonSemanticsLabel: l10n.reportFiltersTitleWithContext(
                       l10n.salesCardProdutoTendenciaMediaMovelTitle,
                     ),
+                  ),
+                  SizedBox(height: tokens.gapMd),
+                  SalesAutoRefreshActionsRow(
+                    value: salesAutoRefreshInterval,
+                    onChanged: setSalesAutoRefreshInterval,
+                    enabled: canScheduleSalesAutoRefresh,
+                    lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
+                    l10n: l10n,
                   ),
                   if (_selectedAgentId == null ||
                       _selectedAgentId!.trim().isEmpty) ...<Widget>[

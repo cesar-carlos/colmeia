@@ -125,7 +125,26 @@
   "overviewAgentFilterSheetSearchHint": "Search agents…",
   "overviewHomeBranchFilterSheetTitle": "Select branches",
   "overviewHomeBranchFilterSheetSearchHint": "Search branches…",
-  "overviewAgentFilterSelectMatching": "Select all matching",
+  "overviewHomeBranchFilterSelectAll": "Select all",
+  "overviewHomeBranchFilterSelectAllFullRoster": "Select all branches (full list)",
+  "overviewHomeBranchFilterDeselectAll": "Deselect all",
+  "overviewHomeBranchFilterSelectMatching": "Select all matching branches",
+  "overviewHomeBranchFilterDeselectMatching": "Deselect all matching branches",
+  "overviewHomeBranchFilterSelectionCount": "{selectedCount} of {totalCount} branches selected",
+  "@overviewHomeBranchFilterSelectionCount": {
+    "placeholders": {
+      "selectedCount": {"type": "int"},
+      "totalCount": {"type": "int"}
+    }
+  },
+  "overviewHomeBranchFilterApplyRequiresSelectionHint": "Choose at least one branch to apply.",
+  "overviewHomeBranchFilterSheetUseAllBranches": "Use all branches",
+  "overviewHomeBranchFilterApplyDisabledSemantics": "Apply. Disabled. Select at least one branch.",
+  "overviewHomeBranchFilterRefineAction": "Refine branches",
+  "overviewHomeBranchFilterEditAction": "Edit",
+  "overviewHomeBranchFilterApply": "Apply",
+  "overviewHomeBranchFilterCancel": "Cancel",
+  "overviewHomeBranchFilterMissingClientTokenRowSubtitle": "No client token on this device for this branch — SQL queries are skipped.",
   "overviewAgentFilterApply": "Apply",
   "overviewAgentFilterCancel": "Cancel",
   "overviewAgentFilterNoSearchResults": "No agents match your search.",
@@ -1027,6 +1046,132 @@
   "overviewLoadingLucratividadeMensalSemantics": "Loading monthly product profitability chart…",
   "salesHubTitle": "Sales",
   "salesHubSubtitle": "Access and manage commercial information by category.",
+  "shellNavSalesMonitoringLabel": "Track sales",
+  "shellNavSalesMonitoringSubtitle": "Map and filter-based refresh",
+  "salesLiveMapTitle": "Track sales",
+  "salesLiveMapSubtitle": "Brazil map with sales by branch and filter-based refresh.",
+  "salesLiveMapSessionExpiredMessage": "Session expired. Sign in again to query.",
+  "salesLiveMapAgentsLabel": "Branches",
+  "salesLiveMapPeriodLabel": "Period",
+  "salesLiveMapMapLabel": "Map",
+  "salesLiveMapParametersLabel": "Parameters",
+  "salesLiveMapParametersSummary": "{origin} | Finance {finance} | Pre-sale {preSale}",
+  "@salesLiveMapParametersSummary": {
+    "placeholders": {
+      "origin": {"type": "String"},
+      "finance": {"type": "String"},
+      "preSale": {"type": "String"}
+    }
+  },
+  "salesLiveMapAgentsLoadingSummary": "Loading branches",
+  "salesLiveMapAgentsAllWithTokenSummary": "All with token ({count})",
+  "@salesLiveMapAgentsAllWithTokenSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapAgentsSelectedSummary": "{count} branch(es)",
+  "@salesLiveMapAgentsSelectedSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPeriodToday": "Today",
+  "salesLiveMapPeriodLastSevenDays": "Last 7 days",
+  "salesLiveMapPeriodLastSevenDaysShort": "7 days",
+  "salesLiveMapPeriodCurrentMonth": "Current month",
+  "salesLiveMapPeriodCurrentMonthShort": "Month",
+  "salesLiveMapPeriodCustom": "Custom",
+  "salesLiveMapMapPresetPoints": "Points",
+  "salesLiveMapMapPresetBubbles": "Bubbles",
+  "salesLiveMapMapPresetMunicipalities": "Municipalities",
+  "salesLiveMapMapPresetMunicipalitiesShort": "Cities",
+  "salesLiveMapMapPresetStateBubbles": "Bubbles by state",
+  "salesLiveMapMapPresetStateBubblesShort": "States",
+  "salesLiveMapMapPresetStoreIcon": "Store icon",
+  "salesLiveMapMapPresetStoreIconShort": "Store",
+  "salesLiveMapLoadErrorTitle": "Could not load sales tracking",
+  "salesLiveMapLoadErrorRetryMessage": "Try refreshing the query again.",
+  "salesLiveMapChartTitle": "Sales by branch in Brazil",
+  "salesLiveMapChartSubtitlePending": "Period {period}.",
+  "@salesLiveMapChartSubtitlePending": {
+    "placeholders": {
+      "period": {"type": "String"}
+    }
+  },
+  "salesLiveMapChartSubtitleLoaded": "Period {period}. {mappedCount} of {totalCount} branches positioned.",
+  "@salesLiveMapChartSubtitleLoaded": {
+    "placeholders": {
+      "period": {"type": "String"},
+      "mappedCount": {"type": "int"},
+      "totalCount": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialTitle": "Partial tracking",
+  "salesLiveMapPartialFailedAgents": "{count} branch(es) failed in the last query.",
+  "@salesLiveMapPartialFailedAgents": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialMissingTokenAgents": "{count} branch(es) without local client_token.",
+  "@salesLiveMapPartialMissingTokenAgents": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialOfflineAgents": "{count} branch(es) outside hub presence.",
+  "@salesLiveMapPartialOfflineAgents": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialMissingCoordinates": "{count} branch(es) without resolved coordinates.",
+  "@salesLiveMapPartialMissingCoordinates": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapFiltersTitle": "Tracking filters",
+  "salesLiveMapFiltersDescription": "Choose branches, period, and map view type.",
+  "salesLiveMapBranchesSectionTitle": "Branches",
+  "salesLiveMapBranchesSectionSubtitle": "Branches without a local token stay visible, but locked.",
+  "salesLiveMapSelectAtLeastOneTokenBranch": "Select at least one branch with a local token.",
+  "salesLiveMapNoApprovedAgents": "No approved branch is available for query.",
+  "salesLiveMapSelectAllTokenBacked": "Select all",
+  "salesLiveMapClearSelection": "Clear all",
+  "salesLiveMapMissingLocalToken": "No local token",
+  "salesLiveMapCustomPeriodLabel": "Custom period",
+  "salesLiveMapCustomPeriodHelper": "Limit of {maxDays} days per refresh.",
+  "@salesLiveMapCustomPeriodHelper": {
+    "placeholders": {
+      "maxDays": {"type": "int"}
+    }
+  },
+  "salesLiveMapCustomPeriodPickerTitle": "Select period",
+  "salesLiveMapMapTypeTitle": "Map type",
+  "salesLiveMapMapTypeSubtitle": "Choose how points and totals should appear.",
+  "salesLiveMapDetailLabel": "Detail",
+  "salesLiveMapDetailSubtitle": "Choose the aggregation level shown on the map.",
+  "salesLiveMapDetailBranches": "Branches",
+  "salesLiveMapDetailMunicipalities": "Cities",
+  "salesLiveMapDetailStates": "States",
+  "salesLiveMapVisualLabel": "Visual",
+  "salesLiveMapVisualSubtitle": "Choose the marker style for branch and city views.",
+  "salesLiveMapVisualDot": "Points",
+  "salesLiveMapVisualBubble": "Bubbles",
+  "salesLiveMapVisualStoreIcon": "Store icon",
+  "salesLiveMapDetailAutoMunicipalities": "Above {threshold} branches, cities are shown automatically for readability.",
+  "@salesLiveMapDetailAutoMunicipalities": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+  "salesLiveMapKpiRevenue": "Total revenue",
+  "salesLiveMapKpiSales": "Sales",
+  "salesLiveMapKpiBranchesOnMap": "Branches on map",
+  "salesLiveMapKpiMunicipalitiesOnMap": "Cities on map",
+  "salesLiveMapKpiQueriedAgents": "Queried branches",
   "salesBranchFilterLabel": "BRANCHES",
   "salesBranchFilterEmptyHint": "Load the report to list branches.",
   "salesBranchFilterSheetTitle": "Select branches",
@@ -1048,6 +1193,14 @@
   "salesCardProdutoRankLucroTitle": "Product ranking",
   "salesCardMonthlyPnlTitle": "Monthly P&L",
   "salesCardResumoTotalDiarioVendasTitle": "Daily sales totals",
+  "salesAutoRefreshOff": "Off",
+  "salesAutoRefreshTooltip": "Auto-refresh",
+  "salesAutoRefreshLastUpdatedAt": "Updated {time}",
+  "@salesAutoRefreshLastUpdatedAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "salesDailyTotalsChartTitle": "Daily sales",
   "salesDailyTotalsChartTitleAmount": "Daily revenue",
   "salesDailyTotalsChartSubtitle": "Totals per calendar day for the selected branch and reference month.",

@@ -40,6 +40,64 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     int? bridgeTimeoutMs,
     int? raceMaxSources,
   }) async {
+    return executeMapped<AgentQueryExecutionReport<Row>, Row>(
+      operation: operation,
+      queryKey: queryKey,
+      userId: userId,
+      targetResolver: targetResolver,
+      planBuilder: planBuilder,
+      executor: executor,
+      selectedAgentIds: selectedAgentIds,
+      strategy: strategy,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      raceMaxSources: raceMaxSources,
+      loadRowsForTarget:
+          ({
+            required target,
+            required plan,
+            required resolution,
+          }) {
+            return loadRowsForTarget(
+              userId: userId,
+              agentId: target.agentId,
+              filter: filter,
+              clientToken: target.clientToken,
+              bridgeTimeoutMs: plan.bridgeTimeoutMs,
+              hubPresenceOnlineAgentIdsSnapshot:
+                  resolution.hubPresenceOnlineAgentIdsSnapshot,
+              hubConnectedFromApprovedCatalogRow:
+                  target.hubConnectedFromApprovedCatalogRow,
+            );
+          },
+      mapReport: (report) => report,
+    );
+  }
+
+  static Future<AppResult<Output>> executeMapped<Output extends Object, Row>({
+    required String operation,
+    required AgentQueryKey queryKey,
+    required String userId,
+    required AgentQueryTargetResolver targetResolver,
+    required AgentQueryPlanBuilder planBuilder,
+    required AgentQueryExecutor<Row> executor,
+    required Future<AppResult<List<Row>>> Function({
+      required AgentQueryTarget target,
+      required AgentQueryPlan plan,
+      required AgentQueryTargetResolution resolution,
+    })
+    loadRowsForTarget,
+    required Output Function(AgentQueryExecutionReport<Row> report) mapReport,
+    Set<String>? selectedAgentIds,
+    AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
+    int? bridgeTimeoutMs,
+    int? raceMaxSources,
+    String successLogMessage = 'Agent query executed across agents',
+    Map<String, Object?> Function(
+      AgentQueryExecutionReport<Row> report,
+      Output mapped,
+    )?
+    successContext,
+  }) async {
     final resolutionResult = await targetResolver.resolve(
       userId: userId,
       selectedAgentIds: selectedAgentIds,
@@ -63,7 +121,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
         error: failure,
         stackTrace: failure.stackTrace,
       );
-      return Failure<AgentQueryExecutionReport<Row>, AppFailure>(failure);
+      return Failure<Output, AppFailure>(failure);
     }
 
     final planResult = planBuilder.build(
@@ -99,29 +157,22 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
         error: failure,
         stackTrace: failure.stackTrace,
       );
-      return Failure<AgentQueryExecutionReport<Row>, AppFailure>(failure);
+      return Failure<Output, AppFailure>(failure);
     }
 
     final executionResult = await executor.execute(
       plan: plan,
-      loadTarget: (target) {
-        return loadRowsForTarget(
-          userId: userId,
-          agentId: target.agentId,
-          filter: filter,
-          clientToken: target.clientToken,
-          bridgeTimeoutMs: plan.bridgeTimeoutMs,
-          hubPresenceOnlineAgentIdsSnapshot:
-              resolution.hubPresenceOnlineAgentIdsSnapshot,
-          hubConnectedFromApprovedCatalogRow:
-              target.hubConnectedFromApprovedCatalogRow,
-        );
-      },
+      loadTarget: (target) => loadRowsForTarget(
+        target: target,
+        plan: plan,
+        resolution: resolution,
+      ),
     );
     final report = executionResult.getOrNull();
     if (report != null) {
+      final mapped = mapReport(report);
       AppLogger.info(
-        'Agent query executed across agents',
+        successLogMessage,
         context: <String, Object?>{
           ..._executionContext(
             operation: operation,
@@ -136,9 +187,10 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
               resolution.skippedDueToHubPresenceTargets.length,
           'sqlEligibleConsideredTargetCount':
               resolution.sqlEligibleConsideredTargetCount,
+          if (successContext != null) ...successContext(report, mapped),
         },
       );
-      return Success<AgentQueryExecutionReport<Row>, AppFailure>(report);
+      return Success<Output, AppFailure>(mapped);
     }
 
     final failure = appFailureWithMergedContext(
@@ -154,7 +206,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       error: failure,
       stackTrace: failure.stackTrace,
     );
-    return Failure<AgentQueryExecutionReport<Row>, AppFailure>(failure);
+    return Failure<Output, AppFailure>(failure);
   }
 
   static Map<String, Object?> _executionContext<Row>({

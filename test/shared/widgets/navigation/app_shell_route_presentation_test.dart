@@ -29,6 +29,10 @@ void main() {
     test('should map active shell routes to shell labels', () {
       expect(appShellRouteLabel(AppRoute.sales, l10n), l10n.shellNavSalesLabel);
       expect(
+        appShellRouteLabel(AppRoute.salesMonitoring, l10n),
+        l10n.shellNavSalesMonitoringLabel,
+      );
+      expect(
         appShellRouteLabel(AppRoute.inventory, l10n),
         l10n.shellNavInventoryLabel,
       );
@@ -67,6 +71,10 @@ void main() {
       expect(
         appShellRouteSubtitle(AppRoute.sales, l10n),
         l10n.shellNavSalesSubtitle,
+      );
+      expect(
+        appShellRouteSubtitle(AppRoute.salesMonitoring, l10n),
+        l10n.shellNavSalesMonitoringSubtitle,
       );
       expect(
         appShellRouteSubtitle(AppRoute.inventory, l10n),
@@ -112,6 +120,14 @@ void main() {
       expect(
         appShellRouteIcon(AppRoute.sales, selected: true),
         Icons.point_of_sale_rounded,
+      );
+      expect(
+        appShellRouteIcon(AppRoute.salesMonitoring, selected: false),
+        Icons.map_outlined,
+      );
+      expect(
+        appShellRouteIcon(AppRoute.salesMonitoring, selected: true),
+        Icons.map_rounded,
       );
     });
   });

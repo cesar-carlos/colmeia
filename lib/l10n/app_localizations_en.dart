@@ -299,7 +299,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewHomeBranchFilterSheetSearchHint => 'Search branches…';
 
   @override
-  String get overviewAgentFilterSelectMatching => 'Select all matching';
+  String get overviewHomeBranchFilterSelectAll => 'Select all';
+
+  @override
+  String get overviewHomeBranchFilterSelectAllFullRoster =>
+      'Select all branches (full list)';
+
+  @override
+  String get overviewHomeBranchFilterDeselectAll => 'Deselect all';
+
+  @override
+  String get overviewHomeBranchFilterSelectMatching =>
+      'Select all matching branches';
+
+  @override
+  String get overviewHomeBranchFilterDeselectMatching =>
+      'Deselect all matching branches';
+
+  @override
+  String overviewHomeBranchFilterSelectionCount(
+    int selectedCount,
+    int totalCount,
+  ) {
+    return '$selectedCount of $totalCount branches selected';
+  }
+
+  @override
+  String get overviewHomeBranchFilterApplyRequiresSelectionHint =>
+      'Choose at least one branch to apply.';
+
+  @override
+  String get overviewHomeBranchFilterSheetUseAllBranches => 'Use all branches';
+
+  @override
+  String get overviewHomeBranchFilterApplyDisabledSemantics =>
+      'Apply. Disabled. Select at least one branch.';
+
+  @override
+  String get overviewHomeBranchFilterRefineAction => 'Refine branches';
+
+  @override
+  String get overviewHomeBranchFilterEditAction => 'Edit';
+
+  @override
+  String get overviewHomeBranchFilterApply => 'Apply';
+
+  @override
+  String get overviewHomeBranchFilterCancel => 'Cancel';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenRowSubtitle =>
+      'No client token on this device for this branch — SQL queries are skipped.';
 
   @override
   String get overviewAgentFilterApply => 'Apply';
@@ -2164,6 +2214,247 @@ class AppLocalizationsEn extends AppLocalizations {
       'Access and manage commercial information by category.';
 
   @override
+  String get shellNavSalesMonitoringLabel => 'Track sales';
+
+  @override
+  String get shellNavSalesMonitoringSubtitle => 'Map and filter-based refresh';
+
+  @override
+  String get salesLiveMapTitle => 'Track sales';
+
+  @override
+  String get salesLiveMapSubtitle =>
+      'Brazil map with sales by branch and filter-based refresh.';
+
+  @override
+  String get salesLiveMapSessionExpiredMessage =>
+      'Session expired. Sign in again to query.';
+
+  @override
+  String get salesLiveMapAgentsLabel => 'Branches';
+
+  @override
+  String get salesLiveMapPeriodLabel => 'Period';
+
+  @override
+  String get salesLiveMapMapLabel => 'Map';
+
+  @override
+  String get salesLiveMapParametersLabel => 'Parameters';
+
+  @override
+  String salesLiveMapParametersSummary(
+    String origin,
+    String finance,
+    String preSale,
+  ) {
+    return '$origin | Finance $finance | Pre-sale $preSale';
+  }
+
+  @override
+  String get salesLiveMapAgentsLoadingSummary => 'Loading branches';
+
+  @override
+  String salesLiveMapAgentsAllWithTokenSummary(int count) {
+    return 'All with token ($count)';
+  }
+
+  @override
+  String salesLiveMapAgentsSelectedSummary(int count) {
+    return '$count branch(es)';
+  }
+
+  @override
+  String get salesLiveMapPeriodToday => 'Today';
+
+  @override
+  String get salesLiveMapPeriodLastSevenDays => 'Last 7 days';
+
+  @override
+  String get salesLiveMapPeriodLastSevenDaysShort => '7 days';
+
+  @override
+  String get salesLiveMapPeriodCurrentMonth => 'Current month';
+
+  @override
+  String get salesLiveMapPeriodCurrentMonthShort => 'Month';
+
+  @override
+  String get salesLiveMapPeriodCustom => 'Custom';
+
+  @override
+  String get salesLiveMapMapPresetPoints => 'Points';
+
+  @override
+  String get salesLiveMapMapPresetBubbles => 'Bubbles';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalities => 'Municipalities';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalitiesShort => 'Cities';
+
+  @override
+  String get salesLiveMapMapPresetStateBubbles => 'Bubbles by state';
+
+  @override
+  String get salesLiveMapMapPresetStateBubblesShort => 'States';
+
+  @override
+  String get salesLiveMapMapPresetStoreIcon => 'Store icon';
+
+  @override
+  String get salesLiveMapMapPresetStoreIconShort => 'Store';
+
+  @override
+  String get salesLiveMapLoadErrorTitle => 'Could not load sales tracking';
+
+  @override
+  String get salesLiveMapLoadErrorRetryMessage =>
+      'Try refreshing the query again.';
+
+  @override
+  String get salesLiveMapChartTitle => 'Sales by branch in Brazil';
+
+  @override
+  String salesLiveMapChartSubtitlePending(String period) {
+    return 'Period $period.';
+  }
+
+  @override
+  String salesLiveMapChartSubtitleLoaded(
+    String period,
+    int mappedCount,
+    int totalCount,
+  ) {
+    return 'Period $period. $mappedCount of $totalCount branches positioned.';
+  }
+
+  @override
+  String get salesLiveMapPartialTitle => 'Partial tracking';
+
+  @override
+  String salesLiveMapPartialFailedAgents(int count) {
+    return '$count branch(es) failed in the last query.';
+  }
+
+  @override
+  String salesLiveMapPartialMissingTokenAgents(int count) {
+    return '$count branch(es) without local client_token.';
+  }
+
+  @override
+  String salesLiveMapPartialOfflineAgents(int count) {
+    return '$count branch(es) outside hub presence.';
+  }
+
+  @override
+  String salesLiveMapPartialMissingCoordinates(int count) {
+    return '$count branch(es) without resolved coordinates.';
+  }
+
+  @override
+  String get salesLiveMapFiltersTitle => 'Tracking filters';
+
+  @override
+  String get salesLiveMapFiltersDescription =>
+      'Choose branches, period, and map view type.';
+
+  @override
+  String get salesLiveMapBranchesSectionTitle => 'Branches';
+
+  @override
+  String get salesLiveMapBranchesSectionSubtitle =>
+      'Branches without a local token stay visible, but locked.';
+
+  @override
+  String get salesLiveMapSelectAtLeastOneTokenBranch =>
+      'Select at least one branch with a local token.';
+
+  @override
+  String get salesLiveMapNoApprovedAgents =>
+      'No approved branch is available for query.';
+
+  @override
+  String get salesLiveMapSelectAllTokenBacked => 'Select all';
+
+  @override
+  String get salesLiveMapClearSelection => 'Clear all';
+
+  @override
+  String get salesLiveMapMissingLocalToken => 'No local token';
+
+  @override
+  String get salesLiveMapCustomPeriodLabel => 'Custom period';
+
+  @override
+  String salesLiveMapCustomPeriodHelper(int maxDays) {
+    return 'Limit of $maxDays days per refresh.';
+  }
+
+  @override
+  String get salesLiveMapCustomPeriodPickerTitle => 'Select period';
+
+  @override
+  String get salesLiveMapMapTypeTitle => 'Map type';
+
+  @override
+  String get salesLiveMapMapTypeSubtitle =>
+      'Choose how points and totals should appear.';
+
+  @override
+  String get salesLiveMapDetailLabel => 'Detail';
+
+  @override
+  String get salesLiveMapDetailSubtitle =>
+      'Choose the aggregation level shown on the map.';
+
+  @override
+  String get salesLiveMapDetailBranches => 'Branches';
+
+  @override
+  String get salesLiveMapDetailMunicipalities => 'Cities';
+
+  @override
+  String get salesLiveMapDetailStates => 'States';
+
+  @override
+  String get salesLiveMapVisualLabel => 'Visual';
+
+  @override
+  String get salesLiveMapVisualSubtitle =>
+      'Choose the marker style for branch and city views.';
+
+  @override
+  String get salesLiveMapVisualDot => 'Points';
+
+  @override
+  String get salesLiveMapVisualBubble => 'Bubbles';
+
+  @override
+  String get salesLiveMapVisualStoreIcon => 'Store icon';
+
+  @override
+  String salesLiveMapDetailAutoMunicipalities(int threshold) {
+    return 'Above $threshold branches, cities are shown automatically for readability.';
+  }
+
+  @override
+  String get salesLiveMapKpiRevenue => 'Total revenue';
+
+  @override
+  String get salesLiveMapKpiSales => 'Sales';
+
+  @override
+  String get salesLiveMapKpiBranchesOnMap => 'Branches on map';
+
+  @override
+  String get salesLiveMapKpiMunicipalitiesOnMap => 'Cities on map';
+
+  @override
+  String get salesLiveMapKpiQueriedAgents => 'Queried branches';
+
+  @override
   String get salesBranchFilterLabel => 'BRANCHES';
 
   @override
@@ -2229,6 +2520,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesCardResumoTotalDiarioVendasTitle => 'Daily sales totals';
+
+  @override
+  String get salesAutoRefreshOff => 'Off';
+
+  @override
+  String get salesAutoRefreshTooltip => 'Auto-refresh';
+
+  @override
+  String salesAutoRefreshLastUpdatedAt(String time) {
+    return 'Updated $time';
+  }
 
   @override
   String get salesDailyTotalsChartTitle => 'Daily sales';

@@ -1,15 +1,13 @@
-import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
-import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/models/marca_produto_option_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/marca_produto_options_sql.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
-import 'package:result_dart/result_dart.dart';
 
 class MarcaProdutoOptionsRepositoryImpl
     implements MarcaProdutoOptionsRepository {
@@ -37,39 +35,30 @@ class MarcaProdutoOptionsRepositoryImpl
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     if (page < 1) {
-      return Failure<List<MarcaProdutoOption>, AppFailure>(
-        ValidationFailure(
-          message: 'page must be >= 1',
-          userMessage: 'Os filtros da consulta sao invalidos.',
-          context: <String, Object?>{
-            'operation': _operation,
-            'agentId': agentId.trim(),
-          },
-        ),
+      return AgentSqlRepositoryExecution.invalidFilters<
+        List<MarcaProdutoOption>
+      >(
+        message: 'page must be >= 1',
+        operation: _operation,
+        agentId: agentId.trim(),
       );
     }
     if (pageSize < 1) {
-      return Failure<List<MarcaProdutoOption>, AppFailure>(
-        ValidationFailure(
-          message: 'pageSize must be >= 1',
-          userMessage: 'Os filtros da consulta sao invalidos.',
-          context: <String, Object?>{
-            'operation': _operation,
-            'agentId': agentId.trim(),
-          },
-        ),
+      return AgentSqlRepositoryExecution.invalidFilters<
+        List<MarcaProdutoOption>
+      >(
+        message: 'pageSize must be >= 1',
+        operation: _operation,
+        agentId: agentId.trim(),
       );
     }
     if (pageSize > _maxPageSize) {
-      return Failure<List<MarcaProdutoOption>, AppFailure>(
-        ValidationFailure(
-          message: 'pageSize must be <= $_maxPageSize',
-          userMessage: 'Os filtros da consulta sao invalidos.',
-          context: <String, Object?>{
-            'operation': _operation,
-            'agentId': agentId.trim(),
-          },
-        ),
+      return AgentSqlRepositoryExecution.invalidFilters<
+        List<MarcaProdutoOption>
+      >(
+        message: 'pageSize must be <= $_maxPageSize',
+        operation: _operation,
+        agentId: agentId.trim(),
       );
     }
 
@@ -105,41 +94,15 @@ class MarcaProdutoOptionsRepositoryImpl
       useRelay: true,
     );
 
-    final result = await _agentQueriesRepository.executeSql(request);
-    return result.fold(
-      (executionResult) {
-        try {
-          final mapped = executionResult.rows
-              .map((row) => MarcaProdutoOptionModel.fromMap(row).toEntity())
-              .toList(growable: false);
-          return Success<List<MarcaProdutoOption>, AppFailure>(mapped);
-        } on FormatException catch (error, stackTrace) {
-          AppLogger.error(
-            'Unexpected row shape for $_operation',
-            context: <String, Object?>{
-              'operation': _operation,
-              'agentId': agentId.trim(),
-            },
-            error: error,
-            stackTrace: stackTrace,
-          );
-          return Failure<List<MarcaProdutoOption>, AppFailure>(
-            UnknownFailure(
-              message: error.message,
-              userMessage:
-                  'Resposta do agente estava em formato inesperado. '
-                  'Tente novamente.',
-              cause: error,
-              stackTrace: stackTrace,
-              context: <String, Object?>{
-                'operation': _operation,
-                'agentId': agentId.trim(),
-              },
-            ),
-          );
-        }
-      },
-      Failure<List<MarcaProdutoOption>, AppFailure>.new,
+    return AgentSqlRepositoryExecution.execute<List<MarcaProdutoOption>>(
+      agentQueriesRepository: _agentQueriesRepository,
+      request: request,
+      operation: _operation,
+      agentId: agentId.trim(),
+      unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+      mapExecution: (executionResult) => executionResult.rows
+          .map((row) => MarcaProdutoOptionModel.fromMap(row).toEntity())
+          .toList(growable: false),
     );
   }
 

@@ -16,6 +16,8 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
@@ -42,7 +44,8 @@ class SalesProdutoRankLucroPage extends StatefulWidget {
       _SalesProdutoRankLucroPageState();
 }
 
-class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
+class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
+    with SalesAutoRefreshStateMixin<SalesProdutoRankLucroPage> {
   late final SalesPreferences _prefs;
   late final AgentClientTokenReader _clientTokenReader;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
@@ -149,7 +152,14 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
     unawaited(_reload());
   }
 
-  Future<void> _reload() async {
+  Future<void> _reload() => reloadWithSalesAutoRefresh();
+
+  @override
+  bool get canScheduleSalesAutoRefresh =>
+      _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
+
+  @override
+  Future<void> performSalesAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
@@ -185,6 +195,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
         _rows = const <ProdutoVendidoProdutoRankLucroRow>[];
         _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
       });
+      disableSalesAutoRefresh();
       return;
     }
 
@@ -376,6 +387,14 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage> {
               ),
             ],
             enabled: !_loading,
+          ),
+          SizedBox(height: tokens.gapMd),
+          SalesAutoRefreshActionsRow(
+            value: salesAutoRefreshInterval,
+            onChanged: setSalesAutoRefreshInterval,
+            enabled: canScheduleSalesAutoRefresh,
+            lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
+            l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),
           if (_selectedAgentId == null)

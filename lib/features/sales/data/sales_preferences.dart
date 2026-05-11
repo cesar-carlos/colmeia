@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_daily_totals_range_policy.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,6 +64,7 @@ class SalesPreferences {
 
   static const String monthlyPnlCardId = 'monthly_pnl';
   static const String _legacyParcelasMensal12mCardId = 'parcelas_mensal_12m';
+  static const String salesLiveMapCardId = 'sales_live_map';
 
   static const int _anchorYearMin = 2000;
   static const int _anchorYearMax = 2100;
@@ -171,6 +173,56 @@ class SalesPreferences {
     }
   }
 
+  SalesLiveMapFilter restoreSalesLiveMapFilter() {
+    final raw = restoreCardFilters(salesLiveMapCardId);
+    final mode = _salesLiveMapPeriodModeFromRaw(raw['period_mode']);
+    final selectedAgentIds = _salesLiveMapSelectedAgentIdsFromRaw(
+      raw['selected_agent_ids'],
+    );
+    final customDateRange = _salesLiveMapCustomRangeFromRaw(
+      startMs: raw['custom_range_start_ms'],
+      endMs: raw['custom_range_end_ms'],
+    );
+
+    return SalesLiveMapFilter(
+      selectedAgentIds: selectedAgentIds,
+      periodMode: mode,
+      customDateRange: customDateRange,
+      detailLevel: _salesLiveMapDetailFromRaw(
+        raw['map_detail'],
+        legacyPreset: raw['map_preset'],
+      ),
+      markerVisual: _salesLiveMapMarkerVisualFromRaw(
+        raw['map_visual'],
+        legacyPreset: raw['map_preset'],
+      ),
+    );
+  }
+
+  Future<void> persistSalesLiveMapFilter(SalesLiveMapFilter filter) async {
+    final encoded = <String, Object?>{
+      'period_mode': filter.periodMode.name,
+      'map_detail': filter.detailLevel.name,
+      'map_visual': filter.markerVisual.name,
+    };
+
+    final selected = filter.selectedAgentIds;
+    if (selected != null && selected.isNotEmpty) {
+      encoded['selected_agent_ids'] = (List<String>.from(selected)..sort());
+    }
+
+    final customRange = filter.customDateRange;
+    if (filter.periodMode == SalesLiveMapPeriodMode.customRange &&
+        customRange != null) {
+      encoded['custom_range_start_ms'] =
+          customRange.startInclusive.millisecondsSinceEpoch;
+      encoded['custom_range_end_ms'] =
+          customRange.endInclusive.millisecondsSinceEpoch;
+    }
+
+    await persistCardFilters(salesLiveMapCardId, encoded);
+  }
+
   static const String _monthlyPnlBarChartSuffix = 'bar_chart';
 
   SalesMonthlyPnlBarChartPreferences restoreMonthlyPnlBarChartPreferences() {
@@ -239,6 +291,106 @@ class SalesPreferences {
     await store.persistJsonMap(
       suffix: 'filters',
       value: encoded,
+    );
+  }
+
+  static SalesLiveMapPeriodMode _salesLiveMapPeriodModeFromRaw(Object? raw) {
+    if (raw is String) {
+      for (final mode in SalesLiveMapPeriodMode.values) {
+        if (mode.name == raw) {
+          return mode;
+        }
+      }
+    }
+    return SalesLiveMapPeriodMode.today;
+  }
+
+  static SalesLiveMapMapDetail _salesLiveMapDetailFromRaw(
+    Object? raw, {
+    Object? legacyPreset,
+  }) {
+    if (raw is String) {
+      for (final detail in SalesLiveMapMapDetail.values) {
+        if (detail.name == raw) {
+          return detail;
+        }
+      }
+    }
+
+    return switch (_salesLiveMapMapPresetFromRaw(legacyPreset)) {
+      SalesLiveMapMapPreset.municipalities =>
+        SalesLiveMapMapDetail.municipalities,
+      SalesLiveMapMapPreset.stateBubbles => SalesLiveMapMapDetail.states,
+      SalesLiveMapMapPreset.standard ||
+      SalesLiveMapMapPreset.bubble ||
+      SalesLiveMapMapPreset.storeIcon => SalesLiveMapMapDetail.branches,
+    };
+  }
+
+  static SalesLiveMapMarkerVisual _salesLiveMapMarkerVisualFromRaw(
+    Object? raw, {
+    Object? legacyPreset,
+  }) {
+    if (raw is String) {
+      for (final visual in SalesLiveMapMarkerVisual.values) {
+        if (visual.name == raw) {
+          return visual;
+        }
+      }
+    }
+
+    return switch (_salesLiveMapMapPresetFromRaw(legacyPreset)) {
+      SalesLiveMapMapPreset.bubble ||
+      SalesLiveMapMapPreset.municipalities ||
+      SalesLiveMapMapPreset.stateBubbles => SalesLiveMapMarkerVisual.bubble,
+      SalesLiveMapMapPreset.storeIcon => SalesLiveMapMarkerVisual.storeIcon,
+      SalesLiveMapMapPreset.standard => SalesLiveMapMarkerVisual.dot,
+    };
+  }
+
+  static SalesLiveMapMapPreset _salesLiveMapMapPresetFromRaw(Object? raw) {
+    if (raw is String) {
+      for (final preset in SalesLiveMapMapPreset.values) {
+        if (preset.name == raw) {
+          return preset;
+        }
+      }
+    }
+    return SalesLiveMapMapPreset.standard;
+  }
+
+  static Set<String>? _salesLiveMapSelectedAgentIdsFromRaw(Object? raw) {
+    if (raw is! List) {
+      return null;
+    }
+
+    final ids = <String>{};
+    for (final item in raw) {
+      if (item is! String) {
+        continue;
+      }
+      final id = item.trim();
+      if (id.isNotEmpty) {
+        ids.add(id);
+      }
+    }
+
+    return ids.isEmpty ? null : Set<String>.unmodifiable(ids);
+  }
+
+  static OverviewDateRange? _salesLiveMapCustomRangeFromRaw({
+    required Object? startMs,
+    required Object? endMs,
+  }) {
+    if (startMs is! int || endMs is! int) {
+      return null;
+    }
+    final range = OverviewDateRange.fromOrderedEndpoints(
+      DateTime.fromMillisecondsSinceEpoch(startMs),
+      DateTime.fromMillisecondsSinceEpoch(endMs),
+    );
+    return range.clampedToMaxInclusiveCalendarDays(
+      kSalesLiveMapMaxCustomRangeInclusiveDays,
     );
   }
 }

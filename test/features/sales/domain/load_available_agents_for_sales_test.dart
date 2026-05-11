@@ -24,6 +24,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(<String>[]);
+    registerFallbackValue(const PaginatedQuery());
   });
 
   setUp(() {
@@ -36,7 +37,7 @@ void main() {
     when(
       () => repository.loadApprovedAgents(
         userId: 'user-1',
-        query: const PaginatedQuery(pageSize: 100),
+        query: any(named: 'query'),
         includeOnlineStatus: false,
       ),
     ).thenAnswer(
@@ -77,7 +78,7 @@ void main() {
     when(
       () => repository.loadApprovedAgents(
         userId: 'user-2',
-        query: const PaginatedQuery(pageSize: 100),
+        query: any(named: 'query'),
         includeOnlineStatus: false,
       ),
     ).thenAnswer(
@@ -95,6 +96,87 @@ void main() {
         agentIds: any(named: 'agentIds'),
       ),
     );
+  });
+
+  test('loads all approved agent pages before reading local tokens', () async {
+    when(
+      () => repository.loadApprovedAgents(
+        userId: 'user-3',
+        query: any(
+          named: 'query',
+          that: isA<PaginatedQuery>()
+              .having((query) => query.page, 'page', 1)
+              .having((query) => query.pageSize, 'pageSize', 100),
+        ),
+        includeOnlineStatus: false,
+      ),
+    ).thenAnswer(
+      (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+        PaginatedResult<ClientAgent>(
+          items: <ClientAgent>[
+            _agent(agentId: 'agent-1', name: 'Agent 1'),
+            _agent(agentId: 'agent-2', name: 'Agent 2'),
+          ],
+          count: 2,
+          total: 3,
+          page: 1,
+          pageSize: 100,
+        ),
+      ),
+    );
+    when(
+      () => repository.loadApprovedAgents(
+        userId: 'user-3',
+        query: any(
+          named: 'query',
+          that: isA<PaginatedQuery>()
+              .having((query) => query.page, 'page', 2)
+              .having((query) => query.pageSize, 'pageSize', 100),
+        ),
+        includeOnlineStatus: false,
+      ),
+    ).thenAnswer(
+      (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+        PaginatedResult<ClientAgent>(
+          items: <ClientAgent>[_agent(agentId: 'agent-3', name: 'Agent 3')],
+          count: 1,
+          total: 3,
+          page: 2,
+          pageSize: 100,
+        ),
+      ),
+    );
+    when(
+      () => tokenReader.readMany(
+        userId: 'user-3',
+        agentIds: any(named: 'agentIds'),
+      ),
+    ).thenAnswer(
+      (_) async => <String, String>{
+        'agent-1': 'token-1',
+        'agent-3': 'token-3',
+      },
+    );
+
+    final agents = await useCase('user-3');
+
+    expect(agents.map((agent) => agent.agentId), <String>[
+      'agent-1',
+      'agent-2',
+      'agent-3',
+    ]);
+    final capturedAgentIds =
+        verify(
+              () => tokenReader.readMany(
+                userId: 'user-3',
+                agentIds: captureAny(named: 'agentIds'),
+              ),
+            ).captured.single
+            as Iterable<String>;
+    expect(capturedAgentIds, <String>['agent-1', 'agent-2', 'agent-3']);
+    expect(agents[0].missingLocalClientToken, isFalse);
+    expect(agents[1].missingLocalClientToken, isTrue);
+    expect(agents[2].missingLocalClientToken, isFalse);
   });
 }
 

@@ -1,4 +1,3 @@
-import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
@@ -7,6 +6,7 @@ import 'package:colmeia/features/agent_queries/data/models/produto_vendido_tende
 import 'package:colmeia/features/agent_queries/data/models/produto_vendido_tendencia_de_venda_summary_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_summary_sql.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -15,7 +15,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
-import 'package:result_dart/result_dart.dart';
 
 class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     implements ProdutoVendidoTendenciaDeVendaRepository {
@@ -47,15 +46,12 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
-      return Failure<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
-        ValidationFailure(
-          message: validationError,
-          userMessage: 'Os filtros da consulta sao invalidos.',
-          context: <String, Object?>{
-            'operation': _operation,
-            'agentId': agentId.trim(),
-          },
-        ),
+      return AgentSqlRepositoryExecution.invalidFilters<
+        List<ProdutoVendidoTendenciaDeVendaRow>
+      >(
+        message: validationError,
+        operation: _operation,
+        agentId: agentId.trim(),
       );
     }
 
@@ -93,14 +89,19 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       useRelay: true,
     );
 
-    final result = await _agentQueriesRepository.executeSql(request);
-    return result.fold(
-      (executionResult) => _mapExecution(
+    return AgentSqlRepositoryExecution.execute<
+      List<ProdutoVendidoTendenciaDeVendaRow>
+    >(
+      agentQueriesRepository: _agentQueriesRepository,
+      request: request,
+      operation: _operation,
+      agentId: agentId.trim(),
+      unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+      mapExecution: (executionResult) => _mapExecution(
         executionResult,
         agentId: agentId.trim(),
         sqlMaxRowsCap: sqlMaxRowsCap,
       ),
-      Failure<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>.new,
     );
   }
 
@@ -117,18 +118,12 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
-      return Failure<
-        List<ProdutoVendidoTendenciaDeVendaSummaryRow>,
-        AppFailure
+      return AgentSqlRepositoryExecution.invalidFilters<
+        List<ProdutoVendidoTendenciaDeVendaSummaryRow>
       >(
-        ValidationFailure(
-          message: validationError,
-          userMessage: 'Os filtros da consulta sao invalidos.',
-          context: <String, Object?>{
-            'operation': _summaryOperation,
-            'agentId': agentId.trim(),
-          },
-        ),
+        message: validationError,
+        operation: _summaryOperation,
+        agentId: agentId.trim(),
       );
     }
 
@@ -156,13 +151,17 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       useRelay: true,
     );
 
-    final result = await _agentQueriesRepository.executeSql(request);
-    return result.fold(
-      (executionResult) => _mapSummaryExecution(
-        executionResult,
-        agentId: agentId.trim(),
-      ),
-      Failure<List<ProdutoVendidoTendenciaDeVendaSummaryRow>, AppFailure>.new,
+    return AgentSqlRepositoryExecution.execute<
+      List<ProdutoVendidoTendenciaDeVendaSummaryRow>
+    >(
+      agentQueriesRepository: _agentQueriesRepository,
+      request: request,
+      operation: _summaryOperation,
+      agentId: agentId.trim(),
+      unexpectedRowsLogMessage: 'Unexpected row shape for $_summaryOperation',
+      unexpectedRowsUserMessage:
+          'Resumo de tendencia veio em formato inesperado. Tente novamente.',
+      mapExecution: _mapSummaryExecution,
     );
   }
 
@@ -186,119 +185,48 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     };
   }
 
-  AppResult<List<ProdutoVendidoTendenciaDeVendaRow>> _mapExecution(
+  List<ProdutoVendidoTendenciaDeVendaRow> _mapExecution(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
     required int sqlMaxRowsCap,
   }) {
     if (executionResult.rows.isEmpty) {
-      return const Success<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
-        <ProdutoVendidoTendenciaDeVendaRow>[],
-      );
+      return const <ProdutoVendidoTendenciaDeVendaRow>[];
     }
 
-    try {
-      if (executionResult.rows.length >= sqlMaxRowsCap) {
-        AppLogger.warning(
-          'Agent row count reached max_rows cap (possible truncation)',
-          context: <String, Object?>{
-            'operation': _operation,
-            'agentId': agentId,
-            'rowCount': executionResult.rows.length,
-            'sqlMaxRowsCap': sqlMaxRowsCap,
-          },
-        );
-      }
-
-      final items = executionResult.rows
-          .map(
-            (row) =>
-                ProdutoVendidoTendenciaDeVendaRowModel.fromMap(row).toEntity(),
-          )
-          .toList(growable: false);
-
-      return Success<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
-        items,
-      );
-    } on FormatException catch (error, stackTrace) {
-      AppLogger.error(
-        'Unexpected row shape for $_operation',
+    if (executionResult.rows.length >= sqlMaxRowsCap) {
+      AppLogger.warning(
+        'Agent row count reached max_rows cap (possible truncation)',
         context: <String, Object?>{
           'operation': _operation,
           'agentId': agentId,
+          'rowCount': executionResult.rows.length,
+          'sqlMaxRowsCap': sqlMaxRowsCap,
         },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
-        UnknownFailure(
-          message: error.message,
-          userMessage:
-              'Resposta do agente estava em formato inesperado. '
-              'Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': _operation,
-            'agentId': agentId,
-          },
-        ),
       );
     }
+
+    return executionResult.rows
+        .map(
+          (row) =>
+              ProdutoVendidoTendenciaDeVendaRowModel.fromMap(row).toEntity(),
+        )
+        .toList(growable: false);
   }
 
-  AppResult<List<ProdutoVendidoTendenciaDeVendaSummaryRow>>
-  _mapSummaryExecution(
-    AgentSqlExecutionResult executionResult, {
-    required String agentId,
-  }) {
+  List<ProdutoVendidoTendenciaDeVendaSummaryRow> _mapSummaryExecution(
+    AgentSqlExecutionResult executionResult,
+  ) {
     if (executionResult.rows.isEmpty) {
-      return const Success<
-        List<ProdutoVendidoTendenciaDeVendaSummaryRow>,
-        AppFailure
-      >(<ProdutoVendidoTendenciaDeVendaSummaryRow>[]);
+      return const <ProdutoVendidoTendenciaDeVendaSummaryRow>[];
     }
 
-    try {
-      final items = executionResult.rows
-          .map(
-            (row) => ProdutoVendidoTendenciaDeVendaSummaryRowModel.fromMap(
-              row,
-            ).toEntity(),
-          )
-          .toList(growable: false);
-      return Success<
-        List<ProdutoVendidoTendenciaDeVendaSummaryRow>,
-        AppFailure
-      >(
-        items,
-      );
-    } on FormatException catch (error, stackTrace) {
-      AppLogger.error(
-        'Unexpected row shape for $_summaryOperation',
-        context: <String, Object?>{
-          'operation': _summaryOperation,
-          'agentId': agentId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<
-        List<ProdutoVendidoTendenciaDeVendaSummaryRow>,
-        AppFailure
-      >(
-        UnknownFailure(
-          message: error.message,
-          userMessage:
-              'Resumo de tendencia veio em formato inesperado. Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': _summaryOperation,
-            'agentId': agentId,
-          },
-        ),
-      );
-    }
+    return executionResult.rows
+        .map(
+          (row) => ProdutoVendidoTendenciaDeVendaSummaryRowModel.fromMap(
+            row,
+          ).toEntity(),
+        )
+        .toList(growable: false);
   }
 }

@@ -304,8 +304,58 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewHomeBranchFilterSheetSearchHint => 'Buscar filiais…';
 
   @override
-  String get overviewAgentFilterSelectMatching =>
-      'Selecionar todos os filtrados';
+  String get overviewHomeBranchFilterSelectAll => 'Selecionar todos';
+
+  @override
+  String get overviewHomeBranchFilterSelectAllFullRoster =>
+      'Todas as filiais (lista completa)';
+
+  @override
+  String get overviewHomeBranchFilterDeselectAll => 'Desmarcar todos';
+
+  @override
+  String get overviewHomeBranchFilterSelectMatching =>
+      'Selecionar todas as filiais filtradas';
+
+  @override
+  String get overviewHomeBranchFilterDeselectMatching =>
+      'Desmarcar filiais filtradas';
+
+  @override
+  String overviewHomeBranchFilterSelectionCount(
+    int selectedCount,
+    int totalCount,
+  ) {
+    return '$selectedCount de $totalCount filiais selecionadas';
+  }
+
+  @override
+  String get overviewHomeBranchFilterApplyRequiresSelectionHint =>
+      'Escolha pelo menos uma filial para aplicar.';
+
+  @override
+  String get overviewHomeBranchFilterSheetUseAllBranches =>
+      'Usar todas as filiais';
+
+  @override
+  String get overviewHomeBranchFilterApplyDisabledSemantics =>
+      'Aplicar. Desativado. Selecione pelo menos uma filial.';
+
+  @override
+  String get overviewHomeBranchFilterRefineAction => 'Refinar filiais';
+
+  @override
+  String get overviewHomeBranchFilterEditAction => 'Editar';
+
+  @override
+  String get overviewHomeBranchFilterApply => 'Aplicar';
+
+  @override
+  String get overviewHomeBranchFilterCancel => 'Cancelar';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenRowSubtitle =>
+      'Sem token neste dispositivo para esta filial — consultas SQL são ignoradas.';
 
   @override
   String get overviewAgentFilterApply => 'Aplicar';
@@ -2198,6 +2248,249 @@ class AppLocalizationsPt extends AppLocalizations {
       'Acesse e gerencie informações comerciais por categoria.';
 
   @override
+  String get shellNavSalesMonitoringLabel => 'Acompanhar vendas';
+
+  @override
+  String get shellNavSalesMonitoringSubtitle =>
+      'Mapa e atualizacao por filtros';
+
+  @override
+  String get salesLiveMapTitle => 'Acompanhar vendas';
+
+  @override
+  String get salesLiveMapSubtitle =>
+      'Mapa do Brasil com vendas por filial e atualizacao por filtros.';
+
+  @override
+  String get salesLiveMapSessionExpiredMessage =>
+      'Sessao expirada. Entre novamente para consultar.';
+
+  @override
+  String get salesLiveMapAgentsLabel => 'Filiais';
+
+  @override
+  String get salesLiveMapPeriodLabel => 'Periodo';
+
+  @override
+  String get salesLiveMapMapLabel => 'Mapa';
+
+  @override
+  String get salesLiveMapParametersLabel => 'Parametros';
+
+  @override
+  String salesLiveMapParametersSummary(
+    String origin,
+    String finance,
+    String preSale,
+  ) {
+    return '$origin | Financeiro $finance | Pre-venda $preSale';
+  }
+
+  @override
+  String get salesLiveMapAgentsLoadingSummary => 'Carregando filiais';
+
+  @override
+  String salesLiveMapAgentsAllWithTokenSummary(int count) {
+    return 'Todas com token ($count)';
+  }
+
+  @override
+  String salesLiveMapAgentsSelectedSummary(int count) {
+    return '$count filial(is)';
+  }
+
+  @override
+  String get salesLiveMapPeriodToday => 'Hoje';
+
+  @override
+  String get salesLiveMapPeriodLastSevenDays => 'Ultimos 7 dias';
+
+  @override
+  String get salesLiveMapPeriodLastSevenDaysShort => '7 dias';
+
+  @override
+  String get salesLiveMapPeriodCurrentMonth => 'Mes atual';
+
+  @override
+  String get salesLiveMapPeriodCurrentMonthShort => 'Mes';
+
+  @override
+  String get salesLiveMapPeriodCustom => 'Personalizado';
+
+  @override
+  String get salesLiveMapMapPresetPoints => 'Pontos';
+
+  @override
+  String get salesLiveMapMapPresetBubbles => 'Bolhas';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalities => 'Municipios';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalitiesShort => 'Municipios';
+
+  @override
+  String get salesLiveMapMapPresetStateBubbles => 'Bolhas por UF';
+
+  @override
+  String get salesLiveMapMapPresetStateBubblesShort => 'UFs';
+
+  @override
+  String get salesLiveMapMapPresetStoreIcon => 'Icone loja';
+
+  @override
+  String get salesLiveMapMapPresetStoreIconShort => 'Loja';
+
+  @override
+  String get salesLiveMapLoadErrorTitle =>
+      'Nao foi possivel carregar o acompanhamento';
+
+  @override
+  String get salesLiveMapLoadErrorRetryMessage =>
+      'Tente atualizar a consulta novamente.';
+
+  @override
+  String get salesLiveMapChartTitle => 'Vendas por filial no Brasil';
+
+  @override
+  String salesLiveMapChartSubtitlePending(String period) {
+    return 'Periodo $period.';
+  }
+
+  @override
+  String salesLiveMapChartSubtitleLoaded(
+    String period,
+    int mappedCount,
+    int totalCount,
+  ) {
+    return 'Periodo $period. $mappedCount de $totalCount filiais posicionadas.';
+  }
+
+  @override
+  String get salesLiveMapPartialTitle => 'Acompanhamento parcial';
+
+  @override
+  String salesLiveMapPartialFailedAgents(int count) {
+    return '$count filial(is) falharam na ultima consulta.';
+  }
+
+  @override
+  String salesLiveMapPartialMissingTokenAgents(int count) {
+    return '$count filial(is) sem client_token local.';
+  }
+
+  @override
+  String salesLiveMapPartialOfflineAgents(int count) {
+    return '$count filial(is) fora da presenca do hub.';
+  }
+
+  @override
+  String salesLiveMapPartialMissingCoordinates(int count) {
+    return '$count filial(is) sem coordenada resolvida.';
+  }
+
+  @override
+  String get salesLiveMapFiltersTitle => 'Filtros de acompanhamento';
+
+  @override
+  String get salesLiveMapFiltersDescription =>
+      'Escolha filiais, periodo e tipo visual do mapa.';
+
+  @override
+  String get salesLiveMapBranchesSectionTitle => 'Filiais';
+
+  @override
+  String get salesLiveMapBranchesSectionSubtitle =>
+      'Filiais sem token local ficam visiveis, mas bloqueadas.';
+
+  @override
+  String get salesLiveMapSelectAtLeastOneTokenBranch =>
+      'Selecione ao menos uma filial com token local.';
+
+  @override
+  String get salesLiveMapNoApprovedAgents =>
+      'Nenhuma filial aprovada disponivel para consulta.';
+
+  @override
+  String get salesLiveMapSelectAllTokenBacked => 'Selecionar todas';
+
+  @override
+  String get salesLiveMapClearSelection => 'Desmarcar todas';
+
+  @override
+  String get salesLiveMapMissingLocalToken => 'Sem token local';
+
+  @override
+  String get salesLiveMapCustomPeriodLabel => 'Periodo personalizado';
+
+  @override
+  String salesLiveMapCustomPeriodHelper(int maxDays) {
+    return 'Limite de $maxDays dias por atualizacao.';
+  }
+
+  @override
+  String get salesLiveMapCustomPeriodPickerTitle => 'Selecionar periodo';
+
+  @override
+  String get salesLiveMapMapTypeTitle => 'Tipo de mapa';
+
+  @override
+  String get salesLiveMapMapTypeSubtitle =>
+      'Escolha como os pontos e totais devem aparecer.';
+
+  @override
+  String get salesLiveMapDetailLabel => 'Detalhamento';
+
+  @override
+  String get salesLiveMapDetailSubtitle =>
+      'Escolha o nivel de agregacao mostrado no mapa.';
+
+  @override
+  String get salesLiveMapDetailBranches => 'Filiais';
+
+  @override
+  String get salesLiveMapDetailMunicipalities => 'Municipios';
+
+  @override
+  String get salesLiveMapDetailStates => 'UFs';
+
+  @override
+  String get salesLiveMapVisualLabel => 'Visual';
+
+  @override
+  String get salesLiveMapVisualSubtitle =>
+      'Escolha o estilo dos marcadores para filiais e municipios.';
+
+  @override
+  String get salesLiveMapVisualDot => 'Pontos';
+
+  @override
+  String get salesLiveMapVisualBubble => 'Bolhas';
+
+  @override
+  String get salesLiveMapVisualStoreIcon => 'Icone loja';
+
+  @override
+  String salesLiveMapDetailAutoMunicipalities(int threshold) {
+    return 'Acima de $threshold filiais, municipios sao exibidos automaticamente para melhorar a leitura.';
+  }
+
+  @override
+  String get salesLiveMapKpiRevenue => 'Receita total';
+
+  @override
+  String get salesLiveMapKpiSales => 'Vendas';
+
+  @override
+  String get salesLiveMapKpiBranchesOnMap => 'Filiais no mapa';
+
+  @override
+  String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
+
+  @override
+  String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
+
+  @override
   String get salesBranchFilterLabel => 'FILIAIS';
 
   @override
@@ -2264,6 +2557,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesCardResumoTotalDiarioVendasTitle => 'Vendas diárias';
+
+  @override
+  String get salesAutoRefreshOff => 'Desligado';
+
+  @override
+  String get salesAutoRefreshTooltip => 'Atualizacao automatica';
+
+  @override
+  String salesAutoRefreshLastUpdatedAt(String time) {
+    return 'Atualizado $time';
+  }
 
   @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';
@@ -3212,8 +3516,58 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get overviewHomeBranchFilterSheetSearchHint => 'Buscar filiais…';
 
   @override
-  String get overviewAgentFilterSelectMatching =>
-      'Selecionar todos os filtrados';
+  String get overviewHomeBranchFilterSelectAll => 'Selecionar todos';
+
+  @override
+  String get overviewHomeBranchFilterSelectAllFullRoster =>
+      'Todas as filiais (lista completa)';
+
+  @override
+  String get overviewHomeBranchFilterDeselectAll => 'Desmarcar todos';
+
+  @override
+  String get overviewHomeBranchFilterSelectMatching =>
+      'Selecionar todas as filiais filtradas';
+
+  @override
+  String get overviewHomeBranchFilterDeselectMatching =>
+      'Desmarcar filiais filtradas';
+
+  @override
+  String overviewHomeBranchFilterSelectionCount(
+    int selectedCount,
+    int totalCount,
+  ) {
+    return '$selectedCount de $totalCount filiais selecionadas';
+  }
+
+  @override
+  String get overviewHomeBranchFilterApplyRequiresSelectionHint =>
+      'Escolha pelo menos uma filial para aplicar.';
+
+  @override
+  String get overviewHomeBranchFilterSheetUseAllBranches =>
+      'Usar todas as filiais';
+
+  @override
+  String get overviewHomeBranchFilterApplyDisabledSemantics =>
+      'Aplicar. Desativado. Selecione pelo menos uma filial.';
+
+  @override
+  String get overviewHomeBranchFilterRefineAction => 'Refinar filiais';
+
+  @override
+  String get overviewHomeBranchFilterEditAction => 'Editar';
+
+  @override
+  String get overviewHomeBranchFilterApply => 'Aplicar';
+
+  @override
+  String get overviewHomeBranchFilterCancel => 'Cancelar';
+
+  @override
+  String get overviewHomeBranchFilterMissingClientTokenRowSubtitle =>
+      'Sem token neste dispositivo para esta filial — consultas SQL são ignoradas.';
 
   @override
   String get overviewAgentFilterApply => 'Aplicar';
@@ -5106,6 +5460,249 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Acesse e gerencie informações comerciais por categoria.';
 
   @override
+  String get shellNavSalesMonitoringLabel => 'Acompanhar vendas';
+
+  @override
+  String get shellNavSalesMonitoringSubtitle =>
+      'Mapa e atualizacao por filtros';
+
+  @override
+  String get salesLiveMapTitle => 'Acompanhar vendas';
+
+  @override
+  String get salesLiveMapSubtitle =>
+      'Mapa do Brasil com vendas por filial e atualizacao por filtros.';
+
+  @override
+  String get salesLiveMapSessionExpiredMessage =>
+      'Sessao expirada. Entre novamente para consultar.';
+
+  @override
+  String get salesLiveMapAgentsLabel => 'Filiais';
+
+  @override
+  String get salesLiveMapPeriodLabel => 'Periodo';
+
+  @override
+  String get salesLiveMapMapLabel => 'Mapa';
+
+  @override
+  String get salesLiveMapParametersLabel => 'Parametros';
+
+  @override
+  String salesLiveMapParametersSummary(
+    String origin,
+    String finance,
+    String preSale,
+  ) {
+    return '$origin | Financeiro $finance | Pre-venda $preSale';
+  }
+
+  @override
+  String get salesLiveMapAgentsLoadingSummary => 'Carregando filiais';
+
+  @override
+  String salesLiveMapAgentsAllWithTokenSummary(int count) {
+    return 'Todas com token ($count)';
+  }
+
+  @override
+  String salesLiveMapAgentsSelectedSummary(int count) {
+    return '$count filial(is)';
+  }
+
+  @override
+  String get salesLiveMapPeriodToday => 'Hoje';
+
+  @override
+  String get salesLiveMapPeriodLastSevenDays => 'Ultimos 7 dias';
+
+  @override
+  String get salesLiveMapPeriodLastSevenDaysShort => '7 dias';
+
+  @override
+  String get salesLiveMapPeriodCurrentMonth => 'Mes atual';
+
+  @override
+  String get salesLiveMapPeriodCurrentMonthShort => 'Mes';
+
+  @override
+  String get salesLiveMapPeriodCustom => 'Personalizado';
+
+  @override
+  String get salesLiveMapMapPresetPoints => 'Pontos';
+
+  @override
+  String get salesLiveMapMapPresetBubbles => 'Bolhas';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalities => 'Municipios';
+
+  @override
+  String get salesLiveMapMapPresetMunicipalitiesShort => 'Municipios';
+
+  @override
+  String get salesLiveMapMapPresetStateBubbles => 'Bolhas por UF';
+
+  @override
+  String get salesLiveMapMapPresetStateBubblesShort => 'UFs';
+
+  @override
+  String get salesLiveMapMapPresetStoreIcon => 'Icone loja';
+
+  @override
+  String get salesLiveMapMapPresetStoreIconShort => 'Loja';
+
+  @override
+  String get salesLiveMapLoadErrorTitle =>
+      'Nao foi possivel carregar o acompanhamento';
+
+  @override
+  String get salesLiveMapLoadErrorRetryMessage =>
+      'Tente atualizar a consulta novamente.';
+
+  @override
+  String get salesLiveMapChartTitle => 'Vendas por filial no Brasil';
+
+  @override
+  String salesLiveMapChartSubtitlePending(String period) {
+    return 'Periodo $period.';
+  }
+
+  @override
+  String salesLiveMapChartSubtitleLoaded(
+    String period,
+    int mappedCount,
+    int totalCount,
+  ) {
+    return 'Periodo $period. $mappedCount de $totalCount filiais posicionadas.';
+  }
+
+  @override
+  String get salesLiveMapPartialTitle => 'Acompanhamento parcial';
+
+  @override
+  String salesLiveMapPartialFailedAgents(int count) {
+    return '$count filial(is) falharam na ultima consulta.';
+  }
+
+  @override
+  String salesLiveMapPartialMissingTokenAgents(int count) {
+    return '$count filial(is) sem client_token local.';
+  }
+
+  @override
+  String salesLiveMapPartialOfflineAgents(int count) {
+    return '$count filial(is) fora da presenca do hub.';
+  }
+
+  @override
+  String salesLiveMapPartialMissingCoordinates(int count) {
+    return '$count filial(is) sem coordenada resolvida.';
+  }
+
+  @override
+  String get salesLiveMapFiltersTitle => 'Filtros de acompanhamento';
+
+  @override
+  String get salesLiveMapFiltersDescription =>
+      'Escolha filiais, periodo e tipo visual do mapa.';
+
+  @override
+  String get salesLiveMapBranchesSectionTitle => 'Filiais';
+
+  @override
+  String get salesLiveMapBranchesSectionSubtitle =>
+      'Filiais sem token local ficam visiveis, mas bloqueadas.';
+
+  @override
+  String get salesLiveMapSelectAtLeastOneTokenBranch =>
+      'Selecione ao menos uma filial com token local.';
+
+  @override
+  String get salesLiveMapNoApprovedAgents =>
+      'Nenhuma filial aprovada disponivel para consulta.';
+
+  @override
+  String get salesLiveMapSelectAllTokenBacked => 'Selecionar todas';
+
+  @override
+  String get salesLiveMapClearSelection => 'Desmarcar todas';
+
+  @override
+  String get salesLiveMapMissingLocalToken => 'Sem token local';
+
+  @override
+  String get salesLiveMapCustomPeriodLabel => 'Periodo personalizado';
+
+  @override
+  String salesLiveMapCustomPeriodHelper(int maxDays) {
+    return 'Limite de $maxDays dias por atualizacao.';
+  }
+
+  @override
+  String get salesLiveMapCustomPeriodPickerTitle => 'Selecionar periodo';
+
+  @override
+  String get salesLiveMapMapTypeTitle => 'Tipo de mapa';
+
+  @override
+  String get salesLiveMapMapTypeSubtitle =>
+      'Escolha como os pontos e totais devem aparecer.';
+
+  @override
+  String get salesLiveMapDetailLabel => 'Detalhamento';
+
+  @override
+  String get salesLiveMapDetailSubtitle =>
+      'Escolha o nivel de agregacao mostrado no mapa.';
+
+  @override
+  String get salesLiveMapDetailBranches => 'Filiais';
+
+  @override
+  String get salesLiveMapDetailMunicipalities => 'Municipios';
+
+  @override
+  String get salesLiveMapDetailStates => 'UFs';
+
+  @override
+  String get salesLiveMapVisualLabel => 'Visual';
+
+  @override
+  String get salesLiveMapVisualSubtitle =>
+      'Escolha o estilo dos marcadores para filiais e municipios.';
+
+  @override
+  String get salesLiveMapVisualDot => 'Pontos';
+
+  @override
+  String get salesLiveMapVisualBubble => 'Bolhas';
+
+  @override
+  String get salesLiveMapVisualStoreIcon => 'Icone loja';
+
+  @override
+  String salesLiveMapDetailAutoMunicipalities(int threshold) {
+    return 'Acima de $threshold filiais, municipios sao exibidos automaticamente para melhorar a leitura.';
+  }
+
+  @override
+  String get salesLiveMapKpiRevenue => 'Receita total';
+
+  @override
+  String get salesLiveMapKpiSales => 'Vendas';
+
+  @override
+  String get salesLiveMapKpiBranchesOnMap => 'Filiais no mapa';
+
+  @override
+  String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
+
+  @override
+  String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
+
+  @override
   String get salesBranchFilterLabel => 'FILIAIS';
 
   @override
@@ -5172,6 +5769,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesCardResumoTotalDiarioVendasTitle => 'Vendas diárias';
+
+  @override
+  String get salesAutoRefreshOff => 'Desligado';
+
+  @override
+  String get salesAutoRefreshTooltip => 'Atualizacao automatica';
+
+  @override
+  String salesAutoRefreshLastUpdatedAt(String time) {
+    return 'Atualizado $time';
+  }
 
   @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';

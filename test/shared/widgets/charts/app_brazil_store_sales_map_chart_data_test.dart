@@ -355,6 +355,107 @@ void main() {
       expect(rio.isCluster, isFalse);
     });
 
+    test(
+      'groups stores by municipality when municipality aggregation is used',
+      () {
+        final groups = AppBrazilStoreSalesMapData.buildMarkerGroups(
+          const <AppBrazilStoreSalesPoint>[
+            AppBrazilStoreSalesPoint(
+              id: 'sinop-a',
+              name: 'Loja Sinop A',
+              uf: 'MT',
+              municipalityCode: '5107909',
+              city: 'Sinop',
+              latitude: -11.8604,
+              longitude: -55.5091,
+              salesAmount: 100,
+              salesCount: 1,
+            ),
+            AppBrazilStoreSalesPoint(
+              id: 'sinop-b',
+              name: 'Loja Sinop B',
+              uf: 'MT',
+              municipalityCode: '5107909',
+              city: 'Sinop',
+              latitude: -11.81,
+              longitude: -55.45,
+              salesAmount: 250,
+              salesCount: 2,
+            ),
+            AppBrazilStoreSalesPoint(
+              id: 'sorriso',
+              name: 'Loja Sorriso',
+              uf: 'MT',
+              municipalityCode: '5107925',
+              city: 'Sorriso',
+              latitude: -12.5425,
+              longitude: -55.7211,
+              salesAmount: 90,
+              salesCount: 1,
+            ),
+          ],
+          markerAggregation:
+              AppBrazilStoreSalesMarkerAggregation.municipalities,
+        );
+
+        final sinop = groups.singleWhere(
+          (group) => group.cityLabel == 'Sinop / MT',
+        );
+        final sorriso = groups.singleWhere(
+          (group) => group.cityLabel == 'Sorriso / MT',
+        );
+
+        expect(sinop.isCluster, isTrue);
+        expect(sinop.points.map((point) => point.id), <String>[
+          'sinop-b',
+          'sinop-a',
+        ]);
+        expect(sinop.salesAmount, 350);
+        expect(sinop.salesCount, 3);
+        expect(sinop.latitude, closeTo(-11.8352, 0.0001));
+        expect(sorriso.isCluster, isFalse);
+      },
+    );
+
+    test(
+      'keeps municipalities with the same name separated by UF',
+      () {
+        final groups = AppBrazilStoreSalesMapData.buildMarkerGroups(
+          const <AppBrazilStoreSalesPoint>[
+            AppBrazilStoreSalesPoint(
+              id: 'bom-jesus-pi',
+              name: 'Loja Bom Jesus PI',
+              uf: 'PI',
+              city: 'Bom Jesus',
+              latitude: -9.0745,
+              longitude: -44.3586,
+              salesAmount: 100,
+              salesCount: 1,
+            ),
+            AppBrazilStoreSalesPoint(
+              id: 'bom-jesus-rs',
+              name: 'Loja Bom Jesus RS',
+              uf: 'RS',
+              city: 'Bom Jesus',
+              latitude: -28.6695,
+              longitude: -50.4301,
+              salesAmount: 250,
+              salesCount: 2,
+            ),
+          ],
+          markerAggregation:
+              AppBrazilStoreSalesMarkerAggregation.municipalities,
+        );
+
+        expect(groups, hasLength(2));
+        expect(
+          groups.map((group) => group.cityLabel).toSet(),
+          <String>{'Bom Jesus / PI', 'Bom Jesus / RS'},
+        );
+        expect(groups.every((group) => group.isCluster), isFalse);
+      },
+    );
+
     test('reduces proximity clustering distance as zoom increases', () {
       expect(
         AppBrazilStoreSalesMapData.proximityClusterDistanceForZoom(

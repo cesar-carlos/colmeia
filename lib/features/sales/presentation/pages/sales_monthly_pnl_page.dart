@@ -19,7 +19,9 @@ import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.da
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_branch_anchor_month_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_daily_totals_chart_card.dart';
@@ -103,7 +105,8 @@ class SalesMonthlyPnlPage extends StatefulWidget {
   State<SalesMonthlyPnlPage> createState() => _SalesMonthlyPnlPageState();
 }
 
-class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
+class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
+    with SalesAutoRefreshStateMixin<SalesMonthlyPnlPage> {
   late final SalesPreferences _prefs;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadSalesMonthlyPnlLinesUseCase _loadPnlLines;
@@ -200,7 +203,14 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         : resolved;
   }
 
-  Future<void> _reload() async {
+  Future<void> _reload() => reloadWithSalesAutoRefresh();
+
+  @override
+  bool get canScheduleSalesAutoRefresh =>
+      _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
+
+  @override
+  Future<void> performSalesAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
@@ -252,6 +262,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
         _dailyChartLoadFailed = true;
         _dailyChartLoadFailureMessage = authMsg;
       });
+      disableSalesAutoRefresh();
       return;
     }
 
@@ -477,6 +488,14 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage> {
               ),
             ],
             enabled: !_loading,
+          ),
+          SizedBox(height: tokens.gapMd),
+          SalesAutoRefreshActionsRow(
+            value: salesAutoRefreshInterval,
+            onChanged: setSalesAutoRefreshInterval,
+            enabled: canScheduleSalesAutoRefresh,
+            lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
+            l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),
           if (_selectedAgentId == null)

@@ -609,11 +609,92 @@ abstract class AppLocalizations {
   /// **'Search branches…'**
   String get overviewHomeBranchFilterSheetSearchHint;
 
-  /// No description provided for @overviewAgentFilterSelectMatching.
+  /// No description provided for @overviewHomeBranchFilterSelectAll.
   ///
   /// In en, this message translates to:
-  /// **'Select all matching'**
-  String get overviewAgentFilterSelectMatching;
+  /// **'Select all'**
+  String get overviewHomeBranchFilterSelectAll;
+
+  /// No description provided for @overviewHomeBranchFilterSelectAllFullRoster.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all branches (full list)'**
+  String get overviewHomeBranchFilterSelectAllFullRoster;
+
+  /// No description provided for @overviewHomeBranchFilterDeselectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all'**
+  String get overviewHomeBranchFilterDeselectAll;
+
+  /// No description provided for @overviewHomeBranchFilterSelectMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all matching branches'**
+  String get overviewHomeBranchFilterSelectMatching;
+
+  /// No description provided for @overviewHomeBranchFilterDeselectMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect all matching branches'**
+  String get overviewHomeBranchFilterDeselectMatching;
+
+  /// No description provided for @overviewHomeBranchFilterSelectionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{selectedCount} of {totalCount} branches selected'**
+  String overviewHomeBranchFilterSelectionCount(
+    int selectedCount,
+    int totalCount,
+  );
+
+  /// No description provided for @overviewHomeBranchFilterApplyRequiresSelectionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one branch to apply.'**
+  String get overviewHomeBranchFilterApplyRequiresSelectionHint;
+
+  /// No description provided for @overviewHomeBranchFilterSheetUseAllBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Use all branches'**
+  String get overviewHomeBranchFilterSheetUseAllBranches;
+
+  /// No description provided for @overviewHomeBranchFilterApplyDisabledSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply. Disabled. Select at least one branch.'**
+  String get overviewHomeBranchFilterApplyDisabledSemantics;
+
+  /// No description provided for @overviewHomeBranchFilterRefineAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Refine branches'**
+  String get overviewHomeBranchFilterRefineAction;
+
+  /// No description provided for @overviewHomeBranchFilterEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get overviewHomeBranchFilterEditAction;
+
+  /// No description provided for @overviewHomeBranchFilterApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get overviewHomeBranchFilterApply;
+
+  /// No description provided for @overviewHomeBranchFilterCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get overviewHomeBranchFilterCancel;
+
+  /// No description provided for @overviewHomeBranchFilterMissingClientTokenRowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No client token on this device for this branch — SQL queries are skipped.'**
+  String get overviewHomeBranchFilterMissingClientTokenRowSubtitle;
 
   /// No description provided for @overviewAgentFilterApply.
   ///
@@ -3596,6 +3677,416 @@ abstract class AppLocalizations {
   /// **'Access and manage commercial information by category.'**
   String get salesHubSubtitle;
 
+  /// No description provided for @shellNavSalesMonitoringLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Track sales'**
+  String get shellNavSalesMonitoringLabel;
+
+  /// No description provided for @shellNavSalesMonitoringSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map and filter-based refresh'**
+  String get shellNavSalesMonitoringSubtitle;
+
+  /// No description provided for @salesLiveMapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Track sales'**
+  String get salesLiveMapTitle;
+
+  /// No description provided for @salesLiveMapSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Brazil map with sales by branch and filter-based refresh.'**
+  String get salesLiveMapSubtitle;
+
+  /// No description provided for @salesLiveMapSessionExpiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Session expired. Sign in again to query.'**
+  String get salesLiveMapSessionExpiredMessage;
+
+  /// No description provided for @salesLiveMapAgentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get salesLiveMapAgentsLabel;
+
+  /// No description provided for @salesLiveMapPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get salesLiveMapPeriodLabel;
+
+  /// No description provided for @salesLiveMapMapLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get salesLiveMapMapLabel;
+
+  /// No description provided for @salesLiveMapParametersLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parameters'**
+  String get salesLiveMapParametersLabel;
+
+  /// No description provided for @salesLiveMapParametersSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{origin} | Finance {finance} | Pre-sale {preSale}'**
+  String salesLiveMapParametersSummary(
+    String origin,
+    String finance,
+    String preSale,
+  );
+
+  /// No description provided for @salesLiveMapAgentsLoadingSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading branches'**
+  String get salesLiveMapAgentsLoadingSummary;
+
+  /// No description provided for @salesLiveMapAgentsAllWithTokenSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'All with token ({count})'**
+  String salesLiveMapAgentsAllWithTokenSummary(int count);
+
+  /// No description provided for @salesLiveMapAgentsSelectedSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branch(es)'**
+  String salesLiveMapAgentsSelectedSummary(int count);
+
+  /// No description provided for @salesLiveMapPeriodToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get salesLiveMapPeriodToday;
+
+  /// No description provided for @salesLiveMapPeriodLastSevenDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get salesLiveMapPeriodLastSevenDays;
+
+  /// No description provided for @salesLiveMapPeriodLastSevenDaysShort.
+  ///
+  /// In en, this message translates to:
+  /// **'7 days'**
+  String get salesLiveMapPeriodLastSevenDaysShort;
+
+  /// No description provided for @salesLiveMapPeriodCurrentMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Current month'**
+  String get salesLiveMapPeriodCurrentMonth;
+
+  /// No description provided for @salesLiveMapPeriodCurrentMonthShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get salesLiveMapPeriodCurrentMonthShort;
+
+  /// No description provided for @salesLiveMapPeriodCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get salesLiveMapPeriodCustom;
+
+  /// No description provided for @salesLiveMapMapPresetPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get salesLiveMapMapPresetPoints;
+
+  /// No description provided for @salesLiveMapMapPresetBubbles.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles'**
+  String get salesLiveMapMapPresetBubbles;
+
+  /// No description provided for @salesLiveMapMapPresetMunicipalities.
+  ///
+  /// In en, this message translates to:
+  /// **'Municipalities'**
+  String get salesLiveMapMapPresetMunicipalities;
+
+  /// No description provided for @salesLiveMapMapPresetMunicipalitiesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Cities'**
+  String get salesLiveMapMapPresetMunicipalitiesShort;
+
+  /// No description provided for @salesLiveMapMapPresetStateBubbles.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles by state'**
+  String get salesLiveMapMapPresetStateBubbles;
+
+  /// No description provided for @salesLiveMapMapPresetStateBubblesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'States'**
+  String get salesLiveMapMapPresetStateBubblesShort;
+
+  /// No description provided for @salesLiveMapMapPresetStoreIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Store icon'**
+  String get salesLiveMapMapPresetStoreIcon;
+
+  /// No description provided for @salesLiveMapMapPresetStoreIconShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get salesLiveMapMapPresetStoreIconShort;
+
+  /// No description provided for @salesLiveMapLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load sales tracking'**
+  String get salesLiveMapLoadErrorTitle;
+
+  /// No description provided for @salesLiveMapLoadErrorRetryMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Try refreshing the query again.'**
+  String get salesLiveMapLoadErrorRetryMessage;
+
+  /// No description provided for @salesLiveMapChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales by branch in Brazil'**
+  String get salesLiveMapChartTitle;
+
+  /// No description provided for @salesLiveMapChartSubtitlePending.
+  ///
+  /// In en, this message translates to:
+  /// **'Period {period}.'**
+  String salesLiveMapChartSubtitlePending(String period);
+
+  /// No description provided for @salesLiveMapChartSubtitleLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Period {period}. {mappedCount} of {totalCount} branches positioned.'**
+  String salesLiveMapChartSubtitleLoaded(
+    String period,
+    int mappedCount,
+    int totalCount,
+  );
+
+  /// No description provided for @salesLiveMapPartialTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial tracking'**
+  String get salesLiveMapPartialTitle;
+
+  /// No description provided for @salesLiveMapPartialFailedAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branch(es) failed in the last query.'**
+  String salesLiveMapPartialFailedAgents(int count);
+
+  /// No description provided for @salesLiveMapPartialMissingTokenAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branch(es) without local client_token.'**
+  String salesLiveMapPartialMissingTokenAgents(int count);
+
+  /// No description provided for @salesLiveMapPartialOfflineAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branch(es) outside hub presence.'**
+  String salesLiveMapPartialOfflineAgents(int count);
+
+  /// No description provided for @salesLiveMapPartialMissingCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branch(es) without resolved coordinates.'**
+  String salesLiveMapPartialMissingCoordinates(int count);
+
+  /// No description provided for @salesLiveMapFiltersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking filters'**
+  String get salesLiveMapFiltersTitle;
+
+  /// No description provided for @salesLiveMapFiltersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose branches, period, and map view type.'**
+  String get salesLiveMapFiltersDescription;
+
+  /// No description provided for @salesLiveMapBranchesSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get salesLiveMapBranchesSectionTitle;
+
+  /// No description provided for @salesLiveMapBranchesSectionSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches without a local token stay visible, but locked.'**
+  String get salesLiveMapBranchesSectionSubtitle;
+
+  /// No description provided for @salesLiveMapSelectAtLeastOneTokenBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one branch with a local token.'**
+  String get salesLiveMapSelectAtLeastOneTokenBranch;
+
+  /// No description provided for @salesLiveMapNoApprovedAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'No approved branch is available for query.'**
+  String get salesLiveMapNoApprovedAgents;
+
+  /// No description provided for @salesLiveMapSelectAllTokenBacked.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get salesLiveMapSelectAllTokenBacked;
+
+  /// No description provided for @salesLiveMapClearSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get salesLiveMapClearSelection;
+
+  /// No description provided for @salesLiveMapMissingLocalToken.
+  ///
+  /// In en, this message translates to:
+  /// **'No local token'**
+  String get salesLiveMapMissingLocalToken;
+
+  /// No description provided for @salesLiveMapCustomPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom period'**
+  String get salesLiveMapCustomPeriodLabel;
+
+  /// No description provided for @salesLiveMapCustomPeriodHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit of {maxDays} days per refresh.'**
+  String salesLiveMapCustomPeriodHelper(int maxDays);
+
+  /// No description provided for @salesLiveMapCustomPeriodPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select period'**
+  String get salesLiveMapCustomPeriodPickerTitle;
+
+  /// No description provided for @salesLiveMapMapTypeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Map type'**
+  String get salesLiveMapMapTypeTitle;
+
+  /// No description provided for @salesLiveMapMapTypeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how points and totals should appear.'**
+  String get salesLiveMapMapTypeSubtitle;
+
+  /// No description provided for @salesLiveMapDetailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Detail'**
+  String get salesLiveMapDetailLabel;
+
+  /// No description provided for @salesLiveMapDetailSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the aggregation level shown on the map.'**
+  String get salesLiveMapDetailSubtitle;
+
+  /// No description provided for @salesLiveMapDetailBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches'**
+  String get salesLiveMapDetailBranches;
+
+  /// No description provided for @salesLiveMapDetailMunicipalities.
+  ///
+  /// In en, this message translates to:
+  /// **'Cities'**
+  String get salesLiveMapDetailMunicipalities;
+
+  /// No description provided for @salesLiveMapDetailStates.
+  ///
+  /// In en, this message translates to:
+  /// **'States'**
+  String get salesLiveMapDetailStates;
+
+  /// No description provided for @salesLiveMapVisualLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Visual'**
+  String get salesLiveMapVisualLabel;
+
+  /// No description provided for @salesLiveMapVisualSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the marker style for branch and city views.'**
+  String get salesLiveMapVisualSubtitle;
+
+  /// No description provided for @salesLiveMapVisualDot.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get salesLiveMapVisualDot;
+
+  /// No description provided for @salesLiveMapVisualBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles'**
+  String get salesLiveMapVisualBubble;
+
+  /// No description provided for @salesLiveMapVisualStoreIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Store icon'**
+  String get salesLiveMapVisualStoreIcon;
+
+  /// No description provided for @salesLiveMapDetailAutoMunicipalities.
+  ///
+  /// In en, this message translates to:
+  /// **'Above {threshold} branches, cities are shown automatically for readability.'**
+  String salesLiveMapDetailAutoMunicipalities(int threshold);
+
+  /// No description provided for @salesLiveMapKpiRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Total revenue'**
+  String get salesLiveMapKpiRevenue;
+
+  /// No description provided for @salesLiveMapKpiSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get salesLiveMapKpiSales;
+
+  /// No description provided for @salesLiveMapKpiBranchesOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches on map'**
+  String get salesLiveMapKpiBranchesOnMap;
+
+  /// No description provided for @salesLiveMapKpiMunicipalitiesOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Cities on map'**
+  String get salesLiveMapKpiMunicipalitiesOnMap;
+
+  /// No description provided for @salesLiveMapKpiQueriedAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'Queried branches'**
+  String get salesLiveMapKpiQueriedAgents;
+
   /// No description provided for @salesBranchFilterLabel.
   ///
   /// In en, this message translates to:
@@ -3721,6 +4212,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily sales totals'**
   String get salesCardResumoTotalDiarioVendasTitle;
+
+  /// No description provided for @salesAutoRefreshOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get salesAutoRefreshOff;
+
+  /// No description provided for @salesAutoRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh'**
+  String get salesAutoRefreshTooltip;
+
+  /// No description provided for @salesAutoRefreshLastUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {time}'**
+  String salesAutoRefreshLastUpdatedAt(String time);
 
   /// No description provided for @salesDailyTotalsChartTitle.
   ///
