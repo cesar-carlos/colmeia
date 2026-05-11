@@ -222,4 +222,59 @@ void main() {
       check(got).equals(expected);
     },
   );
+
+  test(
+    'agents:command_response correlates REST-parity sql.executeBatch envelope '
+    'without wire ids when exactly one rpc is pending',
+    () async {
+      const rpcId = 'rpc-rest-parity-batch';
+      final body = <String, Object?>{
+        'agentId': 'agent-1',
+        'command': <String, Object?>{
+          'jsonrpc': '2.0',
+          'method': 'sql.executeBatch',
+          'id': rpcId,
+          'params': const <String, Object?>{
+            'commands': <Map<String, Object?>>[
+              <String, Object?>{'sql': 'SELECT 1'},
+            ],
+          },
+        },
+      };
+
+      final future = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: body,
+        rpcId: rpcId,
+        timeout: const Duration(seconds: 2),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      check(commandResponseHandler).isNotNull();
+
+      final bridgeOnly = <String, dynamic>{
+        'response': <String, dynamic>{
+          'success': true,
+          'item': <String, dynamic>{
+            'success': true,
+            'result': <String, dynamic>{
+              'items': <Object?>[
+                <String, dynamic>{
+                  'index': 0,
+                  'ok': true,
+                  'rows': <Object?>[],
+                  'row_count': 0,
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      commandResponseHandler!(bridgeOnly);
+
+      final got = await future;
+      check(got).equals(bridgeOnly);
+    },
+  );
 }

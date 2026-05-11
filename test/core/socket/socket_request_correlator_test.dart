@@ -86,6 +86,53 @@ void main() {
       check(correlator.pendingCount).equals(0);
     });
 
+    test(
+      'solePendingRpcIdWhenUnambiguous is null unless exactly one pending',
+      () async {
+        check(correlator.solePendingRpcIdWhenUnambiguous).isNull();
+
+        final p1 = correlator.register(
+          'a',
+          timeout: const Duration(seconds: 5),
+        );
+        check(correlator.solePendingRpcIdWhenUnambiguous).equals('a');
+
+        final p2 = correlator.register(
+          'b',
+          timeout: const Duration(seconds: 5),
+        );
+        check(correlator.solePendingRpcIdWhenUnambiguous).isNull();
+
+        final c1 = expectLater(
+          p1,
+          throwsA(isA<SocketDispatchDisconnected>()),
+        );
+        final c2 = expectLater(
+          p2,
+          throwsA(isA<SocketDispatchDisconnected>()),
+        );
+        correlator.failAll(
+          const SocketDispatchDisconnected(message: 'cleanup'),
+        );
+        await c1;
+        await c2;
+      },
+    );
+
+    test(
+      'solePendingRpcIdWhenUnambiguous is null after completeWith',
+      () async {
+        final pending = correlator.register(
+          'x',
+          timeout: const Duration(seconds: 5),
+        );
+        check(correlator.solePendingRpcIdWhenUnambiguous).equals('x');
+        correlator.completeWith('x', <String, dynamic>{});
+        await pending;
+        check(correlator.solePendingRpcIdWhenUnambiguous).isNull();
+      },
+    );
+
     test('completeWith for unknown id invokes orphan hook and stays empty', () {
       final orphans = <String>[];
       final c = SocketRequestCorrelator(

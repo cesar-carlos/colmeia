@@ -21,6 +21,9 @@ class _RecordingCorrelator implements SocketRequestCorrelator {
   int get pendingCount => 0;
 
   @override
+  String? get solePendingRpcIdWhenUnambiguous => null;
+
+  @override
   Future<Map<String, dynamic>> register(
     String rpcId, {
     required Duration timeout,

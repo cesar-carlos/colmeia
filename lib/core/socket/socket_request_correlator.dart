@@ -39,6 +39,14 @@ class SocketRequestCorrelator {
   /// Returns the pending count. Useful for metrics and tests.
   int get pendingCount => _pending.length;
 
+  /// The only in-flight RPC id when [pendingCount] is exactly `1`;
+  /// otherwise `null`.
+  ///
+  /// Used when the hub mirrors REST-only `sql.executeBatch` bodies on
+  /// `agents:command_response` without `rpcId` / `requestId` / JSON-RPC `id`.
+  String? get solePendingRpcIdWhenUnambiguous =>
+      _pending.length == 1 ? _pending.keys.single : null;
+
   /// Registers a new request with [rpcId] and arms a timeout. Throws
   /// [SocketDispatchDuplicateId] when [rpcId] is already pending.
   Future<Map<String, dynamic>> register(

@@ -502,7 +502,8 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       );
       return;
     }
-    final rpcId = _extractRpcId(map);
+    var rpcId = _extractRpcId(map);
+    rpcId ??= _solePendingRpcIdForBridgeExecuteBatchWire(map);
     if (rpcId == null) {
       AppLogger.warning(
         'agents:command_response missing rpcId',
@@ -595,6 +596,8 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       // JSON-RPC 2.0 request id echo (plug hubs often mirror `command.id`
       // here; `sql.executeBatch` batch envelopes may omit `rpcId`/`requestId`).
       map['id'],
+      _read(map, const <String>['result', 'id']),
+      _read(map, const <String>['result', 'rpcId']),
       _read(map, const <String>['response', 'item', 'id']),
       _read(map, const <String>['command', 'id']),
     ];
@@ -615,6 +618,55 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       return candidate.toString();
     }
     return null;
+  }
+
+  /// REST parity `sql.executeBatch` success shape (`parseBatchSuccess`) without
+  /// top-level correlation fields — some hubs emit this verbatim on socket.
+  bool _looksLikeBridgeSqlExecuteBatchSuccess(Map<String, dynamic> map) {
+    final response = map['response'];
+    if (response is! Map) {
+      return false;
+    }
+    if (response['success'] != true) {
+      return false;
+    }
+    final item = response['item'];
+    if (item is! Map) {
+      return false;
+    }
+    if (item['success'] != true) {
+      return false;
+    }
+    final result = item['result'];
+    if (result is! Map) {
+      return false;
+    }
+    return result['items'] is List;
+  }
+
+  /// When the hub omits wire correlation ids, only safe if a single RPC is
+  /// in flight **and** the payload matches a batch bridge success envelope.
+  String? _solePendingRpcIdForBridgeExecuteBatchWire(
+    Map<String, dynamic> map,
+  ) {
+    if (_correlator.pendingCount != 1) {
+      return null;
+    }
+    if (!_looksLikeBridgeSqlExecuteBatchSuccess(map)) {
+      return null;
+    }
+    final sole = _correlator.solePendingRpcIdWhenUnambiguous;
+    if (sole != null) {
+      AppLogger.debug(
+        'agents:command_response correlated via sole pending rpcId '
+        '(bridge sql.executeBatch envelope without wire id)',
+        context: <String, Object?>{
+          'component': 'SocketCommandDispatcherImpl',
+          'rpcId': sole,
+        },
+      );
+    }
+    return sole;
   }
 
   /// True when the hub signalled progressive streaming on the legacy
