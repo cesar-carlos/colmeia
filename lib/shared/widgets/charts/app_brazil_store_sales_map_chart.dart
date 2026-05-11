@@ -590,7 +590,7 @@ class _BrazilStoreSalesMapSnapshot {
                 AppBrazilStoreSalesMapData.proximityClusterDistanceForZoom(
                   baseDistanceDegrees: style.proximityClusterDistanceDegrees,
                   zoomLevel: zoomLevel,
-            ),
+                ),
             coordinatePrecision: style.clusterCoordinatePrecision,
             markerAggregation: style.markerAggregation,
           )

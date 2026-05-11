@@ -887,6 +887,7 @@
   "salesLiveMapMapPresetStoreIconShort": "Loja",
   "salesLiveMapLoadErrorTitle": "Nao foi possivel carregar o acompanhamento",
   "salesLiveMapLoadErrorRetryMessage": "Tente atualizar a consulta novamente.",
+  "salesLiveMapMissingClientTokenSetupMessage": "Nenhum agente selecionado possui token local para executar a consulta.",
   "salesLiveMapChartTitle": "Vendas por filial no Brasil",
   "salesLiveMapChartSubtitlePending": "Periodo {period}.",
   "@salesLiveMapChartSubtitlePending": {

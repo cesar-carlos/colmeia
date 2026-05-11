@@ -318,9 +318,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
               SizedBox(height: tokens.gapMd),
               AppInlineErrorPanel(
                 title: l10n.salesLiveMapLoadErrorTitle,
-                message:
-                    result?.loadFailureMessage ??
-                    l10n.salesLiveMapLoadErrorRetryMessage,
+                message: _loadErrorMessage(result, l10n),
                 onRetry: () => unawaited(_reload()),
               ),
             ],
@@ -357,6 +355,18 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       return l10n.salesLiveMapAgentsAllWithTokenSummary(branchOptions.length);
     }
     return l10n.salesLiveMapAgentsSelectedSummary(selected.length);
+  }
+
+  String _loadErrorMessage(
+    SalesLiveMapLoadResult? result,
+    AppLocalizations l10n,
+  ) {
+    return switch (result?.loadFailureReason) {
+      SalesLiveMapLoadFailureReason.missingClientTokenSetup =>
+        l10n.salesLiveMapMissingClientTokenSetupMessage,
+      null =>
+        result?.loadFailureMessage ?? l10n.salesLiveMapLoadErrorRetryMessage,
+    };
   }
 
   void _onMapMetricChanged(AppBrazilStoreSalesMapMetric metric) {

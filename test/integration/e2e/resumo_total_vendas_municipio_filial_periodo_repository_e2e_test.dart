@@ -47,14 +47,24 @@ void main() {
         );
 
         result.fold(
-          (rows) {
-            for (final row in rows) {
+          (loadedRows) {
+            expect(loadedRows.sourceRowCount, greaterThanOrEqualTo(0));
+            for (final row in loadedRows.rows) {
               expect(row.codEmpresa, greaterThan(0));
               expect(row.codFilial, greaterThanOrEqualTo(0));
               expect(row.nomeFilial, isNotEmpty);
-              expect(row.codMunicipioFilial, greaterThan(0));
-              expect(row.nomeMunicipioFilial, isNotEmpty);
-              expect(row.ufMunicipioFilial, isNotEmpty);
+              final codMunicipio = row.codMunicipioFilial;
+              if (codMunicipio != null) {
+                expect(codMunicipio, greaterThan(0));
+              }
+              final municipio = row.nomeMunicipioFilial;
+              if (municipio != null) {
+                expect(municipio, isNotEmpty);
+              }
+              final uf = row.ufMunicipioFilial;
+              if (uf != null) {
+                expect(uf, isNotEmpty);
+              }
               expect(row.qtdVendas, greaterThanOrEqualTo(0));
               expect(row.totalVenda, isNonNegative);
               final fantasia = row.nomeFantasiaFilial;

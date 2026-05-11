@@ -191,10 +191,8 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     );
   }
 
-  static Future<AppResult<Output>> executeLoadedMapped<
-    Output extends Object,
-    Row
-  >({
+  static Future<AppResult<Output>>
+  executeLoadedMapped<Output extends Object, Row>({
     required String operation,
     required AgentQueryKey queryKey,
     required String userId,

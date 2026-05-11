@@ -3926,6 +3926,12 @@ abstract class AppLocalizations {
   /// **'Try refreshing the query again.'**
   String get salesLiveMapLoadErrorRetryMessage;
 
+  /// No description provided for @salesLiveMapMissingClientTokenSetupMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No selected agent has a local token to execute the query.'**
+  String get salesLiveMapMissingClientTokenSetupMessage;
+
   /// No description provided for @salesLiveMapChartTitle.
   ///
   /// In en, this message translates to:

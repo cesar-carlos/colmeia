@@ -27,6 +27,7 @@ class SalesLiveMapLoadResult {
     required this.refreshedAt,
     this.locationDiagnostics = const SalesLiveMapLocationDiagnostics(),
     this.loadFailed = false,
+    this.loadFailureReason,
     this.loadFailureMessage,
   });
 
@@ -45,6 +46,7 @@ class SalesLiveMapLoadResult {
   final int rowCapReachedAgentCount;
   final SalesLiveMapLocationDiagnostics locationDiagnostics;
   final bool loadFailed;
+  final SalesLiveMapLoadFailureReason? loadFailureReason;
   final String? loadFailureMessage;
   final DateTime? refreshedAt;
 
@@ -54,6 +56,10 @@ class SalesLiveMapLoadResult {
       skippedOfflineAgentCount > 0 ||
       rowCapReachedAgentCount > 0 ||
       mappedBranchCount < totalBranchCount;
+}
+
+enum SalesLiveMapLoadFailureReason {
+  missingClientTokenSetup,
 }
 
 class SalesLiveMapLocationDiagnostics {
@@ -221,8 +227,8 @@ class LoadSalesLiveMapUseCase {
       rowCapReachedAgentCount: _rowCapReachedAgentCount(report),
       locationDiagnostics: locationDiagnostics,
       loadFailed: loadFailed,
-      loadFailureMessage: loadFailed
-          ? 'Nenhum agente selecionado possui token local para executar a consulta.'
+      loadFailureReason: loadFailed
+          ? SalesLiveMapLoadFailureReason.missingClientTokenSetup
           : null,
       refreshedAt: refreshedAt,
     );
@@ -381,11 +387,10 @@ class LoadSalesLiveMapUseCase {
   ) {
     return report.participants
         .where(
-          (participant) =>
-              participant.reachedSourceRowLimit(
-                AgentQueriesBoundedResultMaxRows
-                    .resumoTotalVendasMunicipioFilialPeriodo,
-              ),
+          (participant) => participant.reachedSourceRowLimit(
+            AgentQueriesBoundedResultMaxRows
+                .resumoTotalVendasMunicipioFilialPeriodo,
+          ),
         )
         .length;
   }

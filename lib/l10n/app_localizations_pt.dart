@@ -2397,6 +2397,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tente atualizar a consulta novamente.';
 
   @override
+  String get salesLiveMapMissingClientTokenSetupMessage =>
+      'Nenhum agente selecionado possui token local para executar a consulta.';
+
+  @override
   String get salesLiveMapChartTitle => 'Vendas por filial no Brasil';
 
   @override
@@ -5679,6 +5683,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesLiveMapLoadErrorRetryMessage =>
       'Tente atualizar a consulta novamente.';
+
+  @override
+  String get salesLiveMapMissingClientTokenSetupMessage =>
+      'Nenhum agente selecionado possui token local para executar a consulta.';
 
   @override
   String get salesLiveMapChartTitle => 'Vendas por filial no Brasil';

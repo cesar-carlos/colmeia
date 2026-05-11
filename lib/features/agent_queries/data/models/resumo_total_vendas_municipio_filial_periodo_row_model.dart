@@ -43,11 +43,13 @@ class ResumoTotalVendasMunicipioFilialPeriodoRowModel {
               'NomeMunicipioFilial',
             ),
           ),
-      ufMunicipioFilial: AgentQueriesSqlRowMapReader
-          .readOptionalTrimmedStringStrict(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('UFMunicipioFilial'),
-      ),
+      ufMunicipioFilial:
+          AgentQueriesSqlRowMapReader.readOptionalTrimmedStringStrict(
+            map,
+            AgentQueriesSqlRowMapReader.keysCodEmpresaStyle(
+              'UFMunicipioFilial',
+            ),
+          ),
       qtdVendas: AgentQueriesSqlRowMapReader.readRequiredInt(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('QtdVendas'),

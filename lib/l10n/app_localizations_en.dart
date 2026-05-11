@@ -2360,6 +2360,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try refreshing the query again.';
 
   @override
+  String get salesLiveMapMissingClientTokenSetupMessage =>
+      'No selected agent has a local token to execute the query.';
+
+  @override
   String get salesLiveMapChartTitle => 'Sales by branch in Brazil';
 
   @override

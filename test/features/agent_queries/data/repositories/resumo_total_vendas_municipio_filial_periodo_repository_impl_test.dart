@@ -121,9 +121,6 @@ void main() {
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
     check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.sql).contains(
-      'ResumoTotalVendasMunicipioFilialPeriodo',
-    );
-    check(capturedRequest.sql).contains(
       'pv.DataVenda >= CAST(:dataVendaInicio AS DATE)',
     );
     check(capturedRequest.sql).contains(
@@ -134,6 +131,7 @@ void main() {
       'MAX(mf.CodigoIBGE) AS CodigoIBGEMunicipioFilial',
     );
     check(capturedRequest.sql).contains('LEFT JOIN Municipio mf');
+    check(capturedRequest.sql.contains('FROM (')).isFalse();
     check(capturedRequest.sql.contains('DataVenda,')).isFalse();
     check(capturedRequest.sql.contains('ORDER BY')).isFalse();
     check(capturedRequest.sql.contains('INNER JOIN Municipio mc')).isFalse();

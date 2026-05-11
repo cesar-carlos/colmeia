@@ -6,6 +6,7 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
@@ -79,6 +80,27 @@ void main() {
       check(report.rowsByAgentId['agent-b']!).deepEquals(const <int>[]);
     },
   );
+
+  test('should preserve source row count from loaded rows metadata', () async {
+    final result = await executor.executeLoadedRows(
+      plan: _plan(
+        strategy: AgentQueryExecutionStrategy.mergeAll,
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+      ),
+      loadTarget: (_) async =>
+          const Success<AgentQueryLoadedRows<int>, AppFailure>(
+            AgentQueryLoadedRows<int>(
+              rows: <int>[1, 2],
+              sourceRowCount: 50,
+            ),
+          ),
+    );
+
+    check(result.isSuccess()).isTrue();
+    final participant = result.getOrThrow().participants.single;
+    check(participant.rows).deepEquals(const <int>[1, 2]);
+    check(participant.sourceRowCount).equals(50);
+  });
 
   test('should fail when all targets fail in merge all', () async {
     final result = await executor.execute(

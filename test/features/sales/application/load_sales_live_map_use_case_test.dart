@@ -430,10 +430,11 @@ void main() {
                 _participant(
                   'agent-a',
                   rows: List<ResumoTotalVendasMunicipioFilialPeriodoRow>.filled(
-                    AgentQueriesBoundedResultMaxRows
-                        .resumoTotalVendasMunicipioFilialPeriodo,
+                    1,
                     _row(totalVenda: 1),
                   ),
+                  sourceRowCount: AgentQueriesBoundedResultMaxRows
+                      .resumoTotalVendasMunicipioFilialPeriodo,
                 ),
               ],
         ),
@@ -446,6 +447,51 @@ void main() {
 
       check(result.rowCapReachedAgentCount).equals(1);
       check(result.hasPartialIssue).isTrue();
+    },
+  );
+
+  test(
+    'mantem venda de filial sem municipio como nao mapeada',
+    () async {
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(
+                      nomeMunicipioFilial: null,
+                      ufMunicipioFilial: null,
+                      codigoIbgeMunicipioFilial: null,
+                      totalVenda: 450,
+                      qtdVendas: 7,
+                    ),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final result = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      check(result.totalRevenue).equals(450);
+      check(result.totalSalesCount).equals(7);
+      check(result.totalBranchCount).equals(1);
+      check(result.mappedBranchCount).equals(0);
+      check(result.points).isEmpty();
+      check(result.branchOptions.single.city).equals('Sem municipio');
+      check(result.branchOptions.single.uf).equals('--');
+      check(result.locationDiagnostics.unresolvedBranchCount).equals(1);
     },
   );
 }
@@ -499,6 +545,7 @@ AgentQueryExecutionParticipant<ResumoTotalVendasMunicipioFilialPeriodoRow>
 _participant(
   String agentId, {
   required List<ResumoTotalVendasMunicipioFilialPeriodoRow> rows,
+  int? sourceRowCount,
   AppFailure? failure,
 }) {
   return AgentQueryExecutionParticipant<
@@ -507,6 +554,7 @@ _participant(
     agentId: agentId,
     displayName: 'Agente $agentId',
     rows: rows,
+    sourceRowCount: sourceRowCount,
     failure: failure,
     elapsedMs: 10,
   );
@@ -517,8 +565,9 @@ ResumoTotalVendasMunicipioFilialPeriodoRow _row({
   int codFilial = 1,
   String nomeFilial = 'Loja matriz',
   String? nomeFantasiaFilial = 'Loja matriz',
-  String nomeMunicipioFilial = 'SINOP',
-  String ufMunicipioFilial = 'MT',
+  int? codMunicipioFilial = 5107909,
+  String? nomeMunicipioFilial = 'SINOP',
+  String? ufMunicipioFilial = 'MT',
   String? codigoIbgeMunicipioFilial = '5107909',
   String? cepFilial,
   int qtdVendas = 1,
@@ -529,7 +578,7 @@ ResumoTotalVendasMunicipioFilialPeriodoRow _row({
     codFilial: codFilial,
     nomeFilial: nomeFilial,
     nomeFantasiaFilial: nomeFantasiaFilial,
-    codMunicipioFilial: 5107909,
+    codMunicipioFilial: codMunicipioFilial,
     nomeMunicipioFilial: nomeMunicipioFilial,
     ufMunicipioFilial: ufMunicipioFilial,
     codigoIbgeMunicipioFilial: codigoIbgeMunicipioFilial,

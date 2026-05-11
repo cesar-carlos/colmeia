@@ -180,10 +180,9 @@ void main() {
       final debugFields = snap.relayDebugLogFields();
       check(debugFields['relayGzipDecodeIsolateUses']).equals(1);
       check(debugFields['relayJsonDecodeIsolateUses']).equals(1);
-      check(
-        (debugFields['relayDecodeFailureByCode']
-            as Map<String, int>)['gzip_decode_failed'],
-      ).equals(1);
+      final failureByCode =
+          debugFields['relayDecodeFailureByCode'] as Map<String, int>?;
+      check(failureByCode?['gzip_decode_failed']).equals(1);
       check(debugFields['relayPayloadDecodeWallClockMs']).isNotNull();
       check(debugFields['relayAcceptToFirstChunkMs']).isNotNull();
 

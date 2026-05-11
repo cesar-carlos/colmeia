@@ -1111,6 +1111,7 @@
   "salesLiveMapMapPresetStoreIconShort": "Store",
   "salesLiveMapLoadErrorTitle": "Could not load sales tracking",
   "salesLiveMapLoadErrorRetryMessage": "Try refreshing the query again.",
+  "salesLiveMapMissingClientTokenSetupMessage": "No selected agent has a local token to execute the query.",
   "salesLiveMapChartTitle": "Sales by branch in Brazil",
   "salesLiveMapChartSubtitlePending": "Period {period}.",
   "@salesLiveMapChartSubtitlePending": {

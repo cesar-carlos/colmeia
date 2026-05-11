@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_ta
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_total_vendas_municipio_filial_periodo_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
@@ -116,21 +117,24 @@ void main() {
     ).thenAnswer(
       (_) async =>
           const Success<
-            List<ResumoTotalVendasMunicipioFilialPeriodoRow>,
+            AgentQueryLoadedRows<ResumoTotalVendasMunicipioFilialPeriodoRow>,
             AppFailure
           >(
-            <ResumoTotalVendasMunicipioFilialPeriodoRow>[
-              ResumoTotalVendasMunicipioFilialPeriodoRow(
-                codEmpresa: 1,
-                codFilial: 1,
-                nomeFilial: 'F',
-                codMunicipioFilial: 1,
-                nomeMunicipioFilial: 'M',
-                ufMunicipioFilial: 'SP',
-                qtdVendas: 2,
-                totalVenda: 100,
-              ),
-            ],
+            AgentQueryLoadedRows<ResumoTotalVendasMunicipioFilialPeriodoRow>(
+              rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                ResumoTotalVendasMunicipioFilialPeriodoRow(
+                  codEmpresa: 1,
+                  codFilial: 1,
+                  nomeFilial: 'F',
+                  codMunicipioFilial: 1,
+                  nomeMunicipioFilial: 'M',
+                  ufMunicipioFilial: 'SP',
+                  qtdVendas: 2,
+                  totalVenda: 100,
+                ),
+              ],
+              sourceRowCount: 3,
+            ),
           ),
     );
 
@@ -146,6 +150,7 @@ void main() {
       AgentQueryKey.resumoTotalVendasMunicipioFilialPeriodo,
     );
     check(report.mergedRows).has((rows) => rows.length, 'length').equals(1);
+    check(report.participants.single.sourceRowCount).equals(3);
     verify(
       () => loadResumo(
         userId: 'user-1',

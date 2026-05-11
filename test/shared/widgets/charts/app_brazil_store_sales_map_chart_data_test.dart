@@ -182,47 +182,53 @@ void main() {
     });
 
     test('builds diagnostics for invalid, unknown and filtered points', () {
+      const points = <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'valid',
+          name: 'Loja Valida',
+          uf: 'MT',
+          latitude: -15,
+          longitude: -56,
+          salesAmount: 100,
+          salesCount: 1,
+          locationResolution:
+              AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'bad-coordinate',
+          name: 'Coordenada invalida',
+          uf: 'MT',
+          latitude: -91,
+          longitude: -56,
+          salesAmount: 100,
+          salesCount: 1,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'bad-uf',
+          name: 'UF invalida',
+          uf: 'ZZ',
+          latitude: -15,
+          longitude: -56,
+          salesAmount: 100,
+          salesCount: 1,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'filtered',
+          name: 'Fora do recorte',
+          uf: 'SP',
+          latitude: -23,
+          longitude: -46,
+          salesAmount: 100,
+          salesCount: 1,
+        ),
+      ];
+
       final diagnostics = AppBrazilStoreSalesMapData.buildDiagnostics(
-        const <AppBrazilStoreSalesPoint>[
-          AppBrazilStoreSalesPoint(
-            id: 'valid',
-            name: 'Loja Valida',
-            uf: 'MT',
-            latitude: -15,
-            longitude: -56,
-            salesAmount: 100,
-            salesCount: 1,
-            locationResolution:
-                AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
-          ),
-          AppBrazilStoreSalesPoint(
-            id: 'bad-coordinate',
-            name: 'Coordenada invalida',
-            uf: 'MT',
-            latitude: -91,
-            longitude: -56,
-            salesAmount: 100,
-            salesCount: 1,
-          ),
-          AppBrazilStoreSalesPoint(
-            id: 'bad-uf',
-            name: 'UF invalida',
-            uf: 'ZZ',
-            latitude: -15,
-            longitude: -56,
-            salesAmount: 100,
-            salesCount: 1,
-          ),
-          AppBrazilStoreSalesPoint(
-            id: 'filtered',
-            name: 'Fora do recorte',
-            uf: 'SP',
-            latitude: -23,
-            longitude: -46,
-            salesAmount: 100,
-            salesCount: 1,
-          ),
-        ],
+        points,
+        regionKey: 'CO',
+      );
+      final prepared = AppBrazilStoreSalesMapData.prepareSnapshotData(
+        points,
         regionKey: 'CO',
       );
 
@@ -235,6 +241,12 @@ void main() {
       expect(diagnostics.unknownResolutionCount, 0);
       expect(diagnostics.discardedPointCount, 3);
       expect(diagnostics.hasDiscardedPoints, isTrue);
+      expect(prepared.diagnostics, diagnostics);
+      expect(prepared.validPoints.map((point) => point.id), <String>['valid']);
+      expect(
+        prepared.buckets.singleWhere((bucket) => bucket.uf == 'MT').storeCount,
+        2,
+      );
     });
 
     test('filters buckets and markers by region', () {
