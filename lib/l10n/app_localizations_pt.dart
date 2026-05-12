@@ -3002,7 +3002,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaDetailsSubtitle =>
-      'Lista paginada com produto, classificacao, grupo e marca.';
+      'Lista paginada com produto, classificacao e grupo.';
 
   @override
   String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
@@ -3046,9 +3046,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaColGrupo => 'Grupo';
-
-  @override
-  String get salesProdutoTendenciaColMarca => 'Marca';
 
   @override
   String get salesProdutoTendenciaColDiferenca => 'Diferenca';
@@ -6293,7 +6290,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaDetailsSubtitle =>
-      'Lista paginada com produto, classificacao, grupo e marca.';
+      'Lista paginada com produto, classificacao e grupo.';
 
   @override
   String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
@@ -6337,9 +6334,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaColGrupo => 'Grupo';
-
-  @override
-  String get salesProdutoTendenciaColMarca => 'Marca';
 
   @override
   String get salesProdutoTendenciaColDiferenca => 'Diferenca';

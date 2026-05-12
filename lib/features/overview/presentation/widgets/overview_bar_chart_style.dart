@@ -37,6 +37,13 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
   final isWeekdayOrDaily = isWeekday || isDaily;
   final metricRevenueAxis = isWeekdayOrDaily && weekdayUsesCurrencyAxis;
 
+  // Compact currency labels sit just above tall bars; horizontal grid lines at
+  // round tick values (e.g. R$ 20 mil) can visually cross the label. Lift outer
+  // labels more than count-mode labels and reserve extra axis headroom.
+  final dataLabelLiftY = metricRevenueAxis
+      ? tokens.contentSpacing + tokens.gapSm
+      : (isRanking || isPayment ? tokens.gapSm : tokens.gapMd);
+
   return AppComparisonBarChartStyle(
     animationDuration: const Duration(milliseconds: 350),
     stickyPrimaryYAxisWhileScrolling: false,
@@ -62,16 +69,15 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     chartPadding: isRanking || isWeekday || isDaily || isPayment
         ? EdgeInsets.only(bottom: tokens.gapSm)
         : null,
-    dataLabelOffset: Offset(
-      0,
-      (isRanking || isPayment) ? tokens.gapSm : tokens.gapMd,
-    ),
+    dataLabelOffset: Offset(0, dataLabelLiftY),
     yAxisRangePadding: metricRevenueAxis
         ? ChartRangePadding.additionalEnd
         : null,
     // Compact currency labels use annotation widgets with padded containers plus a
     // negative Y transform; reserved margin can still clip the tallest column.
-    outerDataLabelTopReserve: metricRevenueAxis ? tokens.contentSpacing : 0,
+    outerDataLabelTopReserve: metricRevenueAxis
+        ? tokens.contentSpacing + tokens.gapSm
+        : 0,
     dataLabelBackgroundColor: metricRevenueAxis
         ? weekdayRevenueDataLabelBackground
         : null,

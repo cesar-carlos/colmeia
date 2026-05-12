@@ -4907,7 +4907,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaDetailsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Paginated detail with product, classification, group, and brand.'**
+  /// **'Paginated detail with product, classification, and group.'**
   String get salesProdutoTendenciaDetailsSubtitle;
 
   /// No description provided for @salesProdutoTendenciaDetailsHorizontalScrollCaption.
@@ -4987,12 +4987,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Group'**
   String get salesProdutoTendenciaColGrupo;
-
-  /// No description provided for @salesProdutoTendenciaColMarca.
-  ///
-  /// In en, this message translates to:
-  /// **'Brand'**
-  String get salesProdutoTendenciaColMarca;
 
   /// No description provided for @salesProdutoTendenciaColDiferenca.
   ///

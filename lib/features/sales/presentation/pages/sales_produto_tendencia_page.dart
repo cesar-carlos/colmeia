@@ -1732,7 +1732,6 @@ abstract final class _TrendDetailsTableLayout {
   static double _product(AppThemeTokens t) => math.max(220, t.gapMd * 18);
   static double _classificacao(AppThemeTokens t) => math.max(120, t.gapMd * 10);
   static double _grupo(AppThemeTokens t) => math.max(132, t.gapMd * 11);
-  static double _marca(AppThemeTokens t) => math.max(100, t.gapMd * 9);
   static double _delta(AppThemeTokens t) => math.max(104, t.gapMd * 9);
   static double _percentual(AppThemeTokens t) => math.max(104, t.gapMd * 9);
 
@@ -1740,7 +1739,6 @@ abstract final class _TrendDetailsTableLayout {
       _product(t) +
       _classificacao(t) +
       _grupo(t) +
-      _marca(t) +
       _delta(t) +
       _percentual(t);
 
@@ -1781,10 +1779,6 @@ class _TrendDetailsTableHeader extends StatelessWidget {
           SizedBox(
             width: _TrendDetailsTableLayout._grupo(tokens),
             child: Text(l10n.salesProdutoTendenciaColGrupo, style: style),
-          ),
-          SizedBox(
-            width: _TrendDetailsTableLayout._marca(tokens),
-            child: Text(l10n.salesProdutoTendenciaColMarca, style: style),
           ),
           SizedBox(
             width: _TrendDetailsTableLayout._delta(tokens),
@@ -1858,16 +1852,6 @@ class _TrendDetailsRow extends StatelessWidget {
                     : l10n.salesProdutoTendenciaFilterAllOption,
                 softWrap: true,
                 maxLines: 4,
-              ),
-            ),
-            SizedBox(
-              width: _TrendDetailsTableLayout._marca(tokens),
-              child: Text(
-                row.nomeMarca?.trim().isNotEmpty == true
-                    ? row.nomeMarca!
-                    : l10n.salesProdutoTendenciaFilterAllOption,
-                softWrap: true,
-                maxLines: 3,
               ),
             ),
             SizedBox(

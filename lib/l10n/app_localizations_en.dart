@@ -2961,7 +2961,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaDetailsSubtitle =>
-      'Paginated detail with product, classification, group, and brand.';
+      'Paginated detail with product, classification, and group.';
 
   @override
   String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
@@ -3005,9 +3005,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaColGrupo => 'Group';
-
-  @override
-  String get salesProdutoTendenciaColMarca => 'Brand';
 
   @override
   String get salesProdutoTendenciaColDiferenca => 'Delta';
