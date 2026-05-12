@@ -25,6 +25,7 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class ClientAgentDetailPage extends StatefulWidget {
@@ -931,6 +932,10 @@ class _IdentityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final na = l10n.clientAgentValueNotAvailable;
+    final tradeDisplay = _nonEmptyOr(agent.tradeName, na);
+    final statusLabel = _catalogStatusLabel(l10n, agent.catalogStatus);
+    final connectionLabel = _connectionLabel(l10n, agent.connectionStatus);
+    final documentTypeLabel = _nonEmptyTrim(agent.documentType);
     return AppSectionCardWithHeading(
       title: agent.name,
       child: Column(
@@ -938,25 +943,30 @@ class _IdentityCard extends StatelessWidget {
         children: <Widget>[
           _AgentDetailRow(
             label: l10n.clientAgentFieldTradeName,
-            value: _nonEmptyOr(agent.tradeName, na),
+            value: tradeDisplay,
+            clipboardText: tradeDisplay == na ? null : tradeDisplay,
           ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldId,
             value: agent.agentId,
+            clipboardText: agent.agentId,
           ),
           ..._documentIdentityRows(agent, l10n, na),
-          if (_nonEmptyTrim(agent.documentType) != null)
+          if (documentTypeLabel != null)
             _AgentDetailRow(
               label: l10n.clientAgentFieldDocumentType,
-              value: _nonEmptyTrim(agent.documentType)!,
+              value: documentTypeLabel,
+              clipboardText: documentTypeLabel,
             ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldStatus,
-            value: _catalogStatusLabel(l10n, agent.catalogStatus),
+            value: statusLabel,
+            clipboardText: statusLabel,
           ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldConnection,
-            value: _connectionLabel(l10n, agent.connectionStatus),
+            value: connectionLabel,
+            clipboardText: connectionLabel,
           ),
         ],
       ),
@@ -994,6 +1004,7 @@ class _IdentityCard extends StatelessWidget {
         _AgentDetailRow(
           label: l10n.clientAgentFieldDocument,
           value: doc,
+          clipboardText: doc,
         ),
       ];
     }
@@ -1001,10 +1012,12 @@ class _IdentityCard extends StatelessWidget {
       _AgentDetailRow(
         label: l10n.clientAgentFieldDocument,
         value: hasDoc ? doc : na,
+        clipboardText: hasDoc ? doc : null,
       ),
       _AgentDetailRow(
         label: l10n.clientAgentFieldCnpjCpf,
         value: hasCnpj ? cnpj : na,
+        clipboardText: hasCnpj ? cnpj : null,
       ),
     ];
   }
@@ -1034,6 +1047,9 @@ class _ContactCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final na = l10n.clientAgentValueNotAvailable;
+    final email = _trimmedOrNull(agent.email);
+    final phone = _trimmedOrNull(agent.phone);
+    final mobile = _trimmedOrNull(agent.mobile);
     return AppSectionCardWithHeading(
       title: l10n.clientAgentDetailSectionContact,
       child: Column(
@@ -1041,15 +1057,18 @@ class _ContactCard extends StatelessWidget {
         children: <Widget>[
           _AgentDetailRow(
             label: l10n.clientAgentFieldEmail,
-            value: agent.email ?? na,
+            value: email ?? na,
+            clipboardText: email,
           ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldPhone,
-            value: agent.phone ?? na,
+            value: phone ?? na,
+            clipboardText: phone,
           ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldMobile,
-            value: agent.mobile ?? na,
+            value: mobile ?? na,
+            clipboardText: mobile,
           ),
         ],
       ),
@@ -1067,6 +1086,10 @@ class _AddressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final na = l10n.clientAgentValueNotAvailable;
     final streetLine = _streetLine(address);
+    final district = _trimmedOrNull(address.district);
+    final postalCode = _trimmedOrNull(address.postalCode);
+    final city = _trimmedOrNull(address.city);
+    final state = _trimmedOrNull(address.state);
     return AppSectionCardWithHeading(
       title: l10n.clientAgentDetailSectionAddress,
       child: Column(
@@ -1076,22 +1099,27 @@ class _AddressCard extends StatelessWidget {
             _AgentDetailRow(
               label: l10n.clientAgentFieldStreet,
               value: streetLine,
+              clipboardText: streetLine,
             ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldDistrict,
-            value: address.district ?? na,
+            value: district ?? na,
+            clipboardText: district,
           ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldPostalCode,
-            value: address.postalCode ?? na,
+            value: postalCode ?? na,
+            clipboardText: postalCode,
           ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldCity,
-            value: address.city ?? na,
+            value: city ?? na,
+            clipboardText: city,
           ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldState,
-            value: address.state ?? na,
+            value: state ?? na,
+            clipboardText: state,
           ),
         ],
       ),
@@ -1126,11 +1154,13 @@ class _NotesCard extends StatelessWidget {
             _AgentDetailRow(
               label: l10n.clientAgentFieldNotes,
               value: notes,
+              clipboardText: notes,
             ),
           if (observation != null && observation.isNotEmpty)
             _AgentDetailRow(
               label: l10n.clientAgentFieldObservation,
               value: observation,
+              clipboardText: observation,
             ),
         ],
       ),
@@ -1147,6 +1177,10 @@ class _RecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final na = l10n.clientAgentValueNotAvailable;
+    final createdLabel = AppBrFormatters.shortDate(agent.createdAt);
+    final updatedLabel = agent.updatedAt.isAfter(agent.createdAt)
+        ? AppBrFormatters.shortDateTime(agent.updatedAt)
+        : na;
     return AppSectionCardWithHeading(
       title: l10n.clientAgentDetailSectionRecord,
       child: Column(
@@ -1156,16 +1190,18 @@ class _RecordCard extends StatelessWidget {
             _AgentDetailRow(
               label: l10n.clientAgentFieldProfileUpdatedAt,
               value: AppBrFormatters.shortDateTime(agent.profileUpdatedAt!),
+              clipboardText:
+                  AppBrFormatters.shortDateTime(agent.profileUpdatedAt!),
             ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldCreatedAt,
-            value: AppBrFormatters.shortDate(agent.createdAt),
+            value: createdLabel,
+            clipboardText: createdLabel,
           ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldUpdatedAt,
-            value: agent.updatedAt.isAfter(agent.createdAt)
-                ? AppBrFormatters.shortDateTime(agent.updatedAt)
-                : na,
+            value: updatedLabel,
+            clipboardText: updatedLabel == na ? null : updatedLabel,
           ),
         ],
       ),
@@ -1177,11 +1213,45 @@ class _RecordCard extends StatelessWidget {
 // Shared row widget
 // ---------------------------------------------------------------------------
 
+String? _trimmedOrNull(String? value) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) {
+    return null;
+  }
+  return trimmed;
+}
+
+const Duration _kAgentDetailCopySnackDuration = Duration(seconds: 2);
+
+Future<void> _copyAgentDetailFieldValue(BuildContext context, String text) async {
+  await Clipboard.setData(ClipboardData(text: text));
+  if (!context.mounted) {
+    return;
+  }
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final l10n = AppLocalizations.of(context);
+  if (messenger == null) {
+    return;
+  }
+  messenger.showSnackBar(
+    SnackBar(
+      behavior: SnackBarBehavior.floating,
+      duration: _kAgentDetailCopySnackDuration,
+      content: Text(l10n.clientAgentDetailCopiedSnackbar),
+    ),
+  );
+}
+
 class _AgentDetailRow extends StatelessWidget {
-  const _AgentDetailRow({required this.label, required this.value});
+  const _AgentDetailRow({
+    required this.label,
+    required this.value,
+    this.clipboardText,
+  });
 
   final String label;
   final String value;
+  final String? clipboardText;
 
   @override
   Widget build(BuildContext context) {
@@ -1189,6 +1259,10 @@ class _AgentDetailRow extends StatelessWidget {
     final typography = theme.appTypography;
     final colors = theme.appColors;
     final tokens = theme.extension<AppThemeTokens>()!;
+    final l10n = AppLocalizations.of(context);
+    final trimmedCopy = clipboardText?.trim();
+    final copyPayload =
+        trimmedCopy != null && trimmedCopy.isNotEmpty ? trimmedCopy : null;
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.gapSm),
       child: Column(
@@ -1198,7 +1272,26 @@ class _AgentDetailRow extends StatelessWidget {
             label,
             style: typography.caption.copyWith(color: colors.onSurfaceVariant),
           ),
-          Text(value, style: typography.body),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: Text(value, style: typography.body)),
+              if (copyPayload != null)
+                IconButton(
+                  icon: const Icon(Icons.copy_rounded, size: 20),
+                  tooltip: l10n.clientAgentDetailCopyFieldTooltip(label),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  onPressed: () => unawaited(
+                    _copyAgentDetailFieldValue(context, copyPayload),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );

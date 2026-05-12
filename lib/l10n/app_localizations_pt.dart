@@ -903,6 +903,28 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível abrir este gráfico em tela cheia. Volte e tente novamente.';
 
   @override
+  String get chartFullscreenDataSnapshotHint =>
+      'Os valores do mapa refletem os dados carregados ao abrir a tela cheia.';
+
+  @override
+  String get brazilStoreSalesMapMetricGroupLabel => 'Metrica';
+
+  @override
+  String get brazilStoreSalesMapRegionGroupLabel => 'Regiao';
+
+  @override
+  String get brazilStoreSalesMapLoadingMessage => 'Carregando mapa do Brasil…';
+
+  @override
+  String get brazilStoreSalesMapMarkerSizeLegend => 'Tamanho do ponto';
+
+  @override
+  String get brazilStoreSalesMapLegendRevenuePerState => 'Receita por UF';
+
+  @override
+  String get brazilStoreSalesMapLegendSalesPerState => 'Vendas por UF';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Forma de pagamento $label';
   }
@@ -1660,6 +1682,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailSaveProfile => 'Salvar perfil';
+
+  @override
+  String clientAgentDetailCopyFieldTooltip(String label) {
+    return 'Copiar $label para a area de transferencia';
+  }
+
+  @override
+  String get clientAgentDetailCopiedSnackbar =>
+      'Copiado para a area de transferencia';
 
   @override
   String get clientAgentDetailProfileSaved => 'Perfil salvo no servidor.';
@@ -4191,6 +4222,28 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Não foi possível abrir este gráfico em tela cheia. Volte e tente novamente.';
 
   @override
+  String get chartFullscreenDataSnapshotHint =>
+      'Os valores do mapa refletem os dados carregados ao abrir a tela cheia.';
+
+  @override
+  String get brazilStoreSalesMapMetricGroupLabel => 'Métrica';
+
+  @override
+  String get brazilStoreSalesMapRegionGroupLabel => 'Região';
+
+  @override
+  String get brazilStoreSalesMapLoadingMessage => 'Carregando mapa do Brasil…';
+
+  @override
+  String get brazilStoreSalesMapMarkerSizeLegend => 'Tamanho do ponto';
+
+  @override
+  String get brazilStoreSalesMapLegendRevenuePerState => 'Receita por UF';
+
+  @override
+  String get brazilStoreSalesMapLegendSalesPerState => 'Vendas por UF';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Forma de pagamento $label';
   }
@@ -4948,6 +5001,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailSaveProfile => 'Salvar perfil';
+
+  @override
+  String clientAgentDetailCopyFieldTooltip(String label) {
+    return 'Copiar $label para a area de transferencia';
+  }
+
+  @override
+  String get clientAgentDetailCopiedSnackbar =>
+      'Copiado para a area de transferencia';
 
   @override
   String get clientAgentDetailProfileSaved => 'Perfil salvo no servidor.';

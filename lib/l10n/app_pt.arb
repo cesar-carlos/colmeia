@@ -389,6 +389,13 @@
   "chartCloseFullscreenTooltip": "Fechar gráfico em tela cheia",
   "chartFullscreenUnavailableTitle": "Gráfico indisponível",
   "chartFullscreenUnavailableMessage": "Não foi possível abrir este gráfico em tela cheia. Volte e tente novamente.",
+  "chartFullscreenDataSnapshotHint": "Os valores do mapa refletem os dados carregados ao abrir a tela cheia.",
+  "brazilStoreSalesMapMetricGroupLabel": "Metrica",
+  "brazilStoreSalesMapRegionGroupLabel": "Regiao",
+  "brazilStoreSalesMapLoadingMessage": "Carregando mapa do Brasil…",
+  "brazilStoreSalesMapMarkerSizeLegend": "Tamanho do ponto",
+  "brazilStoreSalesMapLegendRevenuePerState": "Receita por UF",
+  "brazilStoreSalesMapLegendSalesPerState": "Vendas por UF",
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -659,6 +666,14 @@
   "clientAgentDetailPolicyEmpty": "O agente nao retornou nenhuma regra para este token.",
   "clientAgentDetailSectionEditProfile": "Perfil no catálogo",
   "clientAgentDetailSaveProfile": "Salvar perfil",
+  "clientAgentDetailCopyFieldTooltip": "Copiar {label} para a area de transferencia",
+  "@clientAgentDetailCopyFieldTooltip": {
+    "description": "Tooltip for copying a single identity field on the agent detail screen.",
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "clientAgentDetailCopiedSnackbar": "Copiado para a area de transferencia",
   "clientAgentDetailProfileSaved": "Perfil salvo no servidor.",
   "clientAgentDetailProfileNameRequired": "Informe o nome / razão social.",
   "clientAgentFieldLegalName": "Nome / razão social",

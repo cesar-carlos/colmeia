@@ -425,6 +425,14 @@
   "@chartFullscreenUnavailableTitle": {"description": "Title shown when the fullscreen chart route is opened without a valid payload."},
   "chartFullscreenUnavailableMessage": "This chart could not be opened in fullscreen. Go back and try again.",
   "@chartFullscreenUnavailableMessage": {"description": "Body shown when the fullscreen chart route is opened without a valid payload."},
+  "chartFullscreenDataSnapshotHint": "Map values reflect the data loaded when you opened fullscreen.",
+  "@chartFullscreenDataSnapshotHint": {"description": "Short hint appended to fullscreen filter summary for charts that snapshot data (e.g. live map)."},
+  "brazilStoreSalesMapMetricGroupLabel": "Metric",
+  "brazilStoreSalesMapRegionGroupLabel": "Region",
+  "brazilStoreSalesMapLoadingMessage": "Loading Brazil map…",
+  "brazilStoreSalesMapMarkerSizeLegend": "Marker size",
+  "brazilStoreSalesMapLegendRevenuePerState": "Revenue by state",
+  "brazilStoreSalesMapLegendSalesPerState": "Sales by state",
   "overviewSemanticsPaymentMethodRow": "Payment method {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -827,6 +835,14 @@
   "clientAgentDetailPolicyEmpty": "Agent did not return any rule for this token.",
   "clientAgentDetailSectionEditProfile": "Catalog profile",
   "clientAgentDetailSaveProfile": "Save profile",
+  "clientAgentDetailCopyFieldTooltip": "Copy {label} to the clipboard",
+  "@clientAgentDetailCopyFieldTooltip": {
+    "description": "Tooltip for copying a single identity field on the agent detail screen.",
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "clientAgentDetailCopiedSnackbar": "Copied to clipboard",
   "clientAgentDetailProfileSaved": "Profile saved on the server.",
   "clientAgentDetailProfileNameRequired": "Legal name is required.",
   "clientAgentFieldLegalName": "Legal name",

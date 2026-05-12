@@ -883,6 +883,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'This chart could not be opened in fullscreen. Go back and try again.';
 
   @override
+  String get chartFullscreenDataSnapshotHint =>
+      'Map values reflect the data loaded when you opened fullscreen.';
+
+  @override
+  String get brazilStoreSalesMapMetricGroupLabel => 'Metric';
+
+  @override
+  String get brazilStoreSalesMapRegionGroupLabel => 'Region';
+
+  @override
+  String get brazilStoreSalesMapLoadingMessage => 'Loading Brazil map…';
+
+  @override
+  String get brazilStoreSalesMapMarkerSizeLegend => 'Marker size';
+
+  @override
+  String get brazilStoreSalesMapLegendRevenuePerState => 'Revenue by state';
+
+  @override
+  String get brazilStoreSalesMapLegendSalesPerState => 'Sales by state';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Payment method $label';
   }
@@ -1631,6 +1653,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentDetailSaveProfile => 'Save profile';
+
+  @override
+  String clientAgentDetailCopyFieldTooltip(String label) {
+    return 'Copy $label to the clipboard';
+  }
+
+  @override
+  String get clientAgentDetailCopiedSnackbar => 'Copied to clipboard';
 
   @override
   String get clientAgentDetailProfileSaved => 'Profile saved on the server.';

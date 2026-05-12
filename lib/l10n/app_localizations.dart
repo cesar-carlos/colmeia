@@ -1537,6 +1537,48 @@ abstract class AppLocalizations {
   /// **'This chart could not be opened in fullscreen. Go back and try again.'**
   String get chartFullscreenUnavailableMessage;
 
+  /// Short hint appended to fullscreen filter summary for charts that snapshot data (e.g. live map).
+  ///
+  /// In en, this message translates to:
+  /// **'Map values reflect the data loaded when you opened fullscreen.'**
+  String get chartFullscreenDataSnapshotHint;
+
+  /// No description provided for @brazilStoreSalesMapMetricGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get brazilStoreSalesMapMetricGroupLabel;
+
+  /// No description provided for @brazilStoreSalesMapRegionGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get brazilStoreSalesMapRegionGroupLabel;
+
+  /// No description provided for @brazilStoreSalesMapLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading Brazil map…'**
+  String get brazilStoreSalesMapLoadingMessage;
+
+  /// No description provided for @brazilStoreSalesMapMarkerSizeLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Marker size'**
+  String get brazilStoreSalesMapMarkerSizeLegend;
+
+  /// No description provided for @brazilStoreSalesMapLegendRevenuePerState.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue by state'**
+  String get brazilStoreSalesMapLegendRevenuePerState;
+
+  /// No description provided for @brazilStoreSalesMapLegendSalesPerState.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales by state'**
+  String get brazilStoreSalesMapLegendSalesPerState;
+
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///
   /// In en, this message translates to:
@@ -2721,6 +2763,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save profile'**
   String get clientAgentDetailSaveProfile;
+
+  /// Tooltip for copying a single identity field on the agent detail screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy {label} to the clipboard'**
+  String clientAgentDetailCopyFieldTooltip(String label);
+
+  /// No description provided for @clientAgentDetailCopiedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get clientAgentDetailCopiedSnackbar;
 
   /// No description provided for @clientAgentDetailProfileSaved.
   ///
