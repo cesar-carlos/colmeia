@@ -52,7 +52,6 @@ class AppChartFullscreenScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final typography = theme.appTypography;
     final l10n = AppLocalizations.of(context);
     final resolvedBodyPadding = _mergedBodyPadding(context, tokens);
 
@@ -63,6 +62,7 @@ class AppChartFullscreenScaffold extends StatelessWidget {
     final resolvedFilterSummary = filterSummary?.trim();
     final hasFilterSummary =
         resolvedFilterSummary != null && resolvedFilterSummary.isNotEmpty;
+    final hasHeader = hasTitle || hasSubtitle || hasFilterSummary;
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
@@ -81,42 +81,10 @@ class AppChartFullscreenScaffold extends StatelessWidget {
               automaticallyImplyLeading: false,
               leading: Navigator.of(context).canPop()
                   ? IconButton(
-                      onPressed: () => unawaited(Navigator.of(context).maybePop()),
+                      onPressed: () =>
+                          unawaited(Navigator.of(context).maybePop()),
                       tooltip: l10n.chartCloseFullscreenTooltip,
                       icon: const Icon(Icons.close),
-                    )
-                  : null,
-              titleSpacing: hasTitle || hasSubtitle || hasFilterSummary
-                  ? tokens.gapSm
-                  : 0,
-              title: (hasTitle || hasSubtitle || hasFilterSummary)
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        if (hasTitle)
-                          Text(
-                            resolvedTitle,
-                            style: typography.sectionHeaderH2.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        if (hasSubtitle)
-                          Text(
-                            resolvedSubtitle,
-                            style: typography.body,
-                          ),
-                        if (hasFilterSummary) ...<Widget>[
-                          if (hasSubtitle || hasTitle)
-                            SizedBox(height: tokens.gapXs),
-                          Text(
-                            resolvedFilterSummary,
-                            style: typography.caption,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
                     )
                   : null,
               actions: switch (headerTrailing) {
@@ -130,9 +98,156 @@ class AppChartFullscreenScaffold extends StatelessWidget {
             body: SafeArea(
               child: Padding(
                 padding: resolvedBodyPadding,
-                child: child,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    if (hasHeader) ...<Widget>[
+                      _AppChartFullscreenHeader(
+                        title: resolvedTitle,
+                        subtitle: resolvedSubtitle,
+                        filterSummary: resolvedFilterSummary,
+                      ),
+                      SizedBox(height: tokens.contentSpacing),
+                    ],
+                    Expanded(child: child),
+                  ],
+                ),
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppChartFullscreenHeader extends StatelessWidget {
+  const _AppChartFullscreenHeader({
+    required this.title,
+    required this.subtitle,
+    required this.filterSummary,
+  });
+
+  final String? title;
+  final String? subtitle;
+  final String? filterSummary;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final typography = theme.appTypography;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (title case final resolvedTitle?
+            when resolvedTitle.trim().isNotEmpty)
+          Text(
+            resolvedTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.sectionHeaderH2.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        if (subtitle case final resolvedSubtitle?
+            when resolvedSubtitle.trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: tokens.gapXs),
+          Text(
+            resolvedSubtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.body,
+          ),
+        ],
+        if (filterSummary case final resolvedFilterSummary?
+            when resolvedFilterSummary.trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: tokens.gapSm),
+          _AppChartFullscreenFilterChips(
+            summary: resolvedFilterSummary,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _AppChartFullscreenFilterChips extends StatelessWidget {
+  const _AppChartFullscreenFilterChips({required this.summary});
+
+  final String summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = _splitSummary(summary);
+    if (parts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+
+    return Tooltip(
+      message: summary,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: <Widget>[
+            for (var index = 0; index < parts.length; index++) ...<Widget>[
+              if (index > 0) SizedBox(width: tokens.gapXs),
+              _AppChartFullscreenFilterChip(label: parts[index]),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<String> _splitSummary(String value) {
+    const separator = 0x00B7;
+    final mojibakeSeparator = String.fromCharCodes(<int>[0x00C2, separator]);
+    final normalized = value.replaceAll(
+      mojibakeSeparator,
+      String.fromCharCode(separator),
+    );
+    return normalized
+        .split(String.fromCharCode(separator))
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
+  }
+}
+
+class _AppChartFullscreenFilterChip extends StatelessWidget {
+  const _AppChartFullscreenFilterChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapSm,
+          vertical: tokens.gapXs,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

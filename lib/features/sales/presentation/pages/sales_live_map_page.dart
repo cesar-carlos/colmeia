@@ -20,6 +20,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_kpi_g
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
@@ -216,21 +217,31 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
           chartSemanticsLabel: pageL10n.salesLiveMapChartTitle,
           chartBuilder: (_) {
             return LayoutBuilder(
-              builder: (context, constraints) {
-                Widget chart = AppBrazilStoreSalesMapChart(
-                  points: pointsSnapshot,
-                  initialMetric: initialMetricSnapshot,
-                  style: styleSnapshot,
-                  onMetricChanged: _onMapMetricChanged,
+              builder: (context, _) {
+                final tokens = Theme.of(
+                  context,
+                ).extension<AppThemeTokens>()!;
+                return AppSectionCard(
+                  padding: EdgeInsets.all(tokens.contentSpacing),
+                  child: LayoutBuilder(
+                    builder: (context, cardConstraints) {
+                      Widget chart = AppBrazilStoreSalesMapChart(
+                        points: pointsSnapshot,
+                        initialMetric: initialMetricSnapshot,
+                        style: styleSnapshot,
+                        onMetricChanged: _onMapMetricChanged,
+                      );
+                      final maxH = cardConstraints.maxHeight;
+                      if (maxH.isFinite && maxH < double.infinity) {
+                        chart = SizedBox(
+                          height: maxH,
+                          child: chart,
+                        );
+                      }
+                      return chart;
+                    },
+                  ),
                 );
-                final maxH = constraints.maxHeight;
-                if (maxH.isFinite && maxH < double.infinity) {
-                  chart = SizedBox(
-                    height: maxH,
-                    child: chart,
-                  );
-                }
-                return chart;
               },
             );
           },

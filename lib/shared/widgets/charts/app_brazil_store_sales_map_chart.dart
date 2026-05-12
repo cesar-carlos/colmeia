@@ -70,6 +70,11 @@ class _AppBrazilStoreSalesMapChartState
   AppBrazilStoreSalesMapDiagnostics? _lastEmittedDiagnostics;
   _BrazilStoreSalesMapSnapshot? _snapshot;
 
+  /// Small shrink of the map tile when height is bounded: real layout (labels,
+  /// chips, legend padding) can exceed our header/footer estimates by a few
+  /// logical pixels and cause a [Column] overflow.
+  static const double _boundedMapTileLayoutSafetyPx = 6;
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +118,10 @@ class _AppBrazilStoreSalesMapChartState
     return LayoutBuilder(
       builder: (context, constraints) {
         final l10n = AppLocalizations.of(context);
+        final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+        final usesCompactMapChrome = constraints.hasBoundedHeight;
+        final usesCompactStateLabels =
+            usesCompactMapChrome && constraints.maxWidth < 900;
         final mapTileHeight = _resolvedMapTileHeight(
           context: context,
           constraints: constraints,
@@ -129,7 +138,10 @@ class _AppBrazilStoreSalesMapChartState
               selectedMetricKey: _selectedMetric.key,
               selectedRegionKey: selectedRegionKey,
               regionKeyBuilder: (bucket) => bucket.uf,
-              regionLabelBuilder: _stateLabelFor,
+              regionLabelBuilder: (bucket) => _stateLabelFor(
+                bucket,
+                compact: usesCompactStateLabels,
+              ),
               scopeOptions: widget.style.showRegionFilter
                   ? AppBrazilMapStaticData.regionScopeOptions
                   : const <AppMapScopeOption>[],
@@ -154,6 +166,9 @@ class _AppBrazilStoreSalesMapChartState
                   : AppChartPreset.standard,
               style: AppRegionMapChartStyle(
                 height: mapTileHeight,
+                chartPadding: usesCompactMapChrome
+                    ? EdgeInsets.all(tokens.gapSm)
+                    : null,
                 showLegend: widget.style.showLegend,
                 showTooltip: widget.style.showTooltip,
                 showDataLabels: widget.style.showDataLabels,
@@ -166,12 +181,17 @@ class _AppBrazilStoreSalesMapChartState
                     ?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
+                      fontSize: usesCompactMapChrome ? 10 : null,
                     ),
+                metricSelectorPadding: usesCompactMapChrome
+                    ? EdgeInsets.zero
+                    : null,
                 legendNumberFormat: _legendFormat,
                 emptyStateMessage: widget.style.emptyStateMessage,
                 metricGroupLabel: l10n.brazilStoreSalesMapMetricGroupLabel,
                 scopeGroupLabel: l10n.brazilStoreSalesMapRegionGroupLabel,
                 mapLoadingMessage: l10n.brazilStoreSalesMapLoadingMessage,
+                showGroupLabels: !usesCompactMapChrome,
               ),
             ),
             if (widget.style.showDataQualityNotice &&
@@ -200,6 +220,13 @@ class _AppBrazilStoreSalesMapChartState
             else if (_showBelowMapMarkerDetail && selectedPoint != null)
               _SelectedStoreDetail(
                 point: selectedPoint,
+                metric: _selectedMetric,
+              )
+            else if (selectedPoint == null &&
+                selectedMarkerGroup == null &&
+                snapshot.selectedStateBucket != null)
+              _SelectedStateDetail(
+                bucket: snapshot.selectedStateBucket!,
                 metric: _selectedMetric,
               ),
           ],
@@ -249,7 +276,7 @@ class _AppBrazilStoreSalesMapChartState
     if (!spare.isFinite) {
       return requested;
     }
-    return spare.clamp(200.0, 4000.0);
+    return (spare - _boundedMapTileLayoutSafetyPx).clamp(200.0, 4000.0);
   }
 
   double _estimateAppRegionMapHeaderReserve(
@@ -299,6 +326,11 @@ class _AppBrazilStoreSalesMapChartState
     } else if (_showBelowMapMarkerDetail && selectedPoint != null) {
       reserve += tokens.gapMd + scaler.scale(160);
     }
+    if (selectedPoint == null &&
+        selectedMarkerGroup == null &&
+        snapshot.selectedStateBucket != null) {
+      reserve += tokens.gapMd + scaler.scale(96);
+    }
     return reserve;
   }
 
@@ -326,23 +358,22 @@ class _AppBrazilStoreSalesMapChartState
 
   List<AppMapMetric<AppBrazilStoreSalesStateBucket>> _buildMetrics(
     AppLocalizations l10n,
-  ) =>
-      <AppMapMetric<AppBrazilStoreSalesStateBucket>>[
-        AppMapMetric<AppBrazilStoreSalesStateBucket>(
-          key: AppBrazilStoreSalesMapMetric.revenue.key,
-          label: AppBrazilStoreSalesMapMetric.revenue.label,
-          legendLabel: l10n.brazilStoreSalesMapLegendRevenuePerState,
-          valueBuilder: (bucket) => bucket.salesAmount,
-          tooltipBuilder: _stateTooltipSubtitle,
-        ),
-        AppMapMetric<AppBrazilStoreSalesStateBucket>(
-          key: AppBrazilStoreSalesMapMetric.salesCount.key,
-          label: AppBrazilStoreSalesMapMetric.salesCount.label,
-          legendLabel: l10n.brazilStoreSalesMapLegendSalesPerState,
-          valueBuilder: (bucket) => bucket.salesCount,
-          tooltipBuilder: _stateTooltipSubtitle,
-        ),
-      ];
+  ) => <AppMapMetric<AppBrazilStoreSalesStateBucket>>[
+    AppMapMetric<AppBrazilStoreSalesStateBucket>(
+      key: AppBrazilStoreSalesMapMetric.revenue.key,
+      label: AppBrazilStoreSalesMapMetric.revenue.label,
+      legendLabel: l10n.brazilStoreSalesMapLegendRevenuePerState,
+      valueBuilder: (bucket) => bucket.salesAmount,
+      tooltipBuilder: _stateTooltipSubtitle,
+    ),
+    AppMapMetric<AppBrazilStoreSalesStateBucket>(
+      key: AppBrazilStoreSalesMapMetric.salesCount.key,
+      label: AppBrazilStoreSalesMapMetric.salesCount.label,
+      legendLabel: l10n.brazilStoreSalesMapLegendSalesPerState,
+      valueBuilder: (bucket) => bucket.salesCount,
+      tooltipBuilder: _stateTooltipSubtitle,
+    ),
+  ];
 
   AppMapViewport _preferredViewport(_BrazilStoreSalesMapSnapshot snapshot) {
     final selectedPoint = snapshot.selectedPoint;
@@ -363,7 +394,14 @@ class _AppBrazilStoreSalesMapChartState
         AppBrazilMapStaticData.brazilViewport;
   }
 
-  String _stateLabelFor(AppBrazilStoreSalesStateBucket bucket) {
+  String _stateLabelFor(
+    AppBrazilStoreSalesStateBucket bucket, {
+    bool compact = false,
+  }) {
+    if (compact) {
+      return bucket.uf;
+    }
+
     final labelMode = switch (widget.style.stateLabelMode) {
       AppBrazilStoreSalesStateLabelMode.responsive =>
         AppBreakpoints.isDesktop(context)
@@ -710,6 +748,7 @@ class _BrazilStoreSalesMapSnapshot {
     required this.selectedPoint,
     required this.selectedMarkerGroup,
     required this.selectedStateKey,
+    required this.selectedStateBucket,
     required this.minMarkerValue,
     required this.maxMarkerValue,
     required this.diagnostics,
@@ -772,6 +811,16 @@ class _BrazilStoreSalesMapSnapshot {
         if (point.id == selectedStoreId) {
           selectedPoint = point;
           selectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(point.uf);
+          break;
+        }
+      }
+    }
+
+    AppBrazilStoreSalesStateBucket? selectedStateBucket;
+    if (selectedStateKey != null) {
+      for (final bucket in buckets) {
+        if (bucket.uf == selectedStateKey) {
+          selectedStateBucket = bucket;
           break;
         }
       }
@@ -884,6 +933,7 @@ class _BrazilStoreSalesMapSnapshot {
       selectedPoint: selectedPoint,
       selectedMarkerGroup: selectedMarkerGroup,
       selectedStateKey: selectedStateKey,
+      selectedStateBucket: selectedStateBucket,
       minMarkerValue: minValue,
       maxMarkerValue: maxValue,
       diagnostics: diagnostics,
@@ -901,6 +951,7 @@ class _BrazilStoreSalesMapSnapshot {
   final AppBrazilStoreSalesPoint? selectedPoint;
   final AppBrazilStoreSalesMarkerGroup? selectedMarkerGroup;
   final String? selectedStateKey;
+  final AppBrazilStoreSalesStateBucket? selectedStateBucket;
   final num minMarkerValue;
   final num maxMarkerValue;
   final AppBrazilStoreSalesMapDiagnostics diagnostics;
@@ -1056,34 +1107,63 @@ class _MarkerScaleLegend extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(top: tokens.gapMd),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: tokens.gapMd,
-        runSpacing: tokens.gapSm,
-        children: [
-          Text(sizeLegendLabel, style: textStyle),
-          _MarkerScaleLegendItem(
-            label: _formatMetricValue(metric, minValue),
-            size: minSize,
-            color: color,
-            strokeColor: strokeColor,
-            visual: visual,
-          ),
-          _MarkerScaleLegendItem(
-            label: _formatMetricValue(metric, middleValue),
-            size: minSize + ((maxSize - minSize) / 2),
-            color: color,
-            strokeColor: strokeColor,
-            visual: visual,
-          ),
-          _MarkerScaleLegendItem(
-            label: _formatMetricValue(metric, maxValue),
-            size: maxSize,
-            color: color,
-            strokeColor: strokeColor,
-            visual: visual,
-          ),
-        ],
+      child: _MapAuxiliarySurface(
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: tokens.gapMd,
+          runSpacing: tokens.gapSm,
+          children: [
+            Text(sizeLegendLabel, style: textStyle),
+            _MarkerScaleLegendItem(
+              label: _formatMetricValue(metric, minValue),
+              size: minSize,
+              color: color,
+              strokeColor: strokeColor,
+              visual: visual,
+            ),
+            _MarkerScaleLegendItem(
+              label: _formatMetricValue(metric, middleValue),
+              size: minSize + ((maxSize - minSize) / 2),
+              color: color,
+              strokeColor: strokeColor,
+              visual: visual,
+            ),
+            _MarkerScaleLegendItem(
+              label: _formatMetricValue(metric, maxValue),
+              size: maxSize,
+              color: color,
+              strokeColor: strokeColor,
+              visual: visual,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapAuxiliarySurface extends StatelessWidget {
+  const _MapAuxiliarySurface({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapSm,
+        ),
+        child: child,
       ),
     );
   }
@@ -1109,36 +1189,25 @@ class _MapDataQualityNotice extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(top: tokens.gapSm),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.gapMd,
-            vertical: tokens.gapSm,
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 16,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              SizedBox(width: tokens.gapSm),
-              Expanded(
-                child: Text(
-                  '${diagnostics.discardedPointCount} lojas nao exibidas'
-                  '${details.isEmpty ? '' : ': $details'}.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+      child: _MapAuxiliarySurface(
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            SizedBox(width: tokens.gapSm),
+            Expanded(
+              child: Text(
+                '${diagnostics.discardedPointCount} lojas nao exibidas'
+                '${details.isEmpty ? '' : ': $details'}.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1516,6 +1585,49 @@ class _StoreMapMarker extends StatelessWidget {
             ],
           ),
         },
+      ),
+    );
+  }
+}
+
+class _SelectedStateDetail extends StatelessWidget {
+  const _SelectedStateDetail({
+    required this.bucket,
+    required this.metric,
+  });
+
+  final AppBrazilStoreSalesStateBucket bucket;
+  final AppBrazilStoreSalesMapMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.gapMd),
+      child: _SelectedMarkerDetailSurface(
+        title: bucket.stateName,
+        subtitle: '${bucket.uf} selecionado',
+        icon: Icons.map_outlined,
+        metric: metric,
+        child: Wrap(
+          spacing: tokens.gapSm,
+          runSpacing: tokens.gapSm,
+          children: <Widget>[
+            AppTagChip(
+              label: AppBrFormatters.currency(bucket.salesAmount),
+              icon: Icons.attach_money,
+            ),
+            AppTagChip(
+              label: '${_formatInteger(bucket.salesCount)} vendas',
+              icon: Icons.receipt_long_outlined,
+            ),
+            AppTagChip(
+              label: '${_formatInteger(bucket.storeCount)} filiais',
+              icon: Icons.storefront_outlined,
+            ),
+          ],
+        ),
       ),
     );
   }

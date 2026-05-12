@@ -869,20 +869,49 @@ class _MapValueLegend extends StatelessWidget {
     if (title == null || title!.isEmpty) {
       return Semantics(
         label: 'Legenda do mapa, de $minValue a $maxValue',
-        child: row,
+        child: _MapLegendSurface(child: row),
       );
     }
 
     return Semantics(
       label: 'Legenda: $title, de $minValue a $maxValue',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(title!, style: textStyle),
-          SizedBox(height: gapXs),
-          row,
-        ],
+      child: _MapLegendSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(title!, style: textStyle),
+            SizedBox(height: gapXs),
+            row,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapLegendSurface extends StatelessWidget {
+  const _MapLegendSurface({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.gapMd,
+          vertical: tokens.gapSm,
+        ),
+        child: child,
       ),
     );
   }
