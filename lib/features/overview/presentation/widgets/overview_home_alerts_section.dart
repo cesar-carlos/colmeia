@@ -130,7 +130,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
             // itself is also no-op'd by the controller — this is the
             // visible feedback so the user understands why.
             retryDisabledLabel: retryCountdownLabel,
-            manageAgentsLabel: l10n.clientAgentsPageTitle,
+            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
           ),
         ),
       );
@@ -153,8 +153,8 @@ class OverviewHomeAlertsSection extends StatelessWidget {
                 ),
           actions: OverviewPanelActions(
             onManageAgents: onOpenAgents,
-            primaryLabel: l10n.clientAgentsPageTitle,
-            manageAgentsLabel: l10n.clientAgentsPageTitle,
+            primaryLabel: l10n.overviewHomeManageBranchesAction,
+            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
             onShowDetails: () {
               final parts = <String>[l10n.dashboardSetupRequiredMessage];
               final bullets = _overviewAlertsBulletAgentList(
@@ -220,7 +220,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
             detailsSemanticsLabel:
                 l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
             retryLabel: l10n.appInlineErrorRetry,
-            manageAgentsLabel: l10n.clientAgentsPageTitle,
+            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
           ),
         ),
       );
@@ -242,8 +242,8 @@ class OverviewHomeAlertsSection extends StatelessWidget {
                 ),
           actions: OverviewPanelActions(
             onManageAgents: onOpenAgents,
-            primaryLabel: l10n.clientAgentsPageTitle,
-            manageAgentsLabel: l10n.clientAgentsPageTitle,
+            primaryLabel: l10n.overviewHomeManageBranchesAction,
+            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
             onShowDetails: () {
               final parts = <String>[l10n.dashboardMissingClientTokenMessage];
               final bullets = _overviewAlertsBulletAgentList(
@@ -309,7 +309,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
             detailsSemanticsLabel:
                 l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
             retryLabel: l10n.appInlineErrorRetry,
-            manageAgentsLabel: l10n.clientAgentsPageTitle,
+            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
           ),
         ),
       );
@@ -367,7 +367,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
             detailsSemanticsLabel:
                 l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
             retryLabel: l10n.appInlineErrorRetry,
-            manageAgentsLabel: l10n.clientAgentsPageTitle,
+            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
           ),
         ),
       );

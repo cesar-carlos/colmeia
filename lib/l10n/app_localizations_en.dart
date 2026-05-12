@@ -125,15 +125,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardPartialAgentQueriesMessage =>
-      'Some approved agents did not return data. Totals may be incomplete.';
+      'Some approved branches did not return data. Totals may be incomplete.';
 
   @override
   String get dashboardMissingClientTokenTitle =>
-      'Agents without a saved client token';
+      'Branches without a saved client token';
 
   @override
   String get dashboardMissingClientTokenMessage =>
-      'These approved agents were skipped because no local client token was saved. Add the token on the agent screen to include their data.';
+      'These approved branches were skipped because no local client token was saved. Add the token in branch management to include their data.';
 
   @override
   String get overviewResumoUnknownPaymentMethod =>
@@ -147,42 +147,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardSetupRequiredMessage =>
-      'None of the approved agents has a client token saved on this device. Open agent management to save the token and enable overview queries.';
+      'None of the approved branches has a client token saved on this device. Open branch management to save the token and enable overview queries.';
 
   @override
   String dashboardViewAffectedAgentsList(int count) {
-    return 'View list ($count)';
+    return 'View branches ($count)';
   }
 
   @override
   String get dashboardAffectedAgentsSheetTitlePartialFailure =>
-      'Agents that did not return data';
+      'Branches that did not return data';
 
   @override
   String get dashboardAffectedAgentsSheetTitleMissingToken =>
-      'Agents without a saved client token';
+      'Branches without a saved client token';
 
   @override
   String get dashboardAffectedAgentsSheetTitleSetupRequired =>
-      'Approved agents without a client token on this device';
+      'Approved branches without a client token on this device';
 
   @override
-  String get dashboardAgentsOfflineTitle => 'Agents currently offline';
+  String get dashboardAgentsOfflineTitle => 'Branches currently offline';
 
   @override
   String get dashboardAgentsOfflineMessage =>
-      'These approved agents have a saved token but the hub reports them as disconnected. Ask the agent operator to reconnect them, then retry.';
+      'These approved branches have a saved token but the hub reports them as disconnected. Ask the operator to reconnect them, then retry.';
 
   @override
   String get dashboardAffectedAgentsSheetTitleOffline =>
-      'Agents reported offline by the hub';
+      'Branches reported offline by the hub';
 
   @override
-  String get dashboardMultiAgentAggregationTitle => 'Multiple agents';
+  String get dashboardMultiAgentAggregationTitle => 'Multiple branches';
 
   @override
   String get dashboardMultiAgentAggregationMessage =>
-      'This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.';
+      'This summary merges data from several approved branches. If their databases overlap, totals may be higher than a single source.';
 
   @override
   String get overviewHomeAlertErrorDetailsButton => 'Error details';
@@ -227,7 +227,7 @@ class AppLocalizationsEn extends AppLocalizations {
     String sourceLabel,
     String userMessage,
   ) {
-    return '$agentName, agent id $agentId. $sourceLabel. $userMessage.';
+    return '$agentName, branch id $agentId. $sourceLabel. $userMessage.';
   }
 
   @override
@@ -265,11 +265,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardPaymentSummaryHeaderAvgTicket => 'AVG.\nTICKET';
 
   @override
-  String get dashboardHomeFiltersAgentsLabel => 'Agents';
+  String get dashboardHomeFiltersAgentsLabel => 'Branches';
 
   @override
   String get dashboardHomeFiltersAgentsEmptyHint =>
-      'Load the overview to list agents.';
+      'Load the overview to list branches.';
 
   @override
   String get dashboardHomeFiltersBranchesLabel => 'BRANCHES';
@@ -308,7 +308,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String overviewAgentFilterAllAgentsSummary(int count) {
-    return 'All agents ($count)';
+    return 'All branches ($count)';
   }
 
   @override
@@ -318,7 +318,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String overviewAgentFilterSelectedCount(int count) {
-    return '$count agents selected';
+    return '$count branches selected';
   }
 
   @override
@@ -327,16 +327,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get overviewAgentFilterRefineAction => 'Refine selection';
+  String get overviewAgentFilterRefineAction => 'Refine branches';
 
   @override
   String get overviewAgentFilterEditAction => 'Edit';
 
   @override
-  String get overviewAgentFilterSheetTitle => 'Select agents';
+  String get overviewAgentFilterSheetTitle => 'Select branches';
 
   @override
-  String get overviewAgentFilterSheetSearchHint => 'Search agents…';
+  String get overviewAgentFilterSheetSearchHint => 'Search branches…';
 
   @override
   String get overviewHomeBranchFilterSheetTitle => 'Select branches';
@@ -405,7 +405,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewAgentFilterNoSearchResults =>
-      'No agents match your search.';
+      'No branches match your search.';
 
   @override
   String get overviewHomeBranchFilterNoSearchResults =>
@@ -413,7 +413,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewAgentFilterMissingClientTokenBanner =>
-      'Agents without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.';
+      'Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.';
 
   @override
   String get overviewHomeBranchFilterMissingClientTokenBanner =>
@@ -421,18 +421,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewAgentFilterMissingClientTokenRowSubtitle =>
-      'No client token on this device — SQL queries are skipped.';
+      'No client token on this device for this branch — SQL queries are skipped.';
 
   @override
   String get chartCategoryDonutEmptyForFilter =>
       'No category data for this view.';
 
   @override
-  String get dashboardAgentRankingTitle => 'Ranking by agent';
+  String get dashboardAgentRankingTitle => 'Ranking by branch';
 
   @override
   String get dashboardAgentRankingSubtitle =>
-      'Total revenue by agent in the period.';
+      'Total revenue by branch in the period.';
 
   @override
   String get dashboardUserRankingTitle => 'Ranking by operator';
@@ -442,7 +442,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Revenue by operator in the period.';
 
   @override
-  String get overviewAgentRankingEmpty => 'No agent revenue in this period.';
+  String get overviewAgentRankingEmpty => 'No branch revenue in this period.';
 
   @override
   String get overviewUserRankingEmpty => 'No operator revenue in this period.';
@@ -452,12 +452,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String overviewTopProductsSubtitle(int count) {
-    return 'Per agent (not merged across databases). Up to $count products.';
+    return 'Per branch (not merged across databases). Up to $count products.';
   }
 
   @override
   String get overviewTopProductsNoEligibleAgents =>
-      'No agents available for this chart. Save a client token on the agent or adjust the filter.';
+      'No branches available for this chart. Save a client token on the branch or adjust the filter.';
 
   @override
   String get overviewTopProductsInvalidPeriod =>
@@ -465,7 +465,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewTopProductsEmpty =>
-      'No product sales in this period for this agent.';
+      'No product sales in this period for this branch.';
 
   @override
   String get overviewTopProductsLoadFailed =>
@@ -496,7 +496,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewHomeSubtitle =>
-      'Consolidated summary of approved agents (all connected branches).';
+      'Consolidated summary of approved branches (connected to the hub).';
+
+  @override
+  String get overviewHomeManageBranchesAction => 'Branch management';
 
   @override
   String get overviewHomeAlertsSectionTitle => 'Notices';
@@ -906,7 +909,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewNoApprovedAgentsUserMessage =>
-      'No approved agent is available to load the overview.';
+      'No approved branch is available to load the overview.';
 
   @override
   String get overviewLoadFailedUserMessage => 'Unable to load the overview.';
@@ -2089,11 +2092,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dateRangePickerSemanticsFallbackLabel => 'Period';
 
   @override
-  String get overviewLucratividadeTitle => 'Profitability by agent';
+  String get overviewLucratividadeTitle => 'Profitability by branch';
 
   @override
   String get overviewLucratividadeSubtitle =>
-      'Revenue, cost and margin for the selected period, per agent (all branches combined).';
+      'Revenue, cost and margin for the selected period (all branches in scope combined).';
 
   @override
   String get overviewLucratividadeSwitchProfit => 'Profit';
@@ -2202,7 +2205,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMultiAgentHint =>
-      'No approved agents are available to load profitability. Add or connect an agent first.';
+      'No approved branches are available to load profitability. Add or connect a branch first.';
 
   @override
   String get overviewLoadingLucratividadeSemantics =>
@@ -2214,7 +2217,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMensalSubtitle =>
-      'Revenue, replacement cost and margin per month (selected agent).';
+      'Revenue, replacement cost and margin per month (selected branch).';
 
   @override
   String get overviewLucratividadeMensalEmpty =>
@@ -2222,7 +2225,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMensalMultiAgentHint =>
-      'Select a single agent to view monthly profitability.';
+      'Select a single branch to view monthly profitability.';
 
   @override
   String get overviewLucratividadeMensalSwitchProfit => 'Profit';

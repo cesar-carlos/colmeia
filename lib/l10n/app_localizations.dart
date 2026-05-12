@@ -324,19 +324,19 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardPartialAgentQueriesMessage.
   ///
   /// In en, this message translates to:
-  /// **'Some approved agents did not return data. Totals may be incomplete.'**
+  /// **'Some approved branches did not return data. Totals may be incomplete.'**
   String get dashboardPartialAgentQueriesMessage;
 
   /// No description provided for @dashboardMissingClientTokenTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agents without a saved client token'**
+  /// **'Branches without a saved client token'**
   String get dashboardMissingClientTokenTitle;
 
   /// No description provided for @dashboardMissingClientTokenMessage.
   ///
   /// In en, this message translates to:
-  /// **'These approved agents were skipped because no local client token was saved. Add the token on the agent screen to include their data.'**
+  /// **'These approved branches were skipped because no local client token was saved. Add the token in branch management to include their data.'**
   String get dashboardMissingClientTokenMessage;
 
   /// No description provided for @overviewResumoUnknownPaymentMethod.
@@ -360,61 +360,61 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardSetupRequiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'None of the approved agents has a client token saved on this device. Open agent management to save the token and enable overview queries.'**
+  /// **'None of the approved branches has a client token saved on this device. Open branch management to save the token and enable overview queries.'**
   String get dashboardSetupRequiredMessage;
 
   /// No description provided for @dashboardViewAffectedAgentsList.
   ///
   /// In en, this message translates to:
-  /// **'View list ({count})'**
+  /// **'View branches ({count})'**
   String dashboardViewAffectedAgentsList(int count);
 
   /// No description provided for @dashboardAffectedAgentsSheetTitlePartialFailure.
   ///
   /// In en, this message translates to:
-  /// **'Agents that did not return data'**
+  /// **'Branches that did not return data'**
   String get dashboardAffectedAgentsSheetTitlePartialFailure;
 
   /// No description provided for @dashboardAffectedAgentsSheetTitleMissingToken.
   ///
   /// In en, this message translates to:
-  /// **'Agents without a saved client token'**
+  /// **'Branches without a saved client token'**
   String get dashboardAffectedAgentsSheetTitleMissingToken;
 
   /// No description provided for @dashboardAffectedAgentsSheetTitleSetupRequired.
   ///
   /// In en, this message translates to:
-  /// **'Approved agents without a client token on this device'**
+  /// **'Approved branches without a client token on this device'**
   String get dashboardAffectedAgentsSheetTitleSetupRequired;
 
   /// No description provided for @dashboardAgentsOfflineTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agents currently offline'**
+  /// **'Branches currently offline'**
   String get dashboardAgentsOfflineTitle;
 
   /// No description provided for @dashboardAgentsOfflineMessage.
   ///
   /// In en, this message translates to:
-  /// **'These approved agents have a saved token but the hub reports them as disconnected. Ask the agent operator to reconnect them, then retry.'**
+  /// **'These approved branches have a saved token but the hub reports them as disconnected. Ask the operator to reconnect them, then retry.'**
   String get dashboardAgentsOfflineMessage;
 
   /// No description provided for @dashboardAffectedAgentsSheetTitleOffline.
   ///
   /// In en, this message translates to:
-  /// **'Agents reported offline by the hub'**
+  /// **'Branches reported offline by the hub'**
   String get dashboardAffectedAgentsSheetTitleOffline;
 
   /// No description provided for @dashboardMultiAgentAggregationTitle.
   ///
   /// In en, this message translates to:
-  /// **'Multiple agents'**
+  /// **'Multiple branches'**
   String get dashboardMultiAgentAggregationTitle;
 
   /// No description provided for @dashboardMultiAgentAggregationMessage.
   ///
   /// In en, this message translates to:
-  /// **'This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.'**
+  /// **'This summary merges data from several approved branches. If their databases overlap, totals may be higher than a single source.'**
   String get dashboardMultiAgentAggregationMessage;
 
   /// No description provided for @overviewHomeAlertErrorDetailsButton.
@@ -480,7 +480,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewHomeAlertDetailsAgentSemanticSummary.
   ///
   /// In en, this message translates to:
-  /// **'{agentName}, agent id {agentId}. {sourceLabel}. {userMessage}.'**
+  /// **'{agentName}, branch id {agentId}. {sourceLabel}. {userMessage}.'**
   String overviewHomeAlertDetailsAgentSemanticSummary(
     String agentName,
     String agentId,
@@ -551,13 +551,13 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardHomeFiltersAgentsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Agents'**
+  /// **'Branches'**
   String get dashboardHomeFiltersAgentsLabel;
 
   /// No description provided for @dashboardHomeFiltersAgentsEmptyHint.
   ///
   /// In en, this message translates to:
-  /// **'Load the overview to list agents.'**
+  /// **'Load the overview to list branches.'**
   String get dashboardHomeFiltersAgentsEmptyHint;
 
   /// No description provided for @dashboardHomeFiltersBranchesLabel.
@@ -623,7 +623,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewAgentFilterAllAgentsSummary.
   ///
   /// In en, this message translates to:
-  /// **'All agents ({count})'**
+  /// **'All branches ({count})'**
   String overviewAgentFilterAllAgentsSummary(int count);
 
   /// No description provided for @overviewHomeBranchFilterAllBranchesSummary.
@@ -635,7 +635,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewAgentFilterSelectedCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} agents selected'**
+  /// **'{count} branches selected'**
   String overviewAgentFilterSelectedCount(int count);
 
   /// No description provided for @overviewHomeBranchFilterSelectedCount.
@@ -647,7 +647,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewAgentFilterRefineAction.
   ///
   /// In en, this message translates to:
-  /// **'Refine selection'**
+  /// **'Refine branches'**
   String get overviewAgentFilterRefineAction;
 
   /// No description provided for @overviewAgentFilterEditAction.
@@ -659,13 +659,13 @@ abstract class AppLocalizations {
   /// No description provided for @overviewAgentFilterSheetTitle.
   ///
   /// In en, this message translates to:
-  /// **'Select agents'**
+  /// **'Select branches'**
   String get overviewAgentFilterSheetTitle;
 
   /// No description provided for @overviewAgentFilterSheetSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search agents…'**
+  /// **'Search branches…'**
   String get overviewAgentFilterSheetSearchHint;
 
   /// No description provided for @overviewHomeBranchFilterSheetTitle.
@@ -782,7 +782,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewAgentFilterNoSearchResults.
   ///
   /// In en, this message translates to:
-  /// **'No agents match your search.'**
+  /// **'No branches match your search.'**
   String get overviewAgentFilterNoSearchResults;
 
   /// No description provided for @overviewHomeBranchFilterNoSearchResults.
@@ -794,7 +794,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewAgentFilterMissingClientTokenBanner.
   ///
   /// In en, this message translates to:
-  /// **'Agents without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.'**
+  /// **'Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.'**
   String get overviewAgentFilterMissingClientTokenBanner;
 
   /// No description provided for @overviewHomeBranchFilterMissingClientTokenBanner.
@@ -806,7 +806,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewAgentFilterMissingClientTokenRowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'No client token on this device — SQL queries are skipped.'**
+  /// **'No client token on this device for this branch — SQL queries are skipped.'**
   String get overviewAgentFilterMissingClientTokenRowSubtitle;
 
   /// No description provided for @chartCategoryDonutEmptyForFilter.
@@ -818,13 +818,13 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardAgentRankingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Ranking by agent'**
+  /// **'Ranking by branch'**
   String get dashboardAgentRankingTitle;
 
   /// No description provided for @dashboardAgentRankingSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Total revenue by agent in the period.'**
+  /// **'Total revenue by branch in the period.'**
   String get dashboardAgentRankingSubtitle;
 
   /// No description provided for @dashboardUserRankingTitle.
@@ -842,7 +842,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewAgentRankingEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No agent revenue in this period.'**
+  /// **'No branch revenue in this period.'**
   String get overviewAgentRankingEmpty;
 
   /// No description provided for @overviewUserRankingEmpty.
@@ -860,13 +860,13 @@ abstract class AppLocalizations {
   /// No description provided for @overviewTopProductsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Per agent (not merged across databases). Up to {count} products.'**
+  /// **'Per branch (not merged across databases). Up to {count} products.'**
   String overviewTopProductsSubtitle(int count);
 
   /// No description provided for @overviewTopProductsNoEligibleAgents.
   ///
   /// In en, this message translates to:
-  /// **'No agents available for this chart. Save a client token on the agent or adjust the filter.'**
+  /// **'No branches available for this chart. Save a client token on the branch or adjust the filter.'**
   String get overviewTopProductsNoEligibleAgents;
 
   /// No description provided for @overviewTopProductsInvalidPeriod.
@@ -878,7 +878,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewTopProductsEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No product sales in this period for this agent.'**
+  /// **'No product sales in this period for this branch.'**
   String get overviewTopProductsEmpty;
 
   /// No description provided for @overviewTopProductsLoadFailed.
@@ -920,8 +920,14 @@ abstract class AppLocalizations {
   /// No description provided for @overviewHomeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Consolidated summary of approved agents (all connected branches).'**
+  /// **'Consolidated summary of approved branches (connected to the hub).'**
   String get overviewHomeSubtitle;
+
+  /// No description provided for @overviewHomeManageBranchesAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch management'**
+  String get overviewHomeManageBranchesAction;
 
   /// No description provided for @overviewHomeAlertsSectionTitle.
   ///
@@ -1564,7 +1570,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewNoApprovedAgentsUserMessage.
   ///
   /// In en, this message translates to:
-  /// **'No approved agent is available to load the overview.'**
+  /// **'No approved branch is available to load the overview.'**
   String get overviewNoApprovedAgentsUserMessage;
 
   /// No description provided for @overviewLoadFailedUserMessage.
@@ -3457,13 +3463,13 @@ abstract class AppLocalizations {
   /// No description provided for @overviewLucratividadeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Profitability by agent'**
+  /// **'Profitability by branch'**
   String get overviewLucratividadeTitle;
 
   /// No description provided for @overviewLucratividadeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Revenue, cost and margin for the selected period, per agent (all branches combined).'**
+  /// **'Revenue, cost and margin for the selected period (all branches in scope combined).'**
   String get overviewLucratividadeSubtitle;
 
   /// No description provided for @overviewLucratividadeSwitchProfit.
@@ -3649,7 +3655,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewLucratividadeMultiAgentHint.
   ///
   /// In en, this message translates to:
-  /// **'No approved agents are available to load profitability. Add or connect an agent first.'**
+  /// **'No approved branches are available to load profitability. Add or connect a branch first.'**
   String get overviewLucratividadeMultiAgentHint;
 
   /// No description provided for @overviewLoadingLucratividadeSemantics.
@@ -3667,7 +3673,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewLucratividadeMensalSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Revenue, replacement cost and margin per month (selected agent).'**
+  /// **'Revenue, replacement cost and margin per month (selected branch).'**
   String get overviewLucratividadeMensalSubtitle;
 
   /// No description provided for @overviewLucratividadeMensalEmpty.
@@ -3679,7 +3685,7 @@ abstract class AppLocalizations {
   /// No description provided for @overviewLucratividadeMensalMultiAgentHint.
   ///
   /// In en, this message translates to:
-  /// **'Select a single agent to view monthly profitability.'**
+  /// **'Select a single branch to view monthly profitability.'**
   String get overviewLucratividadeMensalMultiAgentHint;
 
   /// No description provided for @overviewLucratividadeMensalSwitchProfit.

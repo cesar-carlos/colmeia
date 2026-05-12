@@ -42,27 +42,27 @@
   "userPermissionViewPurchases": "Purchases (module access)",
   "userPermissionViewInventory": "Inventory (module access)",
   "dashboardPartialAgentQueriesTitle": "Incomplete overview data",
-  "dashboardPartialAgentQueriesMessage": "Some approved agents did not return data. Totals may be incomplete.",
-  "dashboardMissingClientTokenTitle": "Agents without a saved client token",
-  "dashboardMissingClientTokenMessage": "These approved agents were skipped because no local client token was saved. Add the token on the agent screen to include their data.",
+  "dashboardPartialAgentQueriesMessage": "Some approved branches did not return data. Totals may be incomplete.",
+  "dashboardMissingClientTokenTitle": "Branches without a saved client token",
+  "dashboardMissingClientTokenMessage": "These approved branches were skipped because no local client token was saved. Add the token in branch management to include their data.",
   "overviewResumoUnknownPaymentMethod": "Payment method not specified",
   "overviewResumoUnknownUserName": "User not specified",
   "dashboardSetupRequiredTitle": "Save a client token to load data",
-  "dashboardSetupRequiredMessage": "None of the approved agents has a client token saved on this device. Open agent management to save the token and enable overview queries.",
-  "dashboardViewAffectedAgentsList": "View list ({count})",
+  "dashboardSetupRequiredMessage": "None of the approved branches has a client token saved on this device. Open branch management to save the token and enable overview queries.",
+  "dashboardViewAffectedAgentsList": "View branches ({count})",
   "@dashboardViewAffectedAgentsList": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "dashboardAffectedAgentsSheetTitlePartialFailure": "Agents that did not return data",
-  "dashboardAffectedAgentsSheetTitleMissingToken": "Agents without a saved client token",
-  "dashboardAffectedAgentsSheetTitleSetupRequired": "Approved agents without a client token on this device",
-  "dashboardAgentsOfflineTitle": "Agents currently offline",
-  "dashboardAgentsOfflineMessage": "These approved agents have a saved token but the hub reports them as disconnected. Ask the agent operator to reconnect them, then retry.",
-  "dashboardAffectedAgentsSheetTitleOffline": "Agents reported offline by the hub",
-  "dashboardMultiAgentAggregationTitle": "Multiple agents",
-  "dashboardMultiAgentAggregationMessage": "This summary merges data from several approved agents. If their databases overlap, totals may be higher than a single source.",
+  "dashboardAffectedAgentsSheetTitlePartialFailure": "Branches that did not return data",
+  "dashboardAffectedAgentsSheetTitleMissingToken": "Branches without a saved client token",
+  "dashboardAffectedAgentsSheetTitleSetupRequired": "Approved branches without a client token on this device",
+  "dashboardAgentsOfflineTitle": "Branches currently offline",
+  "dashboardAgentsOfflineMessage": "These approved branches have a saved token but the hub reports them as disconnected. Ask the operator to reconnect them, then retry.",
+  "dashboardAffectedAgentsSheetTitleOffline": "Branches reported offline by the hub",
+  "dashboardMultiAgentAggregationTitle": "Multiple branches",
+  "dashboardMultiAgentAggregationMessage": "This summary merges data from several approved branches. If their databases overlap, totals may be higher than a single source.",
   "overviewHomeAlertErrorDetailsButton": "Error details",
   "overviewHomeAlertDetailsCopiedSnackbar": "Copied to clipboard",
   "overviewHomeAlertFailureSourcePaymentResumo": "Payment summary query",
@@ -73,7 +73,7 @@
   "overviewHomeAlertDetailsStaleIntro": "These figures come from the last successful overview stored on this device.\n\n",
   "overviewHomeAlertErrorDetailsSemanticsLabel": "Opens a sheet with the full diagnostic text. You can select and copy it.",
   "overviewHomeAlertDetailsCopySemanticsLabel": "Copy diagnostic text to the clipboard",
-  "overviewHomeAlertDetailsAgentSemanticSummary": "{agentName}, agent id {agentId}. {sourceLabel}. {userMessage}.",
+  "overviewHomeAlertDetailsAgentSemanticSummary": "{agentName}, branch id {agentId}. {sourceLabel}. {userMessage}.",
   "@overviewHomeAlertDetailsAgentSemanticSummary": {
     "placeholders": {
       "agentName": {"type": "String"},
@@ -92,8 +92,8 @@
   "dashboardPaymentSummaryTooltipParticipationAbbr": "Share of total revenue (percent)",
   "dashboardPaymentSummaryHeaderSales": "SALES",
   "dashboardPaymentSummaryHeaderAvgTicket": "AVG.\nTICKET",
-  "dashboardHomeFiltersAgentsLabel": "Agents",
-  "dashboardHomeFiltersAgentsEmptyHint": "Load the overview to list agents.",
+  "dashboardHomeFiltersAgentsLabel": "Branches",
+  "dashboardHomeFiltersAgentsEmptyHint": "Load the overview to list branches.",
   "dashboardHomeFiltersBranchesLabel": "BRANCHES",
   "dashboardHomeFiltersBranchesEmptyHint": "Load the overview to list branches.",
   "dashboardHomeFiltersYearMonthLabel": "YEAR / MONTH",
@@ -114,7 +114,7 @@
     }
   },
   "overviewPeriodTagCustomRangePrefix": "Period",
-  "overviewAgentFilterAllAgentsSummary": "All agents ({count})",
+  "overviewAgentFilterAllAgentsSummary": "All branches ({count})",
   "@overviewAgentFilterAllAgentsSummary": {
     "placeholders": {
       "count": {"type": "int"}
@@ -126,7 +126,7 @@
       "count": {"type": "int"}
     }
   },
-  "overviewAgentFilterSelectedCount": "{count} agents selected",
+  "overviewAgentFilterSelectedCount": "{count} branches selected",
   "@overviewAgentFilterSelectedCount": {
     "placeholders": {
       "count": {"type": "int"}
@@ -138,10 +138,10 @@
       "count": {"type": "int"}
     }
   },
-  "overviewAgentFilterRefineAction": "Refine selection",
+  "overviewAgentFilterRefineAction": "Refine branches",
   "overviewAgentFilterEditAction": "Edit",
-  "overviewAgentFilterSheetTitle": "Select agents",
-  "overviewAgentFilterSheetSearchHint": "Search agents…",
+  "overviewAgentFilterSheetTitle": "Select branches",
+  "overviewAgentFilterSheetSearchHint": "Search branches…",
   "overviewHomeBranchFilterSheetTitle": "Select branches",
   "overviewHomeBranchFilterSheetSearchHint": "Search branches…",
   "overviewHomeBranchFilterSelectAll": "Select all",
@@ -166,28 +166,28 @@
   "overviewHomeBranchFilterMissingClientTokenRowSubtitle": "No client token on this device for this branch — SQL queries are skipped.",
   "overviewAgentFilterApply": "Apply",
   "overviewAgentFilterCancel": "Cancel",
-  "overviewAgentFilterNoSearchResults": "No agents match your search.",
+  "overviewAgentFilterNoSearchResults": "No branches match your search.",
   "overviewHomeBranchFilterNoSearchResults": "No branches match your search.",
-  "overviewAgentFilterMissingClientTokenBanner": "Agents without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.",
+  "overviewAgentFilterMissingClientTokenBanner": "Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.",
   "overviewHomeBranchFilterMissingClientTokenBanner": "Branches without a client token on this device cannot run SQL queries. “Online” only reflects hub connectivity.",
-  "overviewAgentFilterMissingClientTokenRowSubtitle": "No client token on this device — SQL queries are skipped.",
+  "overviewAgentFilterMissingClientTokenRowSubtitle": "No client token on this device for this branch — SQL queries are skipped.",
   "chartCategoryDonutEmptyForFilter": "No category data for this view.",
-  "dashboardAgentRankingTitle": "Ranking by agent",
-  "dashboardAgentRankingSubtitle": "Total revenue by agent in the period.",
+  "dashboardAgentRankingTitle": "Ranking by branch",
+  "dashboardAgentRankingSubtitle": "Total revenue by branch in the period.",
   "dashboardUserRankingTitle": "Ranking by operator",
   "dashboardUserRankingSubtitle": "Revenue by operator in the period.",
-  "overviewAgentRankingEmpty": "No agent revenue in this period.",
+  "overviewAgentRankingEmpty": "No branch revenue in this period.",
   "overviewUserRankingEmpty": "No operator revenue in this period.",
   "overviewTopProductsTitle": "Top products by sales",
-  "overviewTopProductsSubtitle": "Per agent (not merged across databases). Up to {count} products.",
+  "overviewTopProductsSubtitle": "Per branch (not merged across databases). Up to {count} products.",
   "@overviewTopProductsSubtitle": {
     "placeholders": {
       "count": {"type": "int"}
     }
   },
-  "overviewTopProductsNoEligibleAgents": "No agents available for this chart. Save a client token on the agent or adjust the filter.",
+  "overviewTopProductsNoEligibleAgents": "No branches available for this chart. Save a client token on the branch or adjust the filter.",
   "overviewTopProductsInvalidPeriod": "The selected period is not valid for this chart.",
-  "overviewTopProductsEmpty": "No product sales in this period for this agent.",
+  "overviewTopProductsEmpty": "No product sales in this period for this branch.",
   "overviewTopProductsLoadFailed": "Could not load this chart. Try again later.",
   "overviewTopProductsLoadingSemantics": "Loading top products chart…",
   "overviewTopProductsTooltipLine": "{sales} sales · {items} items · {revenue} revenue · {cost} cost · {margin}% margin",
@@ -207,7 +207,8 @@
       "name": {"type": "String"}
     }
   },
-  "overviewHomeSubtitle": "Consolidated summary of approved agents (all connected branches).",
+  "overviewHomeSubtitle": "Consolidated summary of approved branches (connected to the hub).",
+  "overviewHomeManageBranchesAction": "Branch management",
   "overviewHomeAlertsSectionTitle": "Notices",
   "overviewLoadErrorTitle": "Unable to load the overview",
   "overviewStaleCacheTitle": "Data saved on this device",
@@ -454,7 +455,7 @@
       "value": {"type": "String"}
     }
   },
-  "overviewNoApprovedAgentsUserMessage": "No approved agent is available to load the overview.",
+  "overviewNoApprovedAgentsUserMessage": "No approved branch is available to load the overview.",
   "overviewLoadFailedUserMessage": "Unable to load the overview.",
   "clientAgentsDataSourcesEyebrow": "Data sources",
   "clientAgentsPageTitle": "Agent management",
@@ -1016,8 +1017,8 @@
   "datePickerSheetApply": "Apply",
   "datePickerSemanticsFallbackLabel": "Date",
   "dateRangePickerSemanticsFallbackLabel": "Period",
-  "overviewLucratividadeTitle": "Profitability by agent",
-  "overviewLucratividadeSubtitle": "Revenue, cost and margin for the selected period, per agent (all branches combined).",
+  "overviewLucratividadeTitle": "Profitability by branch",
+  "overviewLucratividadeSubtitle": "Revenue, cost and margin for the selected period (all branches in scope combined).",
   "overviewLucratividadeSwitchProfit": "Profit",
   "overviewLucratividadeSwitchRevenue": "Revenue",
   "overviewLucratividadeSwitchCost": "Cost",
@@ -1048,12 +1049,12 @@
   "overviewLucratividadeCostSeriesLabel": "Replacement cost",
   "overviewLucratividadeMarginSeriesLabel": "Margin %",
   "overviewLucratividadeEmpty": "No profitability data for this period.",
-  "overviewLucratividadeMultiAgentHint": "No approved agents are available to load profitability. Add or connect an agent first.",
+  "overviewLucratividadeMultiAgentHint": "No approved branches are available to load profitability. Add or connect a branch first.",
   "overviewLoadingLucratividadeSemantics": "Loading profitability by branch chart…",
   "overviewLucratividadeMensalTitle": "Monthly product profitability",
-  "overviewLucratividadeMensalSubtitle": "Revenue, replacement cost and margin per month (selected agent).",
+  "overviewLucratividadeMensalSubtitle": "Revenue, replacement cost and margin per month (selected branch).",
   "overviewLucratividadeMensalEmpty": "No profitability data for this period.",
-  "overviewLucratividadeMensalMultiAgentHint": "Select a single agent to view monthly profitability.",
+  "overviewLucratividadeMensalMultiAgentHint": "Select a single branch to view monthly profitability.",
   "overviewLucratividadeMensalSwitchProfit": "Profit",
   "overviewLucratividadeMensalSwitchRevenue": "Revenue",
   "overviewLucratividadeMensalSwitchCost": "Cost",

@@ -128,15 +128,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardPartialAgentQueriesMessage =>
-      'Alguns agentes aprovados não retornaram dados. Os totais podem estar incompletos.';
+      'Algumas filiais aprovadas não retornaram dados. Os totais podem estar incompletos.';
 
   @override
   String get dashboardMissingClientTokenTitle =>
-      'Agentes sem token de cliente salvo';
+      'Filiais sem token de cliente salvo';
 
   @override
   String get dashboardMissingClientTokenMessage =>
-      'Estes agentes aprovados foram ignorados porque não há token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
+      'Estas filiais aprovadas foram ignoradas porque não há token de cliente local. Cadastre o token na gestão de filiais para incluir os dados.';
 
   @override
   String get overviewResumoUnknownPaymentMethod =>
@@ -151,42 +151,42 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardSetupRequiredMessage =>
-      'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.';
+      'Nenhuma filial aprovada possui token de cliente salvo neste dispositivo. Abra a gestão de filiais para cadastrar o token e liberar a consulta da visão geral.';
 
   @override
   String dashboardViewAffectedAgentsList(int count) {
-    return 'Ver lista ($count)';
+    return 'Ver filiais ($count)';
   }
 
   @override
   String get dashboardAffectedAgentsSheetTitlePartialFailure =>
-      'Agentes que nao retornaram dados';
+      'Filiais que nao retornaram dados';
 
   @override
   String get dashboardAffectedAgentsSheetTitleMissingToken =>
-      'Agentes sem token de cliente salvo';
+      'Filiais sem token de cliente salvo';
 
   @override
   String get dashboardAffectedAgentsSheetTitleSetupRequired =>
-      'Agentes aprovados sem token de cliente neste dispositivo';
+      'Filiais aprovadas sem token de cliente neste dispositivo';
 
   @override
-  String get dashboardAgentsOfflineTitle => 'Agentes offline no momento';
+  String get dashboardAgentsOfflineTitle => 'Filiais offline no momento';
 
   @override
   String get dashboardAgentsOfflineMessage =>
-      'Estes agentes aprovados têm um token salvo, mas o hub os reporta como desconectados. Peça ao operador para reconectá-los e tente novamente.';
+      'Estas filiais aprovadas têm um token salvo, mas o hub as reporta como desconectadas. Peça ao operador para reconectá-las e tente novamente.';
 
   @override
   String get dashboardAffectedAgentsSheetTitleOffline =>
-      'Agentes reportados como offline pelo hub';
+      'Filiais reportadas como offline pelo hub';
 
   @override
-  String get dashboardMultiAgentAggregationTitle => 'Varios agentes';
+  String get dashboardMultiAgentAggregationTitle => 'Varias filiais';
 
   @override
   String get dashboardMultiAgentAggregationMessage =>
-      'Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
+      'Este resumo agrega dados de varias filiais aprovadas. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
 
   @override
   String get overviewHomeAlertErrorDetailsButton => 'Detalhes do erro';
@@ -232,7 +232,7 @@ class AppLocalizationsPt extends AppLocalizations {
     String sourceLabel,
     String userMessage,
   ) {
-    return '$agentName, identificador do agente $agentId. $sourceLabel. $userMessage.';
+    return '$agentName, identificador da filial $agentId. $sourceLabel. $userMessage.';
   }
 
   @override
@@ -270,11 +270,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dashboardPaymentSummaryHeaderAvgTicket => 'TICKET\nMEDIO';
 
   @override
-  String get dashboardHomeFiltersAgentsLabel => 'AGENTES';
+  String get dashboardHomeFiltersAgentsLabel => 'FILIAIS';
 
   @override
   String get dashboardHomeFiltersAgentsEmptyHint =>
-      'Carregue a visao geral para listar os agentes.';
+      'Carregue a visao geral para listar as filiais.';
 
   @override
   String get dashboardHomeFiltersBranchesLabel => 'FILIAIS';
@@ -314,7 +314,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String overviewAgentFilterAllAgentsSummary(int count) {
-    return 'Todos os agentes ($count)';
+    return 'Todas as filiais ($count)';
   }
 
   @override
@@ -324,7 +324,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String overviewAgentFilterSelectedCount(int count) {
-    return '$count agentes selecionados';
+    return '$count filiais selecionadas';
   }
 
   @override
@@ -333,16 +333,16 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get overviewAgentFilterRefineAction => 'Refinar seleção';
+  String get overviewAgentFilterRefineAction => 'Refinar filiais';
 
   @override
   String get overviewAgentFilterEditAction => 'Editar';
 
   @override
-  String get overviewAgentFilterSheetTitle => 'Selecionar agentes';
+  String get overviewAgentFilterSheetTitle => 'Selecionar filiais';
 
   @override
-  String get overviewAgentFilterSheetSearchHint => 'Buscar agentes…';
+  String get overviewAgentFilterSheetSearchHint => 'Buscar filiais…';
 
   @override
   String get overviewHomeBranchFilterSheetTitle => 'Selecionar filiais';
@@ -412,7 +412,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewAgentFilterNoSearchResults =>
-      'Nenhum agente corresponde à busca.';
+      'Nenhuma filial corresponde à busca.';
 
   @override
   String get overviewHomeBranchFilterNoSearchResults =>
@@ -420,7 +420,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewAgentFilterMissingClientTokenBanner =>
-      'Agentes sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
+      'Filiais sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
 
   @override
   String get overviewHomeBranchFilterMissingClientTokenBanner =>
@@ -428,18 +428,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewAgentFilterMissingClientTokenRowSubtitle =>
-      'Sem token neste dispositivo — consultas SQL são ignoradas.';
+      'Sem token neste dispositivo para esta filial — consultas SQL são ignoradas.';
 
   @override
   String get chartCategoryDonutEmptyForFilter =>
       'Sem dados de categorias para este recorte.';
 
   @override
-  String get dashboardAgentRankingTitle => 'Ranking por agente';
+  String get dashboardAgentRankingTitle => 'Ranking por filial';
 
   @override
   String get dashboardAgentRankingSubtitle =>
-      'Faturamento total por agente no periodo.';
+      'Faturamento total por filial no periodo.';
 
   @override
   String get dashboardUserRankingTitle => 'Ranking por operador';
@@ -450,7 +450,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewAgentRankingEmpty =>
-      'Sem faturamento por agente neste período.';
+      'Sem faturamento por filial neste período.';
 
   @override
   String get overviewUserRankingEmpty =>
@@ -461,12 +461,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String overviewTopProductsSubtitle(int count) {
-    return 'Por agente (sem unir cadastros). Até $count produtos.';
+    return 'Por filial (sem unir cadastros). Até $count produtos.';
   }
 
   @override
   String get overviewTopProductsNoEligibleAgents =>
-      'Nenhum agente disponível para este gráfico. Salve o token no agente ou ajuste o filtro.';
+      'Nenhuma filial disponível para este gráfico. Salve o token na filial ou ajuste o filtro.';
 
   @override
   String get overviewTopProductsInvalidPeriod =>
@@ -474,7 +474,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewTopProductsEmpty =>
-      'Sem vendas de produto neste período para este agente.';
+      'Sem vendas de produto neste período para esta filial.';
 
   @override
   String get overviewTopProductsLoadFailed =>
@@ -505,7 +505,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewHomeSubtitle =>
-      'Resumo consolidado dos agentes aprovados (todas as filiais conectadas).';
+      'Resumo consolidado das filiais aprovadas (ligadas ao hub).';
+
+  @override
+  String get overviewHomeManageBranchesAction => 'Gestão de filiais';
 
   @override
   String get overviewHomeAlertsSectionTitle => 'Avisos';
@@ -926,7 +929,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewNoApprovedAgentsUserMessage =>
-      'Nenhum agente aprovado esta disponivel para carregar a visao geral.';
+      'Nenhuma filial aprovada esta disponivel para carregar a visao geral.';
 
   @override
   String get overviewLoadFailedUserMessage =>
@@ -2122,11 +2125,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
 
   @override
-  String get overviewLucratividadeTitle => 'Lucratividade por agente';
+  String get overviewLucratividadeTitle => 'Lucratividade por filial';
 
   @override
   String get overviewLucratividadeSubtitle =>
-      'Receita, custo e margem no periodo selecionado, por agente (todas as filiais somadas).';
+      'Receita, custo e margem no periodo selecionado (todas as filiais no escopo somadas).';
 
   @override
   String get overviewLucratividadeSwitchProfit => 'Lucro';
@@ -2237,7 +2240,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMultiAgentHint =>
-      'Nenhum agente aprovado esta disponivel para carregar a lucratividade. Adicione ou conecte um agente primeiro.';
+      'Nenhuma filial aprovada esta disponivel para carregar a lucratividade. Adicione ou conecte uma filial primeiro.';
 
   @override
   String get overviewLoadingLucratividadeSemantics =>
@@ -2249,7 +2252,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMensalSubtitle =>
-      'Receita, custo de reposicao e margem por mes (agente selecionado).';
+      'Receita, custo de reposicao e margem por mes (filial selecionada).';
 
   @override
   String get overviewLucratividadeMensalEmpty =>
@@ -2257,7 +2260,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMensalMultiAgentHint =>
-      'Selecione um unico agente para visualizar a lucratividade mensal.';
+      'Selecione uma unica filial para visualizar a lucratividade mensal.';
 
   @override
   String get overviewLucratividadeMensalSwitchProfit => 'Lucro';
@@ -3416,15 +3419,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardPartialAgentQueriesMessage =>
-      'Alguns agentes aprovados não retornaram dados. Os totais podem estar incompletos.';
+      'Algumas filiais aprovadas não retornaram dados. Os totais podem estar incompletos.';
 
   @override
   String get dashboardMissingClientTokenTitle =>
-      'Agentes sem token de cliente salvo';
+      'Filiais sem token de cliente salvo';
 
   @override
   String get dashboardMissingClientTokenMessage =>
-      'Estes agentes aprovados foram ignorados porque não há token de cliente local. Cadastre o token na tela do agente para incluir os dados.';
+      'Estas filiais aprovadas foram ignoradas porque não há token de cliente local. Cadastre o token na gestão de filiais para incluir os dados.';
 
   @override
   String get overviewResumoUnknownPaymentMethod =>
@@ -3439,42 +3442,42 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardSetupRequiredMessage =>
-      'Nenhum agente com acesso aprovado possui token de cliente salvo neste dispositivo. Abra a gestão de agentes para cadastrar o token e liberar a consulta da visão geral.';
+      'Nenhuma filial aprovada possui token de cliente salvo neste dispositivo. Abra a gestão de filiais para cadastrar o token e liberar a consulta da visão geral.';
 
   @override
   String dashboardViewAffectedAgentsList(int count) {
-    return 'Ver lista ($count)';
+    return 'Ver filiais ($count)';
   }
 
   @override
   String get dashboardAffectedAgentsSheetTitlePartialFailure =>
-      'Agentes que nao retornaram dados';
+      'Filiais que nao retornaram dados';
 
   @override
   String get dashboardAffectedAgentsSheetTitleMissingToken =>
-      'Agentes sem token de cliente salvo';
+      'Filiais sem token de cliente salvo';
 
   @override
   String get dashboardAffectedAgentsSheetTitleSetupRequired =>
-      'Agentes aprovados sem token de cliente neste dispositivo';
+      'Filiais aprovadas sem token de cliente neste dispositivo';
 
   @override
-  String get dashboardAgentsOfflineTitle => 'Agentes offline no momento';
+  String get dashboardAgentsOfflineTitle => 'Filiais offline no momento';
 
   @override
   String get dashboardAgentsOfflineMessage =>
-      'Estes agentes aprovados têm um token salvo, mas o hub os reporta como desconectados. Peça ao operador para reconectá-los e tente novamente.';
+      'Estas filiais aprovadas têm um token salvo, mas o hub as reporta como desconectadas. Peça ao operador para reconectá-las e tente novamente.';
 
   @override
   String get dashboardAffectedAgentsSheetTitleOffline =>
-      'Agentes reportados como offline pelo hub';
+      'Filiais reportadas como offline pelo hub';
 
   @override
-  String get dashboardMultiAgentAggregationTitle => 'Varios agentes';
+  String get dashboardMultiAgentAggregationTitle => 'Varias filiais';
 
   @override
   String get dashboardMultiAgentAggregationMessage =>
-      'Este resumo agrega dados de varios agentes aprovados. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
+      'Este resumo agrega dados de varias filiais aprovadas. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
 
   @override
   String get overviewHomeAlertErrorDetailsButton => 'Detalhes do erro';
@@ -3520,7 +3523,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
     String sourceLabel,
     String userMessage,
   ) {
-    return '$agentName, identificador do agente $agentId. $sourceLabel. $userMessage.';
+    return '$agentName, identificador da filial $agentId. $sourceLabel. $userMessage.';
   }
 
   @override
@@ -3558,11 +3561,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get dashboardPaymentSummaryHeaderAvgTicket => 'TICKET\nMEDIO';
 
   @override
-  String get dashboardHomeFiltersAgentsLabel => 'AGENTES';
+  String get dashboardHomeFiltersAgentsLabel => 'FILIAIS';
 
   @override
   String get dashboardHomeFiltersAgentsEmptyHint =>
-      'Carregue a visao geral para listar os agentes.';
+      'Carregue a visao geral para listar as filiais.';
 
   @override
   String get dashboardHomeFiltersBranchesLabel => 'FILIAIS';
@@ -3602,7 +3605,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String overviewAgentFilterAllAgentsSummary(int count) {
-    return 'Todos os agentes ($count)';
+    return 'Todas as filiais ($count)';
   }
 
   @override
@@ -3612,7 +3615,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String overviewAgentFilterSelectedCount(int count) {
-    return '$count agentes selecionados';
+    return '$count filiais selecionadas';
   }
 
   @override
@@ -3621,16 +3624,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
-  String get overviewAgentFilterRefineAction => 'Refinar seleção';
+  String get overviewAgentFilterRefineAction => 'Refinar filiais';
 
   @override
   String get overviewAgentFilterEditAction => 'Editar';
 
   @override
-  String get overviewAgentFilterSheetTitle => 'Selecionar agentes';
+  String get overviewAgentFilterSheetTitle => 'Selecionar filiais';
 
   @override
-  String get overviewAgentFilterSheetSearchHint => 'Buscar agentes…';
+  String get overviewAgentFilterSheetSearchHint => 'Buscar filiais…';
 
   @override
   String get overviewHomeBranchFilterSheetTitle => 'Selecionar filiais';
@@ -3700,7 +3703,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewAgentFilterNoSearchResults =>
-      'Nenhum agente corresponde à busca.';
+      'Nenhuma filial corresponde à busca.';
 
   @override
   String get overviewHomeBranchFilterNoSearchResults =>
@@ -3708,7 +3711,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewAgentFilterMissingClientTokenBanner =>
-      'Agentes sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
+      'Filiais sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
 
   @override
   String get overviewHomeBranchFilterMissingClientTokenBanner =>
@@ -3716,18 +3719,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewAgentFilterMissingClientTokenRowSubtitle =>
-      'Sem token neste dispositivo — consultas SQL são ignoradas.';
+      'Sem token neste dispositivo para esta filial — consultas SQL são ignoradas.';
 
   @override
   String get chartCategoryDonutEmptyForFilter =>
       'Sem dados de categorias para este recorte.';
 
   @override
-  String get dashboardAgentRankingTitle => 'Ranking por agente';
+  String get dashboardAgentRankingTitle => 'Ranking por filial';
 
   @override
   String get dashboardAgentRankingSubtitle =>
-      'Faturamento total por agente no periodo.';
+      'Faturamento total por filial no periodo.';
 
   @override
   String get dashboardUserRankingTitle => 'Ranking por operador';
@@ -3738,7 +3741,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewAgentRankingEmpty =>
-      'Sem faturamento por agente neste período.';
+      'Sem faturamento por filial neste período.';
 
   @override
   String get overviewUserRankingEmpty =>
@@ -3749,12 +3752,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String overviewTopProductsSubtitle(int count) {
-    return 'Por agente (sem unir cadastros). Até $count produtos.';
+    return 'Por filial (sem unir cadastros). Até $count produtos.';
   }
 
   @override
   String get overviewTopProductsNoEligibleAgents =>
-      'Nenhum agente disponível para este gráfico. Salve o token no agente ou ajuste o filtro.';
+      'Nenhuma filial disponível para este gráfico. Salve o token na filial ou ajuste o filtro.';
 
   @override
   String get overviewTopProductsInvalidPeriod =>
@@ -3762,7 +3765,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewTopProductsEmpty =>
-      'Sem vendas de produto neste período para este agente.';
+      'Sem vendas de produto neste período para esta filial.';
 
   @override
   String get overviewTopProductsLoadFailed =>
@@ -3793,7 +3796,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewHomeSubtitle =>
-      'Resumo consolidado dos agentes aprovados (todas as filiais conectadas).';
+      'Resumo consolidado das filiais aprovadas (ligadas ao hub).';
+
+  @override
+  String get overviewHomeManageBranchesAction => 'Gestão de filiais';
 
   @override
   String get overviewHomeAlertsSectionTitle => 'Avisos';
@@ -4214,7 +4220,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewNoApprovedAgentsUserMessage =>
-      'Nenhum agente aprovado esta disponivel para carregar a visao geral.';
+      'Nenhuma filial aprovada esta disponivel para carregar a visao geral.';
 
   @override
   String get overviewLoadFailedUserMessage =>
@@ -5410,11 +5416,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
 
   @override
-  String get overviewLucratividadeTitle => 'Lucratividade por agente';
+  String get overviewLucratividadeTitle => 'Lucratividade por filial';
 
   @override
   String get overviewLucratividadeSubtitle =>
-      'Receita, custo e margem no periodo selecionado, por agente (todas as filiais somadas).';
+      'Receita, custo e margem no periodo selecionado (todas as filiais no escopo somadas).';
 
   @override
   String get overviewLucratividadeSwitchProfit => 'Lucro';
@@ -5525,7 +5531,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadeMultiAgentHint =>
-      'Nenhum agente aprovado esta disponivel para carregar a lucratividade. Adicione ou conecte um agente primeiro.';
+      'Nenhuma filial aprovada esta disponivel para carregar a lucratividade. Adicione ou conecte uma filial primeiro.';
 
   @override
   String get overviewLoadingLucratividadeSemantics =>
@@ -5537,7 +5543,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadeMensalSubtitle =>
-      'Receita, custo de reposicao e margem por mes (agente selecionado).';
+      'Receita, custo de reposicao e margem por mes (filial selecionada).';
 
   @override
   String get overviewLucratividadeMensalEmpty =>
@@ -5545,7 +5551,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadeMensalMultiAgentHint =>
-      'Selecione um unico agente para visualizar a lucratividade mensal.';
+      'Selecione uma unica filial para visualizar a lucratividade mensal.';
 
   @override
   String get overviewLucratividadeMensalSwitchProfit => 'Lucro';
