@@ -34,6 +34,7 @@ class SyncfusionRegionMapChart<T> extends StatefulWidget {
     this.points = const <AppMapPoint>[],
     this.markerStyle = const AppMapMarkerStyle(),
     this.markerBuilder,
+    this.markerTooltipBuilder,
     this.onPointTap,
   });
 
@@ -70,6 +71,8 @@ class SyncfusionRegionMapChart<T> extends StatefulWidget {
   final AppMapMarkerStyle markerStyle;
   final Widget Function(BuildContext context, AppMapPoint point, int index)?
   markerBuilder;
+  final Widget Function(BuildContext context, AppMapPoint point, int index)?
+  markerTooltipBuilder;
   final ValueChanged<AppMapPointTapEvent>? onPointTap;
 
   @override
@@ -428,6 +431,11 @@ class _SyncfusionRegionMapChartState<T>
                           ? null
                           : (context, index) {
                               final point = widget.points[index];
+                              final tooltipWidget = widget.markerTooltipBuilder
+                                  ?.call(mapBuilderContext, point, index);
+                              if (tooltipWidget != null) {
+                                return tooltipWidget;
+                              }
                               final text = point.tooltip ?? point.label;
                               if (text == null || text.isEmpty) {
                                 return const SizedBox.shrink();

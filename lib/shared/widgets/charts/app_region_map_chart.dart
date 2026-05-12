@@ -201,6 +201,7 @@ class AppRegionMapChart<T> extends StatefulWidget {
     this.points = const <AppMapPoint>[],
     this.markerStyle = const AppMapMarkerStyle(),
     this.markerBuilder,
+    this.markerTooltipBuilder,
     this.onPointTap,
   });
 
@@ -255,6 +256,11 @@ class AppRegionMapChart<T> extends StatefulWidget {
   /// [AppMapMarkerStyle.iconType].
   final Widget Function(BuildContext context, AppMapPoint point, int index)?
   markerBuilder;
+
+  /// Builder for rich marker tooltip content. When null, the engine uses
+  /// [AppMapPoint.tooltip] or [AppMapPoint.label] as plain text.
+  final Widget Function(BuildContext context, AppMapPoint point, int index)?
+  markerTooltipBuilder;
 
   /// Called when the user taps a marker.
   final ValueChanged<AppMapPointTapEvent>? onPointTap;
@@ -323,6 +329,7 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       points: widget.points,
       markerStyle: widget.markerStyle,
       markerBuilder: widget.markerBuilder,
+      markerTooltipBuilder: widget.markerTooltipBuilder,
       onPointTap: widget.onPointTap,
     );
 

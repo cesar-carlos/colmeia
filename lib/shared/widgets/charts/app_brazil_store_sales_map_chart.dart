@@ -154,6 +154,7 @@ class _AppBrazilStoreSalesMapChartState
                 strokeColor: _markerStrokeColor(context),
               ),
               markerBuilder: _buildMarker,
+              markerTooltipBuilder: _buildMarkerTooltip,
               onMetricChanged: _handleMetricChanged,
               onScopeChanged: widget.style.showRegionFilter
                   ? _handleScopeChanged
@@ -685,6 +686,50 @@ class _AppBrazilStoreSalesMapChartState
       metric: _selectedMetric,
       marker: marker,
       onClose: _clearSelectedMarkerDetail,
+    );
+  }
+
+  Widget _buildMarkerTooltip(
+    BuildContext context,
+    AppMapPoint point,
+    int index,
+  ) {
+    if ((point.tooltip == null || point.tooltip!.isEmpty) &&
+        (point.label == null || point.label!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    final payload = point.payload;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxWidth = (screenWidth - 32).clamp(260.0, 360.0);
+
+    final Widget child;
+    if (payload is AppBrazilStoreSalesMarkerGroup) {
+      child = payload.isCluster || payload.isMunicipalityAggregate
+          ? _SelectedMarkerGroupDetailCard(
+              group: payload,
+              metric: _selectedMetric,
+            )
+          : _SelectedMarkerStoreDetailCard(
+              point: payload.primaryPoint,
+              metric: _selectedMetric,
+              showTechnicalLocationDetails: false,
+            );
+    } else if (payload is AppBrazilStoreSalesStateBubble) {
+      child = _StateBubbleTooltipCard(
+        bucket: payload.bucket,
+        metric: _selectedMetric,
+      );
+    } else {
+      final text = point.tooltip ?? point.label;
+      child = text == null || text.isEmpty
+          ? const SizedBox.shrink()
+          : _PlainMapTooltipCard(text: text);
+    }
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: child,
     );
   }
 
@@ -1590,6 +1635,82 @@ class _StoreMapMarker extends StatelessWidget {
   }
 }
 
+class _StateBubbleTooltipCard extends StatelessWidget {
+  const _StateBubbleTooltipCard({
+    required this.bucket,
+    required this.metric,
+  });
+
+  final AppBrazilStoreSalesStateBucket bucket;
+  final AppBrazilStoreSalesMapMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+
+    return _SelectedMarkerDetailSurface(
+      title: bucket.stateName,
+      subtitle: bucket.regionName,
+      icon: Icons.map_outlined,
+      metric: metric,
+      child: Wrap(
+        spacing: tokens.gapSm,
+        runSpacing: tokens.gapSm,
+        children: <Widget>[
+          AppTagChip(
+            label: AppBrFormatters.currency(bucket.salesAmount),
+            icon: Icons.attach_money,
+          ),
+          AppTagChip(
+            label: '${_formatInteger(bucket.salesCount)} vendas',
+            icon: Icons.receipt_long_outlined,
+          ),
+          AppTagChip(
+            label: '${_formatInteger(bucket.storeCount)} filiais',
+            icon: Icons.storefront_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlainMapTooltipCard extends StatelessWidget {
+  const _PlainMapTooltipCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: colorScheme.surface,
+      elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.22),
+      borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.gapMd),
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SelectedStateDetail extends StatelessWidget {
   const _SelectedStateDetail({
     required this.bucket,
@@ -1749,11 +1870,13 @@ class _SelectedMarkerStoreDetailCard extends StatelessWidget {
     required this.point,
     required this.metric,
     this.onClose,
+    this.showTechnicalLocationDetails = true,
   });
 
   final AppBrazilStoreSalesPoint point;
   final AppBrazilStoreSalesMapMetric metric;
   final VoidCallback? onClose;
+  final bool showTechnicalLocationDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -1780,21 +1903,25 @@ class _SelectedMarkerStoreDetailCard extends StatelessWidget {
             icon: Icons.receipt_long_outlined,
           ),
           AppTagChip(label: cityLabel, icon: Icons.place_outlined),
-          if (municipalityCode != null && municipalityCode.isNotEmpty)
+          if (showTechnicalLocationDetails &&
+              municipalityCode != null &&
+              municipalityCode.isNotEmpty)
             AppTagChip(
               label: 'IBGE $municipalityCode',
               icon: Icons.pin_drop_outlined,
             ),
-          AppTagChip(
-            label: _locationResolutionLabel(point.locationResolution),
-            icon: Icons.my_location_outlined,
-          ),
-          AppTagChip(
-            label:
-                '${point.latitude.toStringAsFixed(4)}, '
-                '${point.longitude.toStringAsFixed(4)}',
-            icon: Icons.explore_outlined,
-          ),
+          if (showTechnicalLocationDetails)
+            AppTagChip(
+              label: _locationResolutionLabel(point.locationResolution),
+              icon: Icons.my_location_outlined,
+            ),
+          if (showTechnicalLocationDetails)
+            AppTagChip(
+              label:
+                  '${point.latitude.toStringAsFixed(4)}, '
+                  '${point.longitude.toStringAsFixed(4)}',
+              icon: Icons.explore_outlined,
+            ),
         ],
       ),
     );
