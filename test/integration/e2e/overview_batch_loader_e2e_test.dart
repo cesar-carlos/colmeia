@@ -29,6 +29,8 @@ void main() {
   group(
     'OverviewBatchLoader (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'runs the overview home command set through sql.executeBatch',
         () async {
@@ -43,9 +45,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final countingRepository = _CountingAgentQueriesRepository(
             getIt<AgentQueriesRepository>(),

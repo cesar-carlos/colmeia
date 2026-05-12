@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
@@ -151,6 +153,10 @@ class OverviewBatchLoader {
   static const int overviewBatchMaxRows =
       AgentQueriesBoundedResultMaxRows.resumoParcelasMensal;
 
+  /// Caps concurrent `sql.executeBatch` calls when many agents are selected so
+  /// the client does not stampede bridge / agent queues.
+  static const int overviewBatchMaxConcurrentAgentTargets = 4;
+
   Future<AppResult<OverviewBatchLoadResult>> load({
     required String userId,
     required OverviewFilter filter,
@@ -190,22 +196,22 @@ class OverviewBatchLoader {
     final includeLucratividadeMensal =
         selectedNorm != null && selectedNorm.length == 1;
     final started = DateTime.now();
-    final targetResults = await Future.wait(
-      plan.plannedTargets.map(
-        (target) => _loadForTarget(
-          userId: userId,
-          target: target,
-          planBridgeTimeoutMs: plan.bridgeTimeoutMs,
-          periodStart: periodStart,
-          periodEnd: periodEnd,
-          last12Range: last12Range,
-          mensalFilter: mensalFilter,
-          weekdayFilter: weekdayFilter,
-          dailyTotalFilter: dailyTotalFilter,
-          includeLucratividadeMensal: includeLucratividadeMensal,
-          hubPresenceOnlineAgentIdsSnapshot:
-              resolution.hubPresenceOnlineAgentIdsSnapshot,
-        ),
+    final targetResults = await _loadTargetsWithConcurrencyCap(
+      targets: plan.plannedTargets,
+      maxConcurrent: overviewBatchMaxConcurrentAgentTargets,
+      load: (target) => _loadForTarget(
+        userId: userId,
+        target: target,
+        planBridgeTimeoutMs: plan.bridgeTimeoutMs,
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        last12Range: last12Range,
+        mensalFilter: mensalFilter,
+        weekdayFilter: weekdayFilter,
+        dailyTotalFilter: dailyTotalFilter,
+        includeLucratividadeMensal: includeLucratividadeMensal,
+        hubPresenceOnlineAgentIdsSnapshot:
+            resolution.hubPresenceOnlineAgentIdsSnapshot,
       ),
     );
     final totalElapsedMs = DateTime.now().difference(started).inMilliseconds;
@@ -226,6 +232,29 @@ class OverviewBatchLoader {
         totalElapsedMs: totalElapsedMs,
       ),
     );
+  }
+
+  static Future<List<OverviewBatchTargetResult>>
+  _loadTargetsWithConcurrencyCap({
+    required List<AgentQueryTarget> targets,
+    required int maxConcurrent,
+    required Future<OverviewBatchTargetResult> Function(AgentQueryTarget target)
+    load,
+  }) async {
+    if (targets.isEmpty) {
+      return const <OverviewBatchTargetResult>[];
+    }
+    if (maxConcurrent <= 0 || targets.length <= maxConcurrent) {
+      return Future.wait(targets.map(load));
+    }
+    final out = <OverviewBatchTargetResult>[];
+    for (var i = 0; i < targets.length; i += maxConcurrent) {
+      final end = min(i + maxConcurrent, targets.length);
+      out.addAll(
+        await Future.wait(targets.sublist(i, end).map(load)),
+      );
+    }
+    return out;
   }
 
   Future<OverviewBatchTargetResult> _loadForTarget({

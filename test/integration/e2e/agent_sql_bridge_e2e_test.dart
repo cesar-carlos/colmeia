@@ -18,6 +18,8 @@ void main() {
   group(
     'Agent SQL bridge (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'executeSql loads Cliente with page pagination',
         () async {
@@ -35,8 +37,6 @@ void main() {
             return;
           }
 
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
           expect(AppEnvironment.apiBaseUrl, isNotEmpty);
 
           final repo = getIt<AgentQueriesRepository>();
@@ -100,9 +100,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repo = getIt<AgentQueriesRepository>();
           final result = await runE2eAppResult(

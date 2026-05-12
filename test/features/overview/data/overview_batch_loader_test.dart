@@ -336,6 +336,66 @@ void main() {
       },
     );
 
+    test(
+      'limits concurrent executeSqlBatch calls across many agent targets',
+      () async {
+        final targets = List<AgentQueryTarget>.generate(
+          6,
+          (i) => _agentTarget('agent-${i + 1}', token: 'token-${i + 1}'),
+        );
+        _stubResolution(
+          targetResolver,
+          AgentQueryTargetResolution(
+            consideredApprovedTargets: targets,
+            missingClientTokenTargets: const <AgentQueryTarget>[],
+            consideredApprovedAgentCount: 6,
+            selectedAgentIds: <String>{
+              for (var i = 0; i < 6; i++) 'agent-${i + 1}',
+            },
+          ),
+        );
+        var active = 0;
+        var maxActive = 0;
+        when(
+          () => agentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer((_) async {
+          active++;
+          if (active > maxActive) {
+            maxActive = active;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 40));
+          active--;
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(commandCount: 6),
+          );
+        });
+
+        await loader.load(
+          userId: 'user-1',
+          filter: OverviewFilter(
+            selectedAgentIds: <String>{
+              for (var i = 0; i < 6; i++) 'agent-${i + 1}',
+            },
+          ),
+          periodStart: DateTime(2026, 4),
+          periodEnd: DateTime(2026, 4, 30),
+          last12Range: (
+            dataVendaInicio: DateTime(2025, 5),
+            dataVendaFim: DateTime(2026, 4, 30),
+          ),
+          mensalFilter: _mensalFilter(),
+          weekdayFilter: _weekdayFilter(),
+          dailyTotalFilter: _dailyFilter(),
+          executionStrategy: AgentQueryExecutionStrategy.mergeAll,
+        );
+
+        check(maxActive).isLessOrEqual(
+          OverviewBatchLoader.overviewBatchMaxConcurrentAgentTargets,
+        );
+        check(maxActive).isGreaterOrEqual(2);
+      },
+    );
+
     test('returns resolver failure without executing batch', () async {
       when(
         () => targetResolver.resolve(

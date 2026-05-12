@@ -15,6 +15,8 @@ void main() {
   group(
     'GrupoProdutoOptionsRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'loadAll executes the real GrupoProduto options query',
         () async {
@@ -23,8 +25,6 @@ void main() {
           )) {
             return;
           }
-
-          await setupE2eDependenciesWithTearDown();
 
           final repository = getIt<GrupoProdutoOptionsRepository>();
 
@@ -63,8 +63,6 @@ void main() {
             return;
           }
 
-          await setupE2eDependenciesWithTearDown();
-
           final useCase = getIt<LoadGrupoProdutoOptionsUseCase>();
           final result = await runE2eAppResult(
             () => useCase(
@@ -100,8 +98,6 @@ void main() {
           )) {
             return;
           }
-
-          await setupE2eDependenciesWithTearDown();
 
           final repository = getIt<GrupoProdutoOptionsRepository>();
           final baseline = await runE2eAppResult(

@@ -20,10 +20,31 @@ import 'package:test_api/scaffolding.dart' show group;
 
 import 'support/e2e_dependency_bootstrap.dart';
 
+const String _e2eOverviewRepositoryScopeName = 'e2e_overview_repository';
+
 void main() {
   group(
     'OverviewRepository / LoadOverviewUseCase (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
+      setUp(() {
+        if (missingE2eRepositoryKeys().isNotEmpty) {
+          return;
+        }
+        getIt
+          ..pushNewScope(scopeName: _e2eOverviewRepositoryScopeName)
+          ..registerSingleton<AppCacheStore>(_E2eInMemoryAppCacheStore());
+        registerInjectorOverview(getIt);
+      });
+
+      tearDown(() async {
+        if (getIt.currentScopeName != _e2eOverviewRepositoryScopeName) {
+          return;
+        }
+        await getIt.popScope();
+      });
+
       test(
         'loadOverview hits the hub via overview batch path and returns Overview',
         () async {
@@ -38,12 +59,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
-
-          getIt.registerSingleton<AppCacheStore>(_E2eInMemoryAppCacheStore());
-          registerInjectorOverview(getIt);
 
           final useCase = getIt<LoadOverviewUseCase>();
           final result = await runE2eAppResultWithHubRetry(
@@ -79,12 +94,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
-
-          getIt.registerSingleton<AppCacheStore>(_E2eInMemoryAppCacheStore());
-          registerInjectorOverview(getIt);
 
           final repository = getIt<OverviewRepository>();
           final result = await runE2eAppResultWithHubRetry(

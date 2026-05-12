@@ -15,6 +15,8 @@ void main() {
   group(
     'ResumoTotalVendasMunicipioFilialPeriodoRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test('load executes the real period query through the repository', () async {
         final missingKeys = missingE2eRepositoryKeys();
         if (missingKeys.isNotEmpty) {
@@ -26,9 +28,6 @@ void main() {
           );
           return;
         }
-
-        await e2eSetupDependencies();
-        addTearDown(e2eTeardownDependencies);
 
         final repository =
             getIt<ResumoTotalVendasMunicipioFilialPeriodoRepository>();

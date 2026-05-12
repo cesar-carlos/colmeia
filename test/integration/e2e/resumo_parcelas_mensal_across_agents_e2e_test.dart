@@ -20,6 +20,8 @@ void main() {
   group(
     'LoadResumoParcelasMensalAcrossAgentsUseCase (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'mergeAll loads monthly resumo for the overview twelve-month window',
         () async {
@@ -34,9 +36,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final clock = DateTime.now();
           final overviewFilter = OverviewFilter.initial(now: clock);

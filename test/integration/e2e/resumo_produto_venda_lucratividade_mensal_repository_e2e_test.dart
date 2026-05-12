@@ -18,6 +18,8 @@ void main() {
   group(
     'ResumoProdutoVendaLucratividadeMensalRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'loadAll executes the real lucratividade mensal query through the repository',
         () async {
@@ -32,9 +34,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository =
               getIt<ResumoProdutoVendaLucratividadeMensalRepository>();

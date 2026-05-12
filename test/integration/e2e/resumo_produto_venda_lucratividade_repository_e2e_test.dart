@@ -20,6 +20,8 @@ void main() {
   group(
     'ResumoProdutoVendaLucratividadeRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'loadAll executes the real lucratividade query through the repository',
         () async {
@@ -34,9 +36,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository = getIt<ResumoProdutoVendaLucratividadeRepository>();
           final periodStart = DateTime(2026);
@@ -103,9 +102,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final useCase = getIt<LoadResumoProdutoVendaLucratividadeUseCase>();
           final periodStart = DateTime(2026);

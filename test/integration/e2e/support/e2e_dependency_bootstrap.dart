@@ -23,6 +23,7 @@ import 'package:colmeia/features/client_agents/domain/repositories/agent_client_
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:result_dart/result_dart.dart';
 
 import 'e2e_refreshing_auth_interceptor.dart';
@@ -60,15 +61,15 @@ Future<void> e2eSetupDependencies() async {
     );
   }
 
-  // Full `flutter test` runs many E2E workers; each test calls setup and
-  // `POST /client-auth/login` again. Hub 503 on login must reset DI and
-  // retry — it is outside [runE2eAppResult], which only wraps repository calls.
-  const maxSetupAttempts = 3;
+  // Full `flutter test` runs the whole repo; many files each hit
+  // `POST /client-auth/login` via [registerE2eAgentQueriesSuiteHooks] setUpAll.
+  // Hub 502/503 bursts during that window must reset DI and retry — this is
+  // outside [runE2eAppResult], which only wraps repository calls.
+  const maxSetupAttempts = 6;
   for (var setupAttempt = 0; setupAttempt < maxSetupAttempts; setupAttempt++) {
     if (setupAttempt > 0) {
-      await Future<void>.delayed(
-        Duration(milliseconds: 500 * setupAttempt),
-      );
+      final backoffMs = (250 * (1 << (setupAttempt - 1))).clamp(250, 8000);
+      await Future<void>.delayed(Duration(milliseconds: backoffMs));
     }
     await resetDependenciesForTesting();
     try {
@@ -228,6 +229,31 @@ List<String> missingE2eRepositoryKeys() {
 
 Future<void> e2eTeardownDependencies() async {
   await resetDependenciesForTesting();
+}
+
+/// Registers [setUpAll] / [tearDownAll] so an E2E [group] calls
+/// [e2eSetupDependencies] once when [missingKeys] is empty at suite start.
+///
+/// Place at the top of the group body. Tests must not call
+/// [e2eSetupDependencies] / [e2eTeardownDependencies] when this is used.
+void registerE2eAgentQueriesSuiteHooks({
+  List<String> Function()? missingKeys,
+}) {
+  final didRunHubSetup = <bool>[false];
+  final keys = missingKeys ?? missingE2eRepositoryKeys;
+  setUpAll(() async {
+    if (keys().isNotEmpty) {
+      return;
+    }
+    await e2eSetupDependencies();
+    didRunHubSetup[0] = true;
+  });
+  tearDownAll(() async {
+    if (!didRunHubSetup[0]) {
+      return;
+    }
+    await e2eTeardownDependencies();
+  });
 }
 
 bool isKnownInvalidPolicyFailure(AppFailure failure) {

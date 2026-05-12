@@ -19,6 +19,8 @@ void main() {
   group(
     'ResumoVendasDiariasPorVendedorFilterOptionsRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       late DateTime periodStart;
       late DateTime periodEnd;
 
@@ -42,9 +44,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository =
               getIt<ResumoVendasDiariasPorVendedorFilterOptionsRepository>();
@@ -101,9 +100,6 @@ void main() {
             return;
           }
 
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
-
           final repository =
               getIt<ResumoVendasDiariasPorVendedorFilterOptionsRepository>();
 
@@ -158,9 +154,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository =
               getIt<ResumoVendasDiariasPorVendedorFilterOptionsRepository>();

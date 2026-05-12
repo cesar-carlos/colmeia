@@ -32,13 +32,12 @@ void main() {
   group(
     'Across-agent repository coverage',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test('load payment-method resumo variants through mergeAll', () async {
         if (_skipWhenMissingKeys('agent_query_across_payment_methods')) {
           return;
         }
-
-        await e2eSetupDependencies();
-        addTearDown(e2eTeardownDependencies);
 
         final period = _recentPeriod();
 
@@ -125,9 +124,6 @@ void main() {
           if (_skipWhenMissingKeys('agent_query_across_sales_reports')) {
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final period = _recentPeriod();
           final yearStart = DateTime(period.end.year);
@@ -232,9 +228,6 @@ void main() {
           if (_skipWhenMissingKeys('agent_query_across_filter_options')) {
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final period = _recentPeriod();
 

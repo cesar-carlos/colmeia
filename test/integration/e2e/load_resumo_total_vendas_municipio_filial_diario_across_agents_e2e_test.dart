@@ -14,6 +14,8 @@ void main() {
   group(
     'LoadResumoTotalVendasMunicipioFilialDiarioAcrossAgentsUseCase (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'mergeAll loads municipio-filial daily resumo for a recent window',
         () async {
@@ -27,9 +29,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final today = DateTime.now();
           final periodEnd = DateTime(today.year, today.month, today.day);

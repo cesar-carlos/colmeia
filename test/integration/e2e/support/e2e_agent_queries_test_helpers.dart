@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'e2e_dependency_bootstrap.dart';
 export 'e2e_dependency_bootstrap.dart'
-    show runE2eAppResult, runE2eAppResultWithHubRetry;
+    show
+        registerE2eAgentQueriesSuiteHooks,
+        runE2eAppResult,
+        runE2eAppResultWithHubRetry;
 
 const String _sessionFailureReason =
     'Unexpected HTTP 401 after client login '
@@ -29,6 +32,8 @@ bool shouldSkipE2eRepositoryTest(String testLabel) {
   return true;
 }
 
+/// Prefer [registerE2eAgentQueriesSuiteHooks] on the enclosing [group] so the
+/// suite logs in once; keep this for one-off tests outside a shared group.
 Future<void> setupE2eDependenciesWithTearDown() async {
   await e2eSetupDependencies();
   addTearDown(e2eTeardownDependencies);

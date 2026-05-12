@@ -17,6 +17,8 @@ void main() {
   group(
     'ProdutoVendidoTendenciaDeVendaMediaMovelRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'loadPage executes the real moving-average trend query through the repository',
         () async {
@@ -31,9 +33,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository =
               getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>();
@@ -87,9 +86,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository =
               getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>();
@@ -166,9 +162,6 @@ void main() {
           );
           return;
         }
-
-        await e2eSetupDependencies();
-        addTearDown(e2eTeardownDependencies);
 
         final repository =
             getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>();

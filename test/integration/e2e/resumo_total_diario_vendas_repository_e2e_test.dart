@@ -15,6 +15,8 @@ void main() {
   group(
     'ResumoTotalDiarioVendasRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'load executes the real resumo query through the repository',
         () async {
@@ -29,9 +31,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository = getIt<ResumoTotalDiarioVendasRepository>();
           final today = DateTime.now();
@@ -91,9 +90,6 @@ void main() {
           );
           return;
         }
-
-        await e2eSetupDependencies();
-        addTearDown(e2eTeardownDependencies);
 
         final repository = getIt<ResumoTotalDiarioVendasRepository>();
         final today = DateTime.now();

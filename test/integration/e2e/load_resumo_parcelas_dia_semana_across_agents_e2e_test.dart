@@ -21,6 +21,8 @@ void main() {
   group(
     'LoadResumoParcelasDiaSemanaAcrossAgentsUseCase (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'mergeAll loads weekday resumo for the overview default month window',
         () async {
@@ -35,9 +37,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final clock = DateTime.now();
           final overviewFilter = OverviewFilter.initial(now: clock);

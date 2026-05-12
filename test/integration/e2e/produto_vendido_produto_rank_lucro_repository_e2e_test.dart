@@ -17,6 +17,8 @@ void main() {
   group(
     'ProdutoVendidoProdutoRankLucroRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'loadAll executes the real rank query through the repository',
         () async {
@@ -31,9 +33,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository = getIt<ProdutoVendidoProdutoRankLucroRepository>();
           final periodStart = DateTime(2026);
@@ -97,9 +96,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final useCase = getIt<LoadProdutoVendidoProdutoRankLucroUseCase>();
           final periodStart = DateTime(2026);

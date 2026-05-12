@@ -19,6 +19,8 @@ void main() {
   group(
     'MunicipioListRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'loadPage page 1 executes the real municipio query through the repository',
         () async {
@@ -33,9 +35,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository = getIt<MunicipioListRepository>();
 

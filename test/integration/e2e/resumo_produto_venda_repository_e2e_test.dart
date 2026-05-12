@@ -19,6 +19,8 @@ void main() {
   group(
     'ResumoProdutoVendaRepository (e2e)',
     () {
+      registerE2eAgentQueriesSuiteHooks();
+
       test(
         'loadPage page 1 executes the real resumo query through the repository',
         () async {
@@ -33,9 +35,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository = getIt<ResumoProdutoVendaRepository>();
           final today = DateTime.now();
@@ -104,9 +103,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository = getIt<ResumoProdutoVendaRepository>();
           final today = DateTime.now();
@@ -205,9 +201,6 @@ void main() {
             );
             return;
           }
-
-          await e2eSetupDependencies();
-          addTearDown(e2eTeardownDependencies);
 
           final repository = getIt<ResumoProdutoVendaRepository>();
           final today = DateTime.now();
