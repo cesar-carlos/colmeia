@@ -37,6 +37,11 @@ final class AppChartFullscreenRouteExtra {
   final String? subtitle;
   final String? filterSummary;
   final Widget? headerTrailing;
+
+  /// Optional insets merged into [AppChartFullscreenScaffold] defaults: default
+  /// top/bottom gaps are preserved via [EdgeInsetsGeometry.resolve] merge (at
+  /// least the scaffold minimum). Horizontal screen margins are always applied
+  /// outside the [Scaffold] by [AppChartFullscreenScaffold].
   final EdgeInsetsGeometry? bodyPadding;
   final String? chartSemanticsLabel;
 }

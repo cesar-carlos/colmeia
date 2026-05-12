@@ -1,5 +1,6 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
@@ -31,6 +32,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.onStateTap,
     this.onMetricChanged,
     this.onDiagnosticsChanged,
+    this.onOpenFullscreen,
   });
 
   final List<AppBrazilStoreSalesPoint> points;
@@ -50,6 +52,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   onStateTap;
   final ValueChanged<AppBrazilStoreSalesMapMetric>? onMetricChanged;
   final ValueChanged<AppBrazilStoreSalesMapDiagnostics>? onDiagnosticsChanged;
+  final VoidCallback? onOpenFullscreen;
 
   @override
   State<AppBrazilStoreSalesMapChart> createState() =>
@@ -106,101 +109,197 @@ class _AppBrazilStoreSalesMapChartState
         ? snapshot.selectedStateKey ?? _internalSelectedStateKey
         : null;
     final preferredViewport = _preferredViewport(snapshot);
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
-          mapDefinition: AppBrazilMapStaticData.brazilUfMapDefinition,
-          items: snapshot.buckets,
-          metrics: _metrics,
-          selectedMetricKey: _selectedMetric.key,
-          selectedRegionKey: selectedRegionKey,
-          regionKeyBuilder: (bucket) => bucket.uf,
-          regionLabelBuilder: _stateLabelFor,
-          scopeOptions: widget.style.showRegionFilter
-              ? AppBrazilMapStaticData.regionScopeOptions
-              : const <AppMapScopeOption>[],
-          activeScopeKey: _activeRegionKey,
-          preferredViewport: preferredViewport,
-          points: snapshot.mapPoints,
-          markerStyle: AppMapMarkerStyle(
-            size: widget.style.markerMinSize,
-            color: _markerColor(context),
-            strokeColor: _markerStrokeColor(context),
-          ),
-          markerBuilder: _buildMarker,
-          onMetricChanged: _handleMetricChanged,
-          onScopeChanged: widget.style.showRegionFilter
-              ? _handleScopeChanged
-              : null,
-          onRegionTapEvent: _handleStateTap,
-          onPointTap: _handlePointTap,
-          onViewportChanged: _handleViewportChanged,
-          preset: widget.style.enableZoomPan
-              ? AppChartPreset.explorable
-              : AppChartPreset.standard,
-          style: AppRegionMapChartStyle(
-            height: widget.style.height,
-            showLegend: widget.style.showLegend,
-            showTooltip: widget.style.showTooltip,
-            showDataLabels: widget.style.showDataLabels,
-            showMetricSelector: widget.style.showMetricSelector,
-            enableZoomPan: widget.style.enableZoomPan,
-            lowValueColor: widget.style.lowValueColor ?? _lowColor(context),
-            highValueColor: widget.style.highValueColor ?? _highColor(context),
-            dataLabelTextStyle: Theme.of(context).textTheme.labelSmall
-                ?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
-                ),
-            legendNumberFormat: _legendFormat,
-            emptyStateMessage: widget.style.emptyStateMessage,
-            metricGroupLabel: 'Metrica',
-            scopeGroupLabel: 'Regiao',
-            mapLoadingMessage: 'Carregando mapa do Brasil...',
-          ),
-        ),
-        if (widget.style.showDataQualityNotice &&
-            snapshot.diagnostics.hasDiscardedPoints)
-          _MapDataQualityNotice(diagnostics: snapshot.diagnostics),
-        if (widget.style.showMarkerScaleLegend && snapshot.hasMarkers)
-          _MarkerScaleLegend(
-            metric: _selectedMetric,
-            minValue: snapshot.minMarkerValue,
-            maxValue: snapshot.maxMarkerValue,
-            minSize: widget.style.markerMinSize,
-            maxSize: widget.style.markerMaxSize,
-            color: _markerColor(context),
-            strokeColor: _markerStrokeColor(context),
-            visual: widget.style.markerVisual,
-          ),
-        if (_showBelowMapMarkerDetail &&
-            selectedMarkerGroup != null &&
-            (selectedMarkerGroup.isMunicipalityAggregate ||
-                selectedMarkerGroup.isCluster))
-          _SelectedMunicipalityDetail(
-            group: selectedMarkerGroup,
-            metric: _selectedMetric,
-          )
-        else if (_showBelowMapMarkerDetail && selectedPoint != null)
-          _SelectedStoreDetail(
-            point: selectedPoint,
-            metric: _selectedMetric,
-          ),
-      ],
-    );
 
-    if (widget.title == null && widget.subtitle == null) {
-      return content;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final l10n = AppLocalizations.of(context);
+        final mapTileHeight = _resolvedMapTileHeight(
+          context: context,
+          constraints: constraints,
+          style: widget.style,
+          snapshot: snapshot,
+        );
+        final content = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
+              mapDefinition: AppBrazilMapStaticData.brazilUfMapDefinition,
+              items: snapshot.buckets,
+              metrics: _buildMetrics(l10n),
+              selectedMetricKey: _selectedMetric.key,
+              selectedRegionKey: selectedRegionKey,
+              regionKeyBuilder: (bucket) => bucket.uf,
+              regionLabelBuilder: _stateLabelFor,
+              scopeOptions: widget.style.showRegionFilter
+                  ? AppBrazilMapStaticData.regionScopeOptions
+                  : const <AppMapScopeOption>[],
+              activeScopeKey: _activeRegionKey,
+              preferredViewport: preferredViewport,
+              points: snapshot.mapPoints,
+              markerStyle: AppMapMarkerStyle(
+                size: widget.style.markerMinSize,
+                color: _markerColor(context),
+                strokeColor: _markerStrokeColor(context),
+              ),
+              markerBuilder: _buildMarker,
+              onMetricChanged: _handleMetricChanged,
+              onScopeChanged: widget.style.showRegionFilter
+                  ? _handleScopeChanged
+                  : null,
+              onRegionTapEvent: _handleStateTap,
+              onPointTap: _handlePointTap,
+              onViewportChanged: _handleViewportChanged,
+              preset: widget.style.enableZoomPan
+                  ? AppChartPreset.explorable
+                  : AppChartPreset.standard,
+              style: AppRegionMapChartStyle(
+                height: mapTileHeight,
+                showLegend: widget.style.showLegend,
+                showTooltip: widget.style.showTooltip,
+                showDataLabels: widget.style.showDataLabels,
+                showMetricSelector: widget.style.showMetricSelector,
+                enableZoomPan: widget.style.enableZoomPan,
+                lowValueColor: widget.style.lowValueColor ?? _lowColor(context),
+                highValueColor:
+                    widget.style.highValueColor ?? _highColor(context),
+                dataLabelTextStyle: Theme.of(context).textTheme.labelSmall
+                    ?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
+                legendNumberFormat: _legendFormat,
+                emptyStateMessage: widget.style.emptyStateMessage,
+                metricGroupLabel: l10n.brazilStoreSalesMapMetricGroupLabel,
+                scopeGroupLabel: l10n.brazilStoreSalesMapRegionGroupLabel,
+                mapLoadingMessage: l10n.brazilStoreSalesMapLoadingMessage,
+              ),
+            ),
+            if (widget.style.showDataQualityNotice &&
+                snapshot.diagnostics.hasDiscardedPoints)
+              _MapDataQualityNotice(diagnostics: snapshot.diagnostics),
+            if (widget.style.showMarkerScaleLegend && snapshot.hasMarkers)
+              _MarkerScaleLegend(
+                sizeLegendLabel: l10n.brazilStoreSalesMapMarkerSizeLegend,
+                metric: _selectedMetric,
+                minValue: snapshot.minMarkerValue,
+                maxValue: snapshot.maxMarkerValue,
+                minSize: widget.style.markerMinSize,
+                maxSize: widget.style.markerMaxSize,
+                color: _markerColor(context),
+                strokeColor: _markerStrokeColor(context),
+                visual: widget.style.markerVisual,
+              ),
+            if (_showBelowMapMarkerDetail &&
+                selectedMarkerGroup != null &&
+                (selectedMarkerGroup.isMunicipalityAggregate ||
+                    selectedMarkerGroup.isCluster))
+              _SelectedMunicipalityDetail(
+                group: selectedMarkerGroup,
+                metric: _selectedMetric,
+              )
+            else if (_showBelowMapMarkerDetail && selectedPoint != null)
+              _SelectedStoreDetail(
+                point: selectedPoint,
+                metric: _selectedMetric,
+              ),
+          ],
+        );
+
+        if (widget.title == null && widget.subtitle == null) {
+          return content;
+        }
+
+        return AppChartShell(
+          title: widget.title ?? '',
+          subtitle: widget.subtitle,
+          titleTrailing: widget.titleTrailing,
+          belowSubtitle: widget.belowSubtitle,
+          onOpenFullscreen: widget.onOpenFullscreen,
+          child: content,
+        );
+      },
+    );
+  }
+
+  /// [AppRegionMapChart] adds metric/scope controls above the map tile; this
+  /// chart adds optional notices and marker legend below. When the parent
+  /// height is bounded (e.g. chart fullscreen), the map tile height must leave
+  /// room for that vertical chrome to avoid [Column] overflow.
+  double _resolvedMapTileHeight({
+    required BuildContext context,
+    required BoxConstraints constraints,
+    required AppBrazilStoreSalesMapStyle style,
+    required _BrazilStoreSalesMapSnapshot snapshot,
+  }) {
+    final requested = style.height;
+    final maxParent = constraints.maxHeight;
+    if (!maxParent.isFinite || maxParent >= double.infinity) {
+      return requested;
     }
 
-    return AppChartShell(
-      title: widget.title ?? '',
-      subtitle: widget.subtitle,
-      titleTrailing: widget.titleTrailing,
-      belowSubtitle: widget.belowSubtitle,
-      child: content,
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final headerReserve = _estimateAppRegionMapHeaderReserve(context, style);
+    final footerReserve = _estimateFooterReserveBelowMap(
+      context,
+      style,
+      snapshot,
+      tokens,
     );
+    final spare = maxParent - headerReserve - footerReserve;
+    if (!spare.isFinite) {
+      return requested;
+    }
+    return spare.clamp(200.0, 4000.0);
+  }
+
+  double _estimateAppRegionMapHeaderReserve(
+    BuildContext context,
+    AppBrazilStoreSalesMapStyle style,
+  ) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final scaler = MediaQuery.textScalerOf(context);
+    final textTheme = Theme.of(context).textTheme;
+    final overlineBlock =
+        scaler.scale((textTheme.labelSmall?.fontSize ?? 11) * 1.3) +
+        tokens.gapXs +
+        scaler.scale((textTheme.bodySmall?.fontSize ?? 12) * 1.35 + 8);
+    var reserve = 0.0;
+    if (style.showMetricSelector &&
+        AppBrazilStoreSalesMapMetric.values.length > 1) {
+      reserve += overlineBlock + tokens.gapMd;
+    }
+    if (style.showRegionFilter) {
+      reserve += overlineBlock + tokens.gapMd;
+    }
+    return reserve.clamp(96.0, 260.0);
+  }
+
+  double _estimateFooterReserveBelowMap(
+    BuildContext context,
+    AppBrazilStoreSalesMapStyle style,
+    _BrazilStoreSalesMapSnapshot snapshot,
+    AppThemeTokens tokens,
+  ) {
+    final scaler = MediaQuery.textScalerOf(context);
+    var reserve = 0.0;
+    if (style.showDataQualityNotice &&
+        snapshot.diagnostics.hasDiscardedPoints) {
+      reserve += tokens.gapSm + scaler.scale(56);
+    }
+    if (style.showMarkerScaleLegend && snapshot.hasMarkers) {
+      reserve += tokens.gapMd + scaler.scale(36);
+    }
+    final selectedMarkerGroup = snapshot.selectedMarkerGroup;
+    final selectedPoint = snapshot.selectedPoint;
+    if (_showBelowMapMarkerDetail &&
+        selectedMarkerGroup != null &&
+        (selectedMarkerGroup.isMunicipalityAggregate ||
+            selectedMarkerGroup.isCluster)) {
+      reserve += tokens.gapMd + scaler.scale(160);
+    } else if (_showBelowMapMarkerDetail && selectedPoint != null) {
+      reserve += tokens.gapMd + scaler.scale(160);
+    }
+    return reserve;
   }
 
   NumberFormat? get _legendFormat {
@@ -225,22 +324,25 @@ class _AppBrazilStoreSalesMapChartState
       widget.style.selectedMarkerDetailPlacement ==
           AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap;
 
-  List<AppMapMetric<AppBrazilStoreSalesStateBucket>> get _metrics => [
-    AppMapMetric<AppBrazilStoreSalesStateBucket>(
-      key: AppBrazilStoreSalesMapMetric.revenue.key,
-      label: AppBrazilStoreSalesMapMetric.revenue.label,
-      legendLabel: 'Receita por UF',
-      valueBuilder: (bucket) => bucket.salesAmount,
-      tooltipBuilder: _stateTooltipSubtitle,
-    ),
-    AppMapMetric<AppBrazilStoreSalesStateBucket>(
-      key: AppBrazilStoreSalesMapMetric.salesCount.key,
-      label: AppBrazilStoreSalesMapMetric.salesCount.label,
-      legendLabel: 'Vendas por UF',
-      valueBuilder: (bucket) => bucket.salesCount,
-      tooltipBuilder: _stateTooltipSubtitle,
-    ),
-  ];
+  List<AppMapMetric<AppBrazilStoreSalesStateBucket>> _buildMetrics(
+    AppLocalizations l10n,
+  ) =>
+      <AppMapMetric<AppBrazilStoreSalesStateBucket>>[
+        AppMapMetric<AppBrazilStoreSalesStateBucket>(
+          key: AppBrazilStoreSalesMapMetric.revenue.key,
+          label: AppBrazilStoreSalesMapMetric.revenue.label,
+          legendLabel: l10n.brazilStoreSalesMapLegendRevenuePerState,
+          valueBuilder: (bucket) => bucket.salesAmount,
+          tooltipBuilder: _stateTooltipSubtitle,
+        ),
+        AppMapMetric<AppBrazilStoreSalesStateBucket>(
+          key: AppBrazilStoreSalesMapMetric.salesCount.key,
+          label: AppBrazilStoreSalesMapMetric.salesCount.label,
+          legendLabel: l10n.brazilStoreSalesMapLegendSalesPerState,
+          valueBuilder: (bucket) => bucket.salesCount,
+          tooltipBuilder: _stateTooltipSubtitle,
+        ),
+      ];
 
   AppMapViewport _preferredViewport(_BrazilStoreSalesMapSnapshot snapshot) {
     final selectedPoint = snapshot.selectedPoint;
@@ -921,6 +1023,7 @@ class _BrazilStoreSalesMapSnapshot {
 
 class _MarkerScaleLegend extends StatelessWidget {
   const _MarkerScaleLegend({
+    required this.sizeLegendLabel,
     required this.metric,
     required this.minValue,
     required this.maxValue,
@@ -931,6 +1034,7 @@ class _MarkerScaleLegend extends StatelessWidget {
     required this.visual,
   });
 
+  final String sizeLegendLabel;
   final AppBrazilStoreSalesMapMetric metric;
   final num minValue;
   final num maxValue;
@@ -957,7 +1061,7 @@ class _MarkerScaleLegend extends StatelessWidget {
         spacing: tokens.gapMd,
         runSpacing: tokens.gapSm,
         children: [
-          Text('Tamanho do ponto', style: textStyle),
+          Text(sizeLegendLabel, style: textStyle),
           _MarkerScaleLegendItem(
             label: _formatMetricValue(metric, minValue),
             size: minSize,

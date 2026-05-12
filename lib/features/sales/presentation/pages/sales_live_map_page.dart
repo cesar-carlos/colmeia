@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
@@ -189,6 +190,73 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     }
   }
 
+  void _openLiveMapFullscreen() {
+    final pageL10n = AppLocalizations.of(context);
+    final resultSnapshot = _result;
+    final pointsSnapshot = List<AppBrazilStoreSalesPoint>.of(
+      resultSnapshot?.points ?? const <AppBrazilStoreSalesPoint>[],
+      growable: false,
+    );
+    final subtitleSnapshot = _mapSubtitle(resultSnapshot);
+    final initialMetricSnapshot = _filter.metric;
+    final detailSnapshot = _effectiveDetailLevel(resultSnapshot);
+    final markerVisualSnapshot = _filter.markerVisual;
+    final styleSnapshot = _mapStyle(
+      detailLevel: detailSnapshot,
+      markerVisual: markerVisualSnapshot,
+    );
+    final filterSummarySnapshot = _liveMapFullscreenFilterSummary(pageL10n);
+
+    unawaited(
+      context.pushChartFullscreen<void>(
+        extra: AppChartFullscreenRouteExtra(
+          title: pageL10n.salesLiveMapChartTitle,
+          subtitle: subtitleSnapshot,
+          filterSummary: filterSummarySnapshot,
+          chartSemanticsLabel: pageL10n.salesLiveMapChartTitle,
+          chartBuilder: (_) {
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                Widget chart = AppBrazilStoreSalesMapChart(
+                  points: pointsSnapshot,
+                  initialMetric: initialMetricSnapshot,
+                  style: styleSnapshot,
+                  onMetricChanged: _onMapMetricChanged,
+                );
+                final maxH = constraints.maxHeight;
+                if (maxH.isFinite && maxH < double.infinity) {
+                  chart = SizedBox(
+                    height: maxH,
+                    child: chart,
+                  );
+                }
+                return chart;
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  String _liveMapFullscreenFilterSummary(AppLocalizations l10n) {
+    final parts = <String>[
+      '${l10n.salesLiveMapAgentsLabel}: ${_filiaisSummary(_result)}',
+      '${l10n.salesLiveMapPeriodLabel}: ${_periodSummary()}',
+      '${l10n.salesLiveMapDetailLabel}: ${_detailLabel(_filter.detailLevel)}',
+    ];
+    if (_filter.detailLevel != SalesLiveMapMapDetail.states) {
+      parts.add(
+        '${l10n.salesLiveMapVisualLabel}: ${_visualLabel(_filter.markerVisual)}',
+      );
+    } else {
+      parts.add(
+        '${l10n.salesLiveMapMapLabel}: ${_visualLabel(SalesLiveMapMarkerVisual.bubble)}',
+      );
+    }
+    return '${parts.join(' · ')} · ${l10n.chartFullscreenDataSnapshotHint}';
+  }
+
   Future<void> _openFiltersSheet() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -333,6 +401,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                 markerVisual: _filter.markerVisual,
               ),
               onMetricChanged: _onMapMetricChanged,
+              onOpenFullscreen: _openLiveMapFullscreen,
             ),
           ],
         ],
