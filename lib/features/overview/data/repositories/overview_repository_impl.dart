@@ -182,7 +182,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
 
   /// Higher cardinality than the aggregate weekday query; allow merge-all a
   /// little longer before the bridge times out.
-  static const int _overviewWeekdayUserSqlBridgeTimeoutMs = 360000;
+  static const int _overviewWeekdayUserSqlBridgeTimeoutMs = 300000;
 
   static const int _overviewDailySalesSqlBridgeTimeoutMs = 300000;
 

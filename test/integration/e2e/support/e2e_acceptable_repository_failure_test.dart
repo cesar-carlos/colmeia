@@ -85,4 +85,29 @@ void main() {
       expect(isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure), isFalse);
     });
   });
+
+  group('isKnownE2eAgentDisconnectedAtDispatchFailure', () {
+    test('returns true for agent_disconnected_at_dispatch RpcFailure', () {
+      const failure = RpcFailure(
+        message: 'm',
+        userMessage: 'u',
+        rpcCode: -32000,
+        retryable: false,
+        reason: 'agent_disconnected_at_dispatch',
+      );
+      expect(isKnownE2eAgentDisconnectedAtDispatchFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns false for other RpcFailure reasons', () {
+      const failure = RpcFailure(
+        message: 'm',
+        userMessage: 'u',
+        rpcCode: -1,
+        retryable: false,
+        reason: 'other',
+      );
+      expect(isKnownE2eAgentDisconnectedAtDispatchFailure(failure), isFalse);
+    });
+  });
 }

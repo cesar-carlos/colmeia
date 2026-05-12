@@ -145,8 +145,9 @@ class OverviewBatchLoader {
   final AgentQueryPlanBuilder _planBuilder;
   final AgentQueriesRepository _agentQueriesRepository;
 
-  static const int overviewBatchBridgeTimeoutMs = 360000;
-  static const int overviewBatchSqlTimeoutMs = 360000;
+  /// Hub validates `sql.executeBatch` `options.timeout_ms` at <= 300_000.
+  static const int overviewBatchBridgeTimeoutMs = 300000;
+  static const int overviewBatchSqlTimeoutMs = 300000;
   static const int overviewBatchMaxRows =
       AgentQueriesBoundedResultMaxRows.resumoParcelasMensal;
 

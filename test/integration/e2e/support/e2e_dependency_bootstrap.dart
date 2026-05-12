@@ -501,6 +501,15 @@ bool isKnownE2eAgentSqlQueueSaturationFailure(AppFailure failure) {
   return false;
 }
 
+/// Plug agent dropped off the hub between SQL dispatch and response (common
+/// during long sequential E2E runs against a single dev agent).
+bool isKnownE2eAgentDisconnectedAtDispatchFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  return failure.reason == 'agent_disconnected_at_dispatch';
+}
+
 /// Fail-fast while the agent-queries circuit breaker is open (overload
 /// protection): [NetworkFailure] without an underlying Dio cause, but still
 /// an environmental hub-overload signal for E2E smoke runs.
@@ -517,8 +526,8 @@ bool isKnownE2eAgentSqlCircuitBreakerOpenFailure(AppFailure failure) {
 
 /// Known policy rejection, missing table permission RPC, transient bridge
 /// HTTP 5xx or socket/relay transport overload, HTTP 403 forbidden on agent
-/// SQL, queue saturation, or circuit breaker open after hub overload
-/// (environment / hub access).
+/// SQL, queue saturation, circuit breaker open after hub overload, or plug
+/// agent disconnected at dispatch (environment / hub access).
 bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
   return isKnownInvalidPolicyFailure(failure) ||
       isKnownAgentSqlMissingPermissionFailure(failure) ||
@@ -526,7 +535,8 @@ bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
       isKnownE2eAgentSqlHttpForbiddenFailure(failure) ||
       isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(failure) ||
       isKnownE2eAgentSqlQueueSaturationFailure(failure) ||
-      isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure);
+      isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure) ||
+      isKnownE2eAgentDisconnectedAtDispatchFailure(failure);
 }
 
 String e2eAgentSqlFailureDiagnostic(AppFailure failure) {

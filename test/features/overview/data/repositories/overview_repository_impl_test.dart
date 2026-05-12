@@ -979,7 +979,7 @@ void main() {
             filter: any(named: 'filter'),
             selectedAgentIds: any(named: 'selectedAgentIds'),
             strategy: any(named: 'strategy'),
-            bridgeTimeoutMs: 360000,
+            bridgeTimeoutMs: 300000,
             raceMaxSources: any(named: 'raceMaxSources'),
           ),
         ).called(1);
