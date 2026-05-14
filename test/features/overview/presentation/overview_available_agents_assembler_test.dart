@@ -12,6 +12,8 @@ Overview _minimalOverview({
   List<String> failedNames = const [],
   List<String> missingTokenIds = const [],
   List<String> missingTokenNames = const [],
+  List<String> skippedDueToHubPresenceIds = const [],
+  List<String> skippedDueToHubPresenceNames = const [],
 }) {
   return Overview(
     periodStart: DateTime(2024),
@@ -29,6 +31,8 @@ Overview _minimalOverview({
     agentNamesExcludedFromQueryFailure: failedNames,
     agentIdsMissingClientToken: missingTokenIds,
     agentNamesMissingClientToken: missingTokenNames,
+    agentIdsSkippedDueToHubPresence: skippedDueToHubPresenceIds,
+    agentNamesSkippedDueToHubPresence: skippedDueToHubPresenceNames,
   );
 }
 
@@ -188,6 +192,24 @@ void main() {
       final byId = {for (final o in out) o.agentId: o};
       expect(byId['ok']!.missingLocalClientToken, isFalse);
       expect(byId['bad']!.missingLocalClientToken, isTrue);
+    });
+
+    test('includes agents skipped because hub presence is offline', () {
+      final overview = _minimalOverview(
+        skippedDueToHubPresenceIds: const ['offline-1'],
+        skippedDueToHubPresenceNames: const ['Offline branch'],
+      );
+      final out = OverviewAvailableAgentsAssembler.assemble(
+        overview: overview,
+        previousOptions: const [],
+        onlineAgentIds: const <String>{},
+      );
+
+      expect(out.length, 1);
+      expect(out.single.agentId, 'offline-1');
+      expect(out.single.name, 'Offline branch');
+      expect(out.single.connectionStatus, AgentConnectionStatus.offline);
+      expect(out.single.missingLocalClientToken, isFalse);
     });
   });
 }

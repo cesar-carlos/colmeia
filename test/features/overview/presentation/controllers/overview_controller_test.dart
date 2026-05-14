@@ -4,6 +4,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
+import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
@@ -344,6 +345,67 @@ void main() {
     });
 
     test(
+      'should ignore stale available-agent hydration from older load',
+      () async {
+        final firstOnlineIds = Completer<Set<String>?>();
+        final secondOnlineIds = Completer<Set<String>?>();
+        final onlineIdLoads = <Future<Set<String>?>>[
+          firstOnlineIds.future,
+          secondOnlineIds.future,
+        ];
+        when(
+          () => clientAgentsRepository.loadOnlineAgentIds(
+            userId: any(named: 'userId'),
+          ),
+        ).thenAnswer((_) => onlineIdLoads.removeAt(0));
+
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(
+                _overviewWithAgent('old-agent', 'Old Agent'),
+              ),
+            ),
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(
+                _overviewWithAgent('new-agent', 'New Agent'),
+              ),
+            ),
+          ],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          clientAgentsRepository,
+        );
+
+        final firstLoad = controller.loadOverview(
+          userId: 'demo-user',
+          loadingMode: OverviewLoadingMode.complete,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        final secondLoad = controller.loadOverview(
+          userId: 'demo-user',
+          loadingMode: OverviewLoadingMode.complete,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        firstOnlineIds.complete(const <String>{'old-agent'});
+        await firstLoad;
+
+        check(controller.availableAgents).isEmpty();
+
+        secondOnlineIds.complete(const <String>{'new-agent'});
+        await secondLoad;
+
+        check(
+          controller.availableAgents.map((o) => o.agentId).toList(),
+        ).deepEquals(<String>['new-agent']);
+        check(controller.availableAgents.single.name).equals('New Agent');
+      },
+    );
+
+    test(
       'skippedDueToHubPresenceAgentNamesNormalized exposes a sorted, '
       'deduped, trimmed view of the names from the loaded overview',
       () async {
@@ -381,6 +443,19 @@ void main() {
       },
     );
   });
+}
+
+Overview _overviewWithAgent(String agentId, String displayName) {
+  return _overview('Pix').copyWith(
+    agentRankings: <OverviewAgentRanking>[
+      OverviewAgentRanking(
+        agentId: agentId,
+        displayName: displayName,
+        totalSalesCount: 100,
+        totalAmount: 9000,
+      ),
+    ],
+  );
 }
 
 class _PendingOverviewRepository implements OverviewRepository {

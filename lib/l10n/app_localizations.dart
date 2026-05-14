@@ -3878,6 +3878,12 @@ abstract class AppLocalizations {
   /// **'Loading branches'**
   String get salesLiveMapAgentsLoadingSummary;
 
+  /// No description provided for @salesLiveMapAgentsNoneSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches'**
+  String get salesLiveMapAgentsNoneSummary;
+
   /// No description provided for @salesLiveMapAgentsAllWithTokenSummary.
   ///
   /// In en, this message translates to:
@@ -3992,6 +3998,30 @@ abstract class AppLocalizations {
   /// **'No selected agent has a local token to execute the query.'**
   String get salesLiveMapMissingClientTokenSetupMessage;
 
+  /// No description provided for @salesLiveMapEmptyNoSalesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales in period'**
+  String get salesLiveMapEmptyNoSalesTitle;
+
+  /// No description provided for @salesLiveMapEmptyNoSalesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The query ran, but did not find sales for the current filters.'**
+  String get salesLiveMapEmptyNoSalesMessage;
+
+  /// No description provided for @salesLiveMapEmptySelectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection has no result'**
+  String get salesLiveMapEmptySelectionTitle;
+
+  /// No description provided for @salesLiveMapEmptySelectionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected branches did not return sales in this period. Clear the selection to reload all available branches.'**
+  String get salesLiveMapEmptySelectionMessage;
+
   /// No description provided for @salesLiveMapChartTitle.
   ///
   /// In en, this message translates to:
@@ -4103,6 +4133,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear all'**
   String get salesLiveMapClearSelection;
+
+  /// No description provided for @salesLiveMapClearBranchSelectionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear branch selection'**
+  String get salesLiveMapClearBranchSelectionAction;
 
   /// No description provided for @salesLiveMapMissingLocalToken.
   ///

@@ -113,21 +113,65 @@ class AppBrazilStoreSalesPointResolver {
   }
 
   Future<List<AppBrazilStoreSalesResolvedPoint>> resolveAllWithDetails(
-    Iterable<AppBrazilStoreSalesPointSource> sources,
-  ) async {
-    final points = <AppBrazilStoreSalesResolvedPoint>[];
+    Iterable<AppBrazilStoreSalesPointSource> sources, {
+    int maxConcurrent = 1,
+  }) async {
+    final sourceList = sources.toList(growable: false);
+    if (sourceList.isEmpty) {
+      return const <AppBrazilStoreSalesResolvedPoint>[];
+    }
+
     final locationCache = <String, Future<_ResolvedLocationLookup?>>{};
-    for (final source in sources) {
-      final resolved = await _resolveWithDetails(
-        source,
-        locationCache: locationCache,
-      );
-      if (resolved != null) {
-        points.add(resolved);
+    if (maxConcurrent <= 1 || sourceList.length == 1) {
+      final points = <AppBrazilStoreSalesResolvedPoint>[];
+      for (final source in sourceList) {
+        final resolved = await _resolveWithDetails(
+          source,
+          locationCache: locationCache,
+        );
+        if (resolved != null) {
+          points.add(resolved);
+        }
+      }
+
+      return points;
+    }
+
+    final results = List<AppBrazilStoreSalesResolvedPoint?>.filled(
+      sourceList.length,
+      null,
+    );
+    final workerCount = maxConcurrent < sourceList.length
+        ? maxConcurrent
+        : sourceList.length;
+    var nextIndex = 0;
+
+    Future<void> runWorker() async {
+      while (true) {
+        final index = nextIndex;
+        if (index >= sourceList.length) {
+          return;
+        }
+        nextIndex += 1;
+
+        final source = sourceList[index];
+        final resolved = await _resolveWithDetails(
+          source,
+          locationCache: locationCache,
+        );
+        if (resolved != null) {
+          results[index] = resolved;
+        }
       }
     }
 
-    return points;
+    await Future.wait<void>(
+      List<Future<void>>.generate(workerCount, (_) => runWorker()),
+    );
+
+    return results.whereType<AppBrazilStoreSalesResolvedPoint>().toList(
+      growable: false,
+    );
   }
 
   Future<_ResolvedLocationLookup?> _resolveLocationLookup(

@@ -367,10 +367,10 @@ class _OverviewHomeIntro extends StatelessWidget {
             final storeScoped = route == AppRoute.dashboardStore;
             return AppShellPageIntro(
               eyebrow: l10n.overviewGreetingEyebrow(greetingName),
-              sectionLabel:
-                  storeScoped ? l10n.shellNavDashboardLabel : null,
-              onSectionLabelTap:
-                  storeScoped ? () => context.goTo(AppRoute.dashboard) : null,
+              sectionLabel: storeScoped ? l10n.shellNavDashboardLabel : null,
+              onSectionLabelTap: storeScoped
+                  ? () => context.goTo(AppRoute.dashboard)
+                  : null,
               subtitle: l10n.overviewHomeSubtitle,
               footer: periodLabel != null
                   ? AppTagChip(
@@ -546,6 +546,6 @@ class _MetricsSlice {
   int get hashCode => Object.hash(
     isLoadingInitial,
     overview,
-    Object.hashAll(completedSections),
+    Object.hashAllUnordered(completedSections),
   );
 }

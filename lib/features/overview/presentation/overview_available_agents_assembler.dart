@@ -20,6 +20,13 @@ abstract final class OverviewAvailableAgentsAssembler {
           : id;
       seen[id] = name;
     }
+    for (var i = 0; i < overview.agentIdsSkippedDueToHubPresence.length; i++) {
+      final id = overview.agentIdsSkippedDueToHubPresence[i];
+      final name = i < overview.agentNamesSkippedDueToHubPresence.length
+          ? overview.agentNamesSkippedDueToHubPresence[i]
+          : id;
+      seen[id] = name;
+    }
     for (var i = 0; i < overview.agentIdsMissingClientToken.length; i++) {
       final id = overview.agentIdsMissingClientToken[i];
       final name = i < overview.agentNamesMissingClientToken.length

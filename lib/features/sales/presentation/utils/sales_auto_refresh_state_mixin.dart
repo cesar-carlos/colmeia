@@ -54,7 +54,10 @@ mixin SalesAutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   }
 
   @protected
-  Future<void> reloadWithSalesAutoRefresh() async {
+  Future<void> reloadWithSalesAutoRefresh({bool force = false}) async {
+    if (!force && _salesAutoRefreshActiveReloads > 0) {
+      return;
+    }
     _cancelSalesAutoRefreshTimer();
     try {
       await _trackSalesAutoRefreshReload(performSalesAutoRefreshReload);

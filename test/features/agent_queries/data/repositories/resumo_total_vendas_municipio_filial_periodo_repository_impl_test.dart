@@ -138,6 +138,85 @@ void main() {
     expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
   });
 
+  test('pushes selected branches into SQL for the current agent', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[],
+          rowCount: 0,
+        ),
+      ),
+    );
+
+    await repository.load(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+        selectedBranches:
+            const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[
+              ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
+                agentId: 'agent-1',
+                codEmpresa: 1,
+                codFilial: 6,
+              ),
+              ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
+                agentId: 'agent-1',
+                codEmpresa: 1,
+                codFilial: 7,
+              ),
+              ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
+                agentId: 'agent-2',
+                codEmpresa: 1,
+                codFilial: 9,
+              ),
+            ],
+      ),
+    );
+
+    final capturedRequest =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+    check(capturedRequest.namedParams.length).equals(5);
+    check(capturedRequest.sql).contains(
+      '(pv.CodEmpresa = 1 AND pv.CodFilial IN (6, 7))',
+    );
+    check(capturedRequest.sql).contains('AND (');
+    check(capturedRequest.sql.contains('CodFilial = 9')).isFalse();
+    expect(capturedRequest.sql, isNot(contains(':branch')));
+  });
+
+  test(
+    'rejects invalid selected branch filters before SQL execution',
+    () async {
+      final result = await repository.load(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
+          dataVendaInicio: DateTime.utc(2026),
+          dataVendaFim: DateTime.utc(2026, 12, 31),
+          selectedBranches:
+              const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[
+                ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
+                  agentId: 'agent-1',
+                  codEmpresa: 0,
+                  codFilial: 6,
+                ),
+              ],
+        ),
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<ValidationFailure>();
+      verifyNever(() => agentQueriesRepository.executeSql(any()));
+    },
+  );
+
   test('maps sales rows even when branch municipality is missing', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),

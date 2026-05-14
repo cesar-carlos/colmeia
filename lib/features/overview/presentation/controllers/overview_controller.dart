@@ -355,7 +355,6 @@ class OverviewController extends ChangeNotifier {
       _loadedOverviewSignature = signature;
       _errorMessage = null;
       _errorDiagnosticBody = null;
-      await _updateAvailableAgents(overview, userId);
       AppLogger.info(
         'Overview loaded in controller',
         context: <String, Object?>{
@@ -408,6 +407,11 @@ class OverviewController extends ChangeNotifier {
       _isLoadingInitial = false;
     }
     _notifyListenersIfAlive();
+
+    if (overview != null &&
+        await _updateAvailableAgents(overview, userId, generation)) {
+      _notifyListenersIfAlive();
+    }
   }
 
   Future<void> _loadOverviewProgressively({
@@ -437,10 +441,6 @@ class OverviewController extends ChangeNotifier {
         _errorDiagnosticBody = null;
         if (snapshot.isFinal) {
           _loadedOverviewSignature = signature;
-          await _updateAvailableAgents(snapshot.overview, userId);
-          if (_disposed || generation != _loadGeneration) {
-            return;
-          }
           AppLogger.info(
             'Overview loaded progressively in controller',
             context: <String, Object?>{
@@ -451,6 +451,13 @@ class OverviewController extends ChangeNotifier {
             },
           );
           _finishProgressiveLoading(keepContentVisible: keepContentVisible);
+          if (await _updateAvailableAgents(
+            snapshot.overview,
+            userId,
+            generation,
+          )) {
+            _notifyListenersIfAlive();
+          }
           return;
         }
         _notifyListenersIfAlive();
@@ -537,13 +544,17 @@ class OverviewController extends ChangeNotifier {
 
   /// Rebuilds [_availableAgents] from the overview (per-agent rankings and
   /// failure metadata). Uses names resolved by the repository.
-  Future<void> _updateAvailableAgents(Overview overview, String userId) async {
-    final onlineIds = await _clientAgentsRepository.loadOnlineAgentIds(
-      userId: userId,
-    );
+  Future<bool> _updateAvailableAgents(
+    Overview overview,
+    String userId,
+    int generation,
+  ) async {
+    final onlineIds =
+        overview.hubPresenceOnlineAgentIdsSnapshot ??
+        await _clientAgentsRepository.loadOnlineAgentIds(userId: userId);
 
-    if (_disposed) {
-      return;
+    if (_disposed || generation != _loadGeneration) {
+      return false;
     }
 
     final assembled = OverviewAvailableAgentsAssembler.assemble(
@@ -552,10 +563,14 @@ class OverviewController extends ChangeNotifier {
       onlineAgentIds: onlineIds,
     );
     if (assembled.isEmpty) {
-      return;
+      return false;
+    }
+    if (listEquals(_availableAgents, assembled)) {
+      return false;
     }
     _availableAgents = assembled;
     _scheduleAgentRpcCapabilityPrefetch();
+    return true;
   }
 
   /// Fire-and-forgets a `rpc.discover` for every agent that we both

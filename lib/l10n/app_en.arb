@@ -1100,6 +1100,7 @@
     }
   },
   "salesLiveMapAgentsLoadingSummary": "Loading branches",
+  "salesLiveMapAgentsNoneSummary": "No branches",
   "salesLiveMapAgentsAllWithTokenSummary": "All ({count})",
   "@salesLiveMapAgentsAllWithTokenSummary": {
     "placeholders": {
@@ -1129,6 +1130,10 @@
   "salesLiveMapLoadErrorTitle": "Could not load sales tracking",
   "salesLiveMapLoadErrorRetryMessage": "Try refreshing the query again.",
   "salesLiveMapMissingClientTokenSetupMessage": "No selected agent has a local token to execute the query.",
+  "salesLiveMapEmptyNoSalesTitle": "No sales in period",
+  "salesLiveMapEmptyNoSalesMessage": "The query ran, but did not find sales for the current filters.",
+  "salesLiveMapEmptySelectionTitle": "Selection has no result",
+  "salesLiveMapEmptySelectionMessage": "The selected branches did not return sales in this period. Clear the selection to reload all available branches.",
   "salesLiveMapChartTitle": "Sales by branch in Brazil",
   "salesLiveMapChartSubtitlePending": "Period {period}.",
   "@salesLiveMapChartSubtitlePending": {
@@ -1184,6 +1189,7 @@
   "salesLiveMapBranchesLoadBeforeSelection": "Refresh the map once to list available branches.",
   "salesLiveMapSelectAllTokenBacked": "Select all",
   "salesLiveMapClearSelection": "Clear all",
+  "salesLiveMapClearBranchSelectionAction": "Clear branch selection",
   "salesLiveMapMissingLocalToken": "No local token",
   "salesLiveMapCustomPeriodLabel": "Custom period",
   "salesLiveMapCustomPeriodHelper": "Limit of {maxDays} days per refresh.",

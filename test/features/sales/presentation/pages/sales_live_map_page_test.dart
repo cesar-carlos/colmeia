@@ -12,6 +12,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,6 +38,7 @@ void main() {
   setUpAll(() {
     Provider.debugCheckInvalidValueType = null;
     registerFallbackValue(const SalesLiveMapFilter());
+    registerFallbackValue(SalesLiveMapLoadCancelToken());
   });
 
   setUp(() async {
@@ -73,6 +75,7 @@ void main() {
       () => loadLiveMap.call(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) async => _loadedResult());
 
@@ -100,6 +103,7 @@ void main() {
         () => loadLiveMap.call(
           userId: 'user-1',
           filter: any(named: 'filter'),
+          cancelToken: any(named: 'cancelToken'),
         ),
       ).called(1);
       expect(find.text('Total revenue'), findsOneWidget);
@@ -111,6 +115,7 @@ void main() {
         () => loadLiveMap.call(
           userId: 'user-1',
           filter: any(named: 'filter'),
+          cancelToken: any(named: 'cancelToken'),
         ),
       );
     },
@@ -125,6 +130,7 @@ void main() {
       () => loadLiveMap.call(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
       ),
     ).called(1);
 
@@ -144,6 +150,7 @@ void main() {
       () => loadLiveMap.call(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
       ),
     ).called(1);
   });
@@ -156,6 +163,7 @@ void main() {
       () => loadLiveMap.call(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => completer.future);
 
@@ -166,6 +174,7 @@ void main() {
       () => loadLiveMap.call(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
       ),
     ).called(1);
 
@@ -185,12 +194,187 @@ void main() {
       () => loadLiveMap.call(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
       ),
     );
 
     completer.complete(_loadedResult());
     await tester.pump();
   });
+
+  testWidgets('ignores refresh-now while a reload is still running', (
+    tester,
+  ) async {
+    final completer = Completer<SalesLiveMapLoadResult>();
+    when(
+      () => loadLiveMap.call(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).thenAnswer((_) => completer.future);
+
+    await _pumpPage(tester, authController: authController);
+    await tester.pump();
+    await tester.pump();
+    verify(
+      () => loadLiveMap.call(
+        userId: 'user-1',
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).called(1);
+
+    await tester.tap(find.text('Refresh now'));
+    await tester.pump();
+
+    verifyNever(
+      () => loadLiveMap.call(
+        userId: 'user-1',
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    );
+
+    completer.complete(_loadedResult());
+    await tester.pump();
+  });
+
+  testWidgets('keeps initial skeleton while agents are still loading', (
+    tester,
+  ) async {
+    final agentsCompleter = Completer<List<OverviewAgentOption>>();
+    when(
+      () => loadAvailableAgentsForSales.call('user-1'),
+    ).thenAnswer((_) => agentsCompleter.future);
+
+    await _pumpPage(tester, authController: authController);
+    await tester.pump();
+
+    expect(find.text('Total revenue'), findsOneWidget);
+    verifyNever(
+      () => loadLiveMap.call(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    );
+
+    agentsCompleter.complete(const <OverviewAgentOption>[
+      OverviewAgentOption(agentId: 'agent-1', name: 'Branch One'),
+    ]);
+    await _pumpInitialLoad(tester);
+  });
+
+  testWidgets('shows explicit empty state when the query returns no sales', (
+    tester,
+  ) async {
+    when(
+      () => loadLiveMap.call(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).thenAnswer((_) async => _emptyResult());
+
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+
+    expect(find.text('No sales in period'), findsOneWidget);
+    expect(
+      find.text(
+        'The query ran, but did not find sales for the current filters.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('keeps the last map visible while a manual refresh is running', (
+    tester,
+  ) async {
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+    verify(
+      () => loadLiveMap.call(
+        userId: 'user-1',
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).called(1);
+
+    final reloadCompleter = Completer<SalesLiveMapLoadResult>();
+    when(
+      () => loadLiveMap.call(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).thenAnswer((_) => reloadCompleter.future);
+
+    await tester.tap(find.text('Refresh now'));
+    await tester.pump();
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.text('Total revenue'), findsOneWidget);
+    expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
+
+    reloadCompleter.complete(_loadedResult());
+    await tester.pump();
+  });
+
+  testWidgets(
+    'allows clearing a selected branch filter when the result is empty',
+    (
+      tester,
+    ) async {
+      when(
+        () => salesPreferences.restoreSalesLiveMapFilter(),
+      ).thenReturn(
+        const SalesLiveMapFilter(
+          selectedAgentIds: <String>{'agent-1'},
+          selectedBranchIds: <String>{'agent-1-1-1'},
+        ),
+      );
+      var callCount = 0;
+      when(
+        () => loadLiveMap.call(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) async {
+        callCount += 1;
+        return callCount == 1 ? _emptyResult() : _loadedResult();
+      });
+
+      await _pumpPage(tester, authController: authController);
+      await _pumpInitialLoad(tester);
+
+      expect(find.text('Selection has no result'), findsOneWidget);
+      expect(find.text('Clear branch selection'), findsOneWidget);
+
+      final clearButton = find.widgetWithText(
+        FilledButton,
+        'Clear branch selection',
+      );
+      await tester.ensureVisible(clearButton);
+      await tester.pump();
+      await tester.tap(clearButton);
+      await _pumpInitialLoad(tester);
+
+      final capturedFilters = verify(
+        () => loadLiveMap.call(
+          userId: 'user-1',
+          filter: captureAny(named: 'filter'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).captured.cast<SalesLiveMapFilter>().toList();
+      expect(capturedFilters, hasLength(2));
+      expect(capturedFilters.first.selectedBranchIds, <String>{'agent-1-1-1'});
+      expect(capturedFilters.last.selectedBranchIds, isNull);
+      expect(capturedFilters.last.selectedAgentIds, isNull);
+    },
+  );
 }
 
 Future<void> _pumpPage(
@@ -250,6 +434,25 @@ SalesLiveMapLoadResult _loadedResult() {
     totalBranchCount: 1,
     mappedBranchCount: 1,
     mappedMunicipalityCount: 1,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
+}
+
+SalesLiveMapLoadResult _emptyResult() {
+  return SalesLiveMapLoadResult(
+    points: const <AppBrazilStoreSalesPoint>[],
+    branchOptions: const <SalesLiveMapBranchOption>[],
+    totalRevenue: 0,
+    totalSalesCount: 0,
+    totalBranchCount: 0,
+    mappedBranchCount: 0,
+    mappedMunicipalityCount: 0,
     queriedAgentCount: 1,
     plannedAgentCount: 1,
     failedAgentCount: 0,

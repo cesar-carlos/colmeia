@@ -2371,6 +2371,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapAgentsLoadingSummary => 'Carregando filiais';
 
   @override
+  String get salesLiveMapAgentsNoneSummary => 'Sem filiais';
+
+  @override
   String salesLiveMapAgentsAllWithTokenSummary(int count) {
     return 'Todas ($count)';
   }
@@ -2433,6 +2436,20 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesLiveMapMissingClientTokenSetupMessage =>
       'Nenhum agente selecionado possui token local para executar a consulta.';
+
+  @override
+  String get salesLiveMapEmptyNoSalesTitle => 'Sem vendas no periodo';
+
+  @override
+  String get salesLiveMapEmptyNoSalesMessage =>
+      'A consulta foi executada, mas nao encontrou vendas para os filtros atuais.';
+
+  @override
+  String get salesLiveMapEmptySelectionTitle => 'Selecao sem resultado';
+
+  @override
+  String get salesLiveMapEmptySelectionMessage =>
+      'As filiais selecionadas nao retornaram vendas neste periodo. Limpe a selecao para recarregar todas as filiais disponiveis.';
 
   @override
   String get salesLiveMapChartTitle => 'Vendas por filial no Brasil';
@@ -2510,6 +2527,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapClearSelection => 'Desmarcar todas';
+
+  @override
+  String get salesLiveMapClearBranchSelectionAction =>
+      'Limpar selecao de filiais';
 
   @override
   String get salesLiveMapMissingLocalToken => 'Sem token local';
@@ -5690,6 +5711,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapAgentsLoadingSummary => 'Carregando filiais';
 
   @override
+  String get salesLiveMapAgentsNoneSummary => 'Sem filiais';
+
+  @override
   String salesLiveMapAgentsAllWithTokenSummary(int count) {
     return 'Todas ($count)';
   }
@@ -5752,6 +5776,20 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesLiveMapMissingClientTokenSetupMessage =>
       'Nenhum agente selecionado possui token local para executar a consulta.';
+
+  @override
+  String get salesLiveMapEmptyNoSalesTitle => 'Sem vendas no periodo';
+
+  @override
+  String get salesLiveMapEmptyNoSalesMessage =>
+      'A consulta foi executada, mas nao encontrou vendas para os filtros atuais.';
+
+  @override
+  String get salesLiveMapEmptySelectionTitle => 'Selecao sem resultado';
+
+  @override
+  String get salesLiveMapEmptySelectionMessage =>
+      'As filiais selecionadas nao retornaram vendas neste periodo. Limpe a selecao para recarregar todas as filiais disponiveis.';
 
   @override
   String get salesLiveMapChartTitle => 'Vendas por filial no Brasil';
@@ -5829,6 +5867,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapClearSelection => 'Desmarcar todas';
+
+  @override
+  String get salesLiveMapClearBranchSelectionAction =>
+      'Limpar selecao de filiais';
 
   @override
   String get salesLiveMapMissingLocalToken => 'Sem token local';

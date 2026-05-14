@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
@@ -26,6 +29,16 @@ class OverviewModel {
     this.weekdayUserSalesTrend = const <OverviewWeekdayUserSalesTrendPoint>[],
     this.weekdayUserSalesTrendLoadFailed = false,
     this.weekdayUserSalesTrendLoadFailureMessage,
+    this.dailySalesTrend = const <OverviewDailySalesTrendPoint>[],
+    this.dailySalesTrendLoadFailed = false,
+    this.dailySalesTrendLoadFailureMessage,
+    this.lucratividadeMensalTrend =
+        const <ResumoProdutoVendaLucratividadeMensalRow>[],
+    this.lucratividadeMensalTrendLoadFailed = false,
+    this.lucratividadeMensalTrendLoadFailureMessage,
+    this.lucratividadeTrend = const <ResumoProdutoVendaLucratividadeRow>[],
+    this.lucratividadeTrendLoadFailed = false,
+    this.lucratividadeTrendLoadFailureMessage,
     this.cachedAt,
     this.sourceAgentIds,
   });
@@ -50,6 +63,18 @@ class OverviewModel {
         json['weekdayUserSalesTrend'] as List<dynamic>? ?? const <dynamic>[];
     final weekdayUserSalesTrendLoadFailed =
         json['weekdayUserSalesTrendLoadFailed'] as bool? ?? false;
+    final dailyJson =
+        json['dailySalesTrend'] as List<dynamic>? ?? const <dynamic>[];
+    final dailySalesTrendLoadFailed =
+        json['dailySalesTrendLoadFailed'] as bool? ?? false;
+    final lucratividadeMensalJson =
+        json['lucratividadeMensalTrend'] as List<dynamic>? ?? const <dynamic>[];
+    final lucratividadeMensalTrendLoadFailed =
+        json['lucratividadeMensalTrendLoadFailed'] as bool? ?? false;
+    final lucratividadeJson =
+        json['lucratividadeTrend'] as List<dynamic>? ?? const <dynamic>[];
+    final lucratividadeTrendLoadFailed =
+        json['lucratividadeTrendLoadFailed'] as bool? ?? false;
 
     final cachedAt = json['cachedAt'] is String
         ? DateTime.tryParse(json['cachedAt'] as String)
@@ -136,6 +161,55 @@ class OverviewModel {
           })
           .toList(growable: false),
       weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
+      dailySalesTrend: dailyJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return OverviewDailySalesTrendPoint(
+              saleDate: DateTime.parse(row['saleDate'] as String),
+              salesCount: row['salesCount'] as int,
+              salesAmount: (row['salesAmount'] as num).toDouble(),
+            );
+          })
+          .toList(growable: false),
+      dailySalesTrendLoadFailed: dailySalesTrendLoadFailed,
+      lucratividadeMensalTrend: lucratividadeMensalJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return ResumoProdutoVendaLucratividadeMensalRow(
+              codEmpresa: row['codEmpresa'] as int,
+              codFilial: row['codFilial'] as int,
+              ano: row['ano'] as int,
+              mes: row['mes'] as int,
+              anoMes: row['anoMes'] as String,
+              qtdVendas: row['qtdVendas'] as int,
+              qtdItensVendido: (row['qtdItensVendido'] as num).toDouble(),
+              valorTotalCustoMedio: (row['valorTotalCustoMedio'] as num)
+                  .toDouble(),
+              custoReposicao: (row['custoReposicao'] as num).toDouble(),
+              pontoEquilibrio: (row['pontoEquilibrio'] as num).toDouble(),
+              valorTotalItem: (row['valorTotalItem'] as num).toDouble(),
+            );
+          })
+          .toList(growable: false),
+      lucratividadeMensalTrendLoadFailed: lucratividadeMensalTrendLoadFailed,
+      lucratividadeTrend: lucratividadeJson
+          .map((item) {
+            final row = item as Map<String, dynamic>;
+            return ResumoProdutoVendaLucratividadeRow(
+              codEmpresa: row['codEmpresa'] as int,
+              codFilial: row['codFilial'] as int,
+              qtdVendas: row['qtdVendas'] as int,
+              qtdItensVendido: (row['qtdItensVendido'] as num).toDouble(),
+              valorTotalCustoMedio: (row['valorTotalCustoMedio'] as num)
+                  .toDouble(),
+              custoReposicao: (row['custoReposicao'] as num).toDouble(),
+              pontoEquilibrio: (row['pontoEquilibrio'] as num).toDouble(),
+              valorTotalItem: (row['valorTotalItem'] as num).toDouble(),
+              chartAxisLabel: row['chartAxisLabel'] as String?,
+            );
+          })
+          .toList(growable: false),
+      lucratividadeTrendLoadFailed: lucratividadeTrendLoadFailed,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -171,6 +245,19 @@ class OverviewModel {
       weekdayUserSalesTrendLoadFailed: overview.weekdayUserSalesTrendLoadFailed,
       weekdayUserSalesTrendLoadFailureMessage:
           overview.weekdayUserSalesTrendLoadFailureMessage,
+      dailySalesTrend: overview.dailySalesTrend,
+      dailySalesTrendLoadFailed: overview.dailySalesTrendLoadFailed,
+      dailySalesTrendLoadFailureMessage:
+          overview.dailySalesTrendLoadFailureMessage,
+      lucratividadeMensalTrend: overview.lucratividadeMensalTrend,
+      lucratividadeMensalTrendLoadFailed:
+          overview.lucratividadeMensalTrendLoadFailed,
+      lucratividadeMensalTrendLoadFailureMessage:
+          overview.lucratividadeMensalTrendLoadFailureMessage,
+      lucratividadeTrend: overview.lucratividadeTrend,
+      lucratividadeTrendLoadFailed: overview.lucratividadeTrendLoadFailed,
+      lucratividadeTrendLoadFailureMessage:
+          overview.lucratividadeTrendLoadFailureMessage,
       cachedAt: cachedAt,
       sourceAgentIds: sourceAgentIds,
     );
@@ -206,6 +293,27 @@ class OverviewModel {
   /// See [monthlyParcelTrendLoadFailureMessage] — transient runtime field.
   final String? weekdayUserSalesTrendLoadFailureMessage;
 
+  final List<OverviewDailySalesTrendPoint> dailySalesTrend;
+
+  final bool dailySalesTrendLoadFailed;
+
+  /// Transient runtime field; not persisted in [toJson].
+  final String? dailySalesTrendLoadFailureMessage;
+
+  final List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalTrend;
+
+  final bool lucratividadeMensalTrendLoadFailed;
+
+  /// Transient runtime field; not persisted in [toJson].
+  final String? lucratividadeMensalTrendLoadFailureMessage;
+
+  final List<ResumoProdutoVendaLucratividadeRow> lucratividadeTrend;
+
+  final bool lucratividadeTrendLoadFailed;
+
+  /// Transient runtime field; not persisted in [toJson].
+  final String? lucratividadeTrendLoadFailureMessage;
+
   /// When the overview was persisted locally (for TTL / signature checks).
   final DateTime? cachedAt;
 
@@ -231,6 +339,17 @@ class OverviewModel {
       weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
       weekdayUserSalesTrendLoadFailureMessage:
           weekdayUserSalesTrendLoadFailureMessage,
+      dailySalesTrend: dailySalesTrend,
+      dailySalesTrendLoadFailed: dailySalesTrendLoadFailed,
+      dailySalesTrendLoadFailureMessage: dailySalesTrendLoadFailureMessage,
+      lucratividadeMensalTrend: lucratividadeMensalTrend,
+      lucratividadeMensalTrendLoadFailed: lucratividadeMensalTrendLoadFailed,
+      lucratividadeMensalTrendLoadFailureMessage:
+          lucratividadeMensalTrendLoadFailureMessage,
+      lucratividadeTrend: lucratividadeTrend,
+      lucratividadeTrendLoadFailed: lucratividadeTrendLoadFailed,
+      lucratividadeTrendLoadFailureMessage:
+          lucratividadeTrendLoadFailureMessage,
       isStaleCache: isStaleCache,
     );
   }
@@ -301,6 +420,50 @@ class OverviewModel {
           )
           .toList(growable: false),
       'weekdaySalesTrendLoadFailed': weekdaySalesTrendLoadFailed,
+      'dailySalesTrend': dailySalesTrend
+          .map(
+            (p) => <String, Object?>{
+              'saleDate': p.saleDate.toIso8601String(),
+              'salesCount': p.salesCount,
+              'salesAmount': p.salesAmount,
+            },
+          )
+          .toList(growable: false),
+      'dailySalesTrendLoadFailed': dailySalesTrendLoadFailed,
+      'lucratividadeMensalTrend': lucratividadeMensalTrend
+          .map(
+            (p) => <String, Object?>{
+              'codEmpresa': p.codEmpresa,
+              'codFilial': p.codFilial,
+              'ano': p.ano,
+              'mes': p.mes,
+              'anoMes': p.anoMes,
+              'qtdVendas': p.qtdVendas,
+              'qtdItensVendido': p.qtdItensVendido,
+              'valorTotalCustoMedio': p.valorTotalCustoMedio,
+              'custoReposicao': p.custoReposicao,
+              'pontoEquilibrio': p.pontoEquilibrio,
+              'valorTotalItem': p.valorTotalItem,
+            },
+          )
+          .toList(growable: false),
+      'lucratividadeMensalTrendLoadFailed': lucratividadeMensalTrendLoadFailed,
+      'lucratividadeTrend': lucratividadeTrend
+          .map(
+            (p) => <String, Object?>{
+              'codEmpresa': p.codEmpresa,
+              'codFilial': p.codFilial,
+              'qtdVendas': p.qtdVendas,
+              'qtdItensVendido': p.qtdItensVendido,
+              'valorTotalCustoMedio': p.valorTotalCustoMedio,
+              'custoReposicao': p.custoReposicao,
+              'pontoEquilibrio': p.pontoEquilibrio,
+              'valorTotalItem': p.valorTotalItem,
+              if (p.chartAxisLabel != null) 'chartAxisLabel': p.chartAxisLabel,
+            },
+          )
+          .toList(growable: false),
+      'lucratividadeTrendLoadFailed': lucratividadeTrendLoadFailed,
       if (cachedAt != null) 'cachedAt': cachedAt!.toIso8601String(),
       if (sourceAgentIds != null) 'sourceAgentIds': sourceAgentIds,
     };

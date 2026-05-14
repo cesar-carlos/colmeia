@@ -91,6 +91,54 @@ void main() {
       check((await bounded).getOrNull()?.rowCount).equals(3);
     },
   );
+
+  test(
+    'should coalesce simultaneous identical batch requests',
+    () async {
+      final delegate = _QueueAgentQueriesRepository();
+      final coalescing = CoalescingAgentQueriesRepository(delegate: delegate);
+      final firstCompleter =
+          Completer<AppResult<AgentSqlBatchExecutionResult>>();
+      final secondCompleter =
+          Completer<AppResult<AgentSqlBatchExecutionResult>>();
+      delegate
+        ..enqueueBatch((_) => firstCompleter.future)
+        ..enqueueBatch((_) => secondCompleter.future);
+
+      const request = AgentSqlExecuteBatchRequest(
+        agentId: 'agent-1',
+        clientToken: 'token-1',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(
+            sql: 'SELECT :value',
+            namedParams: <String, Object?>{'value': 1},
+            executionOrder: 0,
+          ),
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 2', executionOrder: 1),
+        ],
+        options: AgentSqlExecuteBatchOptions(maxRows: 10),
+      );
+
+      final firstFuture = coalescing.executeSqlBatch(request);
+      final secondFuture = coalescing.executeSqlBatch(request);
+
+      check(delegate.batchCallCount).equals(1);
+      check(coalescing.coalescedCount).equals(1);
+
+      firstCompleter.complete(_successBatchResult(totalCommands: 2));
+      final firstResult = await firstFuture;
+      final secondResult = await secondFuture;
+      check(firstResult.getOrNull()?.totalCommands).equals(2);
+      check(secondResult.getOrNull()?.totalCommands).equals(2);
+
+      final thirdFuture = coalescing.executeSqlBatch(request);
+      check(delegate.batchCallCount).equals(2);
+
+      secondCompleter.complete(_successBatchResult(totalCommands: 3));
+      final thirdResult = await thirdFuture;
+      check(thirdResult.getOrNull()?.totalCommands).equals(3);
+    },
+  );
 }
 
 AppResult<AgentSqlExecutionResult> _successResult({required int rowCount}) {
@@ -104,18 +152,51 @@ AppResult<AgentSqlExecutionResult> _successResult({required int rowCount}) {
   );
 }
 
+AppResult<AgentSqlBatchExecutionResult> _successBatchResult({
+  required int totalCommands,
+}) {
+  return Success<AgentSqlBatchExecutionResult, AppFailure>(
+    AgentSqlBatchExecutionResult(
+      items: <AgentSqlBatchExecutionItem>[
+        for (var i = 0; i < totalCommands; i++)
+          AgentSqlBatchExecutionItem(
+            index: i,
+            ok: true,
+            rows: const <Map<String, dynamic>>[],
+            rowCount: 0,
+          ),
+      ],
+      totalCommands: totalCommands,
+      successfulCommands: totalCommands,
+      failedCommands: 0,
+    ),
+  );
+}
+
 typedef _AgentQueryHandler =
     Future<AppResult<AgentSqlExecutionResult>> Function(
       AgentSqlExecuteRequest request,
     );
 
+typedef _AgentBatchQueryHandler =
+    Future<AppResult<AgentSqlBatchExecutionResult>> Function(
+      AgentSqlExecuteBatchRequest request,
+    );
+
 final class _QueueAgentQueriesRepository implements AgentQueriesRepository {
   final List<_AgentQueryHandler> _handlers = <_AgentQueryHandler>[];
+  final List<_AgentBatchQueryHandler> _batchHandlers =
+      <_AgentBatchQueryHandler>[];
 
   int callCount = 0;
+  int batchCallCount = 0;
 
   void enqueue(_AgentQueryHandler handler) {
     _handlers.add(handler);
+  }
+
+  void enqueueBatch(_AgentBatchQueryHandler handler) {
+    _batchHandlers.add(handler);
   }
 
   @override
@@ -130,6 +211,7 @@ final class _QueueAgentQueriesRepository implements AgentQueriesRepository {
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
     AgentSqlExecuteBatchRequest request,
   ) async {
-    throw UnimplementedError();
+    batchCallCount++;
+    return _batchHandlers.removeAt(0)(request);
   }
 }

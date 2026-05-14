@@ -6,6 +6,7 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
@@ -25,6 +26,7 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -46,8 +48,9 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   List<OverviewAgentOption> _availableAgents = const <OverviewAgentOption>[];
   late SalesLiveMapFilter _filter;
   SalesLiveMapLoadResult? _result;
-  bool _loading = false;
+  bool _loading = true;
   int _loadGeneration = 0;
+  SalesLiveMapLoadCancelToken? _activeLoadCancelToken;
 
   @override
   void initState() {
@@ -62,13 +65,31 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   }
 
   Future<void> _loadAgents() async {
+    final stopwatch = _startTraceStopwatch();
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     if (userId == null) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _result = _sessionExpiredResult();
+      });
       return;
     }
 
     final agents = await _loadAgentsUseCase(userId);
+    _logTrace(
+      'Sales live map agents loaded',
+      <String, Object?>{
+        'elapsedMs': stopwatch?.elapsedMilliseconds,
+        'agentCount': agents.length,
+        'missingTokenCount': agents
+            .where((agent) => agent.missingLocalClientToken)
+            .length,
+      },
+    );
     if (!mounted) {
       return;
     }
@@ -114,7 +135,12 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     return Set<String>.unmodifiable(reconciled);
   }
 
-  Future<void> _reload() => reloadWithSalesAutoRefresh();
+  Future<void> _reload({bool force = false}) {
+    if (force) {
+      _activeLoadCancelToken?.cancel();
+    }
+    return reloadWithSalesAutoRefresh(force: force);
+  }
 
   @override
   bool get canScheduleSalesAutoRefresh => _hasRunnableAgent;
@@ -139,6 +165,8 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final generation = ++_loadGeneration;
+    final cancelToken = SalesLiveMapLoadCancelToken();
+    _activeLoadCancelToken = cancelToken;
 
     setState(() {
       _loading = true;
@@ -148,28 +176,12 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       if (!mounted || generation != _loadGeneration) {
         return;
       }
+      if (identical(_activeLoadCancelToken, cancelToken)) {
+        _activeLoadCancelToken = null;
+      }
       setState(() {
         _loading = false;
-        _result = SalesLiveMapLoadResult(
-          points: const <AppBrazilStoreSalesPoint>[],
-          branchOptions: const <SalesLiveMapBranchOption>[],
-          totalRevenue: 0,
-          totalSalesCount: 0,
-          totalBranchCount: 0,
-          mappedBranchCount: 0,
-          mappedMunicipalityCount: 0,
-          queriedAgentCount: 0,
-          plannedAgentCount: 0,
-          failedAgentCount: 0,
-          missingClientTokenAgentCount: 0,
-          skippedOfflineAgentCount: 0,
-          rowCapReachedAgentCount: 0,
-          loadFailed: true,
-          loadFailureMessage: AppLocalizations.of(
-            context,
-          ).salesLiveMapSessionExpiredMessage,
-          refreshedAt: DateTime.now(),
-        );
+        _result = _sessionExpiredResult();
       });
       return;
     }
@@ -177,8 +189,18 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     final result = await _loadLiveMap(
       userId: userId,
       filter: _filter,
+      cancelToken: cancelToken,
     );
     if (!mounted || generation != _loadGeneration) {
+      return;
+    }
+    if (identical(_activeLoadCancelToken, cancelToken)) {
+      _activeLoadCancelToken = null;
+    }
+    if (result.cancelled) {
+      setState(() {
+        _loading = false;
+      });
       return;
     }
 
@@ -189,6 +211,12 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     if (result.loadFailed) {
       disableSalesAutoRefresh();
     }
+  }
+
+  @override
+  void dispose() {
+    _activeLoadCancelToken?.cancel();
+    super.dispose();
   }
 
   void _openLiveMapFullscreen() {
@@ -294,7 +322,19 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     if (!canScheduleSalesAutoRefresh) {
       disableSalesAutoRefresh();
     }
-    unawaited(_reload());
+    unawaited(_reload(force: true));
+  }
+
+  void _clearSelectedBranches() {
+    final next = _filter.copyWith(
+      selectedAgentIds: null,
+      selectedBranchIds: null,
+    );
+    setState(() {
+      _filter = next;
+    });
+    unawaited(_prefs.persistSalesLiveMapFilter(next));
+    unawaited(_reload(force: true));
   }
 
   SalesLiveMapFilter _normalizeFilterForSelectedBranches(
@@ -401,6 +441,16 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                 onRetry: () => unawaited(_reload()),
               ),
             ],
+            if (_shouldShowEmptyNotice(result)) ...<Widget>[
+              SizedBox(height: tokens.gapMd),
+              _SalesLiveMapEmptyNotice(
+                result: result!,
+                hasSelectedBranches:
+                    _filter.selectedBranchIds?.isNotEmpty ?? false,
+                onClearSelectedBranches: _clearSelectedBranches,
+                l10n: l10n,
+              ),
+            ],
             SizedBox(height: tokens.sectionSpacing),
             AppBrazilStoreSalesMapChart(
               title: l10n.salesLiveMapChartTitle,
@@ -425,6 +475,9 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     final branchOptions =
         result?.branchOptions ?? const <SalesLiveMapBranchOption>[];
     if (branchOptions.isEmpty) {
+      if (result != null && !_loading) {
+        return l10n.salesLiveMapAgentsNoneSummary;
+      }
       if (_availableAgents.isEmpty) {
         return l10n.salesLiveMapAgentsLoadingSummary;
       }
@@ -436,6 +489,58 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     }
     return l10n.salesLiveMapAgentsSelectedSummary(selected.length);
   }
+
+  bool _shouldShowEmptyNotice(SalesLiveMapLoadResult? result) {
+    if (result == null || result.loadFailed || result.hasPartialIssue) {
+      return false;
+    }
+    return result.totalSalesCount == 0 || result.totalBranchCount == 0;
+  }
+
+  SalesLiveMapLoadResult _sessionExpiredResult() {
+    return SalesLiveMapLoadResult(
+      points: const <AppBrazilStoreSalesPoint>[],
+      branchOptions: const <SalesLiveMapBranchOption>[],
+      totalRevenue: 0,
+      totalSalesCount: 0,
+      totalBranchCount: 0,
+      mappedBranchCount: 0,
+      mappedMunicipalityCount: 0,
+      queriedAgentCount: 0,
+      plannedAgentCount: 0,
+      failedAgentCount: 0,
+      missingClientTokenAgentCount: 0,
+      skippedOfflineAgentCount: 0,
+      rowCapReachedAgentCount: 0,
+      loadFailed: true,
+      loadFailureMessage: AppLocalizations.of(
+        context,
+      ).salesLiveMapSessionExpiredMessage,
+      refreshedAt: DateTime.now(),
+    );
+  }
+
+  Stopwatch? _startTraceStopwatch() {
+    if (!_shouldTracePerformance) {
+      return null;
+    }
+    return Stopwatch()..start();
+  }
+
+  void _logTrace(String message, Map<String, Object?> context) {
+    if (!_shouldTracePerformance) {
+      return;
+    }
+    AppLogger.info(
+      message,
+      context: <String, Object?>{
+        'operation': 'SalesLiveMapPage',
+        ...context,
+      },
+    );
+  }
+
+  bool get _shouldTracePerformance => kDebugMode || kProfileMode;
 
   String _loadErrorMessage(
     SalesLiveMapLoadResult? result,
@@ -642,6 +747,47 @@ class _SalesLiveMapAttentionPanel extends StatelessWidget {
       tone: AppInlinePanelTone.informational,
       title: l10n.salesLiveMapPartialTitle,
       message: messages.join(' '),
+    );
+  }
+}
+
+class _SalesLiveMapEmptyNotice extends StatelessWidget {
+  const _SalesLiveMapEmptyNotice({
+    required this.result,
+    required this.hasSelectedBranches,
+    required this.onClearSelectedBranches,
+    required this.l10n,
+  });
+
+  final SalesLiveMapLoadResult result;
+  final bool hasSelectedBranches;
+  final VoidCallback onClearSelectedBranches;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedWithoutRows =
+        hasSelectedBranches &&
+        result.totalBranchCount == 0 &&
+        result.totalSalesCount == 0;
+    return AppInlineErrorPanel(
+      tone: AppInlinePanelTone.informational,
+      title: selectedWithoutRows
+          ? l10n.salesLiveMapEmptySelectionTitle
+          : l10n.salesLiveMapEmptyNoSalesTitle,
+      message: selectedWithoutRows
+          ? l10n.salesLiveMapEmptySelectionMessage
+          : l10n.salesLiveMapEmptyNoSalesMessage,
+      actions: selectedWithoutRows
+          ? Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.icon(
+                onPressed: onClearSelectedBranches,
+                icon: const Icon(Icons.filter_alt_off_rounded),
+                label: Text(l10n.salesLiveMapClearBranchSelectionAction),
+              ),
+            )
+          : null,
     );
   }
 }
