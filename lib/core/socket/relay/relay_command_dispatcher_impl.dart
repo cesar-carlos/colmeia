@@ -373,8 +373,13 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           cause: e,
         );
       }
-      if (message.startsWith('Consumer socket unauthorized:') ||
-          message.startsWith('Consumer socket reconnect exhausted:')) {
+      if (message.startsWith('Consumer socket reconnect exhausted:')) {
+        throw SocketDispatchDisconnected(
+          message: 'Cannot start relay conversation: $e',
+          cause: e,
+        );
+      }
+      if (message.startsWith('Consumer socket unauthorized:')) {
         throw SocketDispatchUnauthorized(
           message: 'Cannot start relay conversation: $e',
           cause: e,
@@ -498,7 +503,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       ..on(RelayEventNames.rpcResponse, _onResponseFrame)
       ..on(RelayEventNames.rpcChunk, _onChunkFrame)
       ..on(RelayEventNames.rpcComplete, _onCompleteFrame)
-      ..on(RelayEventNames.rpcStreamPullResponse, _onStreamPullResponse);
+      ..on(RelayEventNames.rpcStreamPullResponse, _onStreamPullResponse)
+      ..on(RelayEventNames.appError, _onAppError);
     _attachedSocket = socket;
     AppLogger.debug(
       'Attached relay listeners to active socket',
@@ -520,7 +526,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         ..off(RelayEventNames.rpcResponse)
         ..off(RelayEventNames.rpcChunk)
         ..off(RelayEventNames.rpcComplete)
-        ..off(RelayEventNames.rpcStreamPullResponse);
+        ..off(RelayEventNames.rpcStreamPullResponse)
+        ..off(RelayEventNames.appError);
     } on Object catch (_) {
       // Socket is already being torn down; the next relay send will attach
       // listeners to the fresh raw socket instance.
@@ -564,6 +571,49 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       case ConsumerSocketConnecting():
         break;
     }
+  }
+
+  void _onAppError(Object? raw) {
+    final map = _toMap(raw);
+    if (map == null) {
+      return;
+    }
+    final error = _toMap(map['error']);
+    final code =
+        map['code']?.toString() ?? error?['code']?.toString() ?? 'app_error';
+    final message =
+        map['message']?.toString() ??
+        map['userMessage']?.toString() ??
+        error?['message']?.toString() ??
+        code;
+    final retryAfter = extractRetryAfterFromAppError(map);
+    final clientRequestId = _resolveClientRequestIdForAppError(map);
+    if (clientRequestId != null) {
+      final pending = _pendingByClientId[clientRequestId];
+      if (pending == null) {
+        return;
+      }
+      _failPending(
+        clientRequestId,
+        RelayRequestRejected(
+          message: message,
+          serverCode: code,
+          retryAfter: retryAfter,
+          conversationId: pending.conversationId,
+          clientRequestId: clientRequestId,
+        ),
+      );
+      return;
+    }
+    _failAllPending(
+      (entry) => RelayRequestRejected(
+        message: message,
+        serverCode: code,
+        retryAfter: retryAfter,
+        conversationId: entry.conversationId,
+        clientRequestId: entry.clientRequestId,
+      ),
+    );
   }
 
   /// JSON-only ack for `relay:rpc.stream.pull`. Carries either:
@@ -634,6 +684,32 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     final requestId = map['requestId']?.toString();
     if (requestId != null && requestId.isNotEmpty) {
       return _clientIdByRequestId[requestId];
+    }
+    return null;
+  }
+
+  String? _resolveClientRequestIdForAppError(Map<String, Object?> map) {
+    for (final key in <String>[
+      'clientRequestId',
+      'client_request_id',
+      'rpcId',
+      'rpc_id',
+    ]) {
+      final value = map[key]?.toString();
+      if (value != null &&
+          value.isNotEmpty &&
+          _pendingByClientId.containsKey(value)) {
+        return value;
+      }
+    }
+    for (final key in <String>['requestId', 'request_id']) {
+      final value = map[key]?.toString();
+      if (value != null && value.isNotEmpty) {
+        final clientRequestId = _clientIdByRequestId[value];
+        if (clientRequestId != null) {
+          return clientRequestId;
+        }
+      }
     }
     return null;
   }

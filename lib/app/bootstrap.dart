@@ -48,7 +48,7 @@ Future<void> bootstrap() async {
   await runAppWithOptionalSentry(() async {
     await setupDependencies();
     await getIt<WindowsAutoUpdateController>().initialize();
-    if (AppEnvironment.socketRelayEnabled) {
+    if (AppEnvironment.consumerSocketLifecycleEnabled) {
       getIt<SocketMetricsListener>().start();
     }
     runApp(const ColmeiaBootstrap());
@@ -102,11 +102,9 @@ class ColmeiaBootstrap extends StatelessWidget {
       child: Builder(
         builder: (context) {
           final transport = AppEnvironment.agentBridgeTransport;
-          // Materialise the consumer socket for lifecycle when the app uses
-          // Socket.IO for relay and/or the bridge (`socketRelayEnabled` is
-          // true for `AGENT_BRIDGE_TRANSPORT=socket` or explicit
-          // `SOCKET_RELAY_ENABLED=true` with REST bridge).
-          final needsSocket = AppEnvironment.socketRelayEnabled;
+          // Materialise the consumer socket for lifecycle when relay, socket
+          // bridge, or realtime presence uses the `/consumers` namespace.
+          final needsSocket = AppEnvironment.consumerSocketLifecycleEnabled;
           final connection = needsSocket
               ? getIt<ConsumerSocketConnection>()
               : null;

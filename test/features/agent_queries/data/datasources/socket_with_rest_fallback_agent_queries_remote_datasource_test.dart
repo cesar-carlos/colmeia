@@ -122,10 +122,10 @@ void main() {
       },
     );
 
-    test('unauthorized exhaustion latches to REST too', () async {
+    test('real unauthorized failure latches to REST too', () async {
       final socket = _RecordingDataSource(
         throwOn: const SocketDispatchUnauthorized(
-          message: 'reconnect exhausted',
+          message: 'refresh failed',
         ),
       );
       final rest = _RecordingDataSource(
@@ -139,6 +139,29 @@ void main() {
       await fallback.postSqlExecute(request);
       check(fallback.isLatchedToRest).isTrue();
     });
+
+    test(
+      'reconnect exhaustion mapped as disconnected does not latch',
+      () async {
+        final socket = _RecordingDataSource(
+          throwOn: const SocketDispatchDisconnected(
+            message: 'Consumer socket reconnect exhausted: handshake_timeout',
+          ),
+        );
+        final rest = _RecordingDataSource(
+          response: <String, dynamic>{'response': 'rest-must-not-be-called'},
+        );
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+        );
+
+        final raised = await _capture(fallback.postSqlExecute(request));
+        check(raised).isA<SocketDispatchDisconnected>();
+        check(fallback.isLatchedToRest).isFalse();
+        check(rest.callCount).equals(0);
+      },
+    );
 
     test(
       'transient errors propagate (no fallback): timeout, disconnected, '

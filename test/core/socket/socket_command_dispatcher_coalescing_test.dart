@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_request_correlator.dart';
@@ -126,43 +127,46 @@ void main() {
       check(r1).deepEquals(r2);
     });
 
-    test('coalesced follower can be cancelled without cancelling leader', () async {
-      final pending = Completer<Map<String, dynamic>>();
-      when(
-        () => correlator.register(any(), timeout: any(named: 'timeout')),
-      ).thenAnswer((_) => pending.future);
+    test(
+      'coalesced follower can be cancelled without cancelling leader',
+      () async {
+        final pending = Completer<Map<String, dynamic>>();
+        when(
+          () => correlator.register(any(), timeout: any(named: 'timeout')),
+        ).thenAnswer((_) => pending.future);
 
-      dispatcher = SocketCommandDispatcherImpl(
-        connection: connection,
-        correlator: correlator,
-      );
+        dispatcher = SocketCommandDispatcherImpl(
+          connection: connection,
+          correlator: correlator,
+        );
 
-      final f1 = dispatcher.sendAgentsCommand(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-A'),
-        rpcId: 'rpc-A',
-      );
-      final f2 = dispatcher.sendAgentsCommand(
-        agentId: 'agent-1',
-        body: _body(rpcId: 'rpc-B'),
-        rpcId: 'rpc-B',
-      );
-      await Future<void>.delayed(Duration.zero);
+        final f1 = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-A'),
+          rpcId: 'rpc-A',
+        );
+        final f2 = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-B'),
+          rpcId: 'rpc-B',
+        );
+        await Future<void>.delayed(Duration.zero);
 
-      dispatcher.cancel('rpc-B');
+        dispatcher.cancel('rpc-B');
 
-      await check(f2).throws<SocketDispatchCancelled>();
-      verifyNever(() => correlator.failWith(any(), any()));
+        await check(f2).throws<SocketDispatchCancelled>();
+        verifyNever(() => correlator.failWith(any(), any()));
 
-      pending.complete(<String, dynamic>{
-        'response': <String, dynamic>{
-          'type': 'single',
-          'item': <String, dynamic>{'id': 'rpc-A', 'success': true},
-        },
-      });
+        pending.complete(<String, dynamic>{
+          'response': <String, dynamic>{
+            'type': 'single',
+            'item': <String, dynamic>{'id': 'rpc-A', 'success': true},
+          },
+        });
 
-      await f1;
-    });
+        await f1;
+      },
+    );
 
     test('different params do NOT coalesce', () async {
       when(
@@ -441,6 +445,92 @@ void main() {
       check(response['rpcId']).equals('rpc-B');
       verify(() => rawSocket.off('agents:command_response')).called(1);
       verify(() => socketB.on('agents:command_response', any())).called(1);
+    });
+
+    test(
+      'connect reconnect exhausted maps to SocketDispatchDisconnected',
+      () async {
+        when(connection.connect).thenThrow(
+          StateError('Consumer socket reconnect exhausted: handshake_timeout'),
+        );
+        dispatcher = SocketCommandDispatcherImpl(
+          connection: connection,
+          correlator: correlator,
+        );
+
+        await check(
+          dispatcher.sendAgentsCommand(
+            agentId: 'agent-1',
+            body: _body(),
+            rpcId: 'rpc-1',
+          ),
+        ).throws<SocketDispatchDisconnected>();
+      },
+    );
+
+    test(
+      'connect unauthorized still maps to SocketDispatchUnauthorized',
+      () async {
+        when(connection.connect).thenThrow(
+          StateError('Consumer socket unauthorized: refresh_failed'),
+        );
+        dispatcher = SocketCommandDispatcherImpl(
+          connection: connection,
+          correlator: correlator,
+        );
+
+        await check(
+          dispatcher.sendAgentsCommand(
+            agentId: 'agent-1',
+            body: _body(),
+            rpcId: 'rpc-1',
+          ),
+        ).throws<SocketDispatchUnauthorized>();
+      },
+    );
+
+    test('gate queue rejection maps to SocketDispatchDisconnected', () async {
+      final gate = PerAgentConcurrencyGate(
+        maxInflightPerAgent: 1,
+        maxWaitersPerAgent: 0,
+      );
+      await gate.acquire('agent-1');
+      addTearDown(() => gate.release('agent-1'));
+      dispatcher = SocketCommandDispatcherImpl(
+        connection: connection,
+        correlator: correlator,
+        concurrencyGate: gate,
+      );
+
+      await check(
+        dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(),
+          rpcId: 'rpc-1',
+        ),
+      ).throws<SocketDispatchDisconnected>();
+    });
+
+    test('gate acquire timeout maps to SocketDispatchTimeout', () async {
+      final gate = PerAgentConcurrencyGate(
+        maxInflightPerAgent: 1,
+        maxWaitForSlot: const Duration(milliseconds: 1),
+      );
+      await gate.acquire('agent-1');
+      addTearDown(() => gate.release('agent-1'));
+      dispatcher = SocketCommandDispatcherImpl(
+        connection: connection,
+        correlator: correlator,
+        concurrencyGate: gate,
+      );
+
+      await check(
+        dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(),
+          rpcId: 'rpc-1',
+        ),
+      ).throws<SocketDispatchTimeout>();
     });
   });
 }

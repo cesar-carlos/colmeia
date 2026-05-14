@@ -165,7 +165,7 @@ abstract final class AppEnvironment {
     fromDefine: const String.fromEnvironment(EnvKeys.socketReconnectAttempts),
     fromDotenv: _dotenvMaybe(EnvKeys.socketReconnectAttempts),
     fallback: defaultSocketReconnectAttempts,
-  );
+  )._atLeastOrFallback(1, defaultSocketReconnectAttempts);
 
   static int get socketReconnectInitialDelayMs =>
       AppEnvironmentResolution.resolveInt(
@@ -174,7 +174,7 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketReconnectInitialDelayMs),
         fallback: defaultSocketReconnectInitialDelayMs,
-      );
+      )._atLeastOrFallback(1, defaultSocketReconnectInitialDelayMs);
 
   static int get socketReconnectMaxDelayMs =>
       AppEnvironmentResolution.resolveInt(
@@ -183,13 +183,13 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketReconnectMaxDelayMs),
         fallback: defaultSocketReconnectMaxDelayMs,
-      );
+      )._atLeastOrFallback(1, defaultSocketReconnectMaxDelayMs);
 
   static int get socketRequestTimeoutMs => AppEnvironmentResolution.resolveInt(
     fromDefine: const String.fromEnvironment(EnvKeys.socketRequestTimeoutMs),
     fromDotenv: _dotenvMaybe(EnvKeys.socketRequestTimeoutMs),
     fallback: defaultSocketRequestTimeoutMs,
-  );
+  )._atLeastOrFallback(1, defaultSocketRequestTimeoutMs);
 
   static int get socketHandshakeTimeoutMs =>
       AppEnvironmentResolution.resolveInt(
@@ -198,7 +198,7 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketHandshakeTimeoutMs),
         fallback: defaultSocketHandshakeTimeoutMs,
-      );
+      )._atLeastOrFallback(1, defaultSocketHandshakeTimeoutMs);
 
   /// Whether to pre-connect the consumer socket right after a successful
   /// login. Only effective when [agentBridgeTransport] is
@@ -304,19 +304,31 @@ abstract final class AppEnvironment {
     fromDefine: const String.fromEnvironment(EnvKeys.socketBatchWindowMs),
     fromDotenv: _dotenvMaybe(EnvKeys.socketBatchWindowMs),
     fallback: defaultSocketBatchWindowMs,
-  );
+  )._atLeastOrFallback(0, defaultSocketBatchWindowMs);
 
-  static int get socketBatchMaxSize => AppEnvironmentResolution.resolveInt(
-    fromDefine: const String.fromEnvironment(EnvKeys.socketBatchMaxSize),
-    fromDotenv: _dotenvMaybe(EnvKeys.socketBatchMaxSize),
-    fallback: defaultSocketBatchMaxSize,
-  );
+  static int get socketBatchMaxSize =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(EnvKeys.socketBatchMaxSize),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketBatchMaxSize),
+        fallback: defaultSocketBatchMaxSize,
+      )._clampOrFallback(
+        min: 1,
+        max: 32,
+        fallback: defaultSocketBatchMaxSize,
+      );
 
-  static int get socketBatchMinSize => AppEnvironmentResolution.resolveInt(
-    fromDefine: const String.fromEnvironment(EnvKeys.socketBatchMinSize),
-    fromDotenv: _dotenvMaybe(EnvKeys.socketBatchMinSize),
-    fallback: defaultSocketBatchMinSize,
-  );
+  static int get socketBatchMinSize {
+    final maxSize = socketBatchMaxSize;
+    return AppEnvironmentResolution.resolveInt(
+      fromDefine: const String.fromEnvironment(EnvKeys.socketBatchMinSize),
+      fromDotenv: _dotenvMaybe(EnvKeys.socketBatchMinSize),
+      fallback: defaultSocketBatchMinSize,
+    )._clampOrFallback(
+      min: 1,
+      max: maxSize,
+      fallback: defaultSocketBatchMinSize.clamp(1, maxSize),
+    );
+  }
 
   // ----- Socket channel (PR-L) -----
 
@@ -343,7 +355,7 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketRelayRequestTimeoutMs),
         fallback: defaultSocketRelayRequestTimeoutMs,
-      );
+      )._atLeastOrFallback(1, defaultSocketRelayRequestTimeoutMs);
 
   static int get socketRelayConversationStartTimeoutMs =>
       AppEnvironmentResolution.resolveInt(
@@ -352,7 +364,7 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketRelayConversationStartTimeoutMs),
         fallback: defaultSocketRelayConversationStartTimeoutMs,
-      );
+      )._atLeastOrFallback(1, defaultSocketRelayConversationStartTimeoutMs);
 
   static int get socketRelayConversationEndTimeoutMs =>
       AppEnvironmentResolution.resolveInt(
@@ -361,7 +373,7 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketRelayConversationEndTimeoutMs),
         fallback: defaultSocketRelayConversationEndTimeoutMs,
-      );
+      )._atLeastOrFallback(1, defaultSocketRelayConversationEndTimeoutMs);
 
   static RelayPayloadFrameCompression get socketRelayPayloadFrameCompression =>
       RelayPayloadFrameCompression.parse(
@@ -384,16 +396,22 @@ abstract final class AppEnvironment {
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketRelayStreamInitialWindow),
         fallback: defaultSocketRelayStreamInitialWindow,
-      );
+      )._atLeastOrFallback(1, defaultSocketRelayStreamInitialWindow);
 
-  static int get socketRelayStreamRefillThreshold =>
-      AppEnvironmentResolution.resolveInt(
-        fromDefine: const String.fromEnvironment(
-          EnvKeys.socketRelayStreamRefillThreshold,
-        ),
-        fromDotenv: _dotenvMaybe(EnvKeys.socketRelayStreamRefillThreshold),
-        fallback: defaultSocketRelayStreamRefillThreshold,
-      );
+  static int get socketRelayStreamRefillThreshold {
+    final initialWindow = socketRelayStreamInitialWindow;
+    return AppEnvironmentResolution.resolveInt(
+      fromDefine: const String.fromEnvironment(
+        EnvKeys.socketRelayStreamRefillThreshold,
+      ),
+      fromDotenv: _dotenvMaybe(EnvKeys.socketRelayStreamRefillThreshold),
+      fallback: defaultSocketRelayStreamRefillThreshold,
+    )._clampOrFallback(
+      min: 0,
+      max: initialWindow,
+      fallback: defaultSocketRelayStreamRefillThreshold.clamp(0, initialWindow),
+    );
+  }
 
   // ----- Socket presence (PR-M) -----
 
@@ -410,6 +428,11 @@ abstract final class AppEnvironment {
         fallback: false,
       ) ||
       agentBridgeTransport == AgentBridgeTransport.socket;
+
+  /// True when the app must materialise and lifecycle-manage the consumer
+  /// socket, even if the primary bridge transport remains REST.
+  static bool get consumerSocketLifecycleEnabled =>
+      socketRelayEnabled || socketPresenceListenerEnabled;
 
   // ----- Socket channel (PR-K) -----
 
@@ -523,5 +546,25 @@ abstract final class AppEnvironment {
       return null;
     }
     return dotenv.env[key];
+  }
+}
+
+extension _ResolvedEnvInt on int {
+  int _atLeastOrFallback(int min, int fallback) {
+    return this < min ? fallback : this;
+  }
+
+  int _clampOrFallback({
+    required int min,
+    required int max,
+    required int fallback,
+  }) {
+    if (this < min) {
+      return fallback;
+    }
+    if (this > max) {
+      return max;
+    }
+    return this;
   }
 }

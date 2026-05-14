@@ -233,6 +233,12 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
           cause: e,
         );
       }
+      if (message.startsWith('Consumer socket reconnect exhausted:')) {
+        throw SocketDispatchDisconnected(
+          message: 'Connect exhausted before dispatch: $e',
+          cause: e,
+        );
+      }
       throw SocketDispatchUnauthorized(
         message: 'Cannot connect to consumer socket: $e',
         cause: e,
@@ -260,7 +266,35 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     // correlator timeout window starts only when we actually emit.
     final gate = _concurrencyGate;
     if (gate != null) {
-      await gate.acquire(agentId);
+      try {
+        await gate.acquire(agentId);
+      } on TimeoutException catch (e, s) {
+        _emitTransient(
+          agentId: agentId,
+          rpcId: rpcId,
+          elapsed: Duration.zero,
+          reasonCode: 'gate_acquire_timeout',
+          cause: e,
+        );
+        throw SocketDispatchTimeout(
+          message: 'Per-agent concurrency gate acquire timed out: $e',
+          cause: e,
+          stackTrace: s,
+        );
+      } on Object catch (e, s) {
+        _emitTransient(
+          agentId: agentId,
+          rpcId: rpcId,
+          elapsed: Duration.zero,
+          reasonCode: 'gate_acquire_failed',
+          cause: e,
+        );
+        throw SocketDispatchDisconnected(
+          message: 'Per-agent concurrency gate acquire failed: $e',
+          cause: e,
+          stackTrace: s,
+        );
+      }
     }
 
     final method = _extractMethod(body);

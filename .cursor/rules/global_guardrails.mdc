@@ -18,6 +18,8 @@ assunto.
 
 - Nunca faca commit, push ou crie documentacao nova sem pedido explicito do
   usuario
+- Nunca crie ou troque para uma branch nova sem pedido explicito do usuario;
+  trabalhe na branch atual quando a tarefa nao solicitar branch
 - Prefira codigo autoexplicativo por nomenclatura, estrutura e abstracoes
   focadas
 - Prefira falhas claras e acionaveis a mensagens genericas

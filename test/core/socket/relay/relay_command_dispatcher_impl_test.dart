@@ -584,6 +584,163 @@ void main() {
       },
     );
 
+    test(
+      'app:error with requestId fails only the matching pending',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        Future<Map<String, dynamic>> dispatch(String id) {
+          return dispatcher.sendUnary(
+            agentId: 'agent-1',
+            body: <String, Object?>{
+              'command': <String, Object?>{
+                'jsonrpc': '2.0',
+                'method': 'sql.execute',
+                'id': id,
+              },
+            },
+            clientRequestId: id,
+          );
+        }
+
+        final f1 = dispatch('rpc-app-error-a');
+        final f2 = dispatch('rpc-app-error-b');
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-app-error-a',
+          'requestId': 'srv-app-error-a',
+          'success': true,
+        });
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-app-error-b',
+          'requestId': 'srv-app-error-b',
+          'success': true,
+        });
+
+        final f1Failure = expectLater(
+          f1,
+          throwsA(
+            isA<RelayRequestRejected>()
+                .having((e) => e.code, 'code', 'SERVICE_UNAVAILABLE')
+                .having(
+                  (e) => e.retryAfter,
+                  'retryAfter',
+                  const Duration(milliseconds: 750),
+                ),
+          ),
+        );
+
+        wiring.fire(RelayEventNames.appError, <String, Object?>{
+          'requestId': 'srv-app-error-a',
+          'code': 'SERVICE_UNAVAILABLE',
+          'message': 'hub busy',
+          'retryAfterMs': 750,
+        });
+
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'item': <String, Object?>{
+                  'id': 'rpc-app-error-b',
+                  'success': true,
+                },
+              },
+            },
+            requestId: 'srv-app-error-b',
+          ),
+        );
+
+        await f1Failure;
+        final result = await f2;
+        check(result['response']).isA<Map<dynamic, dynamic>>();
+      },
+    );
+
+    test('global app:error fails every pending relay request', () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      Future<Map<String, dynamic>> dispatch(String id) {
+        return dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': id,
+            },
+          },
+          clientRequestId: id,
+        );
+      }
+
+      final f1 = dispatch('rpc-global-error-a');
+      final f2 = dispatch('rpc-global-error-b');
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      final matcher = throwsA(
+        isA<RelayRequestRejected>()
+            .having((e) => e.code, 'code', 'RATE_LIMITED')
+            .having(
+              (e) => e.retryAfter,
+              'retryAfter',
+              const Duration(milliseconds: 500),
+            ),
+      );
+      final f1Failure = expectLater(f1, matcher);
+      final f2Failure = expectLater(f2, matcher);
+
+      wiring.fire(RelayEventNames.appError, <String, Object?>{
+        'code': 'RATE_LIMITED',
+        'message': 'too many relay requests',
+        'error': <String, Object?>{
+          'data': <String, Object?>{'retry_after_ms': 500},
+        },
+      });
+
+      await Future.wait<void>(<Future<void>>[f1Failure, f2Failure]);
+    });
+
+    test(
+      'connect reconnect exhausted is surfaced as transient disconnected',
+      () async {
+        when(connection.connect).thenThrow(
+          StateError(
+            'Consumer socket reconnect exhausted: handshake_timeout',
+          ),
+        );
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await check(
+          dispatcher.sendUnary(
+            agentId: 'agent-1',
+            body: <String, Object?>{
+              'command': <String, Object?>{
+                'jsonrpc': '2.0',
+                'method': 'sql.execute',
+                'id': 'rpc-reconnect-exhausted',
+              },
+            },
+            clientRequestId: 'rpc-reconnect-exhausted',
+          ),
+        ).throws<SocketDispatchDisconnected>();
+      },
+    );
+
     test('reattaches relay listeners after socket reconnect', () async {
       final socketB = _MockSocket();
       final wiringB = _SocketWiring()..register(socketB);
