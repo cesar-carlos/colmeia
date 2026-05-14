@@ -45,6 +45,8 @@ final class RelayConversationStartFailure extends RelayDispatchException {
   const RelayConversationStartFailure({
     required super.message,
     super.code = 'conversation_start_failed',
+    super.conversationId,
+    super.clientRequestId,
     super.cause,
     super.stackTrace,
   });

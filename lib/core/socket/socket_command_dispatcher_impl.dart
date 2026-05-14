@@ -516,8 +516,8 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     }
     try {
       socket
-        ..off(_eventCommandResponse)
-        ..off(_eventAppError);
+        ..off(_eventCommandResponse, _onCommandResponse)
+        ..off(_eventAppError, _onAppError);
     } on Object catch (_) {
       // Socket is already being torn down; the next connect will attach
       // listeners to the new raw socket instance.
@@ -586,11 +586,16 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
 
   void _onAppError(Object? raw) {
     final map = _toStringKeyedMap(raw) ?? const <String, dynamic>{};
+    final error = _toStringKeyedMap(map['error']);
     final rpcId = _extractRpcId(map);
-    final code = (map['code'] as Object?)?.toString() ?? 'app_error';
+    final code =
+        (map['code'] as Object?)?.toString() ??
+        (error?['code'] as Object?)?.toString() ??
+        'app_error';
     final message =
         (map['message'] as Object?)?.toString() ??
         (map['userMessage'] as Object?)?.toString() ??
+        (error?['message'] as Object?)?.toString() ??
         code;
     final exception = SocketDispatchAppError(
       message: message,
@@ -677,8 +682,12 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
 
   String? _extractRpcId(Map<String, dynamic> map) {
     final candidates = <Object?>[
+      map['clientRequestId'],
+      map['client_request_id'],
       map['rpcId'],
+      map['rpc_id'],
       map['requestId'],
+      map['request_id'],
       // JSON-RPC 2.0 request id echo (plug hubs often mirror `command.id`
       // here; `sql.executeBatch` batch envelopes may omit `rpcId`/`requestId`).
       map['id'],

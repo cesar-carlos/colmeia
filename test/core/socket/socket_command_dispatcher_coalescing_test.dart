@@ -415,6 +415,12 @@ void main() {
         rpcId: 'rpc-A',
       );
       await Future<void>.delayed(Duration.zero);
+      void sentinelAppError(Object? _) {}
+      handlersA
+          .putIfAbsent('app:error', () => <Function>[])
+          .add(
+            sentinelAppError,
+          );
       final firstFailure = expectLater(
         first,
         throwsA(isA<SocketDispatchDisconnected>()),
@@ -443,9 +449,77 @@ void main() {
 
       final response = await second;
       check(response['rpcId']).equals('rpc-B');
-      verify(() => rawSocket.off('agents:command_response')).called(1);
+      verify(
+        () => rawSocket.off('agents:command_response', any()),
+      ).called(1);
+      check(handlersA['app:error']?.contains(sentinelAppError)).equals(true);
       verify(() => socketB.on('agents:command_response', any())).called(1);
     });
+
+    test(
+      'app:error with client_request_id and nested error targets one pending',
+      () async {
+        final handlers = <String, List<Function>>{};
+
+        when(() => rawSocket.on(any(), any())).thenAnswer((invocation) {
+          final event = invocation.positionalArguments[0] as String;
+          final handler = invocation.positionalArguments[1] as Function;
+          handlers.putIfAbsent(event, () => <Function>[]).add(handler);
+          return () => handlers[event]?.remove(handler);
+        });
+        when(() => rawSocket.off(any(), any())).thenAnswer((invocation) {
+          final event = invocation.positionalArguments[0] as String;
+          final handler = invocation.positionalArguments[1];
+          handlers[event]?.remove(handler);
+          if (handlers[event]?.isEmpty ?? false) {
+            handlers.remove(event);
+          }
+        });
+
+        void fire(String event, Object? payload) {
+          for (final handler in List<Function>.of(
+            handlers[event] ?? <Function>[],
+          )) {
+            Function.apply(handler, <Object?>[payload]);
+          }
+        }
+
+        final realCorrelator = SocketRequestCorrelator(
+          sweepInterval: const Duration(seconds: 30),
+        );
+        dispatcher = SocketCommandDispatcherImpl(
+          connection: connection,
+          correlator: realCorrelator,
+          defaultTimeout: const Duration(milliseconds: 250),
+        );
+
+        final future = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-app-error'),
+          rpcId: 'rpc-app-error',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        fire('app:error', <String, Object?>{
+          'client_request_id': 'rpc-app-error',
+          'error': <String, Object?>{
+            'code': 'AGENT_ACCESS_DENIED',
+            'message': 'agent denied',
+            'data': <String, Object?>{'retry_after_ms': 125},
+          },
+        });
+
+        await check(future).throws<SocketDispatchAppError>(
+          (subject) => subject
+            ..has((e) => e.code, 'code').equals('AGENT_ACCESS_DENIED')
+            ..has((e) => e.message, 'message').equals('agent denied')
+            ..has(
+              (e) => e.retryAfter,
+              'retryAfter',
+            ).equals(const Duration(milliseconds: 125)),
+        );
+      },
+    );
 
     test(
       'connect reconnect exhausted maps to SocketDispatchDisconnected',

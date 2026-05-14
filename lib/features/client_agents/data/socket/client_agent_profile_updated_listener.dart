@@ -27,7 +27,9 @@ class ClientAgentProfileUpdatedListener {
     PayloadFrameCodec? codec,
   }) : _connection = connection,
        _sink = sink,
-       _codec = codec ?? const PayloadFrameCodec();
+       _codec = codec ?? const PayloadFrameCodec() {
+    _eventHandler = _onEvent;
+  }
 
   /// Wire event name from `plug_server/docs/socket_client_sdk.md`.
   static const String eventName = 'client:agent.profile.updated';
@@ -35,6 +37,7 @@ class ClientAgentProfileUpdatedListener {
   final ConsumerSocketConnection _connection;
   final Sink<AgentPresenceEvent> _sink;
   final PayloadFrameCodec _codec;
+  late final void Function(Object?) _eventHandler;
 
   bool _attached = false;
 
@@ -47,7 +50,7 @@ class ClientAgentProfileUpdatedListener {
       return;
     }
     try {
-      _connection.raw.on(eventName, _onEvent);
+      _connection.raw.on(eventName, _eventHandler);
       _attached = true;
     }
     // ConsumerSocketConnection.raw throws StateError when not yet
@@ -74,10 +77,7 @@ class ClientAgentProfileUpdatedListener {
     }
     _attached = false;
     try {
-      // Single-arg off() clears every handler for this event. Safe
-      // because the listener is the sole consumer of
-      // `client:agent.profile.updated` in the app.
-      _connection.raw.off(eventName);
+      _connection.raw.off(eventName, _eventHandler);
     }
     // The connection may already be torn down (logout / app dispose).
     // ignore: avoid_catching_errors

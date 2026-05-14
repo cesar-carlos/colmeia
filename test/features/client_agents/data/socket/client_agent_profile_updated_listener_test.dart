@@ -29,10 +29,16 @@ class _SocketWiring {
       handlers.putIfAbsent(name, () => <Function>[]).add(handler);
       return () {};
     });
-    // The listener uses single-arg `off(name)` to drop every handler
-    // for the event during dispose() / reconnect.
     when(() => socket.off(any())).thenAnswer((invocation) {
       handlers[invocation.positionalArguments[0] as String]?.clear();
+    });
+    when(() => socket.off(any(), any())).thenAnswer((invocation) {
+      final name = invocation.positionalArguments[0] as String;
+      final handler = invocation.positionalArguments[1];
+      handlers[name]?.remove(handler);
+      if (handlers[name]?.isEmpty ?? false) {
+        handlers.remove(name);
+      }
     });
   }
 
@@ -101,6 +107,29 @@ void main() {
       await listener.dispose();
       await listener.dispose();
       check(listener.isAttached).isFalse();
+    });
+
+    test('dispose removes only its own handler', () async {
+      final listener = buildListener();
+      void sentinel(Object? _) {}
+      wiring.handlers
+          .putIfAbsent(
+            ClientAgentProfileUpdatedListener.eventName,
+            () => <Function>[],
+          )
+          .add(sentinel);
+
+      listener.attach();
+      await listener.dispose();
+
+      check(
+        wiring.handlers[ClientAgentProfileUpdatedListener.eventName]?.contains(
+          sentinel,
+        ),
+      ).equals(true);
+      verify(
+        () => socket.off(ClientAgentProfileUpdatedListener.eventName, any()),
+      ).called(1);
     });
 
     test(
