@@ -1,4 +1,4 @@
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 
@@ -112,13 +112,55 @@ class SalesLiveMapFilter {
     };
   }
 
-  ResumoTotalVendasMunicipioFilialDiarioFilter toAgentQueryFilter({
+  ResumoTotalVendasMunicipioFilialPeriodoFilter toAgentQueryFilter({
     DateTime? now,
   }) {
     final range = resolveDateRange(now: now);
-    return ResumoTotalVendasMunicipioFilialDiarioFilter(
+    return ResumoTotalVendasMunicipioFilialPeriodoFilter(
       dataVendaInicio: range.startInclusive,
       dataVendaFim: range.endInclusive,
+      selectedBranches: _selectedBranchRefs(),
+    );
+  }
+
+  List<ResumoTotalVendasMunicipioFilialPeriodoBranchRef> _selectedBranchRefs() {
+    final selected = selectedBranchIds;
+    if (selected == null || selected.isEmpty) {
+      return const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[];
+    }
+
+    return selected
+        .map(_branchRefFromId)
+        .whereType<ResumoTotalVendasMunicipioFilialPeriodoBranchRef>()
+        .toList(growable: false);
+  }
+
+  ResumoTotalVendasMunicipioFilialPeriodoBranchRef? _branchRefFromId(
+    String raw,
+  ) {
+    final value = raw.trim();
+    final lastDash = value.lastIndexOf('-');
+    if (lastDash <= 0 || lastDash == value.length - 1) {
+      return null;
+    }
+    final secondLastDash = value.lastIndexOf('-', lastDash - 1);
+    if (secondLastDash <= 0 || secondLastDash == lastDash - 1) {
+      return null;
+    }
+
+    final codEmpresa = int.tryParse(
+      value.substring(secondLastDash + 1, lastDash),
+    );
+    final codFilial = int.tryParse(value.substring(lastDash + 1));
+    final agentId = value.substring(0, secondLastDash).trim();
+    if (agentId.isEmpty || codEmpresa == null || codFilial == null) {
+      return null;
+    }
+
+    return ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
+      agentId: agentId,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
     );
   }
 

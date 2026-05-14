@@ -875,6 +875,7 @@
     }
   },
   "salesLiveMapAgentsLoadingSummary": "Carregando filiais",
+  "salesLiveMapAgentsNoneSummary": "Sem filiais",
   "salesLiveMapAgentsAllWithTokenSummary": "Todas ({count})",
   "@salesLiveMapAgentsAllWithTokenSummary": {
     "placeholders": {
@@ -904,6 +905,10 @@
   "salesLiveMapLoadErrorTitle": "Nao foi possivel carregar o acompanhamento",
   "salesLiveMapLoadErrorRetryMessage": "Tente atualizar a consulta novamente.",
   "salesLiveMapMissingClientTokenSetupMessage": "Nenhum agente selecionado possui token local para executar a consulta.",
+  "salesLiveMapEmptyNoSalesTitle": "Sem vendas no periodo",
+  "salesLiveMapEmptyNoSalesMessage": "A consulta foi executada, mas nao encontrou vendas para os filtros atuais.",
+  "salesLiveMapEmptySelectionTitle": "Selecao sem resultado",
+  "salesLiveMapEmptySelectionMessage": "As filiais selecionadas nao retornaram vendas neste periodo. Limpe a selecao para recarregar todas as filiais disponiveis.",
   "salesLiveMapChartTitle": "Vendas por filial no Brasil",
   "salesLiveMapChartSubtitlePending": "Periodo {period}.",
   "@salesLiveMapChartSubtitlePending": {
@@ -959,6 +964,7 @@
   "salesLiveMapBranchesLoadBeforeSelection": "Atualize o mapa uma vez para listar as filiais disponiveis.",
   "salesLiveMapSelectAllTokenBacked": "Selecionar todas",
   "salesLiveMapClearSelection": "Desmarcar todas",
+  "salesLiveMapClearBranchSelectionAction": "Limpar selecao de filiais",
   "salesLiveMapMissingLocalToken": "Sem token local",
   "salesLiveMapCustomPeriodLabel": "Periodo personalizado",
   "salesLiveMapCustomPeriodHelper": "Limite de {maxDays} dias por atualizacao.",

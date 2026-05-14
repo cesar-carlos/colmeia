@@ -319,83 +319,86 @@ void main() {
   }
 
   group('OverviewRepositoryImpl', () {
-    test('batch load resolves targets once and emits final snapshot', () async {
-      const target = AgentQueryTarget(
-        agentId: 'agent-1',
-        displayName: 'Agent 1',
-        connectionStatus: AgentConnectionStatus.online,
-        clientToken: 'token-1',
-        hubConnectedFromApprovedCatalogRow: true,
-      );
-      when(
-        () => batchTargetResolver.resolve(
-          userId: any(named: 'userId'),
-          selectedAgentIds: any(named: 'selectedAgentIds'),
-        ),
-      ).thenAnswer(
-        (_) async => const Success<AgentQueryTargetResolution, AppFailure>(
-          AgentQueryTargetResolution(
-            consideredApprovedTargets: <AgentQueryTarget>[target],
-            missingClientTokenTargets: <AgentQueryTarget>[],
-            consideredApprovedAgentCount: 1,
-            selectedAgentIds: <String>{'agent-1'},
-            hubPresenceOnlineAgentIdsSnapshot: <String>{'agent-1'},
+    test(
+      'batch load resolves targets once and emits phased snapshots',
+      () async {
+        const target = AgentQueryTarget(
+          agentId: 'agent-1',
+          displayName: 'Agent 1',
+          connectionStatus: AgentConnectionStatus.online,
+          clientToken: 'token-1',
+          hubConnectedFromApprovedCatalogRow: true,
+        );
+        when(
+          () => batchTargetResolver.resolve(
+            userId: any(named: 'userId'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
           ),
-        ),
-      );
-      when(
-        () => batchAgentQueriesRepository.executeSqlBatch(any()),
-      ).thenAnswer(
-        (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
-          AgentSqlBatchExecutionResult(
-            totalCommands: 7,
-            successfulCommands: 7,
-            failedCommands: 0,
-            items: List<AgentSqlBatchExecutionItem>.generate(
-              7,
-              (index) => AgentSqlBatchExecutionItem(
-                index: index,
-                ok: true,
-                rows: const <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      final repository = makeRepository(useBatchOverviewLoading: true);
-      final snapshots = await repository
-          .loadOverviewProgressively(
-            userId: 'user-1',
-            filter: const OverviewFilter(
+        ).thenAnswer(
+          (_) async => const Success<AgentQueryTargetResolution, AppFailure>(
+            AgentQueryTargetResolution(
+              consideredApprovedTargets: <AgentQueryTarget>[target],
+              missingClientTokenTargets: <AgentQueryTarget>[],
+              consideredApprovedAgentCount: 1,
               selectedAgentIds: <String>{'agent-1'},
+              hubPresenceOnlineAgentIdsSnapshot: <String>{'agent-1'},
             ),
-          )
-          .toList();
+          ),
+        );
+        when(
+          () => batchAgentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: request.commands.length,
+              rowsByIndex: request.commands.length == 1
+                  ? <int, List<Map<String, dynamic>>>{
+                      0: <Map<String, dynamic>>[_mainBatchRow()],
+                    }
+                  : const <int, List<Map<String, dynamic>>>{},
+            ),
+          );
+        });
 
-      check(snapshots.length).equals(1);
-      final snapshot = snapshots.single.getOrThrow();
-      check(snapshot.isFinal).isTrue();
-      check(snapshot.pendingSections).isEmpty();
-      check(snapshot.completedSections.length).equals(10);
+        final repository = makeRepository(useBatchOverviewLoading: true);
+        final snapshots = await repository
+            .loadOverviewProgressively(
+              userId: 'user-1',
+              filter: const OverviewFilter(
+                selectedAgentIds: <String>{'agent-1'},
+              ),
+            )
+            .toList();
 
-      verify(
-        () => batchTargetResolver.resolve(
-          userId: 'user-1',
-          selectedAgentIds: const <String>{'agent-1'},
-        ),
-      ).called(1);
-      final capturedRequest =
-          verify(
-                () => batchAgentQueriesRepository.executeSqlBatch(captureAny()),
-              ).captured.single
-              as AgentSqlExecuteBatchRequest;
-      check(capturedRequest.agentId).equals('agent-1');
-      check(capturedRequest.clientToken).equals('token-1');
-      check(capturedRequest.commands.length).equals(7);
-      check(capturedRequest.useRelay).isFalse();
-    });
+        check(snapshots.length).equals(2);
+        final summarySnapshot = snapshots.first.getOrThrow();
+        check(summarySnapshot.isFinal).isFalse();
+        check(summarySnapshot.completedSections.length).equals(4);
+        final finalSnapshot = snapshots.last.getOrThrow();
+        check(finalSnapshot.isFinal).isTrue();
+        check(finalSnapshot.pendingSections).isEmpty();
+        check(finalSnapshot.completedSections.length).equals(10);
+
+        verify(
+          () => batchTargetResolver.resolve(
+            userId: 'user-1',
+            selectedAgentIds: const <String>{'agent-1'},
+          ),
+        ).called(1);
+        final capturedRequests = verify(
+          () => batchAgentQueriesRepository.executeSqlBatch(captureAny()),
+        ).captured.cast<AgentSqlExecuteBatchRequest>().toList(growable: false);
+        check(capturedRequests.length).equals(2);
+        check(capturedRequests[0].agentId).equals('agent-1');
+        check(capturedRequests[0].clientToken).equals('token-1');
+        check(capturedRequests[0].commands.length).equals(1);
+        check(capturedRequests[0].useRelay).isFalse();
+        check(capturedRequests[1].commands.length).equals(6);
+      },
+    );
 
     test(
       'batch load marks only a secondary section when its item fails',
@@ -425,17 +428,24 @@ void main() {
         );
         when(
           () => batchAgentQueriesRepository.executeSqlBatch(any()),
-        ).thenAnswer(
-          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
-            _batchResult(
-              commandCount: 7,
-              rowsByIndex: <int, List<Map<String, dynamic>>>{
-                0: <Map<String, dynamic>>[_mainBatchRow()],
-              },
-              failedIndexes: const <int>{1},
-            ),
-          ),
-        );
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          if (request.commands.length == 1) {
+            return Success<AgentSqlBatchExecutionResult, AppFailure>(
+              _batchResult(
+                commandCount: 1,
+                rowsByIndex: <int, List<Map<String, dynamic>>>{
+                  0: <Map<String, dynamic>>[_mainBatchRow()],
+                },
+              ),
+            );
+          }
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(commandCount: 6, failedIndexes: const <int>{0}),
+          );
+        });
 
         final repository = makeRepository(useBatchOverviewLoading: true);
         final result = await repository.loadOverview(
@@ -484,7 +494,7 @@ void main() {
           () => batchAgentQueriesRepository.executeSqlBatch(any()),
         ).thenAnswer(
           (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
-            _batchResult(commandCount: 7, failedIndexes: const <int>{0}),
+            _batchResult(commandCount: 1, failedIndexes: const <int>{0}),
           ),
         );
 
@@ -539,16 +549,21 @@ void main() {
         );
         when(
           () => batchAgentQueriesRepository.executeSqlBatch(any()),
-        ).thenAnswer(
-          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
-              commandCount: 6,
-              rowsByIndex: <int, List<Map<String, dynamic>>>{
-                0: <Map<String, dynamic>>[_mainBatchRow()],
-              },
+              commandCount: request.commands.length,
+              rowsByIndex: request.commands.length == 1
+                  ? <int, List<Map<String, dynamic>>>{
+                      0: <Map<String, dynamic>>[_mainBatchRow()],
+                    }
+                  : const <int, List<Map<String, dynamic>>>{},
             ),
-          ),
-        );
+          );
+        });
 
         final repository = makeRepository(useBatchOverviewLoading: true);
         final result = await repository.loadOverview(
@@ -562,10 +577,15 @@ void main() {
         final captured = verify(
           () => batchAgentQueriesRepository.executeSqlBatch(captureAny()),
         ).captured;
-        check(captured.length).equals(2);
-        for (final raw in captured) {
-          final request = raw as AgentSqlExecuteBatchRequest;
-          check(request.commands.length).equals(6);
+        check(captured.length).equals(4);
+        final requests = captured.cast<AgentSqlExecuteBatchRequest>().toList(
+          growable: false,
+        );
+        for (final request in requests.take(2)) {
+          check(request.commands.length).equals(1);
+        }
+        for (final request in requests.skip(2)) {
+          check(request.commands.length).equals(5);
         }
       },
     );

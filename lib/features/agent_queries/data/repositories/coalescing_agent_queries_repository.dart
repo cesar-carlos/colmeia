@@ -32,6 +32,8 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
 
   final Map<String, Future<AppResult<AgentSqlExecutionResult>>> _inflight =
       <String, Future<AppResult<AgentSqlExecutionResult>>>{};
+  final Map<String, Future<AppResult<AgentSqlBatchExecutionResult>>>
+  _batchInflight = <String, Future<AppResult<AgentSqlBatchExecutionResult>>>{};
 
   int _coalescedCount = 0;
 
@@ -69,10 +71,28 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
     AgentSqlExecuteBatchRequest request,
-  ) {
-    // Pass through in v1: heterogeneous batch payloads need an explicit
-    // coalescing key policy before sharing in-flight results is safe.
-    return _delegate.executeSqlBatch(request);
+  ) async {
+    final key = AgentQueriesRequestKey.buildBatch(request);
+
+    final existing = _batchInflight[key];
+    if (existing != null) {
+      _coalescedCount++;
+      AppLogger.debug(
+        'Coalescing duplicate in-flight batch request',
+        context: <String, Object?>{
+          'operation': 'executeAgentSqlBatch',
+          'agentId': request.trimmedAgentId,
+          'coalescedCount': _coalescedCount,
+        },
+      );
+      return existing;
+    }
+
+    final future = _delegate.executeSqlBatch(request);
+    _batchInflight[key] = future;
+    unawaited(_removeBatchInflightWhenComplete(key, future));
+
+    return future;
   }
 
   String _buildKey(AgentSqlExecuteRequest request) {
@@ -93,6 +113,22 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
       final current = _inflight[key];
       if (identical(current, future)) {
         _inflight.remove(key)?.ignore();
+      }
+    }
+  }
+
+  Future<void> _removeBatchInflightWhenComplete(
+    String key,
+    Future<AppResult<AgentSqlBatchExecutionResult>> future,
+  ) async {
+    try {
+      await future;
+    } on Object {
+      // Keep cleanup symmetric with single-query coalescing.
+    } finally {
+      final current = _batchInflight[key];
+      if (identical(current, future)) {
+        _batchInflight.remove(key)?.ignore();
       }
     }
   }

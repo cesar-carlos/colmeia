@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
@@ -6,21 +7,34 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 
 class LoadAvailableAgentsForSales {
-  LoadAvailableAgentsForSales(this._repository, this._clientTokenReader);
+  LoadAvailableAgentsForSales(
+    this._repository,
+    this._clientTokenReader,
+  ) : _targetResolver = null;
+
+  LoadAvailableAgentsForSales.fromTargetResolver(this._targetResolver)
+    : _repository = null,
+      _clientTokenReader = null;
 
   static const int _pageSize = 100;
 
-  final ClientAgentsRepository _repository;
-  final AgentClientTokenReader _clientTokenReader;
+  final ClientAgentsRepository? _repository;
+  final AgentClientTokenReader? _clientTokenReader;
+  final AgentQueryTargetResolver? _targetResolver;
 
   Future<List<OverviewAgentOption>> call(String userId) async {
+    final resolver = _targetResolver;
+    if (resolver != null) {
+      return _loadFromTargetResolver(resolver, userId: userId);
+    }
+
     final agents = await _loadAllApprovedAgents(userId);
     if (agents == null) {
       return <OverviewAgentOption>[];
     }
 
     final agentIds = agents.map((agent) => agent.agentId);
-    final tokensByAgent = await _clientTokenReader.readMany(
+    final tokensByAgent = await _clientTokenReader!.readMany(
       userId: userId,
       agentIds: agentIds,
     );
@@ -39,12 +53,34 @@ class LoadAvailableAgentsForSales {
         .toList();
   }
 
+  Future<List<OverviewAgentOption>> _loadFromTargetResolver(
+    AgentQueryTargetResolver resolver, {
+    required String userId,
+  }) async {
+    final result = await resolver.resolve(userId: userId);
+    final resolution = result.getOrNull();
+    if (resolution == null) {
+      return <OverviewAgentOption>[];
+    }
+
+    return resolution.consideredApprovedTargets
+        .map(
+          (target) => OverviewAgentOption(
+            agentId: target.agentId,
+            name: target.displayName,
+            connectionStatus: target.connectionStatus,
+            missingLocalClientToken: !target.hasClientToken,
+          ),
+        )
+        .toList(growable: false);
+  }
+
   Future<List<ClientAgent>?> _loadAllApprovedAgents(String userId) async {
     final agents = <ClientAgent>[];
     var page = 1;
 
     while (true) {
-      final result = await _repository.loadApprovedAgents(
+      final result = await _repository!.loadApprovedAgents(
         userId: userId,
         query: PaginatedQuery(page: page, pageSize: _pageSize),
         includeOnlineStatus: false,

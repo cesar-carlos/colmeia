@@ -1,5 +1,3 @@
-import 'dart:math' show min;
-
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
@@ -54,6 +52,7 @@ final class OverviewBatchLoadResult {
     required this.targetResults,
     required this.mainResumoReport,
     required this.totalElapsedMs,
+    this.isFinal = true,
   });
 
   final AgentQueryTargetResolution resolution;
@@ -63,6 +62,7 @@ final class OverviewBatchLoadResult {
   final AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>
   mainResumoReport;
   final int totalElapsedMs;
+  final bool isFinal;
 }
 
 final class OverviewBatchTargetResult {
@@ -124,6 +124,30 @@ final class _OverviewBatchCommandIndexes {
   final int? lucratividadeMensal;
 }
 
+final class _OverviewMainBatchCommandIndexes {
+  const _OverviewMainBatchCommandIndexes({required this.main});
+
+  final int main;
+}
+
+final class _OverviewSectionBatchCommandIndexes {
+  const _OverviewSectionBatchCommandIndexes({
+    required this.monthly,
+    required this.weekday,
+    required this.daily,
+    required this.weekdayUser,
+    required this.lucratividade,
+    this.lucratividadeMensal,
+  });
+
+  final int monthly;
+  final int weekday;
+  final int daily;
+  final int weekdayUser;
+  final int lucratividade;
+  final int? lucratividadeMensal;
+}
+
 final class _OverviewBatchCommands {
   const _OverviewBatchCommands({
     required this.commands,
@@ -132,6 +156,26 @@ final class _OverviewBatchCommands {
 
   final List<AgentSqlExecuteBatchCommand> commands;
   final _OverviewBatchCommandIndexes indexes;
+}
+
+final class _OverviewMainBatchCommands {
+  const _OverviewMainBatchCommands({
+    required this.commands,
+    required this.indexes,
+  });
+
+  final List<AgentSqlExecuteBatchCommand> commands;
+  final _OverviewMainBatchCommandIndexes indexes;
+}
+
+final class _OverviewSectionBatchCommands {
+  const _OverviewSectionBatchCommands({
+    required this.commands,
+    required this.indexes,
+  });
+
+  final List<AgentSqlExecuteBatchCommand> commands;
+  final _OverviewSectionBatchCommandIndexes indexes;
 }
 
 class OverviewBatchLoader {
@@ -153,10 +197,6 @@ class OverviewBatchLoader {
   static const int overviewBatchMaxRows =
       AgentQueriesBoundedResultMaxRows.resumoParcelasMensal;
 
-  /// Caps concurrent `sql.executeBatch` calls when many agents are selected so
-  /// the client does not stampede bridge / agent queues.
-  static const int overviewBatchMaxConcurrentAgentTargets = 4;
-
   Future<AppResult<OverviewBatchLoadResult>> load({
     required String userId,
     required OverviewFilter filter,
@@ -168,15 +208,54 @@ class OverviewBatchLoader {
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
     required AgentQueryExecutionStrategy executionStrategy,
   }) async {
+    AppResult<OverviewBatchLoadResult>? finalResult;
+    await for (final result in loadProgressively(
+      userId: userId,
+      filter: filter,
+      periodStart: periodStart,
+      periodEnd: periodEnd,
+      last12Range: last12Range,
+      mensalFilter: mensalFilter,
+      weekdayFilter: weekdayFilter,
+      dailyTotalFilter: dailyTotalFilter,
+      executionStrategy: executionStrategy,
+    )) {
+      final loaded = result.getOrNull();
+      if (loaded == null) {
+        return result;
+      }
+      finalResult = result;
+    }
+    return finalResult ??
+        const Failure<OverviewBatchLoadResult, AppFailure>(
+          UnknownFailure(
+            message: 'Overview batch load produced no data',
+            userMessage: 'Unable to load the overview.',
+          ),
+        );
+  }
+
+  Stream<AppResult<OverviewBatchLoadResult>> loadProgressively({
+    required String userId,
+    required OverviewFilter filter,
+    required DateTime periodStart,
+    required DateTime periodEnd,
+    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
+    required ResumoParcelasMensalFilter mensalFilter,
+    required ResumoParcelasDiaSemanaFilter weekdayFilter,
+    required ResumoTotalDiarioVendasFilter dailyTotalFilter,
+    required AgentQueryExecutionStrategy executionStrategy,
+  }) async* {
     final resolutionResult = await _targetResolver.resolve(
       userId: userId,
       selectedAgentIds: filter.selectedAgentIds,
     );
     final resolution = resolutionResult.getOrNull();
     if (resolution == null) {
-      return Failure<OverviewBatchLoadResult, AppFailure>(
+      yield Failure<OverviewBatchLoadResult, AppFailure>(
         resolutionResult.exceptionOrNull()!,
       );
+      return;
     }
 
     final planResult = _planBuilder.build(
@@ -187,34 +266,89 @@ class OverviewBatchLoader {
     );
     final plan = planResult.getOrNull();
     if (plan == null) {
-      return Failure<OverviewBatchLoadResult, AppFailure>(
+      yield Failure<OverviewBatchLoadResult, AppFailure>(
         planResult.exceptionOrNull()!,
       );
+      return;
     }
 
     final selectedNorm = _normalizeSelectedAgentIds(filter.selectedAgentIds);
     final includeLucratividadeMensal =
         selectedNorm != null && selectedNorm.length == 1;
+    final mainBatch = _buildMainCommands(
+      periodStart: periodStart,
+      periodEnd: periodEnd,
+    );
     final started = DateTime.now();
-    final targetResults = await _loadTargetsWithConcurrencyCap(
-      targets: plan.plannedTargets,
-      maxConcurrent: overviewBatchMaxConcurrentAgentTargets,
-      load: (target) => _loadForTarget(
-        userId: userId,
-        target: target,
-        planBridgeTimeoutMs: plan.bridgeTimeoutMs,
-        periodStart: periodStart,
-        periodEnd: periodEnd,
-        last12Range: last12Range,
-        mensalFilter: mensalFilter,
-        weekdayFilter: weekdayFilter,
-        dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: includeLucratividadeMensal,
-        hubPresenceOnlineAgentIdsSnapshot:
-            resolution.hubPresenceOnlineAgentIdsSnapshot,
+    final mainResults = await Future.wait(
+      plan.plannedTargets.map(
+        (target) => _loadMainForTarget(
+          userId: userId,
+          target: target,
+          planBridgeTimeoutMs: plan.bridgeTimeoutMs,
+          batch: mainBatch,
+          hubPresenceOnlineAgentIdsSnapshot:
+              resolution.hubPresenceOnlineAgentIdsSnapshot,
+        ),
+      ),
+    );
+    final mainElapsedMs = DateTime.now().difference(started).inMilliseconds;
+    final mainReport = _buildMainResumoReport(
+      strategy: executionStrategy,
+      plan: plan,
+      targetResults: mainResults,
+      totalElapsedMs: mainElapsedMs,
+    );
+    final hasRunnableMainSuccess = mainResults.any(
+      (result) => result.mainFailure == null,
+    );
+    final shouldLoadSections =
+        plan.plannedTargets.isNotEmpty && hasRunnableMainSuccess;
+
+    yield Success<OverviewBatchLoadResult, AppFailure>(
+      OverviewBatchLoadResult(
+        resolution: resolution,
+        plan: plan,
+        strategy: executionStrategy,
+        targetResults: mainResults,
+        mainResumoReport: mainReport,
+        totalElapsedMs: mainElapsedMs,
+        isFinal: !shouldLoadSections,
+      ),
+    );
+
+    if (!shouldLoadSections) {
+      return;
+    }
+
+    final sectionBatch = _buildSectionCommands(
+      last12Range: last12Range,
+      mensalFilter: mensalFilter,
+      weekdayFilter: weekdayFilter,
+      dailyTotalFilter: dailyTotalFilter,
+      includeLucratividadeMensal: includeLucratividadeMensal,
+    );
+    final sectionTargets = mainResults.where(
+      (result) => result.mainFailure == null,
+    );
+    final sectionResults = await Future.wait(
+      sectionTargets.map(
+        (mainResult) => _loadSectionsForTarget(
+          userId: userId,
+          target: mainResult.target,
+          planBridgeTimeoutMs: plan.bridgeTimeoutMs,
+          batch: sectionBatch,
+          includeLucratividadeMensal: includeLucratividadeMensal,
+          hubPresenceOnlineAgentIdsSnapshot:
+              resolution.hubPresenceOnlineAgentIdsSnapshot,
+        ),
       ),
     );
     final totalElapsedMs = DateTime.now().difference(started).inMilliseconds;
+    final targetResults = _combineMainAndSectionResults(
+      mainResults: mainResults,
+      sectionResults: sectionResults,
+    );
     final report = _buildMainResumoReport(
       strategy: executionStrategy,
       plan: plan,
@@ -222,7 +356,7 @@ class OverviewBatchLoader {
       totalElapsedMs: totalElapsedMs,
     );
 
-    return Success<OverviewBatchLoadResult, AppFailure>(
+    yield Success<OverviewBatchLoadResult, AppFailure>(
       OverviewBatchLoadResult(
         resolution: resolution,
         plan: plan,
@@ -234,52 +368,14 @@ class OverviewBatchLoader {
     );
   }
 
-  static Future<List<OverviewBatchTargetResult>>
-  _loadTargetsWithConcurrencyCap({
-    required List<AgentQueryTarget> targets,
-    required int maxConcurrent,
-    required Future<OverviewBatchTargetResult> Function(AgentQueryTarget target)
-    load,
-  }) async {
-    if (targets.isEmpty) {
-      return const <OverviewBatchTargetResult>[];
-    }
-    if (maxConcurrent <= 0 || targets.length <= maxConcurrent) {
-      return Future.wait(targets.map(load));
-    }
-    final out = <OverviewBatchTargetResult>[];
-    for (var i = 0; i < targets.length; i += maxConcurrent) {
-      final end = min(i + maxConcurrent, targets.length);
-      out.addAll(
-        await Future.wait(targets.sublist(i, end).map(load)),
-      );
-    }
-    return out;
-  }
-
-  Future<OverviewBatchTargetResult> _loadForTarget({
+  Future<OverviewBatchTargetResult> _loadMainForTarget({
     required String userId,
     required AgentQueryTarget target,
     required int planBridgeTimeoutMs,
-    required DateTime periodStart,
-    required DateTime periodEnd,
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
-    required ResumoParcelasMensalFilter mensalFilter,
-    required ResumoParcelasDiaSemanaFilter weekdayFilter,
-    required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
+    required _OverviewMainBatchCommands batch,
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
   }) async {
     final started = DateTime.now();
-    final batch = _buildCommands(
-      periodStart: periodStart,
-      periodEnd: periodEnd,
-      last12Range: last12Range,
-      mensalFilter: mensalFilter,
-      weekdayFilter: weekdayFilter,
-      dailyTotalFilter: dailyTotalFilter,
-      includeLucratividadeMensal: includeLucratividadeMensal,
-    );
     // `sql.executeBatch` is a unary bridge call. Keep the overview on the
     // configured base transport (REST or `agents:command`) until relay batch
     // has the same real-world timeout behaviour for the full home command set.
@@ -304,7 +400,52 @@ class OverviewBatchLoader {
     final execution = result.getOrNull();
     if (execution == null) {
       final failure = result.exceptionOrNull()!;
-      return _targetResultWithAllFailures(
+      return OverviewBatchTargetResult(
+        target: target,
+        elapsedMs: elapsedMs,
+        mainFailure: failure,
+      );
+    }
+
+    return _mapMainExecution(
+      target: target,
+      elapsedMs: elapsedMs,
+      execution: execution,
+      indexes: batch.indexes,
+    );
+  }
+
+  Future<OverviewBatchTargetResult> _loadSectionsForTarget({
+    required String userId,
+    required AgentQueryTarget target,
+    required int planBridgeTimeoutMs,
+    required _OverviewSectionBatchCommands batch,
+    required bool includeLucratividadeMensal,
+    required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+  }) async {
+    final started = DateTime.now();
+    final result = await _agentQueriesRepository.executeSqlBatch(
+      AgentSqlExecuteBatchRequest(
+        agentId: target.agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow:
+            target.hubConnectedFromApprovedCatalogRow,
+        commands: batch.commands,
+        clientToken: target.clientToken,
+        bridgeTimeoutMs: planBridgeTimeoutMs,
+        options: const AgentSqlExecuteBatchOptions(
+          sqlTimeoutMs: overviewBatchSqlTimeoutMs,
+          maxRows: overviewBatchMaxRows,
+          transaction: false,
+        ),
+      ),
+    );
+    final elapsedMs = DateTime.now().difference(started).inMilliseconds;
+    final execution = result.getOrNull();
+    if (execution == null) {
+      final failure = result.exceptionOrNull()!;
+      return _targetResultWithSectionFailures(
         target: target,
         elapsedMs: elapsedMs,
         failure: failure,
@@ -312,11 +453,75 @@ class OverviewBatchLoader {
       );
     }
 
-    return _mapExecution(
+    return _mapSectionExecution(
       target: target,
       elapsedMs: elapsedMs,
       execution: execution,
       indexes: batch.indexes,
+    );
+  }
+
+  _OverviewMainBatchCommands _buildMainCommands({
+    required DateTime periodStart,
+    required DateTime periodEnd,
+  }) {
+    final commands = <AgentSqlExecuteBatchCommand>[];
+    final main = commands.length;
+    commands.add(
+      AgentSqlExecuteBatchCommand(
+        sql: ResumoParcelaFormaPagamentoSql.query,
+        namedParams: _parcelPeriodSqlParamsFromPeriodo(
+          ResumoParcelaFormaPagamentoFilter(
+            dataVendaInicio: periodStart,
+            dataVendaFim: periodEnd,
+          ),
+        ),
+        executionOrder: main,
+      ),
+    );
+    return _OverviewMainBatchCommands(
+      commands: commands,
+      indexes: _OverviewMainBatchCommandIndexes(main: main),
+    );
+  }
+
+  _OverviewSectionBatchCommands _buildSectionCommands({
+    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
+    required ResumoParcelasMensalFilter mensalFilter,
+    required ResumoParcelasDiaSemanaFilter weekdayFilter,
+    required ResumoTotalDiarioVendasFilter dailyTotalFilter,
+    required bool includeLucratividadeMensal,
+  }) {
+    final full = _buildCommands(
+      periodStart: dailyTotalFilter.dataVendaInicio,
+      periodEnd: dailyTotalFilter.dataVendaFim,
+      last12Range: last12Range,
+      mensalFilter: mensalFilter,
+      weekdayFilter: weekdayFilter,
+      dailyTotalFilter: dailyTotalFilter,
+      includeLucratividadeMensal: includeLucratividadeMensal,
+    );
+    final commands = full.commands.skip(1).toList(growable: false);
+    for (var i = 0; i < commands.length; i++) {
+      final command = commands[i];
+      commands[i] = AgentSqlExecuteBatchCommand(
+        sql: command.sql,
+        namedParams: command.namedParams,
+        executionOrder: i,
+      );
+    }
+    return _OverviewSectionBatchCommands(
+      commands: commands,
+      indexes: _OverviewSectionBatchCommandIndexes(
+        monthly: full.indexes.monthly - 1,
+        weekday: full.indexes.weekday - 1,
+        daily: full.indexes.daily - 1,
+        weekdayUser: full.indexes.weekdayUser - 1,
+        lucratividade: full.indexes.lucratividade - 1,
+        lucratividadeMensal: full.indexes.lucratividadeMensal == null
+            ? null
+            : full.indexes.lucratividadeMensal! - 1,
+      ),
     );
   }
 
@@ -478,7 +683,7 @@ class OverviewBatchLoader {
     };
   }
 
-  OverviewBatchTargetResult _targetResultWithAllFailures({
+  OverviewBatchTargetResult _targetResultWithSectionFailures({
     required AgentQueryTarget target,
     required int elapsedMs,
     required AppFailure failure,
@@ -487,7 +692,6 @@ class OverviewBatchLoader {
     return OverviewBatchTargetResult(
       target: target,
       elapsedMs: elapsedMs,
-      mainFailure: failure,
       monthlyFailure: failure,
       weekdayFailure: failure,
       dailyFailure: failure,
@@ -497,11 +701,11 @@ class OverviewBatchLoader {
     );
   }
 
-  OverviewBatchTargetResult _mapExecution({
+  OverviewBatchTargetResult _mapMainExecution({
     required AgentQueryTarget target,
     required int elapsedMs,
     required AgentSqlBatchExecutionResult execution,
-    required _OverviewBatchCommandIndexes indexes,
+    required _OverviewMainBatchCommandIndexes indexes,
   }) {
     final byIndex = <int, AgentSqlBatchExecutionItem>{
       for (final item in execution.items) item.index: item,
@@ -512,6 +716,25 @@ class OverviewBatchLoader {
       indexes.main,
       (row) => ResumoParcelaFormaPagamentoRowModel.fromMap(row).toEntity(),
     );
+
+    return OverviewBatchTargetResult(
+      target: target,
+      elapsedMs: elapsedMs,
+      mainRows: main.rows,
+      mainFailure: main.failure,
+    );
+  }
+
+  OverviewBatchTargetResult _mapSectionExecution({
+    required AgentQueryTarget target,
+    required int elapsedMs,
+    required AgentSqlBatchExecutionResult execution,
+    required _OverviewSectionBatchCommandIndexes indexes,
+  }) {
+    final byIndex = <int, AgentSqlBatchExecutionItem>{
+      for (final item in execution.items) item.index: item,
+    };
+
     final monthly = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
       indexes.monthly,
@@ -554,14 +777,12 @@ class OverviewBatchLoader {
     return OverviewBatchTargetResult(
       target: target,
       elapsedMs: elapsedMs,
-      mainRows: main.rows,
       monthlyRows: monthly.rows,
       weekdayRows: weekday.rows,
       dailyRows: daily.rows,
       weekdayUserRows: weekdayUser.rows,
       lucratividadeRows: lucratividade.rows,
       lucratividadeMensalRows: lucratividadeMensal.rows,
-      mainFailure: main.failure,
       monthlyFailure: monthly.failure,
       weekdayFailure: weekday.failure,
       dailyFailure: daily.failure,
@@ -569,6 +790,41 @@ class OverviewBatchLoader {
       lucratividadeFailure: lucratividade.failure,
       lucratividadeMensalFailure: lucratividadeMensal.failure,
     );
+  }
+
+  List<OverviewBatchTargetResult> _combineMainAndSectionResults({
+    required List<OverviewBatchTargetResult> mainResults,
+    required List<OverviewBatchTargetResult> sectionResults,
+  }) {
+    final sectionsByAgentId = <String, OverviewBatchTargetResult>{
+      for (final result in sectionResults) result.target.agentId: result,
+    };
+    return mainResults
+        .map((main) {
+          final sections = sectionsByAgentId[main.target.agentId];
+          if (sections == null) {
+            return main;
+          }
+          return OverviewBatchTargetResult(
+            target: main.target,
+            elapsedMs: main.elapsedMs + sections.elapsedMs,
+            mainRows: main.mainRows,
+            monthlyRows: sections.monthlyRows,
+            weekdayRows: sections.weekdayRows,
+            dailyRows: sections.dailyRows,
+            weekdayUserRows: sections.weekdayUserRows,
+            lucratividadeRows: sections.lucratividadeRows,
+            lucratividadeMensalRows: sections.lucratividadeMensalRows,
+            mainFailure: main.mainFailure,
+            monthlyFailure: sections.monthlyFailure,
+            weekdayFailure: sections.weekdayFailure,
+            dailyFailure: sections.dailyFailure,
+            weekdayUserFailure: sections.weekdayUserFailure,
+            lucratividadeFailure: sections.lucratividadeFailure,
+            lucratividadeMensalFailure: sections.lucratividadeMensalFailure,
+          );
+        })
+        .toList(growable: false);
   }
 
   AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>

@@ -48,6 +48,7 @@ class Overview {
     this.agentNamesSkippedDueToHubPresence = const <String>[],
     this.mainResumoHadPlannedTargets = false,
     this.partialQueryFailureDetails = const <OverviewAgentQueryFailureDetail>[],
+    this.hubPresenceOnlineAgentIdsSnapshot,
   });
 
   final DateTime periodStart;
@@ -175,6 +176,10 @@ class Overview {
   /// lucratividade-by-agent wave. Not persisted in local overview cache.
   final List<OverviewAgentQueryFailureDetail> partialQueryFailureDetails;
 
+  /// Presence snapshot captured while resolving query targets. Transient: used
+  /// by presentation to avoid immediately reading the same presence cache again.
+  final Set<String>? hubPresenceOnlineAgentIdsSnapshot;
+
   bool get hasRows => paymentMethods.isNotEmpty;
 
   bool get hasPartialAgentQueryFailure =>
@@ -243,6 +248,7 @@ class Overview {
     List<String>? lucratividadePartialFailureAgentNames,
     bool? mainResumoHadPlannedTargets,
     List<OverviewAgentQueryFailureDetail>? partialQueryFailureDetails,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
   }) {
     return Overview(
       periodStart: periodStart ?? this.periodStart,
@@ -316,6 +322,9 @@ class Overview {
           mainResumoHadPlannedTargets ?? this.mainResumoHadPlannedTargets,
       partialQueryFailureDetails:
           partialQueryFailureDetails ?? this.partialQueryFailureDetails,
+      hubPresenceOnlineAgentIdsSnapshot:
+          hubPresenceOnlineAgentIdsSnapshot ??
+          this.hubPresenceOnlineAgentIdsSnapshot,
     );
   }
 }

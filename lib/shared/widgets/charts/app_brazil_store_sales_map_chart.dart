@@ -1,5 +1,6 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -10,6 +11,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -810,6 +812,9 @@ class _BrazilStoreSalesMapSnapshot {
     required double zoomLevel,
     required AppBrazilStoreSalesMapStyle style,
   }) {
+    final stopwatch = kDebugMode || kProfileMode
+        ? (Stopwatch()..start())
+        : null;
     final preparedData = AppBrazilStoreSalesMapData.prepareSnapshotData(
       points,
       includeEmptyStates: style.includeEmptyStates,
@@ -968,7 +973,7 @@ class _BrazilStoreSalesMapSnapshot {
       );
     }
 
-    return _BrazilStoreSalesMapSnapshot(
+    final snapshot = _BrazilStoreSalesMapSnapshot(
       metric: metric,
       selectedStoreId: selectedStoreId,
       requestedStateKey: requestedStateKey,
@@ -984,6 +989,23 @@ class _BrazilStoreSalesMapSnapshot {
       diagnostics: diagnostics,
       zoomLevel: zoomLevel,
     );
+    if (stopwatch != null) {
+      AppLogger.info(
+        'Brazil store sales map snapshot built',
+        context: <String, Object?>{
+          'operation': 'AppBrazilStoreSalesMapChart',
+          'elapsedMs': stopwatch.elapsedMilliseconds,
+          'inputPointCount': points.length,
+          'validPointCount': preparedData.validPoints.length,
+          'bucketCount': buckets.length,
+          'markerGroupCount': markerGroups.length,
+          'mapPointCount': mapPoints.length,
+          'aggregation': style.markerAggregation.name,
+          'activeRegionKey': activeRegionKey,
+        },
+      );
+    }
+    return snapshot;
   }
 
   final AppBrazilStoreSalesMapMetric metric;

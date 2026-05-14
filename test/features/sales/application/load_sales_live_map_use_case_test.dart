@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
@@ -230,6 +233,63 @@ void main() {
     ).captured.single;
     check(captured as Set<String>).deepEquals(<String>{'agent-a'});
   });
+
+  test(
+    'usa filiais selecionadas para reduzir agentes e SQL do resumo',
+    () async {
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(
+          selectedBranchIds: <String>{'agent-a-1-1'},
+        ),
+      );
+
+      final captured = verify(
+        () => loadAcrossAgents.call(
+          userId: 'user-1',
+          filter: captureAny(named: 'filter'),
+          selectedAgentIds: captureAny(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+        ),
+      ).captured;
+      final queryFilter =
+          captured[0] as ResumoTotalVendasMunicipioFilialPeriodoFilter;
+      final selectedAgentIds = captured[1] as Set<String>;
+
+      check(selectedAgentIds).deepEquals(<String>{'agent-a'});
+      check(queryFilter.selectedBranches)
+          .has((it) => it.length, 'length')
+          .equals(
+            1,
+          );
+      final branch = queryFilter.selectedBranches.single;
+      check(branch.agentId).equals('agent-a');
+      check(branch.codEmpresa).equals(1);
+      check(branch.codFilial).equals(1);
+    },
+  );
 
   test('resolve ponto por CodigoIBGEMunicipioFilial', () async {
     _stubReport(
@@ -494,6 +554,102 @@ void main() {
       check(result.locationDiagnostics.unresolvedBranchCount).equals(1);
     },
   );
+
+  test(
+    'reutiliza cache de geolocalizacao por filial entre refreshes',
+    () async {
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final first = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+      final second = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      check(first.points.single.salesAmount).equals(100);
+      check(second.points.single.salesAmount).equals(100);
+      check(geocoder.lookups).has((it) => it.length, 'length').equals(1);
+    },
+  );
+
+  test('cancela processamento local obsoleto antes de geolocalizar', () async {
+    final reportCompleter =
+        Completer<
+          AppResult<
+            AgentQueryExecutionReport<
+              ResumoTotalVendasMunicipioFilialPeriodoRow
+            >
+          >
+        >();
+    when(
+      () => loadAcrossAgents.call(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+      ),
+    ).thenAnswer((_) => reportCompleter.future);
+    final cancelToken = SalesLiveMapLoadCancelToken();
+
+    final future = useCase(
+      userId: userId,
+      filter: const SalesLiveMapFilter(),
+      cancelToken: cancelToken,
+    );
+    cancelToken.cancel();
+    reportCompleter.complete(
+      Success<
+        AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>,
+        AppFailure
+      >(
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      ),
+    );
+
+    final result = await future;
+
+    check(result.cancelled).isTrue();
+    check(result.points).isEmpty();
+    check(geocoder.lookups).isEmpty();
+  });
 }
 
 void _stubReport(

@@ -51,13 +51,17 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
         agentId: agentId.trim(),
       );
     }
+    final trimmedAgentId = agentId.trim();
+    final branchFilters = filter.branchesForAgent(trimmedAgentId);
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
       requestingUserId: userId,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: ResumoTotalVendasMunicipioFilialPeriodoSql.query,
+      sql: ResumoTotalVendasMunicipioFilialPeriodoSql.query(
+        branches: branchFilters,
+      ),
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
       namedParams: <String, Object?>{
@@ -83,12 +87,12 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
       operation: _operation,
-      agentId: agentId.trim(),
+      agentId: trimmedAgentId,
       unexpectedRowsLogMessage:
           'Unexpected row shape for ResumoTotalVendasMunicipioFilialPeriodo',
       mapExecution: (executionResult) => _mapExecutionToRows(
         executionResult,
-        agentId: agentId.trim(),
+        agentId: trimmedAgentId,
         filter: filter,
       ),
     );

@@ -1,3 +1,5 @@
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
+
 /// Period sales aggregate by company and branch with branch municipality
 /// (`ResumoTotalVendasMunicipioFilialPeriodo`).
 ///
@@ -24,7 +26,12 @@
 /// - `MAX(CodigoIBGEMunicipioFilial)` keeps IBGE available for map geolocation
 ///   without widening the grouping.
 abstract final class ResumoTotalVendasMunicipioFilialPeriodoSql {
-  static const String query = '''
+  static String query({
+    Iterable<ResumoTotalVendasMunicipioFilialPeriodoBranchRef> branches =
+        const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[],
+  }) {
+    final branchPredicate = _branchPredicate(branches);
+    return '''
 SELECT
   pv.CodEmpresa,
   pv.CodFilial,
@@ -52,6 +59,7 @@ WHERE pv.DataVenda >= CAST(:dataVendaInicio AS DATE)
   AND pv.Origem = :origem
   AND tos.GeraFinanceiro = :geraFinanceiro
   AND pv.PreVenda = :preVenda
+$branchPredicate
 GROUP BY
   pv.CodEmpresa,
   pv.CodFilial,
@@ -62,4 +70,43 @@ GROUP BY
   mf.Nome,
   TRIM(mf.UF)
 ''';
+  }
+
+  static String _branchPredicate(
+    Iterable<ResumoTotalVendasMunicipioFilialPeriodoBranchRef> branches,
+  ) {
+    final byKey = <String, ResumoTotalVendasMunicipioFilialPeriodoBranchRef>{};
+    for (final branch in branches) {
+      byKey['${branch.codEmpresa}:${branch.codFilial}'] = branch;
+    }
+    final uniqueBranches = byKey.values.toList(growable: false)
+      ..sort((left, right) {
+        final company = left.codEmpresa.compareTo(right.codEmpresa);
+        if (company != 0) {
+          return company;
+        }
+        return left.codFilial.compareTo(right.codFilial);
+      });
+    if (uniqueBranches.isEmpty) {
+      return '';
+    }
+
+    final branchesByCompany = <int, List<int>>{};
+    for (final branch in uniqueBranches) {
+      branchesByCompany
+          .putIfAbsent(branch.codEmpresa, () => <int>[])
+          .add(branch.codFilial);
+    }
+
+    final clauses = branchesByCompany.entries.map((entry) {
+      final filiais = entry.value;
+      if (filiais.length == 1) {
+        return '(pv.CodEmpresa = ${entry.key} AND pv.CodFilial = ${filiais.single})';
+      }
+
+      return '(pv.CodEmpresa = ${entry.key} '
+          'AND pv.CodFilial IN (${filiais.join(', ')}))';
+    });
+    return '\n  AND (${clauses.join(' OR ')})';
+  }
 }

@@ -228,6 +228,59 @@ void main() {
       expect(points.map((item) => item.point.salesAmount), <double>[10, 20]);
       expect(geocoder.lookupCount, 1);
     });
+
+    test('limits concurrent lookups and preserves source order', () async {
+      final geocoder = _DelayedCountingGeocoder();
+      final resolver = AppBrazilStoreSalesPointResolver(
+        locationResolver: AppLocationResolver(
+          cache: AppLocationGeocodeCache(_FakeCacheStore()),
+          geocoders: <AppLocationGeocoder>[geocoder],
+        ),
+      );
+
+      final points = await resolver.resolveAllWithDetails(
+        const <AppBrazilStoreSalesPointSource>[
+          AppBrazilStoreSalesPointSource(
+            id: 'store-1',
+            name: 'Loja 1',
+            ibgeMunicipalityCode: '5103401',
+            salesAmount: 10,
+            salesCount: 1,
+          ),
+          AppBrazilStoreSalesPointSource(
+            id: 'store-2',
+            name: 'Loja 2',
+            ibgeMunicipalityCode: '5103402',
+            salesAmount: 20,
+            salesCount: 2,
+          ),
+          AppBrazilStoreSalesPointSource(
+            id: 'store-3',
+            name: 'Loja 3',
+            ibgeMunicipalityCode: '5103403',
+            salesAmount: 30,
+            salesCount: 3,
+          ),
+          AppBrazilStoreSalesPointSource(
+            id: 'store-4',
+            name: 'Loja 4',
+            ibgeMunicipalityCode: '5103404',
+            salesAmount: 40,
+            salesCount: 4,
+          ),
+        ],
+        maxConcurrent: 2,
+      );
+
+      expect(points.map((item) => item.point.id), <String>[
+        'store-1',
+        'store-2',
+        'store-3',
+        'store-4',
+      ]);
+      expect(geocoder.maxActiveLookups, greaterThan(1));
+      expect(geocoder.maxActiveLookups, lessThanOrEqualTo(2));
+    });
   });
 }
 
@@ -319,6 +372,32 @@ class _CountingGeocoder implements AppLocationGeocoder {
       source: AppLocationSource.staticBrazilMunicipalityCentroid,
       cacheKey: 'location_geocode_ibge_5103403',
       metadata: <String, Object?>{'uf': 'MT', 'city': 'Cuiaba'},
+    );
+  }
+}
+
+class _DelayedCountingGeocoder implements AppLocationGeocoder {
+  int _activeLookups = 0;
+  int maxActiveLookups = 0;
+
+  @override
+  String get providerId => 'delayed-counting';
+
+  @override
+  Future<AppResolvedLocation?> resolve(AppLocationLookupInput input) async {
+    _activeLookups += 1;
+    if (_activeLookups > maxActiveLookups) {
+      maxActiveLookups = _activeLookups;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+    _activeLookups -= 1;
+
+    return AppResolvedLocation(
+      point: const AppGeoPoint(latitude: -15.601, longitude: -56.0974),
+      precision: AppLocationPrecision.city,
+      source: AppLocationSource.staticBrazilMunicipalityCentroid,
+      cacheKey: 'location_geocode_ibge_${input.ibgeMunicipalityCode}',
+      metadata: const <String, Object?>{'uf': 'MT', 'city': 'Cuiaba'},
     );
   }
 }

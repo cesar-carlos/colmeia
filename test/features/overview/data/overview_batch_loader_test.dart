@@ -55,7 +55,7 @@ void main() {
 
   group('OverviewBatchLoader', () {
     test(
-      'sends one full batch per selected target and maps item rows',
+      'sends phased batches per selected target and maps item rows',
       () async {
         final target = _agentTarget('agent-1', token: 'token-1');
         _stubResolution(
@@ -70,22 +70,34 @@ void main() {
         );
         when(
           () => agentQueriesRepository.executeSqlBatch(any()),
-        ).thenAnswer(
-          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          if (request.commands.length == 1) {
+            return Success<AgentSqlBatchExecutionResult, AppFailure>(
+              _batchResult(
+                commandCount: 1,
+                rowsByIndex: <int, List<Map<String, dynamic>>>{
+                  0: <Map<String, dynamic>>[_mainRow()],
+                },
+              ),
+            );
+          }
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
-              commandCount: 7,
+              commandCount: 6,
               rowsByIndex: <int, List<Map<String, dynamic>>>{
-                0: <Map<String, dynamic>>[_mainRow()],
-                1: <Map<String, dynamic>>[_monthlyRow()],
-                2: <Map<String, dynamic>>[_weekdayRow()],
-                3: <Map<String, dynamic>>[_dailyRow()],
-                4: <Map<String, dynamic>>[_weekdayUserRow()],
-                5: <Map<String, dynamic>>[_lucratividadeRow()],
-                6: <Map<String, dynamic>>[_lucratividadeMensalRow()],
+                0: <Map<String, dynamic>>[_monthlyRow()],
+                1: <Map<String, dynamic>>[_weekdayRow()],
+                2: <Map<String, dynamic>>[_dailyRow()],
+                3: <Map<String, dynamic>>[_weekdayUserRow()],
+                4: <Map<String, dynamic>>[_lucratividadeRow()],
+                5: <Map<String, dynamic>>[_lucratividadeMensalRow()],
               },
             ),
-          ),
-        );
+          );
+        });
 
         final result = await _loadSingleAgent(loader);
 
@@ -110,40 +122,46 @@ void main() {
             selectedAgentIds: const <String>{'agent-1'},
           ),
         ).called(1);
-        final request =
-            verify(
-                  () => agentQueriesRepository.executeSqlBatch(captureAny()),
-                ).captured.single
-                as AgentSqlExecuteBatchRequest;
-        check(request.agentId).equals('agent-1');
-        check(request.clientToken).equals('token-1');
-        check(request.requestingUserId).equals('user-1');
-        check(request.useRelay).isFalse();
-        check(request.bridgeTimeoutMs).equals(
+        final requests = verify(
+          () => agentQueriesRepository.executeSqlBatch(captureAny()),
+        ).captured.cast<AgentSqlExecuteBatchRequest>().toList(growable: false);
+        check(requests.length).equals(2);
+        final mainRequest = requests[0];
+        final sectionRequest = requests[1];
+        check(mainRequest.agentId).equals('agent-1');
+        check(mainRequest.clientToken).equals('token-1');
+        check(mainRequest.requestingUserId).equals('user-1');
+        check(mainRequest.useRelay).isFalse();
+        check(mainRequest.bridgeTimeoutMs).equals(
           OverviewBatchLoader.overviewBatchBridgeTimeoutMs,
         );
-        check(request.options?.sqlTimeoutMs).equals(
+        check(mainRequest.options?.sqlTimeoutMs).equals(
           OverviewBatchLoader.overviewBatchSqlTimeoutMs,
         );
-        check(request.options?.maxRows).equals(
+        check(mainRequest.options?.maxRows).equals(
           AgentQueriesBoundedResultMaxRows.resumoParcelasMensal,
         );
-        check(request.options?.transaction).equals(false);
+        check(mainRequest.options?.transaction).equals(false);
         check(
-          request.commands.map((command) => command.executionOrder),
+          mainRequest.commands.map((command) => command.executionOrder),
         ).deepEquals(
-          <int>[0, 1, 2, 3, 4, 5, 6],
+          <int>[0],
+        );
+        check(
+          sectionRequest.commands.map((command) => command.executionOrder),
+        ).deepEquals(
+          <int>[0, 1, 2, 3, 4, 5],
         );
 
         final body = const AgentSqlExecuteBatchRequestToBridgeBody().build(
-          request: request,
+          request: sectionRequest,
           rpcId: 'rpc-1',
         );
         final command = body['command']! as Map<String, Object?>;
         check(command['method']).equals('sql.executeBatch');
         final params = command['params']! as Map<String, Object?>;
         final commands = params['commands']! as List<Object?>;
-        check(commands.length).equals(7);
+        check(commands.length).equals(6);
         for (final rawCommand in commands) {
           final batchCommand = rawCommand! as Map<String, Object?>;
           final sql = batchCommand['sql']! as String;
@@ -168,17 +186,24 @@ void main() {
         );
         when(
           () => agentQueriesRepository.executeSqlBatch(any()),
-        ).thenAnswer(
-          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
-            _batchResult(
-              commandCount: 7,
-              rowsByIndex: <int, List<Map<String, dynamic>>>{
-                0: <Map<String, dynamic>>[_mainRow()],
-              },
-              failedIndexes: const <int>{1},
-            ),
-          ),
-        );
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          if (request.commands.length == 1) {
+            return Success<AgentSqlBatchExecutionResult, AppFailure>(
+              _batchResult(
+                commandCount: 1,
+                rowsByIndex: <int, List<Map<String, dynamic>>>{
+                  0: <Map<String, dynamic>>[_mainRow()],
+                },
+              ),
+            );
+          }
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(commandCount: 6, failedIndexes: const <int>{0}),
+          );
+        });
 
         final result = await _loadSingleAgent(loader);
 
@@ -193,7 +218,7 @@ void main() {
     );
 
     test(
-      'keeps successful agent data when another target batch fails entirely',
+      'keeps successful agent data when another target main batch fails',
       () async {
         final targets = <AgentQueryTarget>[
           _agentTarget('agent-1', token: 'token-1'),
@@ -224,10 +249,12 @@ void main() {
           }
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
-              commandCount: 6,
-              rowsByIndex: <int, List<Map<String, dynamic>>>{
-                0: <Map<String, dynamic>>[_mainRow()],
-              },
+              commandCount: request.commands.length,
+              rowsByIndex: request.commands.length == 1
+                  ? <int, List<Map<String, dynamic>>>{
+                      0: <Map<String, dynamic>>[_mainRow()],
+                    }
+                  : const <int, List<Map<String, dynamic>>>{},
             ),
           );
         });
@@ -259,8 +286,8 @@ void main() {
           (target) => target.target.agentId == 'agent-2',
         );
         check(failed.mainFailure).isA<NetworkFailure>();
-        check(failed.monthlyFailure).isA<NetworkFailure>();
-        check(failed.weekdayFailure).isA<NetworkFailure>();
+        check(failed.monthlyFailure).isNull();
+        check(failed.weekdayFailure).isNull();
         check(successful.mainFailure).isNull();
         check(successful.mainRows.single.valorParcela).equals(100);
         final report = result.getOrThrow().mainResumoReport;
@@ -276,6 +303,12 @@ void main() {
               .rows
               .length,
         ).equals(1);
+        final captured = verify(
+          () => agentQueriesRepository.executeSqlBatch(captureAny()),
+        ).captured.cast<AgentSqlExecuteBatchRequest>().toList(growable: false);
+        check(captured.map((request) => request.agentId)).deepEquals(
+          <String>['agent-1', 'agent-2', 'agent-2'],
+        );
       },
     );
 
@@ -297,11 +330,14 @@ void main() {
         );
         when(
           () => agentQueriesRepository.executeSqlBatch(any()),
-        ).thenAnswer(
-          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
-            _batchResult(commandCount: 6),
-          ),
-        );
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(commandCount: request.commands.length),
+          );
+        });
 
         final result = await loader.load(
           userId: 'user-1',
@@ -324,9 +360,15 @@ void main() {
         final captured = verify(
           () => agentQueriesRepository.executeSqlBatch(captureAny()),
         ).captured;
-        check(captured.length).equals(2);
-        for (final request in captured.cast<AgentSqlExecuteBatchRequest>()) {
-          check(request.commands.length).equals(6);
+        check(captured.length).equals(4);
+        final requests = captured.cast<AgentSqlExecuteBatchRequest>().toList(
+          growable: false,
+        );
+        for (final request in requests.take(2)) {
+          check(request.commands.length).equals(1);
+        }
+        for (final request in requests.skip(2)) {
+          check(request.commands.length).equals(5);
         }
         check(
           result.getOrThrow().targetResults.every(
@@ -337,7 +379,7 @@ void main() {
     );
 
     test(
-      'limits concurrent executeSqlBatch calls across many agent targets',
+      'dispatches executeSqlBatch calls for every agent target in parallel',
       () async {
         final targets = List<AgentQueryTarget>.generate(
           6,
@@ -358,7 +400,10 @@ void main() {
         var maxActive = 0;
         when(
           () => agentQueriesRepository.executeSqlBatch(any()),
-        ).thenAnswer((_) async {
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
           active++;
           if (active > maxActive) {
             maxActive = active;
@@ -366,7 +411,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 40));
           active--;
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
-            _batchResult(commandCount: 6),
+            _batchResult(commandCount: request.commands.length),
           );
         });
 
@@ -389,10 +434,7 @@ void main() {
           executionStrategy: AgentQueryExecutionStrategy.mergeAll,
         );
 
-        check(maxActive).isLessOrEqual(
-          OverviewBatchLoader.overviewBatchMaxConcurrentAgentTargets,
-        );
-        check(maxActive).isGreaterOrEqual(2);
+        check(maxActive).equals(targets.length);
       },
     );
 

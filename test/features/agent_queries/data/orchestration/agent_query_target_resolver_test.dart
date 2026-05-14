@@ -109,12 +109,12 @@ void main() {
       final resolution = result.getOrThrow();
       check(resolution.consideredApprovedTargets).isEmpty();
       check(resolution.consideredApprovedAgentCount).equals(0);
-      verifyNever(
+      verify(
         () => tokenStore.readMany(
-          userId: any(named: 'userId'),
+          userId: 'user-1',
           agentIds: any(named: 'agentIds'),
         ),
-      );
+      ).called(1);
     },
   );
 
@@ -192,6 +192,80 @@ void main() {
       'Agente A',
     );
   });
+
+  test(
+    'should reuse recent all-target resolution for selected calls',
+    () async {
+      var current = DateTime.utc(2026, 5, 14, 10);
+      resolver = AgentQueryTargetResolver(
+        clientAgentsRepository: agentsRepository,
+        clientTokenReader: tokenStore,
+        now: () => current,
+      );
+      when(
+        () => agentsRepository.loadApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+          includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          refresh: any(named: 'refresh'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+          PaginatedResult<ClientAgent>(
+            items: <ClientAgent>[_agent('agent-a'), _agent('agent-b')],
+            count: 2,
+            total: 2,
+            page: 1,
+            pageSize: 50,
+          ),
+        ),
+      );
+      when(
+        () => tokenStore.readMany(
+          userId: any(named: 'userId'),
+          agentIds: any(named: 'agentIds'),
+        ),
+      ).thenAnswer(
+        (_) async => <String, String>{
+          'agent-a': 'token-a',
+          'agent-b': 'token-b',
+        },
+      );
+
+      final allResult = await resolver.resolve(userId: 'user-1');
+      current = current.add(const Duration(seconds: 2));
+      final selectedResult = await resolver.resolve(
+        userId: 'user-1',
+        selectedAgentIds: <String>{'agent-a'},
+      );
+
+      check(allResult.isSuccess()).isTrue();
+      check(selectedResult.isSuccess()).isTrue();
+      check(
+        selectedResult.getOrThrow().consideredApprovedTargets.map(
+          (target) => target.agentId,
+        ),
+      ).deepEquals(const <String>['agent-a']);
+      verify(
+        () => agentsRepository.loadApprovedAgents(
+          userId: 'user-1',
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+          includeOnlineStatus: false,
+          refresh: any(named: 'refresh'),
+        ),
+      ).called(1);
+      verify(
+        () => tokenStore.readMany(
+          userId: 'user-1',
+          agentIds: any(named: 'agentIds'),
+        ),
+      ).called(1);
+    },
+  );
 
   test('should load approved agents with online status disabled', () async {
     when(

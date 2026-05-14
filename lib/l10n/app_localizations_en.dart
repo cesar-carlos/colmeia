@@ -2334,6 +2334,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesLiveMapAgentsLoadingSummary => 'Loading branches';
 
   @override
+  String get salesLiveMapAgentsNoneSummary => 'No branches';
+
+  @override
   String salesLiveMapAgentsAllWithTokenSummary(int count) {
     return 'All ($count)';
   }
@@ -2395,6 +2398,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get salesLiveMapMissingClientTokenSetupMessage =>
       'No selected agent has a local token to execute the query.';
+
+  @override
+  String get salesLiveMapEmptyNoSalesTitle => 'No sales in period';
+
+  @override
+  String get salesLiveMapEmptyNoSalesMessage =>
+      'The query ran, but did not find sales for the current filters.';
+
+  @override
+  String get salesLiveMapEmptySelectionTitle => 'Selection has no result';
+
+  @override
+  String get salesLiveMapEmptySelectionMessage =>
+      'The selected branches did not return sales in this period. Clear the selection to reload all available branches.';
 
   @override
   String get salesLiveMapChartTitle => 'Sales by branch in Brazil';
@@ -2472,6 +2489,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesLiveMapClearSelection => 'Clear all';
+
+  @override
+  String get salesLiveMapClearBranchSelectionAction => 'Clear branch selection';
 
   @override
   String get salesLiveMapMissingLocalToken => 'No local token';
