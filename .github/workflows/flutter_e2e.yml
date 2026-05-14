@@ -40,7 +40,7 @@ jobs:
           [ -z "$E2E_CLIENT_EMAIL" ] && missing+=(E2E_CLIENT_EMAIL)
           [ -z "$E2E_CLIENT_PASSWORD" ] && missing+=(E2E_CLIENT_PASSWORD)
           if [ ${#missing[@]} -ne 0 ]; then
-            echo "::error::Missing repository secrets: ${missing[*]}. Add them under Settings → Secrets and variables → Actions."
+            echo "::error::Missing repository secrets: ${missing[*]}. Add them under Settings -> Secrets and variables -> Actions."
             exit 1
           fi
 
@@ -56,28 +56,68 @@ jobs:
           --concurrency=1
           --reporter expanded
 
-      - name: E2E smoke (AGENT_BRIDGE_TRANSPORT=socket)
+  transport_smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: rest-pure
+            dart_defines: >-
+              --dart-define=AGENT_BRIDGE_TRANSPORT=rest
+              --dart-define=SOCKET_RELAY_ENABLED=false
+              --dart-define=SOCKET_PRESENCE_LISTENER_ENABLED=false
+          - name: rest-relay
+            dart_defines: >-
+              --dart-define=AGENT_BRIDGE_TRANSPORT=rest
+              --dart-define=SOCKET_RELAY_ENABLED=true
+              --dart-define=SOCKET_PRESENCE_LISTENER_ENABLED=false
+          - name: socket-relay-presence
+            dart_defines: >-
+              --dart-define=AGENT_BRIDGE_TRANSPORT=socket
+              --dart-define=SOCKET_RELAY_ENABLED=true
+              --dart-define=SOCKET_PRESENCE_LISTENER_ENABLED=true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: ./.github/actions/setup-colmeia-flutter
+        with:
+          flutter-version: ${{ vars.FLUTTER_CI_VERSION }}
+
+      - name: Verify E2E secrets
         env:
           E2E_AGENT_ID: ${{ secrets.E2E_AGENT_ID }}
           E2E_CLIENT_TOKEN: ${{ secrets.E2E_CLIENT_TOKEN }}
           E2E_CLIENT_EMAIL: ${{ secrets.E2E_CLIENT_EMAIL }}
           E2E_CLIENT_PASSWORD: ${{ secrets.E2E_CLIENT_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -z "$E2E_AGENT_ID" ] && missing+=(E2E_AGENT_ID)
+          [ -z "$E2E_CLIENT_TOKEN" ] && missing+=(E2E_CLIENT_TOKEN)
+          [ -z "$E2E_CLIENT_EMAIL" ] && missing+=(E2E_CLIENT_EMAIL)
+          [ -z "$E2E_CLIENT_PASSWORD" ] && missing+=(E2E_CLIENT_PASSWORD)
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Missing repository secrets: ${missing[*]}. Add them under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: E2E transport smoke (${{ matrix.name }})
+        env:
+          E2E_AGENT_ID: ${{ secrets.E2E_AGENT_ID }}
+          E2E_CLIENT_TOKEN: ${{ secrets.E2E_CLIENT_TOKEN }}
+          E2E_CLIENT_EMAIL: ${{ secrets.E2E_CLIENT_EMAIL }}
+          E2E_CLIENT_PASSWORD: ${{ secrets.E2E_CLIENT_PASSWORD }}
+          DART_DEFINES: ${{ matrix.dart_defines }}
+        shell: bash
         run: >-
           flutter test
           test/integration/e2e/agent_sql_bridge_e2e_test.dart
+          test/integration/e2e/overview_batch_loader_e2e_test.dart
           --concurrency=1
           --reporter expanded
-          --dart-define=AGENT_BRIDGE_TRANSPORT=socket
-
-      - name: E2E repository smoke (socket transport)
-        env:
-          E2E_AGENT_ID: ${{ secrets.E2E_AGENT_ID }}
-          E2E_CLIENT_TOKEN: ${{ secrets.E2E_CLIENT_TOKEN }}
-          E2E_CLIENT_EMAIL: ${{ secrets.E2E_CLIENT_EMAIL }}
-          E2E_CLIENT_PASSWORD: ${{ secrets.E2E_CLIENT_PASSWORD }}
-        run: >-
-          flutter test
-          test/integration/e2e/municipio_list_repository_e2e_test.dart
-          --concurrency=1
-          --reporter expanded
-          --dart-define=AGENT_BRIDGE_TRANSPORT=socket
+          $DART_DEFINES

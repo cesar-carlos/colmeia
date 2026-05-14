@@ -249,7 +249,8 @@ void main() {
     final dynamic sheet = tester.widget(
       find.byWidgetPredicate(
         (widget) =>
-            widget.runtimeType.toString() == 'SalesBranchAnchorMonthFiltersSheet',
+            widget.runtimeType.toString() ==
+            'SalesBranchAnchorMonthFiltersSheet',
       ),
     );
     // The filter sheet widget is private, so the test reads its public callback
@@ -273,6 +274,22 @@ void main() {
     await tester.pumpAndSettle();
 
     _expectSalesSeriesBaseValue(tester, 900);
+    verify(
+      () => loadMonthlyPnlLines.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        anchor: secondAnchor,
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).called(1);
+    verify(
+      () => loadMonthlyPnlLines.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        anchor: thirdAnchor,
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).called(1);
 
     secondCompleter.complete(_bundleWithBaseValue(250));
     await tester.pumpAndSettle();

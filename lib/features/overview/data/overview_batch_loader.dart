@@ -63,6 +63,17 @@ final class OverviewBatchLoadResult {
   mainResumoReport;
   final int totalElapsedMs;
   final bool isFinal;
+
+  bool get hasTargetFailures =>
+      targetResults.any((result) => result.hasAnyFailure);
+
+  bool get hasSuccessfulMainTarget =>
+      targetResults.any((result) => result.mainFailure == null);
+
+  bool get completedWithOnlyTargetFailures =>
+      targetResults.isNotEmpty &&
+      targetResults.every((result) => result.hasAnyFailure) &&
+      !hasSuccessfulMainTarget;
 }
 
 final class OverviewBatchTargetResult {
@@ -102,6 +113,23 @@ final class OverviewBatchTargetResult {
   final AppFailure? weekdayUserFailure;
   final AppFailure? lucratividadeFailure;
   final AppFailure? lucratividadeMensalFailure;
+
+  bool get hasAnyFailure =>
+      mainFailure != null ||
+      monthlyFailure != null ||
+      weekdayFailure != null ||
+      dailyFailure != null ||
+      weekdayUserFailure != null ||
+      lucratividadeFailure != null ||
+      lucratividadeMensalFailure != null;
+
+  bool get hasSectionFailure =>
+      monthlyFailure != null ||
+      weekdayFailure != null ||
+      dailyFailure != null ||
+      weekdayUserFailure != null ||
+      lucratividadeFailure != null ||
+      lucratividadeMensalFailure != null;
 }
 
 final class _OverviewBatchCommandIndexes {
@@ -376,9 +404,8 @@ class OverviewBatchLoader {
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
   }) async {
     final started = DateTime.now();
-    // `sql.executeBatch` is a unary bridge call. Keep the overview on the
-    // configured base transport (REST or `agents:command`) until relay batch
-    // has the same real-world timeout behaviour for the full home command set.
+    // Keep dashboard batches on relay when the socket path is enabled so
+    // unary and batch SQL share the same transient/permanent failure contract.
     final result = await _agentQueriesRepository.executeSqlBatch(
       AgentSqlExecuteBatchRequest(
         agentId: target.agentId,
@@ -388,6 +415,7 @@ class OverviewBatchLoader {
             target.hubConnectedFromApprovedCatalogRow,
         commands: batch.commands,
         clientToken: target.clientToken,
+        useRelay: true,
         bridgeTimeoutMs: planBridgeTimeoutMs,
         options: const AgentSqlExecuteBatchOptions(
           sqlTimeoutMs: overviewBatchSqlTimeoutMs,
@@ -433,6 +461,7 @@ class OverviewBatchLoader {
             target.hubConnectedFromApprovedCatalogRow,
         commands: batch.commands,
         clientToken: target.clientToken,
+        useRelay: true,
         bridgeTimeoutMs: planBridgeTimeoutMs,
         options: const AgentSqlExecuteBatchOptions(
           sqlTimeoutMs: overviewBatchSqlTimeoutMs,

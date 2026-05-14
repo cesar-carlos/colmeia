@@ -395,8 +395,9 @@ void main() {
         check(capturedRequests[0].agentId).equals('agent-1');
         check(capturedRequests[0].clientToken).equals('token-1');
         check(capturedRequests[0].commands.length).equals(1);
-        check(capturedRequests[0].useRelay).isFalse();
+        check(capturedRequests[0].useRelay).isTrue();
         check(capturedRequests[1].commands.length).equals(6);
+        check(capturedRequests[1].useRelay).isTrue();
       },
     );
 

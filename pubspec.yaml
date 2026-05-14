@@ -66,6 +66,7 @@ dependency_overrides:
       ref: 998ed88f0014f6e75ef3adec5bc6c21a80bf598b
 
 dev_dependencies:
+  analyzer: ^10.0.1
   build_runner: ^2.15.0
   checks: ^0.3.1
   fake_async: ^1.3.1

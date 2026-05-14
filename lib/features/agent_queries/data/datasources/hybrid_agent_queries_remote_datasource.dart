@@ -37,6 +37,16 @@ class HybridAgentQueriesRemoteDataSource
     AgentSqlExecuteRequest request,
   ) {
     if (!request.useRelay) {
+      AppLogger.debug(
+        'HybridAgentQueriesRemoteDataSource routing request through base',
+        context: <String, Object?>{
+          'component': 'HybridAgentQueriesRemoteDataSource',
+          'agentId': request.trimmedAgentId,
+          'transportRoute': 'base',
+          'transportMethod': 'sql.execute',
+          'relayRequested': false,
+        },
+      );
       return _baseDelegate.postSqlExecute(request);
     }
     final relay = _relayDelegate;
@@ -47,6 +57,9 @@ class HybridAgentQueriesRemoteDataSource
         context: <String, Object?>{
           'component': 'HybridAgentQueriesRemoteDataSource',
           'agentId': request.trimmedAgentId,
+          'transportRoute': 'base',
+          'transportMethod': 'sql.execute',
+          'relayRequested': true,
           'reason': 'relay_datasource_missing',
         },
       );
@@ -57,6 +70,9 @@ class HybridAgentQueriesRemoteDataSource
       context: <String, Object?>{
         'component': 'HybridAgentQueriesRemoteDataSource',
         'agentId': request.trimmedAgentId,
+        'transportRoute': 'relay',
+        'transportMethod': 'sql.execute',
+        'relayRequested': true,
       },
     );
     return relay.postSqlExecute(request);
@@ -67,6 +83,17 @@ class HybridAgentQueriesRemoteDataSource
     AgentSqlExecuteBatchRequest request,
   ) {
     if (!request.useRelay) {
+      AppLogger.debug(
+        'HybridAgentQueriesRemoteDataSource routing sql.executeBatch through '
+        'base',
+        context: <String, Object?>{
+          'component': 'HybridAgentQueriesRemoteDataSource',
+          'agentId': request.trimmedAgentId,
+          'transportRoute': 'base',
+          'transportMethod': 'sql.executeBatch',
+          'relayRequested': false,
+        },
+      );
       return _baseDelegate.postSqlExecuteBatch(request);
     }
     final relay = _relayDelegate;
@@ -77,6 +104,9 @@ class HybridAgentQueriesRemoteDataSource
         context: <String, Object?>{
           'component': 'HybridAgentQueriesRemoteDataSource',
           'agentId': request.trimmedAgentId,
+          'transportRoute': 'base',
+          'transportMethod': 'sql.executeBatch',
+          'relayRequested': true,
           'reason': 'relay_datasource_missing',
         },
       );
@@ -88,6 +118,9 @@ class HybridAgentQueriesRemoteDataSource
       context: <String, Object?>{
         'component': 'HybridAgentQueriesRemoteDataSource',
         'agentId': request.trimmedAgentId,
+        'transportRoute': 'relay',
+        'transportMethod': 'sql.executeBatch',
+        'relayRequested': true,
       },
     );
     return relay.postSqlExecuteBatch(request);

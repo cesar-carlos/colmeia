@@ -8,6 +8,7 @@ import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/di/injector_socket.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/app_dio_client.dart';
 import 'package:colmeia/core/network/auth_refresh_coordinator.dart';
 import 'package:colmeia/core/network/auth_session_accessor.dart';
@@ -24,6 +25,7 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 import 'package:result_dart/result_dart.dart';
 
 import 'e2e_refreshing_auth_interceptor.dart';
@@ -31,6 +33,8 @@ import 'e2e_stub_client_agents_for_agent_queries.dart';
 
 /// Prints once per VM so skipped E2E tests still show which agent id is configured.
 bool _e2eAnnouncedConfiguredAgentId = false;
+bool _e2eAnnouncedAgentAccessDeniedShortCircuit = false;
+const Duration _e2eAgentAccessDeniedMarkerTtl = Duration(minutes: 10);
 
 bool _e2eLogTransientHubErrors() {
   final raw = Platform.environment['E2E_LOG_TRANSIENT']?.toLowerCase().trim();
@@ -86,6 +90,9 @@ Future<void> e2eSetupDependencies() async {
 }
 
 Future<void> _e2eSetupDependenciesBody() async {
+  if (!_e2eLogTransientHubErrors()) {
+    AppLogger.minimumLevel = Level.off;
+  }
   final dio = AppDioClient.create();
   final sessionHolder = E2eAuthSessionHolder();
 
@@ -121,17 +128,21 @@ Future<void> _e2eSetupDependenciesBody() async {
   registerInjectorAgentQueries(getIt);
   await _e2eWarmConsumerSocketAfterQueriesRegistered();
 
-  // Visible in `flutter test` stdout so runs clearly target this agent for sql.execute.
-  // E2E_CLIENT_TOKEN is not printed (secret); only whether it was loaded from env.
-  // ignore: avoid_print
-  print(
-    'E2E agent-queries: E2E_AGENT_ID=${AppEnvironment.e2eAgentId} '
-    'client_token_loaded=${AppEnvironment.e2eClientToken.isNotEmpty} '
-    'api=${AppEnvironment.apiBaseUrl} '
-    'bearer=${AppEnvironment.hasE2eClientLoginCredentials} '
-    'transport=${AppEnvironment.agentBridgeTransport.name} '
-    'relay_dispatch_disabled=${AppEnvironment.e2eDisableRelayDispatch}',
-  );
+  if (!_e2eAnnouncedConfiguredAgentId &&
+      _claimE2eAnnouncement(_e2eConfiguredAgentAnnouncementFile())) {
+    _e2eAnnouncedConfiguredAgentId = true;
+    // Visible in `flutter test` stdout so runs clearly target this agent for sql.execute.
+    // E2E_CLIENT_TOKEN is not printed (secret); only whether it was loaded from env.
+    // ignore: avoid_print
+    print(
+      'E2E agent-queries: E2E_AGENT_ID=${AppEnvironment.e2eAgentId} '
+      'client_token_loaded=${AppEnvironment.e2eClientToken.isNotEmpty} '
+      'api=${AppEnvironment.apiBaseUrl} '
+      'bearer=${AppEnvironment.hasE2eClientLoginCredentials} '
+      'transport=${AppEnvironment.agentBridgeTransport.name} '
+      'relay_dispatch_disabled=${AppEnvironment.e2eDisableRelayDispatch}',
+    );
+  }
 }
 
 void _registerE2eSocketStack(E2eAuthSessionHolder sessionHolder) {
@@ -368,8 +379,18 @@ Future<AppResult<T>> runE2eAppResult<T extends Object>(
   Future<AppResult<T>> Function() action, {
   String? actionLabel,
 }) async {
+  final shortCircuit = _e2eAgentAccessDeniedShortCircuitFailure();
+  if (shortCircuit != null) {
+    return Failure<T, AppFailure>(shortCircuit);
+  }
   try {
-    return await action();
+    final result = await action();
+    final failure = result.exceptionOrNull();
+    if (failure != null &&
+        isKnownE2eAgentSqlAgentAccessDeniedFailure(failure)) {
+      _rememberE2eAgentAccessDenied(failure);
+    }
+    return result;
   } on DioException catch (e, st) {
     if (isTransientHubDioException(e)) {
       if (_e2eLogTransientHubErrors()) {
@@ -471,8 +492,164 @@ bool isKnownE2eAgentSqlHttpForbiddenFailure(AppFailure failure) {
   if (failure is! AuthorizationFailure) {
     return false;
   }
-  return failure.context['operation'] == 'executeAgentSql';
+  if (isKnownE2eAgentSqlAgentAccessDeniedFailure(failure)) {
+    return true;
+  }
+  final operation = failure.context['operation']?.toString();
+  if (operation == 'executeAgentSql' || operation == 'executeAgentSqlBatch') {
+    return true;
+  }
+  if (failure.context['httpStatusCode'] != 403) {
+    return false;
+  }
+  final body = failure.context[DioHttpFailureContext.responseBodyField];
+  if (_e2eHttpForbiddenBodyHasAgentAccessDeniedCode(body)) {
+    return true;
+  }
+  final message = failure.displayMessage.toLowerCase();
+  return message.contains('do not have access to agent') ||
+      message.contains('agent_access_denied');
 }
+
+bool isKnownE2eAgentSqlAgentAccessDeniedFailure(AppFailure failure) {
+  if (failure is! AuthorizationFailure) {
+    return false;
+  }
+  final body = failure.context[DioHttpFailureContext.responseBodyField];
+  if (_e2eHttpForbiddenBodyHasAgentAccessDeniedCode(body)) {
+    return true;
+  }
+  final message = failure.displayMessage.toLowerCase();
+  return failure.context['httpStatusCode'] == 403 &&
+      (message.contains('do not have access to agent') ||
+          message.contains('agent_access_denied'));
+}
+
+bool shouldLogE2eAcceptedFailureDiagnostic(AppFailure failure) =>
+    _e2eLogTransientHubErrors() ||
+    !isKnownE2eAgentSqlAgentAccessDeniedFailure(failure);
+
+bool _e2eHttpForbiddenBodyHasAgentAccessDeniedCode(Object? body) {
+  if (body is String) {
+    return body.toUpperCase().contains('AGENT_ACCESS_DENIED') ||
+        body.toLowerCase().contains('do not have access to agent');
+  }
+  if (body is Map) {
+    final directCode = body['code']?.toString().trim().toUpperCase();
+    if (directCode == 'AGENT_ACCESS_DENIED') {
+      return true;
+    }
+    final error = body['error'];
+    if (error is Map) {
+      final nestedCode = error['code']?.toString().trim().toUpperCase();
+      if (nestedCode == 'AGENT_ACCESS_DENIED') {
+        return true;
+      }
+    }
+    final message = body['message']?.toString().trim().toLowerCase();
+    return message != null && message.contains('do not have access to agent');
+  }
+  return false;
+}
+
+AppFailure? _e2eAgentAccessDeniedShortCircuitFailure() {
+  final marker = _e2eAgentAccessDeniedMarkerFile();
+  if (!marker.existsSync()) {
+    return null;
+  }
+  final markerAge = DateTime.now().difference(marker.lastModifiedSync());
+  if (markerAge > _e2eAgentAccessDeniedMarkerTtl) {
+    marker.deleteSync();
+    return null;
+  }
+  if (!_e2eAnnouncedAgentAccessDeniedShortCircuit &&
+      _claimE2eAgentAccessDeniedAnnouncement()) {
+    _e2eAnnouncedAgentAccessDeniedShortCircuit = true;
+    // E2E diagnostic only; stdout is intentional for local/CI triage.
+    // ignore: avoid_print
+    print(
+      'SKIP E2E Agent SQL calls: configured E2E_AGENT_ID='
+      '${AppEnvironment.e2eAgentId} is not accessible with current E2E_* '
+      'credentials.',
+    );
+  }
+  return AuthorizationFailure(
+    message: 'E2E agent access denied',
+    userMessage: 'You do not have access to agent ${AppEnvironment.e2eAgentId}',
+    context: <String, Object?>{
+      'operation': 'e2eAgentSqlAccessPreflight',
+      'agentId': AppEnvironment.e2eAgentId,
+      'httpStatusCode': 403,
+      DioHttpFailureContext.responseBodyField: <String, Object?>{
+        'code': 'AGENT_ACCESS_DENIED',
+        'message':
+            'You do not have access to agent ${AppEnvironment.e2eAgentId}',
+      },
+    },
+  );
+}
+
+void _rememberE2eAgentAccessDenied(AppFailure failure) {
+  final marker = _e2eAgentAccessDeniedMarkerFile();
+  if (!marker.existsSync()) {
+    marker.writeAsStringSync(e2eAgentSqlFailureDiagnostic(failure));
+    // E2E diagnostic only; stdout is intentional for local/CI triage.
+    // ignore: avoid_print
+    print(
+      'E2E Agent SQL access denied for E2E_AGENT_ID='
+      '${AppEnvironment.e2eAgentId}; subsequent E2E SQL calls will '
+      'short-circuit locally.',
+    );
+  }
+}
+
+bool _claimE2eAgentAccessDeniedAnnouncement() {
+  return _claimE2eAnnouncement(_e2eAgentAccessDeniedAnnouncementFile());
+}
+
+bool _claimE2eAnnouncement(File announcement) {
+  if (announcement.existsSync()) {
+    final markerAge = DateTime.now().difference(
+      announcement.lastModifiedSync(),
+    );
+    if (markerAge <= _e2eAgentAccessDeniedMarkerTtl) {
+      return false;
+    }
+    announcement.deleteSync();
+  }
+  try {
+    announcement.createSync(exclusive: true);
+    return true;
+  } on FileSystemException {
+    return false;
+  }
+}
+
+File _e2eAgentAccessDeniedAnnouncementFile() {
+  final marker = _e2eAgentAccessDeniedMarkerFile();
+  return File('${marker.path}.announced');
+}
+
+File _e2eConfiguredAgentAnnouncementFile() {
+  primeE2eEnvironment();
+  return File(
+    '${Directory.systemTemp.path}/'
+    'colmeia_e2e_configured_agent_${_e2eAgentSqlEnvironmentKey()}',
+  );
+}
+
+File _e2eAgentAccessDeniedMarkerFile() {
+  primeE2eEnvironment();
+  return File(
+    '${Directory.systemTemp.path}/'
+    'colmeia_e2e_access_denied_${_e2eAgentSqlEnvironmentKey()}',
+  );
+}
+
+String _e2eAgentSqlEnvironmentKey() =>
+    '${AppEnvironment.apiBaseUrl}_${AppEnvironment.e2eAgentId}_'
+            '${AppEnvironment.e2eClientEmail}'
+        .replaceAll(RegExp('[^A-Za-z0-9_.-]+'), '_');
 
 /// Some bridge runtimes cap named bind parameters (e.g. 5). Queries that add
 /// optional dimension binds can exceed that until repositories split SQL like

@@ -90,20 +90,50 @@ void main() {
 
           result.fold(
             (success) {
-              expect(countingRepository.batchCallCount, 1);
               expect(
-                countingRepository.lastBatchRequest?.commands.length,
-                7,
+                countingRepository.batchCallCount,
+                greaterThanOrEqualTo(1),
               );
               expect(
-                countingRepository.lastBatchRequest?.useRelay,
-                isFalse,
+                countingRepository.batchRequests.first.commands.length,
+                1,
+              );
+              expect(
+                countingRepository.batchRequests.every(
+                  (request) => request.useRelay,
+                ),
+                isTrue,
               );
               expect(success.targetResults.length, 1);
               expect(success.plan.plannedTargets.length, 1);
               expect(success.mainResumoReport.participants.length, 1);
               final target = success.targetResults.single;
               expect(target.target.agentId, AppEnvironment.e2eAgentId);
+
+              final mainFailure = target.mainFailure;
+              if (mainFailure != null) {
+                expect(target.hasAnyFailure, isTrue);
+                expect(success.hasTargetFailures, isTrue);
+                expect(success.completedWithOnlyTargetFailures, isTrue);
+                expect(
+                  isAcceptableE2eAgentSqlRepositoryFailure(mainFailure),
+                  isTrue,
+                  reason:
+                      'Overview main batch failure should be an accepted '
+                      'E2E environmental failure. '
+                      '${e2eAgentSqlFailureDiagnostic(mainFailure)}',
+                );
+                return;
+              }
+
+              expect(target.hasAnyFailure, isFalse);
+              expect(success.hasTargetFailures, isFalse);
+              expect(success.completedWithOnlyTargetFailures, isFalse);
+              expect(countingRepository.batchCallCount, 2);
+              expect(
+                countingRepository.batchRequests.last.commands.length,
+                6,
+              );
               for (final row in target.mainRows) {
                 expect(row.codEmpresa, greaterThan(0));
                 expect(row.codFilial, greaterThan(0));
@@ -112,12 +142,14 @@ void main() {
               }
             },
             (failure) {
-              // E2E diagnostic only; stdout is intentional for local/CI triage.
-              // ignore: avoid_print
-              print(
-                'overview_batch_loader_e2e failure: '
-                '${e2eAgentSqlFailureDiagnostic(failure)}',
-              );
+              if (shouldLogE2eAcceptedFailureDiagnostic(failure)) {
+                // E2E diagnostic only; stdout is intentional for local/CI triage.
+                // ignore: avoid_print
+                print(
+                  'overview_batch_loader_e2e failure: '
+                  '${e2eAgentSqlFailureDiagnostic(failure)}',
+                );
+              }
               expect(failure, isA<AppFailure>());
               if (AppEnvironment.hasE2eAgentBridgeCredentials) {
                 expect(
@@ -151,7 +183,8 @@ final class _CountingAgentQueriesRepository implements AgentQueriesRepository {
 
   final AgentQueriesRepository _delegate;
   int batchCallCount = 0;
-  AgentSqlExecuteBatchRequest? lastBatchRequest;
+  final List<AgentSqlExecuteBatchRequest> batchRequests =
+      <AgentSqlExecuteBatchRequest>[];
 
   @override
   Future<ResultDart<AgentSqlExecutionResult, AppFailure>> executeSql(
@@ -165,7 +198,7 @@ final class _CountingAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteBatchRequest request,
   ) {
     batchCallCount++;
-    lastBatchRequest = request;
+    batchRequests.add(request);
     return _delegate.executeSqlBatch(request);
   }
 }

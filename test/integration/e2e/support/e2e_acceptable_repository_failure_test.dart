@@ -110,4 +110,61 @@ void main() {
       expect(isKnownE2eAgentDisconnectedAtDispatchFailure(failure), isFalse);
     });
   });
+
+  group('isKnownE2eAgentSqlHttpForbiddenFailure', () {
+    test('accepts batch Agent SQL authorization failures', () {
+      const failure = AuthorizationFailure(
+        message: 'forbidden',
+        context: <String, Object?>{
+          'operation': 'executeAgentSqlBatch',
+          'httpStatusCode': 403,
+        },
+      );
+
+      expect(isKnownE2eAgentSqlHttpForbiddenFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('accepts AGENT_ACCESS_DENIED payload after context merge', () {
+      const failure = AuthorizationFailure(
+        message: 'overview failed',
+        userMessage:
+            'You do not have access to agent 3183a9f2-429b-46d6-a339-3580e5e5cb31',
+        context: <String, Object?>{
+          'operation': 'loadOverview',
+          'httpStatusCode': 403,
+          DioHttpFailureContext.responseBodyField: <String, Object?>{
+            'code': 'AGENT_ACCESS_DENIED',
+          },
+        },
+      );
+
+      expect(isKnownE2eAgentSqlHttpForbiddenFailure(failure), isTrue);
+      expect(
+        isKnownE2eAgentSqlAgentAccessDeniedFailure(failure),
+        isTrue,
+      );
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('does not accept unrelated 403 failures', () {
+      const failure = AuthorizationFailure(
+        message: 'blocked',
+        context: <String, Object?>{
+          'operation': 'loadOverview',
+          'httpStatusCode': 403,
+          DioHttpFailureContext.responseBodyField: <String, Object?>{
+            'code': 'ACCOUNT_BLOCKED',
+          },
+        },
+      );
+
+      expect(isKnownE2eAgentSqlHttpForbiddenFailure(failure), isFalse);
+      expect(
+        isKnownE2eAgentSqlAgentAccessDeniedFailure(failure),
+        isFalse,
+      );
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isFalse);
+    });
+  });
 }

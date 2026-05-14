@@ -1,9 +1,11 @@
-import 'package:colmeia/app/theme/app_theme.dart';
+import 'dart:ui' show Size;
+
 import 'package:colmeia/features/settings/presentation/pages/app_brazil_store_sales_map_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_region_map_drilldown_demo_page.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../../../support/localized_test_app.dart';
 
 void main() {
   testWidgets('drill-down map demo mounts on Windows without throwing', (
@@ -12,7 +14,7 @@ void main() {
     debugDefaultTargetPlatformOverride = TargetPlatform.windows;
     try {
       await tester.pumpWidget(
-        const _TestApp(child: AppRegionMapDrillDownDemoPage()),
+        const LocalizedTestApp(child: AppRegionMapDrillDownDemoPage()),
       );
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -36,7 +38,9 @@ void main() {
 
       try {
         await tester.pumpWidget(
-          const _TestApp(child: AppBrazilStoreSalesMapChartDemoPage()),
+          const LocalizedTestApp(
+            child: AppBrazilStoreSalesMapChartDemoPage(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -66,7 +70,9 @@ void main() {
 
       try {
         await tester.pumpWidget(
-          const _TestApp(child: AppBrazilStoreSalesMapChartDemoPage()),
+          const LocalizedTestApp(
+            child: AppBrazilStoreSalesMapChartDemoPage(),
+          ),
         );
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -87,18 +93,4 @@ void main() {
       }
     },
   );
-}
-
-class _TestApp extends StatelessWidget {
-  const _TestApp({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: AppTheme.light(),
-      home: Scaffold(body: child),
-    );
-  }
 }

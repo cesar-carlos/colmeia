@@ -166,12 +166,14 @@ void _expectOverviewE2eSuccess(Overview overview) {
 }
 
 void _expectOverviewRepositoryE2eFailure(AppFailure failure) {
-  // E2E diagnostic only; stdout is intentional for local/CI triage.
-  // ignore: avoid_print
-  print(
-    'overview_repository_e2e failure: '
-    '${e2eAgentSqlFailureDiagnostic(failure)}',
-  );
+  if (shouldLogE2eAcceptedFailureDiagnostic(failure)) {
+    // E2E diagnostic only; stdout is intentional for local/CI triage.
+    // ignore: avoid_print
+    print(
+      'overview_repository_e2e failure: '
+      '${e2eAgentSqlFailureDiagnostic(failure)}',
+    );
+  }
   expect(failure, isA<AppFailure>());
   if (AppEnvironment.hasE2eAgentBridgeCredentials) {
     expect(

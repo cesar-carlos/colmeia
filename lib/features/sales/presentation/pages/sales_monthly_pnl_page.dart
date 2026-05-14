@@ -203,7 +203,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         : resolved;
   }
 
-  Future<void> _reload() => reloadWithSalesAutoRefresh();
+  Future<void> _reload({bool force = false}) =>
+      reloadWithSalesAutoRefresh(force: force);
 
   @override
   bool get canScheduleSalesAutoRefresh =>
@@ -323,7 +324,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         range: dailyRange,
       ),
     );
-    unawaited(_reload());
+    unawaited(_reload(force: true));
   }
 
   String _dailyTotalsPeriodSummaryLine(AppLocalizations l10n) {

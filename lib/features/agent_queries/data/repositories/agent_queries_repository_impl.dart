@@ -6,7 +6,7 @@ import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_transport_failure_mapper.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
@@ -20,6 +20,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
   AgentQueriesRepositoryImpl(this._remoteDataSource);
 
   final AgentQueriesRemoteDataSource _remoteDataSource;
+  static const _transportFailureMapper = AgentQueriesTransportFailureMapper();
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
@@ -145,467 +146,34 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
         stackTrace: stackTrace,
       );
       return Failure<AgentSqlExecutionResult, AppFailure>(failure);
-    } on SocketDispatchCancelled catch (error, stackTrace) {
-      // Cancellation is benign: caller (controller in dispose, navigation
-      // away, explicit `SocketCommandCancelToken`) requested it. We still
-      // emit a Failure so the result is honestly typed, but mark the
-      // context with `cancelled: true` so UI controllers can skip the
-      // error banner — the screen is already gone.
-      AppLogger.debug(
-        'Agent SQL Socket dispatch cancelled by caller',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'socket',
-          'reason': error.message,
-        },
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        UnknownFailure(
-          message: error.message,
-          userMessage: 'A consulta foi cancelada.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'socket',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            AgentQueriesFailureContext.cancelledField: true,
-          },
-        ),
-      );
-    } on SocketDispatchNamespaceForbidden catch (error, stackTrace) {
-      // Server-side `SOCKET_CONSUMER_ROLES` does not include this
-      // JWT's role (or the namespace path is wrong). Refresh / re-
-      // login does NOT help — surface a hub-config message instead
-      // of "Sua sessao expirou" so the user does not get trapped in
-      // a logout loop. The upstream
-      // `SocketWithRestFallbackAgentQueriesRemoteDataSource` should
-      // intercept this BEFORE we reach here, but the mapping is
-      // kept in case the fallback is unwired (REST-only build still
-      // benefits from accurate copy).
-      AppLogger.warning(
-        'Agent SQL Socket dispatch namespace-forbidden (hub config)',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'socket',
-          'role': error.role,
-          'namespace': error.namespace,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        AuthorizationFailure(
-          message: error.message,
-          userMessage:
-              'Servidor indisponivel para o seu perfil de acesso. '
-              'Contate o administrador (perfil "${error.role ?? '?'}" '
-              'nao autorizado em ${error.namespace ?? '/consumers'}).',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'socket',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'role': error.role,
-            'namespace': error.namespace,
-          },
-        ),
-      );
-    } on SocketDispatchUnauthorized catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL Socket dispatch unauthorized',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'socket',
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        SessionFailure(
-          message: error.message,
-          userMessage:
-              'Sua sessao expirou. Faca login novamente para continuar.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'socket',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-          },
-        ),
-      );
-    } on SocketDispatchAppError catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL Socket app:error',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'socket',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        _appErrorToFailure(
-          message: error.message,
-          serverCode: error.code,
-          cause: error,
-          stackTrace: stackTrace,
-          retryAfter: error.retryAfter,
-          baseContext: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'socket',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-          },
-        ),
-      );
-    } on SocketDispatchLegacyStreamingUnsupported catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL legacy socket streaming not supported on this path',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'socket',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-          'streamId': error.streamId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        UnknownFailure(
-          message: error.message,
-          userMessage:
-              'Esta consulta precisa do canal relay ou REST. '
-              'Use relay (useRelay) ou altere o transporte do bridge.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'socket',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'streamId': error.streamId,
-          },
-        ),
-      );
     } on SocketDispatchException catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL Socket dispatch failed',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'socket',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-        },
+      final failure = _transportFailureMapper.mapSocket(
         error: error,
         stackTrace: stackTrace,
+        operation: 'executeAgentSql',
+        agentId: request.trimmedAgentId,
       );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        NetworkFailure(
-          message: error.message,
-          userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'socket',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-          },
-        ),
-      );
-    } on RelayDispatcherDisposed catch (error, stackTrace) {
-      // Same semantics as SocketDispatchCancelled: the caller is gone.
-      AppLogger.debug(
-        'Agent SQL Relay dispatch cancelled (dispatcher disposed)',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          'conversationId': error.conversationId,
-          'clientRequestId': error.clientRequestId,
-        },
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        UnknownFailure(
-          message: error.message,
-          userMessage: 'A consulta foi cancelada.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            AgentQueriesFailureContext.cancelledField: true,
-          },
-        ),
-      );
-    } on RelayRequestRejected catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL Relay request rejected by hub',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-          'conversationId': error.conversationId,
-          'clientRequestId': error.clientRequestId,
-        },
+      _transportFailureMapper.logDispatchFailure(
+        message: 'Agent SQL Socket dispatch failed',
         error: error,
         stackTrace: stackTrace,
+        failure: failure,
       );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        _appErrorToFailure(
-          message: error.message,
-          serverCode: error.code,
-          cause: error,
-          stackTrace: stackTrace,
-          retryAfter: error.retryAfter,
-          baseContext: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'conversationId': error.conversationId,
-            'clientRequestId': error.clientRequestId,
-          },
-        ),
-      );
-    } on RelayRequestTimeout catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL Relay request timed out',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-          'conversationId': error.conversationId,
-          'clientRequestId': error.clientRequestId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        NetworkFailure(
-          message: error.message,
-          userMessage:
-              'A consulta demorou mais do que o esperado. Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'conversationId': error.conversationId,
-            'clientRequestId': error.clientRequestId,
-          },
-        ),
-      );
-    } on RelayConversationLost catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL Relay conversation dropped while pending',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-          'conversationId': error.conversationId,
-          'clientRequestId': error.clientRequestId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        NetworkFailure(
-          message: error.message,
-          userMessage:
-              'A conexao com o servidor caiu durante a consulta. '
-              'Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'conversationId': error.conversationId,
-            'clientRequestId': error.clientRequestId,
-          },
-        ),
-      );
-    } on RelayConversationStartFailure catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL Relay conversation could not be started',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        NetworkFailure(
-          message: error.message,
-          userMessage:
-              'Nao foi possivel abrir o canal com o servidor para esta '
-              'consulta. Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-          },
-        ),
-      );
-    } on RelayStreamTerminated catch (error, stackTrace) {
-      AppLogger.warning(
-        'Agent SQL Relay stream terminated abnormally',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-          'conversationId': error.conversationId,
-          'clientRequestId': error.clientRequestId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        NetworkFailure(
-          message: error.message,
-          userMessage:
-              'A consulta foi interrompida antes de terminar. '
-              'Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'conversationId': error.conversationId,
-            'clientRequestId': error.clientRequestId,
-          },
-        ),
-      );
-    } on RelayDecodeFailure catch (error, stackTrace) {
-      AppLogger.error(
-        'Agent SQL Relay PayloadFrame failed structural validation',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-          'conversationId': error.conversationId,
-          'clientRequestId': error.clientRequestId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        NetworkFailure(
-          message: error.message,
-          userMessage:
-              'A resposta do servidor chegou em formato invalido. '
-              'Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'conversationId': error.conversationId,
-            'clientRequestId': error.clientRequestId,
-          },
-        ),
-      );
-    } on RelayDuplicateRequestId catch (error, stackTrace) {
-      // Duplicate request id is a programming bug (caller reused a UUID).
-      // Log loud + emit UnknownFailure so it surfaces in monitoring.
-      AppLogger.error(
-        'Agent SQL Relay duplicate clientRequestId on the same conversation',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-          'conversationId': error.conversationId,
-          'clientRequestId': error.clientRequestId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        UnknownFailure(
-          message: error.message,
-          userMessage:
-              'Ocorreu um erro inesperado ao consultar o agente. '
-              'Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'conversationId': error.conversationId,
-            'clientRequestId': error.clientRequestId,
-          },
-        ),
-      );
+      return Failure<AgentSqlExecutionResult, AppFailure>(failure);
     } on RelayDispatchException catch (error, stackTrace) {
-      // Catch-all for any future relay variant we add (the sealed class is
-      // not exhaustively pattern-matched here because Dart only enforces
-      // exhaustiveness in switch expressions, not in catch chains). Keeps
-      // the user out of the generic `on Object` branch.
-      AppLogger.warning(
-        'Agent SQL Relay dispatch failed (unmapped variant)',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          AgentQueriesFailureContext.transportField: 'relay',
-          AgentQueriesFailureContext.transportCodeField: error.code,
-          'conversationId': error.conversationId,
-          'clientRequestId': error.clientRequestId,
-        },
+      final failure = _transportFailureMapper.mapRelay(
         error: error,
         stackTrace: stackTrace,
+        operation: 'executeAgentSql',
+        agentId: request.trimmedAgentId,
       );
-      return Failure<AgentSqlExecutionResult, AppFailure>(
-        NetworkFailure(
-          message: error.message,
-          userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
-          cause: error,
-          stackTrace: stackTrace,
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            AgentQueriesFailureContext.transportField: 'relay',
-            AgentQueriesFailureContext.transportCodeField: error.code,
-            'conversationId': error.conversationId,
-            'clientRequestId': error.clientRequestId,
-          },
-        ),
+      _transportFailureMapper.logDispatchFailure(
+        message: 'Agent SQL Relay dispatch failed',
+        error: error,
+        stackTrace: stackTrace,
+        failure: failure,
       );
+      return Failure<AgentSqlExecutionResult, AppFailure>(failure);
     } on Object catch (error, stackTrace) {
       AppLogger.error(
         'Unexpected error during agent SQL execute',
@@ -730,6 +298,34 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
         },
       );
       return Failure<AgentSqlBatchExecutionResult, AppFailure>(failure);
+    } on SocketDispatchException catch (error, stackTrace) {
+      final failure = _transportFailureMapper.mapSocket(
+        error: error,
+        stackTrace: stackTrace,
+        operation: 'executeAgentSqlBatch',
+        agentId: request.trimmedAgentId,
+      );
+      _transportFailureMapper.logDispatchFailure(
+        message: 'Agent SQL batch Socket dispatch failed',
+        error: error,
+        stackTrace: stackTrace,
+        failure: failure,
+      );
+      return Failure<AgentSqlBatchExecutionResult, AppFailure>(failure);
+    } on RelayDispatchException catch (error, stackTrace) {
+      final failure = _transportFailureMapper.mapRelay(
+        error: error,
+        stackTrace: stackTrace,
+        operation: 'executeAgentSqlBatch',
+        agentId: request.trimmedAgentId,
+      );
+      _transportFailureMapper.logDispatchFailure(
+        message: 'Agent SQL batch Relay dispatch failed',
+        error: error,
+        stackTrace: stackTrace,
+        failure: failure,
+      );
+      return Failure<AgentSqlBatchExecutionResult, AppFailure>(failure);
     } on Object catch (error, stackTrace) {
       return Failure<AgentSqlBatchExecutionResult, AppFailure>(
         mapToAppFailure(
@@ -746,53 +342,6 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
         ),
       );
     }
-  }
-
-  /// Maps a server-emitted error code (from `SocketDispatchAppError` or
-  /// `RelayRequestRejected`) to the right [AppFailure] variant. Handles:
-  ///
-  /// - **Authentication-failed codes** (`UNAUTHORIZED`, `INVALID_TOKEN`, …) ->
-  ///   `SessionFailure` so the UX prompts re-login.
-  /// - **Authorization-denied codes** (`AGENT_ACCESS_DENIED`, `FORBIDDEN`, …)
-  ///   -> `AuthorizationFailure` so the UX shows "no access to this agent".
-  /// - **Anything else** -> `NetworkFailure` (generic "server could not
-  ///   process now"), preserving the original code in the failure context.
-  AppFailure _appErrorToFailure({
-    required String message,
-    required String serverCode,
-    required Object cause,
-    required StackTrace stackTrace,
-    required Map<String, Object?> baseContext,
-    Duration? retryAfter,
-  }) {
-    if (isSocketAuthenticationFailedCode(serverCode)) {
-      return SessionFailure(
-        message: message,
-        userMessage: 'Sua sessao expirou. Faca login novamente para continuar.',
-        cause: cause,
-        stackTrace: stackTrace,
-        context: baseContext,
-      );
-    }
-    if (isSocketAuthorizationDeniedCode(serverCode)) {
-      return AuthorizationFailure(
-        message: message,
-        userMessage: 'Voce nao tem acesso a este agente.',
-        cause: cause,
-        stackTrace: stackTrace,
-        context: baseContext,
-      );
-    }
-    return NetworkFailure(
-      message: message,
-      userMessage:
-          'O servidor nao conseguiu processar a consulta agora. '
-          'Tente novamente.',
-      retryAfter: retryAfter,
-      cause: cause,
-      stackTrace: stackTrace,
-      context: baseContext,
-    );
   }
 
   /// Pulls a `Duration` out of the JSON-RPC `error.data` block when the

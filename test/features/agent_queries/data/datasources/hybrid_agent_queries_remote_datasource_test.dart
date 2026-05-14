@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
@@ -7,12 +8,46 @@ import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_quer
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockBaseDatasource extends Mock
     implements AgentQueriesRemoteDataSource {}
 
 class _MockRelayDispatcher extends Mock implements RelayCommandDispatcher {}
+
+final class _LogEvent {
+  const _LogEvent({
+    required this.level,
+    required this.message,
+    required this.context,
+  });
+
+  final AppLogLevel level;
+  final String message;
+  final Map<String, Object?> context;
+}
+
+final class _RecordingLogSink implements AppLogSink {
+  final events = <_LogEvent>[];
+
+  @override
+  void onLog({
+    required AppLogLevel level,
+    required String message,
+    required Map<String, Object?> context,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    events.add(
+      _LogEvent(
+        level: level,
+        message: message,
+        context: Map<String, Object?>.of(context),
+      ),
+    );
+  }
+}
 
 AgentSqlExecuteRequest _request({
   String agentId = 'agent-1',
@@ -39,12 +74,23 @@ AgentSqlExecuteBatchRequest _batchRequest({
 }
 
 void main() {
+  late Level previousLogLevel;
+
   setUpAll(() {
     registerFallbackValue(_request());
     registerFallbackValue(_batchRequest());
     registerFallbackValue(<String, Object?>{});
     registerFallbackValue(Duration.zero);
     registerFallbackValue(RelayPayloadFrameCompression.auto);
+  });
+
+  setUp(() {
+    previousLogLevel = AppLogger.minimumLevel;
+    AppLogger.minimumLevel = Level.off;
+  });
+
+  tearDown(() {
+    AppLogger.minimumLevel = previousLogLevel;
   });
 
   group('HybridAgentQueriesRemoteDataSource', () {
@@ -198,6 +244,90 @@ void main() {
         ),
       ).called(1);
       verifyNever(() => base.postSqlExecuteBatch(any()));
+    });
+
+    test('emits route telemetry for base, relay and relay bypass', () async {
+      final previousSink = AppLogger.sink;
+      final previousLevel = AppLogger.minimumLevel;
+      final sink = _RecordingLogSink();
+      AppLogger.sink = sink;
+      AppLogger.minimumLevel = Level.off;
+      addTearDown(() {
+        AppLogger.sink = previousSink;
+        AppLogger.minimumLevel = previousLevel;
+      });
+
+      final base = _MockBaseDatasource();
+      final dispatcher = _MockRelayDispatcher();
+      final relay = RelayAgentQueriesRemoteDataSource(dispatcher: dispatcher);
+      when(() => base.postSqlExecute(any())).thenAnswer(
+        (_) async => <String, dynamic>{
+          'response': <String, dynamic>{
+            'type': 'single',
+            'item': <String, dynamic>{'success': true},
+          },
+        },
+      );
+      when(() => base.postSqlExecuteBatch(any())).thenAnswer(
+        (_) async => <String, dynamic>{
+          'response': <String, dynamic>{
+            'type': 'single',
+            'item': <String, dynamic>{'success': true},
+          },
+        },
+      );
+      when(
+        () => dispatcher.sendUnary(
+          agentId: any(named: 'agentId'),
+          body: any(named: 'body'),
+          clientRequestId: any(named: 'clientRequestId'),
+          timeout: any(named: 'timeout'),
+          compression: any(named: 'compression'),
+        ),
+      ).thenAnswer(
+        (_) async => <String, dynamic>{
+          'response': <String, dynamic>{
+            'type': 'single',
+            'item': <String, dynamic>{'success': true},
+          },
+        },
+      );
+
+      final hybrid = HybridAgentQueriesRemoteDataSource(
+        baseDelegate: base,
+        relayDelegate: relay,
+      );
+      final missingRelayHybrid = HybridAgentQueriesRemoteDataSource(
+        baseDelegate: base,
+      );
+
+      await hybrid.postSqlExecute(_request());
+      await hybrid.postSqlExecute(_request(useRelay: true));
+      await hybrid.postSqlExecuteBatch(_batchRequest(useRelay: true));
+      await missingRelayHybrid.postSqlExecute(_request(useRelay: true));
+
+      final routeContexts = sink.events
+          .map((event) => event.context)
+          .where((context) => context.containsKey('transportRoute'))
+          .toList(growable: false);
+
+      check(
+        routeContexts.map((context) => context['transportMethod']),
+      ).deepEquals(
+        <Object?>[
+          'sql.execute',
+          'sql.execute',
+          'sql.executeBatch',
+          'sql.execute',
+        ],
+      );
+      check(
+        routeContexts.map((context) => context['transportRoute']),
+      ).deepEquals(<Object?>['base', 'relay', 'relay', 'base']);
+      check(
+        routeContexts.map((context) => context['relayRequested']),
+      ).deepEquals(<Object?>[false, true, true, true]);
+      check(routeContexts.last['reason']).equals('relay_datasource_missing');
     });
   });
 

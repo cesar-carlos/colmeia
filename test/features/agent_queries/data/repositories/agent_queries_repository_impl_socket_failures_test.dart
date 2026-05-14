@@ -1,17 +1,27 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/logger.dart';
 
 AppFailure _failureOf(AppResult<AgentSqlExecutionResult> result) {
+  return result.fold(
+    (success) => throw StateError('expected failure, got success'),
+    (failure) => failure,
+  );
+}
+
+AppFailure _batchFailureOf(AppResult<AgentSqlBatchExecutionResult> result) {
   return result.fold(
     (success) => throw StateError('expected failure, got success'),
     (failure) => failure,
@@ -36,9 +46,26 @@ class _ThrowingDataSource implements AgentQueriesRemoteDataSource {
 }
 
 void main() {
+  late Level previousLogLevel;
+
+  setUpAll(() {
+    previousLogLevel = AppLogger.minimumLevel;
+    AppLogger.minimumLevel = Level.off;
+  });
+
+  tearDownAll(() {
+    AppLogger.minimumLevel = previousLogLevel;
+  });
+
   const request = AgentSqlExecuteRequest(
     agentId: 'agent-1',
     sql: 'SELECT 1',
+  );
+  const batchRequest = AgentSqlExecuteBatchRequest(
+    agentId: 'agent-1',
+    commands: <AgentSqlExecuteBatchCommand>[
+      AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+    ],
   );
 
   group('AgentQueriesRepositoryImpl Socket failure mapping', () {
@@ -407,6 +434,367 @@ void main() {
           failure.context[AgentQueriesFailureContext.cancelledField],
         ).equals(true);
         check(isCancelledAgentQueryFailure(failure.context)).isTrue();
+      },
+    );
+  });
+
+  group('AgentQueriesRepositoryImpl batch Socket/Relay failure mapping', () {
+    test('maps SocketDispatchTimeout to transient NetworkFailure', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const SocketDispatchTimeout(message: 'timed out'),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<NetworkFailure>();
+      check(failure.isTransient).isTrue();
+      check(
+        failure.context[AgentQueriesFailureContext.transportField],
+      ).equals('socket');
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('timeout');
+    });
+
+    test(
+      'maps SocketDispatchDisconnected to transient NetworkFailure',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const SocketDispatchDisconnected(message: 'reconnect exhausted'),
+          ),
+        );
+
+        final failure = _batchFailureOf(
+          await repo.executeSqlBatch(batchRequest),
+        );
+
+        check(failure).isA<NetworkFailure>();
+        check(failure.isTransient).isTrue();
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('disconnected');
+      },
+    );
+
+    test('maps SocketDispatchUnauthorized to SessionFailure', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const SocketDispatchUnauthorized(message: 'no token'),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<SessionFailure>();
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('unauthorized');
+    });
+
+    test(
+      'maps SocketDispatchAppError(AGENT_ACCESS_DENIED) to AuthorizationFailure',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const SocketDispatchAppError(
+              message: 'denied',
+              serverCode: 'AGENT_ACCESS_DENIED',
+            ),
+          ),
+        );
+
+        final failure = _batchFailureOf(
+          await repo.executeSqlBatch(batchRequest),
+        );
+
+        check(failure).isA<AuthorizationFailure>();
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('AGENT_ACCESS_DENIED');
+      },
+    );
+
+    test(
+      'maps SocketDispatchAppError(SERVICE_UNAVAILABLE) with retryAfter',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const SocketDispatchAppError(
+              message: 'overloaded',
+              serverCode: 'SERVICE_UNAVAILABLE',
+              retryAfter: Duration(milliseconds: 750),
+            ),
+          ),
+        );
+
+        final failure = _batchFailureOf(
+          await repo.executeSqlBatch(batchRequest),
+        );
+
+        check(failure).isA<NetworkFailure>();
+        check((failure as NetworkFailure).retryAfter).equals(
+          const Duration(milliseconds: 750),
+        );
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('SERVICE_UNAVAILABLE');
+      },
+    );
+
+    test(
+      'maps SocketDispatchNamespaceForbidden to AuthorizationFailure',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const SocketDispatchNamespaceForbidden(
+              message: 'role forbidden',
+              role: 'client',
+              namespace: '/consumers',
+            ),
+          ),
+        );
+
+        final failure = _batchFailureOf(
+          await repo.executeSqlBatch(batchRequest),
+        );
+
+        check(failure).isA<AuthorizationFailure>();
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('namespace_forbidden');
+        check(failure.context['role']).equals('client');
+        check(failure.context['namespace']).equals('/consumers');
+      },
+    );
+
+    test(
+      'maps SocketDispatchLegacyStreamingUnsupported to UnknownFailure',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const SocketDispatchLegacyStreamingUnsupported(
+              message: 'stream',
+              streamId: 'stream-1',
+            ),
+          ),
+        );
+
+        final failure = _batchFailureOf(
+          await repo.executeSqlBatch(batchRequest),
+        );
+
+        check(failure).isA<UnknownFailure>();
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('legacy_streaming_unsupported');
+        check(failure.context['streamId']).equals('stream-1');
+      },
+    );
+
+    test('maps RelayRequestTimeout to transient NetworkFailure', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const RelayRequestTimeout(
+            message: 'no response in 30s',
+            conversationId: 'conv-1',
+            clientRequestId: 'req-1',
+          ),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<NetworkFailure>();
+      check(failure.isTransient).isTrue();
+      check(
+        failure.context[AgentQueriesFailureContext.transportField],
+      ).equals('relay');
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('timeout');
+      check(failure.context['conversationId']).equals('conv-1');
+      check(failure.context['clientRequestId']).equals('req-1');
+    });
+
+    test('maps RelayConversationLost to transient NetworkFailure', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const RelayConversationLost(
+            message: 'socket dropped',
+            conversationId: 'conv-1',
+            clientRequestId: 'req-1',
+          ),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<NetworkFailure>();
+      check(failure.isTransient).isTrue();
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('conversation_lost');
+      check(failure.context['conversationId']).equals('conv-1');
+      check(failure.context['clientRequestId']).equals('req-1');
+    });
+
+    test(
+      'maps RelayConversationStartFailure to transient NetworkFailure',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const RelayConversationStartFailure(message: 'hub overloaded'),
+          ),
+        );
+
+        final failure = _batchFailureOf(
+          await repo.executeSqlBatch(batchRequest),
+        );
+
+        check(failure).isA<NetworkFailure>();
+        check(failure.isTransient).isTrue();
+        check(
+          failure.context[AgentQueriesFailureContext.transportCodeField],
+        ).equals('conversation_start_failed');
+      },
+    );
+
+    test('maps RelayRequestRejected(UNAUTHORIZED) to SessionFailure', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const RelayRequestRejected(
+            message: 'token rejected',
+            serverCode: 'UNAUTHORIZED',
+            conversationId: 'conv-1',
+            clientRequestId: 'req-1',
+          ),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<SessionFailure>();
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('UNAUTHORIZED');
+      check(failure.context['conversationId']).equals('conv-1');
+      check(failure.context['clientRequestId']).equals('req-1');
+    });
+
+    test('maps RelayRequestRejected(RATE_LIMITED) with retryAfter', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const RelayRequestRejected(
+            message: 'too many',
+            serverCode: 'RATE_LIMITED',
+            retryAfter: Duration(seconds: 2),
+            conversationId: 'conv-1',
+            clientRequestId: 'req-1',
+          ),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<NetworkFailure>();
+      check((failure as NetworkFailure).retryAfter).equals(
+        const Duration(seconds: 2),
+      );
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('RATE_LIMITED');
+      check(failure.context['conversationId']).equals('conv-1');
+      check(failure.context['clientRequestId']).equals('req-1');
+    });
+
+    test('maps RelayStreamTerminated to transient NetworkFailure', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const RelayStreamTerminated(
+            message: 'aborted',
+            terminalStatus: 'aborted',
+            conversationId: 'conv-1',
+            clientRequestId: 'req-1',
+          ),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<NetworkFailure>();
+      check(failure.isTransient).isTrue();
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('stream_aborted');
+      check(failure.context['conversationId']).equals('conv-1');
+      check(failure.context['clientRequestId']).equals('req-1');
+    });
+
+    test('maps RelayDecodeFailure to transient NetworkFailure', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const RelayDecodeFailure(
+            message: 'bad frame',
+            conversationId: 'conv-1',
+            clientRequestId: 'req-1',
+          ),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<NetworkFailure>();
+      check(failure.isTransient).isTrue();
+      check(
+        failure.context[AgentQueriesFailureContext.transportCodeField],
+      ).equals('decode_failed');
+      check(failure.context['conversationId']).equals('conv-1');
+      check(failure.context['clientRequestId']).equals('req-1');
+    });
+
+    test('maps cancellation to UnknownFailure with cancelled flag', () async {
+      final repo = AgentQueriesRepositoryImpl(
+        _ThrowingDataSource(
+          const SocketDispatchCancelled(message: 'controller disposed'),
+        ),
+      );
+
+      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+
+      check(failure).isA<UnknownFailure>();
+      check(
+        failure.context[AgentQueriesFailureContext.cancelledField],
+      ).equals(true);
+      check(isCancelledAgentQueryFailure(failure.context)).isTrue();
+    });
+
+    test(
+      'maps RelayDispatcherDisposed to UnknownFailure with cancelled flag',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const RelayDispatcherDisposed(
+              message: 'logging out',
+              conversationId: 'conv-1',
+              clientRequestId: 'req-1',
+            ),
+          ),
+        );
+
+        final failure = _batchFailureOf(
+          await repo.executeSqlBatch(batchRequest),
+        );
+
+        check(failure).isA<UnknownFailure>();
+        check(
+          failure.context[AgentQueriesFailureContext.cancelledField],
+        ).equals(true);
+        check(isCancelledAgentQueryFailure(failure.context)).isTrue();
+        check(failure.context['conversationId']).equals('conv-1');
+        check(failure.context['clientRequestId']).equals('req-1');
       },
     );
   });
