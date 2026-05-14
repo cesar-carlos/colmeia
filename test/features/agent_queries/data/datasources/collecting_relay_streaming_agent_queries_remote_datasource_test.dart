@@ -131,6 +131,85 @@ void main() {
       await second;
     });
 
+    test('serializes equivalent trimmed agent ids', () async {
+      final delegate = _MockStreamingDatasource();
+      final firstStreamStarted = Completer<void>();
+      var streamSqlExecuteCalls = 0;
+      when(() => delegate.streamSqlExecute(any())).thenAnswer((_) {
+        streamSqlExecuteCalls++;
+        final id = streamSqlExecuteCalls;
+        final controller = StreamController<Map<String, dynamic>>();
+        unawaited(
+          (() async {
+            if (id == 1) {
+              firstStreamStarted.complete();
+              await Future<void>.delayed(const Duration(milliseconds: 60));
+            } else {
+              await firstStreamStarted.future;
+            }
+            controller.add(<String, dynamic>{
+              'request_id': 'trimmed-$id',
+              'total_rows': 0,
+            });
+            await controller.close();
+          })(),
+        );
+        return controller.stream;
+      });
+
+      final adapter = CollectingRelayStreamingAgentQueriesRemoteDataSource(
+        streamingDelegate: delegate,
+      );
+
+      final first = adapter.postSqlExecute(
+        const AgentSqlExecuteRequest(agentId: 'agent-trim', sql: 'q'),
+      );
+      await firstStreamStarted.future;
+
+      final second = adapter.postSqlExecute(
+        const AgentSqlExecuteRequest(agentId: ' agent-trim ', sql: 'q2'),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      check(streamSqlExecuteCalls).equals(1);
+      await first;
+      await Future<void>.delayed(Duration.zero);
+      check(streamSqlExecuteCalls).equals(2);
+      await second;
+    });
+
+    test(
+      'completed tails do not block later calls for the same agent',
+      () async {
+        final delegate = _MockStreamingDatasource();
+        var streamSqlExecuteCalls = 0;
+        when(() => delegate.streamSqlExecute(any())).thenAnswer((_) {
+          streamSqlExecuteCalls++;
+          return Stream<Map<String, dynamic>>.fromIterable(
+            <Map<String, dynamic>>[
+              <String, dynamic>{
+                'request_id': 'later-$streamSqlExecuteCalls',
+                'total_rows': 0,
+              },
+            ],
+          );
+        });
+
+        final adapter = CollectingRelayStreamingAgentQueriesRemoteDataSource(
+          streamingDelegate: delegate,
+        );
+
+        await adapter.postSqlExecute(
+          const AgentSqlExecuteRequest(agentId: 'agent-cleanup', sql: 'q1'),
+        );
+        await adapter.postSqlExecute(
+          const AgentSqlExecuteRequest(agentId: 'agent-cleanup', sql: 'q2'),
+        );
+
+        check(streamSqlExecuteCalls).equals(2);
+      },
+    );
+
     test('propagates stream errors as Future errors', () async {
       final delegate = _MockStreamingDatasource();
       when(() => delegate.streamSqlExecute(any())).thenAnswer(

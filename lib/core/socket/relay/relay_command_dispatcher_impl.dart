@@ -129,7 +129,6 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     final pending = await _prepareSend<_PendingUnary>(
       agentId: agentId,
       clientRequestId: clientRequestId,
-      timeout: timeout,
       makePending:
           ({
             required resolvedAgentId,
@@ -155,14 +154,21 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           clientRequestId,
           RelayConversationStartFailure(
             message: 'relay concurrency gate acquire failed: $e',
+            conversationId: pending.conversationId,
+            clientRequestId: clientRequestId,
             cause: e,
             stackTrace: s,
           ),
         );
         return pending.completer.future;
       }
+      if (!_pendingByClientId.containsKey(clientRequestId)) {
+        gate.release(pending.agentId);
+        return pending.completer.future;
+      }
       pending.relayPerAgentSlotRelease = () => gate.release(pending.agentId);
     }
+    _armPendingTimeout(pending, timeout);
     await _emitRpcRequestAsync(
       conversationId: pending.conversationId,
       clientRequestId: clientRequestId,
@@ -210,7 +216,6 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           pending = await _prepareSend<_PendingStream>(
             agentId: agentId,
             clientRequestId: clientRequestId,
-            timeout: timeout,
             makePending:
                 ({
                   required resolvedAgentId,
@@ -266,15 +271,22 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
               clientRequestId,
               RelayConversationStartFailure(
                 message: 'relay concurrency gate acquire failed: $e',
+                conversationId: pending.conversationId,
+                clientRequestId: clientRequestId,
                 cause: e,
                 stackTrace: s,
               ),
             );
             return;
           }
+          if (!_pendingByClientId.containsKey(clientRequestId)) {
+            gate.release(pending.agentId);
+            return;
+          }
           pending.relayPerAgentSlotRelease = () =>
               gate.release(pending.agentId);
         }
+        _armPendingTimeout(pending, timeout);
         await _emitRpcRequestAsync(
           conversationId: pending.conversationId,
           clientRequestId: clientRequestId,
@@ -322,13 +334,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   // ----- Internals -----
 
   /// Shared preparation for both `sendUnary` and `sendStreaming`. Resolves
-  /// the conversation, registers the pending entry, arms the timeout, and
-  /// hands the typed pending back so callers can either await its
-  /// completer or wire its stream controller before emitting on the wire.
+  /// the conversation, registers the pending entry, and hands the typed
+  /// pending back so callers can either await its completer or wire its stream
+  /// controller before acquiring backpressure and emitting on the wire.
+  ///
+  /// The request timeout is armed after the per-agent gate is acquired. Gate
+  /// wait time is controlled by [PerAgentConcurrencyGate]; request timeout
+  /// covers the actual relay round-trip.
   Future<T> _prepareSend<T extends _PendingRelay>({
     required String agentId,
     required String clientRequestId,
-    required Duration? timeout,
     required T Function({
       required String resolvedAgentId,
       required String resolvedConversationId,
@@ -411,21 +426,26 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     );
     _pendingByClientId[clientRequestId] = pending;
     _registerPendingConversation(conversationId, clientRequestId);
+    return pending;
+  }
 
+  void _armPendingTimeout(_PendingRelay pending, Duration? timeout) {
+    if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
+      return;
+    }
     final effectiveTimeout = timeout ?? _defaultTimeout;
     pending.timeoutTimer = Timer(effectiveTimeout, () {
       _failPending(
-        clientRequestId,
+        pending.clientRequestId,
         RelayRequestTimeout(
           message:
-              'No response for clientRequestId=$clientRequestId after '
+              'No response for clientRequestId=${pending.clientRequestId} after '
               '${effectiveTimeout.inSeconds}s',
-          conversationId: conversationId,
-          clientRequestId: clientRequestId,
+          conversationId: pending.conversationId,
+          clientRequestId: pending.clientRequestId,
         ),
       );
     });
-    return pending;
   }
 
   /// Encodes [body] as a PayloadFrame and emits `relay:rpc.request`.
@@ -522,12 +542,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     }
     try {
       socket
-        ..off(RelayEventNames.rpcAccepted)
-        ..off(RelayEventNames.rpcResponse)
-        ..off(RelayEventNames.rpcChunk)
-        ..off(RelayEventNames.rpcComplete)
-        ..off(RelayEventNames.rpcStreamPullResponse)
-        ..off(RelayEventNames.appError);
+        ..off(RelayEventNames.rpcAccepted, _onAccepted)
+        ..off(RelayEventNames.rpcResponse, _onResponseFrame)
+        ..off(RelayEventNames.rpcChunk, _onChunkFrame)
+        ..off(RelayEventNames.rpcComplete, _onCompleteFrame)
+        ..off(RelayEventNames.rpcStreamPullResponse, _onStreamPullResponse)
+        ..off(RelayEventNames.appError, _onAppError);
     } on Object catch (_) {
       // Socket is already being torn down; the next relay send will attach
       // listeners to the fresh raw socket instance.
@@ -602,6 +622,17 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           conversationId: pending.conversationId,
           clientRequestId: clientRequestId,
         ),
+      );
+      return;
+    }
+    if (_hasAppErrorCorrelationId(map)) {
+      AppLogger.debug(
+        'Ignoring relay app:error for non-pending request',
+        context: <String, Object?>{
+          'component': 'RelayCommandDispatcherImpl',
+          'code': code,
+          'topLevelKeys': map.keys.take(32).join(','),
+        },
       );
       return;
     }
@@ -705,6 +736,9 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     for (final key in <String>['requestId', 'request_id']) {
       final value = map[key]?.toString();
       if (value != null && value.isNotEmpty) {
+        if (_pendingByClientId.containsKey(value)) {
+          return value;
+        }
         final clientRequestId = _clientIdByRequestId[value];
         if (clientRequestId != null) {
           return clientRequestId;
@@ -712,6 +746,23 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       }
     }
     return null;
+  }
+
+  bool _hasAppErrorCorrelationId(Map<String, Object?> map) {
+    for (final key in <String>[
+      'clientRequestId',
+      'client_request_id',
+      'rpcId',
+      'rpc_id',
+      'requestId',
+      'request_id',
+    ]) {
+      final value = map[key]?.toString();
+      if (value != null && value.isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
   }
 
   int? _toIntOrNull(Object? raw) {

@@ -35,6 +35,11 @@ class _SocketWiring {
     when(() => socket.off(any())).thenAnswer((invocation) {
       handlers[invocation.positionalArguments[0] as String]?.clear();
     });
+    when(() => socket.off(any(), any())).thenAnswer((invocation) {
+      final name = invocation.positionalArguments[0] as String;
+      final handler = invocation.positionalArguments[1] as Function;
+      handlers[name]?.removeWhere((candidate) => identical(candidate, handler));
+    });
   }
 
   void fire(String event, Object? payload) {

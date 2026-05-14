@@ -54,7 +54,7 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
   Future<Map<String, dynamic>> postSqlExecute(
     AgentSqlExecuteRequest request,
   ) {
-    final agentId = request.agentId;
+    final agentId = request.trimmedAgentId;
     final previous = _postSqlTailByAgentId[agentId] ?? Future<void>.value();
     final mapped = previous
         .then<void>((_) {}, onError: _ignoreChainedError)
@@ -63,9 +63,18 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
             _streamingDelegate.streamSqlExecute(request),
           ),
         );
-    _postSqlTailByAgentId[agentId] = mapped.then<void>(
+    final tail = mapped.then<void>(
       (_) {},
       onError: _ignoreChainedError,
+    );
+    _postSqlTailByAgentId[agentId] = tail;
+    unawaited(
+      tail.whenComplete(() {
+        if (identical(_postSqlTailByAgentId[agentId], tail)) {
+          final removedTail = _postSqlTailByAgentId.remove(agentId);
+          removedTail?.ignore();
+        }
+      }),
     );
     return mapped;
   }

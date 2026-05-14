@@ -294,6 +294,177 @@ void main() {
         await f2;
       },
     );
+
+    test(
+      'does not start request timeout while waiting for a gate slot',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        final dispatcher = await dispatcherFor(
+          concurrencyGate: gate,
+          defaultTimeout: const Duration(milliseconds: 200),
+        );
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final f1 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-gate-a',
+            },
+          },
+          clientRequestId: 'rpc-gate-a',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final f2 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-gate-b',
+            },
+          },
+          clientRequestId: 'rpc-gate-b',
+          timeout: const Duration(milliseconds: 30),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        check(gate.waitingFor('agent-1')).equals(1);
+        check(
+          wiring.emits
+              .where((e) => e.event == RelayEventNames.rpcRequest)
+              .length,
+        ).equals(1);
+        await check(
+          f2.timeout(const Duration(milliseconds: 80)),
+        ).throws<TimeoutException>();
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-gate-a',
+          'requestId': 'srv-gate-a',
+          'success': true,
+        });
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'item': <String, Object?>{'id': 'rpc-gate-a', 'success': true},
+              },
+            },
+            requestId: 'srv-gate-a',
+          ),
+        );
+
+        await f1;
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        check(
+          wiring.emits
+              .where((e) => e.event == RelayEventNames.rpcRequest)
+              .length,
+        ).equals(2);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-gate-b',
+          'requestId': 'srv-gate-b',
+          'success': true,
+        });
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'item': <String, Object?>{'id': 'rpc-gate-b', 'success': true},
+              },
+            },
+            requestId: 'srv-gate-b',
+          ),
+        );
+
+        await f2;
+      },
+    );
+
+    test('gate queue rejection preserves relay request context', () async {
+      final gate = PerAgentConcurrencyGate(
+        maxInflightPerAgent: 1,
+        maxWaitersPerAgent: 0,
+      );
+      final dispatcher = await dispatcherFor(concurrencyGate: gate);
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final f1 = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-context-a',
+          },
+        },
+        clientRequestId: 'rpc-context-a',
+      );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      final rejected = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'command': <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-context-b',
+          },
+        },
+        clientRequestId: 'rpc-context-b',
+      );
+
+      await check(rejected).throws<RelayConversationStartFailure>(
+        (subject) => subject
+          ..has(
+            (e) => e.conversationId,
+            'conversationId',
+          ).equals('conv-agent-1')
+          ..has(
+            (e) => e.clientRequestId,
+            'clientRequestId',
+          ).equals('rpc-context-b'),
+      );
+
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'rpc-context-a',
+        'requestId': 'srv-context-a',
+        'success': true,
+      });
+      wiring.fire(
+        RelayEventNames.rpcResponse,
+        _buildResponseFrame(
+          <String, Object?>{
+            'response': <String, Object?>{
+              'type': 'single',
+              'item': <String, Object?>{'id': 'rpc-context-a', 'success': true},
+            },
+          },
+          requestId: 'srv-context-a',
+        ),
+      );
+      await f1;
+    });
   });
 
   group('RelayCommandDispatcherImpl.sendUnary', () {
@@ -715,6 +886,105 @@ void main() {
     });
 
     test(
+      'app:error with unknown request id does not fail unrelated pendings',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-unrelated',
+            },
+          },
+          clientRequestId: 'rpc-unrelated',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.appError, <String, Object?>{
+          'requestId': 'srv-not-this-request',
+          'code': 'SERVICE_UNAVAILABLE',
+          'message': 'hub busy',
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-unrelated',
+          'requestId': 'srv-unrelated',
+          'success': true,
+        });
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'item': <String, Object?>{
+                  'id': 'rpc-unrelated',
+                  'success': true,
+                },
+              },
+            },
+            requestId: 'srv-unrelated',
+          ),
+        );
+
+        final result = await future;
+        check(result['response']).isA<Map<dynamic, dynamic>>();
+      },
+    );
+
+    test(
+      'app:error with requestId equal to client id works before accepted',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-early-app-error',
+            },
+          },
+          clientRequestId: 'rpc-early-app-error',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.appError, <String, Object?>{
+          'requestId': 'rpc-early-app-error',
+          'error': <String, Object?>{
+            'code': 'RATE_LIMITED',
+            'message': 'retry later',
+            'data': <String, Object?>{'retry_after_ms': 250},
+          },
+        });
+
+        await check(future).throws<RelayRequestRejected>(
+          (subject) => subject
+            ..has((e) => e.code, 'code').equals('RATE_LIMITED')
+            ..has((e) => e.message, 'message').equals('retry later')
+            ..has(
+              (e) => e.retryAfter,
+              'retryAfter',
+            ).equals(const Duration(milliseconds: 250)),
+        );
+      },
+    );
+
+    test(
       'connect reconnect exhausted is surfaced as transient disconnected',
       () async {
         when(connection.connect).thenThrow(
@@ -764,6 +1034,10 @@ void main() {
         clientRequestId: 'rpc-before-drop',
       );
       await Future<void>.delayed(Duration.zero);
+      void sentinelAppError(Object? _) {}
+      wiring.handlers
+          .putIfAbsent(RelayEventNames.appError, () => <Function>[])
+          .add(sentinelAppError);
       final firstFailure = expectLater(
         first,
         throwsA(isA<RelayConversationLost>()),
@@ -819,6 +1093,9 @@ void main() {
       final result = await second;
       check(result['response']).isA<Map<dynamic, dynamic>>();
       check(wiring.handlers[RelayEventNames.rpcResponse]).isNull();
+      check(
+        wiring.handlers[RelayEventNames.appError]?.contains(sentinelAppError),
+      ).equals(true);
       check(wiringB.handlers[RelayEventNames.rpcResponse]?.length).equals(1);
     });
 
