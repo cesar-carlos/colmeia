@@ -2309,7 +2309,6 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
 
     return Material(
       color: colorScheme.surface,
-      elevation: 0,
       shadowColor: Colors.black.withValues(alpha: 0.22),
       borderRadius: BorderRadius.circular(tokens.formFieldRadius),
       child: DecoratedBox(
