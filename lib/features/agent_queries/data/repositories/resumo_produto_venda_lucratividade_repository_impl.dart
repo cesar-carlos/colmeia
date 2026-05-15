@@ -76,8 +76,10 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
         maxRows:
             AgentQueriesBoundedResultMaxRows.resumoProdutoVendaLucratividade,
         sqlTimeoutMs: effectiveSqlMs,
+        preferDbStreaming: true,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<

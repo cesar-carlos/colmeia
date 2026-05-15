@@ -68,10 +68,12 @@ class ResumoParcelasDiaSemanaUsuarioRepositoryImpl
       namedParams: periodAndFlagsParams,
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
+        preferDbStreaming: true,
         maxRows:
             AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemanaUsuario,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<

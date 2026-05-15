@@ -75,10 +75,12 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
+        preferDbStreaming: true,
         maxRows: AgentQueriesBoundedResultMaxRows
             .resumoTotalVendasMunicipioFilialPeriodo,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<

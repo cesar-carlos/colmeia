@@ -53,6 +53,7 @@ import 'package:colmeia/features/agent_queries/data/datasources/collecting_relay
 import 'package:colmeia/features/agent_queries/data/datasources/hybrid_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/routing_relay_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
@@ -249,6 +250,7 @@ void _registerAgentQueriesRepositoryChain(GetIt getIt) {
         remoteDataSource: getIt<AgentQueriesRemoteDataSource>(),
         eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
         maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
+        cacheTtl: Duration(milliseconds: AppEnvironment.agentSqlCacheTtlMs),
       );
 
       AppLogger.info(
@@ -894,15 +896,14 @@ void _registerSingle<R extends Object, U extends Object>(
 }
 
 /// Returns the relay-backed datasource when the relay layer is available.
-/// Repositories opting into `useRelay` always use the collected streaming
-/// adapter so chunked relay responses materialise into the same unary
-/// `Future<Map>` bridge envelope expected by the existing parser.
+/// `useRelay` selects relay transport; each request's `relayMode` decides
+/// whether `sql.execute` uses unary relay or streaming + collector.
 AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
   if (!getIt.isRegistered<RelayCommandDispatcher>()) {
     return null;
   }
 
-  final streamingDelegate =
+  final rawStreamingDelegate =
       getIt.isRegistered<AgentQueriesStreamingRemoteDataSource>()
       ? getIt<AgentQueriesStreamingRemoteDataSource>()
       : RelayStreamingAgentQueriesRemoteDataSource(
@@ -917,16 +918,22 @@ AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
       ? BridgeShapedSqlExecuteCollector(maxBufferedRows: maxBufferedRows)
       : const BridgeShapedSqlExecuteCollector();
 
-  final batchDelegate = RelayAgentQueriesRemoteDataSource(
+  final unaryDelegate = RelayAgentQueriesRemoteDataSource(
     dispatcher: getIt<RelayCommandDispatcher>(),
     bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
     batchBodyMapper: getIt<AgentSqlExecuteBatchRequestToBridgeBody>(),
     compression: AppEnvironment.socketRelayPayloadFrameCompression,
   );
 
-  return CollectingRelayStreamingAgentQueriesRemoteDataSource(
-    streamingDelegate: streamingDelegate,
-    batchDelegate: batchDelegate,
-    collector: collector,
+  final streamingRelayDelegate =
+      CollectingRelayStreamingAgentQueriesRemoteDataSource(
+        streamingDelegate: rawStreamingDelegate,
+        batchDelegate: unaryDelegate,
+        collector: collector,
+      );
+
+  return RoutingRelayAgentQueriesRemoteDataSource(
+    unaryDelegate: unaryDelegate,
+    streamingDelegate: streamingRelayDelegate,
   );
 }

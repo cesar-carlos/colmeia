@@ -60,6 +60,7 @@ void main() {
 
         final envelope = await collector.collect(stream);
         final response = envelope['response']! as Map<String, dynamic>;
+        check(response['success']).equals(true);
         check(response['type']).equals('single');
         final item = response['item']! as Map<String, dynamic>;
         check(item['id']).equals('rpc-1');
@@ -120,6 +121,33 @@ void main() {
       final result = item['result']! as Map<String, dynamic>;
       check(result['rows']! as List).isEmpty();
       check(result['row_count']).equals(0);
+    });
+
+    test('wraps non-streaming relay JSON-RPC response', () async {
+      final envelope = await collector.collect(
+        Stream<Map<String, dynamic>>.fromIterable(
+          <Map<String, dynamic>>[
+            <String, dynamic>{
+              'jsonrpc': '2.0',
+              'id': 'rpc-json',
+              'result': <String, dynamic>{
+                'rows': <Map<String, dynamic>>[
+                  <String, dynamic>{'id': 1},
+                ],
+                'row_count': 1,
+              },
+            },
+          ],
+        ),
+      );
+
+      final response = envelope['response']! as Map<String, dynamic>;
+      check(response['success']).equals(true);
+      final item = response['item']! as Map<String, dynamic>;
+      check(item['id']).equals('rpc-json');
+      final result = item['result']! as Map<String, dynamic>;
+      final rows = result['rows']! as List<dynamic>;
+      check(rows.length).equals(1);
     });
 
     test('throws when buffered rows exceed maxBufferedRows', () async {

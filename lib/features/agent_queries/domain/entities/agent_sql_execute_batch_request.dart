@@ -101,11 +101,13 @@ class AgentSqlExecuteBatchOptions {
     this.sqlTimeoutMs,
     this.maxRows,
     this.transaction,
+    this.maxParallelReadOnlyBatchItems,
   });
 
   final int? sqlTimeoutMs;
   final int? maxRows;
   final bool? transaction;
+  final int? maxParallelReadOnlyBatchItems;
 
   String? validationError() {
     final timeout = sqlTimeoutMs;
@@ -115,6 +117,10 @@ class AgentSqlExecuteBatchOptions {
     final max = maxRows;
     if (max != null && max < 1) {
       return 'maxRows must be >= 1';
+    }
+    final parallel = maxParallelReadOnlyBatchItems;
+    if (parallel != null && parallel < 1) {
+      return 'maxParallelReadOnlyBatchItems must be >= 1';
     }
     return null;
   }
@@ -133,8 +139,12 @@ class AgentSqlExecuteBatchOptions {
     if (tx != null) {
       map['transaction'] = tx;
     }
+    final parallel = maxParallelReadOnlyBatchItems;
+    if (parallel != null) {
+      map['max_parallel_read_only_batch_items'] = parallel;
+    }
     return map.isEmpty ? null : map;
   }
 }
 
-const String kColmeiaAgentBatchApiVersion = '2.5';
+const String kColmeiaAgentBatchApiVersion = '2.10';

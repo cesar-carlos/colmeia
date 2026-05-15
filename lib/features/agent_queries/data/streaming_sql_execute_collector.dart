@@ -1,3 +1,5 @@
+import 'package:colmeia/features/agent_queries/data/agent_sql_relay_response_adapter.dart';
+
 /// Aggregates the chunked output of
 /// `AgentQueriesStreamingRemoteDataSource.streamSqlExecute(...)` into a
 /// single bridge-shaped `Map<String, dynamic>` — the same envelope
@@ -80,6 +82,10 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
     List<Object?>? columnMetadata;
 
     await for (final chunk in chunks) {
+      if (isRelayJsonRpcResponse(chunk)) {
+        return relayJsonRpcToBridgeEnvelope(chunk, responseType: 'single');
+      }
+
       // Capture envelope-level metadata.
       requestId ??= chunk['request_id']?.toString();
 
@@ -129,6 +135,7 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
 
     return <String, dynamic>{
       'response': <String, dynamic>{
+        'success': true,
         'type': 'single',
         'item': <String, dynamic>{
           'id': ?requestId,

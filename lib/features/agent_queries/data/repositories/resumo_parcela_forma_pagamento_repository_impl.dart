@@ -63,9 +63,11 @@ class ResumoParcelaFormaPagamentoRepositoryImpl
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
+        preferDbStreaming: true,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamento,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<

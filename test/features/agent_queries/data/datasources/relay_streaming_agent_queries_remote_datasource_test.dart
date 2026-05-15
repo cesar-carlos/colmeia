@@ -165,7 +165,7 @@ void main() {
     });
 
     test(
-      'builds the shared sql.execute body and correlates it with '
+      'builds the relay JSON-RPC command and correlates it with '
       'clientRequestId',
       () async {
         final dispatcher = _MockRelayDispatcher();
@@ -215,19 +215,57 @@ void main() {
         check(capturedAgentId).equals('agent-1');
         check(captured.length).equals(1);
         final body = captured.single;
-        check(body['agentId']).equals('agent-1');
-        check(body['payloadFrameCompression']).equals('always');
+        check(body.containsKey('agentId')).isFalse();
+        check(body.containsKey('command')).isFalse();
+        check(body.containsKey('payloadFrameCompression')).isFalse();
         check(body.containsKey('useRelay')).isFalse();
-        final command = body['command']! as Map<dynamic, dynamic>;
-        check(command['id']).equals(capturedClientRequestId);
-        check(command['method']).equals('sql.execute');
-        final params = command['params']! as Map<dynamic, dynamic>;
+        check(body['id']).equals(capturedClientRequestId);
+        check(body['method']).equals('sql.execute');
+        final params = body['params']! as Map<dynamic, dynamic>;
         check(params['sql']).equals(
           'SELECT * FROM Cliente WHERE ativo = :ativo',
         );
         check(params['client_token']).equals('token');
         final namedParams = params['params']! as Map<dynamic, dynamic>;
         check(namedParams['ativo']).equals(true);
+      },
+    );
+
+    test(
+      'request payloadFrameCompression overrides datasource default',
+      () async {
+        final dispatcher = _MockRelayDispatcher();
+        RelayPayloadFrameCompression? capturedCompression;
+        when(
+          () => dispatcher.sendStreaming(
+            agentId: any(named: 'agentId'),
+            body: any(named: 'body'),
+            clientRequestId: any(named: 'clientRequestId'),
+            timeout: any(named: 'timeout'),
+            compression: any(named: 'compression'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedCompression =
+              invocation.namedArguments[#compression]
+                  as RelayPayloadFrameCompression?;
+          return const Stream<Map<String, dynamic>>.empty();
+        });
+
+        final datasource = RelayStreamingAgentQueriesRemoteDataSource(
+          dispatcher: dispatcher,
+          compression: RelayPayloadFrameCompression.none,
+        );
+        await datasource
+            .streamSqlExecute(
+              const AgentSqlExecuteRequest(
+                agentId: 'agent-1',
+                sql: 'SELECT 1',
+                payloadFrameCompression: RelayPayloadFrameCompression.always,
+              ),
+            )
+            .toList();
+
+        check(capturedCompression).equals(RelayPayloadFrameCompression.always);
       },
     );
 

@@ -27,6 +27,7 @@ abstract final class AgentQueriesRepositoryChainFactory {
     required AgentQueriesRemoteDataSource remoteDataSource,
     required AgentSqlExecutionEligibilityPort eligibility,
     required int maxCacheSize,
+    Duration cacheTtl = CachingAgentQueriesRepository.defaultCacheTtl,
   }) {
     final base = AgentQueriesRepositoryImpl(remoteDataSource);
 
@@ -48,6 +49,7 @@ abstract final class AgentQueriesRepositoryChainFactory {
 
     final caching = CachingAgentQueriesRepository(
       delegate: coalescing,
+      cacheTtl: cacheTtl,
       maxCacheSize: maxCacheSize,
     );
 

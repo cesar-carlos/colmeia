@@ -63,10 +63,12 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
+        preferDbStreaming: true,
         maxRows:
             AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamentoDiario,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<

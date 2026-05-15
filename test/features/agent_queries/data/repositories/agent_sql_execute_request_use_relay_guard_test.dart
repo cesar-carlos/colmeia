@@ -32,6 +32,38 @@ void main() {
     check(missing).isEmpty();
     check(forbiddenFalse).isEmpty();
   });
+
+  test('report SQL execute requests opt into streaming relay', () {
+    final missing = <String>[];
+
+    for (final file in _streamingReportFiles()) {
+      final source = file.readAsStringSync();
+      final parsed = parseString(
+        content: source,
+        path: file.path,
+        throwIfDiagnostics: false,
+      );
+      parsed.unit.accept(
+        _StreamingRelayVisitor(
+          filePath: file.path,
+          lineInfo: parsed.lineInfo,
+          missing: missing,
+        ),
+      );
+    }
+
+    check(missing).isEmpty();
+  });
+
+  test('small lookup repositories remain unary relay', () {
+    for (final file in _smallLookupFiles()) {
+      final source = file.readAsStringSync();
+      check(
+        source.contains('relayMode: AgentSqlRelayMode.streaming'),
+      ).isFalse();
+      check(source.contains('preferDbStreaming: true')).isFalse();
+    }
+  });
 }
 
 Iterable<File> _sourceFiles() sync* {
@@ -47,6 +79,46 @@ Iterable<File> _sourceFiles() sync* {
     }
   }
 }
+
+Iterable<File> _streamingReportFiles() sync* {
+  const fileNames = <String>{
+    'produto_vendido_produto_rank_lucro_repository_impl.dart',
+    'produto_vendido_tendencia_de_venda_repository_impl.dart',
+    'produto_vendido_tendencia_de_venda_media_movel_repository_impl.dart',
+    'resumo_parcela_forma_pagamento_diario_repository_impl.dart',
+    'resumo_parcela_forma_pagamento_repository_impl.dart',
+    'resumo_parcelas_anual_repository_impl.dart',
+    'resumo_parcelas_dia_semana_repository_impl.dart',
+    'resumo_parcelas_dia_semana_usuario_repository_impl.dart',
+    'resumo_parcelas_forma_pagamento_por_mes_repository_impl.dart',
+    'resumo_parcelas_mensal_repository_impl.dart',
+    'resumo_produto_venda_lucratividade_mensal_repository_impl.dart',
+    'resumo_produto_venda_lucratividade_repository_impl.dart',
+    'resumo_produto_venda_repository_impl.dart',
+    'resumo_total_diario_vendas_repository_impl.dart',
+    'resumo_total_vendas_municipio_filial_diario_repository_impl.dart',
+    'resumo_total_vendas_municipio_filial_periodo_repository_impl.dart',
+    'resumo_vendas_diarias_por_vendedor_repository_impl.dart',
+  };
+  for (final fileName in fileNames) {
+    yield File(_repositoryPath(fileName));
+  }
+}
+
+Iterable<File> _smallLookupFiles() sync* {
+  const fileNames = <String>{
+    'grupo_produto_options_repository_impl.dart',
+    'marca_produto_options_repository_impl.dart',
+    'municipio_list_repository_impl.dart',
+    'resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart',
+  };
+  for (final fileName in fileNames) {
+    yield File(_repositoryPath(fileName));
+  }
+}
+
+String _repositoryPath(String fileName) =>
+    'lib/features/agent_queries/data/repositories/$fileName';
 
 final class _SqlRequestRelayVisitor extends RecursiveAstVisitor<void> {
   _SqlRequestRelayVisitor({
@@ -98,6 +170,73 @@ final class _SqlRequestRelayVisitor extends RecursiveAstVisitor<void> {
         !_falseRelayAllowlist.contains(location)) {
       forbiddenFalse.add(location);
     }
+  }
+
+  String _location(AstNode node) {
+    final line = lineInfo.getLocation(node.offset).lineNumber;
+    return '$filePath:$line';
+  }
+}
+
+final class _StreamingRelayVisitor extends RecursiveAstVisitor<void> {
+  _StreamingRelayVisitor({
+    required this.filePath,
+    required this.lineInfo,
+    required this.missing,
+  });
+
+  final String filePath;
+  final LineInfo lineInfo;
+  final List<String> missing;
+
+  @override
+  void visitInstanceCreationExpression(InstanceCreationExpression node) {
+    super.visitInstanceCreationExpression(node);
+
+    if (node.constructorName.type.name.lexeme != 'AgentSqlExecuteRequest') {
+      return;
+    }
+    if (!_isUseRelayTrue(node)) {
+      return;
+    }
+
+    final relayMode = _namedExpression(node, 'relayMode')?.expression;
+    if (relayMode?.toSource() != 'AgentSqlRelayMode.streaming') {
+      missing.add('${_location(node)} missing relayMode.streaming');
+    }
+
+    final executeOptions = _namedExpression(node, 'executeOptions')?.expression;
+    if (executeOptions is! InstanceCreationExpression ||
+        !_hasBooleanArgument(executeOptions, 'preferDbStreaming', true)) {
+      missing.add('${_location(node)} missing preferDbStreaming true');
+    }
+  }
+
+  bool _isUseRelayTrue(InstanceCreationExpression node) {
+    final useRelay = _namedExpression(node, 'useRelay')?.expression;
+    return useRelay is BooleanLiteral && useRelay.value;
+  }
+
+  NamedExpression? _namedExpression(
+    InstanceCreationExpression node,
+    String name,
+  ) {
+    for (final argument
+        in node.argumentList.arguments.whereType<NamedExpression>()) {
+      if (argument.name.label.name == name) {
+        return argument;
+      }
+    }
+    return null;
+  }
+
+  bool _hasBooleanArgument(
+    InstanceCreationExpression node,
+    String name,
+    bool value,
+  ) {
+    final expression = _namedExpression(node, name)?.expression;
+    return expression is BooleanLiteral && expression.value == value;
   }
 
   String _location(AstNode node) {

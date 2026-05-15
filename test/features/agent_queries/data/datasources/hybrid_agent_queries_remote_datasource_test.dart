@@ -53,11 +53,13 @@ AgentSqlExecuteRequest _request({
   String agentId = 'agent-1',
   String sql = 'SELECT 1',
   bool useRelay = false,
+  AgentSqlRelayMode relayMode = AgentSqlRelayMode.unary,
 }) {
   return AgentSqlExecuteRequest(
     agentId: agentId,
     sql: sql,
     useRelay: useRelay,
+    relayMode: relayMode,
   );
 }
 
@@ -215,13 +217,12 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         final body = invocation.namedArguments[#body] as Map<dynamic, dynamic>;
-        final command = body['command']! as Map<dynamic, dynamic>;
         return <String, dynamic>{
           'response': <String, dynamic>{
             'type': 'single',
             'item': <String, dynamic>{
               'success': true,
-              'method': command['method'],
+              'method': body['method'],
             },
           },
         };
@@ -347,6 +348,16 @@ void main() {
         useRelay: true,
       );
       check(request.useRelay).isTrue();
+      check(request.relayMode).equals(AgentSqlRelayMode.unary);
+    });
+
+    test('relayMode can opt a relay request into streaming', () {
+      final request = _request(
+        useRelay: true,
+        relayMode: AgentSqlRelayMode.streaming,
+      );
+      check(request.useRelay).isTrue();
+      check(request.relayMode).equals(AgentSqlRelayMode.streaming);
     });
   });
 }

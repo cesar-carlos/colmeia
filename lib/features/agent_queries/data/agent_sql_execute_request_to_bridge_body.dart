@@ -1,7 +1,7 @@
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 
-/// Maps an [AgentSqlExecuteRequest] into the bridge body shared by both
-/// transports:
+/// Maps an [AgentSqlExecuteRequest] into the bridge body shared by REST and
+/// the legacy socket command path:
 ///
 /// - REST: body of `POST /api/v1/agents/commands`.
 /// - Socket: payload of the `agents:command` event on the `/consumers`
@@ -11,6 +11,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 /// any divergence is a bug. Snapshot tests in
 /// `test/features/agent_queries/data/agent_sql_execute_request_to_bridge_body_test.dart`
 /// pin the wire format.
+///
+/// Relay (`relay:rpc.request`) is different: the `PayloadFrame` logical
+/// payload is the JSON-RPC command itself, not this REST body. Use
+/// [buildRelayCommand] for relay datasources.
 class AgentSqlExecuteRequestToBridgeBody {
   const AgentSqlExecuteRequestToBridgeBody();
 
@@ -18,6 +22,23 @@ class AgentSqlExecuteRequestToBridgeBody {
   /// JSON-RPC `command.id` ([rpcId]) so the same id can be used to correlate
   /// the response — [rpcId] must NOT be generated inside this helper.
   Map<String, Object?> build({
+    required AgentSqlExecuteRequest request,
+    required String rpcId,
+  }) {
+    final payloadFrameCompression = request.payloadFrameCompression?.wireValue;
+
+    return <String, Object?>{
+      'agentId': request.trimmedAgentId,
+      'timeoutMs': ?request.bridgeTimeoutMs,
+      'pagination': ?request.pagination?.toHttpBody(),
+      'payloadFrameCompression': ?payloadFrameCompression,
+      'command': buildRelayCommand(request: request, rpcId: rpcId),
+    };
+  }
+
+  /// Builds the JSON-RPC command used as the logical PayloadFrame payload on
+  /// `relay:rpc.request`.
+  Map<String, Object?> buildRelayCommand({
     required AgentSqlExecuteRequest request,
     required String rpcId,
   }) {
@@ -43,21 +64,14 @@ class AgentSqlExecuteRequestToBridgeBody {
         : <String, Object?>{'outbound_compression': outboundCompression};
 
     final apiVersion = request.apiVersion.trim();
-    final payloadFrameCompression = request.payloadFrameCompression?.wireValue;
 
     return <String, Object?>{
-      'agentId': request.trimmedAgentId,
-      'timeoutMs': ?request.bridgeTimeoutMs,
-      'pagination': ?request.pagination?.toHttpBody(),
-      'payloadFrameCompression': ?payloadFrameCompression,
-      'command': <String, Object?>{
-        'jsonrpc': '2.0',
-        'method': 'sql.execute',
-        'id': rpcId,
-        if (apiVersion.isNotEmpty) 'api_version': apiVersion,
-        'meta': ?meta,
-        'params': params,
-      },
+      'jsonrpc': '2.0',
+      'method': 'sql.execute',
+      'id': rpcId,
+      if (apiVersion.isNotEmpty) 'api_version': apiVersion,
+      'meta': ?meta,
+      'params': params,
     };
   }
 }

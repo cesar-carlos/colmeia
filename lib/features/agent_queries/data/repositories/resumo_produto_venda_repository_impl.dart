@@ -94,8 +94,10 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: filter.pageSize + _maxRowsPageBuffer,
         sqlTimeoutMs: effectiveSqlMs,
+        preferDbStreaming: true,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<ResumoProdutoVendaPageResult>(

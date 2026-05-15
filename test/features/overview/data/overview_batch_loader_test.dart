@@ -143,6 +143,8 @@ void main() {
           AgentQueriesBoundedResultMaxRows.resumoParcelasMensal,
         );
         check(mainRequest.options?.transaction).equals(false);
+        check(mainRequest.options?.maxParallelReadOnlyBatchItems).equals(4);
+        check(sectionRequest.options?.maxParallelReadOnlyBatchItems).equals(4);
         check(
           mainRequest.commands.map((command) => command.executionOrder),
         ).deepEquals(
@@ -161,6 +163,8 @@ void main() {
         final command = body['command']! as Map<String, Object?>;
         check(command['method']).equals('sql.executeBatch');
         final params = command['params']! as Map<String, Object?>;
+        final options = params['options']! as Map<String, Object?>;
+        check(options['max_parallel_read_only_batch_items']).equals(4);
         final commands = params['commands']! as List<Object?>;
         check(commands.length).equals(6);
         for (final rawCommand in commands) {
@@ -217,6 +221,47 @@ void main() {
         check(targetResult.lucratividadeMensalFailure).isNull();
       },
     );
+
+    test('allows tuning read-only batch parallelism', () async {
+      final tunedLoader = OverviewBatchLoader(
+        targetResolver: targetResolver,
+        planBuilder: const AgentQueryPlanBuilder(),
+        agentQueriesRepository: agentQueriesRepository,
+        maxParallelReadOnlyBatchItems: 6,
+      );
+      final target = _agentTarget('agent-1', token: 'token-1');
+      _stubResolution(
+        targetResolver,
+        AgentQueryTargetResolution(
+          consideredApprovedTargets: <AgentQueryTarget>[target],
+          missingClientTokenTargets: const <AgentQueryTarget>[],
+          consideredApprovedAgentCount: 1,
+          selectedAgentIds: const <String>{'agent-1'},
+          hubPresenceOnlineAgentIdsSnapshot: const <String>{'agent-1'},
+        ),
+      );
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer((invocation) async {
+        final request =
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
+        return Success<AgentSqlBatchExecutionResult, AppFailure>(
+          _batchResult(commandCount: request.commands.length),
+        );
+      });
+
+      final result = await _loadSingleAgent(tunedLoader);
+
+      check(result.isSuccess()).isTrue();
+      final requests = verify(
+        () => agentQueriesRepository.executeSqlBatch(captureAny()),
+      ).captured.cast<AgentSqlExecuteBatchRequest>().toList(growable: false);
+      check(requests.length).equals(2);
+      for (final request in requests) {
+        check(request.options?.maxParallelReadOnlyBatchItems).equals(6);
+      }
+    });
 
     test(
       'keeps successful agent data when another target main batch fails',

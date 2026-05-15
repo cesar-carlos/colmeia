@@ -5,7 +5,7 @@ import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart'
-    show AppFailure, SessionFailure;
+    show AppFailure, RpcFailure;
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
@@ -53,9 +53,9 @@ void main() {
           (success) {
             expect(success.rows, isNotEmpty);
           },
-          (failure) => _expectAcceptableSocketRelayFailure(
-            failure,
-            scope: 'socket relay sql.execute smoke',
+          (failure) => fail(
+            'socket relay sql.execute smoke failed: '
+            '${_describeFailure(failure)}',
           ),
         );
 
@@ -85,9 +85,9 @@ void main() {
             expect(success.items.length, 2);
             expect(success.items.every((item) => item.ok), isTrue);
           },
-          (failure) => _expectAcceptableSocketRelayFailure(
-            failure,
-            scope: 'socket relay sql.executeBatch smoke',
+          (failure) => fail(
+            'socket relay sql.executeBatch smoke failed: '
+            '${_describeFailure(failure)}',
           ),
         );
       });
@@ -126,20 +126,37 @@ List<String> _missingSocketRelaySmokeKeys() {
   return missing;
 }
 
-void _expectAcceptableSocketRelayFailure(
-  AppFailure failure, {
-  required String scope,
-}) {
-  expect(
-    failure,
-    isNot(isA<SessionFailure>()),
-    reason: 'Unexpected HTTP 401 after client login in $scope.',
-  );
-  expect(
-    isAcceptableE2eAgentSqlRepositoryFailure(failure),
-    isTrue,
-    reason:
-        '$scope should return rows or an accepted policy/permission/transient '
-        'hub failure.',
-  );
+String _describeFailure(AppFailure failure) {
+  final details = <String, Object?>{
+    'type': failure.runtimeType.toString(),
+    'message': failure.message,
+    'userMessage': failure.userMessage,
+    'isTransient': failure.isTransient,
+    'context': _redactContext(failure.context),
+  };
+  if (failure is RpcFailure) {
+    details.addAll(<String, Object?>{
+      'rpcCode': failure.rpcCode,
+      'reason': failure.reason,
+      'category': failure.category,
+      'retryable': failure.retryable,
+      'correlationId': failure.correlationId,
+    });
+  }
+  return details.entries
+      .where((entry) => entry.value != null)
+      .map((entry) => '${entry.key}=${entry.value}')
+      .join(', ');
+}
+
+Map<String, Object?> _redactContext(Map<String, Object?> context) {
+  return context.map((key, value) {
+    final normalized = key.toLowerCase();
+    if (normalized.contains('token') ||
+        normalized.contains('password') ||
+        normalized.contains('authorization')) {
+      return MapEntry(key, '<redacted>');
+    }
+    return MapEntry(key, value);
+  });
 }

@@ -120,12 +120,34 @@ abstract final class AppEnvironment {
       );
 
   static const int defaultAgentSqlCacheMaxSize = 500;
+  static const int defaultAgentSqlCacheTtlMs = 3000;
+  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
 
   static int get agentSqlCacheMaxSize => AppEnvironmentResolution.resolveInt(
     fromDefine: const String.fromEnvironment(EnvKeys.agentSqlCacheMaxSize),
     fromDotenv: _dotenvMaybe(EnvKeys.agentSqlCacheMaxSize),
     fallback: defaultAgentSqlCacheMaxSize,
   ).clamp(1, 5000);
+
+  static int get agentSqlCacheTtlMs => AppEnvironmentResolution.resolveInt(
+    fromDefine: const String.fromEnvironment(EnvKeys.agentSqlCacheTtlMs),
+    fromDotenv: _dotenvMaybe(EnvKeys.agentSqlCacheTtlMs),
+    fallback: defaultAgentSqlCacheTtlMs,
+  )._atLeastOrFallback(0, defaultAgentSqlCacheTtlMs);
+
+  static int get agentSqlOverviewBatchMaxParallelReadOnlyItems =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlOverviewBatchMaxParallelReadOnlyItems,
+        ),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.agentSqlOverviewBatchMaxParallelReadOnlyItems,
+        ),
+        fallback: defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems,
+      )._atLeastOrFallback(
+        1,
+        defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems,
+      );
 
   /// Agent bridge + client-auth data for a full stack e2e run.
   static bool get hasE2eAgentBridgeCredentials =>

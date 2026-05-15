@@ -64,9 +64,11 @@ class ResumoTotalDiarioVendasRepositoryImpl
       },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
+        preferDbStreaming: true,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoTotalDiarioVendas,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<

@@ -9,14 +9,14 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 
 /// Short-term cache for idempotent SQL queries to reduce redundant hub calls.
 ///
-/// Caches successful results for a brief TTL (default 5 seconds) to handle:
+/// Caches successful results for a brief TTL (default 3 seconds) to handle:
 /// - Rapid UI refreshes (pull-to-refresh spam)
 /// - Multiple widgets requesting the same data during a single frame
 /// - Back-and-forth navigation within a short window
 ///
 /// The cache is keyed by (agentId + sql + params + clientToken) to prevent
 /// stale or cross-user data leakage. Cache entries are invalidated when:
-/// - TTL expires (default 5 seconds)
+/// - TTL expires (default 3 seconds, tunable by AGENT_SQL_CACHE_TTL_MS)
 /// - Maximum cache size is exceeded (LRU eviction, default 500 entries)
 /// - Session changes (clientToken mismatch)
 ///
@@ -25,11 +25,13 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 class CachingAgentQueriesRepository implements AgentQueriesRepository {
   CachingAgentQueriesRepository({
     required AgentQueriesRepository delegate,
-    Duration cacheTtl = const Duration(seconds: 5),
+    Duration cacheTtl = defaultCacheTtl,
     int maxCacheSize = 500,
   }) : _delegate = delegate,
        _cacheTtl = cacheTtl,
        _maxCacheSize = maxCacheSize;
+
+  static const Duration defaultCacheTtl = Duration(seconds: 3);
 
   final AgentQueriesRepository _delegate;
   final Duration _cacheTtl;

@@ -121,6 +121,8 @@ SOCKET_RELAY_CONVERSATION_START_TIMEOUT_MS=-1
 SOCKET_RELAY_CONVERSATION_END_TIMEOUT_MS=0
 SOCKET_RELAY_STREAM_INITIAL_WINDOW=-8
 SOCKET_RELAY_STREAM_REFILL_THRESHOLD=99
+AGENT_SQL_CACHE_TTL_MS=-1
+AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=0
 ''',
       );
 
@@ -158,6 +160,31 @@ SOCKET_RELAY_STREAM_REFILL_THRESHOLD=99
       );
       check(AppEnvironment.socketRelayStreamRefillThreshold).equals(
         AppEnvironment.defaultSocketRelayStreamInitialWindow,
+      );
+      check(AppEnvironment.agentSqlCacheTtlMs).equals(
+        AppEnvironment.defaultAgentSqlCacheTtlMs,
+      );
+      check(
+        AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
+      ).equals(
+        AppEnvironment.defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems,
+      );
+    });
+
+    test('agent SQL performance knobs can be overridden explicitly', () {
+      dotenv.loadFromString(
+        envString: '''
+AGENT_BRIDGE_TRANSPORT=rest
+AGENT_SQL_CACHE_TTL_MS=1200
+AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=6
+''',
+      );
+
+      check(AppEnvironment.agentSqlCacheTtlMs).equals(1200);
+      check(
+        AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
+      ).equals(
+        6,
       );
     });
   });

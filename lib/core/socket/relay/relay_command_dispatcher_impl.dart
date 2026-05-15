@@ -1360,6 +1360,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   }
 
   String? _extractMethod(Map<String, Object?> body) {
+    final directMethod = body['method'];
+    if (directMethod is String && directMethod.isNotEmpty) {
+      return directMethod;
+    }
     final command = body['command'];
     if (command is Map) {
       final method = command['method'];

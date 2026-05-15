@@ -98,6 +98,7 @@ void main() {
         executeOptions: AgentSqlExecuteOptions(
           executionMode: AgentSqlExecutionMode.preserve,
           maxRows: 1000,
+          preferDbStreaming: true,
         ),
       );
       final body = builder.build(request: request, rpcId: 'rpc-6');
@@ -107,6 +108,7 @@ void main() {
       final options = params['options']! as Map<String, Object?>;
       check(options['execution_mode']).equals('preserve');
       check(options['max_rows']).equals(1000);
+      check(options['prefer_db_streaming']).equals(true);
     });
 
     test('emits namedParams when provided', () {
@@ -136,14 +138,17 @@ void main() {
         agentId: 'agent-1',
         sql: 'SELECT 1',
         useRelay: true,
+        relayMode: AgentSqlRelayMode.streaming,
       );
       final baselineBody = builder.build(request: baseline, rpcId: 'rpc-r');
       final relayBody = builder.build(request: withRelay, rpcId: 'rpc-r');
       check(relayBody.toString()).equals(baselineBody.toString());
       check(relayBody.containsKey('useRelay')).isFalse();
+      check(relayBody.containsKey('relayMode')).isFalse();
     });
 
     test('emits api_version by default (kColmeiaAgentApiVersion)', () {
+      check(kColmeiaAgentApiVersion).equals('2.10');
       const request = AgentSqlExecuteRequest(
         agentId: 'agent-1',
         sql: 'SELECT 1',
@@ -214,6 +219,41 @@ void main() {
       );
       final body = builder.build(request: request, rpcId: 'rpc-pfc-2');
       check(body.containsKey('payloadFrameCompression')).isFalse();
+    });
+  });
+
+  group('AgentSqlExecuteRequestToBridgeBody.buildRelayCommand', () {
+    test('builds the JSON-RPC command without REST envelope fields', () {
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: '''
+          SELECT *
+            FROM Cliente
+           WHERE ativo = :ativo
+        ''',
+        namedParams: <String, Object?>{'ativo': true},
+        clientToken: ' token-1 ',
+        payloadFrameCompression: RelayPayloadFrameCompression.always,
+      );
+
+      final command = builder.buildRelayCommand(
+        request: request,
+        rpcId: 'rpc-relay-1',
+      );
+
+      check(command.containsKey('agentId')).isFalse();
+      check(command.containsKey('command')).isFalse();
+      check(command.containsKey('payloadFrameCompression')).isFalse();
+      check(command['jsonrpc']).equals('2.0');
+      check(command['method']).equals('sql.execute');
+      check(command['id']).equals('rpc-relay-1');
+      final params = command['params']! as Map<String, Object?>;
+      check(params['sql']).equals(
+        'SELECT * FROM Cliente WHERE ativo = :ativo',
+      );
+      check(params['client_token']).equals('token-1');
+      final namedParams = params['params']! as Map<String, Object?>;
+      check(namedParams['ativo']).equals(true);
     });
   });
 }

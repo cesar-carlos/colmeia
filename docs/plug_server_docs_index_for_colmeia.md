@@ -29,6 +29,22 @@ constants.
   pull that legacy stream path.
 - Progressive streaming in Colmeia is relay-only: use `relay:conversation.start`,
   `relay:rpc.request`, and credit flow through `relay:rpc.stream.pull`.
+- In Colmeia app code, `useRelay: true` chooses relay transport and
+  `relayMode: streaming` opts a `sql.execute` call into progressive relay
+  streaming. The default relay mode is unary.
+- Colmeia defaults `sql.execute` and `sql.executeBatch` to
+  `api_version: "2.10"` (`plug-jsonrpc-profile/2.10`). Per-request overrides
+  remain available for legacy agents.
+- Large report/chart queries use relay streaming plus
+  `options.prefer_db_streaming: true`. Lookup/options queries stay relay unary.
+- Overview read-only `sql.executeBatch` calls use
+  `options.max_parallel_read_only_batch_items: 4` by default. Local builds can
+  tune this with `AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS`.
+- SQL result cache TTL defaults to 3000 ms and is tunable through
+  `AGENT_SQL_CACHE_TTL_MS`; use the E2E comparator suite mode to validate
+  changes against REST and socket instead of assuming higher TTL is faster.
+- `SOCKET_WARM_UP_AFTER_LOGIN=true` preconnects `/consumers` after login so the
+  first socket SQL call does not pay the handshake cost.
 - Relay accepts one correlatable JSON-RPC request per `relay:rpc.request`; do
   not send JSON-RPC batch arrays or notifications (`id: null`) through relay.
 - `client:agent.profile.updated` is treated as PayloadFrame-only by default.
@@ -45,6 +61,8 @@ constants.
 - Auto gzip threshold: 4096 bytes
 - Max gzip inflation ratio: 10x
 - Unknown root keys and unknown `signature` keys are invalid.
+- `meta.outbound_compression` is currently not a runtime performance tuning
+  knob; rely on PayloadFrame gzip policy and SQL options above.
 
 ## Legacy removal plan
 

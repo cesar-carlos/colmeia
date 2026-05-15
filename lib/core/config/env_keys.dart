@@ -28,6 +28,14 @@ abstract final class EnvKeys {
   /// Maximum in-memory successful SQL query results kept before LRU eviction.
   static const String agentSqlCacheMaxSize = 'AGENT_SQL_CACHE_MAX_SIZE';
 
+  /// TTL in milliseconds for the short in-memory SQL result cache.
+  static const String agentSqlCacheTtlMs = 'AGENT_SQL_CACHE_TTL_MS';
+
+  /// Optional bridge hint for overview read-only `sql.executeBatch`
+  /// parallelism. Positive integer; the agent keeps the final safety cap.
+  static const String agentSqlOverviewBatchMaxParallelReadOnlyItems =
+      'AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS';
+
   // ----- Socket channel (PR-A: infraestrutura de conexão) -----
 
   /// `rest` (default) | `socket`. Selects the agent commands transport.

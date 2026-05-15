@@ -30,6 +30,13 @@ void main() {
 
       check(rootSummary).contains('2026-09-30');
       check(rootSummary).contains('payload_frame_only');
+      check(rootSummary).contains('plug-jsonrpc-profile/2.10');
+      check(rootSummary).contains('prefer_db_streaming');
+      check(rootSummary).contains('max_parallel_read_only_batch_items');
+      check(rootSummary).contains('AGENT_SQL_CACHE_TTL_MS');
+      check(rootSummary).contains(
+        'AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS',
+      );
       check(rootSummary).contains(
         'SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED',
       );

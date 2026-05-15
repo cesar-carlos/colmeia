@@ -2,23 +2,20 @@ import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_relay_response_adapter.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:uuid/uuid.dart';
 
-/// Sends `sql.execute` over the relay channel (`relay:rpc.request`).
+/// Sends SQL JSON-RPC commands over the relay channel (`relay:rpc.request`).
 ///
-/// Reuses [AgentSqlExecuteRequestToBridgeBody] so the JSON-RPC payload is
-/// byte-for-byte identical to the REST and `agents:command` paths — only
-/// the wire wrapping (PayloadFrame envelope inside `relay:rpc.request`)
-/// changes. The repository (`AgentQueriesRepositoryImpl`) keeps using the
-/// same response parser because the hub re-emits `relay:rpc.response`
-/// frames with the same bridge envelope (`response.type`, `response.item`).
-///
-/// Selection between this datasource and the unitary one
-/// (`SocketAgentQueriesRemoteDataSource`) is a DI concern — see
-/// `injector_agent_queries.dart` and the hybrid wrapper introduced in PR-L.
+/// Relay frames carry the JSON-RPC command directly. REST and
+/// `agents:command` wrap that command in a top-level bridge body, but the
+/// relay hub validates the decoded PayloadFrame as the command itself. The
+/// repository keeps using the same response parser because this datasource
+/// adapts relay JSON-RPC responses back into the bridge envelope
+/// (`response.success`, `response.type`, `response.item`).
 class RelayAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   RelayAgentQueriesRemoteDataSource({
@@ -43,14 +40,24 @@ class RelayAgentQueriesRemoteDataSource
   @override
   Future<Map<String, dynamic>> postSqlExecute(AgentSqlExecuteRequest request) {
     final clientRequestId = _uuid.v4();
-    final body = _bodyMapper.build(request: request, rpcId: clientRequestId);
-    return _dispatcher.sendUnary(
-      agentId: request.trimmedAgentId,
-      body: body,
-      clientRequestId: clientRequestId,
-      timeout: _resolveTimeout(request),
-      compression: _compression,
+    final body = _bodyMapper.buildRelayCommand(
+      request: request,
+      rpcId: clientRequestId,
     );
+    return _dispatcher
+        .sendUnary(
+          agentId: request.trimmedAgentId,
+          body: body,
+          clientRequestId: clientRequestId,
+          timeout: _resolveTimeout(request),
+          compression: _resolveCompression(request.payloadFrameCompression),
+        )
+        .then(
+          (payload) => relayJsonRpcToBridgeEnvelope(
+            payload,
+            responseType: 'single',
+          ),
+        );
   }
 
   @override
@@ -58,17 +65,24 @@ class RelayAgentQueriesRemoteDataSource
     AgentSqlExecuteBatchRequest request,
   ) {
     final clientRequestId = _uuid.v4();
-    final body = _batchBodyMapper.build(
+    final body = _batchBodyMapper.buildRelayCommand(
       request: request,
       rpcId: clientRequestId,
     );
-    return _dispatcher.sendUnary(
-      agentId: request.trimmedAgentId,
-      body: body,
-      clientRequestId: clientRequestId,
-      timeout: _resolveBatchTimeout(request),
-      compression: _compression,
-    );
+    return _dispatcher
+        .sendUnary(
+          agentId: request.trimmedAgentId,
+          body: body,
+          clientRequestId: clientRequestId,
+          timeout: _resolveBatchTimeout(request),
+          compression: _resolveCompression(request.payloadFrameCompression),
+        )
+        .then(
+          (payload) => relayJsonRpcToBridgeEnvelope(
+            payload,
+            responseType: 'batch',
+          ),
+        );
   }
 
   /// Same +5s buffer the REST and unitary socket paths apply, so the relay
@@ -81,5 +95,11 @@ class RelayAgentQueriesRemoteDataSource
   Duration _resolveBatchTimeout(AgentSqlExecuteBatchRequest request) {
     final base = request.bridgeTimeoutMs ?? 15000;
     return Duration(milliseconds: base + 5000);
+  }
+
+  RelayPayloadFrameCompression _resolveCompression(
+    RelayPayloadFrameCompression? requestCompression,
+  ) {
+    return requestCompression ?? _compression;
   }
 }

@@ -211,13 +211,16 @@ class OverviewBatchLoader {
     required AgentQueryTargetResolver targetResolver,
     required AgentQueryPlanBuilder planBuilder,
     required AgentQueriesRepository agentQueriesRepository,
+    int maxParallelReadOnlyBatchItems = 4,
   }) : _targetResolver = targetResolver,
        _planBuilder = planBuilder,
-       _agentQueriesRepository = agentQueriesRepository;
+       _agentQueriesRepository = agentQueriesRepository,
+       _maxParallelReadOnlyBatchItems = maxParallelReadOnlyBatchItems;
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;
   final AgentQueriesRepository _agentQueriesRepository;
+  final int _maxParallelReadOnlyBatchItems;
 
   /// Hub validates `sql.executeBatch` `options.timeout_ms` at <= 300_000.
   static const int overviewBatchBridgeTimeoutMs = 300000;
@@ -417,10 +420,11 @@ class OverviewBatchLoader {
         clientToken: target.clientToken,
         useRelay: true,
         bridgeTimeoutMs: planBridgeTimeoutMs,
-        options: const AgentSqlExecuteBatchOptions(
+        options: AgentSqlExecuteBatchOptions(
           sqlTimeoutMs: overviewBatchSqlTimeoutMs,
           maxRows: overviewBatchMaxRows,
           transaction: false,
+          maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
       ),
     );
@@ -463,10 +467,11 @@ class OverviewBatchLoader {
         clientToken: target.clientToken,
         useRelay: true,
         bridgeTimeoutMs: planBridgeTimeoutMs,
-        options: const AgentSqlExecuteBatchOptions(
+        options: AgentSqlExecuteBatchOptions(
           sqlTimeoutMs: overviewBatchSqlTimeoutMs,
           maxRows: overviewBatchMaxRows,
           transaction: false,
+          maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
       ),
     );

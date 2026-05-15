@@ -32,9 +32,9 @@ class _ThrowingAgentCommandSender implements AgentCommandSender {
 }
 
 class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
-  _FakeRelayCommandDispatcher({this.streamError});
+  _FakeRelayCommandDispatcher({this.unaryError});
 
-  final Object? streamError;
+  final Exception? unaryError;
   int unaryCalls = 0;
   int streamingCalls = 0;
 
@@ -54,7 +54,22 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
         RelayPayloadFrameCompression.auto,
   }) async {
     unaryCalls++;
-    throw StateError('unary relay should not be used for SQL relay requests');
+    final error = unaryError;
+    if (error != null) {
+      throw error;
+    }
+    return <String, dynamic>{
+      'jsonrpc': '2.0',
+      'id': clientRequestId,
+      'result': <String, dynamic>{
+        'rows': <Map<String, Object?>>[
+          <String, Object?>{'value': 1},
+        ],
+        'row_count': 1,
+        'affected_rows': 0,
+        'execution_id': 'exec-unary-1',
+      },
+    };
   }
 
   @override
@@ -69,10 +84,6 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
         RelayPayloadFrameCompression.auto,
   }) {
     streamingCalls++;
-    final error = streamError;
-    if (error != null) {
-      return Stream<Map<String, dynamic>>.error(error);
-    }
     return Stream<Map<String, dynamic>>.fromIterable(<Map<String, dynamic>>[
       <String, dynamic>{
         'request_id': clientRequestId,
@@ -135,7 +146,7 @@ AGENT_BRIDGE_TRANSPORT=rest
   });
 
   test(
-    'registers useRelay requests through the collected streaming relay path',
+    'registers useRelay requests through the unary relay path by default',
     () async {
       final getIt = GetIt.asNewInstance();
       final sender = _ThrowingAgentCommandSender();
@@ -161,8 +172,8 @@ AGENT_BRIDGE_TRANSPORT=rest
       final sqlResult = item['result']! as Map<String, dynamic>;
       final rows = sqlResult['rows']! as List<dynamic>;
 
-      check(relay.streamingCalls).equals(1);
-      check(relay.unaryCalls).equals(0);
+      check(relay.streamingCalls).equals(0);
+      check(relay.unaryCalls).equals(1);
       check(sender.calls).equals(0);
       check(rows).deepEquals(<Map<String, Object?>>[
         <String, Object?>{'value': 1},
@@ -173,12 +184,51 @@ AGENT_BRIDGE_TRANSPORT=rest
     },
   );
 
+  test(
+    'registers relayMode.streaming requests through the collected stream path',
+    () async {
+      final getIt = GetIt.asNewInstance();
+      final sender = _ThrowingAgentCommandSender();
+      final relay = _FakeRelayCommandDispatcher();
+      getIt
+        ..registerLazySingleton<Dio>(Dio.new)
+        ..registerLazySingleton<AgentCommandSender>(() => sender)
+        ..registerLazySingleton<RelayCommandDispatcher>(() => relay);
+
+      registerInjectorAgentQueries(getIt);
+
+      final datasource = getIt<AgentQueriesRemoteDataSource>();
+      final result = await datasource.postSqlExecute(
+        const AgentSqlExecuteRequest(
+          agentId: 'agent-1',
+          sql: 'SELECT 1',
+          useRelay: true,
+          relayMode: AgentSqlRelayMode.streaming,
+        ),
+      );
+
+      final response = result['response']! as Map<String, dynamic>;
+      final item = response['item']! as Map<String, dynamic>;
+      final sqlResult = item['result']! as Map<String, dynamic>;
+      final rows = sqlResult['rows']! as List<dynamic>;
+
+      check(relay.streamingCalls).equals(1);
+      check(relay.unaryCalls).equals(0);
+      check(sender.calls).equals(0);
+      check(rows).deepEquals(<Map<String, Object?>>[
+        <String, Object?>{'value': 1},
+      ]);
+
+      await getIt.reset();
+    },
+  );
+
   test('latches relay permanent socket failure to REST fallback', () async {
     final getIt = GetIt.asNewInstance();
     addTearDown(getIt.reset);
     final sender = _ThrowingAgentCommandSender();
     final relay = _FakeRelayCommandDispatcher(
-      streamError: const SocketDispatchNamespaceForbidden(
+      unaryError: const SocketDispatchNamespaceForbidden(
         message: 'forbidden',
         role: 'client',
         namespace: '/consumers',
@@ -211,7 +261,7 @@ AGENT_BRIDGE_TRANSPORT=rest
 
     check(first['response']).equals('ok-from-rest');
     check(second['response']).equals('ok-from-rest');
-    check(relay.streamingCalls).equals(1);
+    check(relay.unaryCalls).equals(1);
     check(restAdapter.calls).equals(2);
     check(sender.calls).equals(0);
   });
@@ -232,7 +282,7 @@ SOCKET_RELAY_ENABLED=true
       addTearDown(getIt.reset);
       final sender = _ThrowingAgentCommandSender();
       final relay = _FakeRelayCommandDispatcher(
-        streamError: const SocketDispatchNamespaceForbidden(
+        unaryError: const SocketDispatchNamespaceForbidden(
           message: 'forbidden',
           role: 'client',
           namespace: '/consumers',
@@ -263,7 +313,7 @@ SOCKET_RELAY_ENABLED=true
         ),
       );
 
-      check(relay.streamingCalls).equals(1);
+      check(relay.unaryCalls).equals(1);
       check(restAdapter.calls).equals(2);
       check(sender.calls).equals(0);
     },

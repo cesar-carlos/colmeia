@@ -25,9 +25,12 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
   MetricsAgentQueriesRepository({
     required AgentQueriesRepository delegate,
     Duration metricsLogInterval = const Duration(minutes: 5),
+    bool enablePeriodicLogging = true,
   }) : _delegate = delegate,
        _metricsLogInterval = metricsLogInterval {
-    _schedulePeriodicLog();
+    if (enablePeriodicLogging) {
+      _schedulePeriodicLog();
+    }
   }
 
   final AgentQueriesRepository _delegate;
@@ -70,10 +73,16 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     stopwatch.stop();
 
     _recordMetric(
+      operation: 'sql.execute',
       agentId: request.trimmedAgentId,
       duration: stopwatch.elapsed,
       success: result.isSuccess(),
       failure: result.isError() ? result.exceptionOrNull() : null,
+      useRelay: request.useRelay,
+      relayMode: request.useRelay ? request.relayMode.name : null,
+      preferDbStreaming: request.executeOptions?.preferDbStreaming,
+      apiVersion: request.apiVersion,
+      rowCount: result.getOrNull()?.rowCount,
     );
 
     _maybeLogMetrics();
@@ -90,27 +99,57 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     stopwatch.stop();
 
     _recordMetric(
+      operation: 'sql.executeBatch',
       agentId: request.trimmedAgentId,
       duration: stopwatch.elapsed,
       success: result.isSuccess(),
       failure: result.isError() ? result.exceptionOrNull() : null,
+      useRelay: request.useRelay,
+      relayMode: request.useRelay ? 'unary' : null,
+      apiVersion: request.apiVersion,
+      maxParallelReadOnlyBatchItems:
+          request.options?.maxParallelReadOnlyBatchItems,
+      totalCommands: result.getOrNull()?.totalCommands,
+      successfulCommands: result.getOrNull()?.successfulCommands,
+      failedCommands: result.getOrNull()?.failedCommands,
+      rowCount: _batchRowCount(result.getOrNull()),
     );
     _maybeLogMetrics();
     return result;
   }
 
   void _recordMetric({
+    required String operation,
     required String agentId,
     required Duration duration,
     required bool success,
     AppFailure? failure,
+    bool useRelay = false,
+    String? relayMode,
+    bool? preferDbStreaming,
+    String? apiVersion,
+    int? maxParallelReadOnlyBatchItems,
+    int? totalCommands,
+    int? successfulCommands,
+    int? failedCommands,
+    int? rowCount,
   }) {
     final entry = _MetricEntry(
+      operation: operation,
       agentId: agentId,
       duration: duration,
       success: success,
       failure: failure,
       recordedAt: DateTime.now(),
+      useRelay: useRelay,
+      relayMode: relayMode,
+      preferDbStreaming: preferDbStreaming,
+      apiVersion: apiVersion,
+      maxParallelReadOnlyBatchItems: maxParallelReadOnlyBatchItems,
+      totalCommands: totalCommands,
+      successfulCommands: successfulCommands,
+      failedCommands: failedCommands,
+      rowCount: rowCount,
     );
 
     _metrics.add(entry);
@@ -150,8 +189,22 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     final failuresByType = <String, int>{};
     final statusCodes = <int, int>{};
     final rpcCodes = <int, int>{};
+    final countsByOperation = <String, int>{};
+    final countsByRoute = <String, int>{};
+    final countsByRelayMode = <String, int>{};
+    final durationByRoute = <String, Duration>{};
 
     for (final entry in _metrics) {
+      countsByOperation[entry.operation] =
+          (countsByOperation[entry.operation] ?? 0) + 1;
+      final route = entry.useRelay ? 'relay' : 'base';
+      countsByRoute[route] = (countsByRoute[route] ?? 0) + 1;
+      durationByRoute[route] =
+          (durationByRoute[route] ?? Duration.zero) + entry.duration;
+      final mode = entry.relayMode;
+      if (mode != null) {
+        countsByRelayMode[mode] = (countsByRelayMode[mode] ?? 0) + 1;
+      }
       if (!entry.success && entry.failure != null) {
         final typeName = entry.failure.runtimeType.toString();
         failuresByType[typeName] = (failuresByType[typeName] ?? 0) + 1;
@@ -181,6 +234,13 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
         'successRate': _successCount / (_successCount + _failureCount),
         'avgSuccessDurationMs': averageSuccessDuration.inMilliseconds,
         'avgFailureDurationMs': averageFailureDuration.inMilliseconds,
+        'countsByOperation': countsByOperation,
+        'countsByRoute': countsByRoute,
+        'countsByRelayMode': countsByRelayMode,
+        'avgDurationMsByRoute': _averageDurationMsByKey(
+          totals: durationByRoute,
+          counts: countsByRoute,
+        ),
         'failuresByType': failuresByType,
         'httpStatusCodes': statusCodes,
         'rpcErrorCodes': rpcCodes,
@@ -195,10 +255,20 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     final recent = _metrics.reversed.take(limit).toList();
     return recent.map((entry) {
       return <String, Object?>{
+        'operation': entry.operation,
         'agentId': entry.agentId,
         'durationMs': entry.duration.inMilliseconds,
         'success': entry.success,
         'failureType': entry.failure?.runtimeType.toString(),
+        'route': entry.useRelay ? 'relay' : 'base',
+        'relayMode': entry.relayMode,
+        'preferDbStreaming': entry.preferDbStreaming,
+        'apiVersion': entry.apiVersion,
+        'maxParallelReadOnlyBatchItems': entry.maxParallelReadOnlyBatchItems,
+        'totalCommands': entry.totalCommands,
+        'successfulCommands': entry.successfulCommands,
+        'failedCommands': entry.failedCommands,
+        'rowCount': entry.rowCount,
         'recordedAt': entry.recordedAt.toIso8601String(),
       };
     }).toList();
@@ -213,20 +283,60 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     _totalFailureDuration = Duration.zero;
     _lastLoggedAt = null;
   }
+
+  static int? _batchRowCount(AgentSqlBatchExecutionResult? result) {
+    if (result == null) {
+      return null;
+    }
+    return result.items.fold<int>(
+      0,
+      (sum, item) => sum + item.rowCount,
+    );
+  }
+
+  static Map<String, int> _averageDurationMsByKey({
+    required Map<String, Duration> totals,
+    required Map<String, int> counts,
+  }) {
+    return <String, int>{
+      for (final entry in totals.entries)
+        entry.key: entry.value.inMilliseconds ~/ (counts[entry.key] ?? 1),
+    };
+  }
 }
 
 class _MetricEntry {
   _MetricEntry({
+    required this.operation,
     required this.agentId,
     required this.duration,
     required this.success,
     required this.recordedAt,
     this.failure,
+    this.useRelay = false,
+    this.relayMode,
+    this.preferDbStreaming,
+    this.apiVersion,
+    this.maxParallelReadOnlyBatchItems,
+    this.totalCommands,
+    this.successfulCommands,
+    this.failedCommands,
+    this.rowCount,
   });
 
+  final String operation;
   final String agentId;
   final Duration duration;
   final bool success;
   final AppFailure? failure;
   final DateTime recordedAt;
+  final bool useRelay;
+  final String? relayMode;
+  final bool? preferDbStreaming;
+  final String? apiVersion;
+  final int? maxParallelReadOnlyBatchItems;
+  final int? totalCommands;
+  final int? successfulCommands;
+  final int? failedCommands;
+  final int? rowCount;
 }

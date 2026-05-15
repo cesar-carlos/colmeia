@@ -5,16 +5,12 @@ import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_st
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:uuid/uuid.dart';
 
-/// Streams `sql.execute` over the relay channel using
-/// `RelayCommandDispatcher.sendStreaming`. Reuses
-/// [AgentSqlExecuteRequestToBridgeBody] so the body is byte-for-byte
-/// identical to the REST and `agents:command` paths — only the wire
-/// wrapping (PayloadFrame envelope + chunked relay events) changes.
+/// Streams `sql.execute` over relay using the JSON-RPC command as the
+/// PayloadFrame logical payload.
 ///
-/// PR-L+ p3 ships this as a standalone datasource. Wiring it into a
-/// concrete `AgentQueryExecutor` flow is a follow-up sub-PR that
-/// needs to identify which `overview` query benefits from streaming
-/// (see `socket_consumer_channel_plan.md` §0.3).
+/// REST and `agents:command` wrap the command in a bridge body. Relay does
+/// not: the hub validates the decoded frame as the command itself, then
+/// re-emits `relay:rpc.chunk`, `relay:rpc.complete`, or `relay:rpc.response`.
 class RelayStreamingAgentQueriesRemoteDataSource
     implements AgentQueriesStreamingRemoteDataSource {
   RelayStreamingAgentQueriesRemoteDataSource({
@@ -37,13 +33,16 @@ class RelayStreamingAgentQueriesRemoteDataSource
     AgentSqlExecuteRequest request,
   ) {
     final clientRequestId = _uuid.v4();
-    final body = _bodyMapper.build(request: request, rpcId: clientRequestId);
+    final body = _bodyMapper.buildRelayCommand(
+      request: request,
+      rpcId: clientRequestId,
+    );
     return _dispatcher.sendStreaming(
       agentId: request.trimmedAgentId,
       body: body,
       clientRequestId: clientRequestId,
       timeout: _resolveTimeout(request),
-      compression: _compression,
+      compression: _resolveCompression(request.payloadFrameCompression),
     );
   }
 
@@ -53,5 +52,11 @@ class RelayStreamingAgentQueriesRemoteDataSource
   Duration _resolveTimeout(AgentSqlExecuteRequest request) {
     final base = request.bridgeTimeoutMs ?? 15000;
     return Duration(milliseconds: base + 5000);
+  }
+
+  RelayPayloadFrameCompression _resolveCompression(
+    RelayPayloadFrameCompression? requestCompression,
+  ) {
+    return requestCompression ?? _compression;
   }
 }

@@ -968,11 +968,11 @@ execution_id,started_at,finished_at,affected_rows,column_metadata}}}`.
    relay streaming — economia de RAM no hub + backpressure
    correto, sem mudar o repositório nem o executor.
 
-A integração efetiva (registrar o adapter para uma query específica)
-fica para **PR-L+ p4**: é um swap de DI (uma linha no
-`injector_agent_queries.dart`) que não muda contrato nem comportamento
-observável; depende só de identificar a query que sofre com
-materialização, decisão de produto.
+A integração efetiva agora fica no roteador relay de DI:
+`useRelay: true` escolhe relay; `relayMode: unary` é o default;
+`relayMode: streaming` ativa o adapter streaming + collector apenas
+para chamadas marcadas explicitamente. `sql.executeBatch` permanece
+relay unary.
 
 ---
 
@@ -990,6 +990,9 @@ mudar o domínio para classificar queries.
   body byte-a-byte** quando `useRelay` muda (snapshot test pinou esse
   invariante em
   `agent_sql_execute_request_to_bridge_body_test.dart`).
+- `AgentSqlExecuteRequest.relayMode` separa transporte relay do modo de
+  execucao: `useRelay: true` usa relay, `relayMode: unary` e o default e
+  `relayMode: streaming` ativa `sendStreaming(...) -> collect(...)`.
 - `HybridAgentQueriesRemoteDataSource` (em
   `lib/features/agent_queries/data/datasources/`) recebe um
   `baseDelegate` (REST ou `agents:command`) e um `relayDelegate`

@@ -24,6 +24,7 @@ HTTP and socket consumer commands share the same internal pipeline (`executeAgen
 | `page` / `page_size` | Offset pagination (1-based page; requires both).                                                                               |
 | `cursor`             | Keyset continuation token (exclusive with `page` / `page_size`).                                                               |
 | `execution_mode`     | `managed` (default, allows rewrite for pagination) or `preserve` (SQL sent as-is; **not** combinable with pagination options). |
+| `prefer_db_streaming` | Bridge hint for DB-side streaming. Colmeia enables it on large report/chart relay streaming queries. |
 | `preserve_sql`       | Legacy boolean alias for `execution_mode: preserve`.                                                                           |
 | `multi_result`       | Return **multiple result sets** from **one** SQL string; **not** combinable with pagination or named `params`.                 |
 
@@ -48,7 +49,7 @@ Use this when the database/driver returns multiple grids for one round-trip—no
 
 - Method: `sql.executeBatch`.
 - `params.commands[]`: each entry has `sql`, optional `params`, optional `execution_order`.
-- `params.options`: `timeout_ms`, `max_rows` (per command), `transaction` (single transaction wrapping commands).
+- `params.options`: `timeout_ms`, `max_rows` (per command), `transaction` (single transaction wrapping commands), `max_parallel_read_only_batch_items` (positive integer; Colmeia starts overview read-only batches at `4`).
 - Response: `items[]` per command (`index`, `ok`, `rows`, `row_count`, `error`, …), plus `total_commands`, `successful_commands`, `failed_commands`.
 
 This is the **semantic** batch API on the agent (ordered SQL list), distinct from JSON-RPC batching (below).
@@ -81,3 +82,5 @@ This is **several RPC calls in one POST**, not the same as `multi_result`.
 See also **`docs/plug_server_docs_index_for_colmeia.md`** (REST vs socket, relay limits, when to batch).
 
 Colmeia report repos usually call **`sql.execute`** with **`execution_mode: preserve`** and named parameters (`project_agent_sql.mdc`). Bounded aggregate queries may set **`max_rows`** via `AgentQueriesBoundedResultMaxRows` as a safety cap. Anything needing **`multi_result`**, **`sql.executeBatch`**, or JSON-RPC batching must be designed against the plug_server schema and agent policy.
+
+Current rollout policy: Colmeia defaults `api_version` to **`2.10`**. Large report/chart queries use `useRelay: true`, `relayMode: streaming`, and `options.prefer_db_streaming: true`; lookup/options queries remain relay unary. Overview read-only `sql.executeBatch` calls set `options.max_parallel_read_only_batch_items: 4`. Do not use `meta.outbound_compression` as the main performance tuning knob; the current server runtime documents it as a no-op.

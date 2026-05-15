@@ -4,6 +4,7 @@ class AgentSqlExecuteOptions {
     this.maxRows,
     this.sqlTimeoutMs,
     this.executionMode,
+    this.preferDbStreaming,
   });
 
   /// Maps to `options.max_rows` on the agent.
@@ -14,6 +15,12 @@ class AgentSqlExecuteOptions {
 
   /// Maps to `options.execution_mode` (`managed` is the agent default).
   final AgentSqlExecutionMode? executionMode;
+
+  /// Maps to `options.prefer_db_streaming`.
+  ///
+  /// This is a bridge-side performance hint. `null` omits the field so the
+  /// agent keeps its default behavior.
+  final bool? preferDbStreaming;
 
   String? validationError() {
     final max = maxRows;
@@ -46,6 +53,10 @@ class AgentSqlExecuteOptions {
         AgentSqlExecutionMode.managed => 'managed',
         AgentSqlExecutionMode.preserve => 'preserve',
       };
+    }
+    final preferStreaming = preferDbStreaming;
+    if (preferStreaming != null) {
+      map['prefer_db_streaming'] = preferStreaming;
     }
     return map.isEmpty ? null : map;
   }

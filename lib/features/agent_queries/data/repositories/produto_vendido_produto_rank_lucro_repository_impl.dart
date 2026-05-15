@@ -77,8 +77,10 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
         maxRows:
             AgentQueriesBoundedResultMaxRows.produtoVendidoProdutoRankLucro,
         sqlTimeoutMs: effectiveSqlMs,
+        preferDbStreaming: true,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<

@@ -89,9 +89,11 @@ class ResumoParcelasMensalRepositoryImpl
       namedParams: periodAndFlagsParams,
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,
+        preferDbStreaming: true,
         maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasMensal,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<List<ResumoParcelasMensalRow>>(

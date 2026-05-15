@@ -27,6 +27,7 @@ abstract final class AgentQueriesRequestKey {
       'pagination': _paginationToKey(request.pagination),
       'execute_options': _executeOptionsToKey(request.executeOptions),
       'use_relay': request.useRelay,
+      'relay_mode': request.relayMode.name,
       'api_version': request.apiVersion,
       'outbound_compression': request.outboundCompression?.wireValue,
       'payload_frame_compression': request.payloadFrameCompression?.wireValue,
@@ -86,6 +87,7 @@ abstract final class AgentQueriesRequestKey {
       'max_rows': options.maxRows,
       'sql_timeout_ms': options.sqlTimeoutMs,
       'execution_mode': options.executionMode?.name,
+      'prefer_db_streaming': options.preferDbStreaming,
     };
   }
 
@@ -98,6 +100,8 @@ abstract final class AgentQueriesRequestKey {
       'max_rows': options.maxRows,
       'sql_timeout_ms': options.sqlTimeoutMs,
       'transaction': options.transaction,
+      'max_parallel_read_only_batch_items':
+          options.maxParallelReadOnlyBatchItems,
     };
   }
 

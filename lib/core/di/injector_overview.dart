@@ -1,4 +1,5 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
@@ -26,6 +27,8 @@ void registerInjectorOverview(GetIt getIt) {
         targetResolver: getIt<AgentQueryTargetResolver>(),
         planBuilder: getIt<AgentQueryPlanBuilder>(),
         agentQueriesRepository: getIt<AgentQueriesRepository>(),
+        maxParallelReadOnlyBatchItems:
+            AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
       ),
     )
     ..registerLazySingleton<OverviewRepository>(

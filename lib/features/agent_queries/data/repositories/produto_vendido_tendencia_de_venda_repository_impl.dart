@@ -85,8 +85,10 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: sqlMaxRowsCap,
         sqlTimeoutMs: effectiveSqlMs,
+        preferDbStreaming: true,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<
@@ -147,8 +149,10 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         maxRows: AgentQueriesBoundedResultMaxRows
             .produtoVendidoTendenciaDeVendaSummary,
         sqlTimeoutMs: effectiveSqlMs,
+        preferDbStreaming: true,
       ),
       useRelay: true,
+      relayMode: AgentSqlRelayMode.streaming,
     );
 
     return AgentSqlRepositoryExecution.execute<

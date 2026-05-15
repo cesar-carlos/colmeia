@@ -3,12 +3,12 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_outbound_co
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 
-/// Default `api_version` advertised by Colmeia. Aligned with the hub
-/// `plug-jsonrpc-profile/2.8` profile (REST examples in
-/// `plug_server/docs/api_rest_bridge.md` use 2.5+; the hub accepts any
-/// value the underlying agent supports). Forward-compatible: the bridge
-/// silently ignores the field on agents that do not check it.
-const String kColmeiaAgentApiVersion = '2.5';
+/// Default `api_version` advertised by Colmeia.
+///
+/// Aligned with the current hub profile `plug-jsonrpc-profile/2.10`.
+/// Forward-compatible: the bridge silently ignores the field on agents that
+/// do not check it. Pass an explicit value for legacy agents.
+const String kColmeiaAgentApiVersion = '2.10';
 
 /// Semantic input for a single `sql.execute` call through the bridge.
 ///
@@ -34,6 +34,7 @@ class AgentSqlExecuteRequest {
     this.pagination,
     this.executeOptions,
     this.useRelay = false,
+    this.relayMode = AgentSqlRelayMode.unary,
     this.apiVersion = kColmeiaAgentApiVersion,
     this.outboundCompression,
     this.payloadFrameCompression,
@@ -91,6 +92,14 @@ class AgentSqlExecuteRequest {
   /// not implement `agents:stream_pull` / chunk events — relay matches the hub
   /// contract (`plug_server/docs/api_rest_bridge.md`).
   final bool useRelay;
+
+  /// Selects how a relay `sql.execute` request crosses the relay channel.
+  ///
+  /// Ignored unless [useRelay] is `true`. Unary is the default because most
+  /// repository queries expect one JSON-RPC response and do not benefit from
+  /// chunk backpressure. Use streaming only for queries that should opt into
+  /// `relay:rpc.chunk` / `relay:rpc.complete` collection.
+  final AgentSqlRelayMode relayMode;
 
   /// JSON-RPC `command.api_version`. Defaults to [kColmeiaAgentApiVersion]
   /// so every outgoing request advertises the profile we are coding
@@ -173,4 +182,9 @@ class AgentSqlExecuteRequest {
 
   /// Current Agent SQL bridge limit for `namedParams` size.
   static const int bridgeMaxNamedParameterCount = 5;
+}
+
+enum AgentSqlRelayMode {
+  unary,
+  streaming,
 }

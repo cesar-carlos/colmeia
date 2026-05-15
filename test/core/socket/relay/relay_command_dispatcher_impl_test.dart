@@ -14,6 +14,7 @@ import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
+import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
@@ -479,13 +480,10 @@ void main() {
       final future = dispatcher.sendUnary(
         agentId: 'agent-1',
         body: <String, Object?>{
-          'agentId': 'agent-1',
-          'command': <String, Object?>{
-            'jsonrpc': '2.0',
-            'method': 'sql.execute',
-            'id': 'rpc-1',
-            'params': <String, Object?>{'sql': 'SELECT 1'},
-          },
+          'jsonrpc': '2.0',
+          'method': 'sql.execute',
+          'id': 'rpc-1',
+          'params': <String, Object?>{'sql': 'SELECT 1'},
         },
         clientRequestId: 'rpc-1',
       );
@@ -504,6 +502,16 @@ void main() {
       check(rpcEnvelope['conversationId']).equals('conv-agent-1');
       check(rpcEnvelope['payloadFrameCompression']).equals('default');
       check(rpcEnvelope['frame']).isA<Map<String, Object?>>();
+      final frame = PayloadFrame.tryParse(rpcEnvelope['frame'])!;
+      final decoded = const PayloadFrameCodec().decodeJson(frame);
+      final logical = decoded! as Map<dynamic, dynamic>;
+      check(logical['jsonrpc']).equals('2.0');
+      check(logical['method']).equals('sql.execute');
+      check(logical['id']).equals('rpc-1');
+      check(logical.containsKey('agentId')).isFalse();
+      check(logical.containsKey('command')).isFalse();
+      check(logical.containsKey('timeoutMs')).isFalse();
+      check(logical.containsKey('payloadFrameCompression')).isFalse();
 
       // accepted assigns server requestId.
       wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{

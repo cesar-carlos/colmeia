@@ -58,18 +58,28 @@ void main() {
       check(got['timeout_ms']).equals(3000);
     });
 
+    test('maps prefer_db_streaming when provided', () {
+      const o = AgentSqlExecuteOptions(preferDbStreaming: true);
+      final got = o.toRpcOptions();
+      check(got).isNotNull();
+      check(got!.length).equals(1);
+      check(got['prefer_db_streaming']).equals(true);
+    });
+
     test('combines all option fields', () {
       const o = AgentSqlExecuteOptions(
         maxRows: 100,
         sqlTimeoutMs: 2000,
         executionMode: AgentSqlExecutionMode.managed,
+        preferDbStreaming: true,
       );
       final got = o.toRpcOptions();
       check(got).isNotNull();
-      check(got!.length).equals(3);
+      check(got!.length).equals(4);
       check(got['max_rows']).equals(100);
       check(got['timeout_ms']).equals(2000);
       check(got['execution_mode']).equals('managed');
+      check(got['prefer_db_streaming']).equals(true);
     });
   });
 }
