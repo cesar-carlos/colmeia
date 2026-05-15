@@ -3,7 +3,9 @@
 > Status: code-complete (`main` as of 2026-04-18).  
 > Companion plan: [`socket_consumer_channel_plan.md`](socket_consumer_channel_plan.md)  
 > Hub source-of-truth: `plug_server/docs/socket_relay_protocol.md`,
-> `plug_server/docs/socket_client_sdk.md`.
+> `plug_server/docs/socket_client_sdk.md`. Local contract summaries:
+> [`../../plug_server_docs_index_for_colmeia.md`](../../plug_server_docs_index_for_colmeia.md)
+> and [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md).
 
 This document is the **operational** runbook for flipping the Colmeia
 client from REST to the Socket channel against `plug_server`. It assumes
@@ -18,13 +20,13 @@ listed here.
 | Capability                                                                   | Implementation                         | Default behavior                              |
 | ---------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------- |
 | `/consumers` namespace, single connection                                    | `ConsumerSocketConnection`             | Disconnected until `connect()`                |
-| Handshake `connection:ready` (PayloadFrame **or** raw JSON)                  | `CompatConnectionReadyDecoder`         | `compat` (auto-detect)                        |
+| Handshake `connection:ready` (`PayloadFrame`; raw JSON legacy override only) | `PayloadFrameConnectionReadyDecoder`   | `payload_frame_only`                          |
 | Auth via JWT (`auth: { token }`) + single-flight refresh on 401/403          | `SessionSocketAuthTokenProvider`       | Reuses `AuthRefreshCoordinator`               |
 | Reconnect with exponential backoff + full jitter                             | `SocketReconnectBackoff`               | 5 attempts, 1 s → 30 s                        |
 | `Retry-After` honored on handshake (`app:error`) and on per-command failures | `socket_app_error_retry_after.dart`    | Server hint clamped to `reconnectMaxDelay`    |
 | `agents:command` (legacy bridge over `/consumers`)                           | `SocketCommandDispatcherImpl`          | Coalescing on, concurrency gate at 8/agent    |
 | `relay:*` unary + streaming (with `rpc.stream.pull` window clamp)            | `RelayCommandDispatcherImpl`           | Opt-in via `SOCKET_RELAY_ENABLED`             |
-| PayloadFrame v1.0 encode/decode (auto-gzip, 10 MiB cap, 20× inflation guard) | `PayloadFrameCodec`                    | Always on once socket selected                |
+| PayloadFrame v1.0 encode/decode (auto-gzip, 10 MiB cap, 10x inflation guard) | `PayloadFrameCodec`                    | Always on once socket selected                |
 | HMAC-SHA256 outbound signing                                                 | `Hmac256PayloadFrameSigner`            | Off until `SOCKET_PAYLOAD_SIGNING_KEY` set    |
 | HMAC-SHA256 inbound verification                                             | `Hmac256PayloadFrameSignatureVerifier` | Auto-wired with the signer                    |
 | `client:agent.profile.updated` push                                          | `ClientAgentProfileUpdatedListener`    | Opt-in via `SOCKET_PRESENCE_LISTENER_ENABLED` |
@@ -40,8 +42,8 @@ Confirm the target `plug_server` deployment is on a build that:
 
 - exposes `/consumers` namespace (any post-Q1 2026 build);
 - accepts JWT in the Socket.IO handshake `auth.token`;
-- emits `connection:ready` either as PayloadFrame (preferred) or raw
-  JSON during the migration window — both shapes are decoded.
+- emits `connection:ready` as `PayloadFrame`; raw JSON is legacy-only and
+  requires `SOCKET_CONNECTION_READY_COMPAT_MODE=compat` or `raw_json_only`.
 
 Optional but recommended hub configuration:
 
@@ -312,10 +314,10 @@ hub's audit log (`audit_events`) before declaring the incident closed.
 
 ### Why is `connection:ready` a PayloadFrame now?
 
-Hub Phase 2 standardises every event on the binary envelope so signing
-applies uniformly. Until 2026-09-30 the hub still emits raw JSON behind
-`SOCKET_CONNECTION_READY_COMPAT_MODE=raw_json` — we keep
-`compat` decoder by default and drop the legacy path once the hub does.
+Hub Phase 2 standardises every event on the binary envelope so signing applies
+uniformly. Colmeia now defaults to `payload_frame_only`. Use `compat` or
+`raw_json_only` only when validating an older hub; raw JSON is planned for
+removal after 2026-09-30.
 
 ### Can I run signed outbound + unsigned inbound?
 

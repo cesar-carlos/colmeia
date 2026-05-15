@@ -85,10 +85,13 @@ void main() {
 
   tearDown(() => sink.close());
 
-  ClientAgentProfileUpdatedListener buildListener() {
+  ClientAgentProfileUpdatedListener buildListener({
+    bool acceptLegacyRawJson = false,
+  }) {
     return ClientAgentProfileUpdatedListener(
       connection: connection,
       sink: sink.sink,
+      acceptLegacyRawJson: acceptLegacyRawJson,
     );
   }
 
@@ -162,7 +165,7 @@ void main() {
       },
     );
 
-    test('raw JSON map (legacy hub) is also accepted', () async {
+    test('raw JSON map is ignored by default', () async {
       buildListener().attach();
       final emitted = sink.stream.toList();
 
@@ -177,12 +180,33 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await sink.close();
 
-      final list = await emitted;
-      check(list.length).equals(1);
-      final event = list.single as AgentPresenceCatalogUpdated;
-      check(event.agentId).equals('agent-legacy');
-      check(event.changedFields).deepEquals(const <String>{'name'});
+      check(await emitted).isEmpty();
     });
+
+    test(
+      'raw JSON map is accepted only in legacy compatibility mode',
+      () async {
+        buildListener(acceptLegacyRawJson: true).attach();
+        final emitted = sink.stream.toList();
+
+        wiring.fire(
+          ClientAgentProfileUpdatedListener.eventName,
+          <String, Object?>{
+            'agent_id': 'agent-legacy',
+            'profile_version': 1,
+            'changed_fields': <String>['name'],
+          },
+        );
+        await Future<void>.delayed(Duration.zero);
+        await sink.close();
+
+        final list = await emitted;
+        check(list.length).equals(1);
+        final event = list.single as AgentPresenceCatalogUpdated;
+        check(event.agentId).equals('agent-legacy');
+        check(event.changedFields).deepEquals(const <String>{'name'});
+      },
+    );
 
     test('payload without agent_id is dropped silently', () async {
       buildListener().attach();

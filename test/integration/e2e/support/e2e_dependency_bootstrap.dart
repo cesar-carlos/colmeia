@@ -820,6 +820,7 @@ Map<String, String> _processEnvironmentOverrides() {
     EnvKeys.socketRelayStreamInitialWindow,
     EnvKeys.socketRelayStreamRefillThreshold,
     EnvKeys.socketPresenceListenerEnabled,
+    EnvKeys.socketProfileUpdatedLegacyRawJsonEnabled,
     EnvKeys.socketConnectionReadyCompatMode,
     EnvKeys.socketPayloadSigningKey,
     EnvKeys.socketPayloadSigningKeyId,

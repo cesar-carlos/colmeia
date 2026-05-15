@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
+import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -88,6 +90,26 @@ void main() {
       check(result.hubInstanceId).equals('hub-pf-a');
     });
 
+    test('decodes the plug_server connection:ready fixture', () {
+      final raw = _readJsonFixture(
+        'test/fixtures/socket/connection_ready_payload_frame_v1.json',
+      );
+
+      final result = decoder.decode(raw);
+
+      _checkDocReadyPayload(result);
+    });
+
+    test('decodes the gzip plug_server connection:ready fixture', () {
+      final raw = _readJsonFixture(
+        'test/fixtures/socket/connection_ready_payload_frame_v1_gzip.json',
+      );
+
+      final result = decoder.decode(raw);
+
+      _checkDocReadyPayload(result);
+    });
+
     test('returns null when the inner JSON is not a map', () {
       final encoded = codec.encodeJson(<String>['not', 'a', 'map']);
       check(decoder.decode(encoded.frame.toMap())).isNull();
@@ -96,6 +118,18 @@ void main() {
     test('returns null when the envelope is invalid', () {
       check(decoder.decode(<String, Object?>{'not': 'a frame'})).isNull();
       check(decoder.decode('not a json string')).isNull();
+    });
+
+    test('reports parse diagnostics when the envelope is invalid', () {
+      final failures = <String>[];
+      final decoder = PayloadFrameConnectionReadyDecoder(
+        codec: codec,
+        onParseFailure: (failure) => failures.add(failure.code),
+      );
+      check(decoder.decode(<String, Object?>{'not': 'a frame'})).isNull();
+      check(failures).deepEquals(<String>[
+        PayloadFrameParseFailureCodes.unknownRootKey,
+      ]);
     });
 
     test('returns null when the frame fails strict validation', () {
@@ -165,4 +199,17 @@ void main() {
       check(shapes).isEmpty();
     });
   });
+}
+
+Object? _readJsonFixture(String path) {
+  return jsonDecode(File(path).readAsStringSync());
+}
+
+void _checkDocReadyPayload(ConnectionReadyPayload? result) {
+  check(result).isNotNull();
+  check(result!.socketId).equals('sock-doc-1');
+  check(result.message).equals('Consumer socket connected successfully');
+  check(result.userClaims['sub']).equals('client-1');
+  check(result.userClaims['role']).equals('client');
+  check(result.hubInstanceId).equals('hub-a');
 }

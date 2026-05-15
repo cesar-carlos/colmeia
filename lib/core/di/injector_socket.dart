@@ -13,6 +13,7 @@ import 'package:colmeia/core/socket/app_socket_url_resolver.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/direct_agent_command_sender.dart';
+import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/payload_frame_signer.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
@@ -295,18 +296,30 @@ PayloadFrameCodec _buildPayloadFrameCodec() {
 }
 
 /// PR-K: picks the [ConnectionReadyDecoder] dictated by
-/// `SOCKET_CONNECTION_READY_COMPAT_MODE`. Defaults to the migration-window
-/// `compat` decoder so production keeps working when the hub still sends
-/// raw JSON.
+/// `SOCKET_CONNECTION_READY_COMPAT_MODE`. Defaults to strict PayloadFrame;
+/// use `compat` only as a migration override for older hubs.
 ConnectionReadyDecoder _buildReadyDecoder() {
   switch (AppEnvironment.socketConnectionReadyCompatMode) {
     case ConnectionReadyCompatMode.payloadFrameOnly:
-      return PayloadFrameConnectionReadyDecoder();
+      return PayloadFrameConnectionReadyDecoder(
+        onParseFailure: _logReadyFrameParseFailure,
+      );
     case ConnectionReadyCompatMode.rawJsonOnly:
       return const JsonOnlyConnectionReadyDecoder();
     case ConnectionReadyCompatMode.compat:
       return CompatConnectionReadyDecoder(onShape: _logCompatShape);
   }
+}
+
+void _logReadyFrameParseFailure(PayloadFrameParseFailure failure) {
+  AppLogger.warning(
+    'connection:ready PayloadFrame parse failed',
+    context: <String, Object?>{
+      'component': 'PayloadFrameConnectionReadyDecoder',
+      'code': failure.code,
+      'message': failure.message,
+    },
+  );
 }
 
 void _logCompatShape(ConnectionReadyShape shape) {

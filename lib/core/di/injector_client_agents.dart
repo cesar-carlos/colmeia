@@ -158,6 +158,8 @@ void registerInjectorClientAgents(GetIt getIt) {
         () => ClientAgentProfileUpdatedListener(
           connection: getIt<ConsumerSocketConnection>(),
           sink: getIt<SocketAgentPresenceStream>().sink,
+          acceptLegacyRawJson:
+              AppEnvironment.socketProfileUpdatedLegacyRawJsonEnabled,
         ),
         dispose: (l) => l.dispose(),
       )

@@ -172,15 +172,20 @@ abstract final class EnvKeys {
   static const String socketPresenceListenerEnabled =
       'SOCKET_PRESENCE_LISTENER_ENABLED';
 
+  /// Migration-only override for older hubs that still emit
+  /// `client:agent.profile.updated` as a raw JSON map instead of PayloadFrame.
+  /// Default `false`.
+  static const String socketProfileUpdatedLegacyRawJsonEnabled =
+      'SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED';
+
   // ----- Socket channel (PR-K: PayloadFrame + connection:ready) -----
 
   /// Selects how the consumer socket interprets `connection:ready`:
   ///
-  /// - `compat` (default): try PayloadFrame first, fall back to legacy raw
-  ///   JSON. Required during the migration window declared by the hub
-  ///   (`raw_json` removal planned for after `2026-09-30`).
-  /// - `payload_frame_only`: strict — fail when the envelope is not a
-  ///   PayloadFrame.
+  /// - `payload_frame_only` (default): strict - fail when the envelope is not
+  ///   a PayloadFrame.
+  /// - `compat`: try PayloadFrame first, fall back to legacy raw JSON. Use
+  ///   only as a migration override for older hubs.
   /// - `raw_json_only`: legacy strict mode used by the older PR-A decoder
   ///   and by tests against forked hubs.
   static const String socketConnectionReadyCompatMode =

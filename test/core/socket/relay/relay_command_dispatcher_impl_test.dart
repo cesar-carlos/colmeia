@@ -10,6 +10,7 @@ import 'dart:io' show gzip;
 import 'dart:typed_data';
 
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
@@ -95,23 +96,19 @@ Map<String, Object?> _buildResponseFrame(
   ).toMap();
 }
 
-/// Like [_buildResponseFrame] but omits `requestId` on the frame and sets
-/// top-level `conversationId` (hub path when `requestId` is dropped).
+/// Like [_buildResponseFrame] but omits `requestId` on the frame.
 Map<String, Object?> _buildResponseFrameWithoutRequestId(
   Object? data, {
-  required String conversationId,
   bool useGzip = false,
 }) {
   final encoded = Uint8List.fromList(utf8.encode(jsonEncode(data)));
   final wire = useGzip ? Uint8List.fromList(gzip.encode(encoded)) : encoded;
-  final frame = PayloadFrame(
+  return PayloadFrame(
     payload: wire,
     originalSize: encoded.length,
     compressedSize: wire.length,
     cmp: useGzip ? PayloadFrame.compressionGzip : PayloadFrame.compressionNone,
   ).toMap();
-  frame['conversationId'] = conversationId;
-  return frame;
 }
 
 void main() {
@@ -158,12 +155,14 @@ void main() {
   Future<RelayCommandDispatcherImpl> dispatcherFor({
     Duration defaultTimeout = const Duration(milliseconds: 500),
     PerAgentConcurrencyGate? concurrencyGate,
+    SocketChannelMetrics? channelMetrics,
   }) async {
     final dispatcher = RelayCommandDispatcherImpl(
       connection: connection,
       conversationManager: manager,
       defaultTimeout: defaultTimeout,
       concurrencyGate: concurrencyGate,
+      channelMetrics: channelMetrics,
     );
     return dispatcher;
   }
@@ -542,10 +541,12 @@ void main() {
     });
 
     test(
-      'rpc.response without frame requestId routes when exactly one pending '
-      'exists for the conversation',
+      'rpc.response without frame requestId is ignored even when exactly one '
+      'pending exists for the conversation',
       () async {
-        final dispatcher = await dispatcherFor();
+        final dispatcher = await dispatcherFor(
+          defaultTimeout: const Duration(milliseconds: 150),
+        );
         addTearDown(dispatcher.dispose);
 
         await openConversation();
@@ -584,14 +585,10 @@ void main() {
         };
         wiring.fire(
           RelayEventNames.rpcResponse,
-          _buildResponseFrameWithoutRequestId(
-            response,
-            conversationId: 'conv-agent-1',
-          ),
+          _buildResponseFrameWithoutRequestId(response),
         );
 
-        final result = await future;
-        check(result['response']).isA<Map<dynamic, dynamic>>();
+        await expectLater(future, throwsA(isA<RelayRequestTimeout>()));
       },
     );
 
@@ -654,10 +651,7 @@ void main() {
         };
         wiring.fire(
           RelayEventNames.rpcResponse,
-          _buildResponseFrameWithoutRequestId(
-            orphan,
-            conversationId: 'conv-agent-1',
-          ),
+          _buildResponseFrameWithoutRequestId(orphan),
         );
 
         await Future.wait<void>(<Future<void>>[
@@ -1409,6 +1403,61 @@ void main() {
               .has((e) => e.code, 'code')
               .equals('unsupported_schema_version'),
         );
+      },
+    );
+
+    test(
+      'parse failure on response frame surfaces diagnostic RelayDecodeFailure',
+      () async {
+        final metrics = SocketChannelMetrics();
+        final dispatcher = await dispatcherFor(channelMetrics: metrics);
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-parse',
+            },
+          },
+          clientRequestId: 'rpc-parse',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-parse',
+          'requestId': 'srv-parse',
+          'success': true,
+        });
+
+        wiring.fire(RelayEventNames.rpcResponse, <String, Object?>{
+          'schemaVersion': '1.0',
+          'enc': 'json',
+          'cmp': 'none',
+          'contentType': 'application/json',
+          'originalSize': 2,
+          'compressedSize': 2,
+          'requestId': 'srv-parse',
+        });
+
+        await check(future).throws<RelayDecodeFailure>(
+          (subject) => subject
+              .has((e) => e.code, 'code')
+              .equals(
+                PayloadFrameParseFailureCodes.missingPayload,
+              ),
+        );
+        check(
+          metrics
+              .snapshot()
+              .relayDecodeFailureTotalByCode[PayloadFrameParseFailureCodes
+              .missingPayload],
+        ).equals(1);
       },
     );
   });

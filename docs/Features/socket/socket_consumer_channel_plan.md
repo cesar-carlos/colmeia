@@ -1,5 +1,9 @@
 # Plano — Canal Socket (`/consumers`) para `agent_queries`
 
+> Contrato atual de socket/relay para Colmeia:
+> [`../../plug_server_docs_index_for_colmeia.md`](../../plug_server_docs_index_for_colmeia.md)
+> e [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md).
+
 > Status: **em execução, código em estado de handoff**. Tudo da Fase 1
 > (PR-A → PR-J: conexão, dispatcher, lifecycle, métricas, jitter,
 > concurrency gate, coalescing, adaptive timeout, batch coordinator,
@@ -73,7 +77,7 @@
 | Adaptive timeout (EWMA por `(agentId, method)`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `lib/core/socket/agent_latency_oracle.dart` (gated por `SOCKET_TIMEOUT_ADAPTIVE_ENABLED`)                                                                                                                                                                                                                                                                                        | PR-H                |
 | Batch coordinator (`command: [...]`, max 32)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `lib/core/socket/agent_command_batch_coordinator.dart` + `agent_command_sender.dart` (port) + `direct_agent_command_sender.dart` (gated por `SOCKET_BATCH_ENABLED`)                                                                                                                                                                                                              | PR-I                |
 | Cancel token (cancela pendentes em `dispose()` de controllers) — `dispatcher.cancel(rpcId, reason)` + sealed `SocketDispatchCancelled` + helper `SocketCommandCancelToken` (register/unregister/cancelAll/dispose)                                                                                                                                                                                                                                                                                                                            | `lib/core/socket/socket_command_cancel_token.dart` + delta em `socket_command_dispatcher.dart` (port) / `socket_command_dispatcher_impl.dart` / `socket_dispatch_exception.dart`                                                                                                                                                                                                 | PR-J                |
-| **PayloadFrame** envelope + codec (auto-gzip + limites 10 MiB / 20×)                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `lib/core/socket/payload_frame.dart`, `payload_frame_codec.dart`                                                                                                                                                                                                                                                                                                                 | PR-K                |
+| **PayloadFrame** envelope + codec (auto-gzip + limites 10 MiB / 10x)                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `lib/core/socket/payload_frame.dart`, `payload_frame_codec.dart`                                                                                                                                                                                                                                                                                                                 | PR-K                |
 | **`connection:ready` em PayloadFrame** + compat decoder (gated por `SOCKET_CONNECTION_READY_COMPAT_MODE`)                                                                                                                                                                                                                                                                                                                                                                                                                                     | `lib/core/socket/connection_ready_payload.dart` (`PayloadFrameConnectionReadyDecoder`, `CompatConnectionReadyDecoder`), `lib/core/config/connection_ready_compat_mode.dart`                                                                                                                                                                                                      | PR-K                |
 | **Relay primitives** (conversation, dispatcher unitário, exceptions sealed, outcomes)                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `lib/core/socket/relay/` (`relay_event_names.dart`, `relay_dispatch_exception.dart`, `relay_conversation_state.dart`, `relay_conversation.dart`, `relay_conversation_manager.dart`, `relay_command_dispatcher.dart`, `relay_command_dispatcher_impl.dart`, `relay_rpc_outcome.dart`)                                                                                             | PR-L                |
 | **Relay datasource** (standalone) reusando o body REST                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `lib/features/agent_queries/data/datasources/relay_agent_queries_remote_datasource.dart`                                                                                                                                                                                                                                                                                         | PR-L                |
@@ -130,8 +134,8 @@ aborted` vira `RelayStreamTerminated`; `relay:rpc.response` (sem
   FailedAuth e FailedTransient ➜ NO hint; attach/dispose idempotentes.
 - `test/features/client_agents/data/socket/client_agent_profile_updated_listener_test.dart`
   (PR-M p1) — PayloadFrame envelope decodifica para
-  `AgentPresenceCatalogUpdated`; raw JSON map (legacy hub) também
-  aceito; payloads sem `agent_id` ou com schema PayloadFrame inválido
+  `AgentPresenceCatalogUpdated`; raw JSON map (legacy hub) aceito apenas com
+  `SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED=true`; payloads sem `agent_id` ou com schema PayloadFrame inválido
   são logados e descartados sem matar o stream.
 - `test/features/client_agents/data/socket/socket_agent_presence_stream_test.dart`
   (PR-M p1) — Camadas 1+2 num único stream; re-attach do listener no
@@ -602,9 +606,8 @@ LoadXxxUseCase ──► AgentQueriesRepository (port)
 - Comportamento:
   - Ao subir, requisita token via `SocketAuthTokenProvider`.
   - Espera evento `connection:ready` — quando recebido, **decodifica
-    PayloadFrame** (Fase 2 já validamos com `payload_frame.dart`; Fase 1
-    aceitamos tanto `PayloadFrame` quanto `raw_json` durante a janela de
-    compatibilidade `SOCKET_CONNECTION_READY_COMPAT_MODE`).
+    PayloadFrame** por padrão (`payload_frame_only`). `compat` e
+    `raw_json_only` existem apenas como overrides explícitos para hubs antigos.
   - Em `connect_error` 401-like, chama `AuthRefreshCoordinator` e tenta
     reconectar uma vez; se falhar, emite `unauthorized` e `AuthSessionEvents.notifyInvalidated()`.
   - Escuta `AuthSessionEvents.invalidated` → `disconnect()`.
@@ -766,7 +769,7 @@ getIt.registerLazySingleton<AgentQueriesRemoteDataSource>(() {
 | `SOCKET_WARM_UP_AFTER_LOGIN`                 | nova (opcional)         | `true` se `transport=socket` | dispara `connect()` em background ao final do login (review §5.7).                                                                                                                                      |
 | `SOCKET_TIMEOUT_ADAPTIVE_ENABLED`            | nova (opcional, P2)     | `false`                      | liga o `AgentLatencyOracle` para timeout por p95 (review §5.3).                                                                                                                                         |
 | `SOCKET_PAYLOAD_FRAME_ASYNC_GZIP_MIN_BYTES`  | nova (opcional, Fase 2) | `65536`                      | usa `compute(...)` para gzip acima desse tamanho UTF-8 (review §5.9).                                                                                                                                   |
-| `SOCKET_CONNECTION_READY_COMPAT_MODE`        | nova (PR-K)             | `compat`                     | `compat` (PayloadFrame com fallback raw JSON) \| `payload_frame_only` (estrito) \| `raw_json_only` (legado).                                                                                            |
+| `SOCKET_CONNECTION_READY_COMPAT_MODE`        | nova (PR-K)             | `payload_frame_only`         | `payload_frame_only` (estrito, default atual) \| `compat` (PayloadFrame com fallback raw JSON; override de migracao) \| `raw_json_only` (legado). |
 | `SOCKET_RELAY_ENABLED`                       | nova (PR-L)             | `false`                      | Master switch do relay. Quando `true`, registra `RelayConversationManager` + `RelayCommandDispatcher` no DI; `false` mantém apenas o canal `agents:command`.                                            |
 | `SOCKET_RELAY_REQUEST_TIMEOUT_MS`            | nova (PR-L)             | `30000`                      | Timeout por `relay:rpc.request` (precisa ser maior que o `bridgeTimeoutMs` do bridge para o hub responder via `relay:rpc.complete`).                                                                    |
 | `SOCKET_RELAY_CONVERSATION_START_TIMEOUT_MS` | nova (PR-L)             | `10000`                      | Espera por `relay:conversation.started` antes de falhar com `start_timeout`.                                                                                                                            |
@@ -941,13 +944,13 @@ Entregas só após 1 ciclo com dados das métricas P0.
 
 - [x] **PR-K** — `core/socket/payload_frame.dart` + `payload_frame_codec.dart`
       (encode auto-gzip + decode com validação estrutural:
-      `enc==json`, `cmp ∈ {none,gzip}`, tamanho ≤ 10 MiB, inflação ≤ 20×,
+      `enc==json`, `cmp ∈ {none,gzip}`, tamanho ≤ 10 MiB, inflação ≤ 10x,
       `compressedSize`/`originalSize` consistentes).
 - [x] **PR-K** — Suporte a `connection:ready` em PayloadFrame na
       `ConsumerSocketConnection` via `PayloadFrameConnectionReadyDecoder`
       e `CompatConnectionReadyDecoder` (gated por
-      `SOCKET_CONNECTION_READY_COMPAT_MODE`: `compat` default,
-      `payload_frame_only`, `raw_json_only`).
+      `SOCKET_CONNECTION_READY_COMPAT_MODE`: `payload_frame_only` default,
+      `compat` e `raw_json_only` como overrides explicitos).
 - [x] **PR-L** — `RelayConversation` + `RelayConversationManager`
       (uma conversa por `agentId`, single-flight em `start()`,
       `forceEnd` em socket drop) em `lib/core/socket/relay/`.
@@ -1158,7 +1161,7 @@ Seguindo `testing_dart_flutter.mdc` e o padrão atual do repo:
 
 | Risco                                                                     | Mitigação                                                                                                                                                 |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Comportamento `connection:ready` migrar para PayloadFrame antes da Fase 2 | Implementar decode tolerante: tenta JSON puro, cai para PayloadFrame se `cmp/enc/payload` presentes.                                                      |
+| Hub antigo ainda emitir raw JSON em `connection:ready`                   | Usar `SOCKET_CONNECTION_READY_COMPAT_MODE=compat` ou `raw_json_only` temporariamente; o default atual é `payload_frame_only`.                              |
 | Reconexão em loop após 401                                                | Single-flight via `AuthRefreshCoordinator` (igual REST); se refresh falha, parar reconexão e `notifyInvalidated`.                                         |
 | Multi-instância do hub (afinidade)                                        | Para Fase 1 (`agents:command`) compartilha mesmo hub; Fase 2 (relay) — documentar dependência de sticky sessions (já citado em `scaling_and_roadmap.md`). |
 | Web vs mobile (transports)                                                | Forçar `websocket` em mobile; em web manter `websocket` apenas (produção do hub usa só WS).                                                               |
@@ -1462,7 +1465,8 @@ Conforme `client_agent_business_rules.md` (§3.4) e `scaling_and_roadmap.md`:
 - **Fase 2** (`relay:*` + `PayloadFrame`): Camada 1
   (`client:agent.profile.updated` em `PayloadFrame`) — **PR-M p1
   entregue** (`ClientAgentProfileUpdatedListener` decodifica
-  `PayloadFrame` ou raw JSON via compat).
+  `PayloadFrame` por padrão; raw JSON só com
+  `SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED=true`).
 - **Fase 3 / Camada 3** (REST polling com visibility gating) — **PR-M p3
   entregue** (`AgentPresencePoller` + `RouteAware`).
 - **Futuro** (push dedicado): se o hub adicionar
@@ -1526,7 +1530,7 @@ Isso elimina a necessidade da Camada 3 (polling) para presença.
 | **PR-H (P2, entregue)**   | `AgentLatencyOracle` + timeout adaptativo (gated).                                                                                                                                                                                                                                                                                                                         | 1.2     |
 | **PR-I (P2, entregue)**   | `AgentCommandBatchCoordinator` (`agent_command_batch_coordinator_design.md`).                                                                                                                                                                                                                                                                                              | 1.2     |
 | **PR-J (P2, entregue)**   | `SocketCommandCancelToken` + `dispatcher.cancel(rpcId, reason)` + `SocketDispatchCancelled`. Integração com `sql.cancel` para streams fica para um sub-PR futuro quando algum controller usar streaming.                                                                                                                                                                   | 1.2     |
-| **PR-K (entregue)**       | `payload_frame.dart` + `payload_frame_codec.dart` (auto-gzip + limites 10 MiB / 20×) + `PayloadFrameConnectionReadyDecoder` + `CompatConnectionReadyDecoder` (gated por `SOCKET_CONNECTION_READY_COMPAT_MODE`).                                                                                                                                                            | 2       |
+| **PR-K (entregue)**       | `payload_frame.dart` + `payload_frame_codec.dart` (auto-gzip + limites 10 MiB / 10x) + `PayloadFrameConnectionReadyDecoder` + `CompatConnectionReadyDecoder` (gated por `SOCKET_CONNECTION_READY_COMPAT_MODE`).                                                                                                                                                            | 2       |
 | **PR-L (entregue)**       | Relay primitives em `core/socket/relay/`: `RelayConversation`, `RelayConversationManager`, `RelayCommandDispatcher` (`sendUnary`), `RelayDispatchException` (sealed), `RelayPayloadFrameCompression`. `RelayAgentQueriesRemoteDataSource` standalone (não cabeado por padrão). Gated por `SOCKET_RELAY_ENABLED`.                                                           | 2       |
 | **PR-L+ p1 (entregue)**   | `useRelay` em `AgentSqlExecuteRequest` + `HybridAgentQueriesRemoteDataSource` com auto-wrap no `injector_agent_queries` (gated por `RelayCommandDispatcher` registrado). Snapshot test garante body byte-igual.                                                                                                                                                            | 2       |
 | **PR-L+ p2 (entregue)**   | `RelayCommandDispatcher.sendStreaming(...)` retornando `Stream<Map<String, dynamic>>`. Auto-pull rolante (`SOCKET_RELAY_STREAM_INITIAL_WINDOW` / `_REFILL_THRESHOLD`) via `relay:rpc.stream.pull` com `{ conversationId, frame }`, onde `frame` é `PayloadFrame` contendo `request_id`, `window_size` e `stream_id` quando conhecido. Refator em sealed `_PendingRelay`. Tolera `relay:rpc.response` (single-chunk + close) e mapeia `terminal_status != completed` para `RelayStreamTerminated` no stream. | 2       |

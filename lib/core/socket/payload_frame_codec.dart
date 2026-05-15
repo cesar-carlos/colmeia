@@ -40,8 +40,9 @@ class PayloadFrameDecodeException implements Exception {
 ///
 /// - JSON UTF-8 below `compressionThresholdBytes` is emitted with `cmp: none`.
 /// - Above the threshold, gzip is attempted and only kept when the resulting
-///   bytes are **strictly smaller** than the raw JSON ("auto" mode used by
-///   both the hub and the agent).
+///   bytes are **strictly smaller** than the raw JSON and stay inside the
+///   negotiated inflation guard ("auto" mode used by both the hub and the
+///   agent).
 /// - Inbound frames are validated against `maxPayloadBytes` and a max
 ///   inflation ratio, mirroring `PAYLOAD_FRAME_MAX_INFLATION_RATIO` on the
 ///   server.
@@ -51,9 +52,9 @@ class PayloadFrameDecodeException implements Exception {
 ///
 /// Defaults match the production hub:
 ///
-/// - 1 KiB compression threshold (`COMPRESSION_THRESHOLD` snippet).
+/// - 4096-byte compression threshold (`COMPRESSION_THRESHOLD` snippet).
 /// - 10 MiB hard cap on both compressed and decoded sizes.
-/// - 20× inflation ceiling for gzip payloads.
+/// - 10x inflation ceiling for gzip payloads.
 ///
 /// Large payloads may use [decodeJsonAsync] / [encodeJsonAsync] so gzip and
 /// JSON parsing can run off the UI isolate when thresholds are met and
@@ -106,14 +107,14 @@ class PayloadFrameCodec {
   /// run with `PAYLOAD_SIGN_OUTBOUND=true` and trust nothing else.
   final bool requireSignature;
 
-  /// 1 KiB — same value as the snippet bundled with the hub docs.
-  static const int defaultCompressionThresholdBytes = 1024;
+  /// 4096 bytes - same value as the snippet bundled with the hub docs.
+  static const int defaultCompressionThresholdBytes = 4096;
 
   /// 10 MiB — server-side cap on compressed and decoded sizes.
   static const int defaultMaxPayloadBytes = 10 * 1024 * 1024;
 
-  /// 20× — server-side gzip inflation guard.
-  static const int defaultMaxInflationRatio = 20;
+  /// 10x - server-side gzip inflation guard.
+  static const int defaultMaxInflationRatio = 10;
 
   /// When inbound [PayloadFrame.cmp] is gzip and `payload.length` is at or
   /// above this threshold, [decodeJsonAsync] runs `gzip.decode` via Flutter
@@ -185,7 +186,7 @@ class PayloadFrameCodec {
     var cmp = PayloadFrame.compressionNone;
     if (encoded.length >= compressionThresholdBytes) {
       final compressed = Uint8List.fromList(gzip.encode(encoded));
-      if (compressed.length < encoded.length) {
+      if (_shouldUseCompressed(encoded, compressed)) {
         wire = compressed;
         cmp = PayloadFrame.compressionGzip;
       }
@@ -228,7 +229,7 @@ class PayloadFrameCodec {
       } else {
         compressed = Uint8List.fromList(gzip.encode(encoded));
       }
-      if (compressed.length < encoded.length) {
+      if (_shouldUseCompressed(encoded, compressed)) {
         wire = compressed;
         cmp = PayloadFrame.compressionGzip;
       }
@@ -285,6 +286,13 @@ class PayloadFrameCodec {
       ),
       encoded: encoded,
     );
+  }
+
+  bool _shouldUseCompressed(Uint8List encoded, Uint8List compressed) {
+    if (compressed.length >= encoded.length || compressed.isEmpty) {
+      return false;
+    }
+    return encoded.length / compressed.length <= maxInflationRatio;
   }
 
   /// Validates [frame] and returns the decoded JSON value (`Map`, `List`,

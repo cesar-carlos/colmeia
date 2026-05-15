@@ -1,5 +1,9 @@
 # Agent bridge — SQL API options (reference)
 
+> Current canonical Colmeia summary:
+> [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md).
+> Keep this feature note as historical/contextual detail only.
+
 This note summarizes how the **plug_server** REST/socket bridge exposes SQL execution modes relevant to Colmeia agent queries. The **normative** specification lives in the plug_server repository:
 
 - `plug_server/docs/api_rest_bridge.md`

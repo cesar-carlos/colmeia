@@ -1,6 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/core/config/connection_ready_compat_mode.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -45,7 +46,31 @@ AGENT_BRIDGE_TRANSPORT=rest
       );
       check(AppEnvironment.socketRelayEnabled).isFalse();
       check(AppEnvironment.socketPresenceListenerEnabled).isFalse();
+      check(AppEnvironment.socketProfileUpdatedLegacyRawJsonEnabled).isFalse();
       check(AppEnvironment.consumerSocketLifecycleEnabled).isFalse();
+    });
+
+    test('defaults connection:ready decoding to payloadFrameOnly', () {
+      dotenv.loadFromString(
+        envString: '''
+AGENT_BRIDGE_TRANSPORT=rest
+''',
+      );
+
+      check(AppEnvironment.socketConnectionReadyCompatMode).equals(
+        ConnectionReadyCompatMode.payloadFrameOnly,
+      );
+    });
+
+    test('profile update legacy raw JSON mode is explicit opt-in', () {
+      dotenv.loadFromString(
+        envString: '''
+AGENT_BRIDGE_TRANSPORT=rest
+SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED=true
+''',
+      );
+
+      check(AppEnvironment.socketProfileUpdatedLegacyRawJsonEnabled).isTrue();
     });
 
     test('rest transport can opt into relay and presence independently', () {

@@ -29,6 +29,9 @@ abstract interface class ConnectionReadyDecoder {
   ConnectionReadyPayload? decode(Object? raw);
 }
 
+typedef PayloadFrameParseFailureCallback =
+    void Function(PayloadFrameParseFailure failure);
+
 /// Shared logic that turns a logical `connection:ready` map into a
 /// [ConnectionReadyPayload]. Both the legacy raw-JSON decoder and the
 /// PayloadFrame-aware decoder funnel into this builder.
@@ -98,16 +101,24 @@ class JsonOnlyConnectionReadyDecoder implements ConnectionReadyDecoder {
 /// inner JSON via [PayloadFrameCodec] and reuses the legacy field shape
 /// (`id`, `message`, `user`).
 class PayloadFrameConnectionReadyDecoder implements ConnectionReadyDecoder {
-  PayloadFrameConnectionReadyDecoder({PayloadFrameCodec? codec})
-    : _codec = codec ?? const PayloadFrameCodec();
+  PayloadFrameConnectionReadyDecoder({
+    PayloadFrameCodec? codec,
+    PayloadFrameParseFailureCallback? onParseFailure,
+  }) : _codec = codec ?? const PayloadFrameCodec(),
+       _onParseFailure = onParseFailure;
 
   final PayloadFrameCodec _codec;
+  final PayloadFrameParseFailureCallback? _onParseFailure;
 
   @override
   ConnectionReadyPayload? decode(Object? raw) {
-    final frame = PayloadFrame.tryParse(raw);
-    if (frame == null) {
-      return null;
+    final PayloadFrame frame;
+    switch (PayloadFrame.parseDetailed(raw)) {
+      case PayloadFrameParseSuccess(frame: final parsedFrame):
+        frame = parsedFrame;
+      case final PayloadFrameParseFailure failure:
+        _onParseFailure?.call(failure);
+        return null;
     }
     Object? decoded;
     try {

@@ -4,16 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ConnectionReadyCompatMode.parse', () {
-    test('returns compat by default for null / empty / unknown', () {
+    test('returns payloadFrameOnly by default for null / empty / unknown', () {
       check(
         ConnectionReadyCompatMode.parse(null),
-      ).equals(ConnectionReadyCompatMode.compat);
+      ).equals(ConnectionReadyCompatMode.payloadFrameOnly);
       check(
         ConnectionReadyCompatMode.parse(''),
-      ).equals(ConnectionReadyCompatMode.compat);
+      ).equals(ConnectionReadyCompatMode.payloadFrameOnly);
       check(
         ConnectionReadyCompatMode.parse('garbage'),
-      ).equals(ConnectionReadyCompatMode.compat);
+      ).equals(ConnectionReadyCompatMode.payloadFrameOnly);
     });
 
     test('parses payload_frame_only and aliases', () {
@@ -44,9 +44,9 @@ void main() {
       check(
         ConnectionReadyCompatMode.parse(
           'unknown',
-          fallback: ConnectionReadyCompatMode.payloadFrameOnly,
+          fallback: ConnectionReadyCompatMode.compat,
         ),
-      ).equals(ConnectionReadyCompatMode.payloadFrameOnly);
+      ).equals(ConnectionReadyCompatMode.compat);
     });
   });
 }

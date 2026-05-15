@@ -1,5 +1,11 @@
 # Design técnico — `ConsumerSocketConnection`
 
+> Current socket/relay contract for Colmeia:
+> [`../../plug_server_docs_index_for_colmeia.md`](../../plug_server_docs_index_for_colmeia.md)
+> and [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md).
+> Historical raw JSON examples in this design are legacy migration context;
+> `payload_frame_only` is the current default.
+
 > Companheiro técnico de `docs/Features/socket_consumer_channel_plan.md` §6.2.
 > Este documento detalha **estado**, **lifecycle**, **handshake**,
 > **autenticação**, **reconexão** e **integração com o app lifecycle**
@@ -261,7 +267,8 @@ class DefaultSocketIoClientFactory implements SocketIoClientFactory {
 `lib/core/socket/connection_ready_payload.dart`
 
 ```dart
-/// Suporta os dois formatos do hub (raw JSON legado + PayloadFrame).
+/// Suporta PayloadFrame por padrão. Raw JSON legado só entra via
+/// `SOCKET_CONNECTION_READY_COMPAT_MODE=compat` ou `raw_json_only`.
 /// Detalhe real de PayloadFrame fica em `core/socket/payload_frame.dart`
 /// (Fase 2 do plano principal).
 class ConnectionReadyPayload {
@@ -279,18 +286,16 @@ class ConnectionReadyPayload {
 }
 
 abstract interface class ConnectionReadyDecoder {
-  /// Aceita Map (raw JSON), Map com formato PayloadFrame, ou String
+  /// Aceita PayloadFrame por padrão; Map raw JSON só em modo legado
   /// (base64 dentro do PayloadFrame). Retorna `null` quando não puder
   /// ser interpretado — chamadores tratam como erro de handshake.
   ConnectionReadyPayload? decode(Object? raw);
 }
 ```
 
-A implementação default tenta JSON puro primeiro (Fase 1) e cai para
-`PayloadFrameDecoder` se encontrar `enc`/`cmp`/`payload` no envelope
-(Fase 2). Estratégia tolerante: enquanto o flag
-`SOCKET_CONNECTION_READY_COMPAT_MODE` ainda não terminou (após
-`2026-09-30`), os dois formatos coexistem.
+A implementação default atual usa `payload_frame_only`. O decoder `compat`
+tenta PayloadFrame e só então cai para raw JSON quando o app roda contra hub
+antigo com override explícito em `SOCKET_CONNECTION_READY_COMPAT_MODE`.
 
 ---
 
@@ -698,20 +703,25 @@ class _AppLifecycleHookState extends State<_AppLifecycleHook>
 
 ## 10. Estratégia para `connection:ready` em PayloadFrame (Fase 2)
 
+> Contrato atual resumido em
+> [`../../plug_server_docs_index_for_colmeia.md`](../../plug_server_docs_index_for_colmeia.md)
+> e [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md).
+
 > **PR-K (entregue):** o decoder PayloadFrame e o compat decoder agora
 > existem em `lib/core/socket/connection_ready_payload.dart`
 > (`PayloadFrameConnectionReadyDecoder`,
 > `CompatConnectionReadyDecoder`). O DI escolhe a implementação ativa
-> via `SOCKET_CONNECTION_READY_COMPAT_MODE` (`compat` por padrão;
-> `payload_frame_only` ou `raw_json_only` para forçar). O `compat`
+> via `SOCKET_CONNECTION_READY_COMPAT_MODE` (`payload_frame_only` por padrao;
+> `compat` ou `raw_json_only` apenas como override de migracao). O `compat`
 > tenta primeiro o frame e cai para JSON puro, emitindo
 > `ConnectionReadyShape` para que o `AppLogger` (`shape=payloadFrame`
 > | `rawJson`) deixe rastro de quando podemos remover o fallback.
 > A migração final está prevista pelo hub para após **2026-09-30**
 > (`SOCKET_CONNECTION_READY_COMPAT_MODE` no `plug_server`).
 
-A `ConnectionReadyDecoder` é um _port_. Em Fase 1 a implementação
-default detecta o formato:
+A `ConnectionReadyDecoder` é um _port_. O default atual usa
+`PayloadFrameConnectionReadyDecoder`; o exemplo `CompatConnectionReadyDecoder`
+abaixo é mantido como contexto de migração:
 
 ```dart
 class CompatConnectionReadyDecoder implements ConnectionReadyDecoder {
@@ -813,7 +823,7 @@ void registerInjectorSocket(GetIt getIt) {
 > (`SOCKET_CONNECTION_READY_COMPAT_MODE`):
 > `payload_frame_only` → `PayloadFrameConnectionReadyDecoder`,
 > `raw_json_only` → `JsonOnlyConnectionReadyDecoder`,
-> `compat` (default) → `CompatConnectionReadyDecoder` que loga
+> `compat` -> `CompatConnectionReadyDecoder` que loga
 > `ConnectionReadyShape` (`payloadFrame` | `rawJson`) via `AppLogger`.
 
 > **PR-L (entregue):** o `injector_socket` ganhou um bloco gated por
@@ -851,7 +861,7 @@ Map<String, String> _clientIdByRequestId;          // depois do accepted
 Em eventos de stream de alto débito o hub pode omitir `traceId`/`requestId`
 no envelope (`socket_relay_protocol.md` §PayloadFrame). Quando isso acontece
 e há uma única request pendente naquela `conversationId`, o dispatcher
-roteia para ela como fallback determinístico (`_pendingFromFrame`).
+roteia para ela como fallback determinístico (`_pendingRouteFromFrame`).
 
 ### Política de erro
 
@@ -1031,7 +1041,7 @@ contrato unitário.
 
 `test/core/socket/connection_ready_payload_test.dart`
 
-- Decode raw JSON Map.
+- Decode PayloadFrame; raw JSON Map apenas nos testes de override legado.
 - Decode PayloadFrame (mock decoder).
 - Retorna `null` para entrada inválida.
 

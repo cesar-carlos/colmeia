@@ -429,6 +429,20 @@ abstract final class AppEnvironment {
       ) ||
       agentBridgeTransport == AgentBridgeTransport.socket;
 
+  /// Legacy profile update compatibility. Current hub builds emit
+  /// `client:agent.profile.updated` as PayloadFrame; raw JSON maps must be
+  /// enabled explicitly only for older hubs.
+  static bool get socketProfileUpdatedLegacyRawJsonEnabled =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketProfileUpdatedLegacyRawJsonEnabled,
+        ),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.socketProfileUpdatedLegacyRawJsonEnabled,
+        ),
+        fallback: false,
+      );
+
   /// True when the app must materialise and lifecycle-manage the consumer
   /// socket, even if the primary bridge transport remains REST.
   static bool get consumerSocketLifecycleEnabled =>
@@ -437,8 +451,8 @@ abstract final class AppEnvironment {
   // ----- Socket channel (PR-K) -----
 
   /// Decoder strategy for `connection:ready`. Defaults to
-  /// [ConnectionReadyCompatMode.compat] so the app keeps working against
-  /// hub builds that still emit raw JSON during the migration window.
+  /// [ConnectionReadyCompatMode.payloadFrameOnly], matching the current hub
+  /// contract. Set `compat` explicitly for older hubs that still emit raw JSON.
   static ConnectionReadyCompatMode get socketConnectionReadyCompatMode =>
       ConnectionReadyCompatMode.parse(
         AppEnvironmentResolution.resolveString(
@@ -446,7 +460,7 @@ abstract final class AppEnvironment {
             EnvKeys.socketConnectionReadyCompatMode,
           ),
           fromDotenv: _dotenvMaybe(EnvKeys.socketConnectionReadyCompatMode),
-          fallback: 'compat',
+          fallback: 'payload_frame_only',
         ),
       );
 

@@ -8,11 +8,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 /// fallback for the rare classes of failures that no amount of
 /// retry will fix:
 ///
-/// * [SocketDispatchLegacyStreamingUnsupported] — the hub returned a
-///   non-empty `stream_id` / `streamId` on `agents:command`. Colmeia does not
-///   pull `agents:command_stream_*` on this path; one REST retry
-///   materialises the same `sql.execute` per hub contract.
-///   The same one-shot REST retry applies to **batch** (`postSqlExecuteBatch`).
 /// * [SocketDispatchNamespaceForbidden] — the hub's
 ///   `SOCKET_CONSUMER_ROLES` does not include the JWT role. Until
 ///   the server admin fixes the env + restarts, every dispatch will
@@ -28,6 +23,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 /// session-scoped (a hub config edit + restart requires the user to
 /// re-launch the app anyway, since the JWT/socket lifecycle is
 /// rebuilt on cold start).
+///
+/// [SocketDispatchLegacyStreamingUnsupported] is deliberately NOT
+/// fallback-eligible: progressive socket streaming is relay-only in Colmeia.
+/// Callers that need streaming should use `useRelay: true`.
 ///
 /// Transient errors ([SocketDispatchTimeout], plain
 /// [SocketDispatchDisconnected] without an auth bind, regular
@@ -72,17 +71,6 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     }
     try {
       return await _socketDelegate.postSqlExecute(request);
-    } on SocketDispatchLegacyStreamingUnsupported catch (trigger) {
-      AppLogger.warning(
-        'Agent queries: hub chose legacy socket streaming; retrying once on REST',
-        context: <String, Object?>{
-          'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
-          'triggerCode': trigger.code,
-          'streamId': trigger.streamId,
-        },
-        error: trigger,
-      );
-      return _restDelegate.postSqlExecute(request);
     } on SocketDispatchNamespaceForbidden catch (trigger) {
       _latch(trigger, reason: 'namespace_forbidden');
       return _restDelegate.postSqlExecute(request);
@@ -106,18 +94,6 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     }
     try {
       return await _socketDelegate.postSqlExecuteBatch(request);
-    } on SocketDispatchLegacyStreamingUnsupported catch (trigger) {
-      AppLogger.warning(
-        'Agent queries batch: hub chose legacy socket streaming; '
-        'retrying once on REST',
-        context: <String, Object?>{
-          'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
-          'triggerCode': trigger.code,
-          'streamId': trigger.streamId,
-        },
-        error: trigger,
-      );
-      return _restDelegate.postSqlExecuteBatch(request);
     } on SocketDispatchNamespaceForbidden catch (trigger) {
       _latch(trigger, reason: 'namespace_forbidden');
       return _restDelegate.postSqlExecuteBatch(request);

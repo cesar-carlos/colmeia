@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "enc": "json",
+  "cmp": "none",
+  "contentType": "application/json",
+  "originalSize": 138,
+  "compressedSize": 138,
+  "payload": "eyJpZCI6InNvY2stZG9jLTEiLCJtZXNzYWdlIjoiQ29uc3VtZXIgc29ja2V0IGNvbm5lY3RlZCBzdWNjZXNzZnVsbHkiLCJ1c2VyIjp7InN1YiI6ImNsaWVudC0xIiwicm9sZSI6ImNsaWVudCJ9LCJodWJfaW5zdGFuY2VfaWQiOiJodWItYSJ9",
+  "requestId": "ready-doc-fixture"
+}

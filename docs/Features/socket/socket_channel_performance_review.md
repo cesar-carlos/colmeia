@@ -1,5 +1,10 @@
 # Review de desempenho — canal Socket `/consumers`
 
+> Current socket/relay contract for Colmeia:
+> [`../../plug_server_docs_index_for_colmeia.md`](../../plug_server_docs_index_for_colmeia.md)
+> and [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md).
+> Use these summaries for current PayloadFrame/relay defaults.
+
 > Análise crítica do plano em `docs/Features/socket_consumer_channel_plan.md`
 > e designs companheiros (`consumer_socket_connection_design.md`,
 > `socket_command_dispatcher_design.md`, `agent_presence_realtime_design.md`)
@@ -58,7 +63,7 @@ adaptativo**, **backoff com jitter**, **teto in-flight por agente**,
 | Single-flight de `connect()`                    | ✅ §7 do design                              | Evita sockets paralelos.                                                                                                                             |
 | Refresh de token automático em 401              | ✅                                           | Reaproveita `AuthRefreshCoordinator` (single-flight no HTTP).                                                                                        |
 | Body idêntico REST ↔ Socket                     | ✅ helper compartilhado                      | Garante paridade (mesmos tetos UTF-8 que o REST).                                                                                                    |
-| Gzip **do cliente** alinhado ao hub (modo auto) | ✅ Fase 2, threshold 1024 B                  | Evita que o hub desperdice CPU gunzipando algo que não compensou.                                                                                    |
+| Gzip **do cliente** alinhado ao hub (modo auto) | ✅ Fase 2, threshold 4096 B                  | Evita que o hub desperdice CPU gunzipando algo que não compensou.                                                                                    |
 | Listener único por evento                       | ✅ `_ensureListenersAttached`                | Evita memory leak por re-anexar em cada emit.                                                                                                        |
 
 ---
@@ -358,7 +363,7 @@ diagnóstico, pode rodar um `sink` HTTP para painel interno.
 
 Future<PayloadFrame> encodeAuto(Object data) async {
   final encoded = utf8.encode(jsonEncode(data));
-  if (encoded.length < 1024) {
+  if (encoded.length < 4096) {
     return PayloadFrame.raw(encoded);
   }
   if (encoded.length < _asyncGzipThreshold) {

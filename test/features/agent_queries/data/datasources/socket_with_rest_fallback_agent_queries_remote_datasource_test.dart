@@ -35,7 +35,7 @@ void main() {
     );
 
     test(
-      'legacy streaming unsupported retries once on REST without latching',
+      'legacy streaming unsupported propagates without REST fallback',
       () async {
         final socket = _RecordingDataSource(
           throwOn: const SocketDispatchLegacyStreamingUnsupported(
@@ -51,17 +51,16 @@ void main() {
           restDelegate: rest,
         );
 
-        final response = await fallback.postSqlExecute(request);
-        check(response['response']).equals('materialised-from-rest');
+        final raised = await _capture(fallback.postSqlExecute(request));
+        check(raised).isA<SocketDispatchLegacyStreamingUnsupported>();
         check(socket.callCount).equals(1);
-        check(rest.callCount).equals(1);
+        check(rest.callCount).equals(0);
         check(fallback.isLatchedToRest).isFalse();
       },
     );
 
     test(
-      'legacy streaming unsupported on batch retries once on REST without '
-      'latching',
+      'legacy streaming unsupported on batch propagates without REST fallback',
       () async {
         final batchRequest = _batchRequest();
         final socket = _RecordingDataSource(
@@ -78,10 +77,12 @@ void main() {
           restDelegate: rest,
         );
 
-        final response = await fallback.postSqlExecuteBatch(batchRequest);
-        check(response['response']).equals('batch-from-rest');
+        final raised = await _capture(
+          fallback.postSqlExecuteBatch(batchRequest),
+        );
+        check(raised).isA<SocketDispatchLegacyStreamingUnsupported>();
         check(socket.callCount).equals(1);
-        check(rest.callCount).equals(1);
+        check(rest.callCount).equals(0);
         check(fallback.isLatchedToRest).isFalse();
       },
     );

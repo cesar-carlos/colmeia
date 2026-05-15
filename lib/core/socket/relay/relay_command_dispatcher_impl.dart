@@ -82,7 +82,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   final Map<String, String> _clientIdByRequestId = <String, String>{};
 
   /// Client request ids currently pending per `conversationId`. Used for
-  /// O(1) routing in [_pendingFromFrame] when the hub omits `requestId` on
+  /// O(1) routing in [_pendingRouteFromFrame] when the hub omits `requestId` on
   /// the frame and exactly one RPC is in flight for that conversation.
   final Map<String, Set<String>> _pendingClientIdsByConversationId =
       <String, Set<String>>{};
@@ -866,45 +866,45 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   }
 
   void _onResponseFrame(Object? raw) {
-    final pending = _pendingFromFrame(raw);
-    if (pending == null) {
+    final route = _pendingRouteFromFrame(raw);
+    if (route == null) {
       return;
     }
     _enqueueRelayFrameWork(
-      pending,
+      route.pending,
       () => _routeFrameAsyncForPending(
-        pending,
-        raw,
+        route.pending,
+        route.parseResult,
         eventName: 'rpc.response',
       ),
     );
   }
 
   void _onChunkFrame(Object? raw) {
-    final pending = _pendingFromFrame(raw);
-    if (pending == null) {
+    final route = _pendingRouteFromFrame(raw);
+    if (route == null) {
       return;
     }
     _enqueueRelayFrameWork(
-      pending,
+      route.pending,
       () => _routeFrameAsyncForPending(
-        pending,
-        raw,
+        route.pending,
+        route.parseResult,
         eventName: 'rpc.chunk',
       ),
     );
   }
 
   void _onCompleteFrame(Object? raw) {
-    final pending = _pendingFromFrame(raw);
-    if (pending == null) {
+    final route = _pendingRouteFromFrame(raw);
+    if (route == null) {
       return;
     }
     _enqueueRelayFrameWork(
-      pending,
+      route.pending,
       () => _routeFrameAsyncForPending(
-        pending,
-        raw,
+        route.pending,
+        route.parseResult,
         eventName: 'rpc.complete',
       ),
     );
@@ -912,7 +912,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
 
   Future<void> _routeFrameAsyncForPending(
     _PendingRelay pending,
-    Object? raw, {
+    PayloadFrameParseResult parseResult, {
     required String eventName,
   }) async {
     if (_isDisposed) {
@@ -921,19 +921,24 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
       return;
     }
-    final frame = PayloadFrame.tryParse(raw);
-    if (frame == null) {
-      _channelMetrics?.recordRelayDecodeFailure(code: 'malformed_frame');
-      _failPending(
-        pending.clientRequestId,
-        RelayDecodeFailure(
-          message: 'received $eventName without a valid PayloadFrame envelope',
-          code: 'malformed_frame',
-          conversationId: pending.conversationId,
-          clientRequestId: pending.clientRequestId,
-        ),
-      );
-      return;
+    final PayloadFrame frame;
+    switch (parseResult) {
+      case PayloadFrameParseSuccess(frame: final parsedFrame):
+        frame = parsedFrame;
+      case final PayloadFrameParseFailure failure:
+        _channelMetrics?.recordRelayDecodeFailure(code: failure.code);
+        _failPending(
+          pending.clientRequestId,
+          RelayDecodeFailure(
+            message:
+                'received $eventName without a valid PayloadFrame envelope: '
+                '${failure.message}',
+            code: failure.code,
+            conversationId: pending.conversationId,
+            clientRequestId: pending.clientRequestId,
+          ),
+        );
+        return;
     }
 
     final decodeSw = Stopwatch()..start();
@@ -1170,20 +1175,62 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     return text.isEmpty ? null : text;
   }
 
-  _PendingRelay? _pendingFromFrame(Object? raw) {
-    final frame = PayloadFrame.tryParse(raw);
+  _PendingRelayFrameRoute? _pendingRouteFromFrame(Object? raw) {
+    final parseResult = PayloadFrame.parseDetailed(raw);
+    final PayloadFrame frame;
+    switch (parseResult) {
+      case PayloadFrameParseSuccess(frame: final parsedFrame):
+        frame = parsedFrame;
+      case final PayloadFrameParseFailure failure:
+        AppLogger.warning(
+          'relay frame parse failed before routing',
+          context: <String, Object?>{
+            'component': 'RelayCommandDispatcherImpl',
+            'operation': 'pending_from_frame',
+            'code': failure.code,
+            'message': failure.message,
+          },
+        );
+        final pending = _pendingFromRawCorrelation(raw);
+        return pending == null
+            ? null
+            : _PendingRelayFrameRoute(
+                pending: pending,
+                parseResult: failure,
+              );
+    }
     String? clientRequestId;
-    final requestId = frame?.requestId;
+    final requestId = frame.requestId;
     if (requestId != null && requestId.isNotEmpty) {
       clientRequestId = _clientIdByRequestId[requestId];
     }
     if (clientRequestId != null) {
-      return _pendingByClientId[clientRequestId];
+      final pending = _pendingByClientId[clientRequestId];
+      return pending == null
+          ? null
+          : _PendingRelayFrameRoute(
+              pending: pending,
+              parseResult: parseResult,
+            );
+    }
+    final pending = _pendingFromRawCorrelation(raw);
+    return pending == null
+        ? null
+        : _PendingRelayFrameRoute(pending: pending, parseResult: parseResult);
+  }
+
+  _PendingRelay? _pendingFromRawCorrelation(Object? raw) {
+    final map = _toMap(raw);
+    final requestId = map?['requestId']?.toString();
+    if (requestId != null && requestId.isNotEmpty) {
+      final clientRequestId = _clientIdByRequestId[requestId];
+      if (clientRequestId != null) {
+        return _pendingByClientId[clientRequestId];
+      }
     }
     // Fall back to a one-pending-conversation match: when the wire requestId
     // is missing (some events drop it for high-throughput streams), and only
     // a single pending request exists on the conversation, route to it.
-    final map = _toMap(raw);
     final conversationId = map?['conversationId']?.toString();
     if (conversationId == null) {
       return null;
@@ -1352,6 +1399,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     final value = endIndex < 0 ? remainder : remainder.substring(0, endIndex);
     return value.isEmpty ? null : value;
   }
+}
+
+final class _PendingRelayFrameRoute {
+  const _PendingRelayFrameRoute({
+    required this.pending,
+    required this.parseResult,
+  });
+
+  final _PendingRelay pending;
+  final PayloadFrameParseResult parseResult;
 }
 
 /// Common state shared by both unitary and streaming pendings.

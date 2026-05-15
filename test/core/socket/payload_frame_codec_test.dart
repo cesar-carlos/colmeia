@@ -9,27 +9,57 @@ import 'package:colmeia/core/socket/payload_frame_signer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('PayloadFrameCodec contract defaults', () {
+    test('match the plug_server PayloadFrame contract', () {
+      check(PayloadFrameCodec.defaultCompressionThresholdBytes).equals(4096);
+      check(PayloadFrameCodec.defaultMaxInflationRatio).equals(10);
+      check(PayloadFrameCodec.defaultMaxPayloadBytes).equals(10 * 1024 * 1024);
+    });
+  });
+
   group('PayloadFrameCodec.encodeJson', () {
     const codec = PayloadFrameCodec();
 
     test('emits cmp=none for small payloads (below threshold)', () {
-      final result = codec.encodeJson(<String, Object?>{'a': 1});
+      final result = codec.encodeJson(<String, Object?>{'v': 'x' * 3500});
+      check(result.encoded.length).isLessThan(
+        PayloadFrameCodec.defaultCompressionThresholdBytes,
+      );
       check(result.frame.cmp).equals(PayloadFrame.compressionNone);
       check(result.frame.compressedSize).equals(result.encoded.length);
       check(result.frame.originalSize).equals(result.encoded.length);
     });
 
     test('uses gzip when it strictly reduces bytes', () {
-      // Highly compressible payload above the 1 KiB threshold.
-      final repeated = 'A' * 4096;
-      final result = codec.encodeJson(<String, Object?>{'v': repeated});
+      final rows = List<Map<String, Object?>>.generate(
+        200,
+        (i) => <String, Object?>{
+          'id': i,
+          'name': 'agent-$i',
+          'tag': 'sample-payload-row-${i % 7}',
+        },
+      );
+      final result = codec.encodeJson(<String, Object?>{'rows': rows});
+      check(result.encoded.length).isGreaterOrEqual(
+        PayloadFrameCodec.defaultCompressionThresholdBytes,
+      );
       check(result.frame.cmp).equals(PayloadFrame.compressionGzip);
       check(result.frame.compressedSize).isLessThan(result.encoded.length);
       check(result.frame.originalSize).equals(result.encoded.length);
     });
 
+    test('keeps cmp=none when gzip would exceed the inflation guard', () {
+      final repeated = 'A' * 4096;
+      final result = codec.encodeJson(<String, Object?>{'v': repeated});
+      check(result.encoded.length).isGreaterOrEqual(
+        PayloadFrameCodec.defaultCompressionThresholdBytes,
+      );
+      check(result.frame.cmp).equals(PayloadFrame.compressionNone);
+      check(result.frame.compressedSize).equals(result.encoded.length);
+    });
+
     test('skips gzip when the result would be larger', () {
-      // Tiny payload: well below the 1 KiB threshold, so gzip is never even
+      // Tiny payload: well below the 4096-byte threshold, so gzip is never even
       // attempted. Verifies the threshold short-circuit, complementary to
       // the "uses gzip" test that proves activation when the threshold is
       // crossed and compression actually wins.
@@ -71,9 +101,9 @@ void main() {
     test(
       'round-trips through decodeJson with gzip',
       () {
-        // Mixed payload: large enough to cross the 1 KiB threshold and
+        // Mixed payload: large enough to cross the 4096-byte threshold and
         // still compressible, but not so degenerate that gzip beats the
-        // 20× inflation guard.
+        // 10x inflation guard.
         final rows = List<Map<String, Object?>>.generate(
           200,
           (i) => <String, Object?>{
@@ -127,6 +157,19 @@ void main() {
         check(encoded.frame.cmp).equals(PayloadFrame.compressionGzip);
         final decoded = codec.decodeJson(encoded.frame);
         check(jsonEncode(decoded)).equals(jsonEncode(value));
+      },
+    );
+
+    test(
+      'encodeJsonAsync keeps cmp=none when gzip would exceed the guard',
+      () async {
+        const codec = PayloadFrameCodec(gzipEncodeIsolateThresholdBytes: 0);
+        final repeated = 'A' * 4096;
+        final encoded = await codec.encodeJsonAsync(<String, Object?>{
+          'v': repeated,
+        });
+        check(encoded.frame.cmp).equals(PayloadFrame.compressionNone);
+        check(encoded.frame.compressedSize).equals(encoded.encoded.length);
       },
     );
   });
@@ -192,8 +235,15 @@ void main() {
       final codec = PayloadFrameCodec(
         signer: Hmac256PayloadFrameSigner.fromUtf8Key(key: 'k'),
       );
-      final repeated = 'A' * 4096;
-      final result = codec.encodeJson(<String, Object?>{'v': repeated});
+      final rows = List<Map<String, Object?>>.generate(
+        200,
+        (i) => <String, Object?>{
+          'id': i,
+          'name': 'agent-$i',
+          'tag': 'sample-payload-row-${i % 7}',
+        },
+      );
+      final result = codec.encodeJson(<String, Object?>{'rows': rows});
       check(result.frame.cmp).equals(PayloadFrame.compressionGzip);
       check(result.frame.signature).isNotNull();
     });

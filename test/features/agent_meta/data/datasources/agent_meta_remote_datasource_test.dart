@@ -237,5 +237,26 @@ void main() {
       check(socket.policyCalls).equals(1);
       check(rest.policyCalls).equals(0);
     });
+
+    test('does not fallback for legacy streaming unsupported', () async {
+      final socket = _FakeAgentMetaRemoteDataSource('socket')
+        ..errorToThrow = const SocketDispatchLegacyStreamingUnsupported(
+          message: 'legacy stream',
+          streamId: 's-1',
+        );
+      final rest = _FakeAgentMetaRemoteDataSource('rest');
+      final datasource = SocketWithRestFallbackAgentMetaRemoteDataSource(
+        socketDelegate: socket,
+        restDelegate: rest,
+      );
+
+      await check(
+        datasource.rpcDiscover(agentId: 'agent-42'),
+      ).throws<SocketDispatchLegacyStreamingUnsupported>();
+
+      check(datasource.isLatchedToRest).isFalse();
+      check(socket.discoverCalls).equals(1);
+      check(rest.discoverCalls).equals(0);
+    });
   });
 }

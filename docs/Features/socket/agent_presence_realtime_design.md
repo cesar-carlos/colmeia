@@ -1,5 +1,11 @@
 # Design técnico — Presença de agente em tempo real
 
+> Current socket/relay contract for Colmeia:
+> [`../../plug_server_docs_index_for_colmeia.md`](../../plug_server_docs_index_for_colmeia.md)
+> and [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md).
+> `client:agent.profile.updated` is PayloadFrame-only by default; raw JSON is
+> an explicit legacy migration override.
+
 > Companheiro técnico de `docs/Features/socket_consumer_channel_plan.md` §19.
 > Este documento detalha **contratos**, **lifecycle**, **DI**, **casos de
 > borda** e **plano de testes** para a capacidade de presença em tempo real.
@@ -991,9 +997,9 @@ simplificações para reduzir o blast radius do primeiro PR:
 
 - **Decoder do listener.** O esqueleto cita `PayloadFrameDecoder`. O
   código real recebe um `PayloadFrameCodec` (a mesma abstração que o
-  PR-K já registrava). Aceita também a forma legada (raw JSON map),
-  documentada no `socket_client_sdk.md` como compatível durante a
-  janela de migração.
+  PR-K já registrava). Aceita a forma legada (raw JSON map) apenas quando
+  `SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED=true`, para hubs antigos
+  ainda dentro da janela de migração.
 - **Composição do `SocketAgentPresenceStream`.** Para evitar a
   referência circular descrita em §5 ("o stream precisa do listener,
   o listener precisa do sink"), o stream tem dois construtores:

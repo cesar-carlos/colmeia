@@ -40,6 +40,19 @@ class PayloadFrame {
   /// Gzip compression marker.
   static const String compressionGzip = 'gzip';
 
+  static const Set<String> _wireKeys = <String>{
+    'schemaVersion',
+    'enc',
+    'cmp',
+    'contentType',
+    'originalSize',
+    'compressedSize',
+    'payload',
+    'requestId',
+    'traceId',
+    'signature',
+  };
+
   /// Raw bytes either compressed (`cmp == gzip`) or the JSON UTF-8 payload
   /// itself (`cmp == none`). See `PayloadFrameCodec.decodeJson`.
   final Uint8List payload;
@@ -91,77 +104,185 @@ class PayloadFrame {
   /// [raw] may be a `Map`, a JSON-encoded `String`, a `Uint8List` of UTF-8
   /// JSON bytes, or already a [PayloadFrame] (no-op).
   static PayloadFrame? tryParse(Object? raw) {
-    final map = _toMap(raw);
-    if (map == null) {
-      return null;
+    return switch (parseDetailed(raw)) {
+      PayloadFrameParseSuccess(:final frame) => frame,
+      PayloadFrameParseFailure() => null,
+    };
+  }
+
+  /// Decodes an inbound envelope and returns a stable diagnostic when the
+  /// shape is not a valid PayloadFrame.
+  static PayloadFrameParseResult parseDetailed(Object? raw) {
+    if (raw is PayloadFrame) {
+      return PayloadFrameParseSuccess(raw);
+    }
+    final mapResult = _toMapDetailed(raw);
+    final mapFailure = mapResult.failure;
+    if (mapFailure != null) {
+      return mapFailure;
+    }
+    final map = mapResult.map!;
+    if (!_hasOnlyKeys(map, _wireKeys)) {
+      final unknownKey = map.keys.firstWhere((key) => !_wireKeys.contains(key));
+      return PayloadFrameParseFailure(
+        PayloadFrameParseFailureCodes.unknownRootKey,
+        'PayloadFrame contains unknown root key "$unknownKey"',
+      );
     }
     final payload = _decodePayloadField(map['payload']);
     if (payload == null) {
-      return null;
+      if (!map.containsKey('payload')) {
+        return const PayloadFrameParseFailure(
+          PayloadFrameParseFailureCodes.missingPayload,
+          'PayloadFrame is missing payload',
+        );
+      }
+      return const PayloadFrameParseFailure(
+        PayloadFrameParseFailureCodes.invalidPayloadBase64,
+        'PayloadFrame payload is not valid base64 or bytes',
+      );
     }
     final originalSize = _asInt(map['originalSize']);
     final compressedSize = _asInt(map['compressedSize']);
     if (originalSize == null || originalSize < 0) {
-      return null;
+      return const PayloadFrameParseFailure(
+        PayloadFrameParseFailureCodes.invalidOriginalSize,
+        'PayloadFrame originalSize is missing, invalid, or negative',
+      );
     }
     if (compressedSize == null || compressedSize < 0) {
-      return null;
+      return const PayloadFrameParseFailure(
+        PayloadFrameParseFailureCodes.invalidCompressedSize,
+        'PayloadFrame compressedSize is missing, invalid, or negative',
+      );
     }
     final schemaVersion = map['schemaVersion']?.toString();
     final enc = map['enc']?.toString();
     final cmp = map['cmp']?.toString();
     final contentType = map['contentType']?.toString();
     if (schemaVersion == null ||
+        schemaVersion.isEmpty ||
         enc == null ||
+        enc.isEmpty ||
         cmp == null ||
-        contentType == null) {
-      return null;
+        cmp.isEmpty ||
+        contentType == null ||
+        contentType.isEmpty) {
+      return const PayloadFrameParseFailure(
+        PayloadFrameParseFailureCodes.missingSchemaFields,
+        'PayloadFrame schemaVersion, enc, cmp, and contentType are required',
+      );
     }
-    return PayloadFrame(
-      schemaVersion: schemaVersion,
-      enc: enc,
-      cmp: cmp,
-      contentType: contentType,
-      originalSize: originalSize,
-      compressedSize: compressedSize,
-      payload: payload,
-      requestId: map['requestId']?.toString(),
-      traceId: map['traceId']?.toString(),
-      signature: PayloadFrameSignature.tryParse(map['signature']),
+    final rawSignature = map['signature'];
+    final PayloadFrameSignature? signature;
+    if (rawSignature == null) {
+      signature = null;
+    } else {
+      final signatureResult = PayloadFrameSignature._parseDetailed(
+        rawSignature,
+      );
+      if (signatureResult case _PayloadFrameSignatureParseFailure()) {
+        return PayloadFrameParseFailure(
+          signatureResult.code,
+          signatureResult.message,
+        );
+      }
+      signature =
+          (signatureResult as _PayloadFrameSignatureParseSuccess).signature;
+    }
+
+    return PayloadFrameParseSuccess(
+      PayloadFrame(
+        schemaVersion: schemaVersion,
+        enc: enc,
+        cmp: cmp,
+        contentType: contentType,
+        originalSize: originalSize,
+        compressedSize: compressedSize,
+        payload: payload,
+        requestId: map['requestId']?.toString(),
+        traceId: map['traceId']?.toString(),
+        signature: signature,
+      ),
     );
   }
 
-  static Map<String, Object?>? _toMap(Object? raw) {
-    if (raw is PayloadFrame) {
-      return raw.toMap();
-    }
+  static ({
+    Map<String, Object?>? map,
+    PayloadFrameParseFailure? failure,
+  })
+  _toMapDetailed(Object? raw) {
     if (raw is Map<String, Object?>) {
-      return raw;
+      return (map: raw, failure: null);
     }
     if (raw is Map) {
-      return raw.map(
-        (key, value) => MapEntry<String, Object?>(key.toString(), value),
+      return (
+        map: raw.map(
+          (key, value) => MapEntry<String, Object?>(key.toString(), value),
+        ),
+        failure: null,
       );
     }
     if (raw is String) {
       try {
         final decoded = jsonDecode(raw);
-        return decoded is Map ? _toMap(decoded) : null;
-      } on FormatException {
-        return null;
+        return decoded is Map
+            ? _toMapDetailed(decoded)
+            : (
+                map: null,
+                failure: const PayloadFrameParseFailure(
+                  PayloadFrameParseFailureCodes.notMap,
+                  'PayloadFrame envelope JSON is not an object',
+                ),
+              );
+      } on FormatException catch (error) {
+        return (
+          map: null,
+          failure: PayloadFrameParseFailure(
+            PayloadFrameParseFailureCodes.invalidJsonEnvelope,
+            'PayloadFrame envelope is not valid JSON: ${error.message}',
+          ),
+        );
       }
     }
     if (raw is List<int>) {
       try {
         final decoded = jsonDecode(utf8.decode(raw));
-        return decoded is Map ? _toMap(decoded) : null;
-      } on FormatException {
-        return null;
+        return decoded is Map
+            ? _toMapDetailed(decoded)
+            : (
+                map: null,
+                failure: const PayloadFrameParseFailure(
+                  PayloadFrameParseFailureCodes.notMap,
+                  'PayloadFrame envelope JSON is not an object',
+                ),
+              );
+      } on FormatException catch (error) {
+        return (
+          map: null,
+          failure: PayloadFrameParseFailure(
+            PayloadFrameParseFailureCodes.invalidJsonEnvelope,
+            'PayloadFrame envelope bytes are not valid JSON: ${error.message}',
+          ),
+        );
       } on Object {
-        return null;
+        return (
+          map: null,
+          failure: const PayloadFrameParseFailure(
+            PayloadFrameParseFailureCodes.invalidJsonEnvelope,
+            'PayloadFrame envelope bytes are not valid UTF-8 JSON',
+          ),
+        );
       }
     }
-    return null;
+    return (
+      map: null,
+      failure: PayloadFrameParseFailure(
+        PayloadFrameParseFailureCodes.notMap,
+        'PayloadFrame envelope must be a map, JSON string, or bytes; got '
+        '${raw.runtimeType}',
+      ),
+    );
   }
 
   static Uint8List? _decodePayloadField(Object? raw) {
@@ -193,6 +314,44 @@ class PayloadFrame {
     }
     return null;
   }
+
+  static bool _hasOnlyKeys(
+    Map<String, Object?> map,
+    Set<String> allowedKeys,
+  ) {
+    return map.keys.every(allowedKeys.contains);
+  }
+}
+
+sealed class PayloadFrameParseResult {
+  const PayloadFrameParseResult();
+}
+
+final class PayloadFrameParseSuccess extends PayloadFrameParseResult {
+  const PayloadFrameParseSuccess(this.frame);
+
+  final PayloadFrame frame;
+}
+
+final class PayloadFrameParseFailure extends PayloadFrameParseResult {
+  const PayloadFrameParseFailure(this.code, this.message);
+
+  final String code;
+  final String message;
+}
+
+abstract final class PayloadFrameParseFailureCodes {
+  static const String notMap = 'not_map';
+  static const String invalidJsonEnvelope = 'invalid_json_envelope';
+  static const String unknownRootKey = 'unknown_root_key';
+  static const String missingPayload = 'missing_payload';
+  static const String invalidPayloadBase64 = 'invalid_payload_base64';
+  static const String invalidOriginalSize = 'invalid_original_size';
+  static const String invalidCompressedSize = 'invalid_compressed_size';
+  static const String missingSchemaFields = 'missing_schema_fields';
+  static const String invalidSignature = 'invalid_signature';
+  static const String unknownSignatureKey = 'unknown_signature_key';
+  static const String missingSignatureFields = 'missing_signature_fields';
 }
 
 /// Optional HMAC-SHA256 signature block inside a [PayloadFrame].
@@ -204,6 +363,12 @@ class PayloadFrameSignature {
   });
 
   static const String algorithmHmacSha256 = 'hmac-sha256';
+
+  static const Set<String> _wireKeys = <String>{
+    'alg',
+    'value',
+    'key_id',
+  };
 
   final String algorithm;
   final String value;
@@ -218,24 +383,70 @@ class PayloadFrameSignature {
   }
 
   static PayloadFrameSignature? tryParse(Object? raw) {
+    return switch (_parseDetailed(raw)) {
+      _PayloadFrameSignatureParseSuccess(:final signature) => signature,
+      _PayloadFrameSignatureParseFailure() => null,
+    };
+  }
+
+  static _PayloadFrameSignatureParseResult _parseDetailed(Object? raw) {
     if (raw == null) {
-      return null;
+      return const _PayloadFrameSignatureParseFailure(
+        PayloadFrameParseFailureCodes.invalidSignature,
+        'PayloadFrame signature is missing',
+      );
     }
     if (raw is! Map) {
-      return null;
+      return const _PayloadFrameSignatureParseFailure(
+        PayloadFrameParseFailureCodes.invalidSignature,
+        'PayloadFrame signature must be an object',
+      );
     }
     final map = raw.map(
       (key, value) => MapEntry<String, Object?>(key.toString(), value),
     );
+    if (!map.keys.every(_wireKeys.contains)) {
+      final unknownKey = map.keys.firstWhere(
+        (key) => !_wireKeys.contains(key),
+      );
+      return _PayloadFrameSignatureParseFailure(
+        PayloadFrameParseFailureCodes.unknownSignatureKey,
+        'PayloadFrame signature contains unknown key "$unknownKey"',
+      );
+    }
     final alg = map['alg']?.toString();
     final value = map['value']?.toString();
     if (alg == null || value == null || alg.isEmpty || value.isEmpty) {
-      return null;
+      return const _PayloadFrameSignatureParseFailure(
+        PayloadFrameParseFailureCodes.missingSignatureFields,
+        'PayloadFrame signature alg and value are required',
+      );
     }
-    return PayloadFrameSignature(
-      algorithm: alg,
-      value: value,
-      keyId: map['key_id']?.toString(),
+    return _PayloadFrameSignatureParseSuccess(
+      PayloadFrameSignature(
+        algorithm: alg,
+        value: value,
+        keyId: map['key_id']?.toString(),
+      ),
     );
   }
+}
+
+sealed class _PayloadFrameSignatureParseResult {
+  const _PayloadFrameSignatureParseResult();
+}
+
+final class _PayloadFrameSignatureParseSuccess
+    extends _PayloadFrameSignatureParseResult {
+  const _PayloadFrameSignatureParseSuccess(this.signature);
+
+  final PayloadFrameSignature signature;
+}
+
+final class _PayloadFrameSignatureParseFailure
+    extends _PayloadFrameSignatureParseResult {
+  const _PayloadFrameSignatureParseFailure(this.code, this.message);
+
+  final String code;
+  final String message;
 }

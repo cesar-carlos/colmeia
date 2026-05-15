@@ -2,17 +2,17 @@
 /// `ConsumerSocketConnection`. Mirrors the hub-side environment variable
 /// `SOCKET_CONNECTION_READY_COMPAT_MODE` documented in
 /// `plug_server/docs/socket_client_sdk.md` so both sides can be flipped
-/// independently during the migration window.
+/// independently during migration.
 enum ConnectionReadyCompatMode {
-  /// Try the `PayloadFrame` envelope first, fall back to raw JSON. Default
-  /// for the migration window declared by the hub (raw_json removal planned
-  /// for after 2026-09-30).
+  /// Try the `PayloadFrame` envelope first, fall back to raw JSON. Explicit
+  /// migration override for hubs that still emit raw JSON.
   compat,
 
-  /// Strict — only accept the PayloadFrame envelope.
+  /// Strict - only accept the PayloadFrame envelope. Default for current hub
+  /// contracts.
   payloadFrameOnly,
 
-  /// Legacy strict — only accept the raw JSON shape; useful in tests against
+  /// Legacy strict - only accept the raw JSON shape; useful in tests against
   /// older hub forks.
   rawJsonOnly
   ;
@@ -21,7 +21,8 @@ enum ConnectionReadyCompatMode {
   /// Unknown values fall back to [fallback].
   static ConnectionReadyCompatMode parse(
     String? raw, {
-    ConnectionReadyCompatMode fallback = ConnectionReadyCompatMode.compat,
+    ConnectionReadyCompatMode fallback =
+        ConnectionReadyCompatMode.payloadFrameOnly,
   }) {
     if (raw == null) {
       return fallback;

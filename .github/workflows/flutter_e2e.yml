@@ -78,6 +78,7 @@ jobs:
               --dart-define=AGENT_BRIDGE_TRANSPORT=socket
               --dart-define=SOCKET_RELAY_ENABLED=true
               --dart-define=SOCKET_PRESENCE_LISTENER_ENABLED=true
+              --dart-define=E2E_DISABLE_RELAY_DISPATCH=false
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -118,6 +119,22 @@ jobs:
           flutter test
           test/integration/e2e/agent_sql_bridge_e2e_test.dart
           test/integration/e2e/overview_batch_loader_e2e_test.dart
+          --concurrency=1
+          --reporter expanded
+          $DART_DEFINES
+
+      - name: Socket relay smoke
+        if: ${{ matrix.name == 'socket-relay-presence' }}
+        env:
+          E2E_AGENT_ID: ${{ secrets.E2E_AGENT_ID }}
+          E2E_CLIENT_TOKEN: ${{ secrets.E2E_CLIENT_TOKEN }}
+          E2E_CLIENT_EMAIL: ${{ secrets.E2E_CLIENT_EMAIL }}
+          E2E_CLIENT_PASSWORD: ${{ secrets.E2E_CLIENT_PASSWORD }}
+          DART_DEFINES: ${{ matrix.dart_defines }}
+        shell: bash
+        run: >-
+          flutter test
+          test/integration/e2e/agent_queries_socket_relay_smoke_e2e_test.dart
           --concurrency=1
           --reporter expanded
           $DART_DEFINES

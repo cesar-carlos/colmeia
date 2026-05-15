@@ -25,8 +25,10 @@ class ClientAgentProfileUpdatedListener {
     required ConsumerSocketConnection connection,
     required Sink<AgentPresenceEvent> sink,
     PayloadFrameCodec? codec,
+    bool acceptLegacyRawJson = false,
   }) : _connection = connection,
        _sink = sink,
+       _acceptLegacyRawJson = acceptLegacyRawJson,
        _codec = codec ?? const PayloadFrameCodec() {
     _eventHandler = _onEvent;
   }
@@ -36,6 +38,7 @@ class ClientAgentProfileUpdatedListener {
 
   final ConsumerSocketConnection _connection;
   final Sink<AgentPresenceEvent> _sink;
+  final bool _acceptLegacyRawJson;
   final PayloadFrameCodec _codec;
   late final void Function(Object?) _eventHandler;
 
@@ -125,37 +128,53 @@ class ClientAgentProfileUpdatedListener {
   }
 
   /// The hub serializes this event as PayloadFrame since Phase 2 (see
-  /// `socket_client_sdk.md`). We accept three shapes for forward/backward
-  /// compatibility:
+  /// `socket_client_sdk.md`). PayloadFrame is the default contract. Raw JSON
+  /// map remains available only when `acceptLegacyRawJson` is explicitly
+  /// enabled for older hub builds.
   ///
-  /// 1. PayloadFrame envelope (post-2026 hub) — decoded via
-  ///    [PayloadFrameCodec].
-  /// 2. Raw JSON map (older hub builds) — used as-is.
-  /// 3. Anything else — returns `null` (caller logs + drops).
+  /// 1. PayloadFrame envelope (current hub) - decoded via [PayloadFrameCodec].
+  /// 2. Raw JSON map (older hub builds) - used as-is only in legacy mode.
+  /// 3. Anything else - returns `null` (caller logs + drops).
   Map<String, Object?>? _decodeLogical(Object? raw) {
-    final frame = PayloadFrame.tryParse(raw);
-    if (frame != null) {
-      try {
-        final decoded = _codec.decodeJson(frame);
-        if (decoded is Map) {
-          return decoded.map(
-            (key, value) => MapEntry<String, Object?>(key.toString(), value),
+    switch (PayloadFrame.parseDetailed(raw)) {
+      case PayloadFrameParseSuccess(:final frame):
+        try {
+          final decoded = _codec.decodeJson(frame);
+          if (decoded is Map) {
+            return decoded.map(
+              (key, value) => MapEntry<String, Object?>(key.toString(), value),
+            );
+          }
+          return null;
+        } on PayloadFrameDecodeException catch (error, stackTrace) {
+          AppLogger.warning(
+            '$eventName payload frame rejected by codec',
+            context: <String, Object?>{
+              'component': 'ClientAgentProfileUpdatedListener',
+              'operation': 'decode_failed',
+              'code': error.code,
+            },
+            error: error,
+            stackTrace: stackTrace,
           );
+          return null;
         }
-        return null;
-      } on PayloadFrameDecodeException catch (error, stackTrace) {
-        AppLogger.warning(
-          '$eventName payload frame rejected by codec',
-          context: <String, Object?>{
-            'component': 'ClientAgentProfileUpdatedListener',
-            'operation': 'decode_failed',
-            'code': error.code,
-          },
-          error: error,
-          stackTrace: stackTrace,
-        );
-        return null;
-      }
+      case final PayloadFrameParseFailure failure:
+        if (_looksLikePayloadFrame(raw)) {
+          AppLogger.warning(
+            '$eventName payload frame parse failed',
+            context: <String, Object?>{
+              'component': 'ClientAgentProfileUpdatedListener',
+              'operation': 'parse_failed',
+              'code': failure.code,
+              'message': failure.message,
+            },
+          );
+          return null;
+        }
+    }
+    if (!_acceptLegacyRawJson) {
+      return null;
     }
     if (raw is Map<String, Object?>) {
       return raw;
@@ -166,6 +185,23 @@ class ClientAgentProfileUpdatedListener {
       );
     }
     return null;
+  }
+
+  bool _looksLikePayloadFrame(Object? raw) {
+    if (raw is PayloadFrame || raw is List<int>) {
+      return true;
+    }
+    if (raw is Map) {
+      return raw.containsKey('schemaVersion') ||
+          raw.containsKey('payload') ||
+          raw.containsKey('cmp');
+    }
+    if (raw is String) {
+      return raw.contains('"schemaVersion"') ||
+          raw.contains('"payload"') ||
+          raw.contains('"cmp"');
+    }
+    return false;
   }
 
   DateTime _parseObservedAt(Map<String, Object?> logical) {

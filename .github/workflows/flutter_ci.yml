@@ -62,6 +62,7 @@ jobs:
           if [ ${#root[@]} -eq 0 ]; then
             flutter test \
               test/app test/core test/features test/shared \
+              test/docs \
               test/integration/dart_test_config_contract_test.dart \
               --exclude-tags e2e \
               --reporter expanded
@@ -69,6 +70,7 @@ jobs:
             flutter test \
               "${root[@]}" \
               test/app test/core test/features test/shared \
+              test/docs \
               test/integration/dart_test_config_contract_test.dart \
               --exclude-tags e2e \
               --reporter expanded

@@ -1,5 +1,10 @@
 # Design técnico — `SocketCommandDispatcher`
 
+> Current socket/relay contract for Colmeia:
+> [`../../plug_server_docs_index_for_colmeia.md`](../../plug_server_docs_index_for_colmeia.md)
+> and [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md).
+> Progressive streaming in Colmeia is relay-only.
+
 > Companheiro técnico de `docs/Features/socket_consumer_channel_plan.md` §6.5
 > e de `docs/Features/agent_presence_realtime_design.md` §4.2.
 > Detalha o **contrato de envio de comandos**, **correlação por id**,
@@ -35,9 +40,8 @@
   `agents:stream_pull`: quando o hub devolve `stream_id` / `streamId` no
   `result` do primeiro `agents:command_response` (com ou sem linhas parciais),
   o dispatcher falha com `SocketDispatchLegacyStreamingUnsupported` — o
-  cliente não puxa chunks nesse canal. O datasource com fallback REST pode
-  repetir o mesmo `sql.execute` via HTTP, que materializa o resultado. Para
-  novas consultas, prefira `useRelay: true`.
+  cliente nao puxa chunks nesse canal e o wrapper de fallback nao converte esse
+  erro em REST. Para consultas com streaming progressivo, use `useRelay: true`.
 
 ---
 

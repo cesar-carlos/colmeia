@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "enc": "json",
+  "cmp": "gzip",
+  "contentType": "application/json",
+  "originalSize": 138,
+  "compressedSize": 126,
+  "payload": "H4sIAAAAAAAEAD2NMQ7DMAwDv2JwjoeuWfuQwJHV1qgjA5Y1BEH+XiVD1yOPPFAyZmijb8yN4gMTNlZNb3b8bKK2cQ9XziNQE2EanIMakddeVuvuiil3zAfUVteoFpZxb/VW+U9wTvjYuhTRkYR4ub+dxITzB546MumKAAAA",
+  "requestId": "ready-doc-fixture-gzip"
+}

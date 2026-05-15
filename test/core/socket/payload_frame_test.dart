@@ -121,6 +121,42 @@ void main() {
       check(PayloadFrame.tryParse('not json')).isNull();
     });
 
+    test('returns null when envelope contains unknown root keys', () {
+      final bytes = utf8.encode('{"x":1}');
+      check(
+        PayloadFrame.tryParse(<String, Object?>{
+          'schemaVersion': '1.0',
+          'enc': 'json',
+          'cmp': 'none',
+          'contentType': 'application/json',
+          'originalSize': bytes.length,
+          'compressedSize': bytes.length,
+          'payload': base64Encode(bytes),
+          'unexpected': true,
+        }),
+      ).isNull();
+    });
+
+    test('returns null when signature contains unknown keys', () {
+      final bytes = utf8.encode('{"x":1}');
+      check(
+        PayloadFrame.tryParse(<String, Object?>{
+          'schemaVersion': '1.0',
+          'enc': 'json',
+          'cmp': 'none',
+          'contentType': 'application/json',
+          'originalSize': bytes.length,
+          'compressedSize': bytes.length,
+          'payload': base64Encode(bytes),
+          'signature': <String, Object?>{
+            'alg': 'hmac-sha256',
+            'value': 'abc',
+            'extra': 'nope',
+          },
+        }),
+      ).isNull();
+    });
+
     test('passes through gzip-compressed envelopes', () {
       final original = utf8.encode(jsonEncode(<String, Object?>{'x': 1}));
       final gz = gzip.encode(original);
@@ -135,6 +171,99 @@ void main() {
       });
       check(frame).isNotNull();
       check(frame!.cmp).equals(PayloadFrame.compressionGzip);
+    });
+  });
+
+  group('PayloadFrame.parseDetailed', () {
+    String failureCode(Object? raw) {
+      final result = PayloadFrame.parseDetailed(raw);
+      check(result).isA<PayloadFrameParseFailure>();
+      return (result as PayloadFrameParseFailure).code;
+    }
+
+    Map<String, Object?> validFrameMap() {
+      final bytes = utf8.encode('{"x":1}');
+      return <String, Object?>{
+        'schemaVersion': '1.0',
+        'enc': 'json',
+        'cmp': 'none',
+        'contentType': 'application/json',
+        'originalSize': bytes.length,
+        'compressedSize': bytes.length,
+        'payload': base64Encode(bytes),
+      };
+    }
+
+    test('returns a typed success for valid envelopes', () {
+      final result = PayloadFrame.parseDetailed(validFrameMap());
+      check(result).isA<PayloadFrameParseSuccess>();
+      check((result as PayloadFrameParseSuccess).frame.cmp).equals('none');
+    });
+
+    test('reports stable codes for invalid envelope shapes', () {
+      check(failureCode(null)).equals(PayloadFrameParseFailureCodes.notMap);
+      check(
+        failureCode('not json'),
+      ).equals(PayloadFrameParseFailureCodes.invalidJsonEnvelope);
+      check(failureCode(<String, Object?>{'id': 'raw'})).equals(
+        PayloadFrameParseFailureCodes.unknownRootKey,
+      );
+      check(
+        failureCode(<String, Object?>{
+          'schemaVersion': '1.0',
+          'enc': 'json',
+          'cmp': 'none',
+          'contentType': 'application/json',
+          'originalSize': 2,
+          'compressedSize': 2,
+        }),
+      ).equals(PayloadFrameParseFailureCodes.missingPayload);
+      check(
+        failureCode(<String, Object?>{
+          ...validFrameMap(),
+          'payload': 'not-base64',
+        }),
+      ).equals(PayloadFrameParseFailureCodes.invalidPayloadBase64);
+      check(
+        failureCode(<String, Object?>{
+          ...validFrameMap(),
+          'originalSize': -1,
+        }),
+      ).equals(PayloadFrameParseFailureCodes.invalidOriginalSize);
+      check(
+        failureCode(<String, Object?>{
+          ...validFrameMap(),
+          'compressedSize': -1,
+        }),
+      ).equals(PayloadFrameParseFailureCodes.invalidCompressedSize);
+      check(
+        failureCode(<String, Object?>{
+          ...validFrameMap(),
+          'schemaVersion': '',
+        }),
+      ).equals(PayloadFrameParseFailureCodes.missingSchemaFields);
+    });
+
+    test('reports stable codes for invalid signatures', () {
+      check(
+        failureCode(<String, Object?>{...validFrameMap(), 'signature': 'bad'}),
+      ).equals(PayloadFrameParseFailureCodes.invalidSignature);
+      check(
+        failureCode(<String, Object?>{
+          ...validFrameMap(),
+          'signature': <String, Object?>{
+            'alg': 'hmac-sha256',
+            'value': 'abc',
+            'extra': 'nope',
+          },
+        }),
+      ).equals(PayloadFrameParseFailureCodes.unknownSignatureKey);
+      check(
+        failureCode(<String, Object?>{
+          ...validFrameMap(),
+          'signature': <String, Object?>{'alg': 'hmac-sha256'},
+        }),
+      ).equals(PayloadFrameParseFailureCodes.missingSignatureFields);
     });
   });
 
@@ -159,6 +288,16 @@ void main() {
       check(sig!.algorithm).equals('hmac-sha256');
       check(sig.value).equals('abc');
       check(sig.keyId).isNull();
+    });
+
+    test('returns null when map contains unknown keys', () {
+      check(
+        PayloadFrameSignature.tryParse(<String, Object?>{
+          'alg': 'hmac-sha256',
+          'value': 'abc',
+          'extra': 'nope',
+        }),
+      ).isNull();
     });
   });
 }
