@@ -38,10 +38,12 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
   final metricRevenueAxis = isWeekdayOrDaily && weekdayUsesCurrencyAxis;
 
   // Compact currency labels sit just above tall bars; horizontal grid lines at
-  // round tick values (e.g. R$ 20 mil) can visually cross the label. Lift outer
-  // labels more than count-mode labels and reserve extra axis headroom.
+  // round tick values (e.g. R$ 20 mil) can visually cross the label. Keep the
+  // same modest lift used by other comparison charts; the axis range padding
+  // already creates plot headroom for labels, so adding a second large top
+  // reserve leaves an empty band above the bars.
   final dataLabelLiftY = metricRevenueAxis
-      ? tokens.contentSpacing + tokens.gapSm
+      ? tokens.gapSm
       : (isRanking || isPayment ? tokens.gapSm : tokens.gapMd);
 
   return AppComparisonBarChartStyle(
@@ -73,11 +75,7 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     yAxisRangePadding: metricRevenueAxis
         ? ChartRangePadding.additionalEnd
         : null,
-    // Compact currency labels use annotation widgets with padded containers plus a
-    // negative Y transform; reserved margin can still clip the tallest column.
-    outerDataLabelTopReserve: metricRevenueAxis
-        ? tokens.contentSpacing + tokens.gapSm
-        : 0,
+    outerDataLabelTopReserve: 0,
     dataLabelBackgroundColor: metricRevenueAxis
         ? weekdayRevenueDataLabelBackground
         : null,

@@ -114,11 +114,15 @@ class SalesLiveMapFilter {
 
   ResumoTotalVendasMunicipioFilialPeriodoFilter toAgentQueryFilter({
     DateTime? now,
+    int? codEmpresa,
+    int? codFilial,
   }) {
     final range = resolveDateRange(now: now);
     return ResumoTotalVendasMunicipioFilialPeriodoFilter(
       dataVendaInicio: range.startInclusive,
       dataVendaFim: range.endInclusive,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
       selectedBranches: _selectedBranchRefs(),
     );
   }

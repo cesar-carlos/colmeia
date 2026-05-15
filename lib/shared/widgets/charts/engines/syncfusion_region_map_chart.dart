@@ -6,6 +6,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_maps/maps.dart';
@@ -82,6 +83,8 @@ class SyncfusionRegionMapChart<T> extends StatefulWidget {
 
 class _SyncfusionRegionMapChartState<T>
     extends State<SyncfusionRegionMapChart<T>> {
+  static const double _mouseWheelZoomStep = 0.35;
+
   // Not final: must be recreated when SfMaps remounts after a loading cycle,
   // because Syncfusion disposes the behavior's internal AnimationController
   // when SfMaps unmounts, making it unsafe to reuse the same instance.
@@ -140,6 +143,23 @@ class _SyncfusionRegionMapChartState<T>
 
   bool get _isZoomPanEnabled =>
       widget.style.enableZoomPan && widget.preset == AppChartPreset.explorable;
+
+  bool get _isPointerWheelZoomEnabled {
+    if (!_isZoomPanEnabled) {
+      return false;
+    }
+    if (kIsWeb) {
+      return true;
+    }
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.linux ||
+      TargetPlatform.macOS ||
+      TargetPlatform.windows => true,
+      TargetPlatform.android ||
+      TargetPlatform.fuchsia ||
+      TargetPlatform.iOS => false,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -293,6 +313,9 @@ class _SyncfusionRegionMapChartState<T>
       fontWeight: FontWeight.w600,
     );
     final mapBuilderContext = context;
+    final markerLayerKey = ValueKey<int>(
+      _markerLayerFingerprint(widget.points),
+    );
 
     final legend = widget.style.showLegend
         ? _MapValueLegend(
@@ -326,223 +349,223 @@ class _SyncfusionRegionMapChartState<T>
               minHeight: 2,
             ),
           Expanded(
-            child: RepaintBoundary(
-              child: _SyncfusionMapsSemanticsBoundary(
-                excludeOnWindows:
-                    widget.style.excludeNativeMapSemanticsOnWindows,
-                label: _mapSemanticsLabel(
-                  regionCount: regionKeys.length,
-                  markerCount: widget.points.length,
-                  selectedIndex: selectedIndex,
-                  regionLabels: regionLabels,
-                ),
-                child: SfMaps(
-                  layers: <MapLayer>[
-                    MapShapeLayer(
-                      source: shapeSource,
-                      selectedIndex: selectedIndex,
-                      zoomPanBehavior: _isZoomPanEnabled
-                          ? _zoomPanBehavior
-                          : null,
-                      showDataLabels: widget.style.showDataLabels,
-                      dataLabelSettings: MapDataLabelSettings(
-                        overflowMode: MapLabelOverflow.hide,
-                        textStyle:
-                            widget.style.dataLabelTextStyle ??
-                            Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      strokeColor:
-                          widget.style.shapeStrokeColor ??
-                          colors.outlineVariant.withValues(alpha: 0.8),
-                      strokeWidth: widget.style.shapeStrokeWidth,
-                      shapeTooltipBuilder:
-                          !widget.style.showTooltip ||
-                              !widget.style.showShapeTooltip
-                          ? null
-                          : (context, index) {
-                              final item = widget.items[index];
-                              final fallbackMetric = metricValues[index]
-                                  .toStringAsFixed(1);
-                              final tooltipText =
-                                  widget.metric.tooltipBuilder?.call(item) ??
-                                  '${regionLabels[index]}: $fallbackMetric';
-                              return Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Text(
-                                  tooltipText,
-                                  style: tooltipTextStyle,
-                                ),
-                              );
-                            },
-                      tooltipSettings: MapTooltipSettings(
-                        color: colors.inverseSurface,
-                        strokeColor: colors.outlineVariant,
-                        strokeWidth: 1,
-                      ),
-                      selectionSettings: MapSelectionSettings(
-                        color:
-                            widget.style.selectionColor ??
-                            chartTheme.primaryColor.withValues(alpha: 0.25),
-                        strokeColor:
-                            widget.style.selectionStrokeColor ??
-                            chartTheme.primaryColor,
-                        strokeWidth: widget.style.selectionStrokeWidth,
-                      ),
-                      initialMarkersCount: widget.points.length,
-                      markerBuilder: widget.points.isEmpty
-                          ? null
-                          : (context, index) {
-                              final point = widget.points[index];
-                              final effectiveStyle =
-                                  point.style ?? widget.markerStyle;
-                              final fallbackChild = _MarkerShape(
-                                style: effectiveStyle,
-                                defaultColor: chartTheme.primaryColor,
-                                defaultStrokeColor: colors.surface,
-                              );
-                              final builtChild =
-                                  widget.markerBuilder?.call(
-                                    mapBuilderContext,
-                                    point,
-                                    index,
-                                  ) ??
-                                  fallbackChild;
-                              final tapWrappedChild = widget.onPointTap == null
-                                  ? builtChild
-                                  : GestureDetector(
-                                      behavior: HitTestBehavior.opaque,
-                                      onTap: () => widget.onPointTap!.call(
-                                        AppMapPointTapEvent(
-                                          point: point,
-                                          index: index,
-                                        ),
-                                      ),
-                                      child: builtChild,
-                                    );
-                              return MapMarker(
-                                latitude: point.latitude,
-                                longitude: point.longitude,
-                                size: Size.square(effectiveStyle.size),
-                                child: tapWrappedChild,
-                              );
-                            },
-                      markerTooltipBuilder: widget.points.isEmpty
-                          ? null
-                          : (context, index) {
-                              final point = widget.points[index];
-                              final tooltipWidget = widget.markerTooltipBuilder
-                                  ?.call(mapBuilderContext, point, index);
-                              if (tooltipWidget != null) {
-                                return tooltipWidget;
-                              }
-                              final text = point.tooltip ?? point.label;
-                              if (text == null || text.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Text(text, style: tooltipTextStyle),
-                              );
-                            },
-                      onSelectionChanged: (index) {
-                        if (index < 0 || index >= widget.items.length) {
-                          return;
-                        }
-
-                        final item = widget.items[index];
-                        final regionKey = regionKeys[index];
-                        final regionLabel = regionLabels[index];
-                        final metricValue = metricValues[index];
-                        final previousRegionKey = widget.selectedRegionKey;
-                        final previousIndex = previousRegionKey == null
-                            ? -1
-                            : regionKeys.indexOf(previousRegionKey);
-                        final previousItem = previousIndex >= 0
-                            ? widget.items[previousIndex]
-                            : null;
-
-                        // Re-tap on already-selected region: deselect,
-                        // unless a drill-down would be triggered by this tap.
-                        if (regionKey == widget.selectedRegionKey) {
-                          final nextDrill = _nextDrillLevel(
-                            widget.currentDrillLevel,
-                          );
-                          final canDrillFurther =
-                              widget.style.enableAutoDrillOnTap &&
-                              nextDrill != null &&
-                              _shouldAutoDrillTo(nextDrill);
-                          if (!canDrillFurther) {
-                            widget.onSelectionChanged?.call(
-                              AppMapSelectionChangedEvent<T>(
-                                previousRegionKey: previousRegionKey,
-                                currentRegionKey: null,
-                                previousItem: item,
-                                metricKey: widget.metric.key,
-                                metricLabel: widget.metric.label,
+            child: Listener(
+              behavior: HitTestBehavior.opaque,
+              onPointerSignal: _handlePointerSignal,
+              child: RepaintBoundary(
+                child: _SyncfusionMapsSemanticsBoundary(
+                  excludeOnWindows:
+                      widget.style.excludeNativeMapSemanticsOnWindows,
+                  label: _mapSemanticsLabel(
+                    regionCount: regionKeys.length,
+                    markerCount: widget.points.length,
+                    selectedIndex: selectedIndex,
+                    regionLabels: regionLabels,
+                  ),
+                  child: SfMaps(
+                    key: markerLayerKey,
+                    layers: <MapLayer>[
+                      MapShapeLayer(
+                        source: shapeSource,
+                        selectedIndex: selectedIndex,
+                        zoomPanBehavior: _isZoomPanEnabled
+                            ? _zoomPanBehavior
+                            : null,
+                        showDataLabels: widget.style.showDataLabels,
+                        dataLabelSettings: MapDataLabelSettings(
+                          overflowMode: MapLabelOverflow.hide,
+                          textStyle:
+                              widget.style.dataLabelTextStyle ??
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
                               ),
-                            );
+                        ),
+                        strokeColor:
+                            widget.style.shapeStrokeColor ??
+                            colors.outlineVariant.withValues(alpha: 0.8),
+                        strokeWidth: widget.style.shapeStrokeWidth,
+                        shapeTooltipBuilder:
+                            !widget.style.showTooltip ||
+                                !widget.style.showShapeTooltip
+                            ? null
+                            : (context, index) {
+                                final item = widget.items[index];
+                                final fallbackMetric = metricValues[index]
+                                    .toStringAsFixed(1);
+                                final tooltipText =
+                                    widget.metric.tooltipBuilder?.call(item) ??
+                                    '${regionLabels[index]}: $fallbackMetric';
+                                return Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Text(
+                                    tooltipText,
+                                    style: tooltipTextStyle,
+                                  ),
+                                );
+                              },
+                        tooltipSettings: MapTooltipSettings(
+                          color: colors.inverseSurface,
+                          strokeColor: colors.outlineVariant,
+                          strokeWidth: 1,
+                        ),
+                        selectionSettings: MapSelectionSettings(
+                          color:
+                              widget.style.selectionColor ??
+                              chartTheme.primaryColor.withValues(alpha: 0.25),
+                          strokeColor:
+                              widget.style.selectionStrokeColor ??
+                              chartTheme.primaryColor,
+                          strokeWidth: widget.style.selectionStrokeWidth,
+                        ),
+                        initialMarkersCount: widget.points.length,
+                        markerBuilder: widget.points.isEmpty
+                            ? null
+                            : (context, index) {
+                                final point = widget.points[index];
+                                final effectiveStyle =
+                                    point.style ?? widget.markerStyle;
+                                final fallbackChild = _MarkerShape(
+                                  style: effectiveStyle,
+                                  defaultColor: chartTheme.primaryColor,
+                                  defaultStrokeColor: colors.surface,
+                                );
+                                final builtChild =
+                                    widget.markerBuilder?.call(
+                                      mapBuilderContext,
+                                      point,
+                                      index,
+                                    ) ??
+                                    fallbackChild;
+                                final tapWrappedChild =
+                                    widget.onPointTap == null
+                                    ? builtChild
+                                    : GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: () => widget.onPointTap!.call(
+                                          AppMapPointTapEvent(
+                                            point: point,
+                                            index: index,
+                                          ),
+                                        ),
+                                        child: builtChild,
+                                      );
+                                return MapMarker(
+                                  latitude: point.latitude,
+                                  longitude: point.longitude,
+                                  size: Size.square(effectiveStyle.size),
+                                  child: tapWrappedChild,
+                                );
+                              },
+                        markerTooltipBuilder:
+                            widget.points.isEmpty ||
+                                widget.markerTooltipBuilder == null
+                            ? null
+                            : (context, index) {
+                                final point = widget.points[index];
+                                return widget.markerTooltipBuilder!(
+                                  mapBuilderContext,
+                                  point,
+                                  index,
+                                );
+                              },
+                        onSelectionChanged: (index) {
+                          if (index < 0 || index >= widget.items.length) {
                             return;
                           }
-                        }
 
-                        widget.onRegionTap?.call(item, regionKey);
-                        widget.onRegionTapEvent?.call(
-                          AppMapRegionTapEvent<T>(
-                            item: item,
-                            regionKey: regionKey,
-                            regionLabel: regionLabel,
-                            metricKey: widget.metric.key,
-                            metricValue: metricValue,
-                            index: index,
-                          ),
-                        );
-                        widget.onSelectionChanged?.call(
-                          AppMapSelectionChangedEvent<T>(
-                            previousRegionKey: previousRegionKey,
-                            currentRegionKey: regionKey,
-                            previousItem: previousItem,
-                            currentItem: item,
-                            metricKey: widget.metric.key,
-                            metricLabel: widget.metric.label,
-                          ),
-                        );
+                          final item = widget.items[index];
+                          final regionKey = regionKeys[index];
+                          final regionLabel = regionLabels[index];
+                          final metricValue = metricValues[index];
+                          final previousRegionKey = widget.selectedRegionKey;
+                          final previousIndex = previousRegionKey == null
+                              ? -1
+                              : regionKeys.indexOf(previousRegionKey);
+                          final previousItem = previousIndex >= 0
+                              ? widget.items[previousIndex]
+                              : null;
 
-                        if (widget.style.enableAutoDrillOnTap) {
-                          final nextDrillLevel = _nextDrillLevel(
-                            widget.currentDrillLevel,
-                          );
-                          if (nextDrillLevel != null &&
-                              _shouldAutoDrillTo(nextDrillLevel)) {
-                            widget.onDrillDownRequested?.call(
-                              AppMapDrillDownEvent<T>(
-                                item: item,
-                                regionKey: regionKey,
-                                fromLevel: widget.currentDrillLevel,
-                                toLevel: nextDrillLevel,
-                              ),
+                          // Re-tap on already-selected region: deselect,
+                          // unless a drill-down would be triggered by this tap.
+                          if (regionKey == widget.selectedRegionKey) {
+                            final nextDrill = _nextDrillLevel(
+                              widget.currentDrillLevel,
                             );
+                            final canDrillFurther =
+                                widget.style.enableAutoDrillOnTap &&
+                                nextDrill != null &&
+                                _shouldAutoDrillTo(nextDrill);
+                            if (!canDrillFurther) {
+                              widget.onSelectionChanged?.call(
+                                AppMapSelectionChangedEvent<T>(
+                                  previousRegionKey: previousRegionKey,
+                                  currentRegionKey: null,
+                                  previousItem: item,
+                                  metricKey: widget.metric.key,
+                                  metricLabel: widget.metric.label,
+                                ),
+                              );
+                              return;
+                            }
                           }
-                        }
-                      },
-                      onWillZoom: (details) {
-                        _emitViewportChangedFromZoom(
-                          details.newZoomLevel,
-                          details.newVisibleBounds,
-                        );
-                        return true;
-                      },
-                      onWillPan: (details) {
-                        _emitViewportChangedFromZoom(
-                          details.zoomLevel,
-                          details.newVisibleBounds,
-                        );
-                        return true;
-                      },
-                    ),
-                  ],
+
+                          widget.onRegionTap?.call(item, regionKey);
+                          widget.onRegionTapEvent?.call(
+                            AppMapRegionTapEvent<T>(
+                              item: item,
+                              regionKey: regionKey,
+                              regionLabel: regionLabel,
+                              metricKey: widget.metric.key,
+                              metricValue: metricValue,
+                              index: index,
+                            ),
+                          );
+                          widget.onSelectionChanged?.call(
+                            AppMapSelectionChangedEvent<T>(
+                              previousRegionKey: previousRegionKey,
+                              currentRegionKey: regionKey,
+                              previousItem: previousItem,
+                              currentItem: item,
+                              metricKey: widget.metric.key,
+                              metricLabel: widget.metric.label,
+                            ),
+                          );
+
+                          if (widget.style.enableAutoDrillOnTap) {
+                            final nextDrillLevel = _nextDrillLevel(
+                              widget.currentDrillLevel,
+                            );
+                            if (nextDrillLevel != null &&
+                                _shouldAutoDrillTo(nextDrillLevel)) {
+                              widget.onDrillDownRequested?.call(
+                                AppMapDrillDownEvent<T>(
+                                  item: item,
+                                  regionKey: regionKey,
+                                  fromLevel: widget.currentDrillLevel,
+                                  toLevel: nextDrillLevel,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        onWillZoom: (details) {
+                          _emitViewportChangedFromZoom(
+                            details.newZoomLevel,
+                            details.newVisibleBounds,
+                          );
+                          return true;
+                        },
+                        onWillPan: (details) {
+                          _emitViewportChangedFromZoom(
+                            details.zoomLevel,
+                            details.newVisibleBounds,
+                          );
+                          return true;
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -577,6 +600,38 @@ class _SyncfusionRegionMapChartState<T>
         ],
       ),
     );
+  }
+
+  void _handlePointerSignal(PointerSignalEvent event) {
+    if (!_isPointerWheelZoomEnabled || event is! PointerScrollEvent) {
+      return;
+    }
+
+    _applyPointerScrollZoom(event);
+    GestureBinding.instance.pointerSignalResolver.register(event, (_) {});
+  }
+
+  void _applyPointerScrollZoom(PointerScrollEvent event) {
+    if (!mounted || event.scrollDelta.dy == 0) {
+      return;
+    }
+
+    final currentZoom = _zoomPanBehavior.zoomLevel.clamp(
+      widget.style.minZoomLevel,
+      widget.style.maxZoomLevel,
+    );
+    final direction = event.scrollDelta.dy < 0 ? 1.0 : -1.0;
+    final nextZoom = (currentZoom + direction * _mouseWheelZoomStep).clamp(
+      widget.style.minZoomLevel,
+      widget.style.maxZoomLevel,
+    );
+
+    if ((nextZoom - currentZoom).abs() < 0.001) {
+      return;
+    }
+
+    _zoomPanBehavior.zoomLevel = nextZoom;
+    _emitViewportChangedFromZoom(nextZoom, null);
   }
 
   MapZoomPanBehavior _buildZoomPanBehavior() {
@@ -1067,6 +1122,16 @@ class _SyncfusionMapsSemanticsBoundary extends StatelessWidget {
       child: ExcludeSemantics(child: child),
     );
   }
+}
+
+int _markerLayerFingerprint(List<AppMapPoint> points) {
+  return Object.hashAll(<Object?>[
+    points.length,
+    for (final point in points) ...<Object?>[
+      point.latitude,
+      point.longitude,
+    ],
+  ]);
 }
 
 /// Slot visual fixo para o mapa: garante background sutil e cantos arredondados

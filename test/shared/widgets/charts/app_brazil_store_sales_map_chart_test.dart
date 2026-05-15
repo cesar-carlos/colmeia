@@ -5,6 +5,8 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +51,78 @@ void main() {
     expect(find.text('IBGE 5107958'), findsOneWidget);
     expect(find.text('Geolocalizacao IBGE'), findsOneWidget);
   });
+
+  testWidgets('uses custom marker detail on Windows without native tooltip', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    try {
+      await _pumpMap(
+        tester,
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Casa do Mel',
+            fantasyName: 'Casa do Mel',
+            uf: 'MT',
+            city: 'Tangara da Serra',
+            latitude: -14.6229,
+            longitude: -57.4933,
+            salesAmount: 84246.26,
+            salesCount: 1568,
+          ),
+        ],
+        selectedStoreId: 'store-1',
+      );
+
+      expect(find.text('Casa do Mel'), findsOneWidget);
+      final regionMap = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find
+                .byWidgetPredicate(
+                  (widget) =>
+                      widget
+                          is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+                )
+                .first,
+          );
+      expect(regionMap.onPointTap, isNotNull);
+      expect(regionMap.markerTooltipBuilder, isNull);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets(
+    'selected marker detail anchor shows a persistent floating card',
+    (
+      tester,
+    ) async {
+      await _pumpSelectedAnchor(
+        tester,
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Casa do Mel',
+            fantasyName: 'Casa do Mel',
+            uf: 'MT',
+            city: 'Tangara da Serra',
+            latitude: -14.6229,
+            longitude: -57.4933,
+            salesAmount: 84246.26,
+            salesCount: 1568,
+          ),
+        ],
+      );
+
+      expect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-branch-card')),
+        findsOneWidget,
+      );
+      expect(find.text('Casa do Mel'), findsOneWidget);
+      expect(find.text('Fixar filial'), findsOneWidget);
+    },
+  );
 
   testWidgets('renders the municipality aggregate detail card content', (
     tester,
@@ -292,7 +366,9 @@ void main() {
     expect(pinnedStoreId, 'store-1');
   });
 
-  testWidgets('hover card can expose filter action text', (tester) async {
+  testWidgets('hover card can expose a fixed branch toggle label', (
+    tester,
+  ) async {
     String? filteredStoreId;
     await _pumpHoverAnchor(
       tester,
@@ -312,16 +388,22 @@ void main() {
       onPinBranch: (point) {
         filteredStoreId = point.id;
       },
-      pinBranchLabel: 'Filtrar filial',
+      pinBranchLabelBuilder: (_) => 'Desfixar filial',
     );
 
     final gesture = await _hoverFirstStoreMarker(tester);
     addTearDown(gesture.removePointer);
 
-    await tester.tap(find.text('Filtrar filial'));
+    expect(find.text('Desfixar filial'), findsOneWidget);
+
+    await tester.tap(find.text('Desfixar filial'));
     await tester.pump();
 
     expect(filteredStoreId, 'store-1');
+    expect(
+      find.byKey(const ValueKey<String>('brazil-store-sales-branch-card')),
+      findsNothing,
+    );
   });
 
   testWidgets('hover card shows branch picker for many stores', (tester) async {
@@ -539,6 +621,7 @@ Future<void> _pumpHoverAnchor(
   required List<AppBrazilStoreSalesPoint> points,
   ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch,
   String? pinBranchLabel,
+  String Function(AppBrazilStoreSalesPoint)? pinBranchLabelBuilder,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -552,6 +635,7 @@ Future<void> _pumpHoverAnchor(
             metric: AppBrazilStoreSalesMapMetric.revenue,
             onPinBranch: onPinBranch,
             pinBranchLabel: pinBranchLabel,
+            pinBranchLabelBuilder: pinBranchLabelBuilder,
             marker: Container(
               key: const ValueKey<String>('brazil-store-sales-test-marker'),
               width: 32,
@@ -565,5 +649,40 @@ Future<void> _pumpHoverAnchor(
       ),
     ),
   );
+  await tester.pump();
+}
+
+Future<void> _pumpSelectedAnchor(
+  WidgetTester tester, {
+  required List<AppBrazilStoreSalesPoint> points,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: AppTheme.light(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: Center(
+          child: AppBrazilStoreSalesSelectedMarkerDetailAnchor(
+            group: AppBrazilStoreSalesMarkerGroup(points: points),
+            selectedStoreId: points.first.id,
+            metric: AppBrazilStoreSalesMapMetric.revenue,
+            onClose: () {},
+            onSelectBranch: (_) {},
+            selectBranchLabelBuilder: (_) => 'Fixar filial',
+            marker: Container(
+              key: const ValueKey<String>('brazil-store-sales-test-marker'),
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              color: Colors.transparent,
+              child: const Icon(Icons.storefront_rounded),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
   await tester.pump();
 }

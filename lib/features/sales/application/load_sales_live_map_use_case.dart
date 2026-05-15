@@ -200,6 +200,8 @@ class LoadSalesLiveMapUseCase {
 
   static const int bridgeTimeoutMs = 120000;
   static const int geolocationMaxConcurrency = 6;
+  static const int primaryCompanyCode = 1;
+  static const int primaryBranchCode = 1;
   static const int _branchLocationCacheMaxEntries = 5000;
   static const int _branchCatalogCacheMaxEntries = 200;
   static const Duration _branchLocationCacheTtl = Duration(minutes: 10);
@@ -242,7 +244,11 @@ class LoadSalesLiveMapUseCase {
       yield _cancelledResult(refreshedAt: now);
       return;
     }
-    final queryFilter = filter.toAgentQueryFilter(now: now);
+    final queryFilter = filter.toAgentQueryFilter(
+      now: now,
+      codEmpresa: primaryCompanyCode,
+      codFilial: primaryBranchCode,
+    );
     final selectedAgentIds =
         filter.selectedAgentIds ?? queryFilter.selectedAgentIds;
     final queryStopwatch = _startTraceStopwatch();
@@ -357,6 +363,8 @@ class LoadSalesLiveMapUseCase {
     required DateTime now,
   }) async {
     const fullCatalogFilter = CadastroFilialFilter(
+      codEmpresa: primaryCompanyCode,
+      codFilial: primaryBranchCode,
       pageSize: CadastroFilialFilter.maxPageSize,
     );
     final selectedBranches = queryFilter.selectedBranches;
@@ -393,6 +401,9 @@ class LoadSalesLiveMapUseCase {
     final branchResults =
         <Future<AppResult<CadastroFilialAcrossAgentsPageResult>>>[];
     for (final branch in selectedBranches) {
+      if (!_isPrimaryBranch(branch.codEmpresa, branch.codFilial)) {
+        continue;
+      }
       final agentId = branch.normalizedAgentId;
       final key = _branchKey(agentId, branch.codEmpresa, branch.codFilial);
       if (agentId.isEmpty || !seenBranchKeys.add(key)) {
@@ -1166,6 +1177,9 @@ class LoadSalesLiveMapUseCase {
         continue;
       }
       for (final row in participant.rows) {
+        if (!_isPrimaryBranch(row.codEmpresa, row.codFilial)) {
+          continue;
+        }
         final key = _branchKey(
           participant.agentId,
           row.codEmpresa,
@@ -1211,6 +1225,9 @@ class LoadSalesLiveMapUseCase {
         continue;
       }
       for (final row in participant.rows) {
+        if (!_isPrimaryBranch(row.codEmpresa, row.codFilial)) {
+          continue;
+        }
         final key = _branchKey(
           participant.agentId,
           row.codEmpresa,
@@ -1242,6 +1259,9 @@ class LoadSalesLiveMapUseCase {
           continue;
         }
         for (final row in participant.rows) {
+          if (!_isPrimaryBranch(row.codEmpresa, row.codFilial)) {
+            continue;
+          }
           final aggregate =
               byKey[_branchKey(
                 participant.agentId,
@@ -1343,6 +1363,10 @@ class LoadSalesLiveMapUseCase {
 
   String _branchKey(String agentId, int codEmpresa, int codFilial) {
     return '$agentId:$codEmpresa:$codFilial';
+  }
+
+  static bool _isPrimaryBranch(int codEmpresa, int codFilial) {
+    return codEmpresa == primaryCompanyCode && codFilial == primaryBranchCode;
   }
 
   List<_SalesLiveMapBranchAggregate> _filterAggregatesByBranch(

@@ -200,6 +200,61 @@ void main() {
     expect(capturedRequest.sql, isNot(contains(':branch')));
   });
 
+  test('pushes fixed company and branch into SQL', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[],
+          rowCount: 0,
+        ),
+      ),
+    );
+
+    await repository.load(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+        codEmpresa: 1,
+        codFilial: 1,
+      ),
+    );
+
+    final capturedRequest =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+    check(capturedRequest.namedParams.length).equals(5);
+    check(capturedRequest.sql).contains(
+      'AND pv.CodEmpresa = 1 AND pv.CodFilial = 1',
+    );
+    expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
+    expect(capturedRequest.sql, isNot(contains(':codFilial')));
+  });
+
+  test(
+    'rejects invalid fixed company and branch filters before SQL execution',
+    () async {
+      final result = await repository.load(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
+          dataVendaInicio: DateTime.utc(2026),
+          dataVendaFim: DateTime.utc(2026, 12, 31),
+          codEmpresa: 0,
+        ),
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<ValidationFailure>();
+      verifyNever(() => agentQueriesRepository.executeSql(any()));
+    },
+  );
+
   test(
     'rejects invalid selected branch filters before SQL execution',
     () async {

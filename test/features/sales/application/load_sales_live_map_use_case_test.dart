@@ -455,7 +455,7 @@ void main() {
     check(result.salesUnavailableBranchCount).equals(0);
   });
 
-  test('filtra pontos e KPIs pelas filiais selecionadas', () async {
+  test('filtra pontos e KPIs pela filial primaria selecionada', () async {
     _stubReport(
       loadAcrossAgents,
       _report(
@@ -481,18 +481,18 @@ void main() {
       userId: userId,
       filter: const SalesLiveMapFilter(
         selectedAgentIds: <String>{'agent-a'},
-        selectedBranchIds: <String>{'agent-a-1-2'},
+        selectedBranchIds: <String>{'agent-a-1-1'},
       ),
     );
 
     check(result.branchOptions.map((branch) => branch.id).toSet()).deepEquals(
-      <String>{'agent-a-1-1', 'agent-a-1-2'},
+      <String>{'agent-a-1-1'},
     );
     check(result.points.map((point) => point.id).toList()).deepEquals(
-      <String>['agent-a-1-2'],
+      <String>['agent-a-1-1'],
     );
     check(result.totalBranchCount).equals(1);
-    check(result.totalRevenue).equals(300);
+    check(result.totalRevenue).equals(100);
   });
 
   test('usa cadastro como fonte das opcoes mesmo sem venda', () async {
@@ -534,18 +534,18 @@ void main() {
     final result = await useCase(
       userId: userId,
       filter: const SalesLiveMapFilter(
-        selectedBranchIds: <String>{'agent-a-1-2'},
+        selectedBranchIds: <String>{'agent-a-1-1'},
       ),
     );
 
     check(result.branchOptions.map((branch) => branch.id).toSet()).deepEquals(
-      <String>{'agent-a-1-1', 'agent-a-1-2'},
+      <String>{'agent-a-1-1'},
     );
     check(result.points.map((point) => point.id).toList()).deepEquals(
-      <String>['agent-a-1-2'],
+      <String>['agent-a-1-1'],
     );
-    check(result.totalRevenue).equals(0);
-    check(result.zeroedBranchCount).equals(1);
+    check(result.totalRevenue).equals(100);
+    check(result.zeroedBranchCount).equals(0);
 
     final captured = verify(
       () => loadCadastroAcrossAgents.loadAll(
@@ -560,7 +560,7 @@ void main() {
     final catalogFilter = captured[0] as CadastroFilialFilter;
     final selectedAgentIds = captured[1] as Set<String>;
     check(catalogFilter.codEmpresa).equals(1);
-    check(catalogFilter.codFilial).equals(2);
+    check(catalogFilter.codFilial).equals(1);
     check(selectedAgentIds).deepEquals(<String>{'agent-a'});
   });
 
@@ -606,7 +606,7 @@ void main() {
   });
 
   test(
-    'nao envia filtro fixo de empresa e filial na consulta padrao',
+    'envia filtro tecnico para empresa 1 filial 1 na consulta padrao',
     () async {
       _stubReport(
         loadAcrossAgents,
@@ -647,6 +647,8 @@ void main() {
           captured[0] as ResumoTotalVendasMunicipioFilialPeriodoFilter;
       final selectedAgentIds = captured[1] as Set<String>?;
 
+      check(queryFilter.codEmpresa).equals(1);
+      check(queryFilter.codFilial).equals(1);
       check(queryFilter.selectedBranches).isEmpty();
       check(selectedAgentIds).isNull();
     },
@@ -696,6 +698,8 @@ void main() {
           captured[0] as ResumoTotalVendasMunicipioFilialPeriodoFilter;
       final selectedAgentIds = captured[1] as Set<String>;
 
+      check(queryFilter.codEmpresa).equals(1);
+      check(queryFilter.codFilial).equals(1);
       check(selectedAgentIds).deepEquals(<String>{'agent-a'});
       check(queryFilter.selectedBranches)
           .has((it) => it.length, 'length')

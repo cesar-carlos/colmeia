@@ -475,10 +475,44 @@ class _BranchSelectionPanel extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              subtitle: Text(branch.subtitle),
+              subtitle: _BranchSelectionSubtitle(branch: branch),
             ),
         ],
       ),
+    );
+  }
+}
+
+class _BranchSelectionSubtitle extends StatelessWidget {
+  const _BranchSelectionSubtitle({required this.branch});
+
+  final SalesLiveMapBranchOption branch;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Text(
+          '${branch.city}/${branch.uf} - Agente ${branch.agentName}',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: textTheme.bodySmall,
+        ),
+        Text(
+          'Empresa: ${branch.codEmpresa}  Filial: ${branch.codFilial}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -30,6 +30,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.belowSubtitle,
     this.initialMetric = AppBrazilStoreSalesMapMetric.revenue,
     this.selectedStoreId,
+    this.fixedBranchIds = const <String>{},
     this.style = const AppBrazilStoreSalesMapStyle(),
     this.onStoreTap,
     this.onBranchFilter,
@@ -48,6 +49,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   final Widget? belowSubtitle;
   final AppBrazilStoreSalesMapMetric initialMetric;
   final String? selectedStoreId;
+  final Set<String> fixedBranchIds;
   final AppBrazilStoreSalesMapStyle style;
   final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onStoreTap;
   final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onBranchFilter;
@@ -161,7 +163,9 @@ class _AppBrazilStoreSalesMapChartState
                 strokeColor: _markerStrokeColor(context),
               ),
               markerBuilder: _buildMarker,
-              markerTooltipBuilder: _buildMarkerTooltip,
+              markerTooltipBuilder: _useWindowsSafeMarkerDetails
+                  ? null
+                  : _buildMarkerTooltip,
               onMetricChanged: _handleMetricChanged,
               onScopeChanged: widget.style.showRegionFilter
                   ? _handleScopeChanged
@@ -226,11 +230,21 @@ class _AppBrazilStoreSalesMapChartState
                 group: selectedMarkerGroup,
                 metric: _selectedMetric,
                 selectedStoreId: _selectedStoreId,
+                onSelectBranch: (point) => _handleMarkerBranchAction(
+                  point: point,
+                  index: _mapPointIndexFor(point),
+                ),
+                selectBranchLabelBuilder: _branchActionLabelFor,
               )
             else if (_showBelowMapMarkerDetail && selectedPoint != null)
               _SelectedStoreDetail(
                 point: selectedPoint,
                 metric: _selectedMetric,
+                onSelectBranch: (point) => _handleMarkerBranchAction(
+                  point: point,
+                  index: _mapPointIndexFor(point),
+                ),
+                selectBranchLabel: _branchActionLabelFor(selectedPoint),
               )
             else if (selectedPoint == null &&
                 selectedMarkerGroup == null &&
@@ -358,6 +372,7 @@ class _AppBrazilStoreSalesMapChartState
 
   bool get _showOverlayMarkerDetail =>
       widget.style.showStoreDetail &&
+      !_shouldUseCompactBranchSheet &&
       widget.style.selectedMarkerDetailPlacement ==
           AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay;
 
@@ -365,6 +380,9 @@ class _AppBrazilStoreSalesMapChartState
       widget.style.showStoreDetail &&
       widget.style.selectedMarkerDetailPlacement ==
           AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap;
+
+  bool get _useWindowsSafeMarkerDetails =>
+      defaultTargetPlatform == TargetPlatform.windows;
 
   List<AppMapMetric<AppBrazilStoreSalesStateBucket>> _buildMetrics(
     AppLocalizations l10n,
@@ -608,6 +626,41 @@ class _AppBrazilStoreSalesMapChartState
     );
   }
 
+  int _mapPointIndexFor(AppBrazilStoreSalesPoint point) {
+    final snapshot = _resolveSnapshot(context);
+    final index = snapshot.mapPoints.indexWhere((mapPoint) {
+      final payload = mapPoint.payload;
+      return payload is AppBrazilStoreSalesMarkerGroup &&
+          payload.points.any((groupPoint) => groupPoint.id == point.id);
+    });
+    return index < 0 ? 0 : index;
+  }
+
+  void _handleMarkerBranchAction({
+    required AppBrazilStoreSalesPoint point,
+    required int index,
+  }) {
+    if (!mounted) {
+      return;
+    }
+    if (widget.onBranchFilter == null) {
+      _selectPoint(point);
+      _emitStoreTap(point: point, index: index);
+      return;
+    }
+
+    _emitBranchFilter(point: point, index: index);
+  }
+
+  String _branchActionLabelFor(AppBrazilStoreSalesPoint point) {
+    if (widget.onBranchFilter == null) {
+      return 'Fixar filial';
+    }
+    return widget.fixedBranchIds.contains(point.id)
+        ? 'Desfixar filial'
+        : 'Fixar filial';
+  }
+
   bool get _shouldUseCompactBranchSheet =>
       widget.style.showStoreDetail && AppBreakpoints.isMobile(context);
 
@@ -641,10 +694,9 @@ class _AppBrazilStoreSalesMapChartState
                 ? null
                 : (point) {
                     unawaited(Navigator.of(sheetContext).maybePop());
-                    _selectPoint(point);
-                    _emitBranchFilter(point: point, index: markerIndex);
+                    _handleMarkerBranchAction(point: point, index: markerIndex);
                   },
-            selectBranchLabel: 'Filtrar filial',
+            selectBranchLabelBuilder: _branchActionLabelFor,
           ),
         );
       },
@@ -749,6 +801,7 @@ class _AppBrazilStoreSalesMapChartState
     final group = payload is AppBrazilStoreSalesMarkerGroup ? payload : null;
     final style = point.style ?? const AppMapMarkerStyle();
     final marker = _StoreMapMarker(
+      key: ValueKey<String>('brazil-store-sales-map-marker-$index'),
       style: style,
       count: group?.points.length ?? 1,
       visual: widget.style.markerVisual,
@@ -770,37 +823,21 @@ class _AppBrazilStoreSalesMapChartState
         group: group,
         metric: _selectedMetric,
         marker: marker,
-        onPinBranch: (point) {
-          _selectPoint(point);
-          if (widget.onBranchFilter == null) {
-            _emitStoreTap(point: point, index: index);
-          } else {
-            _emitBranchFilter(point: point, index: index);
-          }
-        },
-        pinBranchLabel: widget.onBranchFilter == null
-            ? 'Fixar filial'
-            : 'Filtrar filial',
+        onPinBranch: (point) =>
+            _handleMarkerBranchAction(point: point, index: index),
+        pinBranchLabelBuilder: _branchActionLabelFor,
       );
     }
 
-    return _SelectedMarkerDetailAnchor(
+    return AppBrazilStoreSalesSelectedMarkerDetailAnchor(
       group: group,
       selectedStoreId: selectedStoreId,
       metric: _selectedMetric,
       marker: marker,
       onClose: _clearSelectedMarkerDetail,
-      onSelectBranch: (point) {
-        _selectPoint(point);
-        if (widget.onBranchFilter == null) {
-          _emitStoreTap(point: point, index: index);
-        } else {
-          _emitBranchFilter(point: point, index: index);
-        }
-      },
-      selectBranchLabel: widget.onBranchFilter == null
-          ? 'Selecionar filial'
-          : 'Filtrar filial',
+      onSelectBranch: (point) =>
+          _handleMarkerBranchAction(point: point, index: index),
+      selectBranchLabelBuilder: _branchActionLabelFor,
     );
   }
 
@@ -1385,15 +1422,18 @@ class _MarkerScaleLegendItem extends StatelessWidget {
   }
 }
 
-class _SelectedMarkerDetailAnchor extends StatefulWidget {
-  const _SelectedMarkerDetailAnchor({
+@visibleForTesting
+class AppBrazilStoreSalesSelectedMarkerDetailAnchor extends StatefulWidget {
+  const AppBrazilStoreSalesSelectedMarkerDetailAnchor({
     required this.group,
     required this.selectedStoreId,
     required this.metric,
     required this.marker,
     required this.onClose,
+    super.key,
     this.onSelectBranch,
     this.selectBranchLabel,
+    this.selectBranchLabelBuilder,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
@@ -1403,14 +1443,15 @@ class _SelectedMarkerDetailAnchor extends StatefulWidget {
   final VoidCallback onClose;
   final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
   final String? selectBranchLabel;
+  final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
 
   @override
-  State<_SelectedMarkerDetailAnchor> createState() =>
+  State<AppBrazilStoreSalesSelectedMarkerDetailAnchor> createState() =>
       _SelectedMarkerDetailAnchorState();
 }
 
 class _SelectedMarkerDetailAnchorState
-    extends State<_SelectedMarkerDetailAnchor> {
+    extends State<AppBrazilStoreSalesSelectedMarkerDetailAnchor> {
   final OverlayPortalController _controller = OverlayPortalController();
   final LayerLink _link = LayerLink();
   final GlobalKey _markerKey = GlobalKey();
@@ -1423,7 +1464,9 @@ class _SelectedMarkerDetailAnchorState
   }
 
   @override
-  void didUpdateWidget(covariant _SelectedMarkerDetailAnchor oldWidget) {
+  void didUpdateWidget(
+    covariant AppBrazilStoreSalesSelectedMarkerDetailAnchor oldWidget,
+  ) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.group != widget.group ||
         oldWidget.selectedStoreId != widget.selectedStoreId ||
@@ -1478,6 +1521,7 @@ class _SelectedMarkerDetailAnchorState
             onClose: widget.onClose,
             onSelectBranch: widget.onSelectBranch,
             selectBranchLabel: widget.selectBranchLabel,
+            selectBranchLabelBuilder: widget.selectBranchLabelBuilder,
             markerGlobalDx: _markerGlobalDx,
           );
         },
@@ -1497,6 +1541,7 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
     required this.markerGlobalDx,
     this.onSelectBranch,
     this.selectBranchLabel,
+    this.selectBranchLabelBuilder,
   });
 
   final LayerLink link;
@@ -1507,6 +1552,7 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
   final double? markerGlobalDx;
   final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
   final String? selectBranchLabel;
+  final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -1517,6 +1563,14 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
       maxWidth: maxWidth,
       markerGlobalDx: markerGlobalDx,
     );
+    void handleSelectBranch(AppBrazilStoreSalesPoint point) {
+      onClose();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onSelectBranch?.call(point);
+      });
+    }
+
+    final selectBranch = onSelectBranch == null ? null : handleSelectBranch;
     return Positioned.fill(
       child: IgnorePointer(
         ignoring: false,
@@ -1530,13 +1584,16 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
             alignment: followerAnchor,
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              child: _SelectedMarkerGroupDetailCard(
-                group: group,
-                metric: metric,
-                initialStoreId: selectedStoreId,
-                onClose: onClose,
-                onSelectBranch: onSelectBranch,
-                selectBranchLabel: selectBranchLabel,
+              child: _MapMarkerDetailSemanticsBoundary(
+                child: _SelectedMarkerGroupDetailCard(
+                  group: group,
+                  metric: metric,
+                  initialStoreId: selectedStoreId,
+                  onClose: onClose,
+                  onSelectBranch: selectBranch,
+                  selectBranchLabel: selectBranchLabel,
+                  selectBranchLabelBuilder: selectBranchLabelBuilder,
+                ),
               ),
             ),
           ),
@@ -1555,6 +1612,7 @@ class AppBrazilStoreSalesBranchHoverDetailAnchor extends StatefulWidget {
     super.key,
     this.onPinBranch,
     this.pinBranchLabel,
+    this.pinBranchLabelBuilder,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
@@ -1562,6 +1620,7 @@ class AppBrazilStoreSalesBranchHoverDetailAnchor extends StatefulWidget {
   final Widget marker;
   final ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch;
   final String? pinBranchLabel;
+  final String Function(AppBrazilStoreSalesPoint)? pinBranchLabelBuilder;
 
   @override
   State<AppBrazilStoreSalesBranchHoverDetailAnchor> createState() =>
@@ -1636,6 +1695,7 @@ class _HoverMarkerDetailAnchorState
             metric: widget.metric,
             onPinBranch: widget.onPinBranch,
             pinBranchLabel: widget.pinBranchLabel,
+            pinBranchLabelBuilder: widget.pinBranchLabelBuilder,
             onDismiss: _controller.hide,
             markerGlobalDx: _markerGlobalDx,
             onEnter: () {
@@ -1674,6 +1734,7 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
     required this.markerGlobalDx,
     this.onPinBranch,
     this.pinBranchLabel,
+    this.pinBranchLabelBuilder,
     this.onDismiss,
   });
 
@@ -1685,6 +1746,7 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
   final double? markerGlobalDx;
   final ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch;
   final String? pinBranchLabel;
+  final String Function(AppBrazilStoreSalesPoint)? pinBranchLabelBuilder;
   final VoidCallback? onDismiss;
 
   @override
@@ -1696,6 +1758,14 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
       maxWidth: maxWidth,
       markerGlobalDx: markerGlobalDx,
     );
+    void handleSelectBranch(AppBrazilStoreSalesPoint point) {
+      onDismiss?.call();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onPinBranch?.call(point);
+      });
+    }
+
+    final selectBranch = onPinBranch == null ? null : handleSelectBranch;
 
     return Positioned.fill(
       child: CompositedTransformFollower(
@@ -1711,18 +1781,43 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
             onExit: (_) => onExit(),
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              child: _SelectedMarkerGroupDetailCard(
-                group: group,
-                metric: metric,
-                showTechnicalLocationDetails: false,
-                onSelectBranch: onPinBranch,
-                selectBranchLabel: pinBranchLabel ?? 'Fixar filial',
-                onDismiss: onDismiss,
+              child: _MapMarkerDetailSemanticsBoundary(
+                child: _SelectedMarkerGroupDetailCard(
+                  group: group,
+                  metric: metric,
+                  showTechnicalLocationDetails: false,
+                  onSelectBranch: selectBranch,
+                  selectBranchLabel: pinBranchLabel ?? 'Fixar filial',
+                  selectBranchLabelBuilder: pinBranchLabelBuilder,
+                  onDismiss: onDismiss,
+                ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _MapMarkerDetailSemanticsBoundary extends StatelessWidget {
+  const _MapMarkerDetailSemanticsBoundary({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (defaultTargetPlatform != TargetPlatform.windows) {
+      return child;
+    }
+
+    // Windows' accessibility bridge can reject fast-changing overlay
+    // semantics when marker hover cards mount/remount. Keep one stable
+    // semantic boundary for the overlay and exclude the dynamic internals.
+    return Semantics(
+      container: true,
+      label: 'Detalhes da filial no mapa',
+      child: ExcludeSemantics(child: child),
     );
   }
 }
@@ -1789,6 +1884,7 @@ class _StoreMapMarker extends StatelessWidget {
     required this.count,
     required this.visual,
     required this.semanticLabel,
+    super.key,
   });
 
   final AppMapMarkerStyle style;
@@ -2060,11 +2156,15 @@ class _SelectedMunicipalityDetail extends StatelessWidget {
     required this.group,
     required this.metric,
     this.selectedStoreId,
+    this.onSelectBranch,
+    this.selectBranchLabelBuilder,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
   final AppBrazilStoreSalesMapMetric metric;
   final String? selectedStoreId;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
+  final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -2076,6 +2176,8 @@ class _SelectedMunicipalityDetail extends StatelessWidget {
         group: group,
         metric: metric,
         initialStoreId: selectedStoreId,
+        onSelectBranch: onSelectBranch,
+        selectBranchLabelBuilder: selectBranchLabelBuilder,
       ),
     );
   }
@@ -2085,10 +2187,14 @@ class _SelectedStoreDetail extends StatelessWidget {
   const _SelectedStoreDetail({
     required this.point,
     required this.metric,
+    this.onSelectBranch,
+    this.selectBranchLabel,
   });
 
   final AppBrazilStoreSalesPoint point;
   final AppBrazilStoreSalesMapMetric metric;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
+  final String? selectBranchLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -2096,7 +2202,12 @@ class _SelectedStoreDetail extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(top: tokens.gapMd),
-      child: _SelectedMarkerStoreDetailCard(point: point, metric: metric),
+      child: _SelectedMarkerStoreDetailCard(
+        point: point,
+        metric: metric,
+        onSelectBranch: onSelectBranch,
+        selectBranchLabel: selectBranchLabel,
+      ),
     );
   }
 }
@@ -2110,6 +2221,7 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
     this.onDismiss,
     this.onSelectBranch,
     this.selectBranchLabel,
+    this.selectBranchLabelBuilder,
     this.showTechnicalLocationDetails = true,
   });
 
@@ -2120,6 +2232,7 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
   final VoidCallback? onDismiss;
   final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
   final String? selectBranchLabel;
+  final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
   final bool showTechnicalLocationDetails;
 
   @override
@@ -2132,6 +2245,7 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
       onDismiss: onDismiss,
       onSelectBranch: onSelectBranch,
       selectBranchLabel: selectBranchLabel,
+      selectBranchLabelBuilder: selectBranchLabelBuilder,
       showTechnicalLocationDetails: showTechnicalLocationDetails,
     );
   }
@@ -2141,11 +2255,15 @@ class _SelectedMarkerStoreDetailCard extends StatelessWidget {
   const _SelectedMarkerStoreDetailCard({
     required this.point,
     required this.metric,
+    this.onSelectBranch,
+    this.selectBranchLabel,
     this.showTechnicalLocationDetails = true,
   });
 
   final AppBrazilStoreSalesPoint point;
   final AppBrazilStoreSalesMapMetric metric;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
+  final String? selectBranchLabel;
   final bool showTechnicalLocationDetails;
 
   @override
@@ -2154,6 +2272,10 @@ class _SelectedMarkerStoreDetailCard extends StatelessWidget {
       point: point,
       metric: metric,
       showTechnicalLocationDetails: showTechnicalLocationDetails,
+      onSelectBranch: onSelectBranch == null
+          ? null
+          : () => onSelectBranch!(point),
+      selectBranchLabel: selectBranchLabel,
     );
   }
 }
@@ -2167,6 +2289,7 @@ class _SelectedMarkerBranchCarouselCard extends StatefulWidget {
     this.onDismiss,
     this.onSelectBranch,
     this.selectBranchLabel,
+    this.selectBranchLabelBuilder,
     this.showTechnicalLocationDetails = true,
   });
 
@@ -2177,6 +2300,7 @@ class _SelectedMarkerBranchCarouselCard extends StatefulWidget {
   final VoidCallback? onDismiss;
   final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
   final String? selectBranchLabel;
+  final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
   final bool showTechnicalLocationDetails;
 
   @override
@@ -2265,7 +2389,9 @@ class _SelectedMarkerBranchCarouselCardState
         onSelectBranch: widget.onSelectBranch == null
             ? null
             : () => widget.onSelectBranch!(point),
-        selectBranchLabel: widget.selectBranchLabel,
+        selectBranchLabel:
+            widget.selectBranchLabelBuilder?.call(point) ??
+            widget.selectBranchLabel,
         navigation: count > 1
             ? _BranchCarouselNavigation(
                 currentIndex: _selectedIndex,

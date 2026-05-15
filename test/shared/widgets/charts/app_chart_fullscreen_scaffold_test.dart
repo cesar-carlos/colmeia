@@ -8,6 +8,33 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('fullscreen scaffold fills the full screen width on mobile', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const AppChartFullscreenScaffold(
+          title: 'Chart',
+          child: SizedBox.expand(
+            child: ColoredBox(color: Color(0xFFE0E0E0)),
+          ),
+        ),
+      ),
+    );
+
+    final scaffoldFinder = find.byType(Scaffold);
+    expect(tester.getTopLeft(scaffoldFinder).dx, 0);
+    expect(tester.getSize(scaffoldFinder).width, 390);
+  });
+
   testWidgets('Escape closes fullscreen scaffold when a route is on top', (
     tester,
   ) async {

@@ -7,6 +7,52 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('shows company and branch on a separate branch row', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: SalesLiveMapFiltersSheet(
+                l10n: AppLocalizations.of(context),
+                availableAgents: const <OverviewAgentOption>[
+                  OverviewAgentOption(agentId: 'agent-1', name: 'Agent 1'),
+                ],
+                availableBranches: const <SalesLiveMapBranchOption>[
+                  SalesLiveMapBranchOption(
+                    id: 'agent-1-1-1',
+                    agentId: 'agent-1',
+                    agentName: 'Agent 1',
+                    codEmpresa: 1,
+                    codFilial: 1,
+                    name: 'Branch 1',
+                    city: 'Sinop',
+                    uf: 'MT',
+                  ),
+                ],
+                initialFilter: const SalesLiveMapFilter(),
+                onApply: (_) {},
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    expect(find.text('Sinop/MT - Agente Agent 1'), findsOneWidget);
+    expect(find.text('Empresa: 1  Filial: 1'), findsOneWidget);
+    expect(
+      find.text('Sinop/MT - Agente Agent 1 - Empresa 1 - Filial 1'),
+      findsNothing,
+    );
+  });
+
   testWidgets('applies selected municipality detail and marker visual', (
     tester,
   ) async {

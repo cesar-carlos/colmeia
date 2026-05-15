@@ -58,10 +58,21 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     _prefs = getIt<SalesPreferences>();
     _loadAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
     _loadLiveMap = getIt<LoadSalesLiveMapUseCase>();
-    _filter = _prefs.restoreSalesLiveMapFilter();
+    final restoredFilter = _prefs.restoreSalesLiveMapFilter();
+    _filter = _normalizeRestoredFilter(restoredFilter);
+    if (restoredFilter.selectedBranchIds != null) {
+      unawaited(_prefs.persistSalesLiveMapFilter(_filter));
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
     });
+  }
+
+  SalesLiveMapFilter _normalizeRestoredFilter(SalesLiveMapFilter filter) {
+    if (filter.selectedBranchIds == null) {
+      return filter;
+    }
+    return filter.copyWith(selectedAgentIds: null, selectedBranchIds: null);
   }
 
   Future<void> _loadAgents() async {
@@ -275,6 +286,8 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                       Widget chart = AppBrazilStoreSalesMapChart(
                         points: pointsSnapshot,
                         initialMetric: initialMetricSnapshot,
+                        fixedBranchIds:
+                            _filter.selectedBranchIds ?? const <String>{},
                         style: styleSnapshot,
                         onMetricChanged: _onMapMetricChanged,
                         onBranchFilter: _filterByMapBranch,
@@ -353,7 +366,6 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     setState(() {
       _filter = next;
     });
-    unawaited(_prefs.persistSalesLiveMapFilter(next));
     unawaited(_reload(force: true));
   }
 
@@ -370,6 +382,12 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   }
 
   void _filterByMapBranch(AppBrazilStoreSalesPointTapEvent event) {
+    final selected = _filter.selectedBranchIds;
+    if (selected != null && selected.contains(event.point.id)) {
+      _clearSelectedBranches();
+      return;
+    }
+
     final next = _normalizeFilterForSelectedBranches(
       _filter.copyWith(
         selectedBranchIds: <String>{event.point.id},
@@ -379,7 +397,6 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     setState(() {
       _filter = next;
     });
-    unawaited(_prefs.persistSalesLiveMapFilter(next));
     unawaited(_reload(force: true));
   }
 
@@ -457,14 +474,28 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
             ],
             enabled: !_loading,
           ),
-          if (_hasNonDefaultFilter) ...<Widget>[
+          if (_hasSelectedBranchFilter ||
+              _hasNonBranchNonDefaultFilter) ...<Widget>[
             SizedBox(height: tokens.gapSm),
             Align(
               alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _loading ? null : _clearSavedFilters,
-                icon: const Icon(Icons.filter_alt_off_rounded),
-                label: Text(l10n.salesLiveMapClearSavedFiltersAction),
+              child: Wrap(
+                spacing: tokens.gapSm,
+                runSpacing: tokens.gapXs,
+                children: <Widget>[
+                  if (_hasSelectedBranchFilter)
+                    OutlinedButton.icon(
+                      onPressed: _loading ? null : _clearSelectedBranches,
+                      icon: const Icon(Icons.storefront_outlined),
+                      label: Text(l10n.salesLiveMapClearBranchSelectionAction),
+                    ),
+                  if (_hasNonBranchNonDefaultFilter)
+                    OutlinedButton.icon(
+                      onPressed: _loading ? null : _clearSavedFilters,
+                      icon: const Icon(Icons.filter_alt_off_rounded),
+                      label: Text(l10n.salesLiveMapClearSavedFiltersAction),
+                    ),
+                ],
               ),
             ),
           ],
@@ -514,23 +545,13 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                 l10n: l10n,
               ),
             ],
-            SizedBox(height: tokens.gapMd),
-            _SalesLiveMapTechnicalDiagnosticsPanel(
-              filter: _filter,
-              result: result,
-              periodLabel: _periodSummary(),
-              detailLabel: _detailLabel(_filter.detailLevel),
-              visualLabel: _filter.detailLevel == SalesLiveMapMapDetail.states
-                  ? _visualLabel(SalesLiveMapMarkerVisual.bubble)
-                  : _visualLabel(_filter.markerVisual),
-              metricLabel: _metricLabel(_filter.metric),
-            ),
             SizedBox(height: tokens.sectionSpacing),
             AppBrazilStoreSalesMapChart(
               title: l10n.salesLiveMapChartTitle,
               subtitle: _mapSubtitle(result),
               points: result?.points ?? const <AppBrazilStoreSalesPoint>[],
               initialMetric: _filter.metric,
+              fixedBranchIds: _filter.selectedBranchIds ?? const <String>{},
               style: _mapStyle(
                 detailLevel: _effectiveDetailLevel(result),
                 markerVisual: _filter.markerVisual,
@@ -575,10 +596,12 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     return result.totalSalesCount == 0 || result.totalBranchCount == 0;
   }
 
-  bool get _hasNonDefaultFilter {
+  bool get _hasSelectedBranchFilter =>
+      _filter.selectedBranchIds?.isNotEmpty ?? false;
+
+  bool get _hasNonBranchNonDefaultFilter {
     const defaults = SalesLiveMapFilter();
     return _filter.selectedAgentIds != defaults.selectedAgentIds ||
-        _filter.selectedBranchIds != defaults.selectedBranchIds ||
         _filter.periodMode != defaults.periodMode ||
         _filter.customDateRange != defaults.customDateRange ||
         _filter.detailLevel != defaults.detailLevel ||
@@ -760,14 +783,6 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       SalesLiveMapMarkerVisual.storeIcon => l10n.salesLiveMapVisualStoreIcon,
     };
   }
-
-  String _metricLabel(AppBrazilStoreSalesMapMetric metric) {
-    final l10n = AppLocalizations.of(context);
-    return switch (metric) {
-      AppBrazilStoreSalesMapMetric.revenue => l10n.salesLiveMapKpiRevenue,
-      AppBrazilStoreSalesMapMetric.salesCount => l10n.salesLiveMapKpiSales,
-    };
-  }
 }
 
 class _SalesLiveMapInitialSkeleton extends StatelessWidget {
@@ -809,304 +824,6 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
       ),
     );
   }
-}
-
-class _SalesLiveMapTechnicalDiagnosticsPanel extends StatelessWidget {
-  const _SalesLiveMapTechnicalDiagnosticsPanel({
-    required this.filter,
-    required this.result,
-    required this.periodLabel,
-    required this.detailLabel,
-    required this.visualLabel,
-    required this.metricLabel,
-  });
-
-  final SalesLiveMapFilter filter;
-  final SalesLiveMapLoadResult? result;
-  final String periodLabel;
-  final String detailLabel;
-  final String visualLabel;
-  final String metricLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final diagnostics = result?.locationDiagnostics;
-
-    return AppSectionCard(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.contentSpacing,
-        vertical: tokens.gapSm,
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          childrenPadding: EdgeInsets.only(bottom: tokens.gapSm),
-          leading: Icon(
-            Icons.manage_search_rounded,
-            color: colorScheme.primary,
-          ),
-          title: Text(l10n.salesLiveMapTechnicalDiagnosticsTitle),
-          children: <Widget>[
-            _SalesLiveMapDiagnosticsSection(
-              title: l10n.salesLiveMapTechnicalDiagnosticsFilters,
-              rows: <_SalesLiveMapDiagnosticsRowData>[
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'selectedAgentIds',
-                  value: _selectedSetLabel(filter.selectedAgentIds),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'selectedBranchIds',
-                  value: _selectedSetLabel(filter.selectedBranchIds),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'period',
-                  value: '${filter.periodMode.name} ($periodLabel)',
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'detailLevel',
-                  value: '${filter.detailLevel.name} ($detailLabel)',
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'markerVisual',
-                  value: '${filter.markerVisual.name} ($visualLabel)',
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'metric',
-                  value: '${filter.metric.name} ($metricLabel)',
-                ),
-              ],
-            ),
-            SizedBox(height: tokens.gapMd),
-            _SalesLiveMapDiagnosticsSection(
-              title: l10n.salesLiveMapTechnicalDiagnosticsQuery,
-              rows: <_SalesLiveMapDiagnosticsRowData>[
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'plannedAgentCount',
-                  value: _countLabel(result?.plannedAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'queriedAgentCount',
-                  value: _countLabel(result?.queriedAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'salesAgentCount',
-                  value: _countLabel(result?.salesAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'catalogBranchCount',
-                  value: _countLabel(result?.catalogBranchCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'salesBranchCount',
-                  value: _countLabel(result?.salesBranchCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'salesPendingBranchCount',
-                  value: _countLabel(result?.salesPendingBranchCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'zeroedBranchCount',
-                  value: _countLabel(result?.zeroedBranchCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'noSalesBranchCount',
-                  value: _countLabel(result?.noSalesBranchCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'salesUnavailableBranchCount',
-                  value: _countLabel(result?.salesUnavailableBranchCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'noSalesAgentCount',
-                  value: _countLabel(result?.noSalesAgentOptions.length),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'failedCatalogAgentCount',
-                  value: _countLabel(result?.failedCatalogAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'failedSalesAgentCount',
-                  value: _countLabel(result?.failedSalesAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'failedAgentCount',
-                  value: _countLabel(result?.failedAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'missingClientTokenAgentCount',
-                  value: _countLabel(result?.missingClientTokenAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'skippedOfflineAgentCount',
-                  value: _countLabel(result?.skippedOfflineAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'rowCapReachedAgentCount',
-                  value: _countLabel(result?.rowCapReachedAgentCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'branches',
-                  value:
-                      '${_countLabel(result?.mappedBranchCount)}/${_countLabel(result?.totalBranchCount)}',
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'mappedMunicipalityCount',
-                  value: _countLabel(result?.mappedMunicipalityCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'geo.providedGeoPoint',
-                  value: _countLabel(
-                    diagnostics?.resolvedByProvidedGeoPointCount,
-                  ),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'geo.ibgeMunicipalityCode',
-                  value: _countLabel(
-                    diagnostics?.resolvedByIbgeMunicipalityCodeCount,
-                  ),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'geo.cep',
-                  value: _countLabel(diagnostics?.resolvedByCepCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'geo.cityUf',
-                  value: _countLabel(diagnostics?.resolvedByCityUfCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'geo.capitalUf',
-                  value: _countLabel(diagnostics?.resolvedByCapitalUfCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'geo.stateUf',
-                  value: _countLabel(diagnostics?.resolvedByStateUfCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'geo.unknown',
-                  value: _countLabel(diagnostics?.unknownResolutionCount),
-                ),
-                _SalesLiveMapDiagnosticsRowData(
-                  label: 'geo.unresolvedBranch',
-                  value: _countLabel(diagnostics?.unresolvedBranchCount),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _selectedSetLabel(Set<String>? values) {
-    if (values == null) {
-      return 'all';
-    }
-    if (values.isEmpty) {
-      return '[]';
-    }
-    final sorted = values.toList(growable: false)..sort();
-    return sorted.join(', ');
-  }
-
-  String _countLabel(int? value) {
-    return value?.toString() ?? '-';
-  }
-}
-
-class _SalesLiveMapDiagnosticsSection extends StatelessWidget {
-  const _SalesLiveMapDiagnosticsSection({
-    required this.title,
-    required this.rows,
-  });
-
-  final String title;
-  final List<_SalesLiveMapDiagnosticsRowData> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final colorScheme = Theme.of(context).colorScheme;
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(bottom: tokens.gapXs),
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          Wrap(
-            spacing: tokens.gapSm,
-            runSpacing: tokens.gapSm,
-            children: <Widget>[
-              for (final row in rows) _SalesLiveMapDiagnosticsChip(row: row),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SalesLiveMapDiagnosticsChip extends StatelessWidget {
-  const _SalesLiveMapDiagnosticsChip({required this.row});
-
-  final _SalesLiveMapDiagnosticsRowData row;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final colorScheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.7),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.gapSm,
-          vertical: tokens.gapXs,
-        ),
-        child: Text.rich(
-          TextSpan(
-            children: <InlineSpan>[
-              TextSpan(
-                text: '${row.label}: ',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              TextSpan(text: row.value),
-            ],
-          ),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SalesLiveMapDiagnosticsRowData {
-  const _SalesLiveMapDiagnosticsRowData({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
 }
 
 class _SalesLiveMapAttentionPanel extends StatelessWidget {

@@ -7,9 +7,9 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Fullscreen chart shell: horizontal margin, default vertical body insets,
-/// Escape to close (desktop/web), and tighter default vertical padding on
-/// short viewports.
+/// Fullscreen chart shell: full-screen background, default body insets, Escape
+/// to close (desktop/web), and tighter default vertical padding on short
+/// viewports.
 class AppChartFullscreenScaffold extends StatelessWidget {
   const AppChartFullscreenScaffold({
     required this.child,
@@ -54,6 +54,12 @@ class AppChartFullscreenScaffold extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final l10n = AppLocalizations.of(context);
     final resolvedBodyPadding = _mergedBodyPadding(context, tokens);
+    final effectiveBodyPadding = EdgeInsets.fromLTRB(
+      tokens.contentSpacing + resolvedBodyPadding.left,
+      resolvedBodyPadding.top,
+      tokens.contentSpacing + resolvedBodyPadding.right,
+      resolvedBodyPadding.bottom,
+    );
 
     final resolvedTitle = title?.trim();
     final hasTitle = resolvedTitle != null && resolvedTitle.isNotEmpty;
@@ -74,44 +80,41 @@ class AppChartFullscreenScaffold extends StatelessWidget {
       },
       child: Focus(
         autofocus: true,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: tokens.contentSpacing),
-          child: Scaffold(
-            appBar: AppBar(
-              automaticallyImplyLeading: false,
-              leading: Navigator.of(context).canPop()
-                  ? IconButton(
-                      onPressed: () =>
-                          unawaited(Navigator.of(context).maybePop()),
-                      tooltip: l10n.chartCloseFullscreenTooltip,
-                      icon: const Icon(Icons.close),
-                    )
-                  : null,
-              actions: switch (headerTrailing) {
-                null => const <Widget>[],
-                final Widget trailing => <Widget>[
-                  trailing,
-                  SizedBox(width: tokens.gapXs),
-                ],
-              },
-            ),
-            body: SafeArea(
-              child: Padding(
-                padding: resolvedBodyPadding,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    if (hasHeader) ...<Widget>[
-                      _AppChartFullscreenHeader(
-                        title: resolvedTitle,
-                        subtitle: resolvedSubtitle,
-                        filterSummary: resolvedFilterSummary,
-                      ),
-                      SizedBox(height: tokens.contentSpacing),
-                    ],
-                    Expanded(child: child),
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            leading: Navigator.of(context).canPop()
+                ? IconButton(
+                    onPressed: () =>
+                        unawaited(Navigator.of(context).maybePop()),
+                    tooltip: l10n.chartCloseFullscreenTooltip,
+                    icon: const Icon(Icons.close),
+                  )
+                : null,
+            actions: switch (headerTrailing) {
+              null => const <Widget>[],
+              final Widget trailing => <Widget>[
+                trailing,
+                SizedBox(width: tokens.gapXs),
+              ],
+            },
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: effectiveBodyPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  if (hasHeader) ...<Widget>[
+                    _AppChartFullscreenHeader(
+                      title: resolvedTitle,
+                      subtitle: resolvedSubtitle,
+                      filterSummary: resolvedFilterSummary,
+                    ),
+                    SizedBox(height: tokens.contentSpacing),
                   ],
-                ),
+                  Expanded(child: child),
+                ],
               ),
             ),
           ),

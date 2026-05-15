@@ -61,6 +61,8 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: ResumoTotalVendasMunicipioFilialPeriodoSql.query(
         branches: branchFilters,
+        codEmpresa: filter.codEmpresa,
+        codFilial: filter.codFilial,
       ),
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
@@ -151,6 +153,8 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
           filter.dataVendaInicio,
         ),
         'filterEnd': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
+        'codEmpresa': filter.codEmpresa,
+        'codFilial': filter.codFilial,
         'totalSalesCount': totalSalesCount,
         'totalSalesAmount': totalSalesAmount,
       },

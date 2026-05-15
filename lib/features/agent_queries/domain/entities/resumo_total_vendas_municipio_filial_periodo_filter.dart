@@ -12,10 +12,18 @@ class ResumoTotalVendasMunicipioFilialPeriodoFilter
     super.origem,
     super.geraFinanceiro,
     super.preVenda,
+    this.codEmpresa,
+    this.codFilial,
     Iterable<ResumoTotalVendasMunicipioFilialPeriodoBranchRef>
         selectedBranches =
         const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[],
   }) : selectedBranches = List.unmodifiable(selectedBranches);
+
+  /// Optional company filter applied inside each agent database.
+  final int? codEmpresa;
+
+  /// Optional branch filter applied inside each agent database.
+  final int? codFilial;
 
   /// Optional branch pushdown for live-map reloads.
   ///
@@ -60,6 +68,14 @@ class ResumoTotalVendasMunicipioFilialPeriodoFilter
       if (error != null) {
         return error;
       }
+    }
+    final empresa = codEmpresa;
+    if (empresa != null && empresa <= 0) {
+      return 'codEmpresa must be greater than zero';
+    }
+    final filial = codFilial;
+    if (filial != null && filial < 0) {
+      return 'codFilial must be greater than or equal to zero';
     }
     return null;
   }

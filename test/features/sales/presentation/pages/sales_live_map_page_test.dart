@@ -397,28 +397,16 @@ void main() {
     );
   });
 
-  testWidgets('shows and expands the technical diagnostics panel', (
-    tester,
-  ) async {
+  testWidgets('does not show the technical diagnostics panel', (tester) async {
     await _pumpPage(tester, authController: authController);
     await _pumpInitialLoad(tester);
 
-    final title = find.text('Technical diagnostics');
-    expect(title, findsOneWidget);
+    expect(find.text('Technical diagnostics'), findsNothing);
     expect(find.textContaining('selectedAgentIds:'), findsNothing);
-
-    await tester.ensureVisible(title);
-    await tester.tap(title);
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('selectedAgentIds:'), findsOneWidget);
-    expect(find.textContaining('plannedAgentCount:'), findsOneWidget);
-    expect(find.textContaining('noSalesBranchCount:'), findsOneWidget);
-    expect(
-      find.textContaining('salesUnavailableBranchCount:'),
-      findsOneWidget,
-    );
-    expect(find.textContaining('geo.ibgeMunicipalityCode:'), findsOneWidget);
+    expect(find.textContaining('plannedAgentCount:'), findsNothing);
+    expect(find.textContaining('noSalesBranchCount:'), findsNothing);
+    expect(find.textContaining('salesUnavailableBranchCount:'), findsNothing);
+    expect(find.textContaining('geo.ibgeMunicipalityCode:'), findsNothing);
   });
 
   testWidgets('keeps the last map visible while a manual refresh is running', (
@@ -455,7 +443,7 @@ void main() {
   });
 
   testWidgets(
-    'allows clearing a selected branch filter when the result is empty',
+    'does not restore a stale selected branch filter when the result is empty',
     (
       tester,
     ) async {
@@ -482,17 +470,8 @@ void main() {
       await _pumpPage(tester, authController: authController);
       await _pumpInitialLoad(tester);
 
-      expect(find.text('Selection has no result'), findsOneWidget);
-      expect(find.text('Clear branch selection'), findsOneWidget);
-
-      final clearButton = find.widgetWithText(
-        FilledButton,
-        'Clear branch selection',
-      );
-      await tester.ensureVisible(clearButton);
-      await tester.pump();
-      await tester.tap(clearButton);
-      await _pumpInitialLoad(tester);
+      expect(find.text('No sales in period'), findsOneWidget);
+      expect(find.text('Selection has no result'), findsNothing);
 
       final capturedFilters = verify(
         () => loadLiveMap.loadProgressive(
@@ -501,12 +480,42 @@ void main() {
           cancelToken: any(named: 'cancelToken'),
         ),
       ).captured.cast<SalesLiveMapFilter>().toList();
-      expect(capturedFilters, hasLength(2));
-      expect(capturedFilters.first.selectedBranchIds, <String>{'agent-1-1-1'});
-      expect(capturedFilters.last.selectedBranchIds, isNull);
-      expect(capturedFilters.last.selectedAgentIds, isNull);
+      expect(capturedFilters.first.selectedBranchIds, isNull);
+      expect(capturedFilters.first.selectedAgentIds, isNull);
     },
   );
+
+  testWidgets('clears restored branch selection before first load', (
+    tester,
+  ) async {
+    when(
+      () => salesPreferences.restoreSalesLiveMapFilter(),
+    ).thenReturn(
+      const SalesLiveMapFilter(
+        selectedAgentIds: <String>{'agent-1'},
+        selectedBranchIds: <String>{'agent-1-1-1'},
+      ),
+    );
+
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+
+    final capturedFilters = verify(
+      () => loadLiveMap.loadProgressive(
+        userId: 'user-1',
+        filter: captureAny(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).captured.cast<SalesLiveMapFilter>().toList();
+    expect(capturedFilters.first.selectedBranchIds, isNull);
+    expect(capturedFilters.first.selectedAgentIds, isNull);
+
+    final persistedFilters = verify(
+      () => salesPreferences.persistSalesLiveMapFilter(captureAny()),
+    ).captured.cast<SalesLiveMapFilter>().toList();
+    expect(persistedFilters.first.selectedBranchIds, isNull);
+    expect(persistedFilters.first.selectedAgentIds, isNull);
+  });
 
   testWidgets(
     'clears persisted filters and reloads with the default filter',
@@ -571,6 +580,74 @@ void main() {
       expect(capturedFilters.last.selectedBranchIds, isNull);
     },
   );
+
+  testWidgets('toggles map branch focus without persisting it', (
+    tester,
+  ) async {
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+    clearInteractions(salesPreferences);
+
+    var chart = tester.widget<AppBrazilStoreSalesMapChart>(
+      find.byType(AppBrazilStoreSalesMapChart).last,
+    );
+    expect(chart.fixedBranchIds, isEmpty);
+
+    chart.onBranchFilter!(
+      const AppBrazilStoreSalesPointTapEvent(
+        point: AppBrazilStoreSalesPoint(
+          id: 'agent-1-1-1',
+          name: 'Branch One',
+          uf: 'MT',
+          latitude: -15.60,
+          longitude: -56.10,
+          salesAmount: 1200,
+          salesCount: 12,
+          city: 'Cuiaba',
+        ),
+        index: 0,
+        metric: AppBrazilStoreSalesMapMetric.revenue,
+      ),
+    );
+    await _pumpInitialLoad(tester);
+
+    chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart).last);
+    expect(chart.fixedBranchIds, <String>{'agent-1-1-1'});
+
+    chart.onBranchFilter!(
+      const AppBrazilStoreSalesPointTapEvent(
+        point: AppBrazilStoreSalesPoint(
+          id: 'agent-1-1-1',
+          name: 'Branch One',
+          uf: 'MT',
+          latitude: -15.60,
+          longitude: -56.10,
+          salesAmount: 1200,
+          salesCount: 12,
+          city: 'Cuiaba',
+        ),
+        index: 0,
+        metric: AppBrazilStoreSalesMapMetric.revenue,
+      ),
+    );
+    await _pumpInitialLoad(tester);
+
+    chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart).last);
+    expect(chart.fixedBranchIds, isEmpty);
+
+    final capturedFilters = verify(
+      () => loadLiveMap.loadProgressive(
+        userId: 'user-1',
+        filter: captureAny(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).captured.cast<SalesLiveMapFilter>().toList();
+    expect(capturedFilters[capturedFilters.length - 2].selectedBranchIds, {
+      'agent-1-1-1',
+    });
+    expect(capturedFilters.last.selectedBranchIds, isNull);
+    verifyNever(() => salesPreferences.persistSalesLiveMapFilter(any()));
+  });
 }
 
 Future<void> _pumpPage(

@@ -29,8 +29,14 @@ abstract final class ResumoTotalVendasMunicipioFilialPeriodoSql {
   static String query({
     Iterable<ResumoTotalVendasMunicipioFilialPeriodoBranchRef> branches =
         const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[],
+    int? codEmpresa,
+    int? codFilial,
   }) {
-    final branchPredicate = _branchPredicate(branches);
+    final branchPredicate = _branchPredicate(
+      branches: branches,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+    );
     return '''
 SELECT
   pv.CodEmpresa,
@@ -71,11 +77,20 @@ GROUP BY
 ''';
   }
 
-  static String _branchPredicate(
-    Iterable<ResumoTotalVendasMunicipioFilialPeriodoBranchRef> branches,
-  ) {
+  static String _branchPredicate({
+    required Iterable<ResumoTotalVendasMunicipioFilialPeriodoBranchRef>
+    branches,
+    required int? codEmpresa,
+    required int? codFilial,
+  }) {
     final byKey = <String, ResumoTotalVendasMunicipioFilialPeriodoBranchRef>{};
     for (final branch in branches) {
+      if (codEmpresa != null && branch.codEmpresa != codEmpresa) {
+        continue;
+      }
+      if (codFilial != null && branch.codFilial != codFilial) {
+        continue;
+      }
       byKey['${branch.codEmpresa}:${branch.codFilial}'] = branch;
     }
     final uniqueBranches = byKey.values.toList(growable: false)
@@ -87,7 +102,20 @@ GROUP BY
         return left.codFilial.compareTo(right.codFilial);
       });
     if (uniqueBranches.isEmpty) {
-      return '';
+      if (branches.isNotEmpty) {
+        return '\n  AND 1 = 0';
+      }
+      final clauses = <String>[];
+      if (codEmpresa != null) {
+        clauses.add('pv.CodEmpresa = $codEmpresa');
+      }
+      if (codFilial != null) {
+        clauses.add('pv.CodFilial = $codFilial');
+      }
+      if (clauses.isEmpty) {
+        return '';
+      }
+      return '\n  AND ${clauses.join(' AND ')}';
     }
 
     final branchesByCompany = <int, List<int>>{};
