@@ -116,6 +116,9 @@ Allowed values:
   - `AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS` defaults to `4`;
     raise cautiously when the target agent and database have spare read
     capacity.
+  - `AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT` defaults to `4`;
+    reduce to `1` for fragile hubs/DBs, and validate changes with the E2E
+    comparator before increasing further.
 - `meta.outbound_compression` is not the primary tuning knob today; the
   current server runtime documents it as a no-op for response compression.
 - Colmeia treats `stream_id` from legacy `agents:command_response` as

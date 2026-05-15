@@ -122,6 +122,7 @@ abstract final class AppEnvironment {
   static const int defaultAgentSqlCacheMaxSize = 500;
   static const int defaultAgentSqlCacheTtlMs = 3000;
   static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
+  static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
 
   static int get agentSqlCacheMaxSize => AppEnvironmentResolution.resolveInt(
     fromDefine: const String.fromEnvironment(EnvKeys.agentSqlCacheMaxSize),
@@ -147,6 +148,20 @@ abstract final class AppEnvironment {
       )._atLeastOrFallback(
         1,
         defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems,
+      );
+
+  static int get agentSqlRelayStreamingMaxConcurrentPerAgent =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlRelayStreamingMaxConcurrentPerAgent,
+        ),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.agentSqlRelayStreamingMaxConcurrentPerAgent,
+        ),
+        fallback: defaultAgentSqlRelayStreamingMaxConcurrentPerAgent,
+      )._atLeastOrFallback(
+        1,
+        defaultAgentSqlRelayStreamingMaxConcurrentPerAgent,
       );
 
   /// Agent bridge + client-auth data for a full stack e2e run.

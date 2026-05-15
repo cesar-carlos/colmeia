@@ -38,6 +38,9 @@ void main() {
         'AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS',
       );
       check(rootSummary).contains(
+        'AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT',
+      );
+      check(rootSummary).contains(
         'SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED',
       );
       check(rootSummary).contains('Legacy removal plan');

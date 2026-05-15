@@ -1,8 +1,12 @@
 # Socket/relay contract additions use LF without forcing a repo-wide
 # renormalization pass.
-docs/plug_server_docs_index_for_colmeia.md text eol=lf
-docs/bridge_agent_sql_api_options.md text eol=lf
-test/docs/*.dart text eol=lf
+*.dart text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.arb text eol=lf
+.env.example text eol=lf
+assets/env/*.env text eol=lf
+assets/env/.env.example text eol=lf
 test/fixtures/socket/*.json text eol=lf
-test/core/di/injector_client_agents_profile_update_legacy_test.dart text eol=lf
-test/integration/e2e/agent_queries_socket_relay_smoke_e2e_test.dart text eol=lf

@@ -36,6 +36,11 @@ abstract final class EnvKeys {
   static const String agentSqlOverviewBatchMaxParallelReadOnlyItems =
       'AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS';
 
+  /// Max collected relay streaming `sql.execute` calls allowed concurrently
+  /// per agent before the client queues locally.
+  static const String agentSqlRelayStreamingMaxConcurrentPerAgent =
+      'AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT';
+
   // ----- Socket channel (PR-A: infraestrutura de conexão) -----
 
   /// `rest` (default) | `socket`. Selects the agent commands transport.

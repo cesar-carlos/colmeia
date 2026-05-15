@@ -930,6 +930,8 @@ AgentQueriesRemoteDataSource? _resolveRelayDatasource(GetIt getIt) {
         streamingDelegate: rawStreamingDelegate,
         batchDelegate: unaryDelegate,
         collector: collector,
+        maxConcurrentPerAgent:
+            AppEnvironment.agentSqlRelayStreamingMaxConcurrentPerAgent,
       );
 
   return RoutingRelayAgentQueriesRemoteDataSource(

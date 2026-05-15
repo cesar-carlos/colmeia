@@ -80,7 +80,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     if (result.isSuccess()) {
       _cache[key] = _CacheEntry(
         result: result,
-        cachedAt: now,
+        cachedAt: DateTime.now(),
       );
 
       if (_cache.length > _maxCacheSize) {

@@ -86,6 +86,25 @@ void main() {
     check(caching.cacheSize).equals(2);
   });
 
+  test('should start ttl when the successful response is cached', () async {
+    final delegate = _SequenceAgentQueriesRepository(
+      delay: const Duration(milliseconds: 80),
+    );
+    final caching = CachingAgentQueriesRepository(
+      delegate: delegate,
+      cacheTtl: const Duration(milliseconds: 50),
+    );
+    delegate.enqueue(_successResult(rowCount: 7));
+
+    final first = await caching.executeSql(baseRequest);
+    final second = await caching.executeSql(baseRequest);
+
+    check(first.getOrNull()?.rowCount).equals(7);
+    check(second.getOrNull()?.rowCount).equals(7);
+    check(delegate.callCount).equals(1);
+    check(caching.cacheHits).equals(1);
+  });
+
   test(
     'should evict oldest entry when configured max size is exceeded',
     () async {
@@ -132,6 +151,9 @@ AppResult<AgentSqlExecutionResult> _successResult({required int rowCount}) {
 }
 
 final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
+  _SequenceAgentQueriesRepository({this.delay = Duration.zero});
+
+  final Duration delay;
   final List<AppResult<AgentSqlExecutionResult>> _results =
       <AppResult<AgentSqlExecutionResult>>[];
 
@@ -146,6 +168,9 @@ final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteRequest request,
   ) async {
     callCount++;
+    if (delay > Duration.zero) {
+      await Future<void>.delayed(delay);
+    }
     return _results.removeAt(0);
   }
 

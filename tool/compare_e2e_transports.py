@@ -37,6 +37,7 @@ class RunTarget:
 class RunResult:
     status: str
     seconds: float | None
+    output: str = ""
 
 
 def parse_args() -> argparse.Namespace:
@@ -80,6 +81,12 @@ def parse_args() -> argparse.Namespace:
         "--dry-run",
         action="store_true",
         help="Print commands without running them.",
+    )
+    parser.add_argument(
+        "--tail-lines",
+        type=int,
+        default=80,
+        help="Lines of Flutter output to print for failed/timeout runs. Default: 80.",
     )
     return parser.parse_args()
 
@@ -175,12 +182,16 @@ def run_command(
             timeout=timeout_seconds,
             check=False,
         )
-    except subprocess.TimeoutExpired:
-        return RunResult(status="timeout", seconds=timeout_seconds)
+    except subprocess.TimeoutExpired as exc:
+        return RunResult(
+            status="timeout",
+            seconds=timeout_seconds,
+            output=_coerce_output(exc.output),
+        )
 
     elapsed = time.perf_counter() - started
     status = "pass" if completed.returncode == 0 else f"fail({completed.returncode})"
-    return RunResult(status=status, seconds=elapsed)
+    return RunResult(status=status, seconds=elapsed, output=completed.stdout)
 
 
 def format_result(result: RunResult | None) -> str:
@@ -235,6 +246,62 @@ def print_table(rows: list[tuple[RunTarget, dict[str, RunResult]]]) -> None:
         )
 
 
+def print_failure_tails(
+    rows: list[tuple[RunTarget, dict[str, RunResult]]],
+    *,
+    tail_lines: int,
+) -> None:
+    if tail_lines <= 0:
+        return
+
+    blocks: list[tuple[str, str, RunResult]] = []
+    for target, results in rows:
+        for transport, result in results.items():
+            if result.status.startswith("fail") or result.status == "timeout":
+                blocks.append((target.label, transport, result))
+
+    if not blocks:
+        return
+
+    print()
+    print("## Failure output tails")
+    for target, transport, result in blocks:
+        print()
+        print(f"### {target} [{transport}] {result.status}")
+        output = _redact_output(result.output)
+        lines = output.splitlines()
+        tail = lines[-tail_lines:] if lines else ["<no output captured>"]
+        print("```text")
+        for line in tail:
+            print(line)
+        print("```")
+
+
+def _coerce_output(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode(errors="replace")
+    return str(value)
+
+
+def _redact_output(output: str) -> str:
+    redacted_lines: list[str] = []
+    for line in output.splitlines():
+        lower = line.lower()
+        if (
+            "password" in lower
+            or "client_token" in lower
+            or "token" in lower
+            or "secret" in lower
+            or "authorization" in lower
+        ):
+            redacted_lines.append("<redacted sensitive output line>")
+        else:
+            redacted_lines.append(line)
+    return "\n".join(redacted_lines)
+
+
 def main() -> int:
     args = parse_args()
     files = discover_files(args.files)
@@ -247,6 +314,7 @@ def main() -> int:
         dry_run=args.dry_run,
     )
     print_table(rows)
+    print_failure_tails(rows, tail_lines=args.tail_lines)
     failed = any(
         result.status.startswith("fail") or result.status == "timeout"
         for _, results in rows

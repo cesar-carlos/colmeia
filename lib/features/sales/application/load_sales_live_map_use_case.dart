@@ -829,6 +829,11 @@ class _SalesLiveMapBranchAggregate {
       cep: cepFilial,
       ibgeMunicipalityCode: codigoIbgeMunicipioFilial,
       allowUfFallback: false,
+      fantasyName: _trimmedOrNull(nomeFantasiaFilial),
+      branchName: _trimmedOrNull(nomeFilial),
+      companyCode: codEmpresa,
+      branchCode: codFilial,
+      agentName: _trimmedOrNull(agentName),
       subtitle: 'Agente $agentName - Empresa $codEmpresa - Filial $codFilial',
       payload: this,
     );
@@ -871,6 +876,14 @@ class _SalesLiveMapBranchAggregate {
       return '';
     }
     return trimmed.toUpperCase();
+  }
+
+  static String? _trimmedOrNull(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
   }
 }
 
@@ -972,6 +985,17 @@ class _SalesLiveMapCachedBranchLocation {
       salesCount: aggregate.qtdVendas,
       municipalityCode: municipalityCode,
       city: city,
+      fantasyName: _SalesLiveMapBranchAggregate._trimmedOrNull(
+        aggregate.nomeFantasiaFilial,
+      ),
+      branchName: _SalesLiveMapBranchAggregate._trimmedOrNull(
+        aggregate.nomeFilial,
+      ),
+      companyCode: aggregate.codEmpresa,
+      branchCode: aggregate.codFilial,
+      agentName: _SalesLiveMapBranchAggregate._trimmedOrNull(
+        aggregate.agentName,
+      ),
       locationResolution: locationResolution,
       subtitle:
           'Agente ${aggregate.agentName} - Empresa ${aggregate.codEmpresa} - Filial ${aggregate.codFilial}',

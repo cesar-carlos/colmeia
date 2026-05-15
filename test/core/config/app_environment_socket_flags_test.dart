@@ -123,6 +123,7 @@ SOCKET_RELAY_STREAM_INITIAL_WINDOW=-8
 SOCKET_RELAY_STREAM_REFILL_THRESHOLD=99
 AGENT_SQL_CACHE_TTL_MS=-1
 AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=0
+AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT=0
 ''',
       );
 
@@ -169,6 +170,11 @@ AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=0
       ).equals(
         AppEnvironment.defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems,
       );
+      check(
+        AppEnvironment.agentSqlRelayStreamingMaxConcurrentPerAgent,
+      ).equals(
+        AppEnvironment.defaultAgentSqlRelayStreamingMaxConcurrentPerAgent,
+      );
     });
 
     test('agent SQL performance knobs can be overridden explicitly', () {
@@ -177,6 +183,7 @@ AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=0
 AGENT_BRIDGE_TRANSPORT=rest
 AGENT_SQL_CACHE_TTL_MS=1200
 AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=6
+AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT=3
 ''',
       );
 
@@ -185,6 +192,9 @@ AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=6
         AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
       ).equals(
         6,
+      );
+      check(AppEnvironment.agentSqlRelayStreamingMaxConcurrentPerAgent).equals(
+        3,
       );
     });
   });

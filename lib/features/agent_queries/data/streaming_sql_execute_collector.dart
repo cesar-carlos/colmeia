@@ -51,12 +51,11 @@ abstract interface class StreamingSqlExecuteCollector {
 }
 
 /// Default collector that materialises the canonical bridge envelope
-/// described in the class docs. Built to be **forgiving** of partial
-/// payloads: if a `complete` event never arrives (older agent or hub
-/// drop) the result still contains the accumulated rows; if no chunks
-/// arrive, the result is an empty success envelope so callers can
-/// distinguish "agent ran but found nothing" from "transport failure"
-/// (the latter surfaces as a stream error and never reaches `collect`).
+/// described in the class docs.
+///
+/// A chunked stream must finish with a `relay:rpc.complete` payload. Empty,
+/// incomplete, or unknown stream items fail fast so transport loss cannot be
+/// misreported as a successful empty SQL result.
 ///
 /// When [maxBufferedRows] is set, buffered row count across chunks must
 /// not exceed it — otherwise [collect] throws [StateError] to cap
@@ -80,18 +79,28 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
     int? affectedRows;
     String? requestId;
     List<Object?>? columnMetadata;
+    var sawItem = false;
+    var sawChunk = false;
+    var sawComplete = false;
 
     await for (final chunk in chunks) {
+      sawItem = true;
       if (isRelayJsonRpcResponse(chunk)) {
         return relayJsonRpcToBridgeEnvelope(chunk, responseType: 'single');
       }
 
       // Capture envelope-level metadata.
-      requestId ??= chunk['request_id']?.toString();
+      requestId ??= _readString(chunk, 'request_id', 'requestId');
 
       // Chunk: append rows + grab column_metadata once.
-      final maybeRows = chunk['rows'];
-      if (maybeRows is List) {
+      if (chunk.containsKey('rows')) {
+        final maybeRows = chunk['rows'];
+        if (maybeRows is! List) {
+          throw const FormatException(
+            'Relay streaming chunk rows must be an array',
+          );
+        }
+        sawChunk = true;
         rows.addAll(maybeRows);
         final cap = maxBufferedRows;
         if (cap != null && rows.length > cap) {
@@ -107,18 +116,43 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
         continue;
       }
 
-      // Complete payload.
-      final maybeTotalRows = chunk['total_rows'];
-      if (maybeTotalRows is num) {
+      if (!_isCompletePayload(chunk)) {
+        throw const FormatException(
+          'Relay streaming item is neither row chunk nor complete payload',
+        );
+      }
+
+      final terminalStatus = _readString(
+        chunk,
+        'terminal_status',
+        'terminalStatus',
+      );
+      if (terminalStatus != null && !_isHealthyTerminal(terminalStatus)) {
+        throw FormatException(
+          'Relay streaming complete terminal_status=$terminalStatus',
+        );
+      }
+
+      sawComplete = true;
+      final maybeTotalRows = _readNum(chunk, 'total_rows', 'totalRows');
+      if (maybeTotalRows != null) {
         totalRowsFromComplete = maybeTotalRows.toInt();
       }
-      final maybeAffected = chunk['affected_rows'];
-      if (maybeAffected is num) {
+      final maybeAffected = _readNum(chunk, 'affected_rows', 'affectedRows');
+      if (maybeAffected != null) {
         affectedRows = maybeAffected.toInt();
       }
-      executionId ??= chunk['execution_id']?.toString();
-      startedAt ??= chunk['started_at']?.toString();
-      finishedAt ??= chunk['finished_at']?.toString();
+      executionId ??= _readString(chunk, 'execution_id', 'executionId');
+      startedAt ??= _readString(chunk, 'started_at', 'startedAt');
+      finishedAt ??= _readString(chunk, 'finished_at', 'finishedAt');
+    }
+
+    if (!sawItem) {
+      throw const FormatException('Relay streaming response was empty');
+    }
+    if (!sawComplete) {
+      final reason = sawChunk ? 'missing complete payload' : 'no result';
+      throw FormatException('Relay streaming response incomplete: $reason');
     }
 
     final rowCount = totalRowsFromComplete ?? rows.length;
@@ -145,4 +179,41 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
       },
     };
   }
+}
+
+bool _isCompletePayload(Map<String, dynamic> chunk) {
+  const keys = <String>{
+    'total_rows',
+    'totalRows',
+    'affected_rows',
+    'affectedRows',
+    'execution_id',
+    'executionId',
+    'started_at',
+    'startedAt',
+    'finished_at',
+    'finishedAt',
+    'terminal_status',
+    'terminalStatus',
+  };
+  return keys.any(chunk.containsKey);
+}
+
+bool _isHealthyTerminal(String status) {
+  final normalized = status.trim().toLowerCase();
+  return normalized == 'completed' || normalized == 'success';
+}
+
+String? _readString(Map<String, dynamic> map, String first, String second) {
+  final value = map[first] ?? map[second];
+  if (value == null) {
+    return null;
+  }
+  final text = value.toString();
+  return text.isEmpty ? null : text;
+}
+
+num? _readNum(Map<String, dynamic> map, String first, String second) {
+  final value = map[first] ?? map[second];
+  return value is num ? value : null;
 }

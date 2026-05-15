@@ -80,8 +80,18 @@ void main() {
               _participant(
                 'agent-a',
                 rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
-                  _row(totalVenda: 120, qtdVendas: 2),
-                  _row(totalVenda: 80, qtdVendas: 3),
+                  _row(
+                    nomeFilial: 'Cadastro matriz',
+                    nomeFantasiaFilial: 'Fantasia matriz',
+                    totalVenda: 120,
+                    qtdVendas: 2,
+                  ),
+                  _row(
+                    nomeFilial: 'Cadastro matriz',
+                    nomeFantasiaFilial: 'Fantasia matriz',
+                    totalVenda: 80,
+                    qtdVendas: 3,
+                  ),
                 ],
               ),
             ],
@@ -95,6 +105,11 @@ void main() {
 
     check(result.points).has((points) => points.length, 'length').equals(1);
     final point = result.points.single;
+    check(point.fantasyName).equals('Fantasia matriz');
+    check(point.branchName).equals('Cadastro matriz');
+    check(point.companyCode).equals(1);
+    check(point.branchCode).equals(1);
+    check(point.agentName).equals('Agente agent-a');
     check(point.salesAmount).equals(200);
     check(point.salesCount).equals(5);
     check(result.totalRevenue).equals(200);
@@ -589,6 +604,11 @@ void main() {
 
       check(first.points.single.salesAmount).equals(100);
       check(second.points.single.salesAmount).equals(100);
+      check(second.points.single.fantasyName).equals('Loja matriz');
+      check(second.points.single.branchName).equals('Loja matriz');
+      check(second.points.single.companyCode).equals(1);
+      check(second.points.single.branchCode).equals(1);
+      check(second.points.single.agentName).equals('Agente agent-a');
       check(geocoder.lookups).has((it) => it.length, 'length').equals(1);
     },
   );

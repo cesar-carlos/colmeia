@@ -17,6 +17,11 @@ class AppBrazilStoreSalesPointSource {
     this.ibgeMunicipalityCode,
     this.preferCapitalFallback = false,
     this.allowUfFallback = true,
+    this.fantasyName,
+    this.branchName,
+    this.companyCode,
+    this.branchCode,
+    this.agentName,
     this.subtitle,
     this.payload,
   });
@@ -33,6 +38,11 @@ class AppBrazilStoreSalesPointSource {
   final String? ibgeMunicipalityCode;
   final bool preferCapitalFallback;
   final bool allowUfFallback;
+  final String? fantasyName;
+  final String? branchName;
+  final int? companyCode;
+  final int? branchCode;
+  final String? agentName;
   final String? subtitle;
   final Object? payload;
 }
@@ -89,6 +99,11 @@ class AppBrazilStoreSalesPointResolver {
         salesCount: source.salesCount,
         municipalityCode: municipalityCode,
         city: _resolveCity(source, lookup.location),
+        fantasyName: source.fantasyName,
+        branchName: source.branchName,
+        companyCode: source.companyCode,
+        branchCode: source.branchCode,
+        agentName: source.agentName,
         locationResolution: _resolutionFor(lookup.lookupType),
         subtitle: source.subtitle,
         payload: source.payload,

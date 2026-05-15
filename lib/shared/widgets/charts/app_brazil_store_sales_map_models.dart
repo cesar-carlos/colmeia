@@ -143,6 +143,11 @@ class AppBrazilStoreSalesPoint {
     required this.salesCount,
     this.municipalityCode,
     this.city,
+    this.fantasyName,
+    this.branchName,
+    this.companyCode,
+    this.branchCode,
+    this.agentName,
     this.locationResolution,
     this.subtitle,
     this.payload,
@@ -157,6 +162,11 @@ class AppBrazilStoreSalesPoint {
   final int salesCount;
   final String? municipalityCode;
   final String? city;
+  final String? fantasyName;
+  final String? branchName;
+  final int? companyCode;
+  final int? branchCode;
+  final String? agentName;
   final AppBrazilStoreSalesLocationResolution? locationResolution;
   final String? subtitle;
   final Object? payload;

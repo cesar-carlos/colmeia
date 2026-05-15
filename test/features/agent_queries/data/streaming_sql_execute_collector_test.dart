@@ -44,8 +44,6 @@ void main() {
                 <String, Object?>{'id': 3, 'name': 'c'},
               ],
             },
-            // The dispatcher (PR-L+ p3.5) forwards the complete payload
-            // as the FINAL stream item before closing.
             <String, dynamic>{
               'stream_id': 'stream-1',
               'request_id': 'rpc-1',
@@ -95,9 +93,10 @@ void main() {
                 <String, Object?>{'x': 2},
               ],
             },
-            // No complete payload — agent disconnected gracefully or
-            // hub forwarded only chunks. Collector still wraps a valid
-            // response so the repository parser succeeds.
+            <String, dynamic>{
+              'request_id': 'rpc-2',
+              'execution_id': 'exec-2',
+            },
           ],
         );
 
@@ -107,13 +106,46 @@ void main() {
         final innerResult = result['result']! as Map<String, dynamic>;
         check((innerResult['rows']! as List).length).equals(2);
         check(innerResult['row_count']).equals(2);
-        check(innerResult.containsKey('execution_id')).isFalse();
+        check(innerResult['execution_id']).equals('exec-2');
       },
     );
 
-    test('empty stream yields empty success envelope', () async {
+    test('empty stream fails instead of becoming an empty success', () async {
+      await expectLater(
+        () => collector.collect(const Stream<Map<String, dynamic>>.empty()),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('chunks without complete fail instead of partial success', () async {
+      final stream = Stream<Map<String, dynamic>>.fromIterable(
+        <Map<String, dynamic>>[
+          <String, dynamic>{
+            'request_id': 'rpc-missing-complete',
+            'rows': <Object?>[
+              <String, Object?>{'x': 1},
+            ],
+          },
+        ],
+      );
+
+      await expectLater(
+        () => collector.collect(stream),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('complete with total_rows zero succeeds with empty rows', () async {
       final envelope = await collector.collect(
-        const Stream<Map<String, dynamic>>.empty(),
+        Stream<Map<String, dynamic>>.fromIterable(
+          <Map<String, dynamic>>[
+            <String, dynamic>{
+              'request_id': 'rpc-empty',
+              'total_rows': 0,
+              'terminal_status': 'completed',
+            },
+          ],
+        ),
       );
       final item =
           (envelope['response']! as Map)['item']! as Map<String, dynamic>;
@@ -121,6 +153,35 @@ void main() {
       final result = item['result']! as Map<String, dynamic>;
       check(result['rows']! as List).isEmpty();
       check(result['row_count']).equals(0);
+    });
+
+    test('unknown stream item fails', () async {
+      final stream = Stream<Map<String, dynamic>>.fromIterable(
+        <Map<String, dynamic>>[
+          <String, dynamic>{'request_id': 'rpc-unknown', 'ignored': true},
+        ],
+      );
+
+      await expectLater(
+        () => collector.collect(stream),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('non-healthy complete terminal status fails', () async {
+      final stream = Stream<Map<String, dynamic>>.fromIterable(
+        <Map<String, dynamic>>[
+          <String, dynamic>{
+            'request_id': 'rpc-aborted',
+            'terminal_status': 'aborted',
+          },
+        ],
+      );
+
+      await expectLater(
+        () => collector.collect(stream),
+        throwsA(isA<FormatException>()),
+      );
     });
 
     test('wraps non-streaming relay JSON-RPC response', () async {
@@ -162,6 +223,7 @@ void main() {
               <String, Object?>{'a': 3},
             ],
           },
+          <String, dynamic>{'total_rows': 3},
         ],
       );
       await expectLater(
@@ -176,7 +238,9 @@ void main() {
           <String, dynamic>{
             'rows': <Object?>[<String, Object?>{}],
           },
-          <String, dynamic>{'rows': <Object?>[]}, // last item triggers error
+          <String, dynamic>{
+            'total_rows': 1,
+          }, // last item triggers error
         ],
         error: const FormatException('chunk decode failed'),
       );

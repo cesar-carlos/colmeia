@@ -43,6 +43,9 @@ constants.
 - SQL result cache TTL defaults to 3000 ms and is tunable through
   `AGENT_SQL_CACHE_TTL_MS`; use the E2E comparator suite mode to validate
   changes against REST and socket instead of assuming higher TTL is faster.
+- Collected relay streaming allows up to 4 concurrent `sql.execute` streams per
+  agent by default. Tune with `AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT`;
+  set `1` to recover the previous serial behavior.
 - `SOCKET_WARM_UP_AFTER_LOGIN=true` preconnects `/consumers` after login so the
   first socket SQL call does not pay the handshake cost.
 - Relay accepts one correlatable JSON-RPC request per `relay:rpc.request`; do

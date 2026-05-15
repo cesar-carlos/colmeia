@@ -1,12 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
-
-void _ignoreChainedError(Object error, StackTrace stackTrace) {}
 
 /// Adapter that lets a repository **already wired to the unary
 /// `AgentQueriesRemoteDataSource` port** benefit from the relay
@@ -28,10 +27,9 @@ void _ignoreChainedError(Object error, StackTrace stackTrace) {}
 /// swap chooses which transport (REST, `agents:command`, relay
 /// unitary, **relay-collected**) actually runs.
 ///
-/// [postSqlExecute] for the same [AgentSqlExecuteRequest.agentId] is
-/// **serialized**: a second call waits until the first `collect` fully
-/// completes. That avoids overlapping `streamSqlExecute` sessions and
-/// unbounded memory when many futures are started for one agent.
+/// [postSqlExecute] for the same `AgentSqlExecuteRequest.agentId` is limited
+/// by `maxConcurrentPerAgent`. Calls above that ceiling wait for a slot so
+/// dashboard waves can overlap without creating unbounded stream collectors.
 class CollectingRelayStreamingAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   CollectingRelayStreamingAgentQueriesRemoteDataSource({
@@ -39,44 +37,44 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
     AgentQueriesRemoteDataSource? batchDelegate,
     StreamingSqlExecuteCollector collector =
         const BridgeShapedSqlExecuteCollector(),
+    int maxConcurrentPerAgent = 4,
   }) : _streamingDelegate = streamingDelegate,
        _batchDelegate = batchDelegate,
-       _collector = collector;
+       _collector = collector,
+       _maxConcurrentPerAgent = maxConcurrentPerAgent < 1
+           ? 1
+           : maxConcurrentPerAgent;
 
   final AgentQueriesStreamingRemoteDataSource _streamingDelegate;
   final AgentQueriesRemoteDataSource? _batchDelegate;
   final StreamingSqlExecuteCollector _collector;
+  final int _maxConcurrentPerAgent;
 
-  final Map<String, Future<dynamic>> _postSqlTailByAgentId =
-      <String, Future<dynamic>>{};
+  final Map<String, _PerAgentStreamingQueue> _queuesByAgentId =
+      <String, _PerAgentStreamingQueue>{};
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
     AgentSqlExecuteRequest request,
   ) {
     final agentId = request.trimmedAgentId;
-    final previous = _postSqlTailByAgentId[agentId] ?? Future<void>.value();
-    final mapped = previous
-        .then<void>((_) {}, onError: _ignoreChainedError)
-        .then(
-          (_) => _collector.collect(
-            _streamingDelegate.streamSqlExecute(request),
-          ),
-        );
-    final tail = mapped.then<void>(
-      (_) {},
-      onError: _ignoreChainedError,
+    late final _PerAgentStreamingQueue queue;
+    queue = _queuesByAgentId.putIfAbsent(
+      agentId,
+      () => _PerAgentStreamingQueue(
+        maxConcurrent: _maxConcurrentPerAgent,
+        onIdle: () {
+          if (identical(_queuesByAgentId[agentId], queue)) {
+            _queuesByAgentId.remove(agentId);
+          }
+        },
+      ),
     );
-    _postSqlTailByAgentId[agentId] = tail;
-    unawaited(
-      tail.whenComplete(() {
-        if (identical(_postSqlTailByAgentId[agentId], tail)) {
-          final removedTail = _postSqlTailByAgentId.remove(agentId);
-          removedTail?.ignore();
-        }
-      }),
+    return queue.run(
+      () => _collector.collect(
+        _streamingDelegate.streamSqlExecute(request),
+      ),
     );
-    return mapped;
   }
 
   @override
@@ -91,5 +89,61 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
       );
     }
     return batchDelegate.postSqlExecuteBatch(request);
+  }
+}
+
+class _PerAgentStreamingQueue {
+  _PerAgentStreamingQueue({
+    required int maxConcurrent,
+    required void Function() onIdle,
+  }) : _maxConcurrent = maxConcurrent,
+       _onIdle = onIdle;
+
+  final int _maxConcurrent;
+  final void Function() _onIdle;
+  final Queue<Future<void> Function()> _pending =
+      Queue<Future<void> Function()>();
+  int _active = 0;
+
+  Future<T> run<T>(Future<T> Function() work) {
+    final completer = Completer<T>();
+
+    Future<void> task() async {
+      try {
+        completer.complete(await work());
+      } on Object catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    }
+
+    if (_active < _maxConcurrent) {
+      _start(task);
+    } else {
+      _pending.add(task);
+    }
+    return completer.future;
+  }
+
+  void _start(Future<void> Function() task) {
+    _active += 1;
+    unawaited(
+      (() async {
+        try {
+          await task();
+        } finally {
+          _active -= 1;
+          _drain();
+        }
+      })(),
+    );
+  }
+
+  void _drain() {
+    while (_active < _maxConcurrent && _pending.isNotEmpty) {
+      _start(_pending.removeFirst());
+    }
+    if (_active == 0 && _pending.isEmpty) {
+      _onIdle();
+    }
   }
 }
