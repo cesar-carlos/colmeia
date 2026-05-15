@@ -30,6 +30,11 @@ void main() {
 
   test('query computes moving-average metrics and classification', () {
     check(sql).contains("pv.Origem = 'FrenteLoja'");
+    check(sql).contains('tos.CodEmpresa = pv.CodEmpresa');
+    check(sql).contains(
+      'tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida',
+    );
+    check(sql.contains('tos.CodFilial = pv.CodFilial')).isFalse();
     check(sql).contains('AS MediaAtual');
     check(sql).contains('AS MediaAnterior');
     check(sql).contains('AS Diferenca');

@@ -358,7 +358,9 @@ class _SyncfusionRegionMapChartState<T>
                           widget.style.shapeStrokeColor ??
                           colors.outlineVariant.withValues(alpha: 0.8),
                       strokeWidth: widget.style.shapeStrokeWidth,
-                      shapeTooltipBuilder: !widget.style.showTooltip
+                      shapeTooltipBuilder:
+                          !widget.style.showTooltip ||
+                              !widget.style.showShapeTooltip
                           ? null
                           : (context, index) {
                               final item = widget.items[index];

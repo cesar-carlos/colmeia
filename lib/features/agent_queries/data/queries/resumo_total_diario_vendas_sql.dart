@@ -14,7 +14,7 @@
 /// INCLUDE (CodProdutoVendido, Origem, PreVenda, CodTipoOperacaoSaida, ValorLiquido);
 ///
 /// CREATE NONCLUSTERED INDEX IX_TipoOperacaoSaida_Join
-/// ON TipoOperacaoSaida (CodEmpresa, CodFilial, CodTipoOperacaoSaida)
+/// ON TipoOperacaoSaida (CodEmpresa, CodTipoOperacaoSaida)
 /// INCLUDE (GeraFinanceiro);
 /// ```
 abstract final class ResumoTotalDiarioVendasSql {
@@ -35,7 +35,6 @@ FROM (
   FROM ProdutoVendido pv
   INNER JOIN TipoOperacaoSaida tos ON
     tos.CodEmpresa = pv.CodEmpresa
-    AND tos.CodFilial = pv.CodFilial
     AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
   WHERE pv.DataVenda >= CAST(:dataVendaInicio AS DATE)
     AND pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))

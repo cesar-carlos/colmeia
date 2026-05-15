@@ -15,6 +15,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 final NumberFormat _integerFormat = NumberFormat.decimalPattern('pt_BR');
@@ -31,6 +32,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.selectedStoreId,
     this.style = const AppBrazilStoreSalesMapStyle(),
     this.onStoreTap,
+    this.onBranchFilter,
     this.onStoreClusterTap,
     this.onMunicipalityTap,
     this.onStateTap,
@@ -48,6 +50,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   final String? selectedStoreId;
   final AppBrazilStoreSalesMapStyle style;
   final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onStoreTap;
+  final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onBranchFilter;
   final ValueChanged<AppBrazilStoreSalesPointClusterTapEvent>?
   onStoreClusterTap;
   final ValueChanged<AppBrazilStoreSalesMunicipalityTapEvent>?
@@ -176,6 +179,7 @@ class _AppBrazilStoreSalesMapChartState
                     : null,
                 showLegend: widget.style.showLegend,
                 showTooltip: widget.style.showTooltip,
+                showShapeTooltip: false,
                 showDataLabels: widget.style.showDataLabels,
                 showMetricSelector: widget.style.showMetricSelector,
                 enableZoomPan: widget.style.enableZoomPan,
@@ -221,6 +225,7 @@ class _AppBrazilStoreSalesMapChartState
               _SelectedMunicipalityDetail(
                 group: selectedMarkerGroup,
                 metric: _selectedMetric,
+                selectedStoreId: _selectedStoreId,
               )
             else if (_showBelowMapMarkerDetail && selectedPoint != null)
               _SelectedStoreDetail(
@@ -327,9 +332,9 @@ class _AppBrazilStoreSalesMapChartState
         selectedMarkerGroup != null &&
         (selectedMarkerGroup.isMunicipalityAggregate ||
             selectedMarkerGroup.isCluster)) {
-      reserve += tokens.gapMd + scaler.scale(160);
+      reserve += tokens.gapMd + scaler.scale(300);
     } else if (_showBelowMapMarkerDetail && selectedPoint != null) {
-      reserve += tokens.gapMd + scaler.scale(160);
+      reserve += tokens.gapMd + scaler.scale(220);
     }
     if (selectedPoint == null &&
         selectedMarkerGroup == null &&
@@ -521,15 +526,16 @@ class _AppBrazilStoreSalesMapChartState
     }
 
     final point = payload.primaryPoint;
-    setState(() {
-      _internalSelectedStoreId = point.id;
-      _dismissedControlledSelectedStoreId = null;
-      _internalSelectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(
-        point.uf,
+    _selectPoint(point);
+    if (_shouldUseCompactBranchSheet) {
+      unawaited(
+        _openCompactBranchDetailSheet(
+          group: payload,
+          initialStoreId: point.id,
+          markerIndex: event.index,
+        ),
       );
-      _currentZoomLevel = widget.style.selectedStoreZoomLevel;
-      _snapshot = null;
-    });
+    }
 
     if (payload.isMunicipalityAggregate) {
       widget.onMunicipalityTap?.call(
@@ -561,12 +567,87 @@ class _AppBrazilStoreSalesMapChartState
       return;
     }
 
+    _emitStoreTap(point: point, index: event.index);
+  }
+
+  void _selectPoint(AppBrazilStoreSalesPoint point) {
+    setState(() {
+      _internalSelectedStoreId = point.id;
+      _dismissedControlledSelectedStoreId = null;
+      _internalSelectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(
+        point.uf,
+      );
+      _currentZoomLevel = widget.style.selectedStoreZoomLevel;
+      _snapshot = null;
+    });
+  }
+
+  void _emitStoreTap({
+    required AppBrazilStoreSalesPoint point,
+    required int index,
+  }) {
     widget.onStoreTap?.call(
       AppBrazilStoreSalesPointTapEvent(
         point: point,
-        index: event.index,
+        index: index,
         metric: _selectedMetric,
       ),
+    );
+  }
+
+  void _emitBranchFilter({
+    required AppBrazilStoreSalesPoint point,
+    required int index,
+  }) {
+    widget.onBranchFilter?.call(
+      AppBrazilStoreSalesPointTapEvent(
+        point: point,
+        index: index,
+        metric: _selectedMetric,
+      ),
+    );
+  }
+
+  bool get _shouldUseCompactBranchSheet =>
+      widget.style.showStoreDetail && AppBreakpoints.isMobile(context);
+
+  Future<void> _openCompactBranchDetailSheet({
+    required AppBrazilStoreSalesMarkerGroup group,
+    required String initialStoreId,
+    required int markerIndex,
+  }) async {
+    final l10nContext = context;
+    await showModalBottomSheet<void>(
+      context: l10nContext,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final tokens = Theme.of(sheetContext).extension<AppThemeTokens>()!;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.gapMd,
+            0,
+            tokens.gapMd,
+            tokens.gapMd,
+          ),
+          child: _SelectedMarkerGroupDetailCard(
+            group: group,
+            metric: _selectedMetric,
+            initialStoreId: initialStoreId,
+            onDismiss: () => unawaited(Navigator.of(sheetContext).maybePop()),
+            onClose: () => unawaited(Navigator.of(sheetContext).maybePop()),
+            onSelectBranch: widget.onBranchFilter == null
+                ? null
+                : (point) {
+                    unawaited(Navigator.of(sheetContext).maybePop());
+                    _selectPoint(point);
+                    _emitBranchFilter(point: point, index: markerIndex);
+                  },
+            selectBranchLabel: 'Filtrar filial',
+          ),
+        );
+      },
     );
   }
 
@@ -689,6 +770,17 @@ class _AppBrazilStoreSalesMapChartState
         group: group,
         metric: _selectedMetric,
         marker: marker,
+        onPinBranch: (point) {
+          _selectPoint(point);
+          if (widget.onBranchFilter == null) {
+            _emitStoreTap(point: point, index: index);
+          } else {
+            _emitBranchFilter(point: point, index: index);
+          }
+        },
+        pinBranchLabel: widget.onBranchFilter == null
+            ? 'Fixar filial'
+            : 'Filtrar filial',
       );
     }
 
@@ -698,6 +790,17 @@ class _AppBrazilStoreSalesMapChartState
       metric: _selectedMetric,
       marker: marker,
       onClose: _clearSelectedMarkerDetail,
+      onSelectBranch: (point) {
+        _selectPoint(point);
+        if (widget.onBranchFilter == null) {
+          _emitStoreTap(point: point, index: index);
+        } else {
+          _emitBranchFilter(point: point, index: index);
+        }
+      },
+      selectBranchLabel: widget.onBranchFilter == null
+          ? 'Selecionar filial'
+          : 'Filtrar filial',
     );
   }
 
@@ -1289,6 +1392,8 @@ class _SelectedMarkerDetailAnchor extends StatefulWidget {
     required this.metric,
     required this.marker,
     required this.onClose,
+    this.onSelectBranch,
+    this.selectBranchLabel,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
@@ -1296,6 +1401,8 @@ class _SelectedMarkerDetailAnchor extends StatefulWidget {
   final AppBrazilStoreSalesMapMetric metric;
   final Widget marker;
   final VoidCallback onClose;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
+  final String? selectBranchLabel;
 
   @override
   State<_SelectedMarkerDetailAnchor> createState() =>
@@ -1306,6 +1413,8 @@ class _SelectedMarkerDetailAnchorState
     extends State<_SelectedMarkerDetailAnchor> {
   final OverlayPortalController _controller = OverlayPortalController();
   final LayerLink _link = LayerLink();
+  final GlobalKey _markerKey = GlobalKey();
+  double? _markerGlobalDx;
 
   @override
   void initState() {
@@ -1328,7 +1437,29 @@ class _SelectedMarkerDetailAnchorState
       if (!mounted) {
         return;
       }
+      _updateMarkerGlobalDx();
       _controller.show();
+    });
+  }
+
+  void _updateMarkerGlobalDx() {
+    final markerContext = _markerKey.currentContext;
+    final renderObject = markerContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return;
+    }
+
+    final nextDx = renderObject
+        .localToGlobal(
+          renderObject.size.center(Offset.zero),
+        )
+        .dx;
+    if (_markerGlobalDx == nextDx) {
+      return;
+    }
+
+    setState(() {
+      _markerGlobalDx = nextDx;
     });
   }
 
@@ -1345,9 +1476,12 @@ class _SelectedMarkerDetailAnchorState
             selectedStoreId: widget.selectedStoreId,
             metric: widget.metric,
             onClose: widget.onClose,
+            onSelectBranch: widget.onSelectBranch,
+            selectBranchLabel: widget.selectBranchLabel,
+            markerGlobalDx: _markerGlobalDx,
           );
         },
-        child: widget.marker,
+        child: KeyedSubtree(key: _markerKey, child: widget.marker),
       ),
     );
   }
@@ -1360,6 +1494,9 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
     required this.selectedStoreId,
     required this.metric,
     required this.onClose,
+    required this.markerGlobalDx,
+    this.onSelectBranch,
+    this.selectBranchLabel,
   });
 
   final LayerLink link;
@@ -1367,11 +1504,19 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
   final String selectedStoreId;
   final AppBrazilStoreSalesMapMetric metric;
   final VoidCallback onClose;
+  final double? markerGlobalDx;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
+  final String? selectBranchLabel;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final maxWidth = (screenWidth - 32).clamp(260.0, 340.0);
+    final followerAnchor = _followerAnchorFor(
+      screenWidth: screenWidth,
+      maxWidth: maxWidth,
+      markerGlobalDx: markerGlobalDx,
+    );
     return Positioned.fill(
       child: IgnorePointer(
         ignoring: false,
@@ -1379,10 +1524,10 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
           link: link,
           showWhenUnlinked: false,
           targetAnchor: Alignment.topCenter,
-          followerAnchor: Alignment.bottomCenter,
-          offset: const Offset(0, -10),
+          followerAnchor: followerAnchor,
+          offset: _followerOffsetFor(followerAnchor),
           child: UnconstrainedBox(
-            alignment: Alignment.bottomCenter,
+            alignment: followerAnchor,
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
               child: _SelectedMarkerGroupDetailCard(
@@ -1390,6 +1535,8 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
                 metric: metric,
                 initialStoreId: selectedStoreId,
                 onClose: onClose,
+                onSelectBranch: onSelectBranch,
+                selectBranchLabel: selectBranchLabel,
               ),
             ),
           ),
@@ -1406,11 +1553,15 @@ class AppBrazilStoreSalesBranchHoverDetailAnchor extends StatefulWidget {
     required this.metric,
     required this.marker,
     super.key,
+    this.onPinBranch,
+    this.pinBranchLabel,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
   final AppBrazilStoreSalesMapMetric metric;
   final Widget marker;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch;
+  final String? pinBranchLabel;
 
   @override
   State<AppBrazilStoreSalesBranchHoverDetailAnchor> createState() =>
@@ -1423,9 +1574,11 @@ class _HoverMarkerDetailAnchorState
 
   final OverlayPortalController _controller = OverlayPortalController();
   final LayerLink _link = LayerLink();
+  final GlobalKey _markerKey = GlobalKey();
   Timer? _hideTimer;
   bool _hoveringMarker = false;
   bool _hoveringCard = false;
+  double? _markerGlobalDx;
 
   @override
   void dispose() {
@@ -1435,7 +1588,29 @@ class _HoverMarkerDetailAnchorState
 
   void _show() {
     _hideTimer?.cancel();
+    _updateMarkerGlobalDx();
     _controller.show();
+  }
+
+  void _updateMarkerGlobalDx() {
+    final markerContext = _markerKey.currentContext;
+    final renderObject = markerContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) {
+      return;
+    }
+
+    final nextDx = renderObject
+        .localToGlobal(
+          renderObject.size.center(Offset.zero),
+        )
+        .dx;
+    if (_markerGlobalDx == nextDx) {
+      return;
+    }
+
+    setState(() {
+      _markerGlobalDx = nextDx;
+    });
   }
 
   void _scheduleHide() {
@@ -1459,6 +1634,10 @@ class _HoverMarkerDetailAnchorState
             link: _link,
             group: widget.group,
             metric: widget.metric,
+            onPinBranch: widget.onPinBranch,
+            pinBranchLabel: widget.pinBranchLabel,
+            onDismiss: _controller.hide,
+            markerGlobalDx: _markerGlobalDx,
             onEnter: () {
               _hoveringCard = true;
               _show();
@@ -1478,7 +1657,7 @@ class _HoverMarkerDetailAnchorState
             _hoveringMarker = false;
             _scheduleHide();
           },
-          child: widget.marker,
+          child: KeyedSubtree(key: _markerKey, child: widget.marker),
         ),
       ),
     );
@@ -1492,6 +1671,10 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
     required this.metric,
     required this.onEnter,
     required this.onExit,
+    required this.markerGlobalDx,
+    this.onPinBranch,
+    this.pinBranchLabel,
+    this.onDismiss,
   });
 
   final LayerLink link;
@@ -1499,21 +1682,30 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
   final AppBrazilStoreSalesMapMetric metric;
   final VoidCallback onEnter;
   final VoidCallback onExit;
+  final double? markerGlobalDx;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch;
+  final String? pinBranchLabel;
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final maxWidth = (screenWidth - 32).clamp(280.0, 360.0);
+    final followerAnchor = _followerAnchorFor(
+      screenWidth: screenWidth,
+      maxWidth: maxWidth,
+      markerGlobalDx: markerGlobalDx,
+    );
 
     return Positioned.fill(
       child: CompositedTransformFollower(
         link: link,
         showWhenUnlinked: false,
         targetAnchor: Alignment.topCenter,
-        followerAnchor: Alignment.bottomCenter,
-        offset: const Offset(0, -10),
+        followerAnchor: followerAnchor,
+        offset: _followerOffsetFor(followerAnchor),
         child: UnconstrainedBox(
-          alignment: Alignment.bottomCenter,
+          alignment: followerAnchor,
           child: MouseRegion(
             onEnter: (_) => onEnter(),
             onExit: (_) => onExit(),
@@ -1523,6 +1715,9 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
                 group: group,
                 metric: metric,
                 showTechnicalLocationDetails: false,
+                onSelectBranch: onPinBranch,
+                selectBranchLabel: pinBranchLabel ?? 'Fixar filial',
+                onDismiss: onDismiss,
               ),
             ),
           ),
@@ -1864,10 +2059,12 @@ class _SelectedMunicipalityDetail extends StatelessWidget {
   const _SelectedMunicipalityDetail({
     required this.group,
     required this.metric,
+    this.selectedStoreId,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
   final AppBrazilStoreSalesMapMetric metric;
+  final String? selectedStoreId;
 
   @override
   Widget build(BuildContext context) {
@@ -1875,7 +2072,11 @@ class _SelectedMunicipalityDetail extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(top: tokens.gapMd),
-      child: _SelectedMarkerGroupDetailCard(group: group, metric: metric),
+      child: _SelectedMarkerGroupDetailCard(
+        group: group,
+        metric: metric,
+        initialStoreId: selectedStoreId,
+      ),
     );
   }
 }
@@ -1906,6 +2107,9 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
     required this.metric,
     this.initialStoreId,
     this.onClose,
+    this.onDismiss,
+    this.onSelectBranch,
+    this.selectBranchLabel,
     this.showTechnicalLocationDetails = true,
   });
 
@@ -1913,6 +2117,9 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
   final AppBrazilStoreSalesMapMetric metric;
   final String? initialStoreId;
   final VoidCallback? onClose;
+  final VoidCallback? onDismiss;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
+  final String? selectBranchLabel;
   final bool showTechnicalLocationDetails;
 
   @override
@@ -1922,6 +2129,9 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
       metric: metric,
       initialStoreId: initialStoreId,
       onClose: onClose,
+      onDismiss: onDismiss,
+      onSelectBranch: onSelectBranch,
+      selectBranchLabel: selectBranchLabel,
       showTechnicalLocationDetails: showTechnicalLocationDetails,
     );
   }
@@ -1954,6 +2164,9 @@ class _SelectedMarkerBranchCarouselCard extends StatefulWidget {
     required this.metric,
     this.initialStoreId,
     this.onClose,
+    this.onDismiss,
+    this.onSelectBranch,
+    this.selectBranchLabel,
     this.showTechnicalLocationDetails = true,
   });
 
@@ -1961,6 +2174,9 @@ class _SelectedMarkerBranchCarouselCard extends StatefulWidget {
   final AppBrazilStoreSalesMapMetric metric;
   final String? initialStoreId;
   final VoidCallback? onClose;
+  final VoidCallback? onDismiss;
+  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
+  final String? selectBranchLabel;
   final bool showTechnicalLocationDetails;
 
   @override
@@ -1971,10 +2187,15 @@ class _SelectedMarkerBranchCarouselCard extends StatefulWidget {
 class _SelectedMarkerBranchCarouselCardState
     extends State<_SelectedMarkerBranchCarouselCard> {
   late int _selectedIndex;
+  late List<AppBrazilStoreSalesPoint> _orderedPoints;
 
   @override
   void initState() {
     super.initState();
+    _orderedPoints = _orderedBranchPoints(
+      widget.group,
+      initialStoreId: widget.initialStoreId,
+    );
     _selectedIndex = _initialIndex();
   }
 
@@ -1983,8 +2204,12 @@ class _SelectedMarkerBranchCarouselCardState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.group != widget.group ||
         oldWidget.initialStoreId != widget.initialStoreId) {
+      _orderedPoints = _orderedBranchPoints(
+        widget.group,
+        initialStoreId: widget.initialStoreId,
+      );
       _selectedIndex = _initialIndex();
-    } else if (_selectedIndex >= widget.group.points.length) {
+    } else if (_selectedIndex >= _orderedPoints.length) {
       _selectedIndex = 0;
     }
   }
@@ -1995,14 +2220,14 @@ class _SelectedMarkerBranchCarouselCardState
       return 0;
     }
 
-    final index = widget.group.points.indexWhere(
+    final index = _orderedPoints.indexWhere(
       (point) => point.id == storeId,
     );
     return index < 0 ? 0 : index;
   }
 
   void _move(int delta) {
-    final count = widget.group.points.length;
+    final count = _orderedPoints.length;
     if (count <= 1) {
       return;
     }
@@ -2017,26 +2242,67 @@ class _SelectedMarkerBranchCarouselCardState
 
   @override
   Widget build(BuildContext context) {
-    final point = widget.group.points[_selectedIndex];
-    final count = widget.group.points.length;
+    final point = _orderedPoints[_selectedIndex];
+    final count = _orderedPoints.length;
 
-    return _SelectedMarkerBranchDetailSurface(
-      point: point,
-      metric: widget.metric,
-      onClose: widget.onClose,
-      showTechnicalLocationDetails: widget.showTechnicalLocationDetails,
-      branchPositionLabel: count > 1
-          ? '${_formatInteger(_selectedIndex + 1)} de ${_formatInteger(count)}'
-          : null,
-      navigation: count > 1
-          ? _BranchCarouselNavigation(
-              currentIndex: _selectedIndex,
-              branchCount: count,
-              onPrevious: () => _move(-1),
-              onNext: () => _move(1),
-            )
-          : null,
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: _SelectedMarkerBranchDetailSurface(
+        point: point,
+        metric: widget.metric,
+        onClose: widget.onClose,
+        showTechnicalLocationDetails: widget.showTechnicalLocationDetails,
+        branchPositionLabel: count > 1
+            ? '${_formatInteger(_selectedIndex + 1)} de ${_formatInteger(count)}'
+            : null,
+        aggregateSummary: count > 1
+            ? _BranchAggregateSummary(
+                group: widget.group,
+                metric: widget.metric,
+              )
+            : null,
+        onSelectBranch: widget.onSelectBranch == null
+            ? null
+            : () => widget.onSelectBranch!(point),
+        selectBranchLabel: widget.selectBranchLabel,
+        navigation: count > 1
+            ? _BranchCarouselNavigation(
+                currentIndex: _selectedIndex,
+                points: _orderedPoints,
+                onPrevious: () => _move(-1),
+                onNext: () => _move(1),
+                onSelectIndex: (index) {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                },
+              )
+            : null,
+      ),
     );
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      _move(-1);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      _move(1);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      final dismiss = widget.onDismiss ?? widget.onClose;
+      dismiss?.call();
+      return dismiss == null ? KeyEventResult.ignored : KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
   }
 }
 
@@ -2047,6 +2313,9 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
     this.onClose,
     this.showTechnicalLocationDetails = true,
     this.branchPositionLabel,
+    this.aggregateSummary,
+    this.onSelectBranch,
+    this.selectBranchLabel,
     this.navigation,
   });
 
@@ -2055,6 +2324,9 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
   final VoidCallback? onClose;
   final bool showTechnicalLocationDetails;
   final String? branchPositionLabel;
+  final Widget? aggregateSummary;
+  final VoidCallback? onSelectBranch;
+  final String? selectBranchLabel;
   final Widget? navigation;
 
   @override
@@ -2063,11 +2335,13 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final cityLabel = _cityLabelFor(point);
     final municipalityCode = point.municipalityCode?.trim();
-    final companyCode = point.companyCode;
-    final branchCode = point.branchCode;
     final branchName = _branchNameLabel(point);
     final agentName = _trimmedOrNull(point.agentName);
     final legacySubtitle = _trimmedOrNull(point.subtitle);
+    final maxCardHeight = (MediaQuery.sizeOf(context).height - 48).clamp(
+      260.0,
+      460.0,
+    );
 
     return Semantics(
       container: true,
@@ -2084,140 +2358,160 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.formFieldRadius),
             border: Border.all(color: colorScheme.outlineVariant),
           ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.contentSpacing),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.storefront_outlined,
-                      color: context.appColors.secondary,
-                      size: 20,
-                    ),
-                    SizedBox(width: tokens.gapSm),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _branchDisplayName(point),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          SizedBox(height: tokens.gapXs),
-                          Text(
-                            cityLabel,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxCardHeight),
+            child: SingleChildScrollView(
+              key: const ValueKey<String>(
+                'brazil-store-sales-branch-card-scroll',
+              ),
+              padding: EdgeInsets.all(tokens.contentSpacing),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.storefront_outlined,
+                        color: context.appColors.secondary,
+                        size: 20,
                       ),
-                    ),
-                    SizedBox(width: tokens.gapSm),
-                    if (onClose == null)
-                      AppTagChip(label: branchPositionLabel ?? metric.label)
-                    else
-                      Tooltip(
-                        message: 'Fechar detalhes',
-                        child: IconButton(
-                          onPressed: onClose,
-                          icon: const Icon(Icons.close_rounded),
-                          iconSize: 18,
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints.tightFor(
-                            width: 32,
-                            height: 32,
-                          ),
+                      SizedBox(width: tokens.gapSm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _branchDisplayName(point),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            SizedBox(height: tokens.gapXs),
+                            Text(
+                              cityLabel,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
                         ),
                       ),
+                      SizedBox(width: tokens.gapSm),
+                      if (onClose == null)
+                        AppTagChip(label: branchPositionLabel ?? metric.label)
+                      else
+                        Tooltip(
+                          message: 'Fechar detalhes',
+                          child: IconButton(
+                            onPressed: onClose,
+                            icon: const Icon(Icons.close_rounded),
+                            iconSize: 18,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 32,
+                              height: 32,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: tokens.gapMd),
+                  if (onClose != null) ...[
+                    Wrap(
+                      spacing: tokens.gapSm,
+                      runSpacing: tokens.gapSm,
+                      children: [
+                        const AppTagChip(label: 'Filial fixada'),
+                        AppTagChip(label: metric.label),
+                        if (branchPositionLabel != null)
+                          AppTagChip(label: branchPositionLabel!),
+                      ],
+                    ),
+                    SizedBox(height: tokens.gapSm),
                   ],
-                ),
-                SizedBox(height: tokens.gapMd),
-                if (onClose != null) ...[
+                  if (aggregateSummary != null) ...[
+                    aggregateSummary!,
+                    SizedBox(height: tokens.gapMd),
+                  ],
                   Wrap(
                     spacing: tokens.gapSm,
                     runSpacing: tokens.gapSm,
                     children: [
-                      AppTagChip(label: metric.label),
-                      if (branchPositionLabel != null)
-                        AppTagChip(label: branchPositionLabel!),
+                      AppTagChip(
+                        label: AppBrFormatters.currency(point.salesAmount),
+                        icon: Icons.attach_money,
+                      ),
+                      AppTagChip(
+                        label: '${_formatInteger(point.salesCount)} vendas',
+                        icon: Icons.receipt_long_outlined,
+                      ),
+                      if (agentName != null)
+                        AppTagChip(
+                          label: _agentChipLabel(agentName),
+                          icon: Icons.hub_outlined,
+                        )
+                      else if (legacySubtitle != null)
+                        AppTagChip(
+                          label: legacySubtitle,
+                          icon: Icons.hub_outlined,
+                        ),
+                      if (branchName != null)
+                        AppTagChip(
+                          label: branchName,
+                          icon: Icons.store_mall_directory_outlined,
+                        ),
+                      if (showTechnicalLocationDetails &&
+                          municipalityCode != null &&
+                          municipalityCode.isNotEmpty)
+                        AppTagChip(
+                          label: 'IBGE $municipalityCode',
+                          icon: Icons.pin_drop_outlined,
+                        ),
+                      if (showTechnicalLocationDetails)
+                        AppTagChip(
+                          label: _locationResolutionLabel(
+                            point.locationResolution,
+                          ),
+                          icon: Icons.my_location_outlined,
+                        ),
+                      if (showTechnicalLocationDetails)
+                        AppTagChip(
+                          label:
+                              '${point.latitude.toStringAsFixed(4)}, '
+                              '${point.longitude.toStringAsFixed(4)}',
+                          icon: Icons.explore_outlined,
+                        ),
                     ],
                   ),
-                  SizedBox(height: tokens.gapSm),
-                ],
-                Wrap(
-                  spacing: tokens.gapSm,
-                  runSpacing: tokens.gapSm,
-                  children: [
-                    AppTagChip(
-                      label: AppBrFormatters.currency(point.salesAmount),
-                      icon: Icons.attach_money,
-                    ),
-                    AppTagChip(
-                      label: '${_formatInteger(point.salesCount)} vendas',
-                      icon: Icons.receipt_long_outlined,
-                    ),
-                    if (companyCode != null && branchCode != null)
-                      AppTagChip(
-                        label: 'Empresa $companyCode - Filial $branchCode',
-                        icon: Icons.badge_outlined,
-                      ),
-                    if (agentName != null)
-                      AppTagChip(
-                        label: _agentChipLabel(agentName),
-                        icon: Icons.hub_outlined,
-                      )
-                    else if (legacySubtitle != null)
-                      AppTagChip(
-                        label: legacySubtitle,
-                        icon: Icons.hub_outlined,
-                      ),
-                    if (branchName != null)
-                      AppTagChip(
-                        label: branchName,
-                        icon: Icons.store_mall_directory_outlined,
-                      ),
-                    if (showTechnicalLocationDetails &&
-                        municipalityCode != null &&
-                        municipalityCode.isNotEmpty)
-                      AppTagChip(
-                        label: 'IBGE $municipalityCode',
-                        icon: Icons.pin_drop_outlined,
-                      ),
-                    if (showTechnicalLocationDetails)
-                      AppTagChip(
-                        label: _locationResolutionLabel(
-                          point.locationResolution,
+                  if (onSelectBranch != null) ...[
+                    SizedBox(height: tokens.gapMd),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: OutlinedButton.icon(
+                        key: const ValueKey<String>(
+                          'brazil-store-sales-branch-card-select',
                         ),
-                        icon: Icons.my_location_outlined,
+                        onPressed: onSelectBranch,
+                        icon: const Icon(Icons.push_pin_outlined, size: 18),
+                        label: Text(selectBranchLabel ?? 'Selecionar filial'),
                       ),
-                    if (showTechnicalLocationDetails)
-                      AppTagChip(
-                        label:
-                            '${point.latitude.toStringAsFixed(4)}, '
-                            '${point.longitude.toStringAsFixed(4)}',
-                        icon: Icons.explore_outlined,
-                      ),
+                    ),
                   ],
-                ),
-                if (navigation != null) ...[
-                  SizedBox(height: tokens.gapMd),
-                  Divider(color: colorScheme.outlineVariant, height: 1),
-                  SizedBox(height: tokens.gapXs),
-                  navigation!,
+                  if (navigation != null) ...[
+                    SizedBox(height: tokens.gapMd),
+                    Divider(color: colorScheme.outlineVariant, height: 1),
+                    SizedBox(height: tokens.gapXs),
+                    navigation!,
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -2229,23 +2523,53 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
 class _BranchCarouselNavigation extends StatelessWidget {
   const _BranchCarouselNavigation({
     required this.currentIndex,
-    required this.branchCount,
+    required this.points,
     required this.onPrevious,
     required this.onNext,
+    required this.onSelectIndex,
   });
 
   final int currentIndex;
-  final int branchCount;
+  final List<AppBrazilStoreSalesPoint> points;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
+  final ValueChanged<int> onSelectIndex;
 
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final colorScheme = Theme.of(context).colorScheme;
+    final branchCount = points.length;
+    final showBranchPicker = branchCount >= 10;
 
     return Row(
       children: [
+        if (showBranchPicker) ...[
+          Tooltip(
+            message: 'Escolher filial',
+            child: PopupMenuButton<int>(
+              key: const ValueKey<String>(
+                'brazil-store-sales-branch-card-picker',
+              ),
+              tooltip: 'Escolher filial',
+              onSelected: onSelectIndex,
+              itemBuilder: (context) => [
+                for (var index = 0; index < points.length; index++)
+                  PopupMenuItem<int>(
+                    value: index,
+                    child: Text(
+                      '${_formatInteger(index + 1)}. '
+                      '${_branchDisplayName(points[index])}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+              icon: const Icon(Icons.list_alt_outlined),
+            ),
+          ),
+          SizedBox(width: tokens.gapXs),
+        ],
         Tooltip(
           message: 'Filial anterior',
           child: IconButton(
@@ -2283,6 +2607,65 @@ class _BranchCarouselNavigation extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BranchAggregateSummary extends StatelessWidget {
+  const _BranchAggregateSummary({
+    required this.group,
+    required this.metric,
+  });
+
+  final AppBrazilStoreSalesMarkerGroup group;
+  final AppBrazilStoreSalesMapMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.gapSm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Total do ponto',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: tokens.gapXs),
+            Wrap(
+              spacing: tokens.gapSm,
+              runSpacing: tokens.gapSm,
+              children: [
+                AppTagChip(
+                  label: AppBrFormatters.currency(group.salesAmount),
+                  icon: Icons.attach_money,
+                ),
+                AppTagChip(
+                  label: '${_formatInteger(group.salesCount)} vendas',
+                  icon: Icons.receipt_long_outlined,
+                ),
+                AppTagChip(
+                  label: '${_formatInteger(group.points.length)} filiais',
+                  icon: Icons.storefront_outlined,
+                ),
+                AppTagChip(label: metric.label),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2383,6 +2766,73 @@ String _cityLabelFor(AppBrazilStoreSalesPoint point) {
       '${city.trim()} / ${AppBrazilStoreSalesMapData.normalizeUf(point.uf)}',
     _ => AppBrazilStoreSalesMapData.normalizeUf(point.uf),
   };
+}
+
+Alignment _followerAnchorFor({
+  required double screenWidth,
+  required double maxWidth,
+  required double? markerGlobalDx,
+}) {
+  final markerDx = markerGlobalDx;
+  if (markerDx == null) {
+    return Alignment.bottomCenter;
+  }
+
+  const margin = 16.0;
+  final halfWidth = maxWidth / 2;
+  if (markerDx < halfWidth + margin) {
+    return Alignment.bottomLeft;
+  }
+  if (markerDx > screenWidth - halfWidth - margin) {
+    return Alignment.bottomRight;
+  }
+  return Alignment.bottomCenter;
+}
+
+Offset _followerOffsetFor(Alignment followerAnchor) {
+  if (followerAnchor == Alignment.bottomLeft) {
+    return const Offset(8, -10);
+  }
+  if (followerAnchor == Alignment.bottomRight) {
+    return const Offset(-8, -10);
+  }
+  return const Offset(0, -10);
+}
+
+List<AppBrazilStoreSalesPoint> _orderedBranchPoints(
+  AppBrazilStoreSalesMarkerGroup group, {
+  required String? initialStoreId,
+}) {
+  final selected = <AppBrazilStoreSalesPoint>[];
+  final remaining = <AppBrazilStoreSalesPoint>[];
+
+  for (final point in group.points) {
+    if (initialStoreId != null && point.id == initialStoreId) {
+      selected.add(point);
+    } else {
+      remaining.add(point);
+    }
+  }
+
+  remaining.sort(_compareBranchPoints);
+  return <AppBrazilStoreSalesPoint>[...selected, ...remaining];
+}
+
+int _compareBranchPoints(
+  AppBrazilStoreSalesPoint left,
+  AppBrazilStoreSalesPoint right,
+) {
+  final amount = right.salesAmount.compareTo(left.salesAmount);
+  if (amount != 0) {
+    return amount;
+  }
+
+  final salesCount = right.salesCount.compareTo(left.salesCount);
+  if (salesCount != 0) {
+    return salesCount;
+  }
+
+  return _branchDisplayName(left).compareTo(_branchDisplayName(right));
 }
 
 String _branchDisplayName(AppBrazilStoreSalesPoint point) {

@@ -250,6 +250,53 @@ void main() {
   });
 
   test(
+    'nao envia filtro fixo de empresa e filial na consulta padrao',
+    () async {
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      final captured = verify(
+        () => loadAcrossAgents.call(
+          userId: 'user-1',
+          filter: captureAny(named: 'filter'),
+          selectedAgentIds: captureAny(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+        ),
+      ).captured;
+      final queryFilter =
+          captured[0] as ResumoTotalVendasMunicipioFilialPeriodoFilter;
+      final selectedAgentIds = captured[1] as Set<String>?;
+
+      check(queryFilter.selectedBranches).isEmpty();
+      check(selectedAgentIds).isNull();
+    },
+  );
+
+  test(
     'usa filiais selecionadas para reduzir agentes e SQL do resumo',
     () async {
       _stubReport(
@@ -389,6 +436,10 @@ void main() {
     check(result.mappedBranchCount).equals(0);
     check(result.mappedMunicipalityCount).equals(0);
     check(result.points).isEmpty();
+    check(result.unmappedBranchOptions.single.name).equals('Loja matriz');
+    check(result.unmappedBranchOptions.single.agentName).equals(
+      'Agente agent-a',
+    );
     check(result.hasPartialIssue).isTrue();
   });
 
@@ -426,6 +477,11 @@ void main() {
       check(result.totalBranchCount).equals(1);
       check(result.mappedBranchCount).equals(0);
       check(result.points).isEmpty();
+      check(result.unmappedBranchOptions.single.name).equals('Loja matriz');
+      check(result.unmappedBranchOptions.single.city).equals(
+        'Municipio sem cadastro',
+      );
+      check(result.unmappedBranchOptions.single.uf).equals('MT');
       check(result.locationDiagnostics.resolvedByStateUfCount).equals(0);
       check(result.locationDiagnostics.unresolvedBranchCount).equals(1);
       check(geocoder.lookups.map((input) => input.type).toList()).deepEquals(

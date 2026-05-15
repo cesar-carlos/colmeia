@@ -258,6 +258,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                         initialMetric: initialMetricSnapshot,
                         style: styleSnapshot,
                         onMetricChanged: _onMapMetricChanged,
+                        onBranchFilter: _filterByMapBranch,
                       );
                       final maxH = cardConstraints.maxHeight;
                       if (maxH.isFinite && maxH < double.infinity) {
@@ -329,6 +330,20 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     final next = _filter.copyWith(
       selectedAgentIds: null,
       selectedBranchIds: null,
+    );
+    setState(() {
+      _filter = next;
+    });
+    unawaited(_prefs.persistSalesLiveMapFilter(next));
+    unawaited(_reload(force: true));
+  }
+
+  void _filterByMapBranch(AppBrazilStoreSalesPointTapEvent event) {
+    final next = _normalizeFilterForSelectedBranches(
+      _filter.copyWith(
+        selectedBranchIds: <String>{event.point.id},
+        detailLevel: SalesLiveMapMapDetail.branches,
+      ),
     );
     setState(() {
       _filter = next;
@@ -462,6 +477,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                 markerVisual: _filter.markerVisual,
               ),
               onMetricChanged: _onMapMetricChanged,
+              onBranchFilter: _filterByMapBranch,
               onOpenFullscreen: _openLiveMapFullscreen,
             ),
           ],
@@ -747,7 +763,77 @@ class _SalesLiveMapAttentionPanel extends StatelessWidget {
       tone: AppInlinePanelTone.informational,
       title: l10n.salesLiveMapPartialTitle,
       message: messages.join(' '),
+      actions: result.unmappedBranchOptions.isEmpty
+          ? null
+          : _SalesLiveMapUnmappedBranchesList(
+              branches: result.unmappedBranchOptions,
+            ),
     );
+  }
+}
+
+class _SalesLiveMapUnmappedBranchesList extends StatelessWidget {
+  const _SalesLiveMapUnmappedBranchesList({required this.branches});
+
+  static const int _maxVisibleBranches = 6;
+
+  final List<SalesLiveMapBranchOption> branches;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final visibleBranches = branches
+        .take(_maxVisibleBranches)
+        .toList(growable: false);
+    final hiddenBranchCount = branches.length - visibleBranches.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        for (final branch in visibleBranches)
+          Padding(
+            padding: EdgeInsets.only(bottom: tokens.gapXs),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.location_off_outlined,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+                SizedBox(width: tokens.gapSm),
+                Expanded(
+                  child: Text(
+                    _unmappedBranchLabel(branch),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (hiddenBranchCount > 0)
+          Padding(
+            padding: EdgeInsets.only(left: 18 + tokens.gapSm),
+            child: Text(
+              '+ $hiddenBranchCount',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _unmappedBranchLabel(SalesLiveMapBranchOption branch) {
+    final location = '${branch.city} / ${branch.uf}';
+    return '${branch.name} - $location - ${branch.agentName}';
   }
 }
 

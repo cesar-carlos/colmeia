@@ -129,6 +129,13 @@ void main() {
       'DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
     );
     check(capturedRequest.sql).contains('pv.Origem = :origem');
+    check(capturedRequest.sql).contains('tos.CodEmpresa = pv.CodEmpresa');
+    check(capturedRequest.sql).contains(
+      'tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida',
+    );
+    check(
+      capturedRequest.sql.contains('tos.CodFilial = pv.CodFilial'),
+    ).isFalse();
     check(capturedRequest.sql).contains(
       'MAX(CodigoIBGEMunicipioFilial) AS CodigoIBGEMunicipioFilial',
     );

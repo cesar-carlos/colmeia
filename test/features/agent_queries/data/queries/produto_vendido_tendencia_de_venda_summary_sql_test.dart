@@ -21,6 +21,14 @@ void main() {
     check(sql).contains(':origem');
   });
 
+  test('summary query joins TipoOperacaoSaida without CodFilial', () {
+    check(sql).contains('tos.CodEmpresa = pv.CodEmpresa');
+    check(sql).contains(
+      'tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida',
+    );
+    check(sql.contains('tos.CodFilial = pv.CodFilial')).isFalse();
+  });
+
   test('summary query groups and aggregates by classificacao', () {
     check(sql).contains('COUNT(*) AS QuantidadeProdutos');
     check(sql).contains('SUM(Diferenca) AS ImpactoLiquido');

@@ -80,6 +80,7 @@ class AppRegionMapChartStyle {
     this.height,
     this.chartPadding,
     this.showTooltip = true,
+    this.showShapeTooltip = true,
     this.showLegend = true,
     this.showDataLabels = false,
     this.showMetricSelector = true,
@@ -113,6 +114,7 @@ class AppRegionMapChartStyle {
   final double? height;
   final EdgeInsets? chartPadding;
   final bool showTooltip;
+  final bool showShapeTooltip;
   final bool showLegend;
   final bool showDataLabels;
   final bool showMetricSelector;

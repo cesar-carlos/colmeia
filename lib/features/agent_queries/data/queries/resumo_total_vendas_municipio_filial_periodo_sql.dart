@@ -10,7 +10,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vend
 /// | Alias | Table | Role |
 /// |-------|-------|------|
 /// | `pv` | `ProdutoVendido` | Fact rows: keys, `DataVenda`, `Origem`, `PreVenda`, `ValorLiquido`, joins to filial and tipo saida |
-/// | `tos` | `TipoOperacaoSaida` | Filter `GeraFinanceiro`; join `CodEmpresa`, `CodFilial`, `CodTipoOperacaoSaida` |
+/// | `tos` | `TipoOperacaoSaida` | Filter `GeraFinanceiro`; join `CodEmpresa`, `CodTipoOperacaoSaida` |
 /// | `f` | `Filial` | Branch name, fantasy name, CEP; links to branch municipality |
 /// | `mf` | `Municipio` | Branch municipality (`f.CodMunicipio`): code, name, UF, IBGE |
 ///
@@ -47,7 +47,6 @@ SELECT
 FROM ProdutoVendido pv
 INNER JOIN TipoOperacaoSaida tos ON
   tos.CodEmpresa = pv.CodEmpresa
-  AND tos.CodFilial = pv.CodFilial
   AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
 INNER JOIN Filial f ON
   f.CodEmpresa = pv.CodEmpresa

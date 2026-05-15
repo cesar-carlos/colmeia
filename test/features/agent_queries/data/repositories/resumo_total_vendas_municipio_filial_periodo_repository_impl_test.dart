@@ -127,6 +127,13 @@ void main() {
       'DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
     );
     check(capturedRequest.sql).contains('pv.Origem = :origem');
+    check(capturedRequest.sql).contains('tos.CodEmpresa = pv.CodEmpresa');
+    check(capturedRequest.sql).contains(
+      'tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida',
+    );
+    check(
+      capturedRequest.sql.contains('tos.CodFilial = pv.CodFilial'),
+    ).isFalse();
     check(capturedRequest.sql).contains(
       'MAX(mf.CodigoIBGE) AS CodigoIBGEMunicipioFilial',
     );
@@ -135,6 +142,8 @@ void main() {
     check(capturedRequest.sql.contains('DataVenda,')).isFalse();
     check(capturedRequest.sql.contains('ORDER BY')).isFalse();
     check(capturedRequest.sql.contains('INNER JOIN Municipio mc')).isFalse();
+    check(capturedRequest.sql.contains('pv.CodEmpresa = 1')).isFalse();
+    check(capturedRequest.sql.contains('pv.CodFilial = 1')).isFalse();
     expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
   });
 

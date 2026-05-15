@@ -39,6 +39,11 @@ void main() {
   );
 
   test('query applies business filters and minimum movement threshold', () {
+    check(sql).contains('tos.CodEmpresa = pv.CodEmpresa');
+    check(sql).contains(
+      'tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida',
+    );
+    check(sql.contains('tos.CodFilial = pv.CodFilial')).isFalse();
     check(sql).contains("COALESCE(tos.GeraFinanceiro, 'N') = 'S'");
     check(sql).contains("pv.PreVenda = 'N'");
     check(sql).contains('WHERE (QtdAtual + QtdAnterior) >= 10');

@@ -26,6 +26,7 @@ class SalesLiveMapLoadResult {
     required this.skippedOfflineAgentCount,
     required this.rowCapReachedAgentCount,
     required this.refreshedAt,
+    this.unmappedBranchOptions = const <SalesLiveMapBranchOption>[],
     this.locationDiagnostics = const SalesLiveMapLocationDiagnostics(),
     this.loadFailed = false,
     this.loadFailureReason,
@@ -35,6 +36,7 @@ class SalesLiveMapLoadResult {
 
   final List<AppBrazilStoreSalesPoint> points;
   final List<SalesLiveMapBranchOption> branchOptions;
+  final List<SalesLiveMapBranchOption> unmappedBranchOptions;
   final double totalRevenue;
   final int totalSalesCount;
   final int totalBranchCount;
@@ -58,6 +60,7 @@ class SalesLiveMapLoadResult {
       missingClientTokenAgentCount > 0 ||
       skippedOfflineAgentCount > 0 ||
       rowCapReachedAgentCount > 0 ||
+      unmappedBranchOptions.isNotEmpty ||
       mappedBranchCount < totalBranchCount;
 }
 
@@ -324,11 +327,16 @@ class LoadSalesLiveMapUseCase {
     );
     _logLocationSummary(locationDiagnostics);
     final mappedMunicipalityCount = _mappedMunicipalityCount(points);
+    final unmappedBranchOptions = _unmappedBranchOptions(
+      visibleAggregates: visibleAggregates,
+      points: points,
+    );
 
     final loadFailed = report.requiresClientTokenSetup;
     return SalesLiveMapLoadResult(
       points: points,
       branchOptions: branchOptions,
+      unmappedBranchOptions: unmappedBranchOptions,
       totalRevenue: visibleAggregates.fold<double>(
         0,
         (total, aggregate) => total + aggregate.totalVenda,
@@ -729,6 +737,18 @@ class LoadSalesLiveMapUseCase {
 
   int _mappedMunicipalityCount(Iterable<AppBrazilStoreSalesPoint> points) {
     return points.map(_municipalityKeyFor).toSet().length;
+  }
+
+  List<SalesLiveMapBranchOption> _unmappedBranchOptions({
+    required List<_SalesLiveMapBranchAggregate> visibleAggregates,
+    required List<AppBrazilStoreSalesPoint> points,
+  }) {
+    final mappedBranchIds = points.map((point) => point.id).toSet();
+
+    return visibleAggregates
+        .where((aggregate) => !mappedBranchIds.contains(aggregate.id))
+        .map((aggregate) => aggregate.toBranchOption())
+        .toList(growable: false);
   }
 
   String _municipalityKeyFor(AppBrazilStoreSalesPoint point) {

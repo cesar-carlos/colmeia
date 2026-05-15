@@ -12,7 +12,7 @@
 // |---|---|---|
 // | ipv | ItemProdutoVendido | Sale item line (`Quantidade`, `CodProduto`) |
 // | pv | ProdutoVendido | `pv.CodEmpresa = ipv.CodEmpresa` and `pv.CodProdutoVendido = ipv.CodProdutoVendido`; provides `DataVenda`, `Origem`, `PreVenda`, `CodFilial` |
-// | tos | TipoOperacaoSaida | `tos.CodEmpresa = pv.CodEmpresa`, `tos.CodFilial = pv.CodFilial`, `tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida`; validates financeiro rows |
+// | tos | TipoOperacaoSaida | `tos.CodEmpresa = pv.CodEmpresa`, `tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida`; validates financeiro rows |
 // | p | Produto | `p.CodProduto = ipv.CodProduto`; provides product identity and `CodUnidadeMedida` |
 // | gp | GrupoProduto | `gp.CodGrupoProduto = p.CodGrupoProduto` (optional metadata) |
 // | m | Marca | `m.CodMarca = p.CodMarca` (optional metadata) |
@@ -99,7 +99,6 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
         AND pv.CodProdutoVendido = ipv.CodProdutoVendido
       INNER JOIN TipoOperacaoSaida tos ON
         tos.CodEmpresa = pv.CodEmpresa
-        AND tos.CodFilial = pv.CodFilial
         AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
       INNER JOIN Produto p ON
         p.CodProduto = ipv.CodProduto

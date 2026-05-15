@@ -8,7 +8,7 @@
 /// | Alias | Table | Role |
 /// |-------|-------|------|
 /// | `pv` | `ProdutoVendido` | Fact rows: keys, `DataVenda`, `Origem`, `PreVenda`, `ValorLiquido`, joins to filial and tipo saída |
-/// | `tos` | `TipoOperacaoSaida` | Filter `GeraFinanceiro`; join `CodEmpresa`, `CodFilial`, `CodTipoOperacaoSaida` |
+/// | `tos` | `TipoOperacaoSaida` | Filter `GeraFinanceiro`; join `CodEmpresa`, `CodTipoOperacaoSaida` |
 /// | `f` | `Filial` | Branch name, fantasy name, CEP; links to branch municipality |
 /// | `mf` | `Municipio` | **Branch** municipality (`f.CodMunicipio`): code, name, UF, IBGE |
 ///
@@ -16,7 +16,7 @@
 ///
 /// ```text
 /// ProdutoVendido (pv)
-///   -> TipoOperacaoSaida (tos) on empresa + filial + tipo saída
+///   -> TipoOperacaoSaida (tos) on empresa + tipo saída
 ///   -> Filial (f) on empresa + filial
 ///        -> Municipio (mf) on filial.CodMunicipio   -- geography of the branch
 /// ```
@@ -50,7 +50,7 @@
 /// INCLUDE (CodProdutoVendido, Origem, PreVenda, CodTipoOperacaoSaida, ValorLiquido);
 ///
 /// CREATE NONCLUSTERED INDEX IX_TipoOperacaoSaida_Join
-/// ON TipoOperacaoSaida (CodEmpresa, CodFilial, CodTipoOperacaoSaida)
+/// ON TipoOperacaoSaida (CodEmpresa, CodTipoOperacaoSaida)
 /// INCLUDE (GeraFinanceiro);
 ///
 /// CREATE NONCLUSTERED INDEX IX_Filial_Municipio
@@ -89,7 +89,6 @@ FROM (
   FROM ProdutoVendido pv
   INNER JOIN TipoOperacaoSaida tos ON
     tos.CodEmpresa = pv.CodEmpresa
-    AND tos.CodFilial = pv.CodFilial
     AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
   INNER JOIN Filial f ON
     f.CodEmpresa = pv.CodEmpresa

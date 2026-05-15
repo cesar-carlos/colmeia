@@ -6,6 +6,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.d
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -40,7 +41,7 @@ void main() {
 
     expect(find.text('Casa do Mel'), findsOneWidget);
     expect(find.text('Casa do Mel Matriz'), findsOneWidget);
-    expect(find.text('Empresa 1 - Filial 1'), findsOneWidget);
+    expect(find.text('Empresa 1 - Filial 1'), findsNothing);
     expect(find.text('Agente Tangara'), findsOneWidget);
     expect(find.text(r'R$ 84.246,26'), findsOneWidget);
     expect(find.text('1.568 vendas'), findsOneWidget);
@@ -88,18 +89,21 @@ void main() {
           salesCount: 468,
         ),
       ],
-      selectedStoreId: 'store-1',
+      selectedStoreId: 'store-2',
       style: _baseStyle.copyWith(
         markerAggregation: AppBrazilStoreSalesMarkerAggregation.municipalities,
       ),
     );
 
-    expect(find.text('Casa do Mel Centro'), findsOneWidget);
+    expect(find.text('Casa do Mel Jardim'), findsOneWidget);
     expect(find.text('Tangara da Serra / MT'), findsOneWidget);
-    expect(find.text(r'R$ 60.000,00'), findsOneWidget);
-    expect(find.text('1.100 vendas'), findsOneWidget);
+    expect(find.text(r'R$ 24.246,26'), findsOneWidget);
+    expect(find.text('468 vendas'), findsOneWidget);
     expect(find.text('1 de 2'), findsWidgets);
-    expect(find.text('Empresa 1 - Filial 1'), findsOneWidget);
+    expect(find.text('Total do ponto'), findsOneWidget);
+    expect(find.text(r'R$ 84.246,26'), findsOneWidget);
+    expect(find.text('1.568 vendas'), findsOneWidget);
+    expect(find.text('Empresa 1 - Filial 2'), findsNothing);
   });
 
   testWidgets('hover on a single store marker shows the branch detail card', (
@@ -137,7 +141,7 @@ void main() {
     expect(find.text('Sinop / MT'), findsOneWidget);
     expect(find.text(r'R$ 3.421,77'), findsOneWidget);
     expect(find.text('64 vendas'), findsOneWidget);
-    expect(find.text('Empresa 7 - Filial 3'), findsOneWidget);
+    expect(find.text('Empresa 7 - Filial 3'), findsNothing);
     expect(find.text('Agente Norte'), findsOneWidget);
   });
 
@@ -195,6 +199,192 @@ void main() {
     expect(find.text(r'R$ 1.421,77'), findsOneWidget);
     expect(find.text('44 vendas'), findsOneWidget);
     expect(find.text('2 de 2'), findsWidgets);
+  });
+
+  testWidgets('hover card action pins the current branch', (tester) async {
+    String? pinnedStoreId;
+    await _pumpHoverAnchor(
+      tester,
+      points: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Matriz',
+          fantasyName: 'Mel Centro',
+          uf: 'MT',
+          city: 'Sinop',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 2000,
+          salesCount: 20,
+        ),
+      ],
+      onPinBranch: (point) {
+        pinnedStoreId = point.id;
+      },
+    );
+
+    final gesture = await _hoverFirstStoreMarker(tester);
+    addTearDown(gesture.removePointer);
+
+    await tester.tap(find.text('Fixar filial'));
+    await tester.pump();
+
+    expect(pinnedStoreId, 'store-1');
+  });
+
+  testWidgets('hover card can expose filter action text', (tester) async {
+    String? filteredStoreId;
+    await _pumpHoverAnchor(
+      tester,
+      points: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Matriz',
+          fantasyName: 'Mel Centro',
+          uf: 'MT',
+          city: 'Sinop',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 2000,
+          salesCount: 20,
+        ),
+      ],
+      onPinBranch: (point) {
+        filteredStoreId = point.id;
+      },
+      pinBranchLabel: 'Filtrar filial',
+    );
+
+    final gesture = await _hoverFirstStoreMarker(tester);
+    addTearDown(gesture.removePointer);
+
+    await tester.tap(find.text('Filtrar filial'));
+    await tester.pump();
+
+    expect(filteredStoreId, 'store-1');
+  });
+
+  testWidgets('hover card shows branch picker for many stores', (tester) async {
+    await _pumpHoverAnchor(
+      tester,
+      points: List<AppBrazilStoreSalesPoint>.generate(
+        10,
+        (index) => AppBrazilStoreSalesPoint(
+          id: 'store-${index + 1}',
+          name: 'Loja ${index + 1}',
+          fantasyName: 'Loja ${index + 1}',
+          uf: 'MT',
+          city: 'Sinop',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: (index + 1).toDouble(),
+          salesCount: index + 1,
+        ),
+      ),
+    );
+
+    final gesture = await _hoverFirstStoreMarker(tester);
+    addTearDown(gesture.removePointer);
+
+    expect(find.text('Loja 10'), findsOneWidget);
+    await tester.tap(
+      find.byKey(
+        const ValueKey<String>('brazil-store-sales-branch-card-picker'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('10. Loja 1'), findsOneWidget);
+  });
+
+  testWidgets('hover card height is constrained and scrollable', (
+    tester,
+  ) async {
+    await _pumpHoverAnchor(
+      tester,
+      points: List<AppBrazilStoreSalesPoint>.generate(
+        12,
+        (index) => AppBrazilStoreSalesPoint(
+          id: 'store-${index + 1}',
+          name: 'Loja ${index + 1}',
+          fantasyName: 'Loja ${index + 1}',
+          branchName: 'Cadastro ${index + 1}',
+          companyCode: 1,
+          branchCode: index + 1,
+          agentName: 'Agente $index',
+          uf: 'MT',
+          city: 'Sinop',
+          municipalityCode: '5107909',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: (index + 1) * 1000,
+          salesCount: index + 1,
+          locationResolution:
+              AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+        ),
+      ),
+    );
+
+    final gesture = await _hoverFirstStoreMarker(tester);
+    addTearDown(gesture.removePointer);
+    final card = find.byKey(
+      const ValueKey<String>('brazil-store-sales-branch-card'),
+    );
+
+    expect(tester.getSize(card).height, lessThanOrEqualTo(460));
+    expect(
+      find.byKey(
+        const ValueKey<String>('brazil-store-sales-branch-card-scroll'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('hover card supports keyboard navigation and escape', (
+    tester,
+  ) async {
+    await _pumpHoverAnchor(
+      tester,
+      points: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Matriz',
+          fantasyName: 'Mel Centro',
+          uf: 'MT',
+          city: 'Sinop',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 2000,
+          salesCount: 20,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'store-2',
+          name: 'Filial 2',
+          fantasyName: 'Mel Norte',
+          uf: 'MT',
+          city: 'Sinop',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 1421.77,
+          salesCount: 44,
+        ),
+      ],
+    );
+
+    final gesture = await _hoverFirstStoreMarker(tester);
+    addTearDown(gesture.removePointer);
+    expect(find.text('Mel Centro'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    expect(find.text('Mel Norte'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey<String>('brazil-store-sales-branch-card')),
+      findsNothing,
+    );
   });
 
   testWidgets('hover card stays open when the mouse enters the overlay', (
@@ -287,6 +477,8 @@ Future<TestGesture> _hoverFirstStoreMarker(WidgetTester tester) async {
 Future<void> _pumpHoverAnchor(
   WidgetTester tester, {
   required List<AppBrazilStoreSalesPoint> points,
+  ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch,
+  String? pinBranchLabel,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -298,6 +490,8 @@ Future<void> _pumpHoverAnchor(
           child: AppBrazilStoreSalesBranchHoverDetailAnchor(
             group: AppBrazilStoreSalesMarkerGroup(points: points),
             metric: AppBrazilStoreSalesMapMetric.revenue,
+            onPinBranch: onPinBranch,
+            pinBranchLabel: pinBranchLabel,
             marker: Container(
               key: const ValueKey<String>('brazil-store-sales-test-marker'),
               width: 32,

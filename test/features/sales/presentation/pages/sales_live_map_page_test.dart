@@ -289,6 +289,31 @@ void main() {
     );
   });
 
+  testWidgets('shows unmapped branches in the partial tracking panel', (
+    tester,
+  ) async {
+    when(
+      () => loadLiveMap.call(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).thenAnswer((_) async => _partialUnmappedResult());
+
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+
+    expect(find.text('Partial tracking'), findsOneWidget);
+    expect(
+      find.text('1 branch(es) without resolved coordinates.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Branch Without Coordinates - Unknown City / MT - Agent Two'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('keeps the last map visible while a manual refresh is running', (
     tester,
   ) async {
@@ -436,6 +461,69 @@ SalesLiveMapLoadResult _loadedResult() {
     mappedMunicipalityCount: 1,
     queriedAgentCount: 1,
     plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
+}
+
+SalesLiveMapLoadResult _partialUnmappedResult() {
+  return SalesLiveMapLoadResult(
+    points: const <AppBrazilStoreSalesPoint>[
+      AppBrazilStoreSalesPoint(
+        id: 'agent-1-1-1',
+        name: 'Branch One',
+        uf: 'MT',
+        latitude: -15.60,
+        longitude: -56.10,
+        salesAmount: 1200,
+        salesCount: 12,
+        city: 'Cuiaba',
+      ),
+    ],
+    branchOptions: const <SalesLiveMapBranchOption>[
+      SalesLiveMapBranchOption(
+        id: 'agent-1-1-1',
+        agentId: 'agent-1',
+        agentName: 'Agent One',
+        codEmpresa: 1,
+        codFilial: 1,
+        name: 'Branch One',
+        city: 'Cuiaba',
+        uf: 'MT',
+      ),
+      SalesLiveMapBranchOption(
+        id: 'agent-2-1-2',
+        agentId: 'agent-2',
+        agentName: 'Agent Two',
+        codEmpresa: 1,
+        codFilial: 2,
+        name: 'Branch Without Coordinates',
+        city: 'Unknown City',
+        uf: 'MT',
+      ),
+    ],
+    unmappedBranchOptions: const <SalesLiveMapBranchOption>[
+      SalesLiveMapBranchOption(
+        id: 'agent-2-1-2',
+        agentId: 'agent-2',
+        agentName: 'Agent Two',
+        codEmpresa: 1,
+        codFilial: 2,
+        name: 'Branch Without Coordinates',
+        city: 'Unknown City',
+        uf: 'MT',
+      ),
+    ],
+    totalRevenue: 1500,
+    totalSalesCount: 15,
+    totalBranchCount: 2,
+    mappedBranchCount: 1,
+    mappedMunicipalityCount: 1,
+    queriedAgentCount: 2,
+    plannedAgentCount: 2,
     failedAgentCount: 0,
     missingClientTokenAgentCount: 0,
     skippedOfflineAgentCount: 0,

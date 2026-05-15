@@ -33,7 +33,6 @@ abstract final class ProdutoVendidoTendenciaDeVendaSummarySql {
         AND pv.CodProdutoVendido = ipv.CodProdutoVendido
       INNER JOIN TipoOperacaoSaida tos ON
         tos.CodEmpresa = pv.CodEmpresa
-        AND tos.CodFilial = pv.CodFilial
         AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
       CROSS JOIN Parametros prm
       WHERE (
