@@ -17,6 +17,20 @@ class CadastroFilialFilter {
   final int page;
   final int pageSize;
 
+  CadastroFilialFilter copyWith({
+    int? codEmpresa,
+    int? codFilial,
+    int? page,
+    int? pageSize,
+  }) {
+    return CadastroFilialFilter(
+      codEmpresa: codEmpresa ?? this.codEmpresa,
+      codFilial: codFilial ?? this.codFilial,
+      page: page ?? this.page,
+      pageSize: pageSize ?? this.pageSize,
+    );
+  }
+
   int get offset => (page - 1) * pageSize;
 
   /// Inclusive 1-based row index for `ROW_NUMBER()` paging (`offset + 1`).

@@ -155,6 +155,114 @@ void main() {
       ).called(1);
     },
   );
+
+  test(
+    'loadAll paginates each planned target until all branch rows are loaded',
+    () async {
+      final targetWithToken = _target('agent-a', clientToken: 'tok-a');
+      final resolution = AgentQueryTargetResolution(
+        consideredApprovedTargets: <AgentQueryTarget>[targetWithToken],
+        missingClientTokenTargets: const <AgentQueryTarget>[],
+        consideredApprovedAgentCount: 1,
+      );
+      final plan = AgentQueryPlan(
+        queryKey: AgentQueryKey.cadastroFilial,
+        strategy: AgentQueryExecutionStrategy.mergeAll,
+        consideredApprovedAgentCount: 1,
+        plannedTargets: <AgentQueryTarget>[targetWithToken],
+        missingClientTokenTargets: const <AgentQueryTarget>[],
+        bridgeTimeoutMs: 120000,
+      );
+
+      when(
+        () => targetResolver.resolve(
+          userId: any(named: 'userId'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            Success<AgentQueryTargetResolution, AppFailure>(resolution),
+      );
+      when(
+        () => planBuilder.build(
+          queryKey: any(named: 'queryKey'),
+          strategy: any(named: 'strategy'),
+          resolution: any(named: 'resolution'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+        ),
+      ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
+      when(
+        () => loadCadastroFilial(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+        ),
+      ).thenAnswer((invocation) async {
+        final filter =
+            invocation.namedArguments[#filter] as CadastroFilialFilter;
+        final start = ((filter.page - 1) * filter.pageSize) + 1;
+        final end = filter.page == 1 ? filter.pageSize : 150;
+        return Success<CadastroFilialPageResult, AppFailure>(
+          CadastroFilialPageResult(
+            items: <CadastroFilialRow>[
+              for (var i = start; i <= end; i++)
+                CadastroFilialRow(
+                  codEmpresa: 1,
+                  codFilial: i,
+                  nomeFilial: 'Filial $i',
+                ),
+            ],
+            totalCount: 150,
+          ),
+        );
+      });
+
+      final result = await repository.loadAll(
+        userId: 'user-1',
+        filter: const CadastroFilialFilter(),
+      );
+
+      check(result.isSuccess()).isTrue();
+      final page = result.getOrThrow();
+      check(page.report.mergedRows)
+          .has((rows) => rows.length, 'length')
+          .equals(
+            150,
+          );
+      check(page.totalCountByAgentId['agent-a']).equals(150);
+      check(page.report.participants.single.sourceRowCount).equals(150);
+      final captured = verify(
+        () => loadCadastroFilial(
+          userId: 'user-1',
+          agentId: 'agent-a',
+          filter: captureAny(named: 'filter'),
+          clientToken: 'tok-a',
+          bridgeTimeoutMs: 120000,
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+        ),
+      ).captured.cast<CadastroFilialFilter>();
+      check(captured.map((filter) => filter.page).toList()).deepEquals(
+        <int>[1, 2],
+      );
+      check(captured.map((filter) => filter.pageSize).toSet()).deepEquals(
+        <int>{CadastroFilialFilter.maxPageSize},
+      );
+    },
+  );
 }
 
 AgentQueryTarget _target(String agentId, {String? clientToken = 'token'}) {

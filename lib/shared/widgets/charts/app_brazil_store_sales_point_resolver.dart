@@ -22,6 +22,9 @@ class AppBrazilStoreSalesPointSource {
     this.companyCode,
     this.branchCode,
     this.agentName,
+    this.salesDataLoading = false,
+    this.salesDataUnavailable = false,
+    this.salesDataStatusLabel,
     this.subtitle,
     this.payload,
   });
@@ -43,6 +46,9 @@ class AppBrazilStoreSalesPointSource {
   final int? companyCode;
   final int? branchCode;
   final String? agentName;
+  final bool salesDataLoading;
+  final bool salesDataUnavailable;
+  final String? salesDataStatusLabel;
   final String? subtitle;
   final Object? payload;
 }
@@ -104,6 +110,9 @@ class AppBrazilStoreSalesPointResolver {
         companyCode: source.companyCode,
         branchCode: source.branchCode,
         agentName: source.agentName,
+        salesDataLoading: source.salesDataLoading,
+        salesDataUnavailable: source.salesDataUnavailable,
+        salesDataStatusLabel: source.salesDataStatusLabel,
         locationResolution: _resolutionFor(lookup.lookupType),
         subtitle: source.subtitle,
         payload: source.payload,

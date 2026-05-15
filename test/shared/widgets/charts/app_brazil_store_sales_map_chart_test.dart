@@ -145,6 +145,66 @@ void main() {
     expect(find.text('Agente Norte'), findsOneWidget);
   });
 
+  testWidgets('hover card shows unavailable sales status', (
+    tester,
+  ) async {
+    await _pumpHoverAnchor(
+      tester,
+      points: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Filial sem venda disponivel',
+          fantasyName: 'Mel Sinop',
+          uf: 'MT',
+          city: 'Sinop',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 0,
+          salesCount: 0,
+          salesDataUnavailable: true,
+          salesDataStatusLabel: 'Vendas indisponiveis',
+        ),
+      ],
+    );
+
+    final gesture = await _hoverFirstStoreMarker(tester);
+    addTearDown(gesture.removePointer);
+
+    expect(find.text('Mel Sinop'), findsOneWidget);
+    expect(find.text('0 vendas'), findsOneWidget);
+    expect(find.text('Vendas indisponiveis'), findsOneWidget);
+  });
+
+  testWidgets('hover card hides zero values while sales are loading', (
+    tester,
+  ) async {
+    await _pumpHoverAnchor(
+      tester,
+      points: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Filial carregando',
+          fantasyName: 'Mel Sinop',
+          uf: 'MT',
+          city: 'Sinop',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 0,
+          salesCount: 0,
+          salesDataLoading: true,
+        ),
+      ],
+    );
+
+    final gesture = await _hoverFirstStoreMarker(tester);
+    addTearDown(gesture.removePointer);
+
+    expect(find.text('Mel Sinop'), findsOneWidget);
+    expect(find.text('Carregando vendas'), findsOneWidget);
+    expect(find.text(r'R$ 0,00'), findsNothing);
+    expect(find.text('0 vendas'), findsNothing);
+  });
+
   testWidgets('hover card navigates between stores in the same marker', (
     tester,
   ) async {

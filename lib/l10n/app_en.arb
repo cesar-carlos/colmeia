@@ -1150,6 +1150,15 @@
     }
   },
   "salesLiveMapPartialTitle": "Partial tracking",
+  "salesLiveMapAgentQuerySummary": "Agents: {plannedCount} planned | {queriedCount} queried | {salesCount} with sales | {noSalesCount} without sales",
+  "@salesLiveMapAgentQuerySummary": {
+    "placeholders": {
+      "plannedCount": {"type": "int"},
+      "queriedCount": {"type": "int"},
+      "salesCount": {"type": "int"},
+      "noSalesCount": {"type": "int"}
+    }
+  },
   "salesLiveMapPartialFailedAgents": "{count} branch(es) failed in the last query.",
   "@salesLiveMapPartialFailedAgents": {
     "placeholders": {
@@ -1180,6 +1189,28 @@
       "count": {"type": "int"}
     }
   },
+  "salesLiveMapPartialNoSalesAgents": "{count} agent(s) returned no sales in the period.",
+  "@salesLiveMapPartialNoSalesAgents": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialZeroedBranches": "{count} branch(es) shown with zero sales.",
+  "@salesLiveMapPartialZeroedBranches": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialUnavailableSalesBranches": "{count} branch(es) shown with sales unavailable due to query failure.",
+  "@salesLiveMapPartialUnavailableSalesBranches": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapNoSalesAgentsTitle": "Agents without sales",
+  "salesLiveMapTechnicalDiagnosticsTitle": "Technical diagnostics",
+  "salesLiveMapTechnicalDiagnosticsFilters": "Active filters",
+  "salesLiveMapTechnicalDiagnosticsQuery": "Query diagnostics",
   "salesLiveMapFiltersTitle": "Tracking filters",
   "salesLiveMapFiltersDescription": "Choose branches, period, and map view type.",
   "salesLiveMapBranchesSectionTitle": "Branches",
@@ -1190,6 +1221,7 @@
   "salesLiveMapSelectAllTokenBacked": "Select all",
   "salesLiveMapClearSelection": "Clear all",
   "salesLiveMapClearBranchSelectionAction": "Clear branch selection",
+  "salesLiveMapClearSavedFiltersAction": "Clear saved filters",
   "salesLiveMapMissingLocalToken": "No local token",
   "salesLiveMapCustomPeriodLabel": "Custom period",
   "salesLiveMapCustomPeriodHelper": "Limit of {maxDays} days per refresh.",

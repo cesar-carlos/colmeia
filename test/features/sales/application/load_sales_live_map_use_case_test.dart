@@ -4,6 +4,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
@@ -11,6 +12,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
@@ -29,12 +33,16 @@ class _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
     extends Mock
     implements LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {}
 
+class _MockLoadCadastroFilialAcrossAgentsUseCase extends Mock
+    implements LoadCadastroFilialAcrossAgentsUseCase {}
+
 void main() {
   const userId = 'user-1';
   final now = DateTime(2026, 5, 9, 14);
 
   late _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
   loadAcrossAgents;
+  late _MockLoadCadastroFilialAcrossAgentsUseCase loadCadastroAcrossAgents;
   late _MemoryCacheStore cacheStore;
   late _StaticBrazilTestGeocoder geocoder;
   late LoadSalesLiveMapUseCase useCase;
@@ -46,12 +54,15 @@ void main() {
         dataVendaFim: DateTime.utc(2026, 12, 31),
       ),
     );
+    registerFallbackValue(const CadastroFilialFilter());
     registerFallbackValue(AgentQueryExecutionStrategy.mergeAll);
   });
 
   setUp(() {
     loadAcrossAgents =
         _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase();
+    loadCadastroAcrossAgents = _MockLoadCadastroFilialAcrossAgentsUseCase();
+    _stubCatalogFailure(loadCadastroAcrossAgents);
     cacheStore = _MemoryCacheStore();
     geocoder = _StaticBrazilTestGeocoder();
     final locationResolver = AppLocationResolver(
@@ -61,6 +72,7 @@ void main() {
     );
     useCase = LoadSalesLiveMapUseCase(
       loadAcrossAgents,
+      loadCadastroAcrossAgents,
       AppBrazilStoreSalesPointResolver(locationResolver: locationResolver),
       now: () => now,
     );
@@ -168,6 +180,281 @@ void main() {
     },
   );
 
+  test('mostra filial do cadastro sem venda com valores zerados', () async {
+    _stubCatalogReport(
+      loadCadastroAcrossAgents,
+      _catalogReport(
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+        participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+          _catalogParticipant(
+            'agent-a',
+            rows: <CadastroFilialRow>[
+              _catalogRow(nomeFilial: 'Cadastro sem venda'),
+            ],
+          ),
+        ],
+      ),
+    );
+    _stubReport(
+      loadAcrossAgents,
+      _report(
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+        participants:
+            <
+              AgentQueryExecutionParticipant<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
+            >[
+              _participant(
+                'agent-a',
+                rows: const <ResumoTotalVendasMunicipioFilialPeriodoRow>[],
+              ),
+            ],
+      ),
+    );
+
+    final result = await useCase(
+      userId: userId,
+      filter: const SalesLiveMapFilter(),
+    );
+
+    check(result.points).has((points) => points.length, 'length').equals(1);
+    check(result.points.single.name).equals('Loja matriz');
+    check(result.points.single.salesAmount).equals(0);
+    check(result.points.single.salesCount).equals(0);
+    check(result.totalRevenue).equals(0);
+    check(result.totalSalesCount).equals(0);
+    check(result.catalogBranchCount).equals(1);
+    check(result.salesBranchCount).equals(0);
+    check(result.zeroedBranchCount).equals(1);
+    check(result.noSalesBranchCount).equals(1);
+    check(result.salesUnavailableBranchCount).equals(0);
+    check(result.points.single.salesDataUnavailable).isFalse();
+    check(result.branchOptions.single.name).equals('Loja matriz');
+  });
+
+  test(
+    'loadProgressive emite cadastro no mapa enquanto vendas seguem carregando',
+    () async {
+      final catalogCompleter =
+          Completer<AppResult<CadastroFilialAcrossAgentsPageResult>>();
+      final salesCompleter =
+          Completer<
+            AppResult<
+              AgentQueryExecutionReport<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
+            >
+          >();
+      _stubCatalogFuture(loadCadastroAcrossAgents, catalogCompleter.future);
+      _stubReportFuture(loadAcrossAgents, salesCompleter.future);
+
+      final iterator = StreamIterator<SalesLiveMapLoadResult>(
+        useCase.loadProgressive(
+          userId: userId,
+          filter: const SalesLiveMapFilter(),
+        ),
+      );
+      addTearDown(iterator.cancel);
+
+      check(await iterator.moveNext()).isTrue();
+      final base = iterator.current;
+      check(base.salesDataPending).isTrue();
+      check(base.points).isEmpty();
+
+      catalogCompleter.complete(
+        Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+          CadastroFilialAcrossAgentsPageResult.fromReport(
+            _catalogReport(
+              plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+              participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+                _catalogParticipant(
+                  'agent-a',
+                  rows: <CadastroFilialRow>[_catalogRow()],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      check(await iterator.moveNext()).isTrue();
+      final partial = iterator.current;
+      check(partial.salesDataPending).isTrue();
+      check(partial.salesPendingBranchCount).equals(1);
+      check(partial.points.single.salesDataLoading).isTrue();
+      check(partial.points.single.salesAmount).equals(0);
+      check(partial.noSalesBranchCount).equals(0);
+
+      salesCompleter.complete(
+        Success<
+          AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>,
+          AppFailure
+        >(
+          _report(
+            plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+            participants:
+                <
+                  AgentQueryExecutionParticipant<
+                    ResumoTotalVendasMunicipioFilialPeriodoRow
+                  >
+                >[
+                  _participant(
+                    'agent-a',
+                    rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                      _row(totalVenda: 220, qtdVendas: 6),
+                    ],
+                  ),
+                ],
+          ),
+        ),
+      );
+
+      check(await iterator.moveNext()).isTrue();
+      final finalResult = iterator.current;
+      check(finalResult.salesDataPending).isFalse();
+      check(finalResult.salesPendingBranchCount).equals(0);
+      check(finalResult.points.single.salesDataLoading).isFalse();
+      check(finalResult.points.single.salesAmount).equals(220);
+      check(finalResult.points.single.salesCount).equals(6);
+      check(await iterator.moveNext()).isFalse();
+    },
+  );
+
+  test(
+    'loadProgressive marca venda indisponivel quando vendas falham apos cadastro',
+    () async {
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow()],
+            ),
+          ],
+        ),
+      );
+      _stubSalesFailure(loadAcrossAgents);
+
+      final emissions = await useCase
+          .loadProgressive(
+            userId: userId,
+            filter: const SalesLiveMapFilter(),
+          )
+          .toList();
+
+      check(emissions).has((items) => items.length, 'length').equals(3);
+      check(emissions[1].salesDataPending).isTrue();
+      check(emissions[1].points.single.salesDataLoading).isTrue();
+      final finalResult = emissions.last;
+      check(finalResult.salesDataPending).isFalse();
+      check(finalResult.points.single.salesDataLoading).isFalse();
+      check(finalResult.points.single.salesDataUnavailable).isTrue();
+      check(finalResult.salesUnavailableBranchCount).equals(1);
+    },
+  );
+
+  test(
+    'loadProgressive usa fallback de vendas quando cadastro falha',
+    () async {
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 180, qtdVendas: 3),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final emissions = await useCase
+          .loadProgressive(
+            userId: userId,
+            filter: const SalesLiveMapFilter(),
+          )
+          .toList();
+
+      check(emissions).has((items) => items.length, 'length').equals(2);
+      check(emissions.first.salesDataPending).isTrue();
+      final finalResult = emissions.last;
+      check(finalResult.salesDataPending).isFalse();
+      check(finalResult.points.single.salesAmount).equals(180);
+      check(finalResult.points.single.salesDataLoading).isFalse();
+    },
+  );
+
+  test('vincula cadastro e vendas por agente empresa e filial', () async {
+    _stubCatalogReport(
+      loadCadastroAcrossAgents,
+      _catalogReport(
+        plannedTargets: <AgentQueryTarget>[
+          _target('agent-a'),
+          _target('agent-b'),
+        ],
+        participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+          _catalogParticipant(
+            'agent-a',
+            rows: <CadastroFilialRow>[_catalogRow(nomeFilial: 'A')],
+          ),
+          _catalogParticipant(
+            'agent-b',
+            rows: <CadastroFilialRow>[_catalogRow(nomeFilial: 'B')],
+          ),
+        ],
+      ),
+    );
+    _stubReport(
+      loadAcrossAgents,
+      _report(
+        plannedTargets: <AgentQueryTarget>[
+          _target('agent-a'),
+          _target('agent-b'),
+        ],
+        participants:
+            <
+              AgentQueryExecutionParticipant<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
+            >[
+              _participant(
+                'agent-b',
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                  _row(totalVenda: 250, qtdVendas: 4),
+                ],
+              ),
+            ],
+      ),
+    );
+
+    final result = await useCase(
+      userId: userId,
+      filter: const SalesLiveMapFilter(),
+    );
+
+    final byId = {for (final point in result.points) point.id: point};
+    check(byId['agent-a-1-1']!.salesAmount).equals(0);
+    check(byId['agent-b-1-1']!.salesAmount).equals(250);
+    check(byId['agent-b-1-1']!.salesCount).equals(4);
+    check(result.totalBranchCount).equals(2);
+    check(result.totalRevenue).equals(250);
+    check(result.salesBranchCount).equals(1);
+    check(result.zeroedBranchCount).equals(1);
+    check(result.noSalesBranchCount).equals(1);
+    check(result.salesUnavailableBranchCount).equals(0);
+  });
+
   test('filtra pontos e KPIs pelas filiais selecionadas', () async {
     _stubReport(
       loadAcrossAgents,
@@ -206,6 +493,75 @@ void main() {
     );
     check(result.totalBranchCount).equals(1);
     check(result.totalRevenue).equals(300);
+  });
+
+  test('usa cadastro como fonte das opcoes mesmo sem venda', () async {
+    _stubCatalogReport(
+      loadCadastroAcrossAgents,
+      _catalogReport(
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+        participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+          _catalogParticipant(
+            'agent-a',
+            rows: <CadastroFilialRow>[
+              _catalogRow(nomeFilial: 'Loja 1'),
+              _catalogRow(codFilial: 2, nomeFilial: 'Loja 2'),
+            ],
+          ),
+        ],
+      ),
+    );
+    _stubReport(
+      loadAcrossAgents,
+      _report(
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+        participants:
+            <
+              AgentQueryExecutionParticipant<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
+            >[
+              _participant(
+                'agent-a',
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                  _row(totalVenda: 100),
+                ],
+              ),
+            ],
+      ),
+    );
+
+    final result = await useCase(
+      userId: userId,
+      filter: const SalesLiveMapFilter(
+        selectedBranchIds: <String>{'agent-a-1-2'},
+      ),
+    );
+
+    check(result.branchOptions.map((branch) => branch.id).toSet()).deepEquals(
+      <String>{'agent-a-1-1', 'agent-a-1-2'},
+    );
+    check(result.points.map((point) => point.id).toList()).deepEquals(
+      <String>['agent-a-1-2'],
+    );
+    check(result.totalRevenue).equals(0);
+    check(result.zeroedBranchCount).equals(1);
+
+    final captured = verify(
+      () => loadCadastroAcrossAgents.loadAll(
+        userId: 'user-1',
+        filter: captureAny(named: 'filter'),
+        selectedAgentIds: captureAny(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+      ),
+    ).captured;
+    final catalogFilter = captured[0] as CadastroFilialFilter;
+    final selectedAgentIds = captured[1] as Set<String>;
+    check(catalogFilter.codEmpresa).equals(1);
+    check(catalogFilter.codFilial).equals(2);
+    check(selectedAgentIds).deepEquals(<String>{'agent-a'});
   });
 
   test('repassa apenas agentes selecionados para reduzir consulta', () async {
@@ -538,12 +894,184 @@ void main() {
     check(result.mappedMunicipalityCount).equals(1);
     check(result.queriedAgentCount).equals(2);
     check(result.plannedAgentCount).equals(2);
+    check(result.salesAgentCount).equals(1);
+    check(result.noSalesAgentOptions).isEmpty();
     check(result.failedAgentCount).equals(1);
     check(result.missingClientTokenAgentCount).equals(1);
     check(result.skippedOfflineAgentCount).equals(1);
     check(result.hasPartialIssue).isTrue();
     check(result.refreshedAt).equals(now);
   });
+
+  test(
+    'calcula agentes com vendas e sem vendas sem misturar falhas',
+    () async {
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[
+            _target('agent-a'),
+            _target('agent-b'),
+            _target('agent-c'),
+          ],
+          missingClientTokenTargets: <AgentQueryTarget>[
+            _target('agent-d', clientToken: null),
+          ],
+          skippedDueToHubPresenceTargets: <AgentQueryTarget>[
+            _target('agent-e'),
+          ],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 90, qtdVendas: 2),
+                  ],
+                ),
+                _participant(
+                  'agent-b',
+                  rows: const <ResumoTotalVendasMunicipioFilialPeriodoRow>[],
+                ),
+                _participant(
+                  'agent-c',
+                  rows: const <ResumoTotalVendasMunicipioFilialPeriodoRow>[],
+                  failure: const NetworkFailure(
+                    message: 'down',
+                    userMessage: 'Agente indisponivel.',
+                  ),
+                ),
+              ],
+        ),
+      );
+
+      final result = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      check(result.salesAgentCount).equals(1);
+      check(
+        result.noSalesAgentOptions.map((agent) => agent.id).toList(),
+      ).deepEquals(<String>['agent-b']);
+      check(result.noSalesAgentOptions.single.name).equals('Agente agent-b');
+      check(result.failedAgentCount).equals(1);
+      check(result.missingClientTokenAgentCount).equals(1);
+      check(result.skippedOfflineAgentCount).equals(1);
+      check(result.hasPartialIssue).isTrue();
+    },
+  );
+
+  test(
+    'mantem filiais do cadastro zeradas quando a consulta de vendas falha',
+    () async {
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow()],
+            ),
+          ],
+        ),
+      );
+      _stubSalesFailure(loadAcrossAgents);
+
+      final result = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      check(result.points).has((points) => points.length, 'length').equals(1);
+      check(result.points.single.salesAmount).equals(0);
+      check(result.points.single.salesCount).equals(0);
+      check(result.points.single.salesDataUnavailable).isTrue();
+      check(result.points.single.salesDataStatusLabel).equals(
+        'Vendas indisponiveis.',
+      );
+      check(result.failedSalesAgentCount).equals(1);
+      check(result.failedAgentCount).equals(1);
+      check(result.zeroedBranchCount).equals(1);
+      check(result.noSalesBranchCount).equals(0);
+      check(result.salesUnavailableBranchCount).equals(1);
+      check(result.hasPartialIssue).isTrue();
+    },
+  );
+
+  test(
+    'usa cadastros bem sucedidos quando o cadastro falha parcialmente',
+    () async {
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[
+            _target('agent-a'),
+            _target('agent-b'),
+          ],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow()],
+            ),
+            _catalogParticipant(
+              'agent-b',
+              rows: const <CadastroFilialRow>[],
+              failure: const NetworkFailure(
+                message: 'down',
+                userMessage: 'Cadastro indisponivel.',
+              ),
+            ),
+          ],
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[
+            _target('agent-a'),
+            _target('agent-b'),
+          ],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+                _participant(
+                  'agent-b',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 200),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final result = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      check(result.points.map((point) => point.id).toList()).deepEquals(
+        <String>['agent-a-1-1'],
+      );
+      check(result.totalRevenue).equals(100);
+      check(result.failedCatalogAgentCount).equals(1);
+      check(result.failedAgentCount).equals(1);
+      check(result.hasPartialIssue).isTrue();
+    },
+  );
 
   test(
     'sinaliza consulta possivelmente truncada pelo limite de linhas',
@@ -669,6 +1197,73 @@ void main() {
     },
   );
 
+  test(
+    'reutiliza cache curto do cadastro entre atualizacoes do mapa',
+    () async {
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow()],
+            ),
+          ],
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+      await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
+
+      verify(
+        () => loadCadastroAcrossAgents.loadAll(
+          userId: 'user-1',
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+        ),
+      ).called(1);
+      verify(
+        () => loadAcrossAgents.call(
+          userId: 'user-1',
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+        ),
+      ).called(2);
+    },
+  );
+
   test('cancela processamento local obsoleto antes de geolocalizar', () async {
     final reportCompleter =
         Completer<
@@ -732,6 +1327,45 @@ void _stubReport(
   _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase useCase,
   AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow> report,
 ) {
+  _stubReportFuture(
+    useCase,
+    Future<
+      AppResult<
+        AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>
+      >
+    >.value(
+      Success<
+        AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>,
+        AppFailure
+      >(report),
+    ),
+  );
+}
+
+void _stubReportFuture(
+  _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase useCase,
+  Future<
+    AppResult<
+      AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>
+    >
+  >
+  result,
+) {
+  when(
+    () => useCase(
+      userId: any(named: 'userId'),
+      filter: any(named: 'filter'),
+      selectedAgentIds: any(named: 'selectedAgentIds'),
+      strategy: any(named: 'strategy'),
+      bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+      raceMaxSources: any(named: 'raceMaxSources'),
+    ),
+  ).thenAnswer((_) => result);
+}
+
+void _stubSalesFailure(
+  _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase useCase,
+) {
   when(
     () => useCase(
       userId: any(named: 'userId'),
@@ -743,10 +1377,66 @@ void _stubReport(
     ),
   ).thenAnswer(
     (_) async =>
-        Success<
+        const Failure<
           AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>,
           AppFailure
-        >(report),
+        >(
+          NetworkFailure(
+            message: 'sales down',
+            userMessage: 'Vendas indisponiveis.',
+          ),
+        ),
+  );
+}
+
+void _stubCatalogReport(
+  _MockLoadCadastroFilialAcrossAgentsUseCase useCase,
+  AgentQueryExecutionReport<CadastroFilialRow> report,
+) {
+  _stubCatalogFuture(
+    useCase,
+    Future<AppResult<CadastroFilialAcrossAgentsPageResult>>.value(
+      Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+        CadastroFilialAcrossAgentsPageResult.fromReport(report),
+      ),
+    ),
+  );
+}
+
+void _stubCatalogFuture(
+  _MockLoadCadastroFilialAcrossAgentsUseCase useCase,
+  Future<AppResult<CadastroFilialAcrossAgentsPageResult>> result,
+) {
+  when(
+    () => useCase.loadAll(
+      userId: any(named: 'userId'),
+      filter: any(named: 'filter'),
+      selectedAgentIds: any(named: 'selectedAgentIds'),
+      strategy: any(named: 'strategy'),
+      bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+      raceMaxSources: any(named: 'raceMaxSources'),
+    ),
+  ).thenAnswer((_) => result);
+}
+
+void _stubCatalogFailure(_MockLoadCadastroFilialAcrossAgentsUseCase useCase) {
+  when(
+    () => useCase.loadAll(
+      userId: any(named: 'userId'),
+      filter: any(named: 'filter'),
+      selectedAgentIds: any(named: 'selectedAgentIds'),
+      strategy: any(named: 'strategy'),
+      bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+      raceMaxSources: any(named: 'raceMaxSources'),
+    ),
+  ).thenAnswer(
+    (_) async =>
+        const Failure<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+          NetworkFailure(
+            message: 'catalog down',
+            userMessage: 'Catalogo indisponivel.',
+          ),
+        ),
   );
 }
 
@@ -773,6 +1463,26 @@ AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow> _report({
   );
 }
 
+AgentQueryExecutionReport<CadastroFilialRow> _catalogReport({
+  required List<AgentQueryExecutionParticipant<CadastroFilialRow>> participants,
+  List<AgentQueryTarget> plannedTargets = const <AgentQueryTarget>[],
+  List<AgentQueryTarget> missingClientTokenTargets = const <AgentQueryTarget>[],
+  List<AgentQueryTarget> skippedDueToHubPresenceTargets =
+      const <AgentQueryTarget>[],
+}) {
+  return AgentQueryExecutionReport<CadastroFilialRow>(
+    queryKey: AgentQueryKey.cadastroFilial,
+    strategy: AgentQueryExecutionStrategy.mergeAll,
+    consideredApprovedAgentCount:
+        plannedTargets.length + missingClientTokenTargets.length,
+    plannedTargets: plannedTargets,
+    missingClientTokenTargets: missingClientTokenTargets,
+    participants: participants,
+    totalElapsedMs: 12,
+    skippedDueToHubPresenceTargets: skippedDueToHubPresenceTargets,
+  );
+}
+
 AgentQueryExecutionParticipant<ResumoTotalVendasMunicipioFilialPeriodoRow>
 _participant(
   String agentId, {
@@ -783,6 +1493,22 @@ _participant(
   return AgentQueryExecutionParticipant<
     ResumoTotalVendasMunicipioFilialPeriodoRow
   >(
+    agentId: agentId,
+    displayName: 'Agente $agentId',
+    rows: rows,
+    sourceRowCount: sourceRowCount,
+    failure: failure,
+    elapsedMs: 10,
+  );
+}
+
+AgentQueryExecutionParticipant<CadastroFilialRow> _catalogParticipant(
+  String agentId, {
+  required List<CadastroFilialRow> rows,
+  int? sourceRowCount,
+  AppFailure? failure,
+}) {
+  return AgentQueryExecutionParticipant<CadastroFilialRow>(
     agentId: agentId,
     displayName: 'Agente $agentId',
     rows: rows,
@@ -817,6 +1543,30 @@ ResumoTotalVendasMunicipioFilialPeriodoRow _row({
     cepFilial: cepFilial,
     qtdVendas: qtdVendas,
     totalVenda: totalVenda,
+  );
+}
+
+CadastroFilialRow _catalogRow({
+  int codEmpresa = 1,
+  int codFilial = 1,
+  String nomeFilial = 'Loja matriz',
+  String? nomeFantasia = 'Loja matriz',
+  int? codMunicipio = 5107909,
+  String? nomeMunicipio = 'SINOP',
+  String? ufMunicipio = 'MT',
+  String? codigoIbge = '5107909',
+  String? cep,
+}) {
+  return CadastroFilialRow(
+    codEmpresa: codEmpresa,
+    codFilial: codFilial,
+    nomeFilial: nomeFilial,
+    nomeFantasia: nomeFantasia,
+    codMunicipio: codMunicipio,
+    nomeMunicipio: nomeMunicipio,
+    ufMunicipio: ufMunicipio,
+    codigoIbge: codigoIbge,
+    cep: cep,
   );
 }
 

@@ -907,10 +907,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Os valores do mapa refletem os dados carregados ao abrir a tela cheia.';
 
   @override
-  String get brazilStoreSalesMapMetricGroupLabel => 'Metrica';
+  String get brazilStoreSalesMapMetricGroupLabel => 'Métrica';
 
   @override
-  String get brazilStoreSalesMapRegionGroupLabel => 'Regiao';
+  String get brazilStoreSalesMapRegionGroupLabel => 'Região';
 
   @override
   String get brazilStoreSalesMapLoadingMessage => 'Carregando mapa do Brasil…';
@@ -2472,6 +2472,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapPartialTitle => 'Acompanhamento parcial';
 
   @override
+  String salesLiveMapAgentQuerySummary(
+    int plannedCount,
+    int queriedCount,
+    int salesCount,
+    int noSalesCount,
+  ) {
+    return 'Agentes: $plannedCount planejado(s) | $queriedCount consultado(s) | $salesCount com vendas | $noSalesCount sem vendas';
+  }
+
+  @override
   String salesLiveMapPartialFailedAgents(int count) {
     return '$count filial(is) falharam na ultima consulta.';
   }
@@ -2495,6 +2505,33 @@ class AppLocalizationsPt extends AppLocalizations {
   String salesLiveMapPartialMissingCoordinates(int count) {
     return '$count filial(is) sem coordenada resolvida.';
   }
+
+  @override
+  String salesLiveMapPartialNoSalesAgents(int count) {
+    return '$count agente(s) sem vendas no periodo.';
+  }
+
+  @override
+  String salesLiveMapPartialZeroedBranches(int count) {
+    return '$count filial(is) exibidas com venda zerada.';
+  }
+
+  @override
+  String salesLiveMapPartialUnavailableSalesBranches(int count) {
+    return '$count filial(is) exibidas com venda indisponivel por falha na consulta.';
+  }
+
+  @override
+  String get salesLiveMapNoSalesAgentsTitle => 'Agentes sem vendas';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsTitle => 'Diagnostico tecnico';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsFilters => 'Filtros ativos';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsQuery => 'Diagnostico da consulta';
 
   @override
   String get salesLiveMapFiltersTitle => 'Filtros de acompanhamento';
@@ -2531,6 +2568,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesLiveMapClearBranchSelectionAction =>
       'Limpar selecao de filiais';
+
+  @override
+  String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';
 
   @override
   String get salesLiveMapMissingLocalToken => 'Sem token local';
@@ -5812,6 +5852,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapPartialTitle => 'Acompanhamento parcial';
 
   @override
+  String salesLiveMapAgentQuerySummary(
+    int plannedCount,
+    int queriedCount,
+    int salesCount,
+    int noSalesCount,
+  ) {
+    return 'Agentes: $plannedCount planejado(s) | $queriedCount consultado(s) | $salesCount com vendas | $noSalesCount sem vendas';
+  }
+
+  @override
   String salesLiveMapPartialFailedAgents(int count) {
     return '$count filial(is) falharam na ultima consulta.';
   }
@@ -5835,6 +5885,33 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String salesLiveMapPartialMissingCoordinates(int count) {
     return '$count filial(is) sem coordenada resolvida.';
   }
+
+  @override
+  String salesLiveMapPartialNoSalesAgents(int count) {
+    return '$count agente(s) sem vendas no periodo.';
+  }
+
+  @override
+  String salesLiveMapPartialZeroedBranches(int count) {
+    return '$count filial(is) exibidas com venda zerada.';
+  }
+
+  @override
+  String salesLiveMapPartialUnavailableSalesBranches(int count) {
+    return '$count filial(is) exibidas com venda indisponivel por falha na consulta.';
+  }
+
+  @override
+  String get salesLiveMapNoSalesAgentsTitle => 'Agentes sem vendas';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsTitle => 'Diagnostico tecnico';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsFilters => 'Filtros ativos';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsQuery => 'Diagnostico da consulta';
 
   @override
   String get salesLiveMapFiltersTitle => 'Filtros de acompanhamento';
@@ -5871,6 +5948,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesLiveMapClearBranchSelectionAction =>
       'Limpar selecao de filiais';
+
+  @override
+  String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';
 
   @override
   String get salesLiveMapMissingLocalToken => 'Sem token local';

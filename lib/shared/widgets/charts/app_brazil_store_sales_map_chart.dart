@@ -2444,14 +2444,28 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
                     spacing: tokens.gapSm,
                     runSpacing: tokens.gapSm,
                     children: [
-                      AppTagChip(
-                        label: AppBrFormatters.currency(point.salesAmount),
-                        icon: Icons.attach_money,
-                      ),
-                      AppTagChip(
-                        label: '${_formatInteger(point.salesCount)} vendas',
-                        icon: Icons.receipt_long_outlined,
-                      ),
+                      if (point.salesDataLoading)
+                        const AppTagChip(
+                          label: 'Carregando vendas',
+                          icon: Icons.sync_rounded,
+                        )
+                      else ...[
+                        AppTagChip(
+                          label: AppBrFormatters.currency(point.salesAmount),
+                          icon: Icons.attach_money,
+                        ),
+                        AppTagChip(
+                          label: '${_formatInteger(point.salesCount)} vendas',
+                          icon: Icons.receipt_long_outlined,
+                        ),
+                      ],
+                      if (!point.salesDataLoading && point.salesDataUnavailable)
+                        AppTagChip(
+                          label:
+                              point.salesDataStatusLabel ??
+                              'Vendas indisponiveis',
+                          icon: Icons.sync_problem_outlined,
+                        ),
                       if (agentName != null)
                         AppTagChip(
                           label: _agentChipLabel(agentName),
@@ -2624,6 +2638,9 @@ class _BranchAggregateSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final colorScheme = Theme.of(context).colorScheme;
+    final hasLoadingSales = group.points.any(
+      (point) => point.salesDataLoading,
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -2648,14 +2665,21 @@ class _BranchAggregateSummary extends StatelessWidget {
               spacing: tokens.gapSm,
               runSpacing: tokens.gapSm,
               children: [
-                AppTagChip(
-                  label: AppBrFormatters.currency(group.salesAmount),
-                  icon: Icons.attach_money,
-                ),
-                AppTagChip(
-                  label: '${_formatInteger(group.salesCount)} vendas',
-                  icon: Icons.receipt_long_outlined,
-                ),
+                if (hasLoadingSales)
+                  const AppTagChip(
+                    label: 'Carregando vendas',
+                    icon: Icons.sync_rounded,
+                  )
+                else ...[
+                  AppTagChip(
+                    label: AppBrFormatters.currency(group.salesAmount),
+                    icon: Icons.attach_money,
+                  ),
+                  AppTagChip(
+                    label: '${_formatInteger(group.salesCount)} vendas',
+                    icon: Icons.receipt_long_outlined,
+                  ),
+                ],
                 AppTagChip(
                   label: '${_formatInteger(group.points.length)} filiais',
                   icon: Icons.storefront_outlined,

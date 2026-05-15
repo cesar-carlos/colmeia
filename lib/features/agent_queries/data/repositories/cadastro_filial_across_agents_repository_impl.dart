@@ -32,6 +32,8 @@ class CadastroFilialAcrossAgentsRepositoryImpl
   final LoadCadastroFilialPageUseCase _loadCadastroFilial;
 
   static const String _operation = 'loadCadastroFilialPageAcrossAgents';
+  static const String _loadAllOperation = 'loadCadastroFilialAllAcrossAgents';
+  static const int _maxAllPagesPerAgent = 400;
 
   @override
   Future<AppResult<CadastroFilialAcrossAgentsPageResult>> loadPage({
@@ -85,6 +87,104 @@ class CadastroFilialAcrossAgentsRepositoryImpl
             );
           },
       mapReport: CadastroFilialAcrossAgentsPageResult.fromReport,
+    );
+  }
+
+  @override
+  Future<AppResult<CadastroFilialAcrossAgentsPageResult>> loadAll({
+    required String userId,
+    required CadastroFilialFilter filter,
+    Set<String>? selectedAgentIds,
+    AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
+    int? bridgeTimeoutMs,
+    int? raceMaxSources,
+  }) {
+    return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedMapped<
+      CadastroFilialAcrossAgentsPageResult,
+      CadastroFilialRow
+    >(
+      operation: _loadAllOperation,
+      queryKey: AgentQueryKey.cadastroFilial,
+      userId: userId,
+      targetResolver: _targetResolver,
+      planBuilder: _planBuilder,
+      executor: _executor,
+      selectedAgentIds: selectedAgentIds,
+      strategy: strategy,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      raceMaxSources: raceMaxSources,
+      loadRowsForTarget:
+          ({
+            required target,
+            required plan,
+            required resolution,
+          }) {
+            return _loadAllRowsForTarget(
+              userId: userId,
+              agentId: target.agentId,
+              filter: filter,
+              clientToken: target.clientToken,
+              bridgeTimeoutMs: plan.bridgeTimeoutMs,
+              hubPresenceOnlineAgentIdsSnapshot:
+                  resolution.hubPresenceOnlineAgentIdsSnapshot,
+              hubConnectedFromApprovedCatalogRow:
+                  target.hubConnectedFromApprovedCatalogRow,
+            );
+          },
+      mapReport: CadastroFilialAcrossAgentsPageResult.fromReport,
+    );
+  }
+
+  Future<AppResult<AgentQueryLoadedRows<CadastroFilialRow>>>
+  _loadAllRowsForTarget({
+    required String userId,
+    required String agentId,
+    required CadastroFilialFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+  }) async {
+    final rows = <CadastroFilialRow>[];
+    var page = 1;
+    int? totalCount;
+
+    while (page <= _maxAllPagesPerAgent) {
+      final pageFilter = filter.copyWith(
+        page: page,
+        pageSize: CadastroFilialFilter.maxPageSize,
+      );
+      final result = await _loadCadastroFilial(
+        userId: userId,
+        agentId: agentId,
+        filter: pageFilter,
+        clientToken: clientToken,
+        bridgeTimeoutMs: bridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      );
+      final loaded = result.getOrNull();
+      if (loaded == null) {
+        return Failure<AgentQueryLoadedRows<CadastroFilialRow>, AppFailure>(
+          result.exceptionOrNull()!,
+        );
+      }
+
+      totalCount ??= loaded.totalCount;
+      rows.addAll(loaded.items);
+
+      if (rows.length >= loaded.totalCount ||
+          loaded.items.length < CadastroFilialFilter.maxPageSize) {
+        break;
+      }
+      page += 1;
+    }
+
+    return Success<AgentQueryLoadedRows<CadastroFilialRow>, AppFailure>(
+      AgentQueryLoadedRows<CadastroFilialRow>(
+        rows: rows,
+        sourceRowCount: totalCount ?? rows.length,
+      ),
     );
   }
 }

@@ -4050,6 +4050,17 @@ abstract class AppLocalizations {
   /// **'Partial tracking'**
   String get salesLiveMapPartialTitle;
 
+  /// No description provided for @salesLiveMapAgentQuerySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents: {plannedCount} planned | {queriedCount} queried | {salesCount} with sales | {noSalesCount} without sales'**
+  String salesLiveMapAgentQuerySummary(
+    int plannedCount,
+    int queriedCount,
+    int salesCount,
+    int noSalesCount,
+  );
+
   /// No description provided for @salesLiveMapPartialFailedAgents.
   ///
   /// In en, this message translates to:
@@ -4079,6 +4090,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} branch(es) without resolved coordinates.'**
   String salesLiveMapPartialMissingCoordinates(int count);
+
+  /// No description provided for @salesLiveMapPartialNoSalesAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} agent(s) returned no sales in the period.'**
+  String salesLiveMapPartialNoSalesAgents(int count);
+
+  /// No description provided for @salesLiveMapPartialZeroedBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branch(es) shown with zero sales.'**
+  String salesLiveMapPartialZeroedBranches(int count);
+
+  /// No description provided for @salesLiveMapPartialUnavailableSalesBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branch(es) shown with sales unavailable due to query failure.'**
+  String salesLiveMapPartialUnavailableSalesBranches(int count);
+
+  /// No description provided for @salesLiveMapNoSalesAgentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents without sales'**
+  String get salesLiveMapNoSalesAgentsTitle;
+
+  /// No description provided for @salesLiveMapTechnicalDiagnosticsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical diagnostics'**
+  String get salesLiveMapTechnicalDiagnosticsTitle;
+
+  /// No description provided for @salesLiveMapTechnicalDiagnosticsFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Active filters'**
+  String get salesLiveMapTechnicalDiagnosticsFilters;
+
+  /// No description provided for @salesLiveMapTechnicalDiagnosticsQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'Query diagnostics'**
+  String get salesLiveMapTechnicalDiagnosticsQuery;
 
   /// No description provided for @salesLiveMapFiltersTitle.
   ///
@@ -4139,6 +4192,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear branch selection'**
   String get salesLiveMapClearBranchSelectionAction;
+
+  /// No description provided for @salesLiveMapClearSavedFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear saved filters'**
+  String get salesLiveMapClearSavedFiltersAction;
 
   /// No description provided for @salesLiveMapMissingLocalToken.
   ///

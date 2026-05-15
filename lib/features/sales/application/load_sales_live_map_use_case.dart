@@ -1,14 +1,24 @@
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
 import 'package:flutter/foundation.dart';
+import 'package:result_dart/result_dart.dart';
 
 class SalesLiveMapLoadResult {
   const SalesLiveMapLoadResult({
@@ -26,6 +36,17 @@ class SalesLiveMapLoadResult {
     required this.skippedOfflineAgentCount,
     required this.rowCapReachedAgentCount,
     required this.refreshedAt,
+    this.salesAgentCount = 0,
+    this.catalogBranchCount = 0,
+    this.salesBranchCount = 0,
+    this.zeroedBranchCount = 0,
+    this.noSalesBranchCount = 0,
+    this.salesUnavailableBranchCount = 0,
+    this.salesDataPending = false,
+    this.salesPendingBranchCount = 0,
+    this.failedCatalogAgentCount = 0,
+    this.failedSalesAgentCount = 0,
+    this.noSalesAgentOptions = const <SalesLiveMapAgentOption>[],
     this.unmappedBranchOptions = const <SalesLiveMapBranchOption>[],
     this.locationDiagnostics = const SalesLiveMapLocationDiagnostics(),
     this.loadFailed = false,
@@ -48,6 +69,17 @@ class SalesLiveMapLoadResult {
   final int missingClientTokenAgentCount;
   final int skippedOfflineAgentCount;
   final int rowCapReachedAgentCount;
+  final int salesAgentCount;
+  final int catalogBranchCount;
+  final int salesBranchCount;
+  final int zeroedBranchCount;
+  final int noSalesBranchCount;
+  final int salesUnavailableBranchCount;
+  final bool salesDataPending;
+  final int salesPendingBranchCount;
+  final int failedCatalogAgentCount;
+  final int failedSalesAgentCount;
+  final List<SalesLiveMapAgentOption> noSalesAgentOptions;
   final SalesLiveMapLocationDiagnostics locationDiagnostics;
   final bool loadFailed;
   final SalesLiveMapLoadFailureReason? loadFailureReason;
@@ -60,6 +92,9 @@ class SalesLiveMapLoadResult {
       missingClientTokenAgentCount > 0 ||
       skippedOfflineAgentCount > 0 ||
       rowCapReachedAgentCount > 0 ||
+      failedCatalogAgentCount > 0 ||
+      failedSalesAgentCount > 0 ||
+      noSalesAgentOptions.isNotEmpty ||
       unmappedBranchOptions.isNotEmpty ||
       mappedBranchCount < totalBranchCount;
 }
@@ -158,6 +193,7 @@ class SalesLiveMapLocationDiagnostics {
 class LoadSalesLiveMapUseCase {
   LoadSalesLiveMapUseCase(
     this._loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents,
+    this._loadCadastroFilialAcrossAgents,
     this._pointResolver, {
     DateTime Function()? now,
   }) : _now = now;
@@ -165,131 +201,561 @@ class LoadSalesLiveMapUseCase {
   static const int bridgeTimeoutMs = 120000;
   static const int geolocationMaxConcurrency = 6;
   static const int _branchLocationCacheMaxEntries = 5000;
+  static const int _branchCatalogCacheMaxEntries = 200;
   static const Duration _branchLocationCacheTtl = Duration(minutes: 10);
+  static const Duration _branchCatalogCacheTtl = Duration(minutes: 5);
 
   final LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
   _loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents;
+  final LoadCadastroFilialAcrossAgentsUseCase _loadCadastroFilialAcrossAgents;
   final AppBrazilStoreSalesPointResolver _pointResolver;
   final DateTime Function()? _now;
   final Map<String, _SalesLiveMapCachedBranchLocation> _branchLocationCache =
       <String, _SalesLiveMapCachedBranchLocation>{};
+  final Map<String, _SalesLiveMapCachedCatalogResult> _branchCatalogCache =
+      <String, _SalesLiveMapCachedCatalogResult>{};
 
   Future<SalesLiveMapLoadResult> call({
     required String userId,
     required SalesLiveMapFilter filter,
     SalesLiveMapLoadCancelToken? cancelToken,
   }) async {
+    SalesLiveMapLoadResult? lastResult;
+    await for (final result in loadProgressive(
+      userId: userId,
+      filter: filter,
+      cancelToken: cancelToken,
+    )) {
+      lastResult = result;
+    }
+    return lastResult ?? _cancelledResult(refreshedAt: _resolveNow());
+  }
+
+  Stream<SalesLiveMapLoadResult> loadProgressive({
+    required String userId,
+    required SalesLiveMapFilter filter,
+    SalesLiveMapLoadCancelToken? cancelToken,
+  }) async* {
     final totalStopwatch = _startTraceStopwatch();
     final now = _resolveNow();
     if (cancelToken?.isCancelled ?? false) {
-      return _cancelledResult(refreshedAt: now);
+      yield _cancelledResult(refreshedAt: now);
+      return;
     }
     final queryFilter = filter.toAgentQueryFilter(now: now);
     final selectedAgentIds =
         filter.selectedAgentIds ?? queryFilter.selectedAgentIds;
     final queryStopwatch = _startTraceStopwatch();
-    final result =
-        await _loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents(
+    final salesFuture =
+        _loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents(
           userId: userId,
           filter: queryFilter,
           selectedAgentIds: selectedAgentIds,
           bridgeTimeoutMs: bridgeTimeoutMs,
         );
+    final catalogFuture = _loadCatalog(
+      userId: userId,
+      queryFilter: queryFilter,
+      selectedAgentIds: selectedAgentIds,
+      now: now,
+    );
+
+    yield _pendingBaseResult(refreshedAt: now);
+
+    final catalogResult = await catalogFuture;
+    final catalogPage = catalogResult.getOrNull();
+    if (cancelToken?.isCancelled ?? false) {
+      yield _cancelledResult(refreshedAt: now);
+      return;
+    }
+
+    if (catalogPage != null) {
+      final partialMapped = await _mapReport(
+        null,
+        catalogResult: catalogPage,
+        catalogFailure: catalogResult.exceptionOrNull(),
+        filter: filter,
+        refreshedAt: now,
+        cancelToken: cancelToken,
+        salesDataPending: true,
+      );
+      if (partialMapped.cancelled) {
+        yield partialMapped;
+        return;
+      }
+      yield partialMapped;
+    }
+
+    final salesResult = await salesFuture;
+    final salesReport = salesResult.getOrNull();
     _logTrace(
-      'Sales live map SQL report loaded',
+      'Sales live map SQL reports loaded',
       <String, Object?>{
         'elapsedMs': queryStopwatch?.elapsedMilliseconds,
         'selectedAgentCount': selectedAgentIds?.length ?? 0,
         'selectedBranchCount': queryFilter.selectedBranches.length,
-        'reportElapsedMs': result.fold(
-          (report) => report.totalElapsedMs,
-          (_) => null,
-        ),
+        'salesReportElapsedMs': salesReport?.totalElapsedMs,
+        'catalogReportElapsedMs': catalogPage?.report.totalElapsedMs,
+        'salesLoadSuccess': salesReport != null,
+        'catalogLoadSuccess': catalogPage != null,
       },
     );
     if (cancelToken?.isCancelled ?? false) {
-      return _cancelledResult(refreshedAt: now);
+      yield _cancelledResult(refreshedAt: now);
+      return;
     }
 
-    return result.fold(
-      (report) async {
-        _logParticipantMetrics(report);
-        if (cancelToken?.isCancelled ?? false) {
-          return _cancelledResult(refreshedAt: now);
+    if (salesReport != null) {
+      _logParticipantMetrics(salesReport);
+    }
+    if (cancelToken?.isCancelled ?? false) {
+      yield _cancelledResult(refreshedAt: now);
+      return;
+    }
+    if (catalogPage == null && salesReport == null) {
+      final failure =
+          salesResult.exceptionOrNull() ?? catalogResult.exceptionOrNull()!;
+      AppLogger.warning(
+        'Sales live map queries failed',
+        context: <String, Object?>{
+          'operation': 'LoadSalesLiveMapUseCase',
+          'failureType': failure.runtimeType.toString(),
+        },
+        error: failure,
+      );
+      yield _failedResult(failure, refreshedAt: now);
+      return;
+    }
+
+    final mapped = await _mapReport(
+      salesReport,
+      catalogResult: catalogPage,
+      salesFailure: salesResult.exceptionOrNull(),
+      catalogFailure: catalogResult.exceptionOrNull(),
+      filter: filter,
+      refreshedAt: now,
+      cancelToken: cancelToken,
+    );
+    _logTrace(
+      'Sales live map load completed',
+      <String, Object?>{
+        'elapsedMs': totalStopwatch?.elapsedMilliseconds,
+        'pointCount': mapped.points.length,
+        'branchOptionCount': mapped.branchOptions.length,
+        'totalBranchCount': mapped.totalBranchCount,
+        'plannedAgentCount': mapped.plannedAgentCount,
+        'queriedAgentCount': mapped.queriedAgentCount,
+      },
+    );
+    yield mapped;
+  }
+
+  Future<AppResult<CadastroFilialAcrossAgentsPageResult>> _loadCatalog({
+    required String userId,
+    required ResumoTotalVendasMunicipioFilialPeriodoFilter queryFilter,
+    required Set<String>? selectedAgentIds,
+    required DateTime now,
+  }) async {
+    const fullCatalogFilter = CadastroFilialFilter(
+      pageSize: CadastroFilialFilter.maxPageSize,
+    );
+    final selectedBranches = queryFilter.selectedBranches;
+    if (selectedBranches.isEmpty) {
+      return _loadCatalogCached(
+        userId: userId,
+        filter: fullCatalogFilter,
+        selectedAgentIds: selectedAgentIds,
+        now: now,
+      );
+    }
+
+    var cachedFullCatalog = _readCachedCatalog(
+      userId: userId,
+      filter: fullCatalogFilter,
+      selectedAgentIds: selectedAgentIds,
+      now: now,
+    );
+    cachedFullCatalog ??= selectedAgentIds == null
+        ? null
+        : _readCachedCatalog(
+            userId: userId,
+            filter: fullCatalogFilter,
+            selectedAgentIds: null,
+            now: now,
+          );
+    if (cachedFullCatalog != null) {
+      return Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+        cachedFullCatalog.result,
+      );
+    }
+
+    final seenBranchKeys = <String>{};
+    final branchResults =
+        <Future<AppResult<CadastroFilialAcrossAgentsPageResult>>>[];
+    for (final branch in selectedBranches) {
+      final agentId = branch.normalizedAgentId;
+      final key = _branchKey(agentId, branch.codEmpresa, branch.codFilial);
+      if (agentId.isEmpty || !seenBranchKeys.add(key)) {
+        continue;
+      }
+      branchResults.add(
+        _loadCatalogCached(
+          userId: userId,
+          filter: CadastroFilialFilter(
+            codEmpresa: branch.codEmpresa,
+            codFilial: branch.codFilial,
+            pageSize: CadastroFilialFilter.maxPageSize,
+          ),
+          selectedAgentIds: <String>{agentId},
+          now: now,
+        ),
+      );
+    }
+
+    if (branchResults.isEmpty) {
+      return _loadCatalogCached(
+        userId: userId,
+        filter: fullCatalogFilter,
+        selectedAgentIds: selectedAgentIds,
+        now: now,
+      );
+    }
+
+    return _mergeCatalogResults(await Future.wait(branchResults));
+  }
+
+  Future<AppResult<CadastroFilialAcrossAgentsPageResult>> _loadCatalogCached({
+    required String userId,
+    required CadastroFilialFilter filter,
+    required Set<String>? selectedAgentIds,
+    required DateTime now,
+  }) async {
+    final cached = _readCachedCatalog(
+      userId: userId,
+      filter: filter,
+      selectedAgentIds: selectedAgentIds,
+      now: now,
+    );
+    if (cached != null) {
+      return Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+        cached.result,
+      );
+    }
+
+    final result = await _loadCadastroFilialAcrossAgents.loadAll(
+      userId: userId,
+      filter: filter,
+      selectedAgentIds: selectedAgentIds,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+    );
+    final page = result.getOrNull();
+    if (page != null) {
+      _writeCachedCatalog(
+        userId: userId,
+        filter: filter,
+        selectedAgentIds: selectedAgentIds,
+        now: now,
+        result: page,
+      );
+    }
+    return result;
+  }
+
+  _SalesLiveMapCachedCatalogResult? _readCachedCatalog({
+    required String userId,
+    required CadastroFilialFilter filter,
+    required Set<String>? selectedAgentIds,
+    required DateTime now,
+  }) {
+    final key = _catalogCacheKey(
+      userId: userId,
+      filter: filter,
+      selectedAgentIds: selectedAgentIds,
+    );
+    final cached = _branchCatalogCache[key];
+    if (cached == null) {
+      return null;
+    }
+    if (cached.isExpired(now, ttl: _branchCatalogCacheTtl)) {
+      _branchCatalogCache.remove(key);
+      return null;
+    }
+    return cached;
+  }
+
+  void _writeCachedCatalog({
+    required String userId,
+    required CadastroFilialFilter filter,
+    required Set<String>? selectedAgentIds,
+    required DateTime now,
+    required CadastroFilialAcrossAgentsPageResult result,
+  }) {
+    final key = _catalogCacheKey(
+      userId: userId,
+      filter: filter,
+      selectedAgentIds: selectedAgentIds,
+    );
+    _branchCatalogCache.remove(key);
+    _branchCatalogCache[key] = _SalesLiveMapCachedCatalogResult(
+      result: result,
+      cachedAt: now,
+    );
+    while (_branchCatalogCache.length > _branchCatalogCacheMaxEntries) {
+      _branchCatalogCache.remove(_branchCatalogCache.keys.first);
+    }
+  }
+
+  String _catalogCacheKey({
+    required String userId,
+    required CadastroFilialFilter filter,
+    required Set<String>? selectedAgentIds,
+  }) {
+    final agents = selectedAgentIds == null
+        ? '*'
+        : (selectedAgentIds.toList(growable: false)..sort()).join(',');
+    return <String>[
+      userId.trim(),
+      'agents=$agents',
+      'empresa=${filter.codEmpresa ?? '*'}',
+      'filial=${filter.codFilial ?? '*'}',
+      'pageSize=${filter.pageSize}',
+    ].join('|');
+  }
+
+  AppResult<CadastroFilialAcrossAgentsPageResult> _mergeCatalogResults(
+    List<AppResult<CadastroFilialAcrossAgentsPageResult>> results,
+  ) {
+    final pages = results
+        .map((result) => result.getOrNull())
+        .whereType<CadastroFilialAcrossAgentsPageResult>()
+        .toList(growable: false);
+    if (pages.isEmpty) {
+      return Failure<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+        results.first.exceptionOrNull()!,
+      );
+    }
+    if (pages.length == 1) {
+      return Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+        pages.single,
+      );
+    }
+
+    final plannedTargets = _uniqueTargets(
+      pages.expand((page) => page.report.plannedTargets),
+    );
+    final missingClientTokenTargets = _uniqueTargets(
+      pages.expand((page) => page.report.missingClientTokenTargets),
+    );
+    final skippedDueToHubPresenceTargets = _uniqueTargets(
+      pages.expand((page) => page.report.skippedDueToHubPresenceTargets),
+    );
+    final participantRows = <String, List<CadastroFilialRow>>{};
+    final participantSourceRowCounts = <String, int>{};
+    final participantFailure = <String, AppFailure?>{};
+    final participantElapsedMs = <String, int>{};
+    final participantDisplayNames = <String, String>{};
+    final rowKeysByAgentId = <String, Set<String>>{};
+
+    for (final page in pages) {
+      for (final participant in page.report.participants) {
+        final agentId = participant.agentId;
+        participantDisplayNames.putIfAbsent(
+          agentId,
+          () => participant.displayName,
+        );
+        participantElapsedMs[agentId] =
+            (participantElapsedMs[agentId] ?? 0) + participant.elapsedMs;
+        participantSourceRowCounts[agentId] =
+            (participantSourceRowCounts[agentId] ?? 0) +
+            participant.sourceRowCount;
+        participantFailure.putIfAbsent(agentId, () => participant.failure);
+
+        final rows = participantRows.putIfAbsent(
+          agentId,
+          () => <CadastroFilialRow>[],
+        );
+        final rowKeys = rowKeysByAgentId.putIfAbsent(
+          agentId,
+          () => <String>{},
+        );
+        for (final row in participant.rows) {
+          final rowKey = '${row.codEmpresa}:${row.codFilial}';
+          if (rowKeys.add(rowKey)) {
+            rows.add(row);
+          }
         }
-        final mapped = await _mapReport(
-          report,
-          filter: filter,
-          refreshedAt: now,
-          cancelToken: cancelToken,
-        );
-        _logTrace(
-          'Sales live map load completed',
-          <String, Object?>{
-            'elapsedMs': totalStopwatch?.elapsedMilliseconds,
-            'pointCount': mapped.points.length,
-            'branchOptionCount': mapped.branchOptions.length,
-            'totalBranchCount': mapped.totalBranchCount,
-            'plannedAgentCount': mapped.plannedAgentCount,
-            'queriedAgentCount': mapped.queriedAgentCount,
-          },
-        );
-        return mapped;
-      },
-      (failure) {
-        AppLogger.warning(
-          'Sales live map query failed',
-          context: <String, Object?>{
-            'operation': 'LoadSalesLiveMapUseCase',
-            'failureType': failure.runtimeType.toString(),
-          },
-          error: failure,
-        );
-        return Future<SalesLiveMapLoadResult>.value(
-          _failedResult(failure, refreshedAt: now),
-        );
-      },
+      }
+    }
+
+    final participants =
+        participantRows.entries
+            .map(
+              (entry) => AgentQueryExecutionParticipant<CadastroFilialRow>(
+                agentId: entry.key,
+                displayName: participantDisplayNames[entry.key] ?? entry.key,
+                rows: List<CadastroFilialRow>.unmodifiable(entry.value),
+                sourceRowCount: participantSourceRowCounts[entry.key],
+                failure: entry.value.isEmpty
+                    ? participantFailure[entry.key]
+                    : null,
+                elapsedMs: participantElapsedMs[entry.key] ?? 0,
+              ),
+            )
+            .toList(growable: false)
+          ..sort(
+            (left, right) => left.displayName.compareTo(right.displayName),
+          );
+
+    final report = AgentQueryExecutionReport<CadastroFilialRow>(
+      queryKey: AgentQueryKey.cadastroFilial,
+      strategy: AgentQueryExecutionStrategy.mergeAll,
+      consideredApprovedAgentCount:
+          plannedTargets.length + missingClientTokenTargets.length,
+      plannedTargets: plannedTargets,
+      missingClientTokenTargets: missingClientTokenTargets,
+      participants: participants,
+      totalElapsedMs: pages.fold<int>(
+        0,
+        (total, page) => total + page.report.totalElapsedMs,
+      ),
+      skippedDueToHubPresenceTargets: skippedDueToHubPresenceTargets,
+    );
+    return Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+      CadastroFilialAcrossAgentsPageResult.fromReport(report),
     );
   }
 
+  List<AgentQueryTarget> _uniqueTargets(Iterable<AgentQueryTarget> targets) {
+    final byAgentId = <String, AgentQueryTarget>{};
+    for (final target in targets) {
+      byAgentId.putIfAbsent(target.agentId, () => target);
+    }
+    return byAgentId.values.toList(growable: false)
+      ..sort((left, right) => left.displayName.compareTo(right.displayName));
+  }
+
   Future<SalesLiveMapLoadResult> _mapReport(
-    AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>
-    report, {
+    AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>?
+    salesReport, {
     required SalesLiveMapFilter filter,
     required DateTime refreshedAt,
+    CadastroFilialAcrossAgentsPageResult? catalogResult,
+    AppFailure? salesFailure,
+    AppFailure? catalogFailure,
     SalesLiveMapLoadCancelToken? cancelToken,
+    bool salesDataPending = false,
   }) async {
     if (cancelToken?.isCancelled ?? false) {
       return _cancelledResult(refreshedAt: refreshedAt);
     }
     final aggregateStopwatch = _startTraceStopwatch();
-    final successfulParticipants = report.participants
+    final catalogReport = catalogResult?.report;
+    final AgentQueryExecutionReport<dynamic>? baseReport =
+        catalogReport ?? salesReport;
+    if (baseReport == null) {
+      return SalesLiveMapLoadResult(
+        points: const <AppBrazilStoreSalesPoint>[],
+        branchOptions: const <SalesLiveMapBranchOption>[],
+        totalRevenue: 0,
+        totalSalesCount: 0,
+        totalBranchCount: 0,
+        mappedBranchCount: 0,
+        mappedMunicipalityCount: 0,
+        queriedAgentCount: 0,
+        plannedAgentCount: 0,
+        failedAgentCount: 0,
+        missingClientTokenAgentCount: 0,
+        skippedOfflineAgentCount: 0,
+        rowCapReachedAgentCount: 0,
+        refreshedAt: refreshedAt,
+      );
+    }
+    final successfulParticipants = baseReport.participants
         .where((participant) => participant.isSuccess)
         .length;
-    final returnedRowCount = _returnedRowCount(report);
-    final sourceRowCount = _sourceRowCount(report);
-    final aggregates = _aggregateRows(report.participants);
+    final returnedRowCount = _returnedRowCount(baseReport);
+    final sourceRowCount = _sourceRowCount(baseReport);
+    final agentDiagnostics = salesReport == null
+        ? (
+            salesAgentCount: 0,
+            noSalesAgentOptions: const <SalesLiveMapAgentOption>[],
+          )
+        : _agentDiagnostics(salesReport);
+    final salesUnavailableLabelsByAgentId = _salesUnavailableLabelsByAgentId(
+      catalogReport: catalogReport,
+      salesReport: salesReport,
+      salesFailure: salesFailure,
+    );
+    final aggregates = catalogReport == null
+        ? _aggregateRows(salesReport!.participants)
+        : _aggregateCatalogRows(
+            catalogReport: catalogReport,
+            salesReport: salesReport,
+            salesUnavailableLabelsByAgentId: salesUnavailableLabelsByAgentId,
+            salesDataPending: salesDataPending,
+          );
     final branchOptions = aggregates
         .map((aggregate) => aggregate.toBranchOption())
         .toList(growable: false);
     final visibleAggregates = _filterAggregatesByBranch(aggregates, filter);
+    final failedCatalogAgentCount = catalogReport?.failedAgentIds.length ?? 0;
+    final failedSalesAgentCount =
+        salesReport?.failedAgentIds.length ??
+        (salesFailure == null ? 0 : baseReport.plannedTargets.length);
+    final failedAgentCount = _combinedFailedAgentCount(
+      catalogReport: catalogReport,
+      salesReport: salesReport,
+      catalogFailure: catalogFailure,
+      salesFailure: salesFailure,
+      plannedTargets: baseReport.plannedTargets.length,
+    );
+    final salesBranchCount = visibleAggregates
+        .where((aggregate) => aggregate.qtdVendas > 0)
+        .length;
+    final salesPendingBranchCount = salesDataPending
+        ? visibleAggregates.length
+        : 0;
+    final salesUnavailableBranchCount = salesDataPending
+        ? 0
+        : visibleAggregates
+              .where((aggregate) => aggregate.salesDataUnavailable)
+              .length;
+    final noSalesBranchCount = salesDataPending
+        ? 0
+        : visibleAggregates
+              .where(
+                (aggregate) =>
+                    !aggregate.salesDataUnavailable && aggregate.qtdVendas == 0,
+              )
+              .length;
+    final zeroedBranchCount = noSalesBranchCount + salesUnavailableBranchCount;
     _logTrace(
       'Sales live map rows aggregated',
       <String, Object?>{
         'elapsedMs': aggregateStopwatch?.elapsedMilliseconds,
-        'reportElapsedMs': report.totalElapsedMs,
-        'plannedAgentCount': report.plannedTargets.length,
-        'participantCount': report.participants.length,
+        'reportElapsedMs': baseReport.totalElapsedMs,
+        'plannedAgentCount': baseReport.plannedTargets.length,
+        'participantCount': baseReport.participants.length,
         'successfulParticipantCount': successfulParticipants,
-        'failedAgentCount': report.failedAgentIds.length,
-        'missingClientTokenAgentCount': report.missingClientTokenTargets.length,
+        'failedAgentCount': failedAgentCount,
+        'failedCatalogAgentCount': failedCatalogAgentCount,
+        'failedSalesAgentCount': failedSalesAgentCount,
+        'missingClientTokenAgentCount':
+            baseReport.missingClientTokenTargets.length,
         'skippedOfflineAgentCount':
-            report.skippedDueToHubPresenceTargets.length,
+            baseReport.skippedDueToHubPresenceTargets.length,
         'returnedRowCount': returnedRowCount,
         'sourceRowCount': sourceRowCount,
-        'rowCapReachedAgentCount': _rowCapReachedAgentCount(report),
+        'rowCapReachedAgentCount': salesReport == null
+            ? 0
+            : _rowCapReachedAgentCount(salesReport),
         'aggregateCount': aggregates.length,
         'visibleAggregateCount': visibleAggregates.length,
+        'salesBranchCount': salesBranchCount,
+        'salesPendingBranchCount': salesPendingBranchCount,
+        'noSalesBranchCount': noSalesBranchCount,
+        'salesUnavailableBranchCount': salesUnavailableBranchCount,
+        'zeroedBranchCount': zeroedBranchCount,
       },
     );
     if (cancelToken?.isCancelled ?? false) {
@@ -332,7 +798,7 @@ class LoadSalesLiveMapUseCase {
       points: points,
     );
 
-    final loadFailed = report.requiresClientTokenSetup;
+    final loadFailed = baseReport.requiresClientTokenSetup;
     return SalesLiveMapLoadResult(
       points: points,
       branchOptions: branchOptions,
@@ -348,12 +814,26 @@ class LoadSalesLiveMapUseCase {
       totalBranchCount: visibleAggregates.length,
       mappedBranchCount: points.length,
       mappedMunicipalityCount: mappedMunicipalityCount,
-      queriedAgentCount: report.participants.length,
-      plannedAgentCount: report.plannedTargets.length,
-      failedAgentCount: report.failedAgentIds.length,
-      missingClientTokenAgentCount: report.missingClientTokenTargets.length,
-      skippedOfflineAgentCount: report.skippedDueToHubPresenceTargets.length,
-      rowCapReachedAgentCount: _rowCapReachedAgentCount(report),
+      queriedAgentCount: baseReport.participants.length,
+      plannedAgentCount: baseReport.plannedTargets.length,
+      failedAgentCount: failedAgentCount,
+      missingClientTokenAgentCount: baseReport.missingClientTokenTargets.length,
+      skippedOfflineAgentCount:
+          baseReport.skippedDueToHubPresenceTargets.length,
+      rowCapReachedAgentCount: salesReport == null
+          ? 0
+          : _rowCapReachedAgentCount(salesReport),
+      salesAgentCount: agentDiagnostics.salesAgentCount,
+      catalogBranchCount: visibleAggregates.length,
+      salesBranchCount: salesBranchCount,
+      zeroedBranchCount: zeroedBranchCount,
+      noSalesBranchCount: noSalesBranchCount,
+      salesUnavailableBranchCount: salesUnavailableBranchCount,
+      salesDataPending: salesDataPending,
+      salesPendingBranchCount: salesPendingBranchCount,
+      failedCatalogAgentCount: failedCatalogAgentCount,
+      failedSalesAgentCount: failedSalesAgentCount,
+      noSalesAgentOptions: agentDiagnostics.noSalesAgentOptions,
       locationDiagnostics: locationDiagnostics,
       loadFailed: loadFailed,
       loadFailureReason: loadFailed
@@ -562,6 +1042,46 @@ class LoadSalesLiveMapUseCase {
     );
   }
 
+  ({
+    int salesAgentCount,
+    List<SalesLiveMapAgentOption> noSalesAgentOptions,
+  })
+  _agentDiagnostics(
+    AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>
+    report,
+  ) {
+    final plannedAgentIds = report.plannedTargets
+        .map((target) => target.agentId)
+        .toSet();
+    var salesAgentCount = 0;
+    final noSalesAgentOptions = <SalesLiveMapAgentOption>[];
+
+    for (final participant in report.participants) {
+      if (!plannedAgentIds.contains(participant.agentId) ||
+          !participant.isSuccess) {
+        continue;
+      }
+      if (participant.rows.isEmpty) {
+        noSalesAgentOptions.add(
+          SalesLiveMapAgentOption(
+            id: participant.agentId,
+            name: participant.displayName,
+          ),
+        );
+      } else {
+        salesAgentCount += 1;
+      }
+    }
+
+    noSalesAgentOptions.sort((left, right) => left.name.compareTo(right.name));
+    return (
+      salesAgentCount: salesAgentCount,
+      noSalesAgentOptions: List<SalesLiveMapAgentOption>.unmodifiable(
+        noSalesAgentOptions,
+      ),
+    );
+  }
+
   SalesLiveMapLoadResult _failedResult(
     AppFailure failure, {
     required DateTime refreshedAt,
@@ -582,6 +1102,28 @@ class LoadSalesLiveMapUseCase {
       rowCapReachedAgentCount: 0,
       loadFailed: true,
       loadFailureMessage: failure.userMessage,
+      refreshedAt: refreshedAt,
+    );
+  }
+
+  SalesLiveMapLoadResult _pendingBaseResult({
+    required DateTime refreshedAt,
+  }) {
+    return SalesLiveMapLoadResult(
+      points: const <AppBrazilStoreSalesPoint>[],
+      branchOptions: const <SalesLiveMapBranchOption>[],
+      totalRevenue: 0,
+      totalSalesCount: 0,
+      totalBranchCount: 0,
+      mappedBranchCount: 0,
+      mappedMunicipalityCount: 0,
+      queriedAgentCount: 0,
+      plannedAgentCount: 0,
+      failedAgentCount: 0,
+      missingClientTokenAgentCount: 0,
+      skippedOfflineAgentCount: 0,
+      rowCapReachedAgentCount: 0,
+      salesDataPending: true,
       refreshedAt: refreshedAt,
     );
   }
@@ -624,11 +1166,11 @@ class LoadSalesLiveMapUseCase {
         continue;
       }
       for (final row in participant.rows) {
-        final key = [
+        final key = _branchKey(
           participant.agentId,
           row.codEmpresa,
           row.codFilial,
-        ].join(':');
+        );
         byKey
             .putIfAbsent(
               key,
@@ -652,6 +1194,155 @@ class LoadSalesLiveMapUseCase {
         },
       );
     return aggregates;
+  }
+
+  List<_SalesLiveMapBranchAggregate> _aggregateCatalogRows({
+    required AgentQueryExecutionReport<CadastroFilialRow> catalogReport,
+    required AgentQueryExecutionReport<
+      ResumoTotalVendasMunicipioFilialPeriodoRow
+    >?
+    salesReport,
+    required Map<String, String> salesUnavailableLabelsByAgentId,
+    required bool salesDataPending,
+  }) {
+    final byKey = <String, _SalesLiveMapBranchAggregate>{};
+    for (final participant in catalogReport.participants) {
+      if (!participant.isSuccess) {
+        continue;
+      }
+      for (final row in participant.rows) {
+        final key = _branchKey(
+          participant.agentId,
+          row.codEmpresa,
+          row.codFilial,
+        );
+        byKey.putIfAbsent(
+          key,
+          () {
+            final aggregate = _SalesLiveMapBranchAggregate.fromCadastro(
+              participant: participant,
+              row: row,
+            );
+            final statusLabel =
+                salesUnavailableLabelsByAgentId[participant.agentId];
+            if (salesDataPending) {
+              aggregate.markSalesDataLoading();
+            } else if (statusLabel != null) {
+              aggregate.markSalesDataUnavailable(statusLabel);
+            }
+            return aggregate;
+          },
+        );
+      }
+    }
+
+    if (salesReport != null) {
+      for (final participant in salesReport.participants) {
+        if (!participant.isSuccess) {
+          continue;
+        }
+        for (final row in participant.rows) {
+          final aggregate =
+              byKey[_branchKey(
+                participant.agentId,
+                row.codEmpresa,
+                row.codFilial,
+              )];
+          aggregate?.add(row);
+        }
+      }
+    }
+
+    final aggregates = byKey.values.toList(growable: false)
+      ..sort(
+        (left, right) {
+          final amount = right.totalVenda.compareTo(left.totalVenda);
+          if (amount != 0) {
+            return amount;
+          }
+          return left.name.compareTo(right.name);
+        },
+      );
+    return aggregates;
+  }
+
+  Map<String, String> _salesUnavailableLabelsByAgentId({
+    required AgentQueryExecutionReport<CadastroFilialRow>? catalogReport,
+    required AgentQueryExecutionReport<
+      ResumoTotalVendasMunicipioFilialPeriodoRow
+    >?
+    salesReport,
+    required AppFailure? salesFailure,
+  }) {
+    if (catalogReport == null) {
+      return const <String, String>{};
+    }
+
+    final catalogSuccessAgentIds = catalogReport.participants
+        .where((participant) => participant.isSuccess)
+        .map((participant) => participant.agentId)
+        .toSet();
+    if (catalogSuccessAgentIds.isEmpty) {
+      return const <String, String>{};
+    }
+
+    if (salesReport == null) {
+      if (salesFailure == null) {
+        return const <String, String>{};
+      }
+      return <String, String>{
+        for (final agentId in catalogSuccessAgentIds)
+          agentId: _salesUnavailableLabel(salesFailure),
+      };
+    }
+
+    final labelsByAgentId = <String, String>{};
+    for (final participant in salesReport.participants) {
+      if (participant.isSuccess ||
+          !catalogSuccessAgentIds.contains(participant.agentId)) {
+        continue;
+      }
+      labelsByAgentId[participant.agentId] = _salesUnavailableLabel(
+        participant.failure,
+      );
+    }
+    return Map<String, String>.unmodifiable(labelsByAgentId);
+  }
+
+  String _salesUnavailableLabel(AppFailure? failure) {
+    final userMessage = failure?.userMessage?.trim();
+    if (userMessage != null && userMessage.isNotEmpty) {
+      return userMessage;
+    }
+    return 'Vendas indisponiveis';
+  }
+
+  int _combinedFailedAgentCount({
+    required AgentQueryExecutionReport<CadastroFilialRow>? catalogReport,
+    required AgentQueryExecutionReport<
+      ResumoTotalVendasMunicipioFilialPeriodoRow
+    >?
+    salesReport,
+    required AppFailure? catalogFailure,
+    required AppFailure? salesFailure,
+    required int plannedTargets,
+  }) {
+    final failed = <String>{};
+    if (catalogReport != null) {
+      failed.addAll(catalogReport.failedAgentIds);
+    } else if (catalogFailure != null && salesReport == null) {
+      return plannedTargets;
+    }
+    if (salesReport != null) {
+      failed.addAll(salesReport.failedAgentIds);
+    } else if (salesFailure != null) {
+      return plannedTargets;
+    }
+    return failed.length;
+  }
+
+  String _branchKey(String agentId, int codEmpresa, int codFilial) {
+    return '$agentId:$codEmpresa:$codFilial';
   }
 
   List<_SalesLiveMapBranchAggregate> _filterAggregatesByBranch(
@@ -706,20 +1397,14 @@ class LoadSalesLiveMapUseCase {
         .length;
   }
 
-  int _returnedRowCount(
-    AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>
-    report,
-  ) {
+  int _returnedRowCount<Row>(AgentQueryExecutionReport<Row> report) {
     return report.participants.fold<int>(
       0,
       (total, participant) => total + participant.rows.length,
     );
   }
 
-  int _sourceRowCount(
-    AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>
-    report,
-  ) {
+  int _sourceRowCount<Row>(AgentQueryExecutionReport<Row> report) {
     return report.participants.fold<int>(
       0,
       (total, participant) => total + participant.sourceRowCount,
@@ -801,6 +1486,24 @@ class _SalesLiveMapBranchAggregate {
     );
   }
 
+  factory _SalesLiveMapBranchAggregate.fromCadastro({
+    required AgentQueryExecutionParticipant<CadastroFilialRow> participant,
+    required CadastroFilialRow row,
+  }) {
+    return _SalesLiveMapBranchAggregate(
+      agentId: participant.agentId,
+      agentName: participant.displayName,
+      codEmpresa: row.codEmpresa,
+      codFilial: row.codFilial,
+      nomeFilial: row.nomeFilial,
+      nomeFantasiaFilial: row.nomeFantasia,
+      cepFilial: row.cep,
+      nomeMunicipioFilial: row.nomeMunicipio,
+      ufMunicipioFilial: row.ufMunicipio,
+      codigoIbgeMunicipioFilial: row.codigoIbge,
+    );
+  }
+
   final String agentId;
   final String agentName;
   final int codEmpresa;
@@ -813,6 +1516,9 @@ class _SalesLiveMapBranchAggregate {
   final String? codigoIbgeMunicipioFilial;
   double totalVenda = 0;
   int qtdVendas = 0;
+  bool salesDataLoading = false;
+  bool salesDataUnavailable = false;
+  String? salesDataStatusLabel;
 
   String get id => '$agentId-$codEmpresa-$codFilial';
 
@@ -838,6 +1544,18 @@ class _SalesLiveMapBranchAggregate {
     qtdVendas += row.qtdVendas;
   }
 
+  void markSalesDataLoading() {
+    salesDataLoading = true;
+    salesDataUnavailable = false;
+    salesDataStatusLabel = null;
+  }
+
+  void markSalesDataUnavailable(String statusLabel) {
+    salesDataLoading = false;
+    salesDataUnavailable = true;
+    salesDataStatusLabel = statusLabel;
+  }
+
   AppBrazilStoreSalesPointSource toPointSource() {
     return AppBrazilStoreSalesPointSource(
       id: id,
@@ -854,6 +1572,9 @@ class _SalesLiveMapBranchAggregate {
       companyCode: codEmpresa,
       branchCode: codFilial,
       agentName: _trimmedOrNull(agentName),
+      salesDataLoading: salesDataLoading,
+      salesDataUnavailable: salesDataUnavailable,
+      salesDataStatusLabel: _trimmedOrNull(salesDataStatusLabel),
       subtitle: 'Agente $agentName - Empresa $codEmpresa - Filial $codFilial',
       payload: this,
     );
@@ -925,6 +1646,20 @@ class _SalesLiveMapGeolocationResult {
   final int resolvedAndCachedCount;
   final int unresolvedAndCachedCount;
   final bool cancelled;
+}
+
+class _SalesLiveMapCachedCatalogResult {
+  const _SalesLiveMapCachedCatalogResult({
+    required this.result,
+    required this.cachedAt,
+  });
+
+  final CadastroFilialAcrossAgentsPageResult result;
+  final DateTime cachedAt;
+
+  bool isExpired(DateTime now, {required Duration ttl}) {
+    return now.difference(cachedAt) > ttl;
+  }
 }
 
 class _SalesLiveMapCachedBranchLocation {
@@ -1015,6 +1750,11 @@ class _SalesLiveMapCachedBranchLocation {
       branchCode: aggregate.codFilial,
       agentName: _SalesLiveMapBranchAggregate._trimmedOrNull(
         aggregate.agentName,
+      ),
+      salesDataLoading: aggregate.salesDataLoading,
+      salesDataUnavailable: aggregate.salesDataUnavailable,
+      salesDataStatusLabel: _SalesLiveMapBranchAggregate._trimmedOrNull(
+        aggregate.salesDataStatusLabel,
       ),
       locationResolution: locationResolution,
       subtitle:

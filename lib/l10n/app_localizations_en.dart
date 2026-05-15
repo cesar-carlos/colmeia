@@ -2434,6 +2434,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesLiveMapPartialTitle => 'Partial tracking';
 
   @override
+  String salesLiveMapAgentQuerySummary(
+    int plannedCount,
+    int queriedCount,
+    int salesCount,
+    int noSalesCount,
+  ) {
+    return 'Agents: $plannedCount planned | $queriedCount queried | $salesCount with sales | $noSalesCount without sales';
+  }
+
+  @override
   String salesLiveMapPartialFailedAgents(int count) {
     return '$count branch(es) failed in the last query.';
   }
@@ -2457,6 +2467,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String salesLiveMapPartialMissingCoordinates(int count) {
     return '$count branch(es) without resolved coordinates.';
   }
+
+  @override
+  String salesLiveMapPartialNoSalesAgents(int count) {
+    return '$count agent(s) returned no sales in the period.';
+  }
+
+  @override
+  String salesLiveMapPartialZeroedBranches(int count) {
+    return '$count branch(es) shown with zero sales.';
+  }
+
+  @override
+  String salesLiveMapPartialUnavailableSalesBranches(int count) {
+    return '$count branch(es) shown with sales unavailable due to query failure.';
+  }
+
+  @override
+  String get salesLiveMapNoSalesAgentsTitle => 'Agents without sales';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsTitle => 'Technical diagnostics';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsFilters => 'Active filters';
+
+  @override
+  String get salesLiveMapTechnicalDiagnosticsQuery => 'Query diagnostics';
 
   @override
   String get salesLiveMapFiltersTitle => 'Tracking filters';
@@ -2492,6 +2529,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesLiveMapClearBranchSelectionAction => 'Clear branch selection';
+
+  @override
+  String get salesLiveMapClearSavedFiltersAction => 'Clear saved filters';
 
   @override
   String get salesLiveMapMissingLocalToken => 'No local token';

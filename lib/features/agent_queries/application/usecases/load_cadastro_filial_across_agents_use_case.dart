@@ -26,4 +26,22 @@ class LoadCadastroFilialAcrossAgentsUseCase {
       raceMaxSources: raceMaxSources,
     );
   }
+
+  Future<AppResult<CadastroFilialAcrossAgentsPageResult>> loadAll({
+    required String userId,
+    required CadastroFilialFilter filter,
+    Set<String>? selectedAgentIds,
+    AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
+    int? bridgeTimeoutMs,
+    int? raceMaxSources,
+  }) {
+    return _repository.loadAll(
+      userId: userId,
+      filter: filter,
+      selectedAgentIds: selectedAgentIds,
+      strategy: strategy,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      raceMaxSources: raceMaxSources,
+    );
+  }
 }

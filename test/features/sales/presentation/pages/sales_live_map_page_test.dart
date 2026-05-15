@@ -12,6 +12,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/material.dart';
@@ -72,12 +73,12 @@ void main() {
       ],
     );
     when(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
       ),
-    ).thenAnswer((_) async => _loadedResult());
+    ).thenAnswer((_) => _streamResult(_loadedResult()));
 
     getIt
       ..registerSingleton<SalesPreferences>(salesPreferences)
@@ -100,7 +101,7 @@ void main() {
       await _pumpInitialLoad(tester);
 
       verify(
-        () => loadLiveMap.call(
+        () => loadLiveMap.loadProgressive(
           userId: 'user-1',
           filter: any(named: 'filter'),
           cancelToken: any(named: 'cancelToken'),
@@ -112,7 +113,7 @@ void main() {
       await tester.pump();
 
       verifyNever(
-        () => loadLiveMap.call(
+        () => loadLiveMap.loadProgressive(
           userId: 'user-1',
           filter: any(named: 'filter'),
           cancelToken: any(named: 'cancelToken'),
@@ -127,7 +128,7 @@ void main() {
     await _pumpPage(tester, authController: authController);
     await _pumpInitialLoad(tester);
     verify(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
@@ -147,7 +148,7 @@ void main() {
     await tester.pump();
 
     verify(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
@@ -160,18 +161,18 @@ void main() {
   ) async {
     final completer = Completer<SalesLiveMapLoadResult>();
     when(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
       ),
-    ).thenAnswer((_) => completer.future);
+    ).thenAnswer((_) => _streamFromFuture(completer.future));
 
     await _pumpPage(tester, authController: authController);
     await tester.pump();
     await tester.pump();
     verify(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
@@ -191,7 +192,7 @@ void main() {
     await tester.pump();
 
     verifyNever(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
@@ -207,18 +208,18 @@ void main() {
   ) async {
     final completer = Completer<SalesLiveMapLoadResult>();
     when(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
       ),
-    ).thenAnswer((_) => completer.future);
+    ).thenAnswer((_) => _streamFromFuture(completer.future));
 
     await _pumpPage(tester, authController: authController);
     await tester.pump();
     await tester.pump();
     verify(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
@@ -229,7 +230,7 @@ void main() {
     await tester.pump();
 
     verifyNever(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
@@ -253,7 +254,7 @@ void main() {
 
     expect(find.text('Total revenue'), findsOneWidget);
     verifyNever(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
@@ -266,16 +267,49 @@ void main() {
     await _pumpInitialLoad(tester);
   });
 
-  testWidgets('shows explicit empty state when the query returns no sales', (
+  testWidgets('shows the map while sales values are still loading', (
     tester,
   ) async {
+    final controller = StreamController<SalesLiveMapLoadResult>();
+    addTearDown(controller.close);
     when(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
       ),
-    ).thenAnswer((_) async => _emptyResult());
+    ).thenAnswer((_) => controller.stream);
+
+    await _pumpPage(tester, authController: authController);
+    await tester.pump();
+    await tester.pump();
+
+    controller.add(_pendingMapResult());
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 220));
+
+    expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.byType(AppSkeleton), findsOneWidget);
+    expect(find.text('No sales in period'), findsNothing);
+
+    controller.add(_loadedResult());
+    await tester.pump();
+
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.text('Total revenue'), findsOneWidget);
+  });
+
+  testWidgets('shows explicit empty state when the query returns no sales', (
+    tester,
+  ) async {
+    when(
+      () => loadLiveMap.loadProgressive(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).thenAnswer((_) => _streamResult(_emptyResult()));
 
     await _pumpPage(tester, authController: authController);
     await _pumpInitialLoad(tester);
@@ -293,19 +327,19 @@ void main() {
     tester,
   ) async {
     when(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
       ),
-    ).thenAnswer((_) async => _partialUnmappedResult());
+    ).thenAnswer((_) => _streamResult(_partialUnmappedResult()));
 
     await _pumpPage(tester, authController: authController);
     await _pumpInitialLoad(tester);
 
     expect(find.text('Partial tracking'), findsOneWidget);
     expect(
-      find.text('1 branch(es) without resolved coordinates.'),
+      find.textContaining('1 branch(es) without resolved coordinates.'),
       findsOneWidget,
     );
     expect(
@@ -314,13 +348,86 @@ void main() {
     );
   });
 
+  testWidgets('shows all agents without sales in the partial panel', (
+    tester,
+  ) async {
+    when(
+      () => loadLiveMap.loadProgressive(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).thenAnswer((_) => _streamResult(_partialNoSalesResult()));
+
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+
+    expect(find.text('Partial tracking'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'Agents: 3 planned | 3 queried | 1 with sales | 2 without sales',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Agents without sales'), findsOneWidget);
+    expect(find.text('Agent Two'), findsOneWidget);
+    expect(find.text('Agent Three'), findsOneWidget);
+  });
+
+  testWidgets('shows unavailable sales branches in the partial panel', (
+    tester,
+  ) async {
+    when(
+      () => loadLiveMap.loadProgressive(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).thenAnswer((_) => _streamResult(_partialUnavailableSalesResult()));
+
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+
+    expect(find.text('Partial tracking'), findsOneWidget);
+    expect(
+      find.textContaining(
+        '1 branch(es) shown with sales unavailable due to query failure.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows and expands the technical diagnostics panel', (
+    tester,
+  ) async {
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+
+    final title = find.text('Technical diagnostics');
+    expect(title, findsOneWidget);
+    expect(find.textContaining('selectedAgentIds:'), findsNothing);
+
+    await tester.ensureVisible(title);
+    await tester.tap(title);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('selectedAgentIds:'), findsOneWidget);
+    expect(find.textContaining('plannedAgentCount:'), findsOneWidget);
+    expect(find.textContaining('noSalesBranchCount:'), findsOneWidget);
+    expect(
+      find.textContaining('salesUnavailableBranchCount:'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('geo.ibgeMunicipalityCode:'), findsOneWidget);
+  });
+
   testWidgets('keeps the last map visible while a manual refresh is running', (
     tester,
   ) async {
     await _pumpPage(tester, authController: authController);
     await _pumpInitialLoad(tester);
     verify(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
@@ -329,12 +436,12 @@ void main() {
 
     final reloadCompleter = Completer<SalesLiveMapLoadResult>();
     when(
-      () => loadLiveMap.call(
+      () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
       ),
-    ).thenAnswer((_) => reloadCompleter.future);
+    ).thenAnswer((_) => _streamFromFuture(reloadCompleter.future));
 
     await tester.tap(find.text('Refresh now'));
     await tester.pump();
@@ -362,14 +469,14 @@ void main() {
       );
       var callCount = 0;
       when(
-        () => loadLiveMap.call(
+        () => loadLiveMap.loadProgressive(
           userId: any(named: 'userId'),
           filter: any(named: 'filter'),
           cancelToken: any(named: 'cancelToken'),
         ),
-      ).thenAnswer((_) async {
+      ).thenAnswer((_) {
         callCount += 1;
-        return callCount == 1 ? _emptyResult() : _loadedResult();
+        return _streamResult(callCount == 1 ? _emptyResult() : _loadedResult());
       });
 
       await _pumpPage(tester, authController: authController);
@@ -388,7 +495,7 @@ void main() {
       await _pumpInitialLoad(tester);
 
       final capturedFilters = verify(
-        () => loadLiveMap.call(
+        () => loadLiveMap.loadProgressive(
           userId: 'user-1',
           filter: captureAny(named: 'filter'),
           cancelToken: any(named: 'cancelToken'),
@@ -398,6 +505,70 @@ void main() {
       expect(capturedFilters.first.selectedBranchIds, <String>{'agent-1-1-1'});
       expect(capturedFilters.last.selectedBranchIds, isNull);
       expect(capturedFilters.last.selectedAgentIds, isNull);
+    },
+  );
+
+  testWidgets(
+    'clears persisted filters and reloads with the default filter',
+    (
+      tester,
+    ) async {
+      when(
+        () => salesPreferences.restoreSalesLiveMapFilter(),
+      ).thenReturn(
+        const SalesLiveMapFilter(
+          selectedAgentIds: <String>{'agent-1'},
+          selectedBranchIds: <String>{'agent-1-1-1'},
+          periodMode: SalesLiveMapPeriodMode.lastSevenDays,
+          detailLevel: SalesLiveMapMapDetail.municipalities,
+          markerVisual: SalesLiveMapMarkerVisual.bubble,
+          metric: AppBrazilStoreSalesMapMetric.salesCount,
+        ),
+      );
+
+      await _pumpPage(tester, authController: authController);
+      await _pumpInitialLoad(tester);
+
+      final clearSaved = find.widgetWithText(
+        OutlinedButton,
+        'Clear saved filters',
+      );
+      expect(clearSaved, findsOneWidget);
+
+      await tester.tap(clearSaved);
+      await _pumpInitialLoad(tester);
+
+      final persistedFilters = verify(
+        () => salesPreferences.persistSalesLiveMapFilter(captureAny()),
+      ).captured.cast<SalesLiveMapFilter>().toList();
+      expect(persistedFilters.last.selectedAgentIds, isNull);
+      expect(persistedFilters.last.selectedBranchIds, isNull);
+      expect(
+        persistedFilters.last.periodMode,
+        SalesLiveMapPeriodMode.today,
+      );
+      expect(
+        persistedFilters.last.detailLevel,
+        SalesLiveMapMapDetail.branches,
+      );
+      expect(
+        persistedFilters.last.markerVisual,
+        SalesLiveMapMarkerVisual.dot,
+      );
+      expect(
+        persistedFilters.last.metric,
+        AppBrazilStoreSalesMapMetric.revenue,
+      );
+
+      final capturedFilters = verify(
+        () => loadLiveMap.loadProgressive(
+          userId: 'user-1',
+          filter: captureAny(named: 'filter'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).captured.cast<SalesLiveMapFilter>().toList();
+      expect(capturedFilters.last.selectedAgentIds, isNull);
+      expect(capturedFilters.last.selectedBranchIds, isNull);
     },
   );
 }
@@ -426,6 +597,16 @@ Future<void> _pumpInitialLoad(WidgetTester tester) async {
   await tester.pump();
   await tester.pump();
   await tester.pump();
+}
+
+Stream<SalesLiveMapLoadResult> _streamResult(SalesLiveMapLoadResult result) {
+  return Stream<SalesLiveMapLoadResult>.value(result);
+}
+
+Stream<SalesLiveMapLoadResult> _streamFromFuture(
+  Future<SalesLiveMapLoadResult> future,
+) {
+  return Stream<SalesLiveMapLoadResult>.fromFuture(future);
 }
 
 SalesLiveMapLoadResult _loadedResult() {
@@ -465,6 +646,51 @@ SalesLiveMapLoadResult _loadedResult() {
     missingClientTokenAgentCount: 0,
     skippedOfflineAgentCount: 0,
     rowCapReachedAgentCount: 0,
+    salesAgentCount: 1,
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
+}
+
+SalesLiveMapLoadResult _pendingMapResult() {
+  return SalesLiveMapLoadResult(
+    points: const <AppBrazilStoreSalesPoint>[
+      AppBrazilStoreSalesPoint(
+        id: 'agent-1-1-1',
+        name: 'Branch One',
+        uf: 'MT',
+        latitude: -15.60,
+        longitude: -56.10,
+        salesAmount: 0,
+        salesCount: 0,
+        city: 'Cuiaba',
+        salesDataLoading: true,
+      ),
+    ],
+    branchOptions: const <SalesLiveMapBranchOption>[
+      SalesLiveMapBranchOption(
+        id: 'agent-1-1-1',
+        agentId: 'agent-1',
+        agentName: 'Branch One',
+        codEmpresa: 1,
+        codFilial: 1,
+        name: 'Branch One',
+        city: 'Cuiaba',
+        uf: 'MT',
+      ),
+    ],
+    totalRevenue: 0,
+    totalSalesCount: 0,
+    totalBranchCount: 1,
+    mappedBranchCount: 1,
+    mappedMunicipalityCount: 1,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    salesDataPending: true,
+    salesPendingBranchCount: 1,
     refreshedAt: DateTime(2026, 5, 9, 12),
   );
 }
@@ -528,6 +754,99 @@ SalesLiveMapLoadResult _partialUnmappedResult() {
     missingClientTokenAgentCount: 0,
     skippedOfflineAgentCount: 0,
     rowCapReachedAgentCount: 0,
+    salesAgentCount: 2,
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
+}
+
+SalesLiveMapLoadResult _partialNoSalesResult() {
+  return SalesLiveMapLoadResult(
+    points: const <AppBrazilStoreSalesPoint>[
+      AppBrazilStoreSalesPoint(
+        id: 'agent-1-1-1',
+        name: 'Branch One',
+        uf: 'MT',
+        latitude: -15.60,
+        longitude: -56.10,
+        salesAmount: 1200,
+        salesCount: 12,
+        city: 'Cuiaba',
+      ),
+    ],
+    branchOptions: const <SalesLiveMapBranchOption>[
+      SalesLiveMapBranchOption(
+        id: 'agent-1-1-1',
+        agentId: 'agent-1',
+        agentName: 'Agent One',
+        codEmpresa: 1,
+        codFilial: 1,
+        name: 'Branch One',
+        city: 'Cuiaba',
+        uf: 'MT',
+      ),
+    ],
+    totalRevenue: 1200,
+    totalSalesCount: 12,
+    totalBranchCount: 1,
+    mappedBranchCount: 1,
+    mappedMunicipalityCount: 1,
+    queriedAgentCount: 3,
+    plannedAgentCount: 3,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    salesAgentCount: 1,
+    noSalesAgentOptions: const <SalesLiveMapAgentOption>[
+      SalesLiveMapAgentOption(id: 'agent-2', name: 'Agent Two'),
+      SalesLiveMapAgentOption(id: 'agent-3', name: 'Agent Three'),
+    ],
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
+}
+
+SalesLiveMapLoadResult _partialUnavailableSalesResult() {
+  return SalesLiveMapLoadResult(
+    points: const <AppBrazilStoreSalesPoint>[
+      AppBrazilStoreSalesPoint(
+        id: 'agent-1-1-1',
+        name: 'Branch One',
+        uf: 'MT',
+        latitude: -15.60,
+        longitude: -56.10,
+        salesAmount: 0,
+        salesCount: 0,
+        city: 'Cuiaba',
+        salesDataUnavailable: true,
+        salesDataStatusLabel: 'Sales unavailable.',
+      ),
+    ],
+    branchOptions: const <SalesLiveMapBranchOption>[
+      SalesLiveMapBranchOption(
+        id: 'agent-1-1-1',
+        agentId: 'agent-1',
+        agentName: 'Agent One',
+        codEmpresa: 1,
+        codFilial: 1,
+        name: 'Branch One',
+        city: 'Cuiaba',
+        uf: 'MT',
+      ),
+    ],
+    totalRevenue: 0,
+    totalSalesCount: 0,
+    totalBranchCount: 1,
+    mappedBranchCount: 1,
+    mappedMunicipalityCount: 1,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 1,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    zeroedBranchCount: 1,
+    salesUnavailableBranchCount: 1,
+    failedSalesAgentCount: 1,
     refreshedAt: DateTime(2026, 5, 9, 12),
   );
 }

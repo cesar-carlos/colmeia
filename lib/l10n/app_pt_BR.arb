@@ -925,6 +925,15 @@
     }
   },
   "salesLiveMapPartialTitle": "Acompanhamento parcial",
+  "salesLiveMapAgentQuerySummary": "Agentes: {plannedCount} planejado(s) | {queriedCount} consultado(s) | {salesCount} com vendas | {noSalesCount} sem vendas",
+  "@salesLiveMapAgentQuerySummary": {
+    "placeholders": {
+      "plannedCount": {"type": "int"},
+      "queriedCount": {"type": "int"},
+      "salesCount": {"type": "int"},
+      "noSalesCount": {"type": "int"}
+    }
+  },
   "salesLiveMapPartialFailedAgents": "{count} filial(is) falharam na ultima consulta.",
   "@salesLiveMapPartialFailedAgents": {
     "placeholders": {
@@ -955,6 +964,28 @@
       "count": {"type": "int"}
     }
   },
+  "salesLiveMapPartialNoSalesAgents": "{count} agente(s) sem vendas no periodo.",
+  "@salesLiveMapPartialNoSalesAgents": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialZeroedBranches": "{count} filial(is) exibidas com venda zerada.",
+  "@salesLiveMapPartialZeroedBranches": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPartialUnavailableSalesBranches": "{count} filial(is) exibidas com venda indisponivel por falha na consulta.",
+  "@salesLiveMapPartialUnavailableSalesBranches": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapNoSalesAgentsTitle": "Agentes sem vendas",
+  "salesLiveMapTechnicalDiagnosticsTitle": "Diagnostico tecnico",
+  "salesLiveMapTechnicalDiagnosticsFilters": "Filtros ativos",
+  "salesLiveMapTechnicalDiagnosticsQuery": "Diagnostico da consulta",
   "salesLiveMapFiltersTitle": "Filtros de acompanhamento",
   "salesLiveMapFiltersDescription": "Escolha filiais, periodo e tipo visual do mapa.",
   "salesLiveMapBranchesSectionTitle": "Filiais",
@@ -965,6 +996,7 @@
   "salesLiveMapSelectAllTokenBacked": "Selecionar todas",
   "salesLiveMapClearSelection": "Desmarcar todas",
   "salesLiveMapClearBranchSelectionAction": "Limpar selecao de filiais",
+  "salesLiveMapClearSavedFiltersAction": "Limpar filtros salvos",
   "salesLiveMapMissingLocalToken": "Sem token local",
   "salesLiveMapCustomPeriodLabel": "Periodo personalizado",
   "salesLiveMapCustomPeriodHelper": "Limite de {maxDays} dias por atualizacao.",

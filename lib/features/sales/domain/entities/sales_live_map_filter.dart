@@ -194,4 +194,14 @@ class SalesLiveMapBranchOption {
       '$city/$uf - Agente $agentName - Empresa $codEmpresa - Filial $codFilial';
 }
 
+class SalesLiveMapAgentOption {
+  const SalesLiveMapAgentOption({
+    required this.id,
+    required this.name,
+  });
+
+  final String id;
+  final String name;
+}
+
 const Object _sentinel = Object();

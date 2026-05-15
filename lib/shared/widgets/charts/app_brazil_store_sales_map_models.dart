@@ -148,6 +148,9 @@ class AppBrazilStoreSalesPoint {
     this.companyCode,
     this.branchCode,
     this.agentName,
+    this.salesDataLoading = false,
+    this.salesDataUnavailable = false,
+    this.salesDataStatusLabel,
     this.locationResolution,
     this.subtitle,
     this.payload,
@@ -167,6 +170,9 @@ class AppBrazilStoreSalesPoint {
   final int? companyCode;
   final int? branchCode;
   final String? agentName;
+  final bool salesDataLoading;
+  final bool salesDataUnavailable;
+  final String? salesDataStatusLabel;
   final AppBrazilStoreSalesLocationResolution? locationResolution;
   final String? subtitle;
   final Object? payload;
