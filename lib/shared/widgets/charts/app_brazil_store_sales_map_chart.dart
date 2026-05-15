@@ -955,8 +955,6 @@ class _BrazilStoreSalesMapSnapshot {
         AppMapPoint(
           latitude: group.latitude,
           longitude: group.longitude,
-          label: null,
-          tooltip: null,
           payload: group,
           style: AppMapMarkerStyle(
             size: selected ? markerSize + 4 : markerSize,
@@ -1933,13 +1931,11 @@ class _SelectedMarkerStoreDetailCard extends StatelessWidget {
   const _SelectedMarkerStoreDetailCard({
     required this.point,
     required this.metric,
-    this.onClose,
     this.showTechnicalLocationDetails = true,
   });
 
   final AppBrazilStoreSalesPoint point;
   final AppBrazilStoreSalesMapMetric metric;
-  final VoidCallback? onClose;
   final bool showTechnicalLocationDetails;
 
   @override
@@ -1947,7 +1943,6 @@ class _SelectedMarkerStoreDetailCard extends StatelessWidget {
     return _SelectedMarkerBranchDetailSurface(
       point: point,
       metric: metric,
-      onClose: onClose,
       showTechnicalLocationDetails: showTechnicalLocationDetails,
     );
   }
@@ -2299,7 +2294,6 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
     required this.icon,
     required this.metric,
     required this.child,
-    this.onClose,
   });
 
   final String title;
@@ -2307,7 +2301,6 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
   final IconData icon;
   final AppBrazilStoreSalesMapMetric metric;
   final Widget child;
-  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -2316,7 +2309,7 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
 
     return Material(
       color: colorScheme.surface,
-      elevation: onClose == null ? 0 : 8,
+      elevation: 0,
       shadowColor: Colors.black.withValues(alpha: 0.22),
       borderRadius: BorderRadius.circular(tokens.formFieldRadius),
       child: DecoratedBox(
@@ -2359,30 +2352,10 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: tokens.gapSm),
-                  if (onClose == null)
-                    AppTagChip(label: metric.label)
-                  else
-                    Tooltip(
-                      message: 'Fechar detalhes',
-                      child: IconButton(
-                        onPressed: onClose,
-                        icon: const Icon(Icons.close_rounded),
-                        iconSize: 18,
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints.tightFor(
-                          width: 32,
-                          height: 32,
-                        ),
-                      ),
-                    ),
+                  AppTagChip(label: metric.label),
                 ],
               ),
               SizedBox(height: tokens.gapMd),
-              if (onClose != null) ...[
-                AppTagChip(label: metric.label),
-                SizedBox(height: tokens.gapSm),
-              ],
               child,
             ],
           ),
