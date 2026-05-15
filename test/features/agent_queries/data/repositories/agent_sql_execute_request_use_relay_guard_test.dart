@@ -107,6 +107,7 @@ Iterable<File> _streamingReportFiles() sync* {
 
 Iterable<File> _smallLookupFiles() sync* {
   const fileNames = <String>{
+    'cadastro_filial_repository_impl.dart',
     'grupo_produto_options_repository_impl.dart',
     'marca_produto_options_repository_impl.dart',
     'municipio_list_repository_impl.dart',

@@ -5,6 +5,8 @@ import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
@@ -58,6 +60,8 @@ import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_que
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_chain_factory.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/grupo_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/marca_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
@@ -93,6 +97,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_d
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_row.dart';
@@ -108,6 +113,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/grupo_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/municipio_list_repository.dart';
@@ -267,6 +274,13 @@ void _registerAgentQueriesRepositoryChain(GetIt getIt) {
 }
 
 void _registerSingleAgentQueryRepositories(GetIt getIt) {
+  _registerSingle<CadastroFilialRepository, LoadCadastroFilialPageUseCase>(
+    getIt,
+    repo: () => CadastroFilialRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () =>
+        LoadCadastroFilialPageUseCase(getIt<CadastroFilialRepository>()),
+  );
+
   _registerSingle<MunicipioListRepository, LoadMunicipiosPageUseCase>(
     getIt,
     repo: () => MunicipioListRepositoryImpl(getIt<AgentQueriesRepository>()),
@@ -574,6 +588,9 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
     ..registerLazySingleton<AgentQueryExecutor<ResumoTotalDiarioVendasRow>>(
       AgentQueryExecutor<ResumoTotalDiarioVendasRow>.new,
     )
+    ..registerLazySingleton<AgentQueryExecutor<CadastroFilialRow>>(
+      AgentQueryExecutor<CadastroFilialRow>.new,
+    )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>
     >(
@@ -762,6 +779,19 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
     >(
       () => LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase(
         getIt<ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepository>(),
+      ),
+    )
+    ..registerLazySingleton<CadastroFilialAcrossAgentsRepository>(
+      () => CadastroFilialAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor: getIt<AgentQueryExecutor<CadastroFilialRow>>(),
+        loadCadastroFilial: getIt<LoadCadastroFilialPageUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<LoadCadastroFilialAcrossAgentsUseCase>(
+      () => LoadCadastroFilialAcrossAgentsUseCase(
+        getIt<CadastroFilialAcrossAgentsRepository>(),
       ),
     );
 }

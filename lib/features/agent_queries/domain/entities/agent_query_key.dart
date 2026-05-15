@@ -1,4 +1,5 @@
 enum AgentQueryKey {
+  cadastroFilial,
   resumoParcelaFormaPagamento,
   resumoParcelaFormaPagamentoDiario,
   resumoParcelasDiaSemana,

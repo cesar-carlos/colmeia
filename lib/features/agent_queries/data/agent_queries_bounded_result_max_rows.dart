@@ -48,6 +48,9 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// max page size in domain).
   static const int municipioListPage = 100;
 
+  /// One page of branch registration rows.
+  static const int cadastroFilialPage = 100;
+
   /// Full product-group catalog (`GrupoProduto`) ordered by name.
   static const int grupoProdutoOptions = 2000;
 
