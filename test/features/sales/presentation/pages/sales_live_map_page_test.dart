@@ -630,7 +630,9 @@ void main() {
     var chart = tester.widget<AppBrazilStoreSalesMapChart>(
       find.byType(AppBrazilStoreSalesMapChart).last,
     );
+    expect(chart.filterBranchIds, isEmpty);
     expect(chart.fixedBranchIds, isEmpty);
+    expect(chart.selectedStoreId, isNull);
 
     chart.onBranchFilter!(
       const AppBrazilStoreSalesPointTapEvent(
@@ -651,7 +653,9 @@ void main() {
     await tester.pump();
 
     chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart).last);
+    expect(chart.filterBranchIds, isEmpty);
     expect(chart.fixedBranchIds, <String>{'agent-1-1-1'});
+    expect(chart.selectedStoreId, 'agent-1-1-1');
 
     chart.onBranchFilter!(
       const AppBrazilStoreSalesPointTapEvent(
@@ -672,7 +676,9 @@ void main() {
     await tester.pump();
 
     chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart).last);
+    expect(chart.filterBranchIds, isEmpty);
     expect(chart.fixedBranchIds, isEmpty);
+    expect(chart.selectedStoreId, isNull);
 
     verify(
       () => loadLiveMap.loadProgressive(
@@ -683,6 +689,62 @@ void main() {
     ).called(1);
     verifyNever(() => salesPreferences.persistSalesLiveMapFilter(any()));
   });
+
+  testWidgets(
+    'sheet single-branch filter exposes filterBranchIds and map pin toggles selectedStoreId',
+    (tester) async {
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) => _streamResult(_twoBranchLoadedResult()));
+
+      await _pumpPage(tester, authController: authController);
+      await _pumpInitialLoad(tester);
+
+      await tester.tap(find.byIcon(Icons.filter_list_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.pump();
+      await tester.tap(find.text('Apply filters'));
+      await tester.pumpAndSettle();
+
+      var chart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart).last,
+      );
+      expect(chart.filterBranchIds, <String>{'agent-1-1-1'});
+      expect(chart.fixedBranchIds, <String>{'agent-1-1-1'});
+      expect(chart.selectedStoreId, isNull);
+
+      chart.onBranchFilter!(
+        const AppBrazilStoreSalesPointTapEvent(
+          point: AppBrazilStoreSalesPoint(
+            id: 'agent-1-1-1',
+            name: 'Branch One',
+            uf: 'MT',
+            latitude: -15.60,
+            longitude: -56.10,
+            salesAmount: 1200,
+            salesCount: 12,
+            city: 'Cuiaba',
+          ),
+          index: 0,
+          metric: AppBrazilStoreSalesMapMetric.revenue,
+        ),
+      );
+      await tester.pump();
+
+      chart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart).last,
+      );
+      expect(chart.filterBranchIds, <String>{'agent-1-1-1'});
+      expect(chart.fixedBranchIds, <String>{'agent-1-1-1'});
+      expect(chart.selectedStoreId, 'agent-1-1-1');
+    },
+  );
 }
 
 Future<void> _pumpPage(
@@ -719,6 +781,68 @@ Stream<SalesLiveMapLoadResult> _streamFromFuture(
   Future<SalesLiveMapLoadResult> future,
 ) {
   return Stream<SalesLiveMapLoadResult>.fromFuture(future);
+}
+
+SalesLiveMapLoadResult _twoBranchLoadedResult() {
+  return SalesLiveMapLoadResult(
+    points: const <AppBrazilStoreSalesPoint>[
+      AppBrazilStoreSalesPoint(
+        id: 'agent-1-1-1',
+        name: 'Branch One',
+        uf: 'MT',
+        latitude: -15.60,
+        longitude: -56.10,
+        salesAmount: 1200,
+        salesCount: 12,
+        city: 'Cuiaba',
+      ),
+      AppBrazilStoreSalesPoint(
+        id: 'agent-1-1-2',
+        name: 'Branch Two',
+        uf: 'MT',
+        latitude: -15.61,
+        longitude: -56.11,
+        salesAmount: 800,
+        salesCount: 8,
+        city: 'Sinop',
+      ),
+    ],
+    branchOptions: const <SalesLiveMapBranchOption>[
+      SalesLiveMapBranchOption(
+        id: 'agent-1-1-1',
+        agentId: 'agent-1',
+        agentName: 'Branch One',
+        codEmpresa: 1,
+        codFilial: 1,
+        name: 'Branch One',
+        city: 'Cuiaba',
+        uf: 'MT',
+      ),
+      SalesLiveMapBranchOption(
+        id: 'agent-1-1-2',
+        agentId: 'agent-1',
+        agentName: 'Branch One',
+        codEmpresa: 1,
+        codFilial: 2,
+        name: 'Branch Two',
+        city: 'Sinop',
+        uf: 'MT',
+      ),
+    ],
+    totalRevenue: 2000,
+    totalSalesCount: 20,
+    totalBranchCount: 2,
+    mappedBranchCount: 2,
+    mappedMunicipalityCount: 2,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    salesAgentCount: 1,
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
 }
 
 SalesLiveMapLoadResult _loadedResult() {

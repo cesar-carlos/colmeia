@@ -10,6 +10,7 @@ import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
@@ -30,6 +31,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.belowSubtitle,
     this.initialMetric = AppBrazilStoreSalesMapMetric.revenue,
     this.selectedStoreId,
+    this.filterBranchIds = const <String>{},
     this.fixedBranchIds = const <String>{},
     this.style = const AppBrazilStoreSalesMapStyle(),
     this.onStoreTap,
@@ -49,6 +51,10 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   final Widget? belowSubtitle;
   final AppBrazilStoreSalesMapMetric initialMetric;
   final String? selectedStoreId;
+  /// Branch ids selected outside the map (e.g. sheet filter). Used with [fixedBranchIds]
+  /// so "Fixar filial" / "Desfixar filial" are not confused with map-only pins.
+  final Set<String> filterBranchIds;
+  /// Union of external highlights (filter + map pin); drives reuse keys and cleanup.
   final Set<String> fixedBranchIds;
   final AppBrazilStoreSalesMapStyle style;
   final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onStoreTap;
@@ -116,12 +122,22 @@ class _AppBrazilStoreSalesMapChartState
       _snapshot = null;
     }
 
-    final mapPinnedId = _internalSelectedStoreId;
-    if (mapPinnedId != null &&
-        widget.onBranchFilter != null &&
-        !widget.fixedBranchIds.contains(mapPinnedId)) {
-      _internalSelectedStoreId = null;
+    if (oldWidget.filterBranchIds != widget.filterBranchIds ||
+        oldWidget.fixedBranchIds != widget.fixedBranchIds) {
       _snapshot = null;
+    }
+
+    if (widget.onBranchFilter != null) {
+      if (widget.selectedStoreId != null &&
+          _internalSelectedStoreId == widget.selectedStoreId) {
+        _internalSelectedStoreId = null;
+        _snapshot = null;
+      } else if (oldWidget.selectedStoreId != null &&
+          widget.selectedStoreId == null &&
+          _internalSelectedStoreId == oldWidget.selectedStoreId) {
+        _internalSelectedStoreId = null;
+        _snapshot = null;
+      }
     }
   }
 
@@ -269,7 +285,7 @@ class _AppBrazilStoreSalesMapChartState
                 selectedStoreId: _selectedStoreId,
                 onSelectBranch: (point) => _handleMarkerBranchAction(
                   point: point,
-                  index: _mapPointIndexFor(point),
+                  index: _mapPointIndexFor(point, snapshot),
                 ),
                 selectBranchLabelBuilder: _branchActionLabelFor,
               )
@@ -279,7 +295,7 @@ class _AppBrazilStoreSalesMapChartState
                 metric: _selectedMetric,
                 onSelectBranch: (point) => _handleMarkerBranchAction(
                   point: point,
-                  index: _mapPointIndexFor(point),
+                  index: _mapPointIndexFor(point, snapshot),
                 ),
                 selectBranchLabel: _branchActionLabelFor(selectedPoint),
               )
@@ -561,7 +577,8 @@ class _AppBrazilStoreSalesMapChartState
     final w = widget;
     final style = w.style;
     final parts = <String>[
-      'fx=${w.fixedBranchIds.join(",")}',
+      'fx=${_sortedSetJoin(w.fixedBranchIds)}',
+      'fl=${_sortedSetJoin(w.filterBranchIds)}',
       style.markerAggregation.name,
       style.markerVisual.name,
       style.enableProximityCluster.toString(),
@@ -576,10 +593,37 @@ class _AppBrazilStoreSalesMapChartState
       'rs=$_internalSelectedStateKey',
       'ak=$_activeRegionKey',
       'z=$_currentZoomLevel',
-      for (final p in w.points)
-        '${p.id}|${p.salesAmount}|${p.salesCount}|${p.salesDataLoading}|${p.salesDataUnavailable}|${p.latitude}|${p.longitude}|${p.uf}|${p.city ?? ""}|${p.municipalityCode ?? ""}',
+      'pts=${_pointsContentDigest(w.points)}',
     ];
     return parts.join(';');
+  }
+
+  static String _sortedSetJoin(Set<String> values) {
+    if (values.isEmpty) {
+      return '';
+    }
+    final sorted = values.toList(growable: false)..sort();
+    return sorted.join(',');
+  }
+
+  static int _pointsContentDigest(List<AppBrazilStoreSalesPoint> points) {
+    var h = Object.hash(0xBEE5CAFE, points.length);
+    for (final p in points) {
+      h = Object.hash(
+        h,
+        p.id,
+        p.salesAmount,
+        p.salesCount,
+        p.salesDataLoading,
+        p.salesDataUnavailable,
+        p.latitude,
+        p.longitude,
+        p.uf,
+        p.city ?? '',
+        p.municipalityCode ?? '',
+      );
+    }
+    return h;
   }
 
   _BrazilStoreSalesMapSnapshot _resolveSnapshot(BuildContext context) {
@@ -760,8 +804,10 @@ class _AppBrazilStoreSalesMapChartState
     );
   }
 
-  int _mapPointIndexFor(AppBrazilStoreSalesPoint point) {
-    final snapshot = _resolveSnapshot(context);
+  int _mapPointIndexFor(
+    AppBrazilStoreSalesPoint point,
+    _BrazilStoreSalesMapSnapshot snapshot,
+  ) {
     final index = snapshot.mapPoints.indexWhere((mapPoint) {
       final payload = mapPoint.payload;
       return payload is AppBrazilStoreSalesMarkerGroup &&
@@ -783,30 +829,22 @@ class _AppBrazilStoreSalesMapChartState
       return;
     }
 
-    final wasPinned = widget.fixedBranchIds.contains(point.id);
-    setState(() {
-      if (wasPinned) {
-        _internalSelectedStoreId = null;
-      } else {
-        _internalSelectedStoreId = point.id;
-        _dismissedControlledSelectedStoreId = null;
-        _internalSelectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(
-          point.uf,
-        );
-      }
-      _snapshot = null;
-    });
     _emitBranchFilter(point: point, index: index);
   }
 
   String _branchActionLabelFor(AppBrazilStoreSalesPoint point) {
+    final l10n = AppLocalizations.of(context);
     if (widget.onBranchFilter == null) {
-      return 'Fixar filial';
+      return l10n.salesLiveMapPinBranchAction;
     }
-    final id = point.id;
-    final pinnedByMap = _internalSelectedStoreId == id;
-    final pinnedByFilter = widget.fixedBranchIds.contains(id);
-    return (pinnedByFilter || pinnedByMap) ? 'Desfixar filial' : 'Fixar filial';
+    final pinnedByMap = widget.selectedStoreId == point.id;
+    if (pinnedByMap) {
+      return l10n.salesLiveMapUnpinBranchFromMapAction;
+    }
+    if (widget.filterBranchIds.contains(point.id)) {
+      return l10n.salesLiveMapPinBranchOnMapAction;
+    }
+    return l10n.salesLiveMapPinBranchAction;
   }
 
   bool get _shouldUseCompactBranchSheet =>
@@ -2820,8 +2858,7 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
     return Semantics(
       container: true,
       label: 'Detalhes da filial no mapa',
-      child: TooltipVisibility(
-        visible: defaultTargetPlatform != TargetPlatform.windows,
+      child: AppBrazilStoreSalesMapOverlayTooltipScope(
         child: Material(
           key: const ValueKey<String>('brazil-store-sales-branch-card'),
           color: colorScheme.surface,
@@ -2882,7 +2919,7 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
                         if (onClose == null)
                           AppTagChip(label: branchPositionLabel ?? metric.label)
                         else
-                          _WindowsSafeOverlayIconButton(
+                          AppBrazilStoreSalesMapWindowsSafeOverlayIconButton(
                             key: const ValueKey<String>(
                               'brazil-store-sales-branch-card-close',
                             ),
@@ -3008,61 +3045,6 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
   }
 }
 
-/// On Windows, [IconButton] + [Tooltip] publish tooltip semantics through the
-/// overlay layer. That fights [_MapMarkerDetailSemanticsBoundary]'s
-/// [ExcludeSemantics] and triggers `accessibility_bridge.cc` AXTree errors when
-/// hovering branch map cards.
-class _WindowsSafeOverlayIconButton extends StatelessWidget {
-  const _WindowsSafeOverlayIconButton({
-    required this.icon,
-    required this.onPressed,
-    required this.tooltipMessage,
-    required this.dimension,
-    super.key,
-    this.iconSize,
-  });
-
-  final IconData icon;
-  final VoidCallback onPressed;
-  final String tooltipMessage;
-  final double dimension;
-  final double? iconSize;
-
-  @override
-  Widget build(BuildContext context) {
-    if (defaultTargetPlatform == TargetPlatform.windows) {
-      final colors = Theme.of(context).colorScheme;
-      final resolvedIconSize = iconSize ?? dimension * 0.56;
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: SizedBox(
-            width: dimension,
-            height: dimension,
-            child: Icon(icon, size: resolvedIconSize, color: colors.onSurface),
-          ),
-        ),
-      );
-    }
-
-    return Tooltip(
-      message: tooltipMessage,
-      child: IconButton(
-        onPressed: onPressed,
-        icon: Icon(icon, size: iconSize),
-        visualDensity: VisualDensity.compact,
-        padding: EdgeInsets.zero,
-        constraints: BoxConstraints.tightFor(
-          width: dimension,
-          height: dimension,
-        ),
-      ),
-    );
-  }
-}
-
 class _BranchCarouselNavigation extends StatelessWidget {
   const _BranchCarouselNavigation({
     required this.currentIndex,
@@ -3114,7 +3096,7 @@ class _BranchCarouselNavigation extends StatelessWidget {
           ),
           SizedBox(width: tokens.gapXs),
         ],
-        _WindowsSafeOverlayIconButton(
+        AppBrazilStoreSalesMapWindowsSafeOverlayIconButton(
           key: const ValueKey<String>(
             'brazil-store-sales-branch-card-previous',
           ),
@@ -3135,7 +3117,7 @@ class _BranchCarouselNavigation extends StatelessWidget {
           ),
         ),
         SizedBox(width: tokens.gapXs),
-        _WindowsSafeOverlayIconButton(
+        AppBrazilStoreSalesMapWindowsSafeOverlayIconButton(
           key: const ValueKey<String>('brazil-store-sales-branch-card-next'),
           icon: Icons.chevron_right_rounded,
           dimension: 34,

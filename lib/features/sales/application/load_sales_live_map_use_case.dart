@@ -277,6 +277,13 @@ class LoadSalesLiveMapUseCase {
       now: now,
     );
     if (diskCatalog != null && !(cancelToken?.isCancelled ?? false)) {
+      _logTrace(
+        'Sales live map catalog disk cache hit',
+        <String, Object?>{
+          'catalogParticipantCount': diskCatalog.report.participants.length,
+          'catalogReturnedRowCount': _returnedRowCount(diskCatalog.report),
+        },
+      );
       final diskPartial = await _mapReport(
         null,
         catalogResult: diskCatalog,

@@ -4199,6 +4199,24 @@ abstract class AppLocalizations {
   /// **'Clear map highlight'**
   String get salesLiveMapClearMapFocusAction;
 
+  /// No description provided for @salesLiveMapPinBranchAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin branch'**
+  String get salesLiveMapPinBranchAction;
+
+  /// No description provided for @salesLiveMapPinBranchOnMapAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin on map'**
+  String get salesLiveMapPinBranchOnMapAction;
+
+  /// No description provided for @salesLiveMapUnpinBranchFromMapAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin from map'**
+  String get salesLiveMapUnpinBranchFromMapAction;
+
   /// No description provided for @salesLiveMapClearSavedFiltersAction.
   ///
   /// In en, this message translates to:

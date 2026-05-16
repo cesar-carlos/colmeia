@@ -846,6 +846,88 @@ void main() {
       expect(diagnosticsEmissions, afterFirst);
     },
   );
+
+  testWidgets(
+    'filterBranchIds stays stable while selectedStoreId toggles map pin',
+    (tester) async {
+      const point = AppBrazilStoreSalesPoint(
+        id: 'store-1',
+        name: 'Casa do Mel',
+        fantasyName: 'Casa do Mel',
+        uf: 'MT',
+        city: 'Tangara da Serra',
+        latitude: -14.6229,
+        longitude: -57.4933,
+        salesAmount: 84246.26,
+        salesCount: 1568,
+      );
+      const event = AppBrazilStoreSalesPointTapEvent(
+        point: point,
+        index: 0,
+        metric: AppBrazilStoreSalesMapMetric.revenue,
+      );
+      final mapPin = ValueNotifier<String?>(null);
+      addTearDown(mapPin.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ValueListenableBuilder<String?>(
+              valueListenable: mapPin,
+              builder: (context, pin, _) {
+                return Center(
+                  child: SizedBox(
+                    width: 720,
+                    height: 560,
+                    child: AppBrazilStoreSalesMapChart(
+                      points: const <AppBrazilStoreSalesPoint>[point],
+                      selectedStoreId: pin,
+                      filterBranchIds: const <String>{'store-1'},
+                      fixedBranchIds: const <String>{'store-1'},
+                      style: _baseStyle,
+                      onBranchFilter: (_) {
+                        mapPin.value = mapPin.value == 'store-1'
+                            ? null
+                            : 'store-1';
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      var chart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      );
+      expect(chart.filterBranchIds, <String>{'store-1'});
+      expect(chart.fixedBranchIds, <String>{'store-1'});
+      expect(chart.selectedStoreId, isNull);
+
+      chart.onBranchFilter!(event);
+      await tester.pump();
+
+      chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart));
+      expect(chart.filterBranchIds, <String>{'store-1'});
+      expect(chart.fixedBranchIds, <String>{'store-1'});
+      expect(chart.selectedStoreId, 'store-1');
+
+      chart.onBranchFilter!(event);
+      await tester.pump();
+
+      chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart));
+      expect(chart.filterBranchIds, <String>{'store-1'});
+      expect(chart.fixedBranchIds, <String>{'store-1'});
+      expect(chart.selectedStoreId, isNull);
+    },
+  );
 }
 
 const _baseStyle = AppBrazilStoreSalesMapStyle(

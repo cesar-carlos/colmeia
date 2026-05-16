@@ -2573,6 +2573,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapClearMapFocusAction => 'Limpar destaque no mapa';
 
   @override
+  String get salesLiveMapPinBranchAction => 'Fixar filial';
+
+  @override
+  String get salesLiveMapPinBranchOnMapAction => 'Fixar no mapa';
+
+  @override
+  String get salesLiveMapUnpinBranchFromMapAction => 'Desfixar do mapa';
+
+  @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';
 
   @override
@@ -5951,6 +5960,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesLiveMapClearBranchSelectionAction =>
       'Limpar selecao de filiais';
+
+  @override
+  String get salesLiveMapClearMapFocusAction => 'Limpar destaque no mapa';
+
+  @override
+  String get salesLiveMapPinBranchAction => 'Fixar filial';
+
+  @override
+  String get salesLiveMapPinBranchOnMapAction => 'Fixar no mapa';
+
+  @override
+  String get salesLiveMapUnpinBranchFromMapAction => 'Desfixar do mapa';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';

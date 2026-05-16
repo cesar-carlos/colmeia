@@ -29,6 +29,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class SalesLiveMapPage extends StatefulWidget {
@@ -52,14 +53,17 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   bool _loading = true;
   int _loadGeneration = 0;
   SalesLiveMapLoadCancelToken? _activeLoadCancelToken;
-  Set<String> _ephemeralMapFocusedBranchIds = <String>{};
+  String? _mapPinnedBranchId;
+
+  Set<String> get _filterBranchIdsForChart =>
+      _filter.selectedBranchIds ?? const <String>{};
 
   Set<String> get _fixedBranchIdsForChart => <String>{
-    ...?_filter.selectedBranchIds,
-    ..._ephemeralMapFocusedBranchIds,
+    ..._filterBranchIdsForChart,
+    if (_mapPinnedBranchId case final String id) id,
   };
 
-  bool get _hasEphemeralMapFocus => _ephemeralMapFocusedBranchIds.isNotEmpty;
+  bool get _hasMapPinFocus => _mapPinnedBranchId != null;
 
   @override
   void initState() {
@@ -295,6 +299,8 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                       Widget chart = AppBrazilStoreSalesMapChart(
                         points: pointsSnapshot,
                         initialMetric: initialMetricSnapshot,
+                        selectedStoreId: _mapPinnedBranchId,
+                        filterBranchIds: _filterBranchIdsForChart,
                         fixedBranchIds: _fixedBranchIdsForChart,
                         style: styleSnapshot,
                         onMetricChanged: _onMapMetricChanged,
@@ -366,6 +372,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       disableSalesAutoRefresh();
     }
     if (previousData != nextData) {
+      _maybePopChartFullscreenAfterDataChanged();
       unawaited(_reload(force: true));
     }
   }
@@ -377,14 +384,15 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     );
     setState(() {
       _filter = next;
-      _ephemeralMapFocusedBranchIds = <String>{};
+      _mapPinnedBranchId = null;
     });
+    _maybePopChartFullscreenAfterDataChanged();
     unawaited(_reload(force: true));
   }
 
-  void _clearEphemeralMapFocus() {
+  void _clearMapPinFocus() {
     setState(() {
-      _ephemeralMapFocusedBranchIds = <String>{};
+      _mapPinnedBranchId = null;
     });
   }
 
@@ -392,25 +400,26 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     const next = SalesLiveMapFilter();
     setState(() {
       _filter = next;
-      _ephemeralMapFocusedBranchIds = <String>{};
+      _mapPinnedBranchId = null;
     });
     unawaited(_prefs.persistSalesLiveMapFilter(next));
     if (!canScheduleSalesAutoRefresh) {
       disableSalesAutoRefresh();
     }
+    _maybePopChartFullscreenAfterDataChanged();
     unawaited(_reload(force: true));
   }
 
   void _filterByMapBranch(AppBrazilStoreSalesPointTapEvent event) {
     final id = event.point.id;
-    if (_ephemeralMapFocusedBranchIds.contains(id)) {
+    if (_mapPinnedBranchId == id) {
       setState(() {
-        _ephemeralMapFocusedBranchIds = <String>{};
+        _mapPinnedBranchId = null;
       });
       return;
     }
     setState(() {
-      _ephemeralMapFocusedBranchIds = <String>{id};
+      _mapPinnedBranchId = id;
     });
   }
 
@@ -489,7 +498,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
             enabled: !_loading,
           ),
           if (_hasSelectedBranchFilter ||
-              _hasEphemeralMapFocus ||
+              _hasMapPinFocus ||
               _hasNonBranchNonDefaultFilter) ...<Widget>[
             SizedBox(height: tokens.gapSm),
             Align(
@@ -504,9 +513,9 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                       icon: const Icon(Icons.storefront_outlined),
                       label: Text(l10n.salesLiveMapClearBranchSelectionAction),
                     ),
-                  if (_hasEphemeralMapFocus)
+                  if (_hasMapPinFocus)
                     OutlinedButton.icon(
-                      onPressed: _loading ? null : _clearEphemeralMapFocus,
+                      onPressed: _loading ? null : _clearMapPinFocus,
                       icon: const Icon(Icons.center_focus_strong_outlined),
                       label: Text(l10n.salesLiveMapClearMapFocusAction),
                     ),
@@ -572,6 +581,8 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
               subtitle: _mapSubtitle(result),
               points: result?.points ?? const <AppBrazilStoreSalesPoint>[],
               initialMetric: _filter.metric,
+              selectedStoreId: _mapPinnedBranchId,
+              filterBranchIds: _filterBranchIdsForChart,
               fixedBranchIds: _fixedBranchIdsForChart,
               style: _mapStyle(
                 detailLevel: _effectiveDetailLevel(result),
@@ -674,6 +685,30 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   }
 
   bool get _shouldTracePerformance => kDebugMode || kProfileMode;
+
+  void _maybePopChartFullscreenAfterDataChanged() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final router = GoRouter.maybeOf(context);
+      if (router == null) {
+        return;
+      }
+      final matched = router.state.matchedLocation;
+      if (AppRoute.fromLocation(matched) != AppRoute.chartFullscreen) {
+        return;
+      }
+      if (!router.canPop()) {
+        return;
+      }
+      router.pop();
+      _logTrace(
+        'Closed chart fullscreen route after live map data filter changed',
+        const <String, Object?>{},
+      );
+    });
+  }
 
   String _loadErrorMessage(
     SalesLiveMapLoadResult? result,
