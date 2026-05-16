@@ -98,6 +98,12 @@ class _SyncfusionRegionMapChartState<T>
   MapShapeSource? _cachedMapShapeSource;
   int? _cachedGeometryShapeFingerprint;
 
+  /// Stable identity for [SfMaps] and for deciding when to drop the cached
+  /// [MapShapeSource]. Must not depend on marker lat/lng: remounting [SfMaps]
+  /// with the same [MapShapeSource] instance breaks GeoJSON data labels until
+  /// the source is recreated (e.g. first markers arriving after layout).
+  int? _cachedMapSurfaceStableKey;
+
   /// [MapShapeSource] is cached by geometry only; colors follow the latest metric
   /// via this buffer so metric toggles do not recreate the source (avoids GeoJSON
   /// re-parse on every metric change).
@@ -124,6 +130,7 @@ class _SyncfusionRegionMapChartState<T>
       _applyPreferredViewport();
       _cachedMapShapeSource = null;
       _cachedGeometryShapeFingerprint = null;
+      _cachedMapSurfaceStableKey = null;
       return;
     }
 
@@ -147,6 +154,7 @@ class _SyncfusionRegionMapChartState<T>
     _suppressProgrammaticViewportEvents = false;
     _cachedMapShapeSource = null;
     _cachedGeometryShapeFingerprint = null;
+    _cachedMapSurfaceStableKey = null;
     super.dispose();
   }
 
@@ -310,6 +318,17 @@ class _SyncfusionRegionMapChartState<T>
       regionKeys: regionKeys,
       regionLabels: regionLabels,
     );
+    final mapSurfaceStableKey = Object.hash(
+      geometryFingerprint,
+      widget.points.length,
+    );
+    if (_cachedMapSurfaceStableKey != null &&
+        _cachedMapSurfaceStableKey != mapSurfaceStableKey) {
+      _cachedMapShapeSource = null;
+      _cachedGeometryShapeFingerprint = null;
+    }
+    _cachedMapSurfaceStableKey = mapSurfaceStableKey;
+
     final MapShapeSource shapeSource;
     if (_cachedGeometryShapeFingerprint == geometryFingerprint &&
         _cachedMapShapeSource != null) {
@@ -328,9 +347,7 @@ class _SyncfusionRegionMapChartState<T>
       fontWeight: FontWeight.w600,
     );
     final mapBuilderContext = context;
-    final markerLayerKey = ValueKey<int>(
-      _markerLayerFingerprint(widget.points),
-    );
+    final mapSurfaceKey = ValueKey<int>(mapSurfaceStableKey);
 
     final legend = widget.style.showLegend
         ? _MapValueLegend(
@@ -379,7 +396,7 @@ class _SyncfusionRegionMapChartState<T>
                           regionLabels: regionLabels,
                         ),
                         child: SfMaps(
-                          key: markerLayerKey,
+                          key: mapSurfaceKey,
                           layers: <MapLayer>[
                             MapShapeLayer(
                               source: shapeSource,
@@ -1204,16 +1221,6 @@ class _SyncfusionMapsSemanticsBoundary extends StatelessWidget {
       child: ExcludeSemantics(child: child),
     );
   }
-}
-
-int _markerLayerFingerprint(List<AppMapPoint> points) {
-  return Object.hashAll(<Object?>[
-    points.length,
-    for (final point in points) ...<Object?>[
-      point.latitude,
-      point.longitude,
-    ],
-  ]);
 }
 
 /// Slot visual fixo para o mapa: garante background sutil e cantos arredondados

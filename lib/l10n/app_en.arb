@@ -1224,7 +1224,7 @@
   "salesLiveMapClearMapFocusAction": "Clear map highlight",
   "salesLiveMapPinBranchAction": "Pin branch",
   "salesLiveMapPinBranchOnMapAction": "Pin on map",
-  "salesLiveMapUnpinBranchFromMapAction": "Unpin from map",
+  "salesLiveMapUnpinBranchFromMapAction": "Unpin branch",
   "salesLiveMapClearSavedFiltersAction": "Clear saved filters",
   "salesLiveMapMissingLocalToken": "No local token",
   "salesLiveMapCustomPeriodLabel": "Custom period",

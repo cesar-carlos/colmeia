@@ -999,7 +999,7 @@
   "salesLiveMapClearMapFocusAction": "Limpar destaque no mapa",
   "salesLiveMapPinBranchAction": "Fixar filial",
   "salesLiveMapPinBranchOnMapAction": "Fixar no mapa",
-  "salesLiveMapUnpinBranchFromMapAction": "Desfixar do mapa",
+  "salesLiveMapUnpinBranchFromMapAction": "Desfixar filial",
   "salesLiveMapClearSavedFiltersAction": "Limpar filtros salvos",
   "salesLiveMapMissingLocalToken": "Sem token local",
   "salesLiveMapCustomPeriodLabel": "Periodo personalizado",

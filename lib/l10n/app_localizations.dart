@@ -4214,7 +4214,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapUnpinBranchFromMapAction.
   ///
   /// In en, this message translates to:
-  /// **'Unpin from map'**
+  /// **'Unpin branch'**
   String get salesLiveMapUnpinBranchFromMapAction;
 
   /// No description provided for @salesLiveMapClearSavedFiltersAction.

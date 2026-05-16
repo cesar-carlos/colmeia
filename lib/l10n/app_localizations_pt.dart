@@ -2579,7 +2579,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapPinBranchOnMapAction => 'Fixar no mapa';
 
   @override
-  String get salesLiveMapUnpinBranchFromMapAction => 'Desfixar do mapa';
+  String get salesLiveMapUnpinBranchFromMapAction => 'Desfixar filial';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';
@@ -5971,7 +5971,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapPinBranchOnMapAction => 'Fixar no mapa';
 
   @override
-  String get salesLiveMapUnpinBranchFromMapAction => 'Desfixar do mapa';
+  String get salesLiveMapUnpinBranchFromMapAction => 'Desfixar filial';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';

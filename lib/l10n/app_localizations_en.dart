@@ -2540,7 +2540,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesLiveMapPinBranchOnMapAction => 'Pin on map';
 
   @override
-  String get salesLiveMapUnpinBranchFromMapAction => 'Unpin from map';
+  String get salesLiveMapUnpinBranchFromMapAction => 'Unpin branch';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Clear saved filters';

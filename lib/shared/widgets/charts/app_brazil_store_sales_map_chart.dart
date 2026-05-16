@@ -117,6 +117,10 @@ class _AppBrazilStoreSalesMapChartState
 
     if (oldWidget.selectedStoreId != widget.selectedStoreId ||
         oldWidget.style != widget.style) {
+      if (oldWidget.selectedStoreId != null &&
+          widget.selectedStoreId == null) {
+        _dismissedControlledSelectedStoreId = null;
+      }
       if (oldWidget.selectedStoreId != widget.selectedStoreId &&
           widget.selectedStoreId != null) {
         _currentZoomLevel = widget.style.selectedStoreZoomLevel;
@@ -844,9 +848,6 @@ class _AppBrazilStoreSalesMapChartState
     if (pinnedByMap) {
       return l10n.salesLiveMapUnpinBranchFromMapAction;
     }
-    if (widget.filterBranchIds.contains(point.id)) {
-      return l10n.salesLiveMapPinBranchOnMapAction;
-    }
     return l10n.salesLiveMapPinBranchAction;
   }
 
@@ -902,6 +903,25 @@ class _AppBrazilStoreSalesMapChartState
     });
   }
 
+  /// When the parent drives the map pin via `onBranchFilter` and
+  /// `selectedStoreId`, closing the floating card calls the same toggle as the
+  /// pin button so the card only stays open while pinned.
+  void _handlePinnedMapOverlayClose() {
+    final pinnedId = widget.selectedStoreId;
+    if (widget.onBranchFilter != null && pinnedId != null) {
+      final snapshot = _snapshot ?? _resolveSnapshot(context);
+      final point = _pointById(pinnedId);
+      if (point != null) {
+        _emitBranchFilter(
+          point: point,
+          index: _mapPointIndexFor(point, snapshot),
+        );
+      }
+      return;
+    }
+    _clearSelectedMarkerDetail();
+  }
+
   void _handleStateBubbleTap(
     AppBrazilStoreSalesStateBubble bubble,
     int index,
@@ -927,6 +947,16 @@ class _AppBrazilStoreSalesMapChartState
 
   void _handleViewportChanged(AppMapViewportChangedEvent event) {
     if (!widget.style.enableProximityCluster) {
+      return;
+    }
+
+    // While auto-focus keeps the camera on a selected branch, the engine
+    // still reports the *current* zoom during transitions (e.g. Brazil ~1.0
+    // right after we set clustering zoom to [selectedStoreZoomLevel]).
+    // Applying those samples overwrites [_currentZoomLevel], invalidates the
+    // snapshot on every tick, and can spin rebuilds + Windows AXTree updates
+    // until the process dies (e.g. after "Fixar filial").
+    if (widget.style.autoFocusSelectedStore && _selectedStoreId != null) {
       return;
     }
 
@@ -1069,7 +1099,7 @@ class _AppBrazilStoreSalesMapChartState
       selectedStoreId: selectedStoreId,
       metric: _selectedMetric,
       marker: marker,
-      onClose: _clearSelectedMarkerDetail,
+      onClose: _handlePinnedMapOverlayClose,
       onSelectBranch: (point) =>
           _handleMarkerBranchAction(point: point, index: index),
       selectBranchLabelBuilder: _branchActionLabelFor,
@@ -1955,10 +1985,7 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
       markerGlobalDx: markerGlobalDx,
     );
     void handleSelectBranch(AppBrazilStoreSalesPoint point) {
-      onClose();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        onSelectBranch?.call(point);
-      });
+      onSelectBranch?.call(point);
     }
 
     final selectBranch = onSelectBranch == null ? null : handleSelectBranch;
