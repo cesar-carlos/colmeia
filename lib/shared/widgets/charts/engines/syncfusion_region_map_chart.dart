@@ -96,7 +96,14 @@ class _SyncfusionRegionMapChartState<T>
   bool _userHasManualViewport = false;
 
   MapShapeSource? _cachedMapShapeSource;
-  int? _cachedShapeSourceFingerprint;
+  int? _cachedGeometryShapeFingerprint;
+
+  /// [MapShapeSource] is cached by geometry only; colors follow the latest metric
+  /// via this buffer so metric toggles do not recreate the source (avoids GeoJSON
+  /// re-parse on every metric change).
+  final List<double> _liveShapeMetricValues = <double>[];
+  Color _liveShapeLowColor = Colors.transparent;
+  Color _liveShapeHighColor = Colors.transparent;
 
   @override
   void initState() {
@@ -115,6 +122,8 @@ class _SyncfusionRegionMapChartState<T>
     if (oldWidget.isLoading && !widget.isLoading) {
       _zoomPanBehavior = _buildZoomPanBehavior();
       _applyPreferredViewport();
+      _cachedMapShapeSource = null;
+      _cachedGeometryShapeFingerprint = null;
       return;
     }
 
@@ -137,7 +146,7 @@ class _SyncfusionRegionMapChartState<T>
   void dispose() {
     _suppressProgrammaticViewportEvents = false;
     _cachedMapShapeSource = null;
-    _cachedShapeSourceFingerprint = null;
+    _cachedGeometryShapeFingerprint = null;
     super.dispose();
   }
 
@@ -290,27 +299,28 @@ class _SyncfusionRegionMapChartState<T>
         widget.style.lowValueColor ??
         chartTheme.primaryColor.withValues(alpha: 0.18);
     final highColor = widget.style.highValueColor ?? chartTheme.primaryColor;
-    final fingerprint = _shapeSourceFingerprint(
+
+    _liveShapeLowColor = lowColor;
+    _liveShapeHighColor = highColor;
+    _liveShapeMetricValues
+      ..clear()
+      ..addAll(metricValues);
+
+    final geometryFingerprint = _geometryShapeSourceFingerprint(
       regionKeys: regionKeys,
       regionLabels: regionLabels,
-      metricValues: metricValues,
-      lowColor: lowColor,
-      highColor: highColor,
     );
     final MapShapeSource shapeSource;
-    if (_cachedShapeSourceFingerprint == fingerprint &&
+    if (_cachedGeometryShapeFingerprint == geometryFingerprint &&
         _cachedMapShapeSource != null) {
       shapeSource = _cachedMapShapeSource!;
     } else {
       shapeSource = _buildShapeSource(
         regionKeys: regionKeys,
         regionLabels: regionLabels,
-        metricValues: metricValues,
-        lowColor: lowColor,
-        highColor: highColor,
       );
       _cachedMapShapeSource = shapeSource;
-      _cachedShapeSourceFingerprint = fingerprint;
+      _cachedGeometryShapeFingerprint = geometryFingerprint;
     }
 
     final tooltipTextStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -379,7 +389,6 @@ class _SyncfusionRegionMapChartState<T>
                                   : null,
                               showDataLabels: widget.style.showDataLabels,
                               dataLabelSettings: MapDataLabelSettings(
-                                overflowMode: MapLabelOverflow.ellipsis,
                                 textStyle:
                                     widget.style.dataLabelTextStyle ??
                                     Theme.of(
@@ -726,12 +735,9 @@ class _SyncfusionRegionMapChartState<T>
     });
   }
 
-  int _shapeSourceFingerprint({
+  int _geometryShapeSourceFingerprint({
     required List<String> regionKeys,
     required List<String> regionLabels,
-    required List<double> metricValues,
-    required Color lowColor,
-    required Color highColor,
   }) {
     final def = widget.mapDefinition;
     final bytes = def.bytes;
@@ -753,53 +759,44 @@ class _SyncfusionRegionMapChartState<T>
       def.shapeDataField,
       def.regionLevel,
       widget.items.length,
-      widget.metric.key,
       Object.hashAll(regionKeys),
       widget.style.showDataLabels ? Object.hashAll(regionLabels) : 0,
-      Object.hashAll(metricValues),
-      lowColor.a,
-      lowColor.r,
-      lowColor.g,
-      lowColor.b,
-      highColor.a,
-      highColor.r,
-      highColor.g,
-      highColor.b,
     );
+  }
+
+  Color _shapeColorValueForIndex(int index) {
+    final values = _liveShapeMetricValues;
+    if (values.isEmpty || index < 0 || index >= values.length) {
+      return _liveShapeLowColor;
+    }
+    final minValue = values.reduce(math.min);
+    final maxValue = values.reduce(math.max);
+    final range = (maxValue - minValue).abs() < 0.0001
+        ? 1.0
+        : maxValue - minValue;
+    final normalized = ((values[index] - minValue) / range).clamp(
+      0.0,
+      1.0,
+    );
+    return Color.lerp(_liveShapeLowColor, _liveShapeHighColor, normalized)!;
   }
 
   MapShapeSource _buildShapeSource({
     required List<String> regionKeys,
     required List<String> regionLabels,
-    required List<double> metricValues,
-    required Color lowColor,
-    required Color highColor,
   }) {
-    final minValue = metricValues.isEmpty ? 0.0 : metricValues.reduce(math.min);
-    final maxValue = metricValues.isEmpty ? 0.0 : metricValues.reduce(math.max);
-    final range = (maxValue - minValue).abs() < 0.0001
-        ? 1.0
-        : maxValue - minValue;
-
-    Color resolveColor(int index) {
-      final normalized = ((metricValues[index] - minValue) / range).clamp(
-        0.0,
-        1.0,
-      );
-      return Color.lerp(lowColor, highColor, normalized)!;
-    }
-
     final shapeDataField = widget.mapDefinition.shapeDataField;
-    return switch (widget.mapDefinition.sourceType) {
+    final def = widget.mapDefinition;
+    return switch (def.sourceType) {
       AppMapSourceType.asset => MapShapeSource.asset(
-        widget.mapDefinition.pathOrUrl!,
+        def.pathOrUrl!,
         shapeDataField: shapeDataField,
         dataCount: widget.items.length,
         primaryValueMapper: regionKeys.elementAt,
         dataLabelMapper: widget.style.showDataLabels
             ? regionLabels.elementAt
             : null,
-        shapeColorValueMapper: resolveColor,
+        shapeColorValueMapper: _shapeColorValueForIndex,
       ),
       AppMapSourceType.network => MapShapeSource.network(
         widget.mapDefinition.pathOrUrl!,
@@ -809,7 +806,7 @@ class _SyncfusionRegionMapChartState<T>
         dataLabelMapper: widget.style.showDataLabels
             ? regionLabels.elementAt
             : null,
-        shapeColorValueMapper: resolveColor,
+        shapeColorValueMapper: _shapeColorValueForIndex,
       ),
       AppMapSourceType.memory => MapShapeSource.memory(
         widget.mapDefinition.bytes!,
@@ -819,7 +816,7 @@ class _SyncfusionRegionMapChartState<T>
         dataLabelMapper: widget.style.showDataLabels
             ? regionLabels.elementAt
             : null,
-        shapeColorValueMapper: resolveColor,
+        shapeColorValueMapper: _shapeColorValueForIndex,
       ),
     };
   }

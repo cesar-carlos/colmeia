@@ -376,6 +376,36 @@ void main() {
     });
 
     test(
+      'proximity clustering merges dense grids far below one group per store',
+      () {
+        const count = 400;
+        final points = <AppBrazilStoreSalesPoint>[];
+        for (var i = 0; i < count; i++) {
+          points.add(
+            AppBrazilStoreSalesPoint(
+              id: 'store_$i',
+              name: 'Store $i',
+              uf: 'SP',
+              latitude: -23.55 + (i % 20) * 0.001,
+              longitude: -46.63 + (i ~/ 20) * 0.001,
+              salesAmount: (count - i).toDouble(),
+              salesCount: 1,
+            ),
+          );
+        }
+
+        final groups = AppBrazilStoreSalesMapData.buildMarkerGroups(
+          points,
+          enableProximityCluster: true,
+          proximityClusterDistanceDegrees: 0.02,
+        );
+
+        expect(groups.length, lessThan(120));
+        expect(groups.length, greaterThan(0));
+      },
+    );
+
+    test(
       'groups stores by municipality when municipality aggregation is used',
       () {
         final groups = AppBrazilStoreSalesMapData.buildMarkerGroups(
@@ -495,6 +525,10 @@ void main() {
   });
 
   group('Brazil GeoJSON asset', () {
+    setUpAll(TestWidgetsFlutterBinding.ensureInitialized);
+
+    tearDown(AppBrazilMapStaticData.resetBrazilUfGeoJsonMemoryCacheForTests);
+
     test('contains 27 UF features with UF property', () {
       final file = File(AppBrazilMapStaticData.brazilUfGeoJsonAssetPath);
       final payload =
@@ -509,6 +543,24 @@ void main() {
         expect(uf, isA<String>());
         expect(AppBrazilMapStaticData.ufCodes, contains(uf));
       }
+    });
+
+    test('precache materializes in-memory GeoJSON bytes', () async {
+      expect(
+        await AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset(),
+        isTrue,
+      );
+      final bytes = AppBrazilMapStaticData.brazilUfGeoJsonBytesOrNull;
+      expect(bytes, isNotNull);
+      expect(bytes!.length, greaterThan(1000));
+      expect(
+        await AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset(),
+        isFalse,
+      );
+      expect(
+        identical(bytes, AppBrazilMapStaticData.brazilUfGeoJsonBytesOrNull),
+        isTrue,
+      );
     });
   });
 }

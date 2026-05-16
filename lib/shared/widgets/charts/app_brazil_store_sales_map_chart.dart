@@ -94,6 +94,9 @@ class _AppBrazilStoreSalesMapChartState
   static const Duration _touchViewportClusterDebounceDuration = Duration(
     milliseconds: 180,
   );
+  static const Duration _desktopViewportClusterDebounceDuration = Duration(
+    milliseconds: 120,
+  );
 
   @override
   void initState() {
@@ -928,24 +931,23 @@ class _AppBrazilStoreSalesMapChartState
     }
 
     final nextZoomLevel = event.viewport.zoomLevel;
-    if (_shouldDebounceTouchViewportClustering) {
-      _pendingViewportClusterZoomLevel = nextZoomLevel;
-      _viewportClusterDebounceTimer?.cancel();
-      _viewportClusterDebounceTimer = Timer(
-        _touchViewportClusterDebounceDuration,
-        () {
-          final pendingZoomLevel = _pendingViewportClusterZoomLevel;
-          _pendingViewportClusterZoomLevel = null;
-          if (pendingZoomLevel == null) {
-            return;
-          }
-          _applyViewportClusterZoomLevel(pendingZoomLevel);
-        },
-      );
-      return;
-    }
+    final debounceDuration = _shouldDebounceTouchViewportClustering
+        ? _touchViewportClusterDebounceDuration
+        : _desktopViewportClusterDebounceDuration;
 
-    _applyViewportClusterZoomLevel(nextZoomLevel);
+    _pendingViewportClusterZoomLevel = nextZoomLevel;
+    _viewportClusterDebounceTimer?.cancel();
+    _viewportClusterDebounceTimer = Timer(
+      debounceDuration,
+      () {
+        final pendingZoomLevel = _pendingViewportClusterZoomLevel;
+        _pendingViewportClusterZoomLevel = null;
+        if (pendingZoomLevel == null) {
+          return;
+        }
+        _applyViewportClusterZoomLevel(pendingZoomLevel);
+      },
+    );
   }
 
   bool get _shouldDebounceTouchViewportClustering {

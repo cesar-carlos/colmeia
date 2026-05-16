@@ -1,4 +1,6 @@
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 /// Static Brazil map metadata embedded in the app.
 ///
@@ -13,6 +15,36 @@ abstract final class AppBrazilMapStaticData {
     shapeDataField: 'UF',
     regionLevel: AppMapRegionLevel.state,
   );
+
+  static Uint8List? _brazilUfGeoJsonBytes;
+
+  /// Raw GeoJSON bytes for [brazilUfGeoJsonAssetPath] after [precacheBrazilUfGeoJsonAsset].
+  static Uint8List? get brazilUfGeoJsonBytesOrNull => _brazilUfGeoJsonBytes;
+
+  /// Loads [brazilUfGeoJsonAssetPath] into memory so the map engine can use an
+  /// in-memory GeoJSON buffer on first mount. Idempotent.
+  ///
+  /// Returns `true` only when this invocation populated [brazilUfGeoJsonBytesOrNull]
+  /// (so callers can rebuild once to switch the map to an in-memory shape source). Returns
+  /// `false` when bytes were already cached or another concurrent call finished first.
+  static Future<bool> precacheBrazilUfGeoJsonAsset() async {
+    if (_brazilUfGeoJsonBytes != null) {
+      return false;
+    }
+    final data = await rootBundle.load(brazilUfGeoJsonAssetPath);
+    if (_brazilUfGeoJsonBytes != null) {
+      return false;
+    }
+    _brazilUfGeoJsonBytes = Uint8List.fromList(
+      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+    );
+    return true;
+  }
+
+  @visibleForTesting
+  static void resetBrazilUfGeoJsonMemoryCacheForTests() {
+    _brazilUfGeoJsonBytes = null;
+  }
 
   static const AppMapViewport brazilViewport = AppMapViewport(
     centerLatitude: -14.235,

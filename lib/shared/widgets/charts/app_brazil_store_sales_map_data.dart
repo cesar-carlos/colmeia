@@ -436,39 +436,132 @@ abstract final class AppBrazilStoreSalesMapData {
     ];
   }
 
+  static String _proximityGridKey(
+    String uf,
+    int latCell,
+    int lonCell,
+  ) {
+    return '$uf|$latCell|$lonCell';
+  }
+
+  static void _proximityGridAdd(
+    Map<String, List<int>> grid,
+    String uf,
+    double latitude,
+    double longitude,
+    double cellSize,
+    int groupIndex,
+  ) {
+    final safeCell = cellSize <= 0 ? 1e-9 : cellSize;
+    final key = _proximityGridKey(
+      uf,
+      (latitude / safeCell).floor(),
+      (longitude / safeCell).floor(),
+    );
+    grid.putIfAbsent(key, () => <int>[]).add(groupIndex);
+  }
+
+  static void _proximityGridRemove(
+    Map<String, List<int>> grid,
+    String uf,
+    double latitude,
+    double longitude,
+    double cellSize,
+    int groupIndex,
+  ) {
+    final safeCell = cellSize <= 0 ? 1e-9 : cellSize;
+    final key = _proximityGridKey(
+      uf,
+      (latitude / safeCell).floor(),
+      (longitude / safeCell).floor(),
+    );
+    final bucket = grid[key];
+    if (bucket == null) {
+      return;
+    }
+    bucket.remove(groupIndex);
+    if (bucket.isEmpty) {
+      grid.remove(key);
+    }
+  }
+
   static List<AppBrazilStoreSalesMarkerGroup> _buildProximityMarkerGroups(
     List<AppBrazilStoreSalesPoint> validPoints,
     double distanceDegrees,
   ) {
+    final cellSize = distanceDegrees <= 0 ? 1e-9 : distanceDegrees;
+    const neighborhoodRadius = 2;
+
     final groups = <_MutableMarkerGroup>[];
+    final grid = <String, List<int>>{};
     final sortedPoints = [...validPoints]
       ..sort((left, right) => right.salesAmount.compareTo(left.salesAmount));
 
     for (final point in sortedPoints) {
+      final uf = normalizeUf(point.uf);
+      final latCell = (point.latitude / cellSize).floor();
+      final lonCell = (point.longitude / cellSize).floor();
+
       _MutableMarkerGroup? closestGroup;
       var closestDistance = double.infinity;
+      int? closestIndex;
 
-      for (final group in groups) {
-        if (group.uf != normalizeUf(point.uf)) {
-          continue;
-        }
-
-        final distance = _distanceDegrees(
-          latitudeA: group.latitude,
-          longitudeA: group.longitude,
-          latitudeB: point.latitude,
-          longitudeB: point.longitude,
-        );
-        if (distance <= distanceDegrees && distance < closestDistance) {
-          closestGroup = group;
-          closestDistance = distance;
+      for (var dLat = -neighborhoodRadius; dLat <= neighborhoodRadius; dLat++) {
+        for (var dLon = -neighborhoodRadius;
+            dLon <= neighborhoodRadius;
+            dLon++) {
+          final key = _proximityGridKey(uf, latCell + dLat, lonCell + dLon);
+          for (final idx in grid[key] ?? const <int>[]) {
+            final group = groups[idx];
+            if (group.uf != uf) {
+              continue;
+            }
+            final distance = _distanceDegrees(
+              latitudeA: group.latitude,
+              longitudeA: group.longitude,
+              latitudeB: point.latitude,
+              longitudeB: point.longitude,
+            );
+            if (distance <= distanceDegrees && distance < closestDistance) {
+              closestGroup = group;
+              closestDistance = distance;
+              closestIndex = idx;
+            }
+          }
         }
       }
 
-      if (closestGroup == null) {
+      if (closestGroup == null || closestIndex == null) {
+        final idx = groups.length;
         groups.add(_MutableMarkerGroup(point));
+        _proximityGridAdd(
+          grid,
+          uf,
+          point.latitude,
+          point.longitude,
+          cellSize,
+          idx,
+        );
       } else {
-        closestGroup.add(point);
+        final idx = closestIndex;
+        final group = groups[idx];
+        _proximityGridRemove(
+          grid,
+          group.uf,
+          group.latitude,
+          group.longitude,
+          cellSize,
+          idx,
+        );
+        group.add(point);
+        _proximityGridAdd(
+          grid,
+          group.uf,
+          group.latitude,
+          group.longitude,
+          cellSize,
+          idx,
+        );
       }
     }
 
