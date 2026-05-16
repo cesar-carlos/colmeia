@@ -121,7 +121,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Casa do Mel'), findsOneWidget);
-      expect(find.text('Fixar filial'), findsOneWidget);
+      expect(find.text('Show on map'), findsOneWidget);
     },
   );
 
@@ -334,77 +334,6 @@ void main() {
     expect(find.text(r'R$ 1.421,77'), findsOneWidget);
     expect(find.text('44 vendas'), findsOneWidget);
     expect(find.text('2 de 2'), findsWidgets);
-  });
-
-  testWidgets('hover card action pins the current branch', (tester) async {
-    String? pinnedStoreId;
-    await _pumpHoverAnchor(
-      tester,
-      points: const <AppBrazilStoreSalesPoint>[
-        AppBrazilStoreSalesPoint(
-          id: 'store-1',
-          name: 'Matriz',
-          fantasyName: 'Mel Centro',
-          uf: 'MT',
-          city: 'Sinop',
-          latitude: -11.8604,
-          longitude: -55.5091,
-          salesAmount: 2000,
-          salesCount: 20,
-        ),
-      ],
-      onPinBranch: (point) {
-        pinnedStoreId = point.id;
-      },
-    );
-
-    final gesture = await _hoverFirstStoreMarker(tester);
-    addTearDown(gesture.removePointer);
-
-    await tester.tap(find.text('Fixar filial'));
-    await tester.pump();
-
-    expect(pinnedStoreId, 'store-1');
-  });
-
-  testWidgets('hover card can expose a fixed branch toggle label', (
-    tester,
-  ) async {
-    String? filteredStoreId;
-    await _pumpHoverAnchor(
-      tester,
-      points: const <AppBrazilStoreSalesPoint>[
-        AppBrazilStoreSalesPoint(
-          id: 'store-1',
-          name: 'Matriz',
-          fantasyName: 'Mel Centro',
-          uf: 'MT',
-          city: 'Sinop',
-          latitude: -11.8604,
-          longitude: -55.5091,
-          salesAmount: 2000,
-          salesCount: 20,
-        ),
-      ],
-      onPinBranch: (point) {
-        filteredStoreId = point.id;
-      },
-      pinBranchLabelBuilder: (_) => 'Desfixar filial',
-    );
-
-    final gesture = await _hoverFirstStoreMarker(tester);
-    addTearDown(gesture.removePointer);
-
-    expect(find.text('Desfixar filial'), findsOneWidget);
-
-    await tester.tap(find.text('Desfixar filial'));
-    await tester.pump();
-
-    expect(filteredStoreId, 'store-1');
-    expect(
-      find.byKey(const ValueKey<String>('brazil-store-sales-branch-card')),
-      findsOneWidget,
-    );
   });
 
   testWidgets('hover card shows branch picker for many stores', (tester) async {
@@ -847,87 +776,6 @@ void main() {
     },
   );
 
-  testWidgets(
-    'filterBranchIds stays stable while selectedStoreId toggles map pin',
-    (tester) async {
-      const point = AppBrazilStoreSalesPoint(
-        id: 'store-1',
-        name: 'Casa do Mel',
-        fantasyName: 'Casa do Mel',
-        uf: 'MT',
-        city: 'Tangara da Serra',
-        latitude: -14.6229,
-        longitude: -57.4933,
-        salesAmount: 84246.26,
-        salesCount: 1568,
-      );
-      const event = AppBrazilStoreSalesPointTapEvent(
-        point: point,
-        index: 0,
-        metric: AppBrazilStoreSalesMapMetric.revenue,
-      );
-      final mapPin = ValueNotifier<String?>(null);
-      addTearDown(mapPin.dispose);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ValueListenableBuilder<String?>(
-              valueListenable: mapPin,
-              builder: (context, pin, _) {
-                return Center(
-                  child: SizedBox(
-                    width: 720,
-                    height: 560,
-                    child: AppBrazilStoreSalesMapChart(
-                      points: const <AppBrazilStoreSalesPoint>[point],
-                      selectedStoreId: pin,
-                      filterBranchIds: const <String>{'store-1'},
-                      fixedBranchIds: const <String>{'store-1'},
-                      style: _baseStyle,
-                      onBranchFilter: (_) {
-                        mapPin.value = mapPin.value == 'store-1'
-                            ? null
-                            : 'store-1';
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
-
-      var chart = tester.widget<AppBrazilStoreSalesMapChart>(
-        find.byType(AppBrazilStoreSalesMapChart),
-      );
-      expect(chart.filterBranchIds, <String>{'store-1'});
-      expect(chart.fixedBranchIds, <String>{'store-1'});
-      expect(chart.selectedStoreId, isNull);
-
-      chart.onBranchFilter!(event);
-      await tester.pump();
-
-      chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart));
-      expect(chart.filterBranchIds, <String>{'store-1'});
-      expect(chart.fixedBranchIds, <String>{'store-1'});
-      expect(chart.selectedStoreId, 'store-1');
-
-      chart.onBranchFilter!(event);
-      await tester.pump();
-
-      chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart));
-      expect(chart.filterBranchIds, <String>{'store-1'});
-      expect(chart.fixedBranchIds, <String>{'store-1'});
-      expect(chart.selectedStoreId, isNull);
-    },
-  );
 }
 
 const _baseStyle = AppBrazilStoreSalesMapStyle(
@@ -989,9 +837,6 @@ Future<TestGesture> _hoverFirstStoreMarker(WidgetTester tester) async {
 Future<void> _pumpHoverAnchor(
   WidgetTester tester, {
   required List<AppBrazilStoreSalesPoint> points,
-  ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch,
-  String? pinBranchLabel,
-  String Function(AppBrazilStoreSalesPoint)? pinBranchLabelBuilder,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -1003,9 +848,6 @@ Future<void> _pumpHoverAnchor(
           child: AppBrazilStoreSalesBranchHoverDetailAnchor(
             group: AppBrazilStoreSalesMarkerGroup(points: points),
             metric: AppBrazilStoreSalesMapMetric.revenue,
-            onPinBranch: onPinBranch,
-            pinBranchLabel: pinBranchLabel,
-            pinBranchLabelBuilder: pinBranchLabelBuilder,
             marker: Container(
               key: const ValueKey<String>('brazil-store-sales-test-marker'),
               width: 32,
@@ -1039,7 +881,7 @@ Future<void> _pumpSelectedAnchor(
             metric: AppBrazilStoreSalesMapMetric.revenue,
             onClose: () {},
             onSelectBranch: (_) {},
-            selectBranchLabelBuilder: (_) => 'Fixar filial',
+            selectBranchLabel: 'Show on map',
             marker: Container(
               key: const ValueKey<String>('brazil-store-sales-test-marker'),
               width: 32,

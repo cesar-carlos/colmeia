@@ -32,6 +32,52 @@ abstract final class AppBrazilStoreSalesMapData {
     return AppBrazilMapStaticData.regionKeyForUf(point.uf) == regionKey;
   }
 
+  /// Digest of point payloads for map snapshot reuse keys and for coalescing
+  /// frequent progressive reload emissions in parents.
+  static int pointsContentDigest(List<AppBrazilStoreSalesPoint> points) {
+    var h = Object.hash(0xBEE5CAFE, points.length);
+    for (final p in points) {
+      h = Object.hash(
+        h,
+        p.id,
+        p.salesAmount,
+        p.salesCount,
+        p.salesDataLoading,
+        p.salesDataUnavailable,
+        p.latitude,
+        p.longitude,
+        p.uf,
+        p.city ?? '',
+        p.municipalityCode ?? '',
+      );
+    }
+    return h;
+  }
+
+  /// Content fingerprint for [AppBrazilStoreSalesMarkerGroup]: instances are
+  /// recreated on snapshot rebuilds; point order within a group is ignored.
+  static int markerGroupContentFingerprint(AppBrazilStoreSalesMarkerGroup group) {
+    final sorted = List<AppBrazilStoreSalesPoint>.of(group.points)
+      ..sort((a, b) => a.id.compareTo(b.id));
+    var h = Object.hash(
+      group.aggregation,
+      group.latitude,
+      group.longitude,
+      sorted.length,
+    );
+    for (final point in sorted) {
+      h = Object.hash(
+        h,
+        point.id,
+        point.salesDataLoading,
+        point.salesDataUnavailable,
+        point.salesAmount,
+        point.salesCount,
+      );
+    }
+    return h;
+  }
+
   static List<AppBrazilStoreSalesPoint> validMapPoints(
     Iterable<AppBrazilStoreSalesPoint> points, {
     String? regionKey,

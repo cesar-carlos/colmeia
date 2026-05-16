@@ -1579,6 +1579,12 @@ abstract class AppLocalizations {
   /// **'Sales by state'**
   String get brazilStoreSalesMapLegendSalesPerState;
 
+  /// No description provided for @brazilStoreSalesMapShowBranchOnMapAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on map'**
+  String get brazilStoreSalesMapShowBranchOnMapAction;
+
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///
   /// In en, this message translates to:
@@ -4192,30 +4198,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear branch selection'**
   String get salesLiveMapClearBranchSelectionAction;
-
-  /// No description provided for @salesLiveMapClearMapFocusAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear map highlight'**
-  String get salesLiveMapClearMapFocusAction;
-
-  /// No description provided for @salesLiveMapPinBranchAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Pin branch'**
-  String get salesLiveMapPinBranchAction;
-
-  /// No description provided for @salesLiveMapPinBranchOnMapAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Pin on map'**
-  String get salesLiveMapPinBranchOnMapAction;
-
-  /// No description provided for @salesLiveMapUnpinBranchFromMapAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Unpin branch'**
-  String get salesLiveMapUnpinBranchFromMapAction;
 
   /// No description provided for @salesLiveMapClearSavedFiltersAction.
   ///

@@ -905,6 +905,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get brazilStoreSalesMapLegendSalesPerState => 'Sales by state';
 
   @override
+  String get brazilStoreSalesMapShowBranchOnMapAction => 'Show on map';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Payment method $label';
   }
@@ -2529,18 +2532,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesLiveMapClearBranchSelectionAction => 'Clear branch selection';
-
-  @override
-  String get salesLiveMapClearMapFocusAction => 'Clear map highlight';
-
-  @override
-  String get salesLiveMapPinBranchAction => 'Pin branch';
-
-  @override
-  String get salesLiveMapPinBranchOnMapAction => 'Pin on map';
-
-  @override
-  String get salesLiveMapUnpinBranchFromMapAction => 'Unpin branch';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Clear saved filters';

@@ -620,78 +620,8 @@ void main() {
     },
   );
 
-  testWidgets('toggles map branch focus without persisting it', (
-    tester,
-  ) async {
-    await _pumpPage(tester, authController: authController);
-    await _pumpInitialLoad(tester);
-    clearInteractions(salesPreferences);
-
-    var chart = tester.widget<AppBrazilStoreSalesMapChart>(
-      find.byType(AppBrazilStoreSalesMapChart).last,
-    );
-    expect(chart.filterBranchIds, isEmpty);
-    expect(chart.fixedBranchIds, isEmpty);
-    expect(chart.selectedStoreId, isNull);
-
-    chart.onBranchFilter!(
-      const AppBrazilStoreSalesPointTapEvent(
-        point: AppBrazilStoreSalesPoint(
-          id: 'agent-1-1-1',
-          name: 'Branch One',
-          uf: 'MT',
-          latitude: -15.60,
-          longitude: -56.10,
-          salesAmount: 1200,
-          salesCount: 12,
-          city: 'Cuiaba',
-        ),
-        index: 0,
-        metric: AppBrazilStoreSalesMapMetric.revenue,
-      ),
-    );
-    await tester.pump();
-
-    chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart).last);
-    expect(chart.filterBranchIds, isEmpty);
-    expect(chart.fixedBranchIds, <String>{'agent-1-1-1'});
-    expect(chart.selectedStoreId, 'agent-1-1-1');
-
-    chart.onBranchFilter!(
-      const AppBrazilStoreSalesPointTapEvent(
-        point: AppBrazilStoreSalesPoint(
-          id: 'agent-1-1-1',
-          name: 'Branch One',
-          uf: 'MT',
-          latitude: -15.60,
-          longitude: -56.10,
-          salesAmount: 1200,
-          salesCount: 12,
-          city: 'Cuiaba',
-        ),
-        index: 0,
-        metric: AppBrazilStoreSalesMapMetric.revenue,
-      ),
-    );
-    await tester.pump();
-
-    chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart).last);
-    expect(chart.filterBranchIds, isEmpty);
-    expect(chart.fixedBranchIds, isEmpty);
-    expect(chart.selectedStoreId, isNull);
-
-    verify(
-      () => loadLiveMap.loadProgressive(
-        userId: 'user-1',
-        filter: any(named: 'filter'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    ).called(1);
-    verifyNever(() => salesPreferences.persistSalesLiveMapFilter(any()));
-  });
-
   testWidgets(
-    'sheet single-branch filter exposes filterBranchIds and map pin toggles selectedStoreId',
+    'sheet single-branch filter exposes filterBranchIds and fixedBranchIds',
     (tester) async {
       when(
         () => loadLiveMap.loadProgressive(
@@ -712,37 +642,12 @@ void main() {
       await tester.tap(find.text('Apply filters'));
       await tester.pumpAndSettle();
 
-      var chart = tester.widget<AppBrazilStoreSalesMapChart>(
+      final chart = tester.widget<AppBrazilStoreSalesMapChart>(
         find.byType(AppBrazilStoreSalesMapChart).last,
       );
       expect(chart.filterBranchIds, <String>{'agent-1-1-1'});
       expect(chart.fixedBranchIds, <String>{'agent-1-1-1'});
       expect(chart.selectedStoreId, isNull);
-
-      chart.onBranchFilter!(
-        const AppBrazilStoreSalesPointTapEvent(
-          point: AppBrazilStoreSalesPoint(
-            id: 'agent-1-1-1',
-            name: 'Branch One',
-            uf: 'MT',
-            latitude: -15.60,
-            longitude: -56.10,
-            salesAmount: 1200,
-            salesCount: 12,
-            city: 'Cuiaba',
-          ),
-          index: 0,
-          metric: AppBrazilStoreSalesMapMetric.revenue,
-        ),
-      );
-      await tester.pump();
-
-      chart = tester.widget<AppBrazilStoreSalesMapChart>(
-        find.byType(AppBrazilStoreSalesMapChart).last,
-      );
-      expect(chart.filterBranchIds, <String>{'agent-1-1-1'});
-      expect(chart.fixedBranchIds, <String>{'agent-1-1-1'});
-      expect(chart.selectedStoreId, 'agent-1-1-1');
     },
   );
 }

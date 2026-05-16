@@ -396,6 +396,7 @@
   "brazilStoreSalesMapMarkerSizeLegend": "Tamanho do ponto",
   "brazilStoreSalesMapLegendRevenuePerState": "Receita por UF",
   "brazilStoreSalesMapLegendSalesPerState": "Vendas por UF",
+  "brazilStoreSalesMapShowBranchOnMapAction": "Destacar no mapa",
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -996,10 +997,6 @@
   "salesLiveMapSelectAllTokenBacked": "Selecionar todas",
   "salesLiveMapClearSelection": "Desmarcar todas",
   "salesLiveMapClearBranchSelectionAction": "Limpar selecao de filiais",
-  "salesLiveMapClearMapFocusAction": "Limpar destaque no mapa",
-  "salesLiveMapPinBranchAction": "Fixar filial",
-  "salesLiveMapPinBranchOnMapAction": "Fixar no mapa",
-  "salesLiveMapUnpinBranchFromMapAction": "Desfixar filial",
   "salesLiveMapClearSavedFiltersAction": "Limpar filtros salvos",
   "salesLiveMapMissingLocalToken": "Sem token local",
   "salesLiveMapCustomPeriodLabel": "Periodo personalizado",

@@ -433,6 +433,7 @@
   "brazilStoreSalesMapMarkerSizeLegend": "Marker size",
   "brazilStoreSalesMapLegendRevenuePerState": "Revenue by state",
   "brazilStoreSalesMapLegendSalesPerState": "Sales by state",
+  "brazilStoreSalesMapShowBranchOnMapAction": "Show on map",
   "overviewSemanticsPaymentMethodRow": "Payment method {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -1221,10 +1222,6 @@
   "salesLiveMapSelectAllTokenBacked": "Select all",
   "salesLiveMapClearSelection": "Clear all",
   "salesLiveMapClearBranchSelectionAction": "Clear branch selection",
-  "salesLiveMapClearMapFocusAction": "Clear map highlight",
-  "salesLiveMapPinBranchAction": "Pin branch",
-  "salesLiveMapPinBranchOnMapAction": "Pin on map",
-  "salesLiveMapUnpinBranchFromMapAction": "Unpin branch",
   "salesLiveMapClearSavedFiltersAction": "Clear saved filters",
   "salesLiveMapMissingLocalToken": "No local token",
   "salesLiveMapCustomPeriodLabel": "Custom period",

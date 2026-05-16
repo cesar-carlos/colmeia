@@ -925,6 +925,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get brazilStoreSalesMapLegendSalesPerState => 'Vendas por UF';
 
   @override
+  String get brazilStoreSalesMapShowBranchOnMapAction => 'Destacar no mapa';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Forma de pagamento $label';
   }
@@ -2568,18 +2571,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesLiveMapClearBranchSelectionAction =>
       'Limpar selecao de filiais';
-
-  @override
-  String get salesLiveMapClearMapFocusAction => 'Limpar destaque no mapa';
-
-  @override
-  String get salesLiveMapPinBranchAction => 'Fixar filial';
-
-  @override
-  String get salesLiveMapPinBranchOnMapAction => 'Fixar no mapa';
-
-  @override
-  String get salesLiveMapUnpinBranchFromMapAction => 'Desfixar filial';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';
@@ -4317,6 +4308,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get brazilStoreSalesMapLegendSalesPerState => 'Vendas por UF';
 
   @override
+  String get brazilStoreSalesMapShowBranchOnMapAction => 'Destacar no mapa';
+
+  @override
   String overviewSemanticsPaymentMethodRow(String label) {
     return 'Forma de pagamento $label';
   }
@@ -5960,18 +5954,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesLiveMapClearBranchSelectionAction =>
       'Limpar selecao de filiais';
-
-  @override
-  String get salesLiveMapClearMapFocusAction => 'Limpar destaque no mapa';
-
-  @override
-  String get salesLiveMapPinBranchAction => 'Fixar filial';
-
-  @override
-  String get salesLiveMapPinBranchOnMapAction => 'Fixar no mapa';
-
-  @override
-  String get salesLiveMapUnpinBranchFromMapAction => 'Desfixar filial';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';

@@ -35,7 +35,6 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.fixedBranchIds = const <String>{},
     this.style = const AppBrazilStoreSalesMapStyle(),
     this.onStoreTap,
-    this.onBranchFilter,
     this.onStoreClusterTap,
     this.onMunicipalityTap,
     this.onStateTap,
@@ -50,15 +49,15 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   final Widget? titleTrailing;
   final Widget? belowSubtitle;
   final AppBrazilStoreSalesMapMetric initialMetric;
+  /// Optional externally controlled selection (e.g. deep-link); when set and
+  /// not dismissed, overrides internal marker selection.
   final String? selectedStoreId;
-  /// Branch ids selected outside the map (e.g. sheet filter). Used with [fixedBranchIds]
-  /// so "Fixar filial" / "Desfixar filial" are not confused with map-only pins.
+  /// Branch ids selected outside the map (e.g. sheet filter).
   final Set<String> filterBranchIds;
-  /// Union of external highlights (filter + map pin); drives reuse keys and cleanup.
+  /// Union of external highlights (e.g. filter); drives reuse keys and cleanup.
   final Set<String> fixedBranchIds;
   final AppBrazilStoreSalesMapStyle style;
   final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onStoreTap;
-  final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onBranchFilter;
   final ValueChanged<AppBrazilStoreSalesPointClusterTapEvent>?
   onStoreClusterTap;
   final ValueChanged<AppBrazilStoreSalesMunicipalityTapEvent>?
@@ -87,6 +86,12 @@ class _AppBrazilStoreSalesMapChartState
   Timer? _viewportClusterDebounceTimer;
   double? _pendingViewportClusterZoomLevel;
 
+  void _cancelPendingViewportClusterSampling() {
+    _viewportClusterDebounceTimer?.cancel();
+    _viewportClusterDebounceTimer = null;
+    _pendingViewportClusterZoomLevel = null;
+  }
+
   /// Small shrink of the map tile when height is bounded: real layout (labels,
   /// chips, legend padding) can exceed our header/footer estimates by a few
   /// logical pixels and cause a [Column] overflow.
@@ -97,14 +102,17 @@ class _AppBrazilStoreSalesMapChartState
   static const Duration _desktopViewportClusterDebounceDuration = Duration(
     milliseconds: 120,
   );
+  static const Duration _windowsViewportClusterDebounceDuration = Duration(
+    milliseconds: 500,
+  );
 
   @override
   void initState() {
     super.initState();
     _selectedMetric = widget.initialMetric;
-    _currentZoomLevel = widget.selectedStoreId == null
-        ? AppBrazilMapStaticData.brazilViewport.zoomLevel
-        : widget.style.selectedStoreZoomLevel;
+    _currentZoomLevel = widget.selectedStoreId != null
+        ? widget.style.selectedStoreZoomLevel
+        : AppBrazilMapStaticData.brazilViewport.zoomLevel;
   }
 
   @override
@@ -120,11 +128,14 @@ class _AppBrazilStoreSalesMapChartState
       if (oldWidget.selectedStoreId != null &&
           widget.selectedStoreId == null) {
         _dismissedControlledSelectedStoreId = null;
+        _currentZoomLevel = AppBrazilMapStaticData.brazilViewport.zoomLevel;
+        _cancelPendingViewportClusterSampling();
       }
       if (oldWidget.selectedStoreId != widget.selectedStoreId &&
           widget.selectedStoreId != null) {
         _currentZoomLevel = widget.style.selectedStoreZoomLevel;
         _dismissedControlledSelectedStoreId = null;
+        _cancelPendingViewportClusterSampling();
       }
       _snapshot = null;
     }
@@ -133,24 +144,11 @@ class _AppBrazilStoreSalesMapChartState
         oldWidget.fixedBranchIds != widget.fixedBranchIds) {
       _snapshot = null;
     }
-
-    if (widget.onBranchFilter != null) {
-      if (widget.selectedStoreId != null &&
-          _internalSelectedStoreId == widget.selectedStoreId) {
-        _internalSelectedStoreId = null;
-        _snapshot = null;
-      } else if (oldWidget.selectedStoreId != null &&
-          widget.selectedStoreId == null &&
-          _internalSelectedStoreId == oldWidget.selectedStoreId) {
-        _internalSelectedStoreId = null;
-        _snapshot = null;
-      }
-    }
   }
 
   @override
   void dispose() {
-    _viewportClusterDebounceTimer?.cancel();
+    _cancelPendingViewportClusterSampling();
     super.dispose();
   }
 
@@ -294,17 +292,15 @@ class _AppBrazilStoreSalesMapChartState
                   point: point,
                   index: _mapPointIndexFor(point, snapshot),
                 ),
-                selectBranchLabelBuilder: _branchActionLabelFor,
+                selectBranchLabelBuilder: (_) =>
+                    AppLocalizations.of(
+                      context,
+                    ).brazilStoreSalesMapShowBranchOnMapAction,
               )
             else if (_showBelowMapMarkerDetail && selectedPoint != null)
               _SelectedStoreDetail(
                 point: selectedPoint,
                 metric: _selectedMetric,
-                onSelectBranch: (point) => _handleMarkerBranchAction(
-                  point: point,
-                  index: _mapPointIndexFor(point, snapshot),
-                ),
-                selectBranchLabel: _branchActionLabelFor(selectedPoint),
               )
             else if (selectedPoint == null &&
                 selectedMarkerGroup == null &&
@@ -600,7 +596,7 @@ class _AppBrazilStoreSalesMapChartState
       'rs=$_internalSelectedStateKey',
       'ak=$_activeRegionKey',
       'z=$_currentZoomLevel',
-      'pts=${_pointsContentDigest(w.points)}',
+      'pts=${AppBrazilStoreSalesMapData.pointsContentDigest(w.points)}',
     ];
     return parts.join(';');
   }
@@ -611,26 +607,6 @@ class _AppBrazilStoreSalesMapChartState
     }
     final sorted = values.toList(growable: false)..sort();
     return sorted.join(',');
-  }
-
-  static int _pointsContentDigest(List<AppBrazilStoreSalesPoint> points) {
-    var h = Object.hash(0xBEE5CAFE, points.length);
-    for (final p in points) {
-      h = Object.hash(
-        h,
-        p.id,
-        p.salesAmount,
-        p.salesCount,
-        p.salesDataLoading,
-        p.salesDataUnavailable,
-        p.latitude,
-        p.longitude,
-        p.uf,
-        p.city ?? '',
-        p.municipalityCode ?? '',
-      );
-    }
-    return h;
   }
 
   _BrazilStoreSalesMapSnapshot _resolveSnapshot(BuildContext context) {
@@ -798,19 +774,6 @@ class _AppBrazilStoreSalesMapChartState
     );
   }
 
-  void _emitBranchFilter({
-    required AppBrazilStoreSalesPoint point,
-    required int index,
-  }) {
-    widget.onBranchFilter?.call(
-      AppBrazilStoreSalesPointTapEvent(
-        point: point,
-        index: index,
-        metric: _selectedMetric,
-      ),
-    );
-  }
-
   int _mapPointIndexFor(
     AppBrazilStoreSalesPoint point,
     _BrazilStoreSalesMapSnapshot snapshot,
@@ -830,25 +793,8 @@ class _AppBrazilStoreSalesMapChartState
     if (!mounted) {
       return;
     }
-    if (widget.onBranchFilter == null) {
-      _selectPoint(point);
-      _emitStoreTap(point: point, index: index);
-      return;
-    }
-
-    _emitBranchFilter(point: point, index: index);
-  }
-
-  String _branchActionLabelFor(AppBrazilStoreSalesPoint point) {
-    final l10n = AppLocalizations.of(context);
-    if (widget.onBranchFilter == null) {
-      return l10n.salesLiveMapPinBranchAction;
-    }
-    final pinnedByMap = widget.selectedStoreId == point.id;
-    if (pinnedByMap) {
-      return l10n.salesLiveMapUnpinBranchFromMapAction;
-    }
-    return l10n.salesLiveMapPinBranchAction;
+    _selectPoint(point);
+    _emitStoreTap(point: point, index: index);
   }
 
   bool get _shouldUseCompactBranchSheet =>
@@ -880,13 +826,14 @@ class _AppBrazilStoreSalesMapChartState
             initialStoreId: initialStoreId,
             onDismiss: () => unawaited(Navigator.of(sheetContext).maybePop()),
             onClose: () => unawaited(Navigator.of(sheetContext).maybePop()),
-            onSelectBranch: widget.onBranchFilter == null
-                ? null
-                : (point) {
-                    unawaited(Navigator.of(sheetContext).maybePop());
-                    _handleMarkerBranchAction(point: point, index: markerIndex);
-                  },
-            selectBranchLabelBuilder: _branchActionLabelFor,
+            onSelectBranch: (point) {
+              unawaited(Navigator.of(sheetContext).maybePop());
+              _handleMarkerBranchAction(point: point, index: markerIndex);
+            },
+            selectBranchLabelBuilder: (_) =>
+                AppLocalizations.of(
+                  sheetContext,
+                ).brazilStoreSalesMapShowBranchOnMapAction,
           ),
         );
       },
@@ -901,25 +848,6 @@ class _AppBrazilStoreSalesMapChartState
       _internalSelectedStoreId = null;
       _snapshot = null;
     });
-  }
-
-  /// When the parent drives the map pin via `onBranchFilter` and
-  /// `selectedStoreId`, closing the floating card calls the same toggle as the
-  /// pin button so the card only stays open while pinned.
-  void _handlePinnedMapOverlayClose() {
-    final pinnedId = widget.selectedStoreId;
-    if (widget.onBranchFilter != null && pinnedId != null) {
-      final snapshot = _snapshot ?? _resolveSnapshot(context);
-      final point = _pointById(pinnedId);
-      if (point != null) {
-        _emitBranchFilter(
-          point: point,
-          index: _mapPointIndexFor(point, snapshot),
-        );
-      }
-      return;
-    }
-    _clearSelectedMarkerDetail();
   }
 
   void _handleStateBubbleTap(
@@ -950,20 +878,37 @@ class _AppBrazilStoreSalesMapChartState
       return;
     }
 
+    // Syncfusion Maps + debounced viewport zoom + OverlayPortals overload the
+    // Windows accessibility bridge (AXTree) in practice. In release builds we
+    // still follow zoom with a heavy throttle; in debug/profile/tests we skip
+    // viewport-driven clustering updates entirely on Windows.
+    if (defaultTargetPlatform == TargetPlatform.windows && !kReleaseMode) {
+      _cancelPendingViewportClusterSampling();
+      return;
+    }
+
     // While auto-focus keeps the camera on a selected branch, the engine
     // still reports the *current* zoom during transitions (e.g. Brazil ~1.0
     // right after we set clustering zoom to [selectedStoreZoomLevel]).
     // Applying those samples overwrites [_currentZoomLevel], invalidates the
-    // snapshot on every tick, and can spin rebuilds + Windows AXTree updates
-    // until the process dies (e.g. after "Fixar filial").
+    // snapshot on every tick, and can spin rebuilds + Windows AXTree updates.
     if (widget.style.autoFocusSelectedStore && _selectedStoreId != null) {
+      _cancelPendingViewportClusterSampling();
       return;
     }
 
-    final nextZoomLevel = event.viewport.zoomLevel;
-    final debounceDuration = _shouldDebounceTouchViewportClustering
-        ? _touchViewportClusterDebounceDuration
-        : _desktopViewportClusterDebounceDuration;
+    final rawZoom = event.viewport.zoomLevel;
+    final nextZoomLevel =
+        defaultTargetPlatform == TargetPlatform.windows && kReleaseMode
+        ? (rawZoom * 4).round() / 4.0
+        : rawZoom;
+
+    final debounceDuration =
+        defaultTargetPlatform == TargetPlatform.windows && kReleaseMode
+        ? _windowsViewportClusterDebounceDuration
+        : (_shouldDebounceTouchViewportClustering
+              ? _touchViewportClusterDebounceDuration
+              : _desktopViewportClusterDebounceDuration);
 
     _pendingViewportClusterZoomLevel = nextZoomLevel;
     _viewportClusterDebounceTimer?.cancel();
@@ -996,6 +941,9 @@ class _AppBrazilStoreSalesMapChartState
   }
 
   void _applyViewportClusterZoomLevel(double nextZoomLevel) {
+    if (widget.style.autoFocusSelectedStore && _selectedStoreId != null) {
+      return;
+    }
     if (!mounted || (nextZoomLevel - _currentZoomLevel).abs() < 0.25) {
       return;
     }
@@ -1088,9 +1036,6 @@ class _AppBrazilStoreSalesMapChartState
         group: group,
         metric: _selectedMetric,
         marker: marker,
-        onPinBranch: (point) =>
-            _handleMarkerBranchAction(point: point, index: index),
-        pinBranchLabelBuilder: _branchActionLabelFor,
       );
     }
 
@@ -1099,10 +1044,11 @@ class _AppBrazilStoreSalesMapChartState
       selectedStoreId: selectedStoreId,
       metric: _selectedMetric,
       marker: marker,
-      onClose: _handlePinnedMapOverlayClose,
+      onClose: _clearSelectedMarkerDetail,
       onSelectBranch: (point) =>
           _handleMarkerBranchAction(point: point, index: index),
-      selectBranchLabelBuilder: _branchActionLabelFor,
+      selectBranchLabelBuilder: (_) =>
+          AppLocalizations.of(context).brazilStoreSalesMapShowBranchOnMapAction,
     );
   }
 
@@ -1877,6 +1823,7 @@ class _SelectedMarkerDetailAnchorState
   final LayerLink _link = LayerLink();
   final GlobalKey _markerKey = GlobalKey();
   double? _markerGlobalDx;
+  bool _postFrameOverlaySyncPending = false;
 
   @override
   void initState() {
@@ -1889,7 +1836,12 @@ class _SelectedMarkerDetailAnchorState
     covariant AppBrazilStoreSalesSelectedMarkerDetailAnchor oldWidget,
   ) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.group != widget.group ||
+    if (AppBrazilStoreSalesMapData.markerGroupContentFingerprint(
+              oldWidget.group,
+            ) !=
+            AppBrazilStoreSalesMapData.markerGroupContentFingerprint(
+              widget.group,
+            ) ||
         oldWidget.selectedStoreId != widget.selectedStoreId ||
         oldWidget.metric != widget.metric) {
       _syncOverlayVisibility();
@@ -1897,7 +1849,12 @@ class _SelectedMarkerDetailAnchorState
   }
 
   void _syncOverlayVisibility() {
+    if (_postFrameOverlaySyncPending) {
+      return;
+    }
+    _postFrameOverlaySyncPending = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _postFrameOverlaySyncPending = false;
       if (!mounted) {
         return;
       }
@@ -2028,17 +1985,11 @@ class AppBrazilStoreSalesBranchHoverDetailAnchor extends StatefulWidget {
     required this.metric,
     required this.marker,
     super.key,
-    this.onPinBranch,
-    this.pinBranchLabel,
-    this.pinBranchLabelBuilder,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
   final AppBrazilStoreSalesMapMetric metric;
   final Widget marker;
-  final ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch;
-  final String? pinBranchLabel;
-  final String Function(AppBrazilStoreSalesPoint)? pinBranchLabelBuilder;
 
   @override
   State<AppBrazilStoreSalesBranchHoverDetailAnchor> createState() =>
@@ -2111,9 +2062,6 @@ class _HoverMarkerDetailAnchorState
             link: _link,
             group: widget.group,
             metric: widget.metric,
-            onPinBranch: widget.onPinBranch,
-            pinBranchLabel: widget.pinBranchLabel,
-            pinBranchLabelBuilder: widget.pinBranchLabelBuilder,
             onDismiss: _controller.hide,
             markerGlobalDx: _markerGlobalDx,
             onEnter: () {
@@ -2150,9 +2098,6 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
     required this.onEnter,
     required this.onExit,
     required this.markerGlobalDx,
-    this.onPinBranch,
-    this.pinBranchLabel,
-    this.pinBranchLabelBuilder,
     this.onDismiss,
   });
 
@@ -2162,9 +2107,6 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
   final VoidCallback onEnter;
   final VoidCallback onExit;
   final double? markerGlobalDx;
-  final ValueChanged<AppBrazilStoreSalesPoint>? onPinBranch;
-  final String? pinBranchLabel;
-  final String Function(AppBrazilStoreSalesPoint)? pinBranchLabelBuilder;
   final VoidCallback? onDismiss;
 
   @override
@@ -2176,11 +2118,6 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
       maxWidth: maxWidth,
       markerGlobalDx: markerGlobalDx,
     );
-    void handleSelectBranch(AppBrazilStoreSalesPoint point) {
-      onPinBranch?.call(point);
-    }
-
-    final selectBranch = onPinBranch == null ? null : handleSelectBranch;
 
     return Positioned.fill(
       child: CompositedTransformFollower(
@@ -2201,9 +2138,6 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
                   group: group,
                   metric: metric,
                   showTechnicalLocationDetails: false,
-                  onSelectBranch: selectBranch,
-                  selectBranchLabel: pinBranchLabel ?? 'Fixar filial',
-                  selectBranchLabelBuilder: pinBranchLabelBuilder,
                   onDismiss: onDismiss,
                 ),
               ),
@@ -2602,14 +2536,10 @@ class _SelectedStoreDetail extends StatelessWidget {
   const _SelectedStoreDetail({
     required this.point,
     required this.metric,
-    this.onSelectBranch,
-    this.selectBranchLabel,
   });
 
   final AppBrazilStoreSalesPoint point;
   final AppBrazilStoreSalesMapMetric metric;
-  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
-  final String? selectBranchLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -2620,8 +2550,6 @@ class _SelectedStoreDetail extends StatelessWidget {
       child: _SelectedMarkerStoreDetailCard(
         point: point,
         metric: metric,
-        onSelectBranch: onSelectBranch,
-        selectBranchLabel: selectBranchLabel,
       ),
     );
   }
@@ -2670,15 +2598,11 @@ class _SelectedMarkerStoreDetailCard extends StatelessWidget {
   const _SelectedMarkerStoreDetailCard({
     required this.point,
     required this.metric,
-    this.onSelectBranch,
-    this.selectBranchLabel,
     this.showTechnicalLocationDetails = true,
   });
 
   final AppBrazilStoreSalesPoint point;
   final AppBrazilStoreSalesMapMetric metric;
-  final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
-  final String? selectBranchLabel;
   final bool showTechnicalLocationDetails;
 
   @override
@@ -2687,10 +2611,6 @@ class _SelectedMarkerStoreDetailCard extends StatelessWidget {
       point: point,
       metric: metric,
       showTechnicalLocationDetails: showTechnicalLocationDetails,
-      onSelectBranch: onSelectBranch == null
-          ? null
-          : () => onSelectBranch!(point),
-      selectBranchLabel: selectBranchLabel,
     );
   }
 }

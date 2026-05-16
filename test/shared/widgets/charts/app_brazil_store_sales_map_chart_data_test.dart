@@ -522,6 +522,41 @@ void main() {
         closeTo(0.1, 0.001),
       );
     });
+
+    test('markerGroupContentFingerprint ignores point order in group', () {
+      const p1 = AppBrazilStoreSalesPoint(
+        id: 'z',
+        name: 'Z',
+        uf: 'MT',
+        latitude: -12,
+        longitude: -55,
+        salesAmount: 10,
+        salesCount: 1,
+      );
+      const p2 = AppBrazilStoreSalesPoint(
+        id: 'a',
+        name: 'A',
+        uf: 'MT',
+        latitude: -12.1,
+        longitude: -55.1,
+        salesAmount: 20,
+        salesCount: 2,
+      );
+      final forward = AppBrazilStoreSalesMarkerGroup(
+        points: <AppBrazilStoreSalesPoint>[p1, p2],
+        latitude: -12.05,
+        longitude: -55.05,
+      );
+      final reversed = AppBrazilStoreSalesMarkerGroup(
+        points: <AppBrazilStoreSalesPoint>[p2, p1],
+        latitude: -12.05,
+        longitude: -55.05,
+      );
+      expect(
+        AppBrazilStoreSalesMapData.markerGroupContentFingerprint(forward),
+        AppBrazilStoreSalesMapData.markerGroupContentFingerprint(reversed),
+      );
+    });
   });
 
   group('Brazil GeoJSON asset', () {
