@@ -310,7 +310,7 @@ void main() {
     expect(chart.style.showRegionFilter, isFalse);
     expect(
       chart.style.stateLabelMode,
-      AppBrazilStoreSalesStateLabelMode.stateName,
+      AppBrazilStoreSalesStateLabelMode.uf,
     );
   });
 

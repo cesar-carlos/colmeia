@@ -403,7 +403,7 @@ void main() {
     expect(filteredStoreId, 'store-1');
     expect(
       find.byKey(const ValueKey<String>('brazil-store-sales-branch-card')),
-      findsNothing,
+      findsOneWidget,
     );
   });
 

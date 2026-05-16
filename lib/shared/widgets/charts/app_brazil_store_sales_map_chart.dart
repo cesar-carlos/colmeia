@@ -115,6 +115,14 @@ class _AppBrazilStoreSalesMapChartState
       }
       _snapshot = null;
     }
+
+    final mapPinnedId = _internalSelectedStoreId;
+    if (mapPinnedId != null &&
+        widget.onBranchFilter != null &&
+        !widget.fixedBranchIds.contains(mapPinnedId)) {
+      _internalSelectedStoreId = null;
+      _snapshot = null;
+    }
   }
 
   @override
@@ -775,6 +783,19 @@ class _AppBrazilStoreSalesMapChartState
       return;
     }
 
+    final wasPinned = widget.fixedBranchIds.contains(point.id);
+    setState(() {
+      if (wasPinned) {
+        _internalSelectedStoreId = null;
+      } else {
+        _internalSelectedStoreId = point.id;
+        _dismissedControlledSelectedStoreId = null;
+        _internalSelectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(
+          point.uf,
+        );
+      }
+      _snapshot = null;
+    });
     _emitBranchFilter(point: point, index: index);
   }
 
@@ -782,9 +803,10 @@ class _AppBrazilStoreSalesMapChartState
     if (widget.onBranchFilter == null) {
       return 'Fixar filial';
     }
-    return widget.fixedBranchIds.contains(point.id)
-        ? 'Desfixar filial'
-        : 'Fixar filial';
+    final id = point.id;
+    final pinnedByMap = _internalSelectedStoreId == id;
+    final pinnedByFilter = widget.fixedBranchIds.contains(id);
+    return (pinnedByFilter || pinnedByMap) ? 'Desfixar filial' : 'Fixar filial';
   }
 
   bool get _shouldUseCompactBranchSheet =>
@@ -2088,10 +2110,7 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
       markerGlobalDx: markerGlobalDx,
     );
     void handleSelectBranch(AppBrazilStoreSalesPoint point) {
-      onDismiss?.call();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        onPinBranch?.call(point);
-      });
+      onPinBranch?.call(point);
     }
 
     final selectBranch = onPinBranch == null ? null : handleSelectBranch;
