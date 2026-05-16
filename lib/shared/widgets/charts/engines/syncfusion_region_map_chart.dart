@@ -379,7 +379,7 @@ class _SyncfusionRegionMapChartState<T>
                                   : null,
                               showDataLabels: widget.style.showDataLabels,
                               dataLabelSettings: MapDataLabelSettings(
-                                overflowMode: MapLabelOverflow.hide,
+                                overflowMode: MapLabelOverflow.ellipsis,
                                 textStyle:
                                     widget.style.dataLabelTextStyle ??
                                     Theme.of(

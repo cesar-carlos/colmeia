@@ -2699,7 +2699,7 @@ class _SelectedMarkerBranchCarouselCardState
     final count = _orderedPoints.length;
 
     return Focus(
-      autofocus: true,
+      autofocus: defaultTargetPlatform != TargetPlatform.windows,
       onKeyEvent: _handleKeyEvent,
       child: _SelectedMarkerBranchDetailSurface(
         point: point,
@@ -2801,188 +2801,243 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
     return Semantics(
       container: true,
       label: 'Detalhes da filial no mapa',
-      child: Material(
-        key: const ValueKey<String>('brazil-store-sales-branch-card'),
-        color: colorScheme.surface,
-        elevation: 8,
-        shadowColor: Colors.black.withValues(alpha: 0.22),
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxCardHeight),
-            child: SingleChildScrollView(
-              key: const ValueKey<String>(
-                'brazil-store-sales-branch-card-scroll',
-              ),
-              padding: EdgeInsets.all(tokens.contentSpacing),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.storefront_outlined,
-                        color: context.appColors.secondary,
-                        size: 20,
-                      ),
-                      SizedBox(width: tokens.gapSm),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _branchDisplayName(point),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            SizedBox(height: tokens.gapXs),
-                            Text(
-                              cityLabel,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
+      child: TooltipVisibility(
+        visible: defaultTargetPlatform != TargetPlatform.windows,
+        child: Material(
+          key: const ValueKey<String>('brazil-store-sales-branch-card'),
+          color: colorScheme.surface,
+          elevation: 8,
+          shadowColor: Colors.black.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+              border: Border.all(color: colorScheme.outlineVariant),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxCardHeight),
+              child: SingleChildScrollView(
+                key: const ValueKey<String>(
+                  'brazil-store-sales-branch-card-scroll',
+                ),
+                padding: EdgeInsets.all(tokens.contentSpacing),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.storefront_outlined,
+                          color: context.appColors.secondary,
+                          size: 20,
                         ),
-                      ),
-                      SizedBox(width: tokens.gapSm),
-                      if (onClose == null)
-                        AppTagChip(label: branchPositionLabel ?? metric.label)
-                      else
-                        Tooltip(
-                          message: 'Fechar detalhes',
-                          child: IconButton(
-                            onPressed: onClose,
-                            icon: const Icon(Icons.close_rounded),
-                            iconSize: 18,
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints.tightFor(
-                              width: 32,
-                              height: 32,
-                            ),
+                        SizedBox(width: tokens.gapSm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _branchDisplayName(point),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              SizedBox(height: tokens.gapXs),
+                              Text(
+                                cityLabel,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
+                        SizedBox(width: tokens.gapSm),
+                        if (onClose == null)
+                          AppTagChip(label: branchPositionLabel ?? metric.label)
+                        else
+                          _WindowsSafeOverlayIconButton(
+                            key: const ValueKey<String>(
+                              'brazil-store-sales-branch-card-close',
+                            ),
+                            icon: Icons.close_rounded,
+                            iconSize: 18,
+                            dimension: 32,
+                            onPressed: onClose!,
+                            tooltipMessage: 'Fechar detalhes',
+                          ),
+                      ],
+                    ),
+                    SizedBox(height: tokens.gapMd),
+                    if (onClose != null) ...[
+                      Wrap(
+                        spacing: tokens.gapSm,
+                        runSpacing: tokens.gapSm,
+                        children: [
+                          const AppTagChip(label: 'Filial fixada'),
+                          AppTagChip(label: metric.label),
+                          if (branchPositionLabel != null)
+                            AppTagChip(label: branchPositionLabel!),
+                        ],
+                      ),
+                      SizedBox(height: tokens.gapSm),
                     ],
-                  ),
-                  SizedBox(height: tokens.gapMd),
-                  if (onClose != null) ...[
+                    if (aggregateSummary != null) ...[
+                      aggregateSummary!,
+                      SizedBox(height: tokens.gapMd),
+                    ],
                     Wrap(
                       spacing: tokens.gapSm,
                       runSpacing: tokens.gapSm,
                       children: [
-                        const AppTagChip(label: 'Filial fixada'),
-                        AppTagChip(label: metric.label),
-                        if (branchPositionLabel != null)
-                          AppTagChip(label: branchPositionLabel!),
-                      ],
-                    ),
-                    SizedBox(height: tokens.gapSm),
-                  ],
-                  if (aggregateSummary != null) ...[
-                    aggregateSummary!,
-                    SizedBox(height: tokens.gapMd),
-                  ],
-                  Wrap(
-                    spacing: tokens.gapSm,
-                    runSpacing: tokens.gapSm,
-                    children: [
-                      if (point.salesDataLoading)
-                        const AppTagChip(
-                          label: 'Carregando vendas',
-                          icon: Icons.sync_rounded,
-                        )
-                      else ...[
-                        AppTagChip(
-                          label: AppBrFormatters.currency(point.salesAmount),
-                          icon: Icons.attach_money,
-                        ),
-                        AppTagChip(
-                          label: '${_formatInteger(point.salesCount)} vendas',
-                          icon: Icons.receipt_long_outlined,
-                        ),
-                      ],
-                      if (!point.salesDataLoading && point.salesDataUnavailable)
-                        AppTagChip(
-                          label:
-                              point.salesDataStatusLabel ??
-                              'Vendas indisponiveis',
-                          icon: Icons.sync_problem_outlined,
-                        ),
-                      if (agentName != null)
-                        AppTagChip(
-                          label: _agentChipLabel(agentName),
-                          icon: Icons.hub_outlined,
-                        )
-                      else if (legacySubtitle != null)
-                        AppTagChip(
-                          label: legacySubtitle,
-                          icon: Icons.hub_outlined,
-                        ),
-                      if (branchName != null)
-                        AppTagChip(
-                          label: branchName,
-                          icon: Icons.store_mall_directory_outlined,
-                        ),
-                      if (showTechnicalLocationDetails &&
-                          municipalityCode != null &&
-                          municipalityCode.isNotEmpty)
-                        AppTagChip(
-                          label: 'IBGE $municipalityCode',
-                          icon: Icons.pin_drop_outlined,
-                        ),
-                      if (showTechnicalLocationDetails)
-                        AppTagChip(
-                          label: _locationResolutionLabel(
-                            point.locationResolution,
+                        if (point.salesDataLoading)
+                          const AppTagChip(
+                            label: 'Carregando vendas',
+                            icon: Icons.sync_rounded,
+                          )
+                        else ...[
+                          AppTagChip(
+                            label: AppBrFormatters.currency(point.salesAmount),
+                            icon: Icons.attach_money,
                           ),
-                          icon: Icons.my_location_outlined,
-                        ),
-                      if (showTechnicalLocationDetails)
-                        AppTagChip(
-                          label:
-                              '${point.latitude.toStringAsFixed(4)}, '
-                              '${point.longitude.toStringAsFixed(4)}',
-                          icon: Icons.explore_outlined,
-                        ),
-                    ],
-                  ),
-                  if (onSelectBranch != null) ...[
-                    SizedBox(height: tokens.gapMd),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: OutlinedButton.icon(
-                        key: const ValueKey<String>(
-                          'brazil-store-sales-branch-card-select',
-                        ),
-                        onPressed: onSelectBranch,
-                        icon: const Icon(Icons.push_pin_outlined, size: 18),
-                        label: Text(selectBranchLabel ?? 'Selecionar filial'),
-                      ),
+                          AppTagChip(
+                            label: '${_formatInteger(point.salesCount)} vendas',
+                            icon: Icons.receipt_long_outlined,
+                          ),
+                        ],
+                        if (!point.salesDataLoading &&
+                            point.salesDataUnavailable)
+                          AppTagChip(
+                            label:
+                                point.salesDataStatusLabel ??
+                                'Vendas indisponiveis',
+                            icon: Icons.sync_problem_outlined,
+                          ),
+                        if (agentName != null)
+                          AppTagChip(
+                            label: _agentChipLabel(agentName),
+                            icon: Icons.hub_outlined,
+                          )
+                        else if (legacySubtitle != null)
+                          AppTagChip(
+                            label: legacySubtitle,
+                            icon: Icons.hub_outlined,
+                          ),
+                        if (branchName != null)
+                          AppTagChip(
+                            label: branchName,
+                            icon: Icons.store_mall_directory_outlined,
+                          ),
+                        if (showTechnicalLocationDetails &&
+                            municipalityCode != null &&
+                            municipalityCode.isNotEmpty)
+                          AppTagChip(
+                            label: 'IBGE $municipalityCode',
+                            icon: Icons.pin_drop_outlined,
+                          ),
+                        if (showTechnicalLocationDetails)
+                          AppTagChip(
+                            label: _locationResolutionLabel(
+                              point.locationResolution,
+                            ),
+                            icon: Icons.my_location_outlined,
+                          ),
+                        if (showTechnicalLocationDetails)
+                          AppTagChip(
+                            label:
+                                '${point.latitude.toStringAsFixed(4)}, '
+                                '${point.longitude.toStringAsFixed(4)}',
+                            icon: Icons.explore_outlined,
+                          ),
+                      ],
                     ),
+                    if (onSelectBranch != null) ...[
+                      SizedBox(height: tokens.gapMd),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: OutlinedButton.icon(
+                          key: const ValueKey<String>(
+                            'brazil-store-sales-branch-card-select',
+                          ),
+                          onPressed: onSelectBranch,
+                          icon: const Icon(Icons.push_pin_outlined, size: 18),
+                          label: Text(selectBranchLabel ?? 'Selecionar filial'),
+                        ),
+                      ),
+                    ],
+                    if (navigation != null) ...[
+                      SizedBox(height: tokens.gapMd),
+                      Divider(color: colorScheme.outlineVariant, height: 1),
+                      SizedBox(height: tokens.gapXs),
+                      navigation!,
+                    ],
                   ],
-                  if (navigation != null) ...[
-                    SizedBox(height: tokens.gapMd),
-                    Divider(color: colorScheme.outlineVariant, height: 1),
-                    SizedBox(height: tokens.gapXs),
-                    navigation!,
-                  ],
-                ],
+                ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// On Windows, [IconButton] + [Tooltip] publish tooltip semantics through the
+/// overlay layer. That fights [_MapMarkerDetailSemanticsBoundary]'s
+/// [ExcludeSemantics] and triggers `accessibility_bridge.cc` AXTree errors when
+/// hovering branch map cards.
+class _WindowsSafeOverlayIconButton extends StatelessWidget {
+  const _WindowsSafeOverlayIconButton({
+    required this.icon,
+    required this.onPressed,
+    required this.tooltipMessage,
+    required this.dimension,
+    super.key,
+    this.iconSize,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String tooltipMessage;
+  final double dimension;
+  final double? iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    if (defaultTargetPlatform == TargetPlatform.windows) {
+      final colors = Theme.of(context).colorScheme;
+      final resolvedIconSize = iconSize ?? dimension * 0.56;
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: SizedBox(
+            width: dimension,
+            height: dimension,
+            child: Icon(icon, size: resolvedIconSize, color: colors.onSurface),
+          ),
+        ),
+      );
+    }
+
+    return Tooltip(
+      message: tooltipMessage,
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, size: iconSize),
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: BoxConstraints.tightFor(
+          width: dimension,
+          height: dimension,
         ),
       ),
     );
@@ -3011,46 +3066,43 @@ class _BranchCarouselNavigation extends StatelessWidget {
     final branchCount = points.length;
     final showBranchPicker = branchCount >= 10;
 
+    final pickerTooltip = defaultTargetPlatform == TargetPlatform.windows
+        ? ''
+        : 'Escolher filial';
+
     return Row(
       children: [
         if (showBranchPicker) ...[
-          Tooltip(
-            message: 'Escolher filial',
-            child: PopupMenuButton<int>(
-              key: const ValueKey<String>(
-                'brazil-store-sales-branch-card-picker',
-              ),
-              tooltip: 'Escolher filial',
-              onSelected: onSelectIndex,
-              itemBuilder: (context) => [
-                for (var index = 0; index < points.length; index++)
-                  PopupMenuItem<int>(
-                    value: index,
-                    child: Text(
-                      '${_formatInteger(index + 1)}. '
-                      '${_branchDisplayName(points[index])}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-              ],
-              icon: const Icon(Icons.list_alt_outlined),
+          PopupMenuButton<int>(
+            key: const ValueKey<String>(
+              'brazil-store-sales-branch-card-picker',
             ),
+            tooltip: pickerTooltip,
+            onSelected: onSelectIndex,
+            itemBuilder: (context) => [
+              for (var index = 0; index < points.length; index++)
+                PopupMenuItem<int>(
+                  value: index,
+                  child: Text(
+                    '${_formatInteger(index + 1)}. '
+                    '${_branchDisplayName(points[index])}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+            icon: const Icon(Icons.list_alt_outlined),
           ),
           SizedBox(width: tokens.gapXs),
         ],
-        Tooltip(
-          message: 'Filial anterior',
-          child: IconButton(
-            key: const ValueKey<String>(
-              'brazil-store-sales-branch-card-previous',
-            ),
-            onPressed: onPrevious,
-            icon: const Icon(Icons.chevron_left_rounded),
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+        _WindowsSafeOverlayIconButton(
+          key: const ValueKey<String>(
+            'brazil-store-sales-branch-card-previous',
           ),
+          icon: Icons.chevron_left_rounded,
+          dimension: 34,
+          onPressed: onPrevious,
+          tooltipMessage: 'Filial anterior',
         ),
         Expanded(
           child: Text(
@@ -3064,16 +3116,12 @@ class _BranchCarouselNavigation extends StatelessWidget {
           ),
         ),
         SizedBox(width: tokens.gapXs),
-        Tooltip(
-          message: 'Proxima filial',
-          child: IconButton(
-            key: const ValueKey<String>('brazil-store-sales-branch-card-next'),
-            onPressed: onNext,
-            icon: const Icon(Icons.chevron_right_rounded),
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 34, height: 34),
-          ),
+        _WindowsSafeOverlayIconButton(
+          key: const ValueKey<String>('brazil-store-sales-branch-card-next'),
+          icon: Icons.chevron_right_rounded,
+          dimension: 34,
+          onPressed: onNext,
+          tooltipMessage: 'Proxima filial',
         ),
       ],
     );

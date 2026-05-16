@@ -783,7 +783,6 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       showStoreDetail: detailLevel != SalesLiveMapMapDetail.states,
       showRegionFilter: false,
       enableProximityCluster: detailLevel == SalesLiveMapMapDetail.branches,
-      stateLabelMode: AppBrazilStoreSalesStateLabelMode.stateName,
     );
   }
 
@@ -841,7 +840,6 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
             style: const AppBrazilStoreSalesMapStyle(
               showStoreDetail: false,
               showRegionFilter: false,
-              stateLabelMode: AppBrazilStoreSalesStateLabelMode.stateName,
             ),
           ),
         ],
