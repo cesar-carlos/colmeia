@@ -1221,6 +1221,7 @@
   "salesLiveMapSelectAllTokenBacked": "Select all",
   "salesLiveMapClearSelection": "Clear all",
   "salesLiveMapClearBranchSelectionAction": "Clear branch selection",
+  "salesLiveMapClearMapFocusAction": "Clear map highlight",
   "salesLiveMapClearSavedFiltersAction": "Clear saved filters",
   "salesLiveMapMissingLocalToken": "No local token",
   "salesLiveMapCustomPeriodLabel": "Custom period",

@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_across_agents_repository.dart';
@@ -16,6 +17,7 @@ class LoadCadastroFilialAcrossAgentsUseCase {
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) {
     return _repository.loadPage(
       userId: userId,
@@ -24,6 +26,7 @@ class LoadCadastroFilialAcrossAgentsUseCase {
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      preResolvedResolution: preResolvedResolution,
     );
   }
 
@@ -34,6 +37,7 @@ class LoadCadastroFilialAcrossAgentsUseCase {
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) {
     return _repository.loadAll(
       userId: userId,
@@ -42,6 +46,7 @@ class LoadCadastroFilialAcrossAgentsUseCase {
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      preResolvedResolution: preResolvedResolution,
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_ta
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
@@ -33,8 +34,13 @@ void registerInjectorSales(GetIt getIt) {
         getIt<LoadResumoTotalDiarioVendasUseCase>(),
       ),
     )
+    ..registerLazySingleton<SalesLiveMapCatalogDiskCache>(
+      () => SalesLiveMapCatalogDiskCache(getIt<SharedPreferences>()),
+    )
     ..registerFactory<LoadSalesLiveMapUseCase>(
       () => LoadSalesLiveMapUseCase(
+        getIt<AgentQueryTargetResolver>(),
+        getIt<SalesLiveMapCatalogDiskCache>(),
         getIt<LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase>(),
         getIt<LoadCadastroFilialAcrossAgentsUseCase>(),
         AppBrazilStoreSalesPointResolver(

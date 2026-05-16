@@ -11,6 +11,7 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
@@ -51,6 +52,14 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   bool _loading = true;
   int _loadGeneration = 0;
   SalesLiveMapLoadCancelToken? _activeLoadCancelToken;
+  Set<String> _ephemeralMapFocusedBranchIds = <String>{};
+
+  Set<String> get _fixedBranchIdsForChart => <String>{
+    ...?_filter.selectedBranchIds,
+    ..._ephemeralMapFocusedBranchIds,
+  };
+
+  bool get _hasEphemeralMapFocus => _ephemeralMapFocusedBranchIds.isNotEmpty;
 
   @override
   void initState() {
@@ -286,8 +295,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                       Widget chart = AppBrazilStoreSalesMapChart(
                         points: pointsSnapshot,
                         initialMetric: initialMetricSnapshot,
-                        fixedBranchIds:
-                            _filter.selectedBranchIds ?? const <String>{},
+                        fixedBranchIds: _fixedBranchIdsForChart,
                         style: styleSnapshot,
                         onMetricChanged: _onMapMetricChanged,
                         onBranchFilter: _filterByMapBranch,
@@ -348,6 +356,8 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
 
   void _onFilterChanged(SalesLiveMapFilter filter) {
     final normalizedFilter = _normalizeFilterForSelectedBranches(filter);
+    final previousData = _filter.dataFilter;
+    final nextData = normalizedFilter.dataFilter;
     setState(() {
       _filter = normalizedFilter;
     });
@@ -355,7 +365,9 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     if (!canScheduleSalesAutoRefresh) {
       disableSalesAutoRefresh();
     }
-    unawaited(_reload(force: true));
+    if (previousData != nextData) {
+      unawaited(_reload(force: true));
+    }
   }
 
   void _clearSelectedBranches() {
@@ -365,14 +377,22 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     );
     setState(() {
       _filter = next;
+      _ephemeralMapFocusedBranchIds = <String>{};
     });
     unawaited(_reload(force: true));
+  }
+
+  void _clearEphemeralMapFocus() {
+    setState(() {
+      _ephemeralMapFocusedBranchIds = <String>{};
+    });
   }
 
   void _clearSavedFilters() {
     const next = SalesLiveMapFilter();
     setState(() {
       _filter = next;
+      _ephemeralMapFocusedBranchIds = <String>{};
     });
     unawaited(_prefs.persistSalesLiveMapFilter(next));
     if (!canScheduleSalesAutoRefresh) {
@@ -382,22 +402,16 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   }
 
   void _filterByMapBranch(AppBrazilStoreSalesPointTapEvent event) {
-    final selected = _filter.selectedBranchIds;
-    if (selected != null && selected.contains(event.point.id)) {
-      _clearSelectedBranches();
+    final id = event.point.id;
+    if (_ephemeralMapFocusedBranchIds.contains(id)) {
+      setState(() {
+        _ephemeralMapFocusedBranchIds = <String>{};
+      });
       return;
     }
-
-    final next = _normalizeFilterForSelectedBranches(
-      _filter.copyWith(
-        selectedBranchIds: <String>{event.point.id},
-        detailLevel: SalesLiveMapMapDetail.branches,
-      ),
-    );
     setState(() {
-      _filter = next;
+      _ephemeralMapFocusedBranchIds = <String>{id};
     });
-    unawaited(_reload(force: true));
   }
 
   SalesLiveMapFilter _normalizeFilterForSelectedBranches(
@@ -475,6 +489,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
             enabled: !_loading,
           ),
           if (_hasSelectedBranchFilter ||
+              _hasEphemeralMapFocus ||
               _hasNonBranchNonDefaultFilter) ...<Widget>[
             SizedBox(height: tokens.gapSm),
             Align(
@@ -488,6 +503,12 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
                       onPressed: _loading ? null : _clearSelectedBranches,
                       icon: const Icon(Icons.storefront_outlined),
                       label: Text(l10n.salesLiveMapClearBranchSelectionAction),
+                    ),
+                  if (_hasEphemeralMapFocus)
+                    OutlinedButton.icon(
+                      onPressed: _loading ? null : _clearEphemeralMapFocus,
+                      icon: const Icon(Icons.center_focus_strong_outlined),
+                      label: Text(l10n.salesLiveMapClearMapFocusAction),
                     ),
                   if (_hasNonBranchNonDefaultFilter)
                     OutlinedButton.icon(
@@ -551,7 +572,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
               subtitle: _mapSubtitle(result),
               points: result?.points ?? const <AppBrazilStoreSalesPoint>[],
               initialMetric: _filter.metric,
-              fixedBranchIds: _filter.selectedBranchIds ?? const <String>{},
+              fixedBranchIds: _fixedBranchIdsForChart,
               style: _mapStyle(
                 detailLevel: _effectiveDetailLevel(result),
                 markerVisual: _filter.markerVisual,
@@ -760,8 +781,9 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       maxClusterTooltipStores:
           detailLevel == SalesLiveMapMapDetail.municipalities ? 8 : 5,
       showStoreDetail: detailLevel != SalesLiveMapMapDetail.states,
+      showRegionFilter: false,
       enableProximityCluster: detailLevel == SalesLiveMapMapDetail.branches,
-      stateLabelMode: AppBrazilStoreSalesStateLabelMode.responsive,
+      stateLabelMode: AppBrazilStoreSalesStateLabelMode.stateName,
     );
   }
 
@@ -818,6 +840,8 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
             points: const <AppBrazilStoreSalesPoint>[],
             style: const AppBrazilStoreSalesMapStyle(
               showStoreDetail: false,
+              showRegionFilter: false,
+              stateLabelMode: AppBrazilStoreSalesStateLabelMode.stateName,
             ),
           ),
         ],

@@ -24,6 +24,7 @@ void main() {
         home: const AppChartFullscreenScaffold(
           title: 'Chart',
           child: SizedBox.expand(
+            key: ValueKey<String>('fullscreen-child'),
             child: ColoredBox(color: Color(0xFFE0E0E0)),
           ),
         ),
@@ -33,6 +34,12 @@ void main() {
     final scaffoldFinder = find.byType(Scaffold);
     expect(tester.getTopLeft(scaffoldFinder).dx, 0);
     expect(tester.getSize(scaffoldFinder).width, 390);
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey<String>('fullscreen-child')))
+          .width,
+      greaterThan(370),
+    );
   });
 
   testWidgets('Escape closes fullscreen scaffold when a route is on top', (
@@ -54,11 +61,11 @@ void main() {
                         MaterialPageRoute<void>(
                           builder: (context) =>
                               const AppChartFullscreenScaffold(
-                            title: 'Chart',
-                            child: SizedBox.expand(
-                              child: ColoredBox(color: Color(0xFFE0E0E0)),
-                            ),
-                          ),
+                                title: 'Chart',
+                                child: SizedBox.expand(
+                                  child: ColoredBox(color: Color(0xFFE0E0E0)),
+                                ),
+                              ),
                         ),
                       ),
                     );

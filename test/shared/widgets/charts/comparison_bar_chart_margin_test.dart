@@ -69,6 +69,47 @@ void main() {
   );
 
   testWidgets(
+    'resolveComparisonBarChartMargin adds pill allowance for pill-shaped annotation labels',
+    (tester) async {
+      late EdgeInsets annotationOnly;
+      late EdgeInsets annotationPill;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Builder(
+            builder: (context) {
+              annotationOnly = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: null,
+                valueLabelsRenderedAsChartAnnotations: true,
+              );
+              annotationPill = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: null,
+                valueLabelsRenderedAsChartAnnotations: true,
+                dataLabelAnnotationUsesPillBackground: true,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(
+        annotationPill.top,
+        equals(
+          annotationOnly.top + kComparisonBarAnnotationPillExtraTopAllowance,
+        ),
+      );
+    },
+  );
+
+  testWidgets(
     'resolveComparisonBarChartMargin adds outerDataLabelTopReserve after headroom',
     (tester) async {
       late EdgeInsets withoutReserve;
@@ -99,6 +140,36 @@ void main() {
         ),
       );
       expect(withReserve.top, equals(withoutReserve.top + 12));
+    },
+  );
+
+  testWidgets(
+    'resolveComparisonBarChartMargin can skip outer label top margin',
+    (tester) async {
+      late EdgeInsets margin;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Builder(
+            builder: (context) {
+              margin = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: const EdgeInsets.only(top: 4, bottom: 8),
+                reserveOuterDataLabelTopMargin: false,
+                valueLabelsRenderedAsChartAnnotations: true,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(margin.top, 4);
+      expect(margin.bottom, 8);
+      expect(margin.left, greaterThan(0));
+      expect(margin.right, greaterThan(0));
     },
   );
 

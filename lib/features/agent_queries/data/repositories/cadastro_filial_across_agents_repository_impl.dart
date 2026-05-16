@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/agent_query_lis
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
@@ -43,6 +44,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedMapped<
       CadastroFilialAcrossAgentsPageResult,
@@ -58,6 +60,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      preResolvedResolution: preResolvedResolution,
       loadRowsForTarget:
           ({
             required target,
@@ -98,6 +101,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedMapped<
       CadastroFilialAcrossAgentsPageResult,
@@ -113,6 +117,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      preResolvedResolution: preResolvedResolution,
       loadRowsForTarget:
           ({
             required target,
@@ -172,6 +177,10 @@ class CadastroFilialAcrossAgentsRepositoryImpl
 
       totalCount ??= loaded.totalCount;
       rows.addAll(loaded.items);
+
+      if (loaded.items.isEmpty) {
+        break;
+      }
 
       if (rows.length >= loaded.totalCount ||
           loaded.items.length < CadastroFilialFilter.maxPageSize) {

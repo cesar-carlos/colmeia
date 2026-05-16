@@ -204,6 +204,49 @@ void main() {
     }
   });
 
+  testWidgets('keeps a map centering button available over the map', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    final viewports = <AppMapViewport>[];
+    try {
+      await tester.pumpWidget(
+        _TestApp(
+          child: _TestRegionMap(
+            preset: AppChartPreset.explorable,
+            preferredViewport: const AppMapViewport(
+              zoomLevel: 1,
+              centerLatitude: -23,
+              centerLongitude: -47,
+            ),
+            style: const AppRegionMapChartStyle(
+              height: 240,
+              maxZoomLevel: 2,
+            ),
+            onViewportChanged: (event) => viewports.add(event.viewport),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.my_location_rounded), findsOneWidget);
+
+      await _sendPointerScrollOver(tester, find.byType(SfMaps), -120);
+      await tester.pump();
+      await tester.pump();
+
+      expect(viewports, isNotEmpty);
+      expect(find.byIcon(Icons.my_location_rounded), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.my_location_rounded));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.my_location_rounded), findsOneWidget);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
   testWidgets('mouse wheel outside the map does not zoom the map', (
     tester,
   ) async {
@@ -239,6 +282,31 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     }
   });
+
+  testWidgets('does not install mouse wheel listener on mobile', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    try {
+      await tester.pumpWidget(
+        const _TestApp(
+          child: _TestRegionMap(
+            preset: AppChartPreset.explorable,
+          ),
+        ),
+      );
+
+      expect(find.byType(SfMaps), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Listener && widget.onPointerSignal != null,
+        ),
+        findsNothing,
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
 }
 
 class _TestRegionMap extends StatelessWidget {
@@ -246,12 +314,14 @@ class _TestRegionMap extends StatelessWidget {
     this.style = const AppRegionMapChartStyle(height: 240),
     this.points = const <AppMapPoint>[],
     this.preset = AppChartPreset.standard,
+    this.preferredViewport,
     this.onViewportChanged,
   });
 
   final AppRegionMapChartStyle style;
   final List<AppMapPoint> points;
   final AppChartPreset preset;
+  final AppMapViewport? preferredViewport;
   final ValueChanged<AppMapViewportChangedEvent>? onViewportChanged;
 
   @override
@@ -271,6 +341,7 @@ class _TestRegionMap extends StatelessWidget {
       regionKeyBuilder: (item) => item,
       regionLabelBuilder: (item) => item,
       currentDrillLevel: AppMapDrillLevel.state,
+      preferredViewport: preferredViewport,
       style: style,
       preset: preset,
       points: points,

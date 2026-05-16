@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/agent_query_lis
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_periodo_across_agents_repository.dart';
@@ -46,6 +47,7 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedRows<
       ResumoTotalVendasMunicipioFilialPeriodoFilter,
@@ -63,6 +65,7 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      preResolvedResolution: preResolvedResolution,
     );
   }
 }

@@ -2570,6 +2570,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Limpar selecao de filiais';
 
   @override
+  String get salesLiveMapClearMapFocusAction => 'Limpar destaque no mapa';
+
+  @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';
 
   @override

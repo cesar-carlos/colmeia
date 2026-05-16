@@ -5,7 +5,9 @@ import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/maps/app_brazil_municipality_asset_geocoder.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
@@ -42,6 +44,8 @@ void main() {
           ],
         );
         final useCase = LoadSalesLiveMapUseCase(
+          getIt<AgentQueryTargetResolver>(),
+          getIt<SalesLiveMapCatalogDiskCache>(),
           getIt<
             LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
           >(),

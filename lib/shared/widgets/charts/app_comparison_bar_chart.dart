@@ -26,10 +26,11 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 ///
 /// **Vertical space:** [height] is the outer box for the Syncfusion chart.
 /// With [showDataLabels] and outer label alignment, the engine applies extra
-/// top margin (see comparison bar chart margin helper) and numeric axis
-/// [ChartRangePadding.additionalEnd] so labels are not clipped at the plot top —
-/// tightening [height] without adjusting labels can make bars shorter; prefer
-/// tuning [chartPadding] or label alignment per screen if needed.
+/// top margin by default (see comparison bar chart margin helper) and numeric
+/// axis [ChartRangePadding.additionalEnd] so labels are not clipped at the plot
+/// top — tightening [height] without adjusting labels can make bars shorter;
+/// prefer tuning [chartPadding], [reserveOuterDataLabelTopMargin], or label
+/// alignment per screen if needed.
 ///
 /// All other properties are optional; omitted values fall back to the
 /// preset-driven defaults from the chart theme helper.
@@ -84,6 +85,7 @@ class AppComparisonBarChartStyle {
     this.categoryAutoScrollingMode = AutoScrollingMode.start,
     this.categoryViewportFootnote,
     this.categoryViewportPanSemanticsLabel,
+    this.reserveOuterDataLabelTopMargin = true,
     this.outerDataLabelTopReserve = 0,
     this.dataLabelBackgroundColor,
     this.enableTapHighlight = false,
@@ -146,6 +148,13 @@ class AppComparisonBarChartStyle {
   /// headroom calculation. Use when labels (e.g. compact currency) still clip
   /// at the top of the plot at default [TextScaler] values.
   final double outerDataLabelTopReserve;
+
+  /// Whether the engine should add top chart margin for outer data labels.
+  ///
+  /// Keep this enabled for the generic case. Set it to false only when the
+  /// chart already reserves plot headroom through its axis range padding and
+  /// the extra margin would create a large empty band above the bars.
+  final bool reserveOuterDataLabelTopMargin;
 
   /// Optional fill behind each data label (e.g. chart/card surface) so grid
   /// lines do not run through compact currency text on tall columns.

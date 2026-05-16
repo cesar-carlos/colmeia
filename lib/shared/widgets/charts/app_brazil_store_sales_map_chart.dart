@@ -78,11 +78,16 @@ class _AppBrazilStoreSalesMapChartState
   late double _currentZoomLevel;
   AppBrazilStoreSalesMapDiagnostics? _lastEmittedDiagnostics;
   _BrazilStoreSalesMapSnapshot? _snapshot;
+  Timer? _viewportClusterDebounceTimer;
+  double? _pendingViewportClusterZoomLevel;
 
   /// Small shrink of the map tile when height is bounded: real layout (labels,
   /// chips, legend padding) can exceed our header/footer estimates by a few
   /// logical pixels and cause a [Column] overflow.
   static const double _boundedMapTileLayoutSafetyPx = 6;
+  static const Duration _touchViewportClusterDebounceDuration = Duration(
+    milliseconds: 180,
+  );
 
   @override
   void initState() {
@@ -101,8 +106,7 @@ class _AppBrazilStoreSalesMapChartState
       _snapshot = null;
     }
 
-    if (!identical(oldWidget.points, widget.points) ||
-        oldWidget.selectedStoreId != widget.selectedStoreId ||
+    if (oldWidget.selectedStoreId != widget.selectedStoreId ||
         oldWidget.style != widget.style) {
       if (oldWidget.selectedStoreId != widget.selectedStoreId &&
           widget.selectedStoreId != null) {
@@ -111,6 +115,12 @@ class _AppBrazilStoreSalesMapChartState
       }
       _snapshot = null;
     }
+  }
+
+  @override
+  void dispose() {
+    _viewportClusterDebounceTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -131,11 +141,21 @@ class _AppBrazilStoreSalesMapChartState
         final usesCompactMapChrome = constraints.hasBoundedHeight;
         final usesCompactStateLabels =
             usesCompactMapChrome && constraints.maxWidth < 900;
+        final stateDataLabelTextStyle = _stateDataLabelTextStyle(
+          context,
+          compact: usesCompactStateLabels,
+          maxWidth: constraints.maxWidth,
+        );
+        final useCompactMarkerLegend = _shouldUseCompactMarkerLegend(
+          usesCompactMapChrome: usesCompactMapChrome,
+          maxWidth: constraints.maxWidth,
+        );
         final mapTileHeight = _resolvedMapTileHeight(
           context: context,
           constraints: constraints,
           style: widget.style,
           snapshot: snapshot,
+          usesCompactMapChrome: usesCompactMapChrome,
         );
         final content = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -190,12 +210,7 @@ class _AppBrazilStoreSalesMapChartState
                 lowValueColor: widget.style.lowValueColor ?? _lowColor(context),
                 highValueColor:
                     widget.style.highValueColor ?? _highColor(context),
-                dataLabelTextStyle: Theme.of(context).textTheme.labelSmall
-                    ?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
-                      fontSize: usesCompactMapChrome ? 10 : null,
-                    ),
+                dataLabelTextStyle: stateDataLabelTextStyle,
                 metricSelectorPadding: usesCompactMapChrome
                     ? EdgeInsets.zero
                     : null,
@@ -210,7 +225,21 @@ class _AppBrazilStoreSalesMapChartState
             if (widget.style.showDataQualityNotice &&
                 snapshot.diagnostics.hasDiscardedPoints)
               _MapDataQualityNotice(diagnostics: snapshot.diagnostics),
-            if (widget.style.showMarkerScaleLegend && snapshot.hasMarkers)
+            if (widget.style.showMarkerScaleLegend &&
+                snapshot.hasMarkers &&
+                useCompactMarkerLegend)
+              _MarkerScaleLegendMenuButton(
+                sizeLegendLabel: l10n.brazilStoreSalesMapMarkerSizeLegend,
+                metric: _selectedMetric,
+                minValue: snapshot.minMarkerValue,
+                maxValue: snapshot.maxMarkerValue,
+                minSize: widget.style.markerMinSize,
+                maxSize: widget.style.markerMaxSize,
+                color: _markerColor(context),
+                strokeColor: _markerStrokeColor(context),
+                visual: widget.style.markerVisual,
+              )
+            else if (widget.style.showMarkerScaleLegend && snapshot.hasMarkers)
               _MarkerScaleLegend(
                 sizeLegendLabel: l10n.brazilStoreSalesMapMarkerSizeLegend,
                 metric: _selectedMetric,
@@ -281,6 +310,7 @@ class _AppBrazilStoreSalesMapChartState
     required BoxConstraints constraints,
     required AppBrazilStoreSalesMapStyle style,
     required _BrazilStoreSalesMapSnapshot snapshot,
+    required bool usesCompactMapChrome,
   }) {
     final requested = style.height;
     final maxParent = constraints.maxHeight;
@@ -295,6 +325,8 @@ class _AppBrazilStoreSalesMapChartState
       style,
       snapshot,
       tokens,
+      constraints.maxWidth,
+      usesCompactMapChrome,
     );
     final spare = maxParent - headerReserve - footerReserve;
     if (!spare.isFinite) {
@@ -330,6 +362,8 @@ class _AppBrazilStoreSalesMapChartState
     AppBrazilStoreSalesMapStyle style,
     _BrazilStoreSalesMapSnapshot snapshot,
     AppThemeTokens tokens,
+    double maxWidth,
+    bool usesCompactMapChrome,
   ) {
     final scaler = MediaQuery.textScalerOf(context);
     var reserve = 0.0;
@@ -338,7 +372,11 @@ class _AppBrazilStoreSalesMapChartState
       reserve += tokens.gapSm + scaler.scale(56);
     }
     if (style.showMarkerScaleLegend && snapshot.hasMarkers) {
-      reserve += tokens.gapMd + scaler.scale(36);
+      final compactLegend = _shouldUseCompactMarkerLegend(
+        usesCompactMapChrome: usesCompactMapChrome,
+        maxWidth: maxWidth,
+      );
+      reserve += tokens.gapMd + scaler.scale(compactLegend ? 46 : 40);
     }
     final selectedMarkerGroup = snapshot.selectedMarkerGroup;
     final selectedPoint = snapshot.selectedPoint;
@@ -356,6 +394,13 @@ class _AppBrazilStoreSalesMapChartState
       reserve += tokens.gapMd + scaler.scale(96);
     }
     return reserve;
+  }
+
+  bool _shouldUseCompactMarkerLegend({
+    required bool usesCompactMapChrome,
+    required double maxWidth,
+  }) {
+    return usesCompactMapChrome || (maxWidth.isFinite && maxWidth < 420);
   }
 
   NumberFormat? get _legendFormat {
@@ -426,11 +471,13 @@ class _AppBrazilStoreSalesMapChartState
     AppBrazilStoreSalesStateBucket bucket, {
     bool compact = false,
   }) {
-    if (compact) {
+    final requestedLabelMode = widget.style.stateLabelMode;
+    if (compact &&
+        requestedLabelMode != AppBrazilStoreSalesStateLabelMode.stateName) {
       return bucket.uf;
     }
 
-    final labelMode = switch (widget.style.stateLabelMode) {
+    final labelMode = switch (requestedLabelMode) {
       AppBrazilStoreSalesStateLabelMode.responsive =>
         AppBreakpoints.isDesktop(context)
             ? AppBrazilStoreSalesStateLabelMode.stateName
@@ -440,20 +487,98 @@ class _AppBrazilStoreSalesMapChartState
 
     return switch (labelMode) {
       AppBrazilStoreSalesStateLabelMode.uf => bucket.uf,
-      AppBrazilStoreSalesStateLabelMode.stateName => bucket.stateName,
+      AppBrazilStoreSalesStateLabelMode.stateName =>
+        compact ? _compactStateNameLabel(bucket) : bucket.stateName,
       AppBrazilStoreSalesStateLabelMode.responsive => bucket.uf,
     };
   }
 
+  TextStyle? _stateDataLabelTextStyle(
+    BuildContext context, {
+    required bool compact,
+    required double maxWidth,
+  }) {
+    final theme = Theme.of(context);
+    final base = theme.textTheme.labelSmall;
+    final requestedLabelMode = widget.style.stateLabelMode;
+    final usesStateNames =
+        requestedLabelMode == AppBrazilStoreSalesStateLabelMode.stateName ||
+        (requestedLabelMode == AppBrazilStoreSalesStateLabelMode.responsive &&
+            AppBreakpoints.isDesktop(context));
+    final compactStateNames = compact && usesStateNames;
+    final fontSize = compactStateNames
+        ? _compactStateLabelFontSize(maxWidth)
+        : (compact ? 10.0 : null);
+
+    return base?.copyWith(
+      color: theme.colorScheme.onSurface.withValues(
+        alpha: compactStateNames ? 0.88 : 1,
+      ),
+      fontWeight: compactStateNames ? FontWeight.w800 : FontWeight.w700,
+      fontSize: fontSize,
+      height: compactStateNames ? 1.04 : null,
+    );
+  }
+
+  double _compactStateLabelFontSize(double maxWidth) {
+    if (!maxWidth.isFinite) {
+      return 9;
+    }
+    if (maxWidth < 380) {
+      return 7;
+    }
+    if (maxWidth < 600) {
+      return 8;
+    }
+    return 9;
+  }
+
+  String _compactStateNameLabel(AppBrazilStoreSalesStateBucket bucket) {
+    return switch (bucket.uf) {
+      'DF' => 'Distrito\nFederal',
+      'ES' => 'Espirito\nSanto',
+      'MS' => 'Mato Grosso\ndo Sul',
+      'MT' => 'Mato\nGrosso',
+      'MG' => 'Minas\nGerais',
+      'RJ' => 'Rio de\nJaneiro',
+      'RN' => 'Rio Grande\ndo Norte',
+      'RS' => 'Rio Grande\ndo Sul',
+      'SC' => 'Santa\nCatarina',
+      'SP' => 'Sao\nPaulo',
+      final _ => bucket.stateName,
+    };
+  }
+
+  String _computeSnapshotReuseKey({required String? selectedStoreId}) {
+    final w = widget;
+    final style = w.style;
+    final parts = <String>[
+      'fx=${w.fixedBranchIds.join(",")}',
+      style.markerAggregation.name,
+      style.markerVisual.name,
+      style.enableProximityCluster.toString(),
+      style.collapseSameCoordinateMarkers.toString(),
+      '${style.clusterCoordinatePrecision}',
+      '${style.proximityClusterDistanceDegrees}',
+      style.includeEmptyStates.toString(),
+      style.showTooltip.toString(),
+      '${style.markerMinSize}|${style.markerMaxSize}|${style.height}',
+      'm=${_selectedMetric.name}',
+      'ss=$selectedStoreId',
+      'rs=$_internalSelectedStateKey',
+      'ak=$_activeRegionKey',
+      'z=$_currentZoomLevel',
+      for (final p in w.points)
+        '${p.id}|${p.salesAmount}|${p.salesCount}|${p.salesDataLoading}|${p.salesDataUnavailable}|${p.latitude}|${p.longitude}|${p.uf}|${p.city ?? ""}|${p.municipalityCode ?? ""}',
+    ];
+    return parts.join(';');
+  }
+
   _BrazilStoreSalesMapSnapshot _resolveSnapshot(BuildContext context) {
     final selectedStoreId = _selectedStoreId;
+    final reuseKey = _computeSnapshotReuseKey(selectedStoreId: selectedStoreId);
     final snapshot = _snapshot;
-    if (snapshot != null &&
-        snapshot.metric == _selectedMetric &&
-        snapshot.selectedStoreId == selectedStoreId &&
-        snapshot.requestedStateKey == _internalSelectedStateKey &&
-        snapshot.activeRegionKey == _activeRegionKey &&
-        snapshot.zoomLevel == _currentZoomLevel) {
+    if (snapshot != null && snapshot.cachedReuseKey == reuseKey) {
       return snapshot;
     }
 
@@ -466,6 +591,7 @@ class _AppBrazilStoreSalesMapChartState
       activeRegionKey: _activeRegionKey,
       zoomLevel: _currentZoomLevel,
       style: widget.style,
+      cachedReuseKey: reuseKey,
     );
     _snapshot = nextSnapshot;
     return nextSnapshot;
@@ -742,7 +868,43 @@ class _AppBrazilStoreSalesMapChartState
     }
 
     final nextZoomLevel = event.viewport.zoomLevel;
-    if ((nextZoomLevel - _currentZoomLevel).abs() < 0.25) {
+    if (_shouldDebounceTouchViewportClustering) {
+      _pendingViewportClusterZoomLevel = nextZoomLevel;
+      _viewportClusterDebounceTimer?.cancel();
+      _viewportClusterDebounceTimer = Timer(
+        _touchViewportClusterDebounceDuration,
+        () {
+          final pendingZoomLevel = _pendingViewportClusterZoomLevel;
+          _pendingViewportClusterZoomLevel = null;
+          if (pendingZoomLevel == null) {
+            return;
+          }
+          _applyViewportClusterZoomLevel(pendingZoomLevel);
+        },
+      );
+      return;
+    }
+
+    _applyViewportClusterZoomLevel(nextZoomLevel);
+  }
+
+  bool get _shouldDebounceTouchViewportClustering {
+    if (!widget.style.enableZoomPan) {
+      return false;
+    }
+
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android ||
+      TargetPlatform.fuchsia ||
+      TargetPlatform.iOS => true,
+      TargetPlatform.linux ||
+      TargetPlatform.macOS ||
+      TargetPlatform.windows => false,
+    };
+  }
+
+  void _applyViewportClusterZoomLevel(double nextZoomLevel) {
+    if (!mounted || (nextZoomLevel - _currentZoomLevel).abs() < 0.25) {
       return;
     }
 
@@ -750,6 +912,17 @@ class _AppBrazilStoreSalesMapChartState
       _currentZoomLevel = nextZoomLevel;
       _snapshot = null;
     });
+    if (kDebugMode) {
+      AppLogger.info(
+        'Brazil store sales map viewport changed',
+        context: <String, Object?>{
+          'operation': 'AppBrazilStoreSalesMapChart',
+          'zoomLevel': nextZoomLevel,
+          'pointCount': widget.points.length,
+          'activeRegionKey': _activeRegionKey,
+        },
+      );
+    }
   }
 
   void _emitDiagnosticsIfNeeded(
@@ -889,7 +1062,8 @@ class _AppBrazilStoreSalesMapChartState
     final revenue = AppBrFormatters.currency(bucket.salesAmount);
     final salesCount = _formatInteger(bucket.salesCount);
     final stores = _formatInteger(bucket.storeCount);
-    return '$revenue | $salesCount vendas | $stores lojas';
+    return '${bucket.stateName} (${bucket.uf}) | '
+        '$revenue | $salesCount vendas | $stores lojas';
   }
 
   Color _markerColor(BuildContext context) {
@@ -914,16 +1088,22 @@ class _AppBrazilStoreSalesMapChartState
       return 'Loja no mapa';
     }
 
+    final salesStatus = group.points.any((point) => point.salesDataLoading)
+        ? ', vendas carregando'
+        : group.points.any((point) => point.salesDataUnavailable)
+        ? ', vendas indisponiveis'
+        : '';
+
     if (group.isCluster) {
       return '${group.points.length} lojas em ${group.cityLabel}, '
           '${AppBrFormatters.currency(group.salesAmount)}, '
-          '${_formatInteger(group.salesCount)} vendas';
+          '${_formatInteger(group.salesCount)} vendas$salesStatus';
     }
 
     final point = group.primaryPoint;
     return '${point.name}, ${group.cityLabel}, '
         '${AppBrFormatters.currency(point.salesAmount)}, '
-        '${_formatInteger(point.salesCount)} vendas';
+        '${_formatInteger(point.salesCount)} vendas$salesStatus';
   }
 
   String _stateBubbleSemanticLabel(AppBrazilStoreSalesStateBucket bucket) {
@@ -950,6 +1130,7 @@ class _BrazilStoreSalesMapSnapshot {
     required this.maxMarkerValue,
     required this.diagnostics,
     required this.zoomLevel,
+    required this.cachedReuseKey,
   });
 
   factory _BrazilStoreSalesMapSnapshot.build({
@@ -961,6 +1142,7 @@ class _BrazilStoreSalesMapSnapshot {
     required String? activeRegionKey,
     required double zoomLevel,
     required AppBrazilStoreSalesMapStyle style,
+    required String cachedReuseKey,
   }) {
     final stopwatch = kDebugMode || kProfileMode
         ? (Stopwatch()..start())
@@ -999,6 +1181,8 @@ class _BrazilStoreSalesMapSnapshot {
     final colorScheme = Theme.of(context).colorScheme;
     final markerColor = style.markerColor ?? context.appColors.tertiary;
     final markerStrokeColor = style.markerStrokeColor ?? colorScheme.surface;
+    final pendingMarkerColor = context.appColors.secondary;
+    final unavailableMarkerColor = colorScheme.onSurfaceVariant;
     final selectedMarkerColor =
         style.selectedMarkerColor ?? context.appColors.secondary;
     final selectedMarkerStrokeColor =
@@ -1091,6 +1275,24 @@ class _BrazilStoreSalesMapSnapshot {
         isCluster: group.isCluster,
         visual: style.markerVisual,
       );
+      final hasLoadingSales = group.points.any(
+        (point) => point.salesDataLoading,
+      );
+      final hasUnavailableSales =
+          !hasLoadingSales &&
+          group.points.any((point) => point.salesDataUnavailable);
+      final effectiveMarkerColor = selected
+          ? selectedMarkerColor
+          : hasLoadingSales
+          ? pendingMarkerColor
+          : hasUnavailableSales
+          ? unavailableMarkerColor
+          : markerColor;
+      final effectiveStrokeColor = selected
+          ? selectedMarkerStrokeColor
+          : hasLoadingSales
+          ? colorScheme.surface
+          : markerStrokeColor;
       mapPoints.add(
         AppMapPoint(
           latitude: group.latitude,
@@ -1098,11 +1300,9 @@ class _BrazilStoreSalesMapSnapshot {
           payload: group,
           style: AppMapMarkerStyle(
             size: selected ? markerSize + 4 : markerSize,
-            color: selected ? selectedMarkerColor : markerColor,
-            strokeColor: selected
-                ? selectedMarkerStrokeColor
-                : markerStrokeColor,
-            strokeWidth: selected ? 2.4 : 1.5,
+            color: effectiveMarkerColor,
+            strokeColor: effectiveStrokeColor,
+            strokeWidth: selected || hasLoadingSales ? 2.4 : 1.5,
           ),
         ),
       );
@@ -1123,6 +1323,7 @@ class _BrazilStoreSalesMapSnapshot {
       maxMarkerValue: maxValue,
       diagnostics: diagnostics,
       zoomLevel: zoomLevel,
+      cachedReuseKey: cachedReuseKey,
     );
     if (stopwatch != null) {
       AppLogger.info(
@@ -1157,6 +1358,7 @@ class _BrazilStoreSalesMapSnapshot {
   final num minMarkerValue;
   final num maxMarkerValue;
   final AppBrazilStoreSalesMapDiagnostics diagnostics;
+  final String cachedReuseKey;
 
   bool get hasMarkers => mapPoints.isNotEmpty;
 
@@ -1268,6 +1470,134 @@ class _MarkerScaleLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.gapMd),
+      child: _MapAuxiliarySurface(
+        child: _MarkerScaleLegendContent(
+          sizeLegendLabel: sizeLegendLabel,
+          metric: metric,
+          minValue: minValue,
+          maxValue: maxValue,
+          minSize: minSize,
+          maxSize: maxSize,
+          color: color,
+          strokeColor: strokeColor,
+          visual: visual,
+        ),
+      ),
+    );
+  }
+}
+
+class _MarkerScaleLegendMenuButton extends StatelessWidget {
+  const _MarkerScaleLegendMenuButton({
+    required this.sizeLegendLabel,
+    required this.metric,
+    required this.minValue,
+    required this.maxValue,
+    required this.minSize,
+    required this.maxSize,
+    required this.color,
+    required this.strokeColor,
+    required this.visual,
+  });
+
+  final String sizeLegendLabel;
+  final AppBrazilStoreSalesMapMetric metric;
+  final num minValue;
+  final num maxValue;
+  final double minSize;
+  final double maxSize;
+  final Color color;
+  final Color strokeColor;
+  final AppBrazilStoreSalesMarkerVisual visual;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.gapMd),
+      child: _MapAuxiliarySurface(
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => _showLegendSheet(context),
+            icon: const Icon(Icons.info_outline_rounded, size: 18),
+            label: const Text('Legenda'),
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              foregroundColor: colorScheme.onSurfaceVariant,
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showLegendSheet(BuildContext context) {
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (context) {
+          final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.contentSpacing,
+              tokens.gapSm,
+              tokens.contentSpacing,
+              tokens.contentSpacing,
+            ),
+            child: _MarkerScaleLegendContent(
+              sizeLegendLabel: sizeLegendLabel,
+              metric: metric,
+              minValue: minValue,
+              maxValue: maxValue,
+              minSize: minSize,
+              maxSize: maxSize,
+              color: color,
+              strokeColor: strokeColor,
+              visual: visual,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MarkerScaleLegendContent extends StatelessWidget {
+  const _MarkerScaleLegendContent({
+    required this.sizeLegendLabel,
+    required this.metric,
+    required this.minValue,
+    required this.maxValue,
+    required this.minSize,
+    required this.maxSize,
+    required this.color,
+    required this.strokeColor,
+    required this.visual,
+  });
+
+  final String sizeLegendLabel;
+  final AppBrazilStoreSalesMapMetric metric;
+  final num minValue;
+  final num maxValue;
+  final double minSize;
+  final double maxSize;
+  final Color color;
+  final Color strokeColor;
+  final AppBrazilStoreSalesMarkerVisual visual;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     );
@@ -1275,38 +1605,37 @@ class _MarkerScaleLegend extends StatelessWidget {
         ? minValue
         : minValue + ((maxValue - minValue) / 2);
 
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.gapMd),
-      child: _MapAuxiliarySurface(
-        child: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: tokens.gapMd,
-          runSpacing: tokens.gapSm,
-          children: [
-            Text(sizeLegendLabel, style: textStyle),
-            _MarkerScaleLegendItem(
-              label: _formatMetricValue(metric, minValue),
-              size: minSize,
-              color: color,
-              strokeColor: strokeColor,
-              visual: visual,
-            ),
-            _MarkerScaleLegendItem(
-              label: _formatMetricValue(metric, middleValue),
-              size: minSize + ((maxSize - minSize) / 2),
-              color: color,
-              strokeColor: strokeColor,
-              visual: visual,
-            ),
-            _MarkerScaleLegendItem(
-              label: _formatMetricValue(metric, maxValue),
-              size: maxSize,
-              color: color,
-              strokeColor: strokeColor,
-              visual: visual,
-            ),
-          ],
-        ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(sizeLegendLabel, style: textStyle),
+          SizedBox(width: tokens.gapMd),
+          _MarkerScaleLegendItem(
+            label: _formatMetricValue(metric, minValue),
+            size: minSize,
+            color: color,
+            strokeColor: strokeColor,
+            visual: visual,
+          ),
+          SizedBox(width: tokens.gapMd),
+          _MarkerScaleLegendItem(
+            label: _formatMetricValue(metric, middleValue),
+            size: minSize + ((maxSize - minSize) / 2),
+            color: color,
+            strokeColor: strokeColor,
+            visual: visual,
+          ),
+          SizedBox(width: tokens.gapMd),
+          _MarkerScaleLegendItem(
+            label: _formatMetricValue(metric, maxValue),
+            size: maxSize,
+            color: color,
+            strokeColor: strokeColor,
+            visual: visual,
+          ),
+        ],
       ),
     );
   }

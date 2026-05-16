@@ -69,6 +69,10 @@ class AppChartFullscreenScaffold extends StatelessWidget {
     final hasFilterSummary =
         resolvedFilterSummary != null && resolvedFilterSummary.isNotEmpty;
     final hasHeader = hasTitle || hasSubtitle || hasFilterSummary;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final horizontalInset = screenWidth < 600
+        ? tokens.gapXs
+        : tokens.contentSpacing;
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
@@ -101,7 +105,12 @@ class AppChartFullscreenScaffold extends StatelessWidget {
           ),
           body: SafeArea(
             child: Padding(
-              padding: effectiveBodyPadding,
+              padding: EdgeInsets.fromLTRB(
+                horizontalInset + resolvedBodyPadding.left,
+                effectiveBodyPadding.top,
+                horizontalInset + resolvedBodyPadding.right,
+                effectiveBodyPadding.bottom,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[

@@ -40,6 +40,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) async {
     return executeMapped<AgentQueryExecutionReport<Row>, Row>(
       operation: operation,
@@ -52,6 +53,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      preResolvedResolution: preResolvedResolution,
       loadRowsForTarget:
           ({
             required target,
@@ -97,6 +99,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) async {
     return executeLoadedMapped<AgentQueryExecutionReport<Row>, Row>(
       operation: operation,
@@ -109,6 +112,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      preResolvedResolution: preResolvedResolution,
       loadRowsForTarget:
           ({
             required target,
@@ -155,6 +159,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       Output mapped,
     )?
     successContext,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) async {
     return executeLoadedMapped<Output, Row>(
       operation: operation,
@@ -167,6 +172,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      preResolvedResolution: preResolvedResolution,
       loadRowsForTarget:
           ({
             required target,
@@ -216,31 +222,38 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       Output mapped,
     )?
     successContext,
+    AgentQueryTargetResolution? preResolvedResolution,
   }) async {
-    final resolutionResult = await targetResolver.resolve(
-      userId: userId,
-      selectedAgentIds: selectedAgentIds,
-    );
-    final resolution = resolutionResult.getOrNull();
-    if (resolution == null) {
-      final failure = appFailureWithMergedContext(
-        resolutionResult.exceptionOrNull()!,
-        _resolutionContext(null),
+    late final AgentQueryTargetResolution resolution;
+    if (preResolvedResolution != null) {
+      resolution = preResolvedResolution;
+    } else {
+      final resolutionResult = await targetResolver.resolve(
+        userId: userId,
+        selectedAgentIds: selectedAgentIds,
       );
-      AppLogger.warning(
-        'Agent query target resolution failed',
-        context: <String, Object?>{
-          'operation': operation,
-          'userId': userId,
-          'queryKey': queryKey.name,
-          'strategy': strategy.name,
-          'selectedAgentCount': selectedAgentIds?.length ?? 0,
-          'failureType': failure.runtimeType.toString(),
-        },
-        error: failure,
-        stackTrace: failure.stackTrace,
-      );
-      return Failure<Output, AppFailure>(failure);
+      final resolved = resolutionResult.getOrNull();
+      if (resolved == null) {
+        final failure = appFailureWithMergedContext(
+          resolutionResult.exceptionOrNull()!,
+          _resolutionContext(null),
+        );
+        AppLogger.warning(
+          'Agent query target resolution failed',
+          context: <String, Object?>{
+            'operation': operation,
+            'userId': userId,
+            'queryKey': queryKey.name,
+            'strategy': strategy.name,
+            'selectedAgentCount': selectedAgentIds?.length ?? 0,
+            'failureType': failure.runtimeType.toString(),
+          },
+          error: failure,
+          stackTrace: failure.stackTrace,
+        );
+        return Failure<Output, AppFailure>(failure);
+      }
+      resolution = resolved;
     }
 
     final planResult = planBuilder.build(

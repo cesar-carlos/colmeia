@@ -1,19 +1,24 @@
+import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
@@ -53,6 +58,7 @@ class SalesLiveMapLoadResult {
     this.loadFailureReason,
     this.loadFailureMessage,
     this.cancelled = false,
+    this.partialGeoReuseCount = 0,
   });
 
   final List<AppBrazilStoreSalesPoint> points;
@@ -86,6 +92,7 @@ class SalesLiveMapLoadResult {
   final String? loadFailureMessage;
   final DateTime? refreshedAt;
   final bool cancelled;
+  final int partialGeoReuseCount;
 
   bool get hasPartialIssue =>
       failedAgentCount > 0 ||
@@ -192,6 +199,8 @@ class SalesLiveMapLocationDiagnostics {
 
 class LoadSalesLiveMapUseCase {
   LoadSalesLiveMapUseCase(
+    this._targetResolver,
+    this._catalogDiskCache,
     this._loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents,
     this._loadCadastroFilialAcrossAgents,
     this._pointResolver, {
@@ -207,6 +216,8 @@ class LoadSalesLiveMapUseCase {
   static const Duration _branchLocationCacheTtl = Duration(minutes: 10);
   static const Duration _branchCatalogCacheTtl = Duration(minutes: 5);
 
+  final AgentQueryTargetResolver _targetResolver;
+  final SalesLiveMapCatalogDiskCache _catalogDiskCache;
   final LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
   _loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents;
   final LoadCadastroFilialAcrossAgentsUseCase _loadCadastroFilialAcrossAgents;
@@ -216,6 +227,10 @@ class LoadSalesLiveMapUseCase {
       <String, _SalesLiveMapCachedBranchLocation>{};
   final Map<String, _SalesLiveMapCachedCatalogResult> _branchCatalogCache =
       <String, _SalesLiveMapCachedCatalogResult>{};
+  final Map<String, String> _partialLocationSignatureByBranchId =
+      <String, String>{};
+  final Map<String, AppBrazilStoreSalesPoint> _partialGeoPointsByBranchId =
+      <String, AppBrazilStoreSalesPoint>{};
 
   Future<SalesLiveMapLoadResult> call({
     required String userId,
@@ -244,6 +259,8 @@ class LoadSalesLiveMapUseCase {
       yield _cancelledResult(refreshedAt: now);
       return;
     }
+    _partialLocationSignatureByBranchId.clear();
+    _partialGeoPointsByBranchId.clear();
     final queryFilter = filter.toAgentQueryFilter(
       now: now,
       codEmpresa: primaryCompanyCode,
@@ -251,22 +268,77 @@ class LoadSalesLiveMapUseCase {
     );
     final selectedAgentIds =
         filter.selectedAgentIds ?? queryFilter.selectedAgentIds;
+
+    final diskCatalog = _catalogDiskCache.readIfFresh(
+      userId: userId,
+      selectedAgentIds: selectedAgentIds,
+      codEmpresa: primaryCompanyCode,
+      codFilial: primaryBranchCode,
+      now: now,
+    );
+    if (diskCatalog != null && !(cancelToken?.isCancelled ?? false)) {
+      final diskPartial = await _mapReport(
+        null,
+        catalogResult: diskCatalog,
+        filter: filter,
+        refreshedAt: now,
+        cancelToken: cancelToken,
+        salesDataPending: true,
+      );
+      if (diskPartial.cancelled) {
+        yield diskPartial;
+        return;
+      }
+      yield diskPartial;
+      if (cancelToken?.isCancelled ?? false) {
+        yield _cancelledResult(refreshedAt: now);
+        return;
+      }
+    }
+
+    final resolveSw = _startTraceStopwatch();
+    final resolutionResult = await _targetResolver.resolve(
+      userId: userId,
+      selectedAgentIds: selectedAgentIds,
+    );
+    final resolution = resolutionResult.getOrNull();
+    _logTrace(
+      'Sales live map agent targets resolved',
+      <String, Object?>{
+        'elapsedMs': resolveSw?.elapsedMilliseconds,
+        'resolveSuccess': resolution != null,
+        'consideredApprovedAgentCount':
+            resolution?.consideredApprovedAgentCount,
+      },
+    );
+    if (resolution == null) {
+      yield _failedResult(resolutionResult.exceptionOrNull()!, refreshedAt: now);
+      return;
+    }
+    if (cancelToken?.isCancelled ?? false) {
+      yield _cancelledResult(refreshedAt: now);
+      return;
+    }
+
     final queryStopwatch = _startTraceStopwatch();
-    final salesFuture =
-        _loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents(
-          userId: userId,
-          filter: queryFilter,
-          selectedAgentIds: selectedAgentIds,
-          bridgeTimeoutMs: bridgeTimeoutMs,
-        );
+    final salesFuture = _loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents(
+      userId: userId,
+      filter: queryFilter,
+      selectedAgentIds: selectedAgentIds,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      preResolvedResolution: resolution,
+    );
     final catalogFuture = _loadCatalog(
       userId: userId,
       queryFilter: queryFilter,
       selectedAgentIds: selectedAgentIds,
       now: now,
+      preResolvedResolution: resolution,
     );
 
-    yield _pendingBaseResult(refreshedAt: now);
+    if (diskCatalog == null) {
+      yield _pendingBaseResult(refreshedAt: now);
+    }
 
     final catalogResult = await catalogFuture;
     final catalogPage = catalogResult.getOrNull();
@@ -276,6 +348,16 @@ class LoadSalesLiveMapUseCase {
     }
 
     if (catalogPage != null) {
+      unawaited(
+        _catalogDiskCache.write(
+          userId: userId,
+          selectedAgentIds: selectedAgentIds,
+          codEmpresa: primaryCompanyCode,
+          codFilial: primaryBranchCode,
+          now: now,
+          result: catalogPage,
+        ),
+      );
       final partialMapped = await _mapReport(
         null,
         catalogResult: catalogPage,
@@ -341,6 +423,7 @@ class LoadSalesLiveMapUseCase {
       filter: filter,
       refreshedAt: now,
       cancelToken: cancelToken,
+      allowPartialGeoReuse: true,
     );
     _logTrace(
       'Sales live map load completed',
@@ -361,6 +444,7 @@ class LoadSalesLiveMapUseCase {
     required ResumoTotalVendasMunicipioFilialPeriodoFilter queryFilter,
     required Set<String>? selectedAgentIds,
     required DateTime now,
+    required AgentQueryTargetResolution preResolvedResolution,
   }) async {
     const fullCatalogFilter = CadastroFilialFilter(
       codEmpresa: primaryCompanyCode,
@@ -374,6 +458,7 @@ class LoadSalesLiveMapUseCase {
         filter: fullCatalogFilter,
         selectedAgentIds: selectedAgentIds,
         now: now,
+        preResolvedResolution: preResolvedResolution,
       );
     }
 
@@ -419,6 +504,7 @@ class LoadSalesLiveMapUseCase {
           ),
           selectedAgentIds: <String>{agentId},
           now: now,
+          preResolvedResolution: preResolvedResolution,
         ),
       );
     }
@@ -429,6 +515,7 @@ class LoadSalesLiveMapUseCase {
         filter: fullCatalogFilter,
         selectedAgentIds: selectedAgentIds,
         now: now,
+        preResolvedResolution: preResolvedResolution,
       );
     }
 
@@ -440,6 +527,7 @@ class LoadSalesLiveMapUseCase {
     required CadastroFilialFilter filter,
     required Set<String>? selectedAgentIds,
     required DateTime now,
+    required AgentQueryTargetResolution preResolvedResolution,
   }) async {
     final cached = _readCachedCatalog(
       userId: userId,
@@ -458,6 +546,7 @@ class LoadSalesLiveMapUseCase {
       filter: filter,
       selectedAgentIds: selectedAgentIds,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      preResolvedResolution: preResolvedResolution,
     );
     final page = result.getOrNull();
     if (page != null) {
@@ -655,6 +744,7 @@ class LoadSalesLiveMapUseCase {
     AppFailure? catalogFailure,
     SalesLiveMapLoadCancelToken? cancelToken,
     bool salesDataPending = false,
+    bool allowPartialGeoReuse = false,
   }) async {
     if (cancelToken?.isCancelled ?? false) {
       return _cancelledResult(refreshedAt: refreshedAt);
@@ -777,10 +867,23 @@ class LoadSalesLiveMapUseCase {
       visibleAggregates,
       refreshedAt: refreshedAt,
       cancelToken: cancelToken,
+      allowPartialGeoReuse: allowPartialGeoReuse,
     );
     final points = geolocation.points;
     if (geolocation.cancelled) {
       return _cancelledResult(refreshedAt: refreshedAt);
+    }
+    if (salesDataPending) {
+      _partialLocationSignatureByBranchId
+        ..clear()
+        ..addEntries(
+          visibleAggregates.map(
+            (a) => MapEntry(a.id, a.locationSourceSignature),
+          ),
+        );
+      _partialGeoPointsByBranchId
+        ..clear()
+        ..addEntries(points.map((p) => MapEntry(p.id, p)));
     }
     _logTrace(
       'Sales live map branch geolocation completed',
@@ -796,6 +899,7 @@ class LoadSalesLiveMapUseCase {
         'cacheUnresolvedHitCount': geolocation.cacheUnresolvedHitCount,
         'resolvedAndCachedCount': geolocation.resolvedAndCachedCount,
         'unresolvedAndCachedCount': geolocation.unresolvedAndCachedCount,
+        'partialGeoReuseCount': geolocation.partialGeoReuseCount,
       },
     );
     final locationDiagnostics = SalesLiveMapLocationDiagnostics.fromPoints(
@@ -851,6 +955,7 @@ class LoadSalesLiveMapUseCase {
           ? SalesLiveMapLoadFailureReason.missingClientTokenSetup
           : null,
       refreshedAt: refreshedAt,
+      partialGeoReuseCount: geolocation.partialGeoReuseCount,
     );
   }
 
@@ -858,6 +963,7 @@ class LoadSalesLiveMapUseCase {
     List<_SalesLiveMapBranchAggregate> aggregates, {
     required DateTime refreshedAt,
     SalesLiveMapLoadCancelToken? cancelToken,
+    bool allowPartialGeoReuse = false,
   }) async {
     if (aggregates.isEmpty) {
       return const _SalesLiveMapGeolocationResult();
@@ -870,6 +976,7 @@ class LoadSalesLiveMapUseCase {
     final pending = <({int index, _SalesLiveMapBranchAggregate aggregate})>[];
     var cacheHitCount = 0;
     var cacheUnresolvedHitCount = 0;
+    var partialGeoReuseCount = 0;
 
     for (var i = 0; i < aggregates.length; i++) {
       if (cancelToken?.isCancelled ?? false) {
@@ -877,6 +984,18 @@ class LoadSalesLiveMapUseCase {
       }
 
       final aggregate = aggregates[i];
+      if (allowPartialGeoReuse) {
+        final prev = _partialGeoPointsByBranchId[aggregate.id];
+        final prevSig = _partialLocationSignatureByBranchId[aggregate.id];
+        if (prev != null &&
+            prevSig != null &&
+            prevSig == aggregate.locationSourceSignature) {
+          pointsByIndex[i] = _mergePartialGeoIntoAggregate(prev, aggregate);
+          partialGeoReuseCount += 1;
+          continue;
+        }
+      }
+
       final cached = _readCachedBranchLocation(
         aggregate,
         now: refreshedAt,
@@ -943,6 +1062,7 @@ class LoadSalesLiveMapUseCase {
       cacheUnresolvedHitCount: cacheUnresolvedHitCount,
       resolvedAndCachedCount: resolvedAndCachedCount,
       unresolvedAndCachedCount: unresolvedAndCachedCount,
+      partialGeoReuseCount: partialGeoReuseCount,
     );
   }
 
@@ -1475,6 +1595,34 @@ class LoadSalesLiveMapUseCase {
   }
 }
 
+AppBrazilStoreSalesPoint _mergePartialGeoIntoAggregate(
+  AppBrazilStoreSalesPoint base,
+  _SalesLiveMapBranchAggregate aggregate,
+) {
+  return AppBrazilStoreSalesPoint(
+    id: base.id,
+    name: base.name,
+    uf: base.uf,
+    latitude: base.latitude,
+    longitude: base.longitude,
+    salesAmount: aggregate.totalVenda,
+    salesCount: aggregate.qtdVendas,
+    municipalityCode: base.municipalityCode,
+    city: base.city,
+    fantasyName: base.fantasyName,
+    branchName: base.branchName,
+    companyCode: base.companyCode,
+    branchCode: base.branchCode,
+    agentName: base.agentName,
+    salesDataLoading: aggregate.salesDataLoading,
+    salesDataUnavailable: aggregate.salesDataUnavailable,
+    salesDataStatusLabel: aggregate.salesDataStatusLabel,
+    locationResolution: base.locationResolution,
+    subtitle: base.subtitle,
+    payload: aggregate,
+  );
+}
+
 class _SalesLiveMapBranchAggregate {
   _SalesLiveMapBranchAggregate({
     required this.agentId,
@@ -1660,6 +1808,7 @@ class _SalesLiveMapGeolocationResult {
     this.cacheUnresolvedHitCount = 0,
     this.resolvedAndCachedCount = 0,
     this.unresolvedAndCachedCount = 0,
+    this.partialGeoReuseCount = 0,
     this.cancelled = false,
   });
 
@@ -1669,6 +1818,7 @@ class _SalesLiveMapGeolocationResult {
   final int cacheUnresolvedHitCount;
   final int resolvedAndCachedCount;
   final int unresolvedAndCachedCount;
+  final int partialGeoReuseCount;
   final bool cancelled;
 }
 

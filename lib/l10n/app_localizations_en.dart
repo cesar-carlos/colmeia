@@ -2531,6 +2531,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesLiveMapClearBranchSelectionAction => 'Clear branch selection';
 
   @override
+  String get salesLiveMapClearMapFocusAction => 'Clear map highlight';
+
+  @override
   String get salesLiveMapClearSavedFiltersAction => 'Clear saved filters';
 
   @override

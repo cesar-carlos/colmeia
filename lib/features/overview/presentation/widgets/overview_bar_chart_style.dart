@@ -75,7 +75,6 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     yAxisRangePadding: metricRevenueAxis
         ? ChartRangePadding.additionalEnd
         : null,
-    outerDataLabelTopReserve: 0,
     dataLabelBackgroundColor: metricRevenueAxis
         ? weekdayRevenueDataLabelBackground
         : null,

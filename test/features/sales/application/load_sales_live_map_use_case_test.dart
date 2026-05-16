@@ -7,11 +7,13 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
@@ -19,6 +21,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vend
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
 import 'package:colmeia/shared/maps/app_location_models.dart';
@@ -36,6 +39,27 @@ class _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
 class _MockLoadCadastroFilialAcrossAgentsUseCase extends Mock
     implements LoadCadastroFilialAcrossAgentsUseCase {}
 
+class _MockAgentQueryTargetResolver extends Mock
+    implements AgentQueryTargetResolver {}
+
+class _MockSalesLiveMapCatalogDiskCache extends Mock
+    implements SalesLiveMapCatalogDiskCache {}
+
+AgentQueryTargetResolution _wideTestAgentResolution() {
+  return AgentQueryTargetResolution(
+    consideredApprovedTargets: <AgentQueryTarget>[
+      _target('agent-a'),
+      _target('agent-b'),
+      _target('agent-c'),
+      _target('agent-d', clientToken: null),
+      _target('agent-e'),
+    ],
+    missingClientTokenTargets: const <AgentQueryTarget>[],
+    consideredApprovedAgentCount: 5,
+    sqlEligibleConsideredTargetCount: 5,
+  );
+}
+
 void main() {
   const userId = 'user-1';
   final now = DateTime(2026, 5, 9, 14);
@@ -43,6 +67,8 @@ void main() {
   late _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
   loadAcrossAgents;
   late _MockLoadCadastroFilialAcrossAgentsUseCase loadCadastroAcrossAgents;
+  late _MockAgentQueryTargetResolver targetResolver;
+  late _MockSalesLiveMapCatalogDiskCache catalogDiskCache;
   late _MemoryCacheStore cacheStore;
   late _StaticBrazilTestGeocoder geocoder;
   late LoadSalesLiveMapUseCase useCase;
@@ -56,13 +82,56 @@ void main() {
     );
     registerFallbackValue(const CadastroFilialFilter());
     registerFallbackValue(AgentQueryExecutionStrategy.mergeAll);
+    registerFallbackValue(_wideTestAgentResolution());
+    registerFallbackValue(
+      CadastroFilialAcrossAgentsPageResult.fromReport(
+        const AgentQueryExecutionReport<CadastroFilialRow>(
+          queryKey: AgentQueryKey.cadastroFilial,
+          strategy: AgentQueryExecutionStrategy.mergeAll,
+          consideredApprovedAgentCount: 0,
+          plannedTargets: <AgentQueryTarget>[],
+          missingClientTokenTargets: <AgentQueryTarget>[],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[],
+          totalElapsedMs: 0,
+        ),
+      ),
+    );
   });
 
   setUp(() {
     loadAcrossAgents =
         _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase();
     loadCadastroAcrossAgents = _MockLoadCadastroFilialAcrossAgentsUseCase();
+    targetResolver = _MockAgentQueryTargetResolver();
+    catalogDiskCache = _MockSalesLiveMapCatalogDiskCache();
     _stubCatalogFailure(loadCadastroAcrossAgents);
+    when(
+      () => targetResolver.resolve(
+        userId: any(named: 'userId'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+      ),
+    ).thenAnswer((_) async => Success<AgentQueryTargetResolution, AppFailure>(
+          _wideTestAgentResolution(),
+        ));
+    when(
+      () => catalogDiskCache.readIfFresh(
+        userId: any(named: 'userId'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        codEmpresa: any(named: 'codEmpresa'),
+        codFilial: any(named: 'codFilial'),
+        now: any(named: 'now'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => catalogDiskCache.write(
+        userId: any(named: 'userId'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        codEmpresa: any(named: 'codEmpresa'),
+        codFilial: any(named: 'codFilial'),
+        now: any(named: 'now'),
+        result: any(named: 'result'),
+      ),
+    ).thenAnswer((_) async {});
     cacheStore = _MemoryCacheStore();
     geocoder = _StaticBrazilTestGeocoder();
     final locationResolver = AppLocationResolver(
@@ -71,6 +140,8 @@ void main() {
       now: () => now,
     );
     useCase = LoadSalesLiveMapUseCase(
+      targetResolver,
+      catalogDiskCache,
       loadAcrossAgents,
       loadCadastroAcrossAgents,
       AppBrazilStoreSalesPointResolver(locationResolver: locationResolver),
@@ -234,6 +305,52 @@ void main() {
   });
 
   test(
+    'chama AgentQueryTargetResolver.resolve uma vez por carga com catalogo e vendas',
+    () async {
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow()],
+            ),
+          ],
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 50),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      await useCase(userId: userId, filter: const SalesLiveMapFilter());
+
+      verify(
+        () => targetResolver.resolve(
+          userId: any(named: 'userId'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
     'loadProgressive emite cadastro no mapa enquanto vendas seguem carregando',
     () async {
       final catalogCompleter =
@@ -317,6 +434,8 @@ void main() {
       check(finalResult.points.single.salesDataLoading).isFalse();
       check(finalResult.points.single.salesAmount).equals(220);
       check(finalResult.points.single.salesCount).equals(6);
+      check(finalResult.partialGeoReuseCount).equals(1);
+      check(geocoder.lookups).has((it) => it.length, 'length').equals(1);
       check(await iterator.moveNext()).isFalse();
     },
   );
@@ -555,6 +674,7 @@ void main() {
         strategy: any(named: 'strategy'),
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         raceMaxSources: any(named: 'raceMaxSources'),
+        preResolvedResolution: any(named: 'preResolvedResolution'),
       ),
     ).captured;
     final catalogFilter = captured[0] as CadastroFilialFilter;
@@ -600,6 +720,7 @@ void main() {
         strategy: any(named: 'strategy'),
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         raceMaxSources: any(named: 'raceMaxSources'),
+        preResolvedResolution: any(named: 'preResolvedResolution'),
       ),
     ).captured.single;
     check(captured as Set<String>).deepEquals(<String>{'agent-a'});
@@ -641,6 +762,7 @@ void main() {
           strategy: any(named: 'strategy'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
         ),
       ).captured;
       final queryFilter =
@@ -692,6 +814,7 @@ void main() {
           strategy: any(named: 'strategy'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
         ),
       ).captured;
       final queryFilter =
@@ -1253,6 +1376,7 @@ void main() {
           strategy: any(named: 'strategy'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
         ),
       ).called(1);
       verify(
@@ -1263,6 +1387,7 @@ void main() {
           strategy: any(named: 'strategy'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
         ),
       ).called(2);
     },
@@ -1285,6 +1410,7 @@ void main() {
         strategy: any(named: 'strategy'),
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         raceMaxSources: any(named: 'raceMaxSources'),
+        preResolvedResolution: any(named: 'preResolvedResolution'),
       ),
     ).thenAnswer((_) => reportCompleter.future);
     final cancelToken = SalesLiveMapLoadCancelToken();
@@ -1363,6 +1489,7 @@ void _stubReportFuture(
       strategy: any(named: 'strategy'),
       bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       raceMaxSources: any(named: 'raceMaxSources'),
+      preResolvedResolution: any(named: 'preResolvedResolution'),
     ),
   ).thenAnswer((_) => result);
 }
@@ -1378,6 +1505,7 @@ void _stubSalesFailure(
       strategy: any(named: 'strategy'),
       bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       raceMaxSources: any(named: 'raceMaxSources'),
+      preResolvedResolution: any(named: 'preResolvedResolution'),
     ),
   ).thenAnswer(
     (_) async =>
@@ -1394,11 +1522,11 @@ void _stubSalesFailure(
 }
 
 void _stubCatalogReport(
-  _MockLoadCadastroFilialAcrossAgentsUseCase useCase,
+  _MockLoadCadastroFilialAcrossAgentsUseCase cadastroMock,
   AgentQueryExecutionReport<CadastroFilialRow> report,
 ) {
   _stubCatalogFuture(
-    useCase,
+    cadastroMock,
     Future<AppResult<CadastroFilialAcrossAgentsPageResult>>.value(
       Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(
         CadastroFilialAcrossAgentsPageResult.fromReport(report),
@@ -1408,30 +1536,32 @@ void _stubCatalogReport(
 }
 
 void _stubCatalogFuture(
-  _MockLoadCadastroFilialAcrossAgentsUseCase useCase,
+  _MockLoadCadastroFilialAcrossAgentsUseCase cadastroMock,
   Future<AppResult<CadastroFilialAcrossAgentsPageResult>> result,
 ) {
   when(
-    () => useCase.loadAll(
+    () => cadastroMock.loadAll(
       userId: any(named: 'userId'),
       filter: any(named: 'filter'),
       selectedAgentIds: any(named: 'selectedAgentIds'),
       strategy: any(named: 'strategy'),
       bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       raceMaxSources: any(named: 'raceMaxSources'),
+      preResolvedResolution: any(named: 'preResolvedResolution'),
     ),
   ).thenAnswer((_) => result);
 }
 
-void _stubCatalogFailure(_MockLoadCadastroFilialAcrossAgentsUseCase useCase) {
+void _stubCatalogFailure(_MockLoadCadastroFilialAcrossAgentsUseCase cadastroMock) {
   when(
-    () => useCase.loadAll(
+    () => cadastroMock.loadAll(
       userId: any(named: 'userId'),
       filter: any(named: 'filter'),
       selectedAgentIds: any(named: 'selectedAgentIds'),
       strategy: any(named: 'strategy'),
       bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       raceMaxSources: any(named: 'raceMaxSources'),
+      preResolvedResolution: any(named: 'preResolvedResolution'),
     ),
   ).thenAnswer(
     (_) async =>

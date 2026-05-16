@@ -583,6 +583,7 @@ AppComparisonBarChartStyle _comparisonStyleWithPercent({
     categoryAutoScrollingMode: base.categoryAutoScrollingMode,
     categoryViewportFootnote: base.categoryViewportFootnote,
     categoryViewportPanSemanticsLabel: base.categoryViewportPanSemanticsLabel,
+    reserveOuterDataLabelTopMargin: base.reserveOuterDataLabelTopMargin,
     outerDataLabelTopReserve: base.outerDataLabelTopReserve,
     dataLabelBackgroundColor: base.dataLabelBackgroundColor,
     enableTapHighlight: base.enableTapHighlight,

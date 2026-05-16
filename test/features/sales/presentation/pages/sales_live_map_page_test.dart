@@ -300,6 +300,20 @@ void main() {
     expect(find.text('Total revenue'), findsOneWidget);
   });
 
+  testWidgets('does not show the map region selector', (tester) async {
+    await _pumpPage(tester, authController: authController);
+    await _pumpInitialLoad(tester);
+
+    final chart = tester.widget<AppBrazilStoreSalesMapChart>(
+      find.byType(AppBrazilStoreSalesMapChart).last,
+    );
+    expect(chart.style.showRegionFilter, isFalse);
+    expect(
+      chart.style.stateLabelMode,
+      AppBrazilStoreSalesStateLabelMode.stateName,
+    );
+  });
+
   testWidgets('shows explicit empty state when the query returns no sales', (
     tester,
   ) async {
@@ -408,6 +422,31 @@ void main() {
     expect(find.textContaining('salesUnavailableBranchCount:'), findsNothing);
     expect(find.textContaining('geo.ibgeMunicipalityCode:'), findsNothing);
   });
+
+  testWidgets(
+    'changing the map metric does not call loadProgressive again',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpPage(tester, authController: authController);
+      await _pumpInitialLoad(tester);
+      clearInteractions(loadLiveMap);
+
+      await tester.ensureVisible(find.text('Vendas'));
+      await tester.pump();
+      await tester.tap(find.text('Vendas'));
+      await tester.pump();
+
+      verifyNever(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
+    },
+  );
 
   testWidgets('keeps the last map visible while a manual refresh is running', (
     tester,
@@ -609,7 +648,7 @@ void main() {
         metric: AppBrazilStoreSalesMapMetric.revenue,
       ),
     );
-    await _pumpInitialLoad(tester);
+    await tester.pump();
 
     chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart).last);
     expect(chart.fixedBranchIds, <String>{'agent-1-1-1'});
@@ -630,22 +669,18 @@ void main() {
         metric: AppBrazilStoreSalesMapMetric.revenue,
       ),
     );
-    await _pumpInitialLoad(tester);
+    await tester.pump();
 
     chart = tester.widget(find.byType(AppBrazilStoreSalesMapChart).last);
     expect(chart.fixedBranchIds, isEmpty);
 
-    final capturedFilters = verify(
+    verify(
       () => loadLiveMap.loadProgressive(
         userId: 'user-1',
-        filter: captureAny(named: 'filter'),
+        filter: any(named: 'filter'),
         cancelToken: any(named: 'cancelToken'),
       ),
-    ).captured.cast<SalesLiveMapFilter>().toList();
-    expect(capturedFilters[capturedFilters.length - 2].selectedBranchIds, {
-      'agent-1-1-1',
-    });
-    expect(capturedFilters.last.selectedBranchIds, isNull);
+    ).called(1);
     verifyNever(() => salesPreferences.persistSalesLiveMapFilter(any()));
   });
 }

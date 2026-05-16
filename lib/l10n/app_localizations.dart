@@ -4193,6 +4193,12 @@ abstract class AppLocalizations {
   /// **'Clear branch selection'**
   String get salesLiveMapClearBranchSelectionAction;
 
+  /// No description provided for @salesLiveMapClearMapFocusAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear map highlight'**
+  String get salesLiveMapClearMapFocusAction;
+
   /// No description provided for @salesLiveMapClearSavedFiltersAction.
   ///
   /// In en, this message translates to:

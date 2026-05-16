@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
@@ -561,6 +562,290 @@ void main() {
     expect(cardFinder, findsOneWidget);
     expect(find.text('Mel Sinop'), findsOneWidget);
   });
+
+  testWidgets('fits compact bounded layout when marker legend wraps', (
+    tester,
+  ) async {
+    await _pumpMap(
+      tester,
+      width: 321,
+      height: 617,
+      style: const AppBrazilStoreSalesMapStyle(
+        height: 600,
+        showLegend: false,
+        showStoreDetail: false,
+        markerVisual: AppBrazilStoreSalesMarkerVisual.storeIcon,
+        markerMinSize: 24,
+        markerMaxSize: 34,
+      ),
+      points: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Casa do Mel',
+          uf: 'MT',
+          city: 'Tangara da Serra',
+          latitude: -14.6229,
+          longitude: -57.4933,
+          salesAmount: 84246.26,
+          salesCount: 1568,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'store-2',
+          name: 'Mel Sinop',
+          uf: 'MT',
+          city: 'Sinop',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 3421.77,
+          salesCount: 64,
+        ),
+      ],
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Legenda'), findsOneWidget);
+    expect(find.text('Marker size'), findsNothing);
+
+    await tester.tap(find.text('Legenda'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Marker size'), findsOneWidget);
+  });
+
+  testWidgets('fits common mobile map widths without layout overflow', (
+    tester,
+  ) async {
+    const widths = <double>[320, 360, 390];
+
+    for (final width in widths) {
+      await _pumpMap(
+        tester,
+        width: width,
+        height: 617,
+        style: const AppBrazilStoreSalesMapStyle(
+          height: 600,
+          showLegend: false,
+          showStoreDetail: false,
+          markerVisual: AppBrazilStoreSalesMarkerVisual.storeIcon,
+          markerMinSize: 24,
+          markerMaxSize: 34,
+        ),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Casa do Mel',
+            uf: 'MT',
+            city: 'Tangara da Serra',
+            latitude: -14.6229,
+            longitude: -57.4933,
+            salesAmount: 84246.26,
+            salesCount: 1568,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-2',
+            name: 'Mel Sinop',
+            uf: 'MT',
+            city: 'Sinop',
+            latitude: -11.8604,
+            longitude: -55.5091,
+            salesAmount: 3421.77,
+            salesCount: 64,
+          ),
+        ],
+      );
+
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'width $width should not overflow',
+      );
+      expect(find.text('Legenda'), findsOneWidget);
+    }
+  });
+
+  testWidgets('wraps full state labels and uses compact type on mobile', (
+    tester,
+  ) async {
+    await _pumpMap(
+      tester,
+      width: 360,
+      height: 617,
+      style: const AppBrazilStoreSalesMapStyle(
+        height: 600,
+        showLegend: false,
+        showStoreDetail: false,
+        showRegionFilter: false,
+        showMarkerScaleLegend: false,
+        stateLabelMode: AppBrazilStoreSalesStateLabelMode.stateName,
+      ),
+      points: const <AppBrazilStoreSalesPoint>[],
+    );
+
+    final regionMap = tester
+        .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+          find
+              .byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              )
+              .first,
+        );
+    final wrappedLabel = regionMap.regionLabelBuilder(
+      const AppBrazilStoreSalesStateBucket(
+        uf: 'MS',
+        stateName: 'Mato Grosso do Sul',
+        regionKey: 'CO',
+        regionName: 'Centro-Oeste',
+        salesAmount: 0,
+        salesCount: 0,
+        storeCount: 0,
+      ),
+    );
+
+    expect(wrappedLabel, 'Mato Grosso\ndo Sul');
+    expect(regionMap.style.dataLabelTextStyle?.fontSize, 7);
+  });
+
+  testWidgets('state tooltip includes full state name and UF', (tester) async {
+    await _pumpMap(
+      tester,
+      style: const AppBrazilStoreSalesMapStyle(
+        showLegend: false,
+        showStoreDetail: false,
+        showRegionFilter: false,
+        showMarkerScaleLegend: false,
+        stateLabelMode: AppBrazilStoreSalesStateLabelMode.stateName,
+      ),
+      points: const <AppBrazilStoreSalesPoint>[],
+    );
+
+    final regionMap = tester
+        .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+          find
+              .byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              )
+              .first,
+        );
+    final tooltip = regionMap.metrics.first.tooltipBuilder!(
+      const AppBrazilStoreSalesStateBucket(
+        uf: 'MT',
+        stateName: 'Mato Grosso',
+        regionKey: 'CO',
+        regionName: 'Centro-Oeste',
+        salesAmount: 1200,
+        salesCount: 12,
+        storeCount: 1,
+      ),
+    );
+
+    expect(tooltip, contains('Mato Grosso (MT)'));
+    expect(tooltip, contains('12 vendas'));
+  });
+
+  testWidgets('pending sales markers use a distinct loading color', (
+    tester,
+  ) async {
+    await _pumpMap(
+      tester,
+      style: const AppBrazilStoreSalesMapStyle(
+        showLegend: false,
+        showStoreDetail: false,
+        showRegionFilter: false,
+        showMarkerScaleLegend: false,
+      ),
+      points: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Casa do Mel',
+          uf: 'MT',
+          city: 'Tangara da Serra',
+          latitude: -14.6229,
+          longitude: -57.4933,
+          salesAmount: 0,
+          salesCount: 0,
+          salesDataLoading: true,
+        ),
+      ],
+    );
+
+    final regionMap = tester
+        .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+          find
+              .byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              )
+              .first,
+        );
+
+    expect(regionMap.points.single.style?.color, AppColors.light.secondary);
+    expect(regionMap.points.single.style?.strokeWidth, 2.4);
+  });
+
+  testWidgets(
+    'does not re-emit diagnostics when points list is recreated with same data',
+    (tester) async {
+      var diagnosticsEmissions = 0;
+      const point = AppBrazilStoreSalesPoint(
+        id: 'store-1',
+        name: 'Casa do Mel',
+        fantasyName: 'Casa do Mel',
+        uf: 'MT',
+        city: 'Tangara da Serra',
+        municipalityCode: '5107958',
+        latitude: -14.6229,
+        longitude: -57.4933,
+        salesAmount: 84246.26,
+        salesCount: 1568,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() {}),
+                      child: const Text('rebuild'),
+                    ),
+                    SizedBox(
+                      width: 720,
+                      height: 400,
+                      child: AppBrazilStoreSalesMapChart(
+                        // New list instance each rebuild to exercise snapshot reuse.
+                        // ignore: prefer_const_literals_to_create_immutables
+                        points: <AppBrazilStoreSalesPoint>[point],
+                        style: _baseStyle,
+                        onDiagnosticsChanged: (_) {
+                          diagnosticsEmissions += 1;
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      expect(diagnosticsEmissions, greaterThan(0));
+      final afterFirst = diagnosticsEmissions;
+
+      await tester.tap(find.text('rebuild'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(diagnosticsEmissions, afterFirst);
+    },
+  );
 }
 
 const _baseStyle = AppBrazilStoreSalesMapStyle(
@@ -580,6 +865,8 @@ Future<void> _pumpMap(
   required List<AppBrazilStoreSalesPoint> points,
   String? selectedStoreId,
   AppBrazilStoreSalesMapStyle style = _baseStyle,
+  double width = 720,
+  double? height,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -589,7 +876,8 @@ Future<void> _pumpMap(
       home: Scaffold(
         body: Center(
           child: SizedBox(
-            width: 720,
+            width: width,
+            height: height,
             child: AppBrazilStoreSalesMapChart(
               points: points,
               selectedStoreId: selectedStoreId,
