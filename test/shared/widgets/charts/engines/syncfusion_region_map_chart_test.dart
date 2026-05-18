@@ -209,6 +209,34 @@ void main() {
     }
   });
 
+  testWidgets('does not remount SfMaps when only selected region changes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const _TestApp(child: _MutableSelectedRegionMap()));
+
+    final initialKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+
+    await tester.tap(find.byKey(const ValueKey<String>('change-selection')));
+    await tester.pump();
+
+    final updatedKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+    expect(updatedKey, initialKey);
+  });
+
+  testWidgets('does not remount SfMaps when only metric identity changes', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const _TestApp(child: _MutableMetricIdentityMap()));
+
+    final initialKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+
+    await tester.tap(find.byKey(const ValueKey<String>('change-metric-key')));
+    await tester.pump();
+
+    final updatedKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+    expect(updatedKey, initialKey);
+  });
+
   testWidgets('mouse wheel zoom respects min and max zoom limits', (
     tester,
   ) async {
@@ -237,6 +265,75 @@ void main() {
       await _sendPointerScrollOver(tester, find.byType(SfMaps), 120);
 
       expect(viewports.last.zoomLevel, closeTo(1, 0.01));
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets(
+    'recreates zoom behavior after SfMaps remount before wheel zoom',
+    (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      final viewports = <AppMapViewport>[];
+      try {
+        await tester.pumpWidget(
+          _TestApp(
+            child: _MutableMarkerRegionMap(
+              preset: AppChartPreset.explorable,
+              style: const AppRegionMapChartStyle(
+                height: 240,
+                maxZoomLevel: 2,
+              ),
+              onViewportChanged: (event) => viewports.add(event.viewport),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byKey(const ValueKey<String>('add-marker')));
+        await tester.pump();
+
+        await _sendPointerScrollOver(tester, find.byType(SfMaps), -120);
+
+        expect(tester.takeException(), isNull);
+        expect(viewports, isNotEmpty);
+        expect(viewports.last.zoomLevel, closeTo(1.35, 0.01));
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
+
+  testWidgets('preserves manual zoom state across SfMaps remounts', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    final viewports = <AppMapViewport>[];
+    try {
+      await tester.pumpWidget(
+        _TestApp(
+          child: _MutableMarkerRegionMap(
+            preset: AppChartPreset.explorable,
+            style: const AppRegionMapChartStyle(
+              height: 240,
+              maxZoomLevel: 2,
+            ),
+            onViewportChanged: (event) => viewports.add(event.viewport),
+          ),
+        ),
+      );
+
+      await _sendPointerScrollOver(tester, find.byType(SfMaps), -120);
+      expect(viewports.last.zoomLevel, closeTo(1.35, 0.01));
+
+      await tester.tap(find.byKey(const ValueKey<String>('add-marker')));
+      await tester.pump();
+
+      await _sendPointerScrollOver(tester, find.byType(SfMaps), -120);
+
+      expect(tester.takeException(), isNull);
+      expect(viewports.last.zoomLevel, closeTo(1.7, 0.01));
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
@@ -280,6 +377,45 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.my_location_rounded), findsOneWidget);
+
+      await _sendPointerScrollOver(tester, find.byType(SfMaps), -120);
+
+      expect(viewports.last.zoomLevel, closeTo(1.35, 0.01));
+      expect(viewports.last.centerLatitude, closeTo(-23, 0.01));
+      expect(viewports.last.centerLongitude, closeTo(-47, 0.01));
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('reapplies preferred viewport after leaving loading state', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    final events = <AppMapViewportChangedEvent>[];
+    try {
+      await tester.pumpWidget(
+        _TestApp(
+          child: _MutableLoadingRegionMap(
+            onViewportChanged: (event) => events.add(event),
+          ),
+        ),
+      );
+
+      expect(find.byType(SfMaps), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey<String>('finish-loading')));
+      await tester.pump();
+
+      expect(find.byType(SfMaps), findsOneWidget);
+
+      await _sendPointerScrollOver(tester, find.byType(SfMaps), -120);
+
+      expect(events, isNotEmpty);
+      expect(events.last.viewport.zoomLevel, closeTo(1.75, 0.01));
+      expect(events.last.viewport.centerLatitude, closeTo(-23, 0.01));
+      expect(events.last.viewport.centerLongitude, closeTo(-47, 0.01));
+      expect(events.last.source, AppMapViewportChangeSource.user);
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
@@ -353,6 +489,9 @@ class _TestRegionMap extends StatelessWidget {
     this.points = const <AppMapPoint>[],
     this.preset = AppChartPreset.standard,
     this.preferredViewport,
+    this.selectedRegionKey,
+    this.metric,
+    this.isLoading = false,
     this.onViewportChanged,
   });
 
@@ -360,6 +499,9 @@ class _TestRegionMap extends StatelessWidget {
   final List<AppMapPoint> points;
   final AppChartPreset preset;
   final AppMapViewport? preferredViewport;
+  final String? selectedRegionKey;
+  final AppMapMetric<String>? metric;
+  final bool isLoading;
   final ValueChanged<AppMapViewportChangedEvent>? onViewportChanged;
 
   @override
@@ -371,17 +513,21 @@ class _TestRegionMap extends StatelessWidget {
         shapeDataField: 'UF',
         regionLevel: AppMapRegionLevel.state,
       ),
-      metric: AppMapMetric<String>(
-        key: 'revenue',
-        label: 'Receita',
-        valueBuilder: (_) => 1,
-      ),
+      metric:
+          metric ??
+          AppMapMetric<String>(
+            key: 'revenue',
+            label: 'Receita',
+            valueBuilder: (_) => 1,
+          ),
       regionKeyBuilder: (item) => item,
       regionLabelBuilder: (item) => item,
       currentDrillLevel: AppMapDrillLevel.state,
       preferredViewport: preferredViewport,
+      selectedRegionKey: selectedRegionKey,
       style: style,
       preset: preset,
+      isLoading: isLoading,
       points: points,
       onViewportChanged: onViewportChanged,
     );
@@ -389,7 +535,15 @@ class _TestRegionMap extends StatelessWidget {
 }
 
 class _MutableMarkerRegionMap extends StatefulWidget {
-  const _MutableMarkerRegionMap();
+  const _MutableMarkerRegionMap({
+    this.preset = AppChartPreset.standard,
+    this.style = const AppRegionMapChartStyle(height: 240),
+    this.onViewportChanged,
+  });
+
+  final AppChartPreset preset;
+  final AppRegionMapChartStyle style;
+  final ValueChanged<AppMapViewportChangedEvent>? onViewportChanged;
 
   @override
   State<_MutableMarkerRegionMap> createState() =>
@@ -413,6 +567,9 @@ class _MutableMarkerRegionMapState extends State<_MutableMarkerRegionMap> {
           child: const Text('Add marker'),
         ),
         _TestRegionMap(
+          preset: widget.preset,
+          style: widget.style,
+          onViewportChanged: widget.onViewportChanged,
           points: _hasMarker
               ? const <AppMapPoint>[
                   AppMapPoint(latitude: -23, longitude: -47),
@@ -545,6 +702,117 @@ class _MutableMarkerCoordinatesRegionMapState
           points: <AppMapPoint>[
             AppMapPoint(latitude: _latitude, longitude: _longitude),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MutableSelectedRegionMap extends StatefulWidget {
+  const _MutableSelectedRegionMap();
+
+  @override
+  State<_MutableSelectedRegionMap> createState() =>
+      _MutableSelectedRegionMapState();
+}
+
+class _MutableSelectedRegionMapState extends State<_MutableSelectedRegionMap> {
+  String? _selectedRegionKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ElevatedButton(
+          key: const ValueKey<String>('change-selection'),
+          onPressed: () {
+            setState(() {
+              _selectedRegionKey = _selectedRegionKey == null ? 'SP' : null;
+            });
+          },
+          child: const Text('Change selection'),
+        ),
+        _TestRegionMap(selectedRegionKey: _selectedRegionKey),
+      ],
+    );
+  }
+}
+
+class _MutableMetricIdentityMap extends StatefulWidget {
+  const _MutableMetricIdentityMap();
+
+  @override
+  State<_MutableMetricIdentityMap> createState() =>
+      _MutableMetricIdentityMapState();
+}
+
+class _MutableMetricIdentityMapState extends State<_MutableMetricIdentityMap> {
+  var _usesAlternateMetricKey = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ElevatedButton(
+          key: const ValueKey<String>('change-metric-key'),
+          onPressed: () {
+            setState(() {
+              _usesAlternateMetricKey = !_usesAlternateMetricKey;
+            });
+          },
+          child: const Text('Change metric key'),
+        ),
+        _TestRegionMap(
+          metric: AppMapMetric<String>(
+            key: _usesAlternateMetricKey ? 'sales' : 'revenue',
+            label: _usesAlternateMetricKey ? 'Vendas' : 'Receita',
+            valueBuilder: (_) => 1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MutableLoadingRegionMap extends StatefulWidget {
+  const _MutableLoadingRegionMap({this.onViewportChanged});
+
+  final ValueChanged<AppMapViewportChangedEvent>? onViewportChanged;
+
+  @override
+  State<_MutableLoadingRegionMap> createState() =>
+      _MutableLoadingRegionMapState();
+}
+
+class _MutableLoadingRegionMapState extends State<_MutableLoadingRegionMap> {
+  var _isLoading = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ElevatedButton(
+          key: const ValueKey<String>('finish-loading'),
+          onPressed: () {
+            setState(() {
+              _isLoading = false;
+            });
+          },
+          child: const Text('Finish loading'),
+        ),
+        _TestRegionMap(
+          isLoading: _isLoading,
+          preset: AppChartPreset.explorable,
+          preferredViewport: const AppMapViewport(
+            zoomLevel: 1.4,
+            centerLatitude: -23,
+            centerLongitude: -47,
+          ),
+          style: const AppRegionMapChartStyle(
+            height: 240,
+            maxZoomLevel: 2,
+          ),
+          onViewportChanged: widget.onViewportChanged,
         ),
       ],
     );

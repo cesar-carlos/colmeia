@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -90,11 +91,8 @@ class _SyncfusionRegionMapChartState<T>
   // because Syncfusion disposes the behavior's internal AnimationController
   // when SfMaps unmounts, making it unsafe to reuse the same instance.
   late MapZoomPanBehavior _zoomPanBehavior;
-  bool _suppressProgrammaticViewportEvents = false;
-
-  // True after the user manually pans or zooms; drives the reset-viewport
-  // button visibility. Reset when a preferred viewport is applied.
-  bool _userHasManualViewport = false;
+  late _RegionMapViewportState _viewportState;
+  _MapSurfaceRemountReason? _pendingMapSurfaceRemountReason;
 
   MapShapeSource? _cachedMapShapeSource;
   int? _cachedGeometryShapeFingerprint;
@@ -116,6 +114,11 @@ class _SyncfusionRegionMapChartState<T>
   void initState() {
     super.initState();
     _zoomPanBehavior = _buildZoomPanBehavior();
+    _viewportState = _RegionMapViewportState(
+      zoomLevel: _clampZoomLevel(_zoomPanBehavior.zoomLevel),
+      centerLatitude: _zoomPanBehavior.focalLatLng?.latitude,
+      centerLongitude: _zoomPanBehavior.focalLatLng?.longitude,
+    );
     _applyPreferredViewport();
   }
 
@@ -127,12 +130,7 @@ class _SyncfusionRegionMapChartState<T>
     // internal AnimationController inside MapZoomPanBehavior. Recreate it
     // before SfMaps remounts so we start from a clean internal state.
     if (oldWidget.isLoading && !widget.isLoading) {
-      _zoomPanBehavior = _buildZoomPanBehavior();
-      _applyPreferredViewport();
-      _cachedMapShapeSource = null;
-      _cachedGeometryShapeFingerprint = null;
-      _cachedMapSurfaceStableKey = null;
-      return;
+      _pendingMapSurfaceRemountReason = _MapSurfaceRemountReason.loadingEnded;
     }
 
     _zoomPanBehavior
@@ -145,14 +143,19 @@ class _SyncfusionRegionMapChartState<T>
       ..minZoomLevel = widget.style.minZoomLevel
       ..maxZoomLevel = widget.style.maxZoomLevel
       ..showToolbar = widget.preset == AppChartPreset.explorable;
+    _viewportState = _clampedViewportState(_viewportState);
     if (oldWidget.preferredViewport != widget.preferredViewport) {
       _applyPreferredViewport();
+    } else {
+      _applyZoomPanBehaviorViewport(
+        reason: 'widget_update_sync',
+        shouldLog: false,
+      );
     }
   }
 
   @override
   void dispose() {
-    _suppressProgrammaticViewportEvents = false;
     _cachedMapShapeSource = null;
     _cachedGeometryShapeFingerprint = null;
     _cachedMapSurfaceStableKey = null;
@@ -322,6 +325,10 @@ class _SyncfusionRegionMapChartState<T>
       regionKeys: regionKeys,
       regionLabels: regionLabels,
     );
+    // Keyed remount is reserved for structural changes that Syncfusion does not
+    // consistently reconcile in place. Visual state such as selection and
+    // metric identity stays out of this key so region highlight / metric
+    // toggles can update without tearing down SfMaps.
     final mapSurfaceStableKey = Object.hash(
       geometryFingerprint,
       _itemContentFingerprint(
@@ -330,15 +337,14 @@ class _SyncfusionRegionMapChartState<T>
         metricValues: metricValues,
       ),
       _markerPointsFingerprint(widget.points),
-      widget.selectedRegionKey,
-      widget.metric.key,
     );
-    if (_cachedMapSurfaceStableKey != null &&
-        _cachedMapSurfaceStableKey != mapSurfaceStableKey) {
-      _cachedMapShapeSource = null;
-      _cachedGeometryShapeFingerprint = null;
-    }
-    _cachedMapSurfaceStableKey = mapSurfaceStableKey;
+    final stableKeyChanged =
+        _cachedMapSurfaceStableKey != null &&
+        _cachedMapSurfaceStableKey != mapSurfaceStableKey;
+    _handleMapSurfaceRemount(
+      nextMapSurfaceStableKey: mapSurfaceStableKey,
+      stableKeyChanged: stableKeyChanged,
+    );
 
     final MapShapeSource shapeSource;
     if (_cachedGeometryShapeFingerprint == geometryFingerprint &&
@@ -601,16 +607,28 @@ class _SyncfusionRegionMapChartState<T>
                                 }
                               },
                               onWillZoom: (details) {
-                                _emitViewportChangedFromZoom(
-                                  details.newZoomLevel,
-                                  details.newVisibleBounds,
+                                _viewportState = _viewportState.copyWith(
+                                  zoomLevel: _clampZoomLevel(
+                                    details.newZoomLevel ??
+                                        _viewportState.zoomLevel,
+                                  ),
+                                );
+                                _emitViewportChanged(
+                                  source: AppMapViewportChangeSource.user,
+                                  bounds: details.newVisibleBounds,
                                 );
                                 return true;
                               },
                               onWillPan: (details) {
-                                _emitViewportChangedFromZoom(
-                                  details.zoomLevel,
-                                  details.newVisibleBounds,
+                                _viewportState = _viewportState.copyWith(
+                                  zoomLevel: _clampZoomLevel(
+                                    details.zoomLevel ??
+                                        _viewportState.zoomLevel,
+                                  ),
+                                );
+                                _emitViewportChanged(
+                                  source: AppMapViewportChangeSource.user,
+                                  bounds: details.newVisibleBounds,
                                 );
                                 return true;
                               },
@@ -641,7 +659,11 @@ class _SyncfusionRegionMapChartState<T>
                 label: 'Restaurar visão original do mapa',
                 child: TextButton.icon(
                   onPressed: () {
-                    setState(() => _userHasManualViewport = false);
+                    setState(() {
+                      _viewportState = _viewportState.copyWith(
+                        userHasManualViewport: false,
+                      );
+                    });
                     _applyPreferredViewport();
                   },
                   icon: const Icon(Icons.fit_screen_rounded, size: 16),
@@ -689,27 +711,32 @@ class _SyncfusionRegionMapChartState<T>
       return;
     }
 
-    final currentZoom = _zoomPanBehavior.zoomLevel.clamp(
-      widget.style.minZoomLevel,
-      widget.style.maxZoomLevel,
-    );
+    final currentZoom = _viewportState.zoomLevel;
     final direction = event.scrollDelta.dy < 0 ? 1.0 : -1.0;
-    final nextZoom = (currentZoom + direction * _mouseWheelZoomStep).clamp(
-      widget.style.minZoomLevel,
-      widget.style.maxZoomLevel,
+    final nextZoom = _clampZoomLevel(
+      currentZoom + direction * _mouseWheelZoomStep,
     );
 
     if ((nextZoom - currentZoom).abs() < 0.001) {
       return;
     }
 
-    _zoomPanBehavior.zoomLevel = nextZoom;
+    _viewportState = _viewportState.copyWith(zoomLevel: nextZoom);
+    final applied = _applyZoomPanBehaviorViewport(reason: 'pointer_wheel_zoom');
+    if (!applied) {
+      return;
+    }
     _scheduleManualViewportState();
-    _emitViewportChangedFromZoom(nextZoom, null);
+    _emitViewportChanged(
+      source: AppMapViewportChangeSource.user,
+      bounds: null,
+    );
   }
 
   void _resetPreferredViewport() {
-    setState(() => _userHasManualViewport = false);
+    setState(() {
+      _viewportState = _viewportState.copyWith(userHasManualViewport: false);
+    });
     _applyPreferredViewport();
   }
 
@@ -728,39 +755,140 @@ class _SyncfusionRegionMapChartState<T>
   }
 
   void _applyPreferredViewport() {
-    // SfMaps is not in the tree while loading; applying viewport to a behavior
-    // whose internal state may be stale from a previous mount is unsafe.
     if (!mounted || widget.isLoading) {
+      _logViewportGuard('preferred_viewport_skipped');
       return;
     }
-
-    // Preferred viewport applied: the user's manual pan/zoom is superseded,
-    // so the reset button should be hidden.
-    _userHasManualViewport = false;
 
     final viewport = widget.preferredViewport;
     if (viewport == null) {
+      _viewportState = _viewportState.copyWith(userHasManualViewport: false);
       return;
     }
 
-    final targetZoomLevel = viewport.zoomLevel.clamp(
+    _viewportState = _clampedViewportState(
+      _viewportState.copyWith(
+        zoomLevel: viewport.zoomLevel,
+        centerLatitude: viewport.centerLatitude,
+        centerLongitude: viewport.centerLongitude,
+        userHasManualViewport: false,
+        suppressProgrammaticViewportEvents: true,
+      ),
+    );
+    _logViewportLifecycle(
+      'Applying preferred viewport',
+      context: <String, Object?>{
+        'operation': 'SyncfusionRegionMapChart',
+        'zoomLevel': _viewportState.zoomLevel,
+        'centerLatitude': _viewportState.centerLatitude,
+        'centerLongitude': _viewportState.centerLongitude,
+        'pointCount': widget.points.length,
+        'itemCount': widget.items.length,
+      },
+    );
+    _applyZoomPanBehaviorViewport(reason: 'preferred_viewport');
+    _releaseProgrammaticViewportSuppressionAfterFrame();
+  }
+
+  double _clampZoomLevel(double zoomLevel) {
+    return zoomLevel.clamp(
       widget.style.minZoomLevel,
       widget.style.maxZoomLevel,
     );
-    final latitude = viewport.centerLatitude;
-    final longitude = viewport.centerLongitude;
+  }
 
-    _suppressProgrammaticViewportEvents = true;
-    _zoomPanBehavior.zoomLevel = targetZoomLevel;
-    if (latitude != null && longitude != null) {
-      _zoomPanBehavior.focalLatLng = MapLatLng(latitude, longitude);
+  _RegionMapViewportState _clampedViewportState(
+    _RegionMapViewportState state,
+  ) {
+    return state.copyWith(zoomLevel: _clampZoomLevel(state.zoomLevel));
+  }
+
+  void _handleMapSurfaceRemount({
+    required int nextMapSurfaceStableKey,
+    required bool stableKeyChanged,
+  }) {
+    if (stableKeyChanged) {
+      _pendingMapSurfaceRemountReason ??=
+          _MapSurfaceRemountReason.stableKeyChanged;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      _suppressProgrammaticViewportEvents = false;
-    });
+
+    final remountReason = _pendingMapSurfaceRemountReason;
+    if (remountReason == null) {
+      _cachedMapSurfaceStableKey = nextMapSurfaceStableKey;
+      return;
+    }
+
+    if (remountReason == _MapSurfaceRemountReason.loadingEnded &&
+        widget.preferredViewport != null) {
+      _viewportState = _clampedViewportState(
+        _viewportState.copyWith(
+          zoomLevel: widget.preferredViewport!.zoomLevel,
+          centerLatitude: widget.preferredViewport!.centerLatitude,
+          centerLongitude: widget.preferredViewport!.centerLongitude,
+          userHasManualViewport: false,
+          suppressProgrammaticViewportEvents: true,
+        ),
+      );
+      _releaseProgrammaticViewportSuppressionAfterFrame();
+    }
+
+    _logViewportLifecycle(
+      'Recreating zoom pan behavior',
+      context: <String, Object?>{
+        'operation': 'SyncfusionRegionMapChart',
+        'reason': remountReason.name,
+        'stableKeyChanged': stableKeyChanged,
+        'nextMapSurfaceStableKey': nextMapSurfaceStableKey,
+        'zoomLevel': _viewportState.zoomLevel,
+        'hasPreferredViewport': widget.preferredViewport != null,
+        'userHasManualViewport': _viewportState.userHasManualViewport,
+        'pointCount': widget.points.length,
+        'itemCount': widget.items.length,
+      },
+    );
+
+    _zoomPanBehavior = _buildZoomPanBehavior();
+    _applyZoomPanBehaviorViewport(
+      reason: 'map_surface_remount_${remountReason.name}',
+      shouldLog: false,
+    );
+    _cachedMapShapeSource = null;
+    _cachedGeometryShapeFingerprint = null;
+    _cachedMapSurfaceStableKey = nextMapSurfaceStableKey;
+    _pendingMapSurfaceRemountReason = null;
+  }
+
+  bool _applyZoomPanBehaviorViewport({
+    required String reason,
+    bool shouldLog = true,
+  }) {
+    if (!mounted || widget.isLoading) {
+      _logViewportGuard(reason);
+      return false;
+    }
+
+    _viewportState = _clampedViewportState(_viewportState);
+    _zoomPanBehavior.zoomLevel = _viewportState.zoomLevel;
+    if (_viewportState.centerLatitude != null &&
+        _viewportState.centerLongitude != null) {
+      _zoomPanBehavior.focalLatLng = MapLatLng(
+        _viewportState.centerLatitude!,
+        _viewportState.centerLongitude!,
+      );
+    }
+    if (shouldLog) {
+      _logViewportLifecycle(
+        'Applied zoom pan behavior viewport',
+        context: <String, Object?>{
+          'operation': 'SyncfusionRegionMapChart',
+          'reason': reason,
+          'zoomLevel': _viewportState.zoomLevel,
+          'centerLatitude': _viewportState.centerLatitude,
+          'centerLongitude': _viewportState.centerLongitude,
+        },
+      );
+    }
+    return true;
   }
 
   int _geometryShapeSourceFingerprint({
@@ -928,14 +1056,27 @@ class _SyncfusionRegionMapChartState<T>
     return buffer.toString();
   }
 
-  void _emitViewportChangedFromZoom(
-    double? zoomLevel,
+  void _emitViewportChanged({
+    required AppMapViewportChangeSource source,
     MapLatLngBounds? bounds,
-  ) {
-    if (_suppressProgrammaticViewportEvents) {
+  }) {
+    if (_viewportState.suppressProgrammaticViewportEvents) {
       return;
     }
 
+    final centerLatitude = bounds == null
+        ? _viewportState.centerLatitude
+        : (bounds.northeast.latitude + bounds.southwest.latitude) / 2;
+    final centerLongitude = bounds == null
+        ? _viewportState.centerLongitude
+        : (bounds.northeast.longitude + bounds.southwest.longitude) / 2;
+
+    _viewportState = _clampedViewportState(
+      _viewportState.copyWith(
+        centerLatitude: centerLatitude,
+        centerLongitude: centerLongitude,
+      ),
+    );
     _scheduleManualViewportState();
 
     final callback = widget.onViewportChanged;
@@ -943,20 +1084,12 @@ class _SyncfusionRegionMapChartState<T>
       return;
     }
 
-    final focalPoint = _zoomPanBehavior.focalLatLng;
-    final centerLatitude = bounds == null
-        ? focalPoint?.latitude
-        : (bounds.northeast.latitude + bounds.southwest.latitude) / 2;
-    final centerLongitude = bounds == null
-        ? focalPoint?.longitude
-        : (bounds.northeast.longitude + bounds.southwest.longitude) / 2;
-
     callback(
       AppMapViewportChangedEvent(
         viewport: AppMapViewport(
-          zoomLevel: zoomLevel ?? _zoomPanBehavior.zoomLevel,
-          centerLatitude: centerLatitude,
-          centerLongitude: centerLongitude,
+          zoomLevel: _viewportState.zoomLevel,
+          centerLatitude: _viewportState.centerLatitude,
+          centerLongitude: _viewportState.centerLongitude,
           bounds: bounds == null
               ? null
               : AppMapViewportBounds(
@@ -966,6 +1099,7 @@ class _SyncfusionRegionMapChartState<T>
                   west: bounds.southwest.longitude,
                 ),
         ),
+        source: source,
       ),
     );
   }
@@ -974,14 +1108,99 @@ class _SyncfusionRegionMapChartState<T>
     // Reveal the reset-viewport button after the first user interaction.
     // Uses addPostFrameCallback because Syncfusion calls the pan/zoom hooks
     // during its own layout pass.
-    if (_userHasManualViewport) {
+    if (_viewportState.userHasManualViewport) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _userHasManualViewport = true);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _viewportState = _viewportState.copyWith(userHasManualViewport: true);
+      });
     });
   }
+
+  void _releaseProgrammaticViewportSuppressionAfterFrame() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _viewportState = _viewportState.copyWith(
+        suppressProgrammaticViewportEvents: false,
+      );
+    });
+  }
+
+  void _logViewportGuard(String reason) {
+    _logViewportLifecycle(
+      'Skipping viewport behavior update',
+      context: <String, Object?>{
+        'operation': 'SyncfusionRegionMapChart',
+        'reason': reason,
+        'mounted': mounted,
+        'isLoading': widget.isLoading,
+      },
+    );
+  }
+
+  void _logViewportLifecycle(
+    String message, {
+    required Map<String, Object?> context,
+  }) {
+    if (!kDebugMode && !kProfileMode) {
+      return;
+    }
+    AppLogger.debug(message, context: context);
+  }
 }
+
+enum _MapSurfaceRemountReason {
+  loadingEnded,
+  stableKeyChanged,
+}
+
+@immutable
+class _RegionMapViewportState {
+  const _RegionMapViewportState({
+    required this.zoomLevel,
+    this.centerLatitude,
+    this.centerLongitude,
+    this.userHasManualViewport = false,
+    this.suppressProgrammaticViewportEvents = false,
+  });
+
+  final double zoomLevel;
+  final double? centerLatitude;
+  final double? centerLongitude;
+  final bool userHasManualViewport;
+  final bool suppressProgrammaticViewportEvents;
+
+  _RegionMapViewportState copyWith({
+    double? zoomLevel,
+    Object? centerLatitude = _regionMapViewportUnset,
+    Object? centerLongitude = _regionMapViewportUnset,
+    bool? userHasManualViewport,
+    bool? suppressProgrammaticViewportEvents,
+  }) {
+    return _RegionMapViewportState(
+      zoomLevel: zoomLevel ?? this.zoomLevel,
+      centerLatitude: identical(centerLatitude, _regionMapViewportUnset)
+          ? this.centerLatitude
+          : centerLatitude as double?,
+      centerLongitude: identical(centerLongitude, _regionMapViewportUnset)
+          ? this.centerLongitude
+          : centerLongitude as double?,
+      userHasManualViewport:
+          userHasManualViewport ?? this.userHasManualViewport,
+      suppressProgrammaticViewportEvents:
+          suppressProgrammaticViewportEvents ??
+          this.suppressProgrammaticViewportEvents,
+    );
+  }
+}
+
+const Object _regionMapViewportUnset = Object();
 
 class _MapValueLegend extends StatelessWidget {
   const _MapValueLegend({

@@ -18,11 +18,14 @@ assunto.
 
 - Nunca faca commit, push ou crie documentacao nova sem pedido explicito do
   usuario
-- Nunca crie ou troque para uma branch nova sem pedido explicito do usuario;
-  trabalhe na branch atual quando a tarefa nao solicitar branch
-- Pedidos para salvar, commitar, publicar ou enviar ao GitHub nao autorizam
-  criacao de branch por si so; so crie branch quando o pedido mencionar branch
-  explicitamente
+- Nunca crie, troque, publique ou apague branch sem pedido explicito do
+  usuario
+- Trabalhe por padrao na branch atual; nao invente branch de apoio, branch do
+  Codex ou branch temporaria por conta propria
+- Pedidos para salvar, commitar, publicar, enviar ao GitHub, abrir PR ou
+  "organizar melhor o git" nao autorizam criacao de branch por si so
+- So crie branch quando o pedido mencionar branch explicitamente ou indicar de
+  forma inequivoca que a mudanca deve acontecer em uma branch separada
 - Prefira codigo autoexplicativo por nomenclatura, estrutura e abstracoes
   focadas
 - Prefira falhas claras e acionaveis a mensagens genericas
