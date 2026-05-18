@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 
@@ -14,6 +15,7 @@ class AppBrazilStoreSalesVisibleBranchListItem {
     required this.point,
     required this.displayName,
     required this.cityUfLabel,
+    required this.searchIndexText,
     required this.salesAmount,
     required this.isSelected,
     required this.state,
@@ -23,6 +25,7 @@ class AppBrazilStoreSalesVisibleBranchListItem {
   final AppBrazilStoreSalesPoint point;
   final String displayName;
   final String cityUfLabel;
+  final String searchIndexText;
   final double salesAmount;
   final bool isSelected;
   final AppBrazilStoreSalesVisibleBranchListItemState state;
@@ -93,10 +96,37 @@ class AppBrazilStoreSalesMapSnapshotData {
 }
 
 abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
+  static AppBrazilStoreSalesMapSnapshotData buildData(
+    AppBrazilStoreSalesMapSnapshotInput input, {
+    required String cachedReuseKey,
+    required String defaultBranchName,
+  }) {
+    return _build(
+      input,
+      cachedReuseKey: cachedReuseKey,
+      defaultBranchName: defaultBranchName,
+      resolveSelectionState: false,
+    );
+  }
+
   static AppBrazilStoreSalesMapSnapshotData build(
     AppBrazilStoreSalesMapSnapshotInput input, {
     required String cachedReuseKey,
     required String defaultBranchName,
+  }) {
+    return _build(
+      input,
+      cachedReuseKey: cachedReuseKey,
+      defaultBranchName: defaultBranchName,
+      resolveSelectionState: true,
+    );
+  }
+
+  static AppBrazilStoreSalesMapSnapshotData _build(
+    AppBrazilStoreSalesMapSnapshotInput input, {
+    required String cachedReuseKey,
+    required String defaultBranchName,
+    required bool resolveSelectionState,
   }) {
     final preparedData = AppBrazilStoreSalesMapData.prepareSnapshotData(
       input.points,
@@ -135,7 +165,7 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
     AppBrazilStoreSalesPoint? selectedPoint;
     AppBrazilStoreSalesMarkerGroup? selectedMarkerGroup;
     var selectedStateKey = input.requestedStateKey;
-    if (input.selectedStoreId != null) {
+    if (resolveSelectionState && input.selectedStoreId != null) {
       for (final point in preparedData.validPoints) {
         if (point.id == input.selectedStoreId) {
           selectedPoint = point;
@@ -145,26 +175,28 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
       }
     }
 
-    for (final group in markerGroups) {
-      final selected = group.points.any(
-        (point) => point.id == input.selectedStoreId,
-      );
-      if (!selected) {
-        continue;
+    if (resolveSelectionState) {
+      for (final group in markerGroups) {
+        final selected = group.points.any(
+          (point) => point.id == input.selectedStoreId,
+        );
+        if (!selected) {
+          continue;
+        }
+        selectedMarkerGroup = group;
+        selectedPoint = group.points.firstWhere(
+          (point) => point.id == input.selectedStoreId,
+          orElse: () => group.primaryPoint,
+        );
+        selectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(
+          selectedPoint.uf,
+        );
+        break;
       }
-      selectedMarkerGroup = group;
-      selectedPoint = group.points.firstWhere(
-        (point) => point.id == input.selectedStoreId,
-        orElse: () => group.primaryPoint,
-      );
-      selectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(
-        selectedPoint.uf,
-      );
-      break;
     }
 
     AppBrazilStoreSalesStateBucket? selectedStateBucket;
-    if (selectedStateKey != null) {
+    if (resolveSelectionState && selectedStateKey != null) {
       for (final bucket in buckets) {
         if (bucket.uf == selectedStateKey) {
           selectedStateBucket = bucket;
@@ -208,10 +240,10 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
     required Set<String> filterBranchIds,
     required AppBrazilStoreSalesMapStyle style,
     required AppBrazilStoreSalesMapMetric metric,
-    required String? selectedStoreId,
-    required String? requestedStateKey,
     required String? activeRegionKey,
     required double zoomLevel,
+    String? selectedStoreId,
+    String? requestedStateKey,
   }) {
     final parts = <String>[
       'fx=${_sortedSetJoin(fixedBranchIds)}',
@@ -226,8 +258,6 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
       style.showTooltip.toString(),
       '${style.markerMinSize}|${style.markerMaxSize}|${style.height}',
       'm=${metric.name}',
-      'ss=$selectedStoreId',
-      'rs=$requestedStateKey',
       'ak=$activeRegionKey',
       'z=$zoomLevel',
       'pts=${AppBrazilStoreSalesMapData.pointsContentDigest(points)}',
@@ -311,18 +341,27 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
   }) {
     final entries = <AppBrazilStoreSalesVisibleBranchListItem>[
       for (final point in points)
-        AppBrazilStoreSalesVisibleBranchListItem(
-          id: point.id,
-          point: point,
-          displayName: _displayNameForPoint(
+        () {
+          final displayName = _displayNameForPoint(
             point,
             defaultBranchName: defaultBranchName,
-          ),
-          cityUfLabel: _cityUfLabelForPoint(point),
-          salesAmount: point.salesAmount,
-          isSelected: point.id == selectedStoreId,
-          state: _branchItemStateFor(point),
-        ),
+          );
+          final cityUfLabel = _cityUfLabelForPoint(point);
+          return AppBrazilStoreSalesVisibleBranchListItem(
+            id: point.id,
+            point: point,
+            displayName: displayName,
+            cityUfLabel: cityUfLabel,
+            searchIndexText:
+                AppLocationLookupNormalizer.normalizeAddressLine(
+                  '$displayName $cityUfLabel',
+                ) ??
+                point.id,
+            salesAmount: point.salesAmount,
+            isSelected: point.id == selectedStoreId,
+            state: _branchItemStateFor(point),
+          );
+        }(),
     ];
     return entries..sort(_compareVisibleBranchListItems);
   }

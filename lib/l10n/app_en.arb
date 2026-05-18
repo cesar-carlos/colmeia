@@ -1494,6 +1494,18 @@
       "time": {"type": "String"}
     }
   },
+  "salesAutoRefreshNextIn": "Next in {time}",
+  "@salesAutoRefreshNextIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "salesAutoRefreshRetryIn": "Retry in {time}",
+  "@salesAutoRefreshRetryIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "salesDailyTotalsChartTitle": "Daily sales",
   "salesDailyTotalsChartTitleAmount": "Daily revenue",
   "salesDailyTotalsChartSubtitle": "Totals per calendar day for the selected branch and reference month.",

@@ -140,6 +140,9 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
   final ScrollController _scrollController = ScrollController();
   List<FocusNode> _focusNodes = const <FocusNode>[];
   int _focusedIndex = 0;
+  _DesktopBranchSidebarFilterResult? _filterResultCache;
+  String? _filterResultQueryCache;
+  List<AppBrazilStoreSalesVisibleBranchListItem>? _filterResultEntriesCache;
 
   @override
   void initState() {
@@ -154,6 +157,7 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.entries != widget.entries ||
         oldWidget.selectedStoreId != widget.selectedStoreId) {
+      _invalidateFilterResultCache();
       _syncFocusNodes();
       _queueFocusRequest();
     }
@@ -173,26 +177,54 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
 
   String get _searchQuery => _searchController.text.trim();
 
-  List<AppBrazilStoreSalesVisibleBranchListItem> get _filteredEntries {
-    final normalizedQuery = _normalizedSearchToken(_searchQuery);
-    if (normalizedQuery == null) {
-      return widget.entries;
+  void _invalidateFilterResultCache() {
+    _filterResultCache = null;
+    _filterResultQueryCache = null;
+    _filterResultEntriesCache = null;
+  }
+
+  _DesktopBranchSidebarFilterResult get _filterResult {
+    final searchQuery = _searchQuery;
+    final entries = widget.entries;
+    final cachedResult = _filterResultCache;
+    if (cachedResult != null &&
+        identical(_filterResultEntriesCache, entries) &&
+        _filterResultQueryCache == searchQuery) {
+      return cachedResult;
     }
-    return widget.entries
-        .where((entry) {
-          final haystack = _normalizedSearchToken(
-            '${entry.displayName} ${entry.cityUfLabel}',
-          );
-          return haystack != null && haystack.contains(normalizedQuery);
-        })
-        .toList(growable: false);
+
+    final normalizedQuery = _normalizedSearchToken(searchQuery);
+    final filteredEntries = normalizedQuery == null
+        ? entries
+        : entries
+              .where((entry) => entry.searchIndexText.contains(normalizedQuery))
+              .toList(growable: false);
+    final totalVisibleRevenue = filteredEntries.fold<double>(
+      0,
+      (sum, entry) => sum + entry.salesAmount,
+    );
+    final result = _DesktopBranchSidebarFilterResult(
+      entries: filteredEntries,
+      totalVisibleRevenue: totalVisibleRevenue,
+    );
+    _filterResultCache = result;
+    _filterResultQueryCache = searchQuery;
+    _filterResultEntriesCache = entries;
+    return result;
+  }
+
+  List<AppBrazilStoreSalesVisibleBranchListItem> get _filteredEntries {
+    return _filterResult.entries;
   }
 
   void _handleSearchChanged() {
     if (!mounted) {
       return;
     }
-    setState(_syncFocusNodes);
+    setState(() {
+      _invalidateFilterResultCache();
+      _syncFocusNodes();
+    });
   }
 
   void _syncFocusNodes() {
@@ -297,10 +329,7 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
     final appColors = context.appColors;
     final l10n = AppLocalizations.of(context);
     final filteredEntries = _filteredEntries;
-    final totalVisibleRevenue = filteredEntries.fold<double>(
-      0,
-      (sum, entry) => sum + entry.salesAmount,
-    );
+    final totalVisibleRevenue = _filterResult.totalVisibleRevenue;
     final hasActiveSearch = _searchQuery.isNotEmpty;
     final emptyStateTitle = hasActiveSearch
         ? l10n.brazilStoreSalesMapSidebarSearchEmptyStateTitle
@@ -505,6 +534,16 @@ String? _normalizedSearchToken(String? value) {
     return null;
   }
   return normalized;
+}
+
+class _DesktopBranchSidebarFilterResult {
+  const _DesktopBranchSidebarFilterResult({
+    required this.entries,
+    required this.totalVisibleRevenue,
+  });
+
+  final List<AppBrazilStoreSalesVisibleBranchListItem> entries;
+  final double totalVisibleRevenue;
 }
 
 class _DesktopBranchSidebarEmptyState extends StatelessWidget {

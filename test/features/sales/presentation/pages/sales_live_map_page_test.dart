@@ -11,6 +11,7 @@ import 'package:colmeia/features/sales/application/load_sales_available_agents_u
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
@@ -50,6 +51,7 @@ void main() {
     Provider.debugCheckInvalidValueType = null;
     registerFallbackValue(const SalesLiveMapFilter());
     registerFallbackValue(SalesLiveMapLoadCancelToken());
+    registerFallbackValue(SalesAutoRefreshPreference.disabled);
   });
 
   setUp(() async {
@@ -75,6 +77,12 @@ void main() {
     ).thenReturn(const SalesLiveMapFilter());
     when(
       () => salesPreferences.persistSalesLiveMapFilter(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => salesPreferences.restoreSalesLiveMapAutoRefreshPreference(),
+    ).thenReturn(SalesAutoRefreshPreference.disabled);
+    when(
+      () => salesPreferences.persistSalesLiveMapAutoRefreshPreference(any()),
     ).thenAnswer((_) async {});
     when(
       () => loadAvailableAgentsForSales.call('user-1'),
@@ -155,6 +163,57 @@ void main() {
       ),
     ).called(1);
   });
+
+  testWidgets(
+    'restores the persisted auto-refresh interval and last updated label',
+    (tester) async {
+      when(
+        () => salesPreferences.restoreSalesLiveMapAutoRefreshPreference(),
+      ).thenReturn(
+        SalesAutoRefreshPreference(
+          interval: SalesAutoRefreshInterval.fiveMinutes,
+          lastSuccessfulRefreshAt: DateTime(2026, 5, 9, 11, 45),
+          remainingDelay: const Duration(minutes: 5),
+        ),
+      );
+
+      await _pumpPage(tester, authController: authController);
+      await _pumpInitialLoad(tester);
+
+      expect(find.text('5 min'), findsOneWidget);
+      expect(find.textContaining('Updated 12:00'), findsOneWidget);
+      expect(find.textContaining('Next in'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'does not advance last updated label when the reload fails',
+    (tester) async {
+      when(
+        () => salesPreferences.restoreSalesLiveMapAutoRefreshPreference(),
+      ).thenReturn(
+        SalesAutoRefreshPreference(
+          interval: SalesAutoRefreshInterval.fiveMinutes,
+          lastSuccessfulRefreshAt: DateTime(2026, 5, 9, 11, 45),
+          remainingDelay: const Duration(minutes: 5),
+        ),
+      );
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) => _streamResult(_failedResult()));
+
+      await _pumpPage(tester, authController: authController);
+      await _pumpInitialLoad(tester);
+
+      expect(find.textContaining('Updated 11:45'), findsOneWidget);
+      expect(find.textContaining('Updated 12:00'), findsNothing);
+      expect(find.textContaining('Next in'), findsOneWidget);
+    },
+  );
 
   testWidgets('ignores auto-refresh tick while reload is still running', (
     tester,
@@ -1199,6 +1258,26 @@ SalesLiveMapLoadResult _emptyResult() {
     missingClientTokenAgentCount: 0,
     skippedOfflineAgentCount: 0,
     rowCapReachedAgentCount: 0,
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
+}
+
+SalesLiveMapLoadResult _failedResult() {
+  return SalesLiveMapLoadResult(
+    points: const <AppBrazilStoreSalesPoint>[],
+    branchOptions: const <SalesLiveMapBranchOption>[],
+    totalRevenue: 0,
+    totalSalesCount: 0,
+    totalBranchCount: 0,
+    mappedBranchCount: 0,
+    mappedMunicipalityCount: 0,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    loadFailed: true,
     refreshedAt: DateTime(2026, 5, 9, 12),
   );
 }

@@ -1,5 +1,6 @@
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 
@@ -60,6 +61,16 @@ class SalesSessionService {
 
   Future<void> persistSalesLiveMapFilter(SalesLiveMapFilter filter) {
     return _preferences.persistSalesLiveMapFilter(filter);
+  }
+
+  SalesAutoRefreshPreference restoreSalesLiveMapAutoRefreshPreference() {
+    return _preferences.restoreSalesLiveMapAutoRefreshPreference();
+  }
+
+  Future<void> persistSalesLiveMapAutoRefreshPreference(
+    SalesAutoRefreshPreference preference,
+  ) {
+    return _preferences.persistSalesLiveMapAutoRefreshPreference(preference);
   }
 
   SalesMonthlyPnlBarChartPreferences restoreMonthlyPnlBarChartPreferences() {

@@ -5,6 +5,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
@@ -33,6 +34,18 @@ class SalesLiveMapController extends ChangeNotifier {
   bool _disposed = false;
 
   SalesLiveMapPresentationState get state => _state;
+
+  SalesAutoRefreshPreference restoreAutoRefreshPreference() {
+    return _sessionService.restoreSalesLiveMapAutoRefreshPreference();
+  }
+
+  Future<void> persistAutoRefreshPreference(
+    SalesAutoRefreshPreference preference,
+  ) {
+    return _sessionService.persistSalesLiveMapAutoRefreshPreference(
+      preference,
+    );
+  }
 
   Future<void> bindUser(String? userId) async {
     if (_boundUserId == userId) {

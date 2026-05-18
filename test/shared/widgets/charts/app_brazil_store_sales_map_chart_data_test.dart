@@ -681,10 +681,16 @@ void main() {
         expect(snapshot.minMarkerValue, 100);
         expect(snapshot.maxMarkerValue, 300);
         expect(snapshot.cachedReuseKey, 'reuse-key');
+        expect(
+          snapshot.visibleBranchListItems.first.searchIndexText,
+          'LOJA_PAULISTA_SAO_PAULO_SP',
+        );
       },
     );
 
-    test('snapshot reuse key is stable for equivalent point content', () {
+    test(
+      'snapshot reuse key is stable for equivalent point content and ignores visual selection state',
+      () {
       const pointsA = <AppBrazilStoreSalesPoint>[
         AppBrazilStoreSalesPoint(
           id: 'sinop',
@@ -714,8 +720,6 @@ void main() {
         filterBranchIds: const <String>{'b'},
         style: const AppBrazilStoreSalesMapStyle.standard(),
         metric: AppBrazilStoreSalesMapMetric.revenue,
-        selectedStoreId: 'sinop',
-        requestedStateKey: 'MT',
         activeRegionKey: null,
         zoomLevel: 2,
       );
@@ -725,8 +729,8 @@ void main() {
         filterBranchIds: const <String>{'b'},
         style: const AppBrazilStoreSalesMapStyle.standard(),
         metric: AppBrazilStoreSalesMapMetric.revenue,
-        selectedStoreId: 'sinop',
-        requestedStateKey: 'MT',
+        selectedStoreId: 'other-store',
+        requestedStateKey: 'SP',
         activeRegionKey: null,
         zoomLevel: 2,
       );

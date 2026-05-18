@@ -109,6 +109,8 @@ class _SyncfusionRegionMapChartState<T>
   final List<double> _liveShapeMetricValues = <double>[];
   Color _liveShapeLowColor = Colors.transparent;
   Color _liveShapeHighColor = Colors.transparent;
+  double _liveShapeMetricMinValue = 0;
+  double _liveShapeMetricRange = 1;
 
   @override
   void initState() {
@@ -314,12 +316,15 @@ class _SyncfusionRegionMapChartState<T>
         widget.style.lowValueColor ??
         chartTheme.primaryColor.withValues(alpha: 0.18);
     final highColor = widget.style.highValueColor ?? chartTheme.primaryColor;
+    final metricRange = _resolveMetricRange(metricValues);
 
     _liveShapeLowColor = lowColor;
     _liveShapeHighColor = highColor;
     _liveShapeMetricValues
       ..clear()
       ..addAll(metricValues);
+    _liveShapeMetricMinValue = metricRange.minValue;
+    _liveShapeMetricRange = metricRange.range;
 
     final geometryFingerprint = _geometryShapeSourceFingerprint(
       regionKeys: regionKeys,
@@ -956,17 +961,40 @@ class _SyncfusionRegionMapChartState<T>
     return value.toStringAsFixed(6).hashCode;
   }
 
+  ({double minValue, double maxValue, double range}) _resolveMetricRange(
+    List<double> values,
+  ) {
+    if (values.isEmpty) {
+      return (minValue: 0, maxValue: 0, range: 1);
+    }
+
+    var minValue = values.first;
+    var maxValue = values.first;
+    for (final value in values.skip(1)) {
+      if (value < minValue) {
+        minValue = value;
+      }
+      if (value > maxValue) {
+        maxValue = value;
+      }
+    }
+
+    final rawRange = maxValue - minValue;
+    return (
+      minValue: minValue,
+      maxValue: maxValue,
+      range: rawRange.abs() < 0.0001 ? 1.0 : rawRange,
+    );
+  }
+
   Color _shapeColorValueForIndex(int index) {
     final values = _liveShapeMetricValues;
     if (values.isEmpty || index < 0 || index >= values.length) {
       return _liveShapeLowColor;
     }
-    final minValue = values.reduce(math.min);
-    final maxValue = values.reduce(math.max);
-    final range = (maxValue - minValue).abs() < 0.0001
-        ? 1.0
-        : maxValue - minValue;
-    final normalized = ((values[index] - minValue) / range).clamp(
+    final normalized = ((values[index] - _liveShapeMetricMinValue) /
+            _liveShapeMetricRange)
+        .clamp(
       0.0,
       1.0,
     );

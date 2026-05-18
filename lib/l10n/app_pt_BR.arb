@@ -1270,6 +1270,18 @@
       "time": {"type": "String"}
     }
   },
+  "salesAutoRefreshNextIn": "Proximo em {time}",
+  "@salesAutoRefreshNextIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "salesAutoRefreshRetryIn": "Nova tentativa em {time}",
+  "@salesAutoRefreshRetryIn": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "salesDailyTotalsChartTitle": "Vendas por dia",
   "salesDailyTotalsChartTitleAmount": "Faturamento diário",
   "salesDailyTotalsChartSubtitle": "Totais por dia civil na filial e no mês de referência selecionados.",

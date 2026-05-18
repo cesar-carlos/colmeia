@@ -557,12 +557,14 @@ void main() {
             payload.points.any((groupPoint) => groupPoint.id == 'store-2');
       });
       final storeTwoSizeBefore = storeTwoPointBefore.style?.size;
-
-      (tester.state(
+      final previewHandle =
+          tester.state(
                 find.byType(AppBrazilStoreSalesMapChart),
               )
-              as AppBrazilStoreSalesMapChartPreviewTestHandle)
-          .previewBranchForTesting(points[1]);
+              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final snapshotDataBefore = previewHandle.snapshotDataIdentityForTesting;
+
+      previewHandle.previewBranchForTesting(points[1]);
       await tester.pump();
       await tester.pump();
 
@@ -582,6 +584,7 @@ void main() {
             payload.points.any((groupPoint) => groupPoint.id == 'store-2');
       });
       expect(storeTwoPointAfter.style?.size, greaterThan(storeTwoSizeBefore!));
+      expect(previewHandle.snapshotDataIdentityForTesting, same(snapshotDataBefore));
       expect(
         find.byKey(
           const ValueKey<String>('brazil-store-sales-map-store-detail'),
@@ -589,11 +592,7 @@ void main() {
         findsNothing,
       );
 
-      (tester.state(
-                find.byType(AppBrazilStoreSalesMapChart),
-              )
-              as AppBrazilStoreSalesMapChartPreviewTestHandle)
-          .clearPreviewBranchForTesting();
+      previewHandle.clearPreviewBranchForTesting();
       await tester.pump(const Duration(milliseconds: 200));
 
       final regionMapReset = tester
@@ -612,6 +611,7 @@ void main() {
             payload.points.any((groupPoint) => groupPoint.id == 'store-2');
       });
       expect(storeTwoPointReset.style?.size, storeTwoSizeBefore);
+      expect(previewHandle.snapshotDataIdentityForTesting, same(snapshotDataBefore));
 
       await tester.enterText(
         find.byKey(

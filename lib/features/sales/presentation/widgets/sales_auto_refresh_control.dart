@@ -1,22 +1,9 @@
+import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:flutter/material.dart';
 
-enum SalesAutoRefreshInterval {
-  fiveMinutes,
-  tenMinutes,
-  fifteenMinutes,
-  thirtyMinutes,
-}
-
 extension SalesAutoRefreshIntervalProperties on SalesAutoRefreshInterval {
-  Duration get duration => switch (this) {
-    SalesAutoRefreshInterval.fiveMinutes => const Duration(minutes: 5),
-    SalesAutoRefreshInterval.tenMinutes => const Duration(minutes: 10),
-    SalesAutoRefreshInterval.fifteenMinutes => const Duration(minutes: 15),
-    SalesAutoRefreshInterval.thirtyMinutes => const Duration(minutes: 30),
-  };
-
   String get label => switch (this) {
     SalesAutoRefreshInterval.fiveMinutes => '5 min',
     SalesAutoRefreshInterval.tenMinutes => '10 min',

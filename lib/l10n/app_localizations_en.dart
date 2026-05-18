@@ -3024,6 +3024,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String salesAutoRefreshNextIn(String time) {
+    return 'Next in $time';
+  }
+
+  @override
+  String salesAutoRefreshRetryIn(String time) {
+    return 'Retry in $time';
+  }
+
+  @override
   String get salesDailyTotalsChartTitle => 'Daily sales';
 
   @override

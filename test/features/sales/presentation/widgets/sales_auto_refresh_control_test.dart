@@ -1,4 +1,5 @@
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

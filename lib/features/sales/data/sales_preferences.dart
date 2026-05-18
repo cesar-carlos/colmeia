@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
@@ -68,6 +69,7 @@ class SalesPreferences {
   static const String monthlyPnlCardId = 'monthly_pnl';
   static const String _legacyParcelasMensal12mCardId = 'parcelas_mensal_12m';
   static const String salesLiveMapCardId = 'sales_live_map';
+  static const String _salesLiveMapAutoRefreshSuffix = 'auto_refresh';
 
   static const int _anchorYearMin = 2000;
   static const int _anchorYearMax = 2100;
@@ -237,6 +239,70 @@ class SalesPreferences {
     }
 
     await persistCardFilters(salesLiveMapCardId, encoded);
+  }
+
+  SalesAutoRefreshPreference restoreSalesLiveMapAutoRefreshPreference() {
+    final store = PersistedPageSessionStore(
+      prefs: _prefs,
+      namespace: 'colmeia_sales_card.$salesLiveMapCardId',
+    );
+    final raw = store.restoreJsonMap(suffix: _salesLiveMapAutoRefreshSuffix);
+    final interval = _salesAutoRefreshIntervalFromRaw(raw['interval']);
+    final refreshedAtMs = raw['last_successful_refresh_at_ms'];
+    final nextDueAtMs = raw['next_due_at_ms'];
+    final remainingDelayMs = raw['remaining_delay_ms'];
+    final failureStreakRaw = raw['failure_streak'];
+    final lastSuccessfulRefreshAt = refreshedAtMs is int
+        ? DateTime.fromMillisecondsSinceEpoch(refreshedAtMs)
+        : null;
+    final nextDueAt = nextDueAtMs is int
+        ? DateTime.fromMillisecondsSinceEpoch(nextDueAtMs)
+        : null;
+    final remainingDelay = remainingDelayMs is int && remainingDelayMs >= 0
+        ? Duration(milliseconds: remainingDelayMs)
+        : null;
+    final failureStreak = failureStreakRaw is int && failureStreakRaw >= 0
+        ? failureStreakRaw
+        : 0;
+    return SalesAutoRefreshPreference(
+      interval: interval,
+      lastSuccessfulRefreshAt: lastSuccessfulRefreshAt,
+      nextDueAt: nextDueAt,
+      remainingDelay: remainingDelay,
+      failureStreak: failureStreak,
+    );
+  }
+
+  Future<void> persistSalesLiveMapAutoRefreshPreference(
+    SalesAutoRefreshPreference preference,
+  ) async {
+    final store = PersistedPageSessionStore(
+      prefs: _prefs,
+      namespace: 'colmeia_sales_card.$salesLiveMapCardId',
+    );
+    final interval = preference.interval;
+    if (interval == null) {
+      await store.persistJsonMap(
+        suffix: _salesLiveMapAutoRefreshSuffix,
+        value: const <String, Object?>{},
+      );
+      return;
+    }
+    await store.persistJsonMap(
+      suffix: _salesLiveMapAutoRefreshSuffix,
+      value: <String, Object?>{
+        'interval': interval.name,
+        if (preference.lastSuccessfulRefreshAt != null)
+          'last_successful_refresh_at_ms':
+              preference.lastSuccessfulRefreshAt!.millisecondsSinceEpoch,
+        if (preference.nextDueAt != null)
+          'next_due_at_ms': preference.nextDueAt!.millisecondsSinceEpoch,
+        if (preference.remainingDelay != null)
+          'remaining_delay_ms': preference.remainingDelay!.inMilliseconds,
+        if (preference.failureStreak > 0)
+          'failure_streak': preference.failureStreak,
+      },
+    );
   }
 
   static const String _monthlyPnlBarChartSuffix = 'bar_chart';
@@ -441,5 +507,19 @@ class SalesPreferences {
     return range.clampedToMaxInclusiveCalendarDays(
       kSalesLiveMapMaxCustomRangeInclusiveDays,
     );
+  }
+
+  static SalesAutoRefreshInterval? _salesAutoRefreshIntervalFromRaw(
+    Object? raw,
+  ) {
+    if (raw is! String) {
+      return null;
+    }
+    for (final interval in SalesAutoRefreshInterval.values) {
+      if (interval.name == raw) {
+        return interval;
+      }
+    }
+    return null;
   }
 }

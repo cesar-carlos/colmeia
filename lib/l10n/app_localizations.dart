@@ -4960,6 +4960,18 @@ abstract class AppLocalizations {
   /// **'Updated {time}'**
   String salesAutoRefreshLastUpdatedAt(String time);
 
+  /// No description provided for @salesAutoRefreshNextIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Next in {time}'**
+  String salesAutoRefreshNextIn(String time);
+
+  /// No description provided for @salesAutoRefreshRetryIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry in {time}'**
+  String salesAutoRefreshRetryIn(String time);
+
   /// No description provided for @salesDailyTotalsChartTitle.
   ///
   /// In en, this message translates to:

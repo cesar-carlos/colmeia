@@ -3070,6 +3070,16 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String salesAutoRefreshNextIn(String time) {
+    return 'Proximo em $time';
+  }
+
+  @override
+  String salesAutoRefreshRetryIn(String time) {
+    return 'Nova tentativa em $time';
+  }
+
+  @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';
 
   @override
@@ -6832,6 +6842,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String salesAutoRefreshLastUpdatedAt(String time) {
     return 'Atualizado $time';
+  }
+
+  @override
+  String salesAutoRefreshNextIn(String time) {
+    return 'Proximo em $time';
+  }
+
+  @override
+  String salesAutoRefreshRetryIn(String time) {
+    return 'Nova tentativa em $time';
   }
 
   @override
