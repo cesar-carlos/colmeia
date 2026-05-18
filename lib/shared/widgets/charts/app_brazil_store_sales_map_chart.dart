@@ -6,6 +6,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
@@ -16,7 +17,6 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapsho
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
-import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
