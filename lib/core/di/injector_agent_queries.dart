@@ -203,7 +203,7 @@ void _registerAgentQueryTransport(GetIt getIt) {
                   'triggerCode': trigger.code,
                   'triggerMessage': trigger.message,
                   'agentBridgeTransport':
-                      AppEnvironment.agentBridgeTransport.name,
+                      AppEnvironment.agentBridgeTransport.wireValue,
                 },
               ),
             );
@@ -225,7 +225,7 @@ void _registerAgentQueryTransport(GetIt getIt) {
                   context: <String, Object?>{
                     'triggerCode': trigger.code,
                     'triggerMessage': trigger.message,
-                    'transport': AppEnvironment.agentBridgeTransport.name,
+                    'transport': AppEnvironment.agentBridgeTransport.wireValue,
                   },
                 ),
               );
@@ -238,7 +238,7 @@ void _registerAgentQueryTransport(GetIt getIt) {
         AppLogger.info(
           'AgentQueriesRemoteDataSource initialized',
           context: <String, Object?>{
-            'transport': AppEnvironment.agentBridgeTransport.name,
+            'transport': AppEnvironment.agentBridgeTransport.wireValue,
             'relayEnabled': relay != null,
             'baseUsesSocketRestFallback':
                 AppEnvironment.agentBridgeTransport ==

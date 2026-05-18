@@ -397,7 +397,7 @@ void main() {
       await tester.pumpWidget(
         _TestApp(
           child: _MutableLoadingRegionMap(
-            onViewportChanged: (event) => events.add(event),
+            onViewportChanged: events.add,
           ),
         ),
       );

@@ -6,6 +6,7 @@ import 'package:colmeia/app/router/app_router.dart';
 import 'package:colmeia/app/socket_lifecycle_observer.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/app/web_url_strategy.dart';
+import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_dotenv_loader.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
@@ -21,6 +22,41 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
+@visibleForTesting
+void logResolvedAgentBridgeTransportAtBootstrap() {
+  final rawTransport = AppEnvironment.agentBridgeTransportRaw;
+  final parsedTransport = AgentBridgeTransport.tryParse(rawTransport);
+  final resolvedTransport =
+      parsedTransport ?? AppEnvironment.agentBridgeTransport;
+  final hasExplicitInvalidTransport =
+      rawTransport.trim().isNotEmpty && parsedTransport == null;
+
+  if (hasExplicitInvalidTransport) {
+    AppLogger.warning(
+      'Bootstrap: invalid AGENT_BRIDGE_TRANSPORT value; falling back to default transport',
+      context: <String, Object?>{
+        'component': 'bootstrap',
+        'rawTransport': rawTransport,
+        'resolvedTransport': resolvedTransport.wireValue,
+        'fallbackApplied': true,
+      },
+    );
+  }
+
+  AppLogger.info(
+    'Bootstrap: agent bridge transport resolved',
+    context: <String, Object?>{
+      'component': 'bootstrap',
+      'transport': resolvedTransport.wireValue,
+      'rawTransport': rawTransport.isEmpty ? null : rawTransport,
+      'socketRelayEnabled': AppEnvironment.socketRelayEnabled,
+      'socketPresenceListenerEnabled':
+          AppEnvironment.socketPresenceListenerEnabled,
+      'socketWarmUpAfterLogin': AppEnvironment.socketWarmUpAfterLogin,
+    },
+  );
+}
+
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureColmeiaWebUrlStrategy();
@@ -32,18 +68,7 @@ Future<void> bootstrap() async {
   // require a Sentry round-trip — the answer shows up in the very
   // first lines of `flutter logs`. Cheap (single info line per cold
   // start) and pays for itself on every env-flip rollout.
-  final resolvedTransport = AppEnvironment.agentBridgeTransport;
-  AppLogger.info(
-    'Bootstrap: agent bridge transport resolved',
-    context: <String, Object?>{
-      'component': 'bootstrap',
-      'transport': resolvedTransport.name,
-      'socketRelayEnabled': AppEnvironment.socketRelayEnabled,
-      'socketPresenceListenerEnabled':
-          AppEnvironment.socketPresenceListenerEnabled,
-      'socketWarmUpAfterLogin': AppEnvironment.socketWarmUpAfterLogin,
-    },
-  );
+  logResolvedAgentBridgeTransportAtBootstrap();
 
   await runAppWithOptionalSentry(() async {
     await setupDependencies();

@@ -50,6 +50,22 @@ AGENT_BRIDGE_TRANSPORT=rest
       check(AppEnvironment.consumerSocketLifecycleEnabled).isFalse();
     });
 
+    test('invalid transport value falls back to rest', () {
+      dotenv.loadFromString(
+        envString: '''
+AGENT_BRIDGE_TRANSPORT=grpc
+''',
+      );
+
+      check(AppEnvironment.agentBridgeTransportRaw).equals('grpc');
+      check(AppEnvironment.agentBridgeTransport).equals(
+        AgentBridgeTransport.rest,
+      );
+      check(AppEnvironment.socketRelayEnabled).isFalse();
+      check(AppEnvironment.socketPresenceListenerEnabled).isFalse();
+      check(AppEnvironment.consumerSocketLifecycleEnabled).isFalse();
+    });
+
     test('defaults connection:ready decoding to payloadFrameOnly', () {
       dotenv.loadFromString(
         envString: '''

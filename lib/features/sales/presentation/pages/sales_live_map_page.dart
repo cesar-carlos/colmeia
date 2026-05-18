@@ -181,7 +181,6 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
         extra: AppChartFullscreenRouteExtra(
           title: l10n.salesLiveMapChartTitle,
           subtitle: viewModel.mapSubtitle,
-          filterSummary: viewModel.fullscreenFilterSummary,
           chartSemanticsLabel: l10n.salesLiveMapChartTitle,
           chartBuilder: (_) {
             return LayoutBuilder(
@@ -190,7 +189,12 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
                   context,
                 ).extension<AppThemeTokens>()!;
                 return AppSectionCard(
-                  padding: EdgeInsets.all(tokens.contentSpacing),
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.contentSpacing,
+                    tokens.contentSpacing,
+                    tokens.contentSpacing,
+                    0,
+                  ),
                   child: LayoutBuilder(
                     builder: (context, cardConstraints) {
                       Widget chart = AppBrazilStoreSalesMapChart(
@@ -200,6 +204,10 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
                         fixedBranchIds: filterBranchIdsSnapshot,
                         style: styleSnapshot,
                         onMetricChanged: _controller.updateMetric,
+                        showDesktopBranchSidebar: true,
+                        presentationMode:
+                            AppBrazilStoreSalesMapPresentationMode
+                                .cleanFullscreen,
                       );
                       final maxH = cardConstraints.maxHeight;
                       if (maxH.isFinite && maxH < double.infinity) {
@@ -480,6 +488,8 @@ class _SalesLiveMapBodySection extends StatelessWidget {
               filterBranchIds: state.filterBranchStorageKeys,
               fixedBranchIds: state.filterBranchStorageKeys,
               style: state.mapStyle,
+              presentationMode:
+                  AppBrazilStoreSalesMapPresentationMode.inlineOperational,
               onMetricChanged: controller.updateMetric,
               onOpenFullscreen: () => onOpenFullscreen(state, viewModel),
             ),
@@ -525,6 +535,8 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
               showStoreDetail: false,
               showRegionFilter: false,
             ),
+            presentationMode:
+                AppBrazilStoreSalesMapPresentationMode.inlineOperational,
           ),
         ],
       ),

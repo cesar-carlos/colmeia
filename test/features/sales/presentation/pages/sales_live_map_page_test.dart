@@ -309,10 +309,104 @@ void main() {
     );
     expect(chart.style.showRegionFilter, isFalse);
     expect(
+      chart.presentationMode,
+      AppBrazilStoreSalesMapPresentationMode.inlineOperational,
+    );
+    expect(chart.style.showLegend, isTrue);
+    expect(chart.style.showMarkerScaleLegend, isTrue);
+    expect(chart.style.height, 560);
+    expect(
       chart.style.stateLabelMode,
       AppBrazilStoreSalesStateLabelMode.uf,
     );
   });
+
+  testWidgets(
+    'keeps the desktop branch sidebar disabled inline and enables it in fullscreen',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final router = GoRouter(
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/',
+            builder: (context, state) =>
+                ChangeNotifierProvider<SalesLiveMapController>(
+                  create: (_) => SalesLiveMapController(
+                    sessionService: SalesSessionService(_pumpSalesPreferences),
+                    loadSalesAvailableAgentsUseCase:
+                        LoadSalesAvailableAgentsUseCase(
+                          _pumpLoadAvailableAgentsForSales,
+                        ),
+                    loadSalesLiveMapUseCase: _pumpLoadLiveMap,
+                  ),
+                  child: const Scaffold(body: SalesLiveMapPage()),
+                ),
+          ),
+          ...buildAppChartFullscreenRoutes(),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        Provider<AuthController>.value(
+          value: authController,
+          child: MaterialApp.router(
+            theme: AppTheme.light(),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+      await _pumpInitialLoad(tester);
+
+      final inlineChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart).last,
+      );
+      expect(inlineChart.showDesktopBranchSidebar, isFalse);
+      expect(
+        inlineChart.presentationMode,
+        AppBrazilStoreSalesMapPresentationMode.inlineOperational,
+      );
+
+      final fullscreenFinder = find.byIcon(Icons.open_in_full);
+      await tester.ensureVisible(fullscreenFinder);
+      await tester.pump();
+      await tester.tap(fullscreenFinder);
+      await tester.pumpAndSettle();
+
+      final fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart).last,
+      );
+      expect(fullscreenChart.showDesktopBranchSidebar, isTrue);
+      expect(
+        fullscreenChart.presentationMode,
+        AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+      );
+      expect(fullscreenChart.style.showLegend, isTrue);
+      expect(fullscreenChart.style.showMarkerScaleLegend, isTrue);
+      expect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-map-sidebar')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-floating'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Branches:'), findsNothing);
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-legend-button'),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('shows explicit empty state when the query returns no sales', (
     tester,
@@ -687,16 +781,18 @@ void main() {
       routes: <RouteBase>[
         GoRoute(
           path: '/',
-          builder: (context, state) => ChangeNotifierProvider<SalesLiveMapController>(
-            create: (_) => SalesLiveMapController(
-              sessionService: SalesSessionService(_pumpSalesPreferences),
-              loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-                _pumpLoadAvailableAgentsForSales,
+          builder: (context, state) =>
+              ChangeNotifierProvider<SalesLiveMapController>(
+                create: (_) => SalesLiveMapController(
+                  sessionService: SalesSessionService(_pumpSalesPreferences),
+                  loadSalesAvailableAgentsUseCase:
+                      LoadSalesAvailableAgentsUseCase(
+                        _pumpLoadAvailableAgentsForSales,
+                      ),
+                  loadSalesLiveMapUseCase: _pumpLoadLiveMap,
+                ),
+                child: const Scaffold(body: SalesLiveMapPage()),
               ),
-              loadSalesLiveMapUseCase: _pumpLoadLiveMap,
-            ),
-            child: const Scaffold(body: SalesLiveMapPage()),
-          ),
         ),
         ...buildAppChartFullscreenRoutes(),
       ],

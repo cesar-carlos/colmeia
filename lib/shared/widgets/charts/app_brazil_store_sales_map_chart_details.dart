@@ -826,3 +826,46 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
     );
   }
 }
+
+class _BrazilStoreSalesMapContent extends StatelessWidget {
+  const _BrazilStoreSalesMapContent({
+    required this.regionMap,
+    this.mapOverlay,
+    this.diagnostics,
+    this.markerLegend,
+    this.detail,
+  });
+
+  final Widget regionMap;
+  final Widget? mapOverlay;
+  final Widget? diagnostics;
+  final Widget? markerLegend;
+  final Widget? detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final regionMapContent = mapOverlay == null
+        ? regionMap
+        : Stack(
+            clipBehavior: Clip.none,
+            children: <Widget>[
+              regionMap,
+              mapOverlay!,
+            ],
+          );
+    final children = <Widget>[regionMapContent];
+    if (diagnostics != null) {
+      children.add(diagnostics!);
+    }
+    if (markerLegend != null) {
+      children.add(markerLegend!);
+    }
+    if (detail != null) {
+      children.add(detail!);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
+  }
+}

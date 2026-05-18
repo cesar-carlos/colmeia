@@ -28,7 +28,7 @@ void registerInjectorAgentMeta(GetIt getIt) {
                 'triggerCode': trigger.code,
                 'triggerMessage': trigger.message,
                 'agentBridgeTransport':
-                    AppEnvironment.agentBridgeTransport.name,
+                    AppEnvironment.agentBridgeTransport.wireValue,
               },
             ),
           ),

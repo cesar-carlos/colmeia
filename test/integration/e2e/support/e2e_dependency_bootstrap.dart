@@ -139,7 +139,7 @@ Future<void> _e2eSetupDependenciesBody() async {
       'client_token_loaded=${AppEnvironment.e2eClientToken.isNotEmpty} '
       'api=${AppEnvironment.apiBaseUrl} '
       'bearer=${AppEnvironment.hasE2eClientLoginCredentials} '
-      'transport=${AppEnvironment.agentBridgeTransport.name} '
+      'transport=${AppEnvironment.agentBridgeTransport.wireValue} '
       'relay_dispatch_disabled=${AppEnvironment.e2eDisableRelayDispatch}',
     );
   }

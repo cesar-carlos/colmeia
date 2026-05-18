@@ -1133,6 +1133,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get brazilStoreSalesMapDefaultBranchName => 'Unnamed branch';
 
   @override
+  String get brazilStoreSalesMapSidebarTitle => 'Visible branches';
+
+  @override
+  String brazilStoreSalesMapSidebarSummary(int count, String revenue) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count visible branches',
+      one: '1 visible branch',
+    );
+    return '$_temp0 · $revenue';
+  }
+
+  @override
+  String brazilStoreSalesMapSidebarCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count visible branches',
+      one: '1 visible branch',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String brazilStoreSalesMapSidebarRevenueSummary(String revenue) {
+    return 'Total in scope: $revenue';
+  }
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchPlaceholder =>
+      'Search branch or city';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchSemanticsLabel =>
+      'Search branch or city in the map list';
+
+  @override
+  String get brazilStoreSalesMapSidebarEmptyStateTitle => 'No visible branches';
+
+  @override
+  String get brazilStoreSalesMapSidebarEmptyStateMessage =>
+      'Adjust the map region or clear the active scope to list branches in this panel.';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchEmptyStateTitle =>
+      'No branches found';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchEmptyStateMessage =>
+      'Adjust the search to find branches in this scope.';
+
+  @override
+  String get brazilStoreSalesMapSidebarZeroSalesLabel => 'No sales in period';
+
+  @override
+  String get brazilStoreSalesMapSidebarCollapseTooltip => 'Hide branch list';
+
+  @override
+  String get brazilStoreSalesMapSidebarExpandTooltip => 'Show branch list';
+
+  @override
   String brazilStoreSalesMapAgentChipWithName(String agentName) {
     return 'Branch $agentName';
   }

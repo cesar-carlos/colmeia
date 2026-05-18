@@ -117,7 +117,7 @@ List<String> _missingSocketRelaySmokeKeys() {
   if (AppEnvironment.agentBridgeTransport != AgentBridgeTransport.socket) {
     missing.add(
       'AGENT_BRIDGE_TRANSPORT=socket '
-      '(current: ${AppEnvironment.agentBridgeTransport.name})',
+      '(current: ${AppEnvironment.agentBridgeTransport.wireValue})',
     );
   }
   if (AppEnvironment.e2eDisableRelayDispatch) {

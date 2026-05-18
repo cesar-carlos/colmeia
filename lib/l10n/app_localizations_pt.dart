@@ -1155,6 +1155,72 @@ class AppLocalizationsPt extends AppLocalizations {
   String get brazilStoreSalesMapDefaultBranchName => 'Filial sem nome';
 
   @override
+  String get brazilStoreSalesMapSidebarTitle => 'Filiais visiveis';
+
+  @override
+  String brazilStoreSalesMapSidebarSummary(int count, String revenue) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filiais visiveis',
+      one: '1 filial visivel',
+    );
+    return '$_temp0 · $revenue';
+  }
+
+  @override
+  String brazilStoreSalesMapSidebarCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filiais visiveis',
+      one: '1 filial visivel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String brazilStoreSalesMapSidebarRevenueSummary(String revenue) {
+    return 'Total no recorte: $revenue';
+  }
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchPlaceholder =>
+      'Buscar filial ou cidade';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchSemanticsLabel =>
+      'Buscar filial ou cidade na lista do mapa';
+
+  @override
+  String get brazilStoreSalesMapSidebarEmptyStateTitle =>
+      'Nenhuma filial visivel';
+
+  @override
+  String get brazilStoreSalesMapSidebarEmptyStateMessage =>
+      'Ajuste a regiao do mapa ou limpe o escopo ativo para listar filiais neste painel.';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchEmptyStateTitle =>
+      'Nenhuma filial encontrada';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchEmptyStateMessage =>
+      'Ajuste a busca para localizar filiais neste recorte.';
+
+  @override
+  String get brazilStoreSalesMapSidebarZeroSalesLabel =>
+      'Sem vendas no periodo';
+
+  @override
+  String get brazilStoreSalesMapSidebarCollapseTooltip =>
+      'Ocultar lista de filiais';
+
+  @override
+  String get brazilStoreSalesMapSidebarExpandTooltip =>
+      'Mostrar lista de filiais';
+
+  @override
   String brazilStoreSalesMapAgentChipWithName(String agentName) {
     return 'Filial $agentName';
   }
@@ -4852,6 +4918,72 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get brazilStoreSalesMapDefaultBranchName => 'Filial sem nome';
+
+  @override
+  String get brazilStoreSalesMapSidebarTitle => 'Filiais visiveis';
+
+  @override
+  String brazilStoreSalesMapSidebarSummary(int count, String revenue) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filiais visiveis',
+      one: '1 filial visivel',
+    );
+    return '$_temp0 · $revenue';
+  }
+
+  @override
+  String brazilStoreSalesMapSidebarCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filiais visiveis',
+      one: '1 filial visivel',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String brazilStoreSalesMapSidebarRevenueSummary(String revenue) {
+    return 'Total no recorte: $revenue';
+  }
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchPlaceholder =>
+      'Buscar filial ou cidade';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchSemanticsLabel =>
+      'Buscar filial ou cidade na lista do mapa';
+
+  @override
+  String get brazilStoreSalesMapSidebarEmptyStateTitle =>
+      'Nenhuma filial visivel';
+
+  @override
+  String get brazilStoreSalesMapSidebarEmptyStateMessage =>
+      'Ajuste a regiao do mapa ou limpe o escopo ativo para listar filiais neste painel.';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchEmptyStateTitle =>
+      'Nenhuma filial encontrada';
+
+  @override
+  String get brazilStoreSalesMapSidebarSearchEmptyStateMessage =>
+      'Ajuste a busca para localizar filiais neste recorte.';
+
+  @override
+  String get brazilStoreSalesMapSidebarZeroSalesLabel =>
+      'Sem vendas no periodo';
+
+  @override
+  String get brazilStoreSalesMapSidebarCollapseTooltip =>
+      'Ocultar lista de filiais';
+
+  @override
+  String get brazilStoreSalesMapSidebarExpandTooltip =>
+      'Mostrar lista de filiais';
 
   @override
   String brazilStoreSalesMapAgentChipWithName(String agentName) {

@@ -1,5 +1,176 @@
 part of 'app_brazil_store_sales_map_chart.dart';
 
+class _FloatingMapControlsOverlay extends StatelessWidget {
+  const _FloatingMapControlsOverlay({
+    required this.topInset,
+    required this.leftInset,
+    required this.selectedMetricKey,
+    required this.onMetricChanged,
+    required this.scopeOptions,
+    required this.activeScopeKey,
+    required this.scopeRootLabel,
+    required this.onScopeChanged,
+    this.metrics,
+  });
+
+  final double topInset;
+  final double leftInset;
+  final List<AppMapMetric<AppBrazilStoreSalesStateBucket>>? metrics;
+  final String selectedMetricKey;
+  final ValueChanged<AppMapMetricChangedEvent> onMetricChanged;
+  final List<AppMapScopeOption> scopeOptions;
+  final String? activeScopeKey;
+  final String scopeRootLabel;
+  final ValueChanged<AppMapScopeChangedEvent>? onScopeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final controls = <Widget>[];
+    final visibleMetrics = metrics;
+    if (visibleMetrics != null && visibleMetrics.isNotEmpty) {
+      controls.add(
+        _FloatingControlSurface(
+          child: KeyedSubtree(
+            key: const ValueKey<String>('app-region-map-metric-selector'),
+            child: Semantics(
+              label: l10n.regionMapMetricSelectorSemanticsLabel,
+              child: AppSegmentedControl<String>(
+                options: visibleMetrics
+                    .map(
+                      (metric) => AppSegmentedControlOption<String>(
+                        value: metric.key,
+                        label: metric.label,
+                      ),
+                    )
+                    .toList(growable: false),
+                value: selectedMetricKey,
+                onChanged: (nextMetricKey) {
+                  if (nextMetricKey == selectedMetricKey) {
+                    return;
+                  }
+                  onMetricChanged(
+                    AppMapMetricChangedEvent(
+                      metricKey: nextMetricKey,
+                      previousMetricKey: selectedMetricKey,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    if (onScopeChanged != null && scopeOptions.isNotEmpty) {
+      if (controls.isNotEmpty) {
+        controls.add(const SizedBox(height: _floatingMapOverlayGap));
+      }
+      controls.add(
+        _FloatingControlSurface(
+          child: KeyedSubtree(
+            key: const ValueKey<String>('app-region-map-scope-selector'),
+            child: Semantics(
+              label: l10n.regionMapScopeSemanticsLabel,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      AppChoiceChip(
+                        label: scopeRootLabel,
+                        selected: activeScopeKey == null,
+                        tooltip: l10n.regionMapViewFullScopeTooltip(
+                          scopeRootLabel,
+                        ),
+                        semanticLabel: l10n
+                            .regionMapViewFullScopeSemanticLabel(
+                              scopeRootLabel,
+                            ),
+                        onSelected: () {
+                          if (activeScopeKey == null) {
+                            return;
+                          }
+                          onScopeChanged!(
+                            AppMapScopeChangedEvent(
+                              previousScopeKey: activeScopeKey,
+                              currentScopeKey: null,
+                            ),
+                          );
+                        },
+                      ),
+                      for (final option in scopeOptions)
+                        AppChoiceChip(
+                          label: option.label,
+                          selected: option.key == activeScopeKey,
+                          tooltip: l10n.regionMapFocusScopeTooltip(
+                            option.label,
+                          ),
+                          semanticLabel: l10n.regionMapFocusScopeSemanticLabel(
+                            option.label,
+                          ),
+                          onSelected: () {
+                            if (option.key == activeScopeKey) {
+                              return;
+                            }
+                            onScopeChanged!(
+                              AppMapScopeChangedEvent(
+                                previousScopeKey: activeScopeKey,
+                                currentScopeKey: option.key,
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (controls.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned(
+      top: topInset,
+      left: leftInset,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: controls,
+      ),
+    );
+  }
+}
+
+class _FloatingControlSurface extends StatelessWidget {
+  const _FloatingControlSurface({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: colorScheme.surface.withValues(alpha: 0.94),
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(_floatingMapOverlaySurfaceRadius),
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: child,
+      ),
+    );
+  }
+}
+
 @visibleForTesting
 class AppBrazilStoreSalesSelectedMarkerDetailAnchor extends StatefulWidget {
   const AppBrazilStoreSalesSelectedMarkerDetailAnchor({
@@ -202,11 +373,15 @@ class AppBrazilStoreSalesBranchHoverDetailAnchor extends StatefulWidget {
     required this.metric,
     required this.marker,
     super.key,
+    this.initialStoreId,
+    this.forceVisible = false,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
   final AppBrazilStoreSalesMapMetric metric;
   final Widget marker;
+  final String? initialStoreId;
+  final bool forceVisible;
 
   @override
   State<AppBrazilStoreSalesBranchHoverDetailAnchor> createState() =>
@@ -224,6 +399,34 @@ class _HoverMarkerDetailAnchorState
   bool _hoveringMarker = false;
   bool _hoveringCard = false;
   double? _markerGlobalDx;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.forceVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _show();
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(
+    covariant AppBrazilStoreSalesBranchHoverDetailAnchor oldWidget,
+  ) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.forceVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _show();
+        }
+      });
+    } else if (oldWidget.forceVisible) {
+      _controller.hide();
+    }
+  }
 
   @override
   void dispose() {
@@ -279,6 +482,7 @@ class _HoverMarkerDetailAnchorState
             link: _link,
             group: widget.group,
             metric: widget.metric,
+            initialStoreId: widget.initialStoreId,
             onDismiss: _controller.hide,
             markerGlobalDx: _markerGlobalDx,
             onEnter: () {
@@ -292,14 +496,18 @@ class _HoverMarkerDetailAnchorState
           );
         },
         child: MouseRegion(
-          onEnter: (_) {
-            _hoveringMarker = true;
-            _show();
-          },
-          onExit: (_) {
-            _hoveringMarker = false;
-            _scheduleHide();
-          },
+          onEnter: widget.forceVisible
+              ? null
+              : (_) {
+                  _hoveringMarker = true;
+                  _show();
+                },
+          onExit: widget.forceVisible
+              ? null
+              : (_) {
+                  _hoveringMarker = false;
+                  _scheduleHide();
+                },
           child: KeyedSubtree(key: _markerKey, child: widget.marker),
         ),
       ),
@@ -312,6 +520,7 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
     required this.link,
     required this.group,
     required this.metric,
+    required this.initialStoreId,
     required this.onEnter,
     required this.onExit,
     required this.markerGlobalDx,
@@ -321,6 +530,7 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
   final LayerLink link;
   final AppBrazilStoreSalesMarkerGroup group;
   final AppBrazilStoreSalesMapMetric metric;
+  final String? initialStoreId;
   final VoidCallback onEnter;
   final VoidCallback onExit;
   final double? markerGlobalDx;
@@ -354,6 +564,7 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
                 child: _SelectedMarkerGroupDetailCard(
                   group: group,
                   metric: metric,
+                  initialStoreId: initialStoreId,
                   showTechnicalLocationDetails: false,
                   onDismiss: onDismiss,
                 ),

@@ -668,6 +668,7 @@ void main() {
             style: AppBrazilStoreSalesMapStyle.stateBubbles(height: 320),
           ),
           cachedReuseKey: 'reuse-key',
+          defaultBranchName: 'Filial sem nome',
         );
 
         expect(snapshot.selectedPoint?.id, 'paulista');
@@ -756,6 +757,7 @@ void main() {
             style: AppBrazilStoreSalesMapStyle.standard(),
           ),
           cachedReuseKey: 'missing-selection',
+          defaultBranchName: 'Filial sem nome',
         );
 
         expect(snapshot.selectedPoint, isNull);
@@ -793,6 +795,7 @@ void main() {
           style: AppBrazilStoreSalesMapStyle.stateBubbles(height: 320),
         ),
         cachedReuseKey: 'states-only',
+        defaultBranchName: 'Filial sem nome',
       );
 
       expect(snapshot.markerGroups, isEmpty);
@@ -834,6 +837,7 @@ void main() {
           ),
         ),
         cachedReuseKey: 'wide-zoom',
+        defaultBranchName: 'Filial sem nome',
       );
       final closeZoomSnapshot = AppBrazilStoreSalesMapSnapshotBuilder.build(
         const AppBrazilStoreSalesMapSnapshotInput(
@@ -846,6 +850,7 @@ void main() {
           ),
         ),
         cachedReuseKey: 'close-zoom',
+        defaultBranchName: 'Filial sem nome',
       );
 
       expect(wideZoomSnapshot.markerGroups, hasLength(1));

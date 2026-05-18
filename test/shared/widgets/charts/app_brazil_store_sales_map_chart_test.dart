@@ -53,6 +53,654 @@ void main() {
     expect(find.text('Geolocalizacao IBGE'), findsOneWidget);
   });
 
+  testWidgets(
+    'shows a desktop sidebar list in fullscreen mode and selects a branch on tap',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpMap(
+        tester,
+        width: 1400,
+        height: 780,
+        showDesktopBranchSidebar: true,
+        style: _baseStyle.copyWith(showRegionFilter: true),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Filial Cuiaba',
+            fantasyName: 'Mel Cuiaba',
+            uf: 'MT',
+            city: 'Cuiaba',
+            latitude: -15.60,
+            longitude: -56.10,
+            salesAmount: 4200,
+            salesCount: 42,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-2',
+            name: 'Filial Sao Paulo',
+            fantasyName: 'Mel Sao Paulo',
+            uf: 'SP',
+            city: 'Sao Paulo',
+            latitude: -23.55,
+            longitude: -46.63,
+            salesAmount: 9800,
+            salesCount: 98,
+          ),
+        ],
+      );
+
+      expect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-map-sidebar')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-floating'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Filiais visiveis'), findsOneWidget);
+      expect(
+        find.text(r'2 filiais visiveis · R$ 14.000,00'),
+        findsOneWidget,
+      );
+      expect(find.text('Mel Sao Paulo'), findsOneWidget);
+      expect(find.text('Mel Cuiaba'), findsOneWidget);
+      expect(find.text('Sao Paulo / SP'), findsOneWidget);
+      expect(find.text('Cuiaba / MT'), findsOneWidget);
+      expect(find.text(r'R$ 9.800,00'), findsOneWidget);
+      expect(find.text(r'R$ 4.200,00'), findsOneWidget);
+
+      final saoPauloTop = tester.getTopLeft(find.text('Mel Sao Paulo')).dy;
+      final cuiabaTop = tester.getTopLeft(find.text('Mel Cuiaba')).dy;
+      expect(saoPauloTop, lessThan(cuiabaTop));
+      final sidebarRect = tester.getRect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-floating'),
+        ),
+      );
+      final regionMapRect = tester.getRect(
+        find
+            .byWidgetPredicate(
+              (widget) =>
+                  widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+            )
+            .first,
+      );
+      expect(sidebarRect.left, greaterThanOrEqualTo(regionMapRect.left));
+      expect(sidebarRect.top, greaterThan(regionMapRect.top));
+      expect(sidebarRect.right, lessThan(regionMapRect.right));
+      expect(sidebarRect.bottom, lessThan(regionMapRect.bottom));
+      expect(sidebarRect.height, lessThan(regionMapRect.height * 0.92));
+
+      final cuiabaItem = find.byKey(
+        const ValueKey<String>(
+          'brazil-store-sales-map-sidebar-item-store-1',
+        ),
+      );
+      await tester.tap(cuiabaItem);
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Mel Cuiaba'), findsWidgets);
+      final selectedCard = find.descendant(
+        of: cuiabaItem,
+        matching: find.byType(DecoratedBox),
+      );
+      final selectedDecoration =
+          tester.widget<DecoratedBox>(selectedCard.first).decoration
+              as BoxDecoration;
+      expect(selectedDecoration.border, isA<Border>());
+      expect((selectedDecoration.border! as Border).top.width, 1.8);
+    },
+  );
+
+  testWidgets(
+    'desktop sidebar requires useful width and clears branch selection when scope hides the store',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1220, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _pumpMap(
+        tester,
+        width: 1220,
+        height: 780,
+        showDesktopBranchSidebar: true,
+        style: _baseStyle.copyWith(showRegionFilter: true),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Filial Cuiaba',
+            fantasyName: 'Mel Cuiaba',
+            uf: 'MT',
+            city: 'Cuiaba',
+            latitude: -15.60,
+            longitude: -56.10,
+            salesAmount: 4200,
+            salesCount: 42,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-2',
+            name: 'Filial Sao Paulo',
+            fantasyName: 'Mel Sao Paulo',
+            uf: 'SP',
+            city: 'Sao Paulo',
+            latitude: -23.55,
+            longitude: -46.63,
+            salesAmount: 9800,
+            salesCount: 98,
+          ),
+        ],
+      );
+
+      expect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-map-sidebar')),
+        findsNothing,
+      );
+
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      await _pumpMap(
+        tester,
+        width: 1400,
+        height: 780,
+        showDesktopBranchSidebar: true,
+        style: _baseStyle.copyWith(showRegionFilter: true),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Filial Cuiaba',
+            fantasyName: 'Mel Cuiaba',
+            uf: 'MT',
+            city: 'Cuiaba',
+            latitude: -15.60,
+            longitude: -56.10,
+            salesAmount: 4200,
+            salesCount: 42,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-2',
+            name: 'Filial Sao Paulo',
+            fantasyName: 'Mel Sao Paulo',
+            uf: 'SP',
+            city: 'Sao Paulo',
+            latitude: -23.55,
+            longitude: -46.63,
+            salesAmount: 9800,
+            salesCount: 98,
+          ),
+        ],
+      );
+
+      expect(find.text('Mel Cuiaba'), findsOneWidget);
+      expect(find.text('Mel Sao Paulo'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'brazil-store-sales-map-sidebar-item-store-1',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Sudeste'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Mel Sao Paulo'), findsOneWidget);
+      expect(find.text('Mel Cuiaba'), findsNothing);
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'clean fullscreen chrome hides legends and supports collapsing the floating sidebar',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpMap(
+        tester,
+        width: 1400,
+        height: 780,
+        showDesktopBranchSidebar: true,
+        presentationMode: AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+        style: _baseStyle.copyWith(
+          showLegend: true,
+          showMarkerScaleLegend: true,
+          showMetricSelector: true,
+          showRegionFilter: true,
+        ),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Filial Cuiaba',
+            fantasyName: 'Mel Cuiaba',
+            uf: 'MT',
+            city: 'Cuiaba',
+            latitude: -15.60,
+            longitude: -56.10,
+            salesAmount: 4200,
+            salesCount: 42,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-2',
+            name: 'Filial Sao Paulo',
+            fantasyName: 'Mel Sao Paulo',
+            uf: 'SP',
+            city: 'Sao Paulo',
+            latitude: -23.55,
+            longitude: -46.63,
+            salesAmount: 9800,
+            salesCount: 98,
+          ),
+        ],
+      );
+
+      final regionMap = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find
+                .byWidgetPredicate(
+                  (widget) =>
+                      widget
+                          is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+                )
+                .first,
+          );
+      expect(regionMap.style.showLegend, isFalse);
+      expect(regionMap.style.showGroupLabels, isFalse);
+      expect(
+        find.byKey(const ValueKey<String>('app-region-map-metric-selector')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey<String>('app-region-map-scope-selector')),
+        findsOneWidget,
+      );
+      expect(find.text('MÉTRICA'), findsNothing);
+      expect(find.text('ESCOPO'), findsNothing);
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-legend-button'),
+        ),
+        findsNothing,
+      );
+      expect(find.text('Legenda'), findsNothing);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-collapse'),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-map-sidebar')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-collapsed'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-collapsed'),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-map-sidebar')),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'desktop sidebar shows explicit empty state for regions without visible branches',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpMap(
+        tester,
+        width: 1400,
+        height: 780,
+        showDesktopBranchSidebar: true,
+        style: _baseStyle.copyWith(showRegionFilter: true),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Filial Cuiaba',
+            fantasyName: 'Mel Cuiaba',
+            uf: 'MT',
+            city: 'Cuiaba',
+            latitude: -15.60,
+            longitude: -56.10,
+            salesAmount: 4200,
+            salesCount: 42,
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('Norte'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-map-sidebar')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-empty'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Nenhuma filial visivel'), findsOneWidget);
+      expect(
+        find.text(
+          'Ajuste a regiao do mapa ou limpe o escopo ativo para listar filiais neste painel.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Mel Cuiaba'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'desktop sidebar filters branches locally and updates the summary',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpMap(
+        tester,
+        width: 1400,
+        height: 780,
+        showDesktopBranchSidebar: true,
+        style: _baseStyle.copyWith(
+          selectedMarkerDetailPlacement:
+              AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay,
+        ),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Filial Cuiaba',
+            fantasyName: 'Mel Cuiaba',
+            uf: 'MT',
+            city: 'Cuiaba',
+            latitude: -15.60,
+            longitude: -56.10,
+            salesAmount: 4200,
+            salesCount: 42,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-2',
+            name: 'Filial Sao Paulo',
+            fantasyName: 'Mel Sao Paulo',
+            uf: 'SP',
+            city: 'Sao Paulo',
+            latitude: -23.55,
+            longitude: -46.63,
+            salesAmount: 9800,
+            salesCount: 98,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-3',
+            name: 'Filial Porto Alegre',
+            fantasyName: 'Mel Sul',
+            uf: 'RS',
+            city: 'Porto Alegre',
+            latitude: -30.03,
+            longitude: -51.23,
+            salesAmount: 7300,
+            salesCount: 67,
+          ),
+        ],
+      );
+
+      await tester.enterText(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-search'),
+        ),
+        'porto',
+      );
+      await tester.pump();
+
+      expect(find.text('Mel Sul'), findsOneWidget);
+      expect(find.text('Mel Sao Paulo'), findsNothing);
+      expect(find.text('Mel Cuiaba'), findsNothing);
+      expect(find.text('1 filial visivel'), findsOneWidget);
+      expect(find.text(r'Total no recorte: R$ 7.300,00'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'desktop sidebar hover previews a branch without changing persistent selection and shows search empty state',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final points = <AppBrazilStoreSalesPoint>[
+        const AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Filial Cuiaba',
+          fantasyName: 'Mel Cuiaba',
+          uf: 'MT',
+          city: 'Cuiaba',
+          latitude: -15.60,
+          longitude: -56.10,
+          salesAmount: 4200,
+          salesCount: 42,
+        ),
+        const AppBrazilStoreSalesPoint(
+          id: 'store-2',
+          name: 'Filial Sao Paulo',
+          fantasyName: 'Mel Sao Paulo',
+          uf: 'SP',
+          city: 'Sao Paulo',
+          latitude: -23.55,
+          longitude: -46.63,
+          salesAmount: 9800,
+          salesCount: 98,
+        ),
+      ];
+
+      await _pumpMap(
+        tester,
+        width: 1400,
+        height: 780,
+        showDesktopBranchSidebar: true,
+        style: _baseStyle.copyWith(
+          selectedMarkerDetailPlacement:
+              AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay,
+        ),
+        points: points,
+      );
+
+      final regionMapBefore = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find
+                .byWidgetPredicate(
+                  (widget) =>
+                      widget
+                          is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+                )
+                .first,
+          );
+      final storeTwoPointBefore = regionMapBefore.points.firstWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup &&
+            payload.points.any((groupPoint) => groupPoint.id == 'store-2');
+      });
+      final storeTwoSizeBefore = storeTwoPointBefore.style?.size;
+
+      (tester.state(
+                find.byType(AppBrazilStoreSalesMapChart),
+              )
+              as AppBrazilStoreSalesMapChartPreviewTestHandle)
+          .previewBranchForTesting(points[1]);
+      await tester.pump();
+      await tester.pump();
+
+      final regionMapAfter = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find
+                .byWidgetPredicate(
+                  (widget) =>
+                      widget
+                          is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+                )
+                .first,
+          );
+      final storeTwoPointAfter = regionMapAfter.points.firstWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup &&
+            payload.points.any((groupPoint) => groupPoint.id == 'store-2');
+      });
+      expect(storeTwoPointAfter.style?.size, greaterThan(storeTwoSizeBefore!));
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsNothing,
+      );
+
+      (tester.state(
+                find.byType(AppBrazilStoreSalesMapChart),
+              )
+              as AppBrazilStoreSalesMapChartPreviewTestHandle)
+          .clearPreviewBranchForTesting();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final regionMapReset = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find
+                .byWidgetPredicate(
+                  (widget) =>
+                      widget
+                          is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+                )
+                .first,
+          );
+      final storeTwoPointReset = regionMapReset.points.firstWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup &&
+            payload.points.any((groupPoint) => groupPoint.id == 'store-2');
+      });
+      expect(storeTwoPointReset.style?.size, storeTwoSizeBefore);
+
+      await tester.enterText(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-sidebar-search'),
+        ),
+        'inexistente',
+      );
+      await tester.pump();
+
+      expect(find.text('Nenhuma filial encontrada'), findsOneWidget);
+      expect(
+        find.text('Ajuste a busca para localizar filiais neste recorte.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'desktop sidebar supports keyboard navigation and status rows',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpMap(
+        tester,
+        width: 1400,
+        height: 780,
+        showDesktopBranchSidebar: true,
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-loading',
+            name: 'Filial carregando',
+            fantasyName: 'Mel Cuiaba',
+            uf: 'MT',
+            city: 'Cuiaba',
+            latitude: -15.60,
+            longitude: -56.10,
+            salesAmount: 0,
+            salesCount: 0,
+            salesDataLoading: true,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-unavailable',
+            name: 'Filial indisponivel',
+            fantasyName: 'Mel Norte',
+            uf: 'PA',
+            city: 'Belem',
+            latitude: -1.45,
+            longitude: -48.50,
+            salesAmount: 0,
+            salesCount: 0,
+            salesDataUnavailable: true,
+            salesDataStatusLabel: 'Vendas indisponiveis',
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-zero',
+            name: 'Filial zerada',
+            fantasyName: 'Mel Sul',
+            uf: 'RS',
+            city: 'Porto Alegre',
+            latitude: -30.03,
+            longitude: -51.23,
+            salesAmount: 0,
+            salesCount: 0,
+          ),
+        ],
+      );
+
+      expect(find.text('Carregando vendas'), findsOneWidget);
+      expect(find.text('Vendas indisponiveis'), findsOneWidget);
+      expect(find.text('Sem vendas no periodo'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Mel Sul'), findsWidgets);
+    },
+  );
+
   testWidgets('uses custom marker detail on Windows without native tooltip', (
     tester,
   ) async {
@@ -945,6 +1593,9 @@ Future<void> _pumpMap(
   double width = 720,
   double? height,
   Locale locale = const Locale('pt', 'BR'),
+  bool showDesktopBranchSidebar = false,
+  AppBrazilStoreSalesMapPresentationMode presentationMode =
+      AppBrazilStoreSalesMapPresentationMode.standard,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -961,6 +1612,8 @@ Future<void> _pumpMap(
               points: points,
               selectedStoreId: selectedStoreId,
               style: style,
+              showDesktopBranchSidebar: showDesktopBranchSidebar,
+              presentationMode: presentationMode,
             ),
           ),
         ),

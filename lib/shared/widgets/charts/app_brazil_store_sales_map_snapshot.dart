@@ -1,6 +1,33 @@
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 
+enum AppBrazilStoreSalesVisibleBranchListItemState {
+  regular,
+  loading,
+  unavailable,
+  zeroSales,
+}
+
+class AppBrazilStoreSalesVisibleBranchListItem {
+  const AppBrazilStoreSalesVisibleBranchListItem({
+    required this.id,
+    required this.point,
+    required this.displayName,
+    required this.cityUfLabel,
+    required this.salesAmount,
+    required this.isSelected,
+    required this.state,
+  });
+
+  final String id;
+  final AppBrazilStoreSalesPoint point;
+  final String displayName;
+  final String cityUfLabel;
+  final double salesAmount;
+  final bool isSelected;
+  final AppBrazilStoreSalesVisibleBranchListItemState state;
+}
+
 class AppBrazilStoreSalesMapSnapshotInput {
   const AppBrazilStoreSalesMapSnapshotInput({
     required this.points,
@@ -28,6 +55,8 @@ class AppBrazilStoreSalesMapSnapshotData {
     required this.requestedStateKey,
     required this.activeRegionKey,
     required this.zoomLevel,
+    required this.visiblePoints,
+    required this.visibleBranchListItems,
     required this.buckets,
     required this.markerGroups,
     required this.stateBubbleBuckets,
@@ -47,6 +76,8 @@ class AppBrazilStoreSalesMapSnapshotData {
   final String? requestedStateKey;
   final String? activeRegionKey;
   final double zoomLevel;
+  final List<AppBrazilStoreSalesPoint> visiblePoints;
+  final List<AppBrazilStoreSalesVisibleBranchListItem> visibleBranchListItems;
   final List<AppBrazilStoreSalesStateBucket> buckets;
   final List<AppBrazilStoreSalesMarkerGroup> markerGroups;
   final List<AppBrazilStoreSalesStateBucket> stateBubbleBuckets;
@@ -65,6 +96,7 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
   static AppBrazilStoreSalesMapSnapshotData build(
     AppBrazilStoreSalesMapSnapshotInput input, {
     required String cachedReuseKey,
+    required String defaultBranchName,
   }) {
     final preparedData = AppBrazilStoreSalesMapData.prepareSnapshotData(
       input.points,
@@ -141,12 +173,20 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
       }
     }
 
+    final visibleBranchListItems = _buildVisibleBranchListItems(
+      points: preparedData.validPoints,
+      selectedStoreId: input.selectedStoreId,
+      defaultBranchName: defaultBranchName,
+    );
+
     return AppBrazilStoreSalesMapSnapshotData(
       metric: input.metric,
       selectedStoreId: input.selectedStoreId,
       requestedStateKey: input.requestedStateKey,
       activeRegionKey: input.activeRegionKey,
       zoomLevel: input.zoomLevel,
+      visiblePoints: preparedData.validPoints,
+      visibleBranchListItems: visibleBranchListItems,
       buckets: buckets,
       markerGroups: markerGroups,
       stateBubbleBuckets: stateBubbleBuckets,
@@ -261,5 +301,80 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
       for (final bucket in buckets)
         if (metric.valueForBucket(bucket) > 0) bucket,
     ];
+  }
+
+  static List<AppBrazilStoreSalesVisibleBranchListItem>
+  _buildVisibleBranchListItems({
+    required List<AppBrazilStoreSalesPoint> points,
+    required String? selectedStoreId,
+    required String defaultBranchName,
+  }) {
+    final entries = <AppBrazilStoreSalesVisibleBranchListItem>[
+      for (final point in points)
+        AppBrazilStoreSalesVisibleBranchListItem(
+          id: point.id,
+          point: point,
+          displayName: _displayNameForPoint(
+            point,
+            defaultBranchName: defaultBranchName,
+          ),
+          cityUfLabel: _cityUfLabelForPoint(point),
+          salesAmount: point.salesAmount,
+          isSelected: point.id == selectedStoreId,
+          state: _branchItemStateFor(point),
+        ),
+    ];
+    return entries..sort(_compareVisibleBranchListItems);
+  }
+
+  static int _compareVisibleBranchListItems(
+    AppBrazilStoreSalesVisibleBranchListItem left,
+    AppBrazilStoreSalesVisibleBranchListItem right,
+  ) {
+    final amount = right.salesAmount.compareTo(left.salesAmount);
+    if (amount != 0) {
+      return amount;
+    }
+    return left.displayName.compareTo(right.displayName);
+  }
+
+  static AppBrazilStoreSalesVisibleBranchListItemState _branchItemStateFor(
+    AppBrazilStoreSalesPoint point,
+  ) {
+    if (point.salesDataLoading) {
+      return AppBrazilStoreSalesVisibleBranchListItemState.loading;
+    }
+    if (point.salesDataUnavailable) {
+      return AppBrazilStoreSalesVisibleBranchListItemState.unavailable;
+    }
+    if (point.salesAmount <= 0 && point.salesCount <= 0) {
+      return AppBrazilStoreSalesVisibleBranchListItemState.zeroSales;
+    }
+    return AppBrazilStoreSalesVisibleBranchListItemState.regular;
+  }
+
+  static String _displayNameForPoint(
+    AppBrazilStoreSalesPoint point, {
+    required String defaultBranchName,
+  }) {
+    return _trimmedOrNull(point.fantasyName) ??
+        _trimmedOrNull(point.name) ??
+        defaultBranchName;
+  }
+
+  static String _cityUfLabelForPoint(AppBrazilStoreSalesPoint point) {
+    return switch (_trimmedOrNull(point.city)) {
+      final city? =>
+        '$city / ${AppBrazilStoreSalesMapData.normalizeUf(point.uf)}',
+      _ => AppBrazilStoreSalesMapData.normalizeUf(point.uf),
+    };
+  }
+
+  static String? _trimmedOrNull(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
   }
 }

@@ -183,16 +183,15 @@ abstract final class AppEnvironment {
   ///
   /// Default `rest`. Setting `AGENT_BRIDGE_TRANSPORT=socket` activates the
   /// new Socket channel once the relevant injectors land in subsequent PRs.
-  static AgentBridgeTransport get agentBridgeTransport =>
-      AgentBridgeTransport.parse(
-        AppEnvironmentResolution.resolveString(
-          fromDefine: const String.fromEnvironment(
-            EnvKeys.agentBridgeTransport,
-          ),
-          fromDotenv: _dotenvMaybe(EnvKeys.agentBridgeTransport),
-          fallback: 'rest',
-        ),
+  static String get agentBridgeTransportRaw =>
+      AppEnvironmentResolution.resolveString(
+        fromDefine: const String.fromEnvironment(EnvKeys.agentBridgeTransport),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentBridgeTransport),
+        fallback: '',
       );
+
+  static AgentBridgeTransport get agentBridgeTransport =>
+      AgentBridgeTransport.parse(agentBridgeTransportRaw);
 
   /// Override for the consumer namespace. Defaults to `/consumers`.
   static String get socketNamespace => AppEnvironmentResolution.resolveString(

@@ -729,7 +729,6 @@ class _SyncfusionRegionMapChartState<T>
     _scheduleManualViewportState();
     _emitViewportChanged(
       source: AppMapViewportChangeSource.user,
-      bounds: null,
     );
   }
 

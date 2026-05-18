@@ -550,6 +550,35 @@
   "brazilStoreSalesMapBranchNavigationNextTooltip": "Proxima filial",
   "brazilStoreSalesMapMarkerGroupTotalTitle": "Total do ponto",
   "brazilStoreSalesMapDefaultBranchName": "Filial sem nome",
+  "brazilStoreSalesMapSidebarTitle": "Filiais visiveis",
+  "brazilStoreSalesMapSidebarSummary": "{count, plural, one{1 filial visivel} other{{count} filiais visiveis}} · {revenue}",
+  "@brazilStoreSalesMapSidebarSummary": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "revenue": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSidebarCountSummary": "{count, plural, one{1 filial visivel} other{{count} filiais visiveis}}",
+  "@brazilStoreSalesMapSidebarCountSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "brazilStoreSalesMapSidebarRevenueSummary": "Total no recorte: {revenue}",
+  "@brazilStoreSalesMapSidebarRevenueSummary": {
+    "placeholders": {
+      "revenue": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSidebarSearchPlaceholder": "Buscar filial ou cidade",
+  "brazilStoreSalesMapSidebarSearchSemanticsLabel": "Buscar filial ou cidade na lista do mapa",
+  "brazilStoreSalesMapSidebarEmptyStateTitle": "Nenhuma filial visivel",
+  "brazilStoreSalesMapSidebarEmptyStateMessage": "Ajuste a regiao do mapa ou limpe o escopo ativo para listar filiais neste painel.",
+  "brazilStoreSalesMapSidebarSearchEmptyStateTitle": "Nenhuma filial encontrada",
+  "brazilStoreSalesMapSidebarSearchEmptyStateMessage": "Ajuste a busca para localizar filiais neste recorte.",
+  "brazilStoreSalesMapSidebarZeroSalesLabel": "Sem vendas no periodo",
+  "brazilStoreSalesMapSidebarCollapseTooltip": "Ocultar lista de filiais",
+  "brazilStoreSalesMapSidebarExpandTooltip": "Mostrar lista de filiais",
   "brazilStoreSalesMapAgentChipWithName": "Filial {agentName}",
   "@brazilStoreSalesMapAgentChipWithName": {
     "placeholders": {"agentName": {"type": "String"}}

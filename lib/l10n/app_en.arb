@@ -587,6 +587,35 @@
   "brazilStoreSalesMapBranchNavigationNextTooltip": "Next branch",
   "brazilStoreSalesMapMarkerGroupTotalTitle": "Location total",
   "brazilStoreSalesMapDefaultBranchName": "Unnamed branch",
+  "brazilStoreSalesMapSidebarTitle": "Visible branches",
+  "brazilStoreSalesMapSidebarSummary": "{count, plural, one{1 visible branch} other{{count} visible branches}} · {revenue}",
+  "@brazilStoreSalesMapSidebarSummary": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "revenue": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSidebarCountSummary": "{count, plural, one{1 visible branch} other{{count} visible branches}}",
+  "@brazilStoreSalesMapSidebarCountSummary": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "brazilStoreSalesMapSidebarRevenueSummary": "Total in scope: {revenue}",
+  "@brazilStoreSalesMapSidebarRevenueSummary": {
+    "placeholders": {
+      "revenue": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSidebarSearchPlaceholder": "Search branch or city",
+  "brazilStoreSalesMapSidebarSearchSemanticsLabel": "Search branch or city in the map list",
+  "brazilStoreSalesMapSidebarEmptyStateTitle": "No visible branches",
+  "brazilStoreSalesMapSidebarEmptyStateMessage": "Adjust the map region or clear the active scope to list branches in this panel.",
+  "brazilStoreSalesMapSidebarSearchEmptyStateTitle": "No branches found",
+  "brazilStoreSalesMapSidebarSearchEmptyStateMessage": "Adjust the search to find branches in this scope.",
+  "brazilStoreSalesMapSidebarZeroSalesLabel": "No sales in period",
+  "brazilStoreSalesMapSidebarCollapseTooltip": "Hide branch list",
+  "brazilStoreSalesMapSidebarExpandTooltip": "Show branch list",
   "brazilStoreSalesMapAgentChipWithName": "Branch {agentName}",
   "@brazilStoreSalesMapAgentChipWithName": {
     "placeholders": {"agentName": {"type": "String"}}

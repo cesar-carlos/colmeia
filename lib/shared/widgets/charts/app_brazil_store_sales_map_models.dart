@@ -48,6 +48,12 @@ enum AppBrazilStoreSalesMapPreset {
   storeIcon,
 }
 
+enum AppBrazilStoreSalesMapPresentationMode {
+  standard,
+  inlineOperational,
+  cleanFullscreen,
+}
+
 extension AppBrazilStoreSalesMapPresetX on AppBrazilStoreSalesMapPreset {
   @Deprecated(
     'Use AppBrazilStoreSalesMapPresetLocalizationX.localizedLabel with '

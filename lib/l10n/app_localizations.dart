@@ -1912,6 +1912,84 @@ abstract class AppLocalizations {
   /// **'Unnamed branch'**
   String get brazilStoreSalesMapDefaultBranchName;
 
+  /// No description provided for @brazilStoreSalesMapSidebarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible branches'**
+  String get brazilStoreSalesMapSidebarTitle;
+
+  /// No description provided for @brazilStoreSalesMapSidebarSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 visible branch} other{{count} visible branches}} · {revenue}'**
+  String brazilStoreSalesMapSidebarSummary(int count, String revenue);
+
+  /// No description provided for @brazilStoreSalesMapSidebarCountSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 visible branch} other{{count} visible branches}}'**
+  String brazilStoreSalesMapSidebarCountSummary(int count);
+
+  /// No description provided for @brazilStoreSalesMapSidebarRevenueSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Total in scope: {revenue}'**
+  String brazilStoreSalesMapSidebarRevenueSummary(String revenue);
+
+  /// No description provided for @brazilStoreSalesMapSidebarSearchPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search branch or city'**
+  String get brazilStoreSalesMapSidebarSearchPlaceholder;
+
+  /// No description provided for @brazilStoreSalesMapSidebarSearchSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Search branch or city in the map list'**
+  String get brazilStoreSalesMapSidebarSearchSemanticsLabel;
+
+  /// No description provided for @brazilStoreSalesMapSidebarEmptyStateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No visible branches'**
+  String get brazilStoreSalesMapSidebarEmptyStateTitle;
+
+  /// No description provided for @brazilStoreSalesMapSidebarEmptyStateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the map region or clear the active scope to list branches in this panel.'**
+  String get brazilStoreSalesMapSidebarEmptyStateMessage;
+
+  /// No description provided for @brazilStoreSalesMapSidebarSearchEmptyStateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No branches found'**
+  String get brazilStoreSalesMapSidebarSearchEmptyStateTitle;
+
+  /// No description provided for @brazilStoreSalesMapSidebarSearchEmptyStateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the search to find branches in this scope.'**
+  String get brazilStoreSalesMapSidebarSearchEmptyStateMessage;
+
+  /// No description provided for @brazilStoreSalesMapSidebarZeroSalesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales in period'**
+  String get brazilStoreSalesMapSidebarZeroSalesLabel;
+
+  /// No description provided for @brazilStoreSalesMapSidebarCollapseTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide branch list'**
+  String get brazilStoreSalesMapSidebarCollapseTooltip;
+
+  /// No description provided for @brazilStoreSalesMapSidebarExpandTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show branch list'**
+  String get brazilStoreSalesMapSidebarExpandTooltip;
+
   /// No description provided for @brazilStoreSalesMapAgentChipWithName.
   ///
   /// In en, this message translates to:
