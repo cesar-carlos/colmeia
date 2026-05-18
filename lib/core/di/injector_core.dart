@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
@@ -22,9 +24,13 @@ import 'package:colmeia/features/auth/data/datasources/fake_auth_remote_datasour
 import 'package:colmeia/features/user_context/data/datasources/user_context_local_datasource.dart';
 import 'package:colmeia/features/user_context/data/datasources/user_context_remote_datasource.dart';
 import 'package:colmeia/shared/maps/app_brazil_municipality_asset_geocoder.dart';
+import 'package:colmeia/shared/maps/app_geocoding_plugin_geocoder.dart';
+import 'package:colmeia/shared/maps/app_here_geocoding_geocoder.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
+import 'package:colmeia/shared/maps/app_location_resolution_observer.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive_ce/hive_ce.dart';
@@ -40,11 +46,21 @@ Future<void> registerInjectorCore(GetIt getIt) async {
     ..registerLazySingleton<AppLocationGeocodeCache>(
       () => AppLocationGeocodeCache(getIt<AppCacheStore>()),
     )
+    ..registerLazySingleton<AppLocationResolutionObserver>(
+      () => const AppLoggerLocationResolutionObserver(),
+    )
     ..registerLazySingleton<AppLocationResolver>(
       () => AppLocationResolver(
         cache: getIt<AppLocationGeocodeCache>(),
-        geocoders: const <AppLocationGeocoder>[
-          AppBrazilMunicipalityAssetGeocoder(),
+        observer: getIt<AppLocationResolutionObserver>(),
+        geocoders: <AppLocationGeocoder>[
+          const AppBrazilMunicipalityAssetGeocoder(),
+          ...buildPlatformLocationGeocoders(
+            isWeb: kIsWeb,
+            targetPlatform: defaultTargetPlatform,
+            dio: getIt<Dio>(),
+            hereApiKey: AppEnvironment.hereGeocodingApiKey,
+          ),
         ],
       ),
     )
@@ -129,4 +145,39 @@ Future<void> registerInjectorCore(GetIt getIt) async {
           ? FakeUserContextRemoteDataSource(getIt<FakeIdentityBackendStore>())
           : ApiUserContextRemoteDataSource(getIt<Dio>()),
     );
+
+  unawaited(_purgeLocationGeocodeCache(getIt));
+}
+
+Future<void> _purgeLocationGeocodeCache(GetIt getIt) async {
+  final summary = await getIt<AppLocationGeocodeCache>().purgeExpiredEntries(
+    maxEntries: 50,
+  );
+  getIt<AppLocationResolutionObserver>().onEvent(
+    event: 'cache_purge_summary',
+    context: summary.toJson(),
+  );
+}
+
+List<AppLocationGeocoder> buildPlatformLocationGeocoders({
+  required bool isWeb,
+  required TargetPlatform targetPlatform,
+  required Dio dio,
+  required String hereApiKey,
+}) {
+  final geocoders = <AppLocationGeocoder>[];
+  if (!isWeb &&
+      (targetPlatform == TargetPlatform.android ||
+          targetPlatform == TargetPlatform.iOS)) {
+    geocoders.add(AppGeocodingPluginGeocoder());
+  }
+  if (!isWeb && hereApiKey.trim().isNotEmpty) {
+    geocoders.add(
+      AppHereGeocodingGeocoder(
+        dio: dio,
+        apiKey: hereApiKey,
+      ),
+    );
+  }
+  return geocoders;
 }

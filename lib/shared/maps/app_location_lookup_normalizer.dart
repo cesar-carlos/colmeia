@@ -1,10 +1,18 @@
+import 'dart:convert';
+
 import 'package:colmeia/core/cache/app_kv_cache_key_prefixes.dart';
 import 'package:colmeia/shared/maps/app_location_models.dart';
+import 'package:crypto/crypto.dart';
 
 abstract final class AppLocationLookupNormalizer {
+  static const String streetAddressNormalizationVersion = 'v1';
+
   static String? cacheKeyFor(AppLocationLookupInput input) {
     return switch (input.type) {
       AppLocationLookupType.geoPoint => null,
+      AppLocationLookupType.streetAddress => cacheKeyForStreetAddress(
+        input.postalAddress,
+      ),
       AppLocationLookupType.ibgeMunicipalityCode => cacheKeyForIbgeMunicipality(
         input.ibgeMunicipalityCode,
       ),
@@ -16,6 +24,53 @@ abstract final class AppLocationLookupNormalizer {
       AppLocationLookupType.capitalUf => cacheKeyForCapitalUf(input.uf),
       AppLocationLookupType.uf => cacheKeyForUf(input.uf),
     };
+  }
+
+  static String? cacheKeyForStreetAddress(AppPostalAddress? address) {
+    final fingerprint = fingerprintForStreetAddress(address);
+    if (fingerprint == null) {
+      return null;
+    }
+
+    return '${AppKvCacheKeyPrefixes.locationGeocode}'
+        'street_address_${streetAddressNormalizationVersion}_$fingerprint';
+  }
+
+  static String? fingerprintForStreetAddress(AppPostalAddress? address) {
+    if (address == null) {
+      return null;
+    }
+
+    final normalizedStreet = normalizeAddressLine(address.street);
+    final normalizedNumber = normalizeAddressToken(address.number);
+    final normalizedDistrict = normalizeAddressLine(address.district);
+    final normalizedCity = normalizeCity(address.city);
+    final normalizedUf = normalizeUf(address.uf);
+    final normalizedCep = normalizeCep(address.cep);
+    final normalizedCountry = normalizeCountryCode(address.countryCode);
+    final hasLookupData =
+        normalizedUf != null ||
+        normalizedCity != null ||
+        normalizedStreet != null ||
+        normalizedNumber != null ||
+        normalizedDistrict != null ||
+        normalizedCep != null;
+    if (!hasLookupData) {
+      return null;
+    }
+    final payload = <String>[
+      streetAddressNormalizationVersion,
+      normalizedCountry ?? '',
+      normalizedUf ?? '',
+      normalizedCity ?? '',
+      normalizedStreet ?? '',
+      normalizedNumber ?? '',
+      normalizedDistrict ?? '',
+      normalizedCep ?? '',
+    ];
+
+    final digest = sha256.convert(utf8.encode(payload.join('|')));
+    return digest.toString().substring(0, 24);
   }
 
   static String? cacheKeyForCep(String? cep) {
@@ -109,17 +164,53 @@ abstract final class AppLocationLookupNormalizer {
     return value;
   }
 
-  static String? normalizeCity(String? city) {
-    final value = city?.trim();
-    if (value == null || value.isEmpty) {
+  static String? normalizeCountryCode(String? value) {
+    final normalized = value?.trim().toUpperCase();
+    if (normalized == null || normalized.length != 2) {
       return null;
     }
 
-    return _stripDiacritics(value)
+    return normalized;
+  }
+
+  static String? normalizeCountryCodeLoose(String? value) {
+    final normalized = value?.trim().toUpperCase();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    if (normalized.length == 2) {
+      return normalized;
+    }
+    return switch (normalized) {
+      'BRA' => 'BR',
+      _ => null,
+    };
+  }
+
+  static String? normalizeCity(String? city) {
+    return _normalizeToUnderscoreToken(city);
+  }
+
+  static String? normalizeAddressLine(String? value) {
+    return _normalizeToUnderscoreToken(value);
+  }
+
+  static String? normalizeAddressToken(String? value) {
+    return _normalizeToUnderscoreToken(value);
+  }
+
+  static String? _normalizeToUnderscoreToken(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return null;
+    }
+
+    final normalized = _stripDiacritics(trimmed)
         .toUpperCase()
         .replaceAll(RegExp('[^A-Z0-9]+'), '_')
         .replaceAll(RegExp('_+'), '_')
         .replaceAll(RegExp(r'^_|_$'), '');
+    return normalized.isEmpty ? null : normalized;
   }
 
   static String _stripDiacritics(String value) {

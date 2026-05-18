@@ -85,10 +85,11 @@ void main() {
           precision: AppLocationPrecision.cep,
           source: AppLocationSource.geocodingProvider,
           cacheKey: 'location_geocode_cep_01001000',
-          metadata: <String, Object?>{
-            'uf': 'SP',
-            'city': 'Sao Paulo',
-          },
+          details: AppResolvedAddressDetails(
+            uf: 'SP',
+            city: 'Sao Paulo',
+            countryCode: 'BR',
+          ),
         ),
       );
       final resolver = AppBrazilStoreSalesPointResolver(
@@ -360,18 +361,32 @@ class _CountingGeocoder implements AppLocationGeocoder {
   String get providerId => 'counting';
 
   @override
-  Future<AppResolvedLocation?> resolve(AppLocationLookupInput input) async {
+  bool get isExternal => false;
+
+  @override
+  int get maxConcurrentRequests => 1;
+
+  @override
+  Future<AppLocationGeocoderResult> resolve(
+    AppLocationLookupInput input,
+  ) async {
     lookupCount += 1;
     if (input.ibgeMunicipalityCode != '5103403') {
-      return null;
+      return const AppLocationGeocoderResult.notFound();
     }
 
-    return const AppResolvedLocation(
-      point: AppGeoPoint(latitude: -15.601, longitude: -56.0974),
-      precision: AppLocationPrecision.city,
-      source: AppLocationSource.staticBrazilMunicipalityCentroid,
-      cacheKey: 'location_geocode_ibge_5103403',
-      metadata: <String, Object?>{'uf': 'MT', 'city': 'Cuiaba'},
+    return const AppLocationGeocoderResult.resolved(
+      AppResolvedLocation(
+        point: AppGeoPoint(latitude: -15.601, longitude: -56.0974),
+        precision: AppLocationPrecision.city,
+        source: AppLocationSource.staticBrazilMunicipalityCentroid,
+        cacheKey: 'location_geocode_ibge_5103403',
+        details: AppResolvedAddressDetails(
+          uf: 'MT',
+          city: 'Cuiaba',
+          countryCode: 'BR',
+        ),
+      ),
     );
   }
 }
@@ -384,7 +399,15 @@ class _DelayedCountingGeocoder implements AppLocationGeocoder {
   String get providerId => 'delayed-counting';
 
   @override
-  Future<AppResolvedLocation?> resolve(AppLocationLookupInput input) async {
+  bool get isExternal => false;
+
+  @override
+  int get maxConcurrentRequests => 1;
+
+  @override
+  Future<AppLocationGeocoderResult> resolve(
+    AppLocationLookupInput input,
+  ) async {
     _activeLookups += 1;
     if (_activeLookups > maxActiveLookups) {
       maxActiveLookups = _activeLookups;
@@ -392,12 +415,18 @@ class _DelayedCountingGeocoder implements AppLocationGeocoder {
     await Future<void>.delayed(const Duration(milliseconds: 1));
     _activeLookups -= 1;
 
-    return AppResolvedLocation(
-      point: const AppGeoPoint(latitude: -15.601, longitude: -56.0974),
-      precision: AppLocationPrecision.city,
-      source: AppLocationSource.staticBrazilMunicipalityCentroid,
-      cacheKey: 'location_geocode_ibge_${input.ibgeMunicipalityCode}',
-      metadata: const <String, Object?>{'uf': 'MT', 'city': 'Cuiaba'},
+    return AppLocationGeocoderResult.resolved(
+      AppResolvedLocation(
+        point: const AppGeoPoint(latitude: -15.601, longitude: -56.0974),
+        precision: AppLocationPrecision.city,
+        source: AppLocationSource.staticBrazilMunicipalityCentroid,
+        cacheKey: 'location_geocode_ibge_${input.ibgeMunicipalityCode}',
+        details: const AppResolvedAddressDetails(
+          uf: 'MT',
+          city: 'Cuiaba',
+          countryCode: 'BR',
+        ),
+      ),
     );
   }
 }

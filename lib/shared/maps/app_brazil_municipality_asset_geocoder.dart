@@ -16,7 +16,15 @@ class AppBrazilMunicipalityAssetGeocoder implements AppLocationGeocoder {
   String get providerId => 'brazil_municipality_asset';
 
   @override
-  Future<AppResolvedLocation?> resolve(AppLocationLookupInput input) async {
+  bool get isExternal => false;
+
+  @override
+  int get maxConcurrentRequests => 1;
+
+  @override
+  Future<AppLocationGeocoderResult> resolve(
+    AppLocationLookupInput input,
+  ) async {
     final index = await _loadIndex();
     final centroid = switch (input.type) {
       AppLocationLookupType.ibgeMunicipalityCode => index.lookupByIbgeCode(
@@ -27,12 +35,23 @@ class AppBrazilMunicipalityAssetGeocoder implements AppLocationGeocoder {
         uf: input.uf,
       ),
       AppLocationLookupType.capitalUf => index.lookupCapitalByUf(input.uf),
+      AppLocationLookupType.streetAddress => null,
       AppLocationLookupType.geoPoint ||
       AppLocationLookupType.cep ||
       AppLocationLookupType.uf => null,
     };
     if (centroid == null) {
-      return null;
+      return switch (input.type) {
+        AppLocationLookupType.ibgeMunicipalityCode ||
+        AppLocationLookupType.cityUf ||
+        AppLocationLookupType.capitalUf =>
+          const AppLocationGeocoderResult.notFound(),
+        AppLocationLookupType.streetAddress ||
+        AppLocationLookupType.geoPoint ||
+        AppLocationLookupType.cep ||
+        AppLocationLookupType.uf =>
+          const AppLocationGeocoderResult.unsupported(),
+      };
     }
 
     final cacheKey = switch (input.type) {
@@ -45,6 +64,7 @@ class AppBrazilMunicipalityAssetGeocoder implements AppLocationGeocoder {
           city: centroid.name,
           uf: centroid.uf,
         ),
+      AppLocationLookupType.streetAddress => null,
       AppLocationLookupType.capitalUf =>
         AppLocationLookupNormalizer.cacheKeyForCapitalUf(centroid.uf),
       AppLocationLookupType.geoPoint ||
@@ -52,27 +72,32 @@ class AppBrazilMunicipalityAssetGeocoder implements AppLocationGeocoder {
       AppLocationLookupType.uf => null,
     };
     if (cacheKey == null) {
-      return null;
+      return const AppLocationGeocoderResult.unsupported();
     }
 
-    return AppResolvedLocation(
-      point: centroid.point,
-      precision: AppLocationPrecision.city,
-      source: AppLocationSource.staticBrazilMunicipalityCentroid,
-      cacheKey: cacheKey,
-      label: '${centroid.name} / ${centroid.uf}',
-      metadata: <String, Object?>{
-        'ibgeCode': centroid.ibgeCode,
-        'city': centroid.name,
-        'ufCode': centroid.ufCode,
-        'uf': centroid.uf,
-        'stateName': centroid.stateName,
-        'region': centroid.region,
-        'isCapital': centroid.isCapital,
-        'siafiId': centroid.siafiId,
-        'ddd': centroid.ddd,
-        'timezone': centroid.timezone,
-      },
+    return AppLocationGeocoderResult.resolved(
+      AppResolvedLocation(
+        point: centroid.point,
+        precision: AppLocationPrecision.city,
+        source: AppLocationSource.staticBrazilMunicipalityCentroid,
+        cacheKey: cacheKey,
+        label: '${centroid.name} / ${centroid.uf}',
+        details: AppResolvedAddressDetails(
+          city: centroid.name,
+          uf: centroid.uf,
+          countryCode: 'BR',
+        ),
+        metadata: <String, Object?>{
+          'ibgeCode': centroid.ibgeCode,
+          'ufCode': centroid.ufCode,
+          'stateName': centroid.stateName,
+          'region': centroid.region,
+          'isCapital': centroid.isCapital,
+          'siafiId': centroid.siafiId,
+          'ddd': centroid.ddd,
+          'timezone': centroid.timezone,
+        },
+      ),
     );
   }
 

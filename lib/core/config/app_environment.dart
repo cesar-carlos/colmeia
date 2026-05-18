@@ -35,6 +35,15 @@ abstract final class AppEnvironment {
     fallback: '',
   );
 
+  /// Optional HERE Geocoding & Search API key used for desktop-native
+  /// geocoding and as a secondary mobile fallback.
+  static String get hereGeocodingApiKey =>
+      AppEnvironmentResolution.resolveString(
+        fromDefine: const String.fromEnvironment(EnvKeys.hereGeocodingApiKey),
+        fromDotenv: _dotenvMaybe(EnvKeys.hereGeocodingApiKey),
+        fallback: '',
+      );
+
   /// When true, initializes Sentry in debug builds if [sentryDsn] is set.
   static bool get sentryDebug => AppEnvironmentResolution.resolveBool(
     fromDefine: const String.fromEnvironment(EnvKeys.sentryDebug),

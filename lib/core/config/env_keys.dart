@@ -7,6 +7,7 @@ abstract final class EnvKeys {
   static const String sentryDebug = 'SENTRY_DEBUG';
   static const String sentryTracesSampleRate = 'SENTRY_TRACES_SAMPLE_RATE';
   static const String autoUpdateFeedUrl = 'AUTO_UPDATE_FEED_URL';
+  static const String hereGeocodingApiKey = 'HERE_GEOCODING_API_KEY';
 
   /// Agent UUID for integration / e2e tests that call the real SQL bridge.
   static const String e2eAgentId = 'E2E_AGENT_ID';

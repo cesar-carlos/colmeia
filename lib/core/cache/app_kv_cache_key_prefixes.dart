@@ -16,4 +16,6 @@ abstract final class AppKvCacheKeyPrefixes {
   static const String clientAgentsOwnerApprovedClients =
       'client_agents_owner_approved_clients_';
   static const String locationGeocode = 'location_geocode_';
+  static const String locationGeocodeEntry = 'location_geocode_entry_';
+  static const String locationGeocodeIndex = 'location_geocode_index';
 }

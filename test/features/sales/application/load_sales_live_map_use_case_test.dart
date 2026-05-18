@@ -110,9 +110,11 @@ void main() {
         userId: any(named: 'userId'),
         selectedAgentIds: any(named: 'selectedAgentIds'),
       ),
-    ).thenAnswer((_) async => Success<AgentQueryTargetResolution, AppFailure>(
-          _wideTestAgentResolution(),
-        ));
+    ).thenAnswer(
+      (_) async => Success<AgentQueryTargetResolution, AppFailure>(
+        _wideTestAgentResolution(),
+      ),
+    );
     when(
       () => catalogDiskCache.readIfFresh(
         userId: any(named: 'userId'),
@@ -1552,7 +1554,9 @@ void _stubCatalogFuture(
   ).thenAnswer((_) => result);
 }
 
-void _stubCatalogFailure(_MockLoadCadastroFilialAcrossAgentsUseCase cadastroMock) {
+void _stubCatalogFailure(
+  _MockLoadCadastroFilialAcrossAgentsUseCase cadastroMock,
+) {
   when(
     () => cadastroMock.loadAll(
       userId: any(named: 'userId'),
@@ -1720,22 +1724,34 @@ class _StaticBrazilTestGeocoder implements AppLocationGeocoder {
   String get providerId => 'static-test';
 
   @override
-  Future<AppResolvedLocation?> resolve(AppLocationLookupInput input) async {
+  bool get isExternal => false;
+
+  @override
+  int get maxConcurrentRequests => 1;
+
+  @override
+  Future<AppLocationGeocoderResult> resolve(
+    AppLocationLookupInput input,
+  ) async {
     lookups.add(input);
     return switch (input.ibgeMunicipalityCode) {
-      '1100015' => _resolved(
-        latitude: -11.9355403047646,
-        longitude: -61.9998238962936,
-        uf: 'RO',
-        city: "ALTA FLORESTA D'OESTE",
+      '1100015' => AppLocationGeocoderResult.resolved(
+        _resolved(
+          latitude: -11.9355403047646,
+          longitude: -61.9998238962936,
+          uf: 'RO',
+          city: "ALTA FLORESTA D'OESTE",
+        ),
       ),
-      '5107909' => _resolved(
-        latitude: -11.8604,
-        longitude: -55.5091,
-        uf: 'MT',
-        city: 'SINOP',
+      '5107909' => AppLocationGeocoderResult.resolved(
+        _resolved(
+          latitude: -11.8604,
+          longitude: -55.5091,
+          uf: 'MT',
+          city: 'SINOP',
+        ),
       ),
-      _ => null,
+      _ => const AppLocationGeocoderResult.notFound(),
     };
   }
 
@@ -1750,7 +1766,11 @@ class _StaticBrazilTestGeocoder implements AppLocationGeocoder {
       precision: AppLocationPrecision.city,
       source: AppLocationSource.staticBrazilMunicipalityCentroid,
       cacheKey: 'test',
-      metadata: <String, Object?>{'uf': uf, 'city': city},
+      details: AppResolvedAddressDetails(
+        uf: uf,
+        city: city,
+        countryCode: 'BR',
+      ),
     );
   }
 }

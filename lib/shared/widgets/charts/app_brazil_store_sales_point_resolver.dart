@@ -221,8 +221,14 @@ class AppBrazilStoreSalesPointResolver {
   Future<_ResolvedLocationLookup?> _resolveLookupInput(
     AppLocationLookupInput input,
   ) async {
-    final resolved = await _locationResolver.resolve(input);
-    if (resolved == null || !resolved.point.isValid) {
+    final result = await _locationResolver.resolve(input);
+    final outcome = result.getOrNull();
+    if (outcome is! AppLocationResolutionResolved) {
+      return null;
+    }
+
+    final resolved = outcome.location;
+    if (!resolved.point.isValid) {
       return null;
     }
 
@@ -297,12 +303,11 @@ class AppBrazilStoreSalesPointResolver {
     AppBrazilStoreSalesPointSource source,
     AppResolvedLocation location,
   ) {
-    final metadataUf = location.metadata['uf'];
-    if (metadataUf is String) {
-      final normalizedUf = AppLocationLookupNormalizer.normalizeUf(metadataUf);
-      if (normalizedUf != null) {
-        return normalizedUf;
-      }
+    final detailsUf = AppLocationLookupNormalizer.normalizeUf(
+      location.details?.uf,
+    );
+    if (detailsUf != null) {
+      return detailsUf;
     }
 
     return AppLocationLookupNormalizer.normalizeUf(source.uf);
@@ -317,9 +322,9 @@ class AppBrazilStoreSalesPointResolver {
       return city;
     }
 
-    final metadataCity = location.metadata['city'];
-    if (metadataCity is String && metadataCity.trim().isNotEmpty) {
-      return metadataCity.trim();
+    final detailsCity = location.details?.city?.trim();
+    if (detailsCity != null && detailsCity.isNotEmpty) {
+      return detailsCity;
     }
 
     return null;
@@ -331,6 +336,7 @@ class AppBrazilStoreSalesPointResolver {
     return switch (lookupType) {
       AppLocationLookupType.geoPoint =>
         AppBrazilStoreSalesLocationResolution.providedGeoPoint,
+      AppLocationLookupType.streetAddress => null,
       AppLocationLookupType.ibgeMunicipalityCode =>
         AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
       AppLocationLookupType.cep => AppBrazilStoreSalesLocationResolution.cep,
