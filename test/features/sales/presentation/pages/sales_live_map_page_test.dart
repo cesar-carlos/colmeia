@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:colmeia/app/theme/app_theme.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
@@ -30,6 +31,10 @@ class _MockLoadAvailableAgentsForSales extends Mock
 class _MockLoadSalesLiveMapUseCase extends Mock
     implements LoadSalesLiveMapUseCase {}
 
+late SalesPreferences _pumpSalesPreferences;
+late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
+late LoadSalesLiveMapUseCase _pumpLoadLiveMap;
+
 void main() {
   late _MockAuthController authController;
   late _MockSalesPreferences salesPreferences;
@@ -43,12 +48,13 @@ void main() {
   });
 
   setUp(() async {
-    await getIt.reset();
-
     authController = _MockAuthController();
     salesPreferences = _MockSalesPreferences();
     loadAvailableAgentsForSales = _MockLoadAvailableAgentsForSales();
     loadLiveMap = _MockLoadSalesLiveMapUseCase();
+    _pumpSalesPreferences = salesPreferences;
+    _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
+    _pumpLoadLiveMap = loadLiveMap;
 
     when(() => authController.session).thenReturn(
       AuthSession(
@@ -79,17 +85,6 @@ void main() {
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => _streamResult(_loadedResult()));
-
-    getIt
-      ..registerSingleton<SalesPreferences>(salesPreferences)
-      ..registerSingleton<LoadAvailableAgentsForSales>(
-        loadAvailableAgentsForSales,
-      )
-      ..registerSingleton<LoadSalesLiveMapUseCase>(loadLiveMap);
-  });
-
-  tearDown(() async {
-    await getIt.reset();
   });
 
   testWidgets(
@@ -433,9 +428,19 @@ void main() {
       await _pumpInitialLoad(tester);
       clearInteractions(loadLiveMap);
 
-      await tester.ensureVisible(find.text('Vendas'));
+      final context = tester.element(find.byType(SalesLiveMapPage));
+      final l10n = AppLocalizations.of(context);
+      final salesMetricLabel = l10n.brazilStoreSalesMapMetricSalesShort;
+      final salesMetricFinder = find.descendant(
+        of: find.byKey(
+          const ValueKey<String>('app-region-map-metric-selector'),
+        ),
+        matching: find.text(salesMetricLabel),
+      );
+
+      await tester.ensureVisible(salesMetricFinder);
       await tester.pump();
-      await tester.tap(find.text('Vendas'));
+      await tester.tap(salesMetricFinder.last);
       await tester.pump();
 
       verifyNever(
@@ -664,8 +669,14 @@ Future<void> _pumpPage(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          body: SalesLiveMapPage(),
+        home: Scaffold(
+          body: SalesLiveMapPage(
+            sessionService: SalesSessionService(_pumpSalesPreferences),
+            loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
+              _pumpLoadAvailableAgentsForSales,
+            ),
+            loadSalesLiveMapUseCase: _pumpLoadLiveMap,
+          ),
         ),
       ),
     ),

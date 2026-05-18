@@ -1,15 +1,17 @@
 import 'dart:async';
 
 import 'package:colmeia/app/theme/app_theme.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
@@ -61,8 +63,6 @@ void main() {
   });
 
   setUp(() async {
-    await getIt.reset();
-
     authController = _MockAuthController();
     salesPreferences = _MockSalesPreferences();
     tokenReader = _MockAgentClientTokenReader();
@@ -143,19 +143,6 @@ void main() {
         loadFailureMessage: null,
       ),
     );
-
-    getIt
-      ..registerSingleton<SalesPreferences>(salesPreferences)
-      ..registerSingleton<AgentClientTokenReader>(tokenReader)
-      ..registerSingleton<LoadAvailableAgentsForSales>(
-        loadAvailableAgentsForSales,
-      )
-      ..registerSingleton<LoadSalesMonthlyPnlLinesUseCase>(loadMonthlyPnlLines)
-      ..registerSingleton<LoadSalesDailyTotalsUseCase>(loadDailyTotals);
-  });
-
-  tearDown(() async {
-    await getIt.reset();
   });
 
   testWidgets('uses a time-series skeleton while the monthly chart loads', (
@@ -171,7 +158,15 @@ void main() {
       ),
     ).thenAnswer((_) => completer.future);
 
-    await _pumpPage(tester, authController: authController);
+    await _pumpPage(
+      tester,
+      authController: authController,
+      salesPreferences: salesPreferences,
+      tokenReader: tokenReader,
+      loadAvailableAgentsForSales: loadAvailableAgentsForSales,
+      loadMonthlyPnlLines: loadMonthlyPnlLines,
+      loadDailyTotals: loadDailyTotals,
+    );
     await tester.pump();
     await tester.pump();
 
@@ -196,7 +191,15 @@ void main() {
       ),
     ).thenAnswer((_) async => _bundleWithBaseValue(120));
 
-    await _pumpPage(tester, authController: authController);
+    await _pumpPage(
+      tester,
+      authController: authController,
+      salesPreferences: salesPreferences,
+      tokenReader: tokenReader,
+      loadAvailableAgentsForSales: loadAvailableAgentsForSales,
+      loadMonthlyPnlLines: loadMonthlyPnlLines,
+      loadDailyTotals: loadDailyTotals,
+    );
     await tester.pumpAndSettle();
 
     final shell = tester.widget<ChartHorizontalScrollShell>(
@@ -240,7 +243,15 @@ void main() {
       throw StateError('Unexpected anchor: $anchor');
     });
 
-    await _pumpPage(tester, authController: authController);
+    await _pumpPage(
+      tester,
+      authController: authController,
+      salesPreferences: salesPreferences,
+      tokenReader: tokenReader,
+      loadAvailableAgentsForSales: loadAvailableAgentsForSales,
+      loadMonthlyPnlLines: loadMonthlyPnlLines,
+      loadDailyTotals: loadDailyTotals,
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Agent One'));
@@ -301,6 +312,11 @@ void main() {
 Future<void> _pumpPage(
   WidgetTester tester, {
   required AuthController authController,
+  required SalesPreferences salesPreferences,
+  required AgentClientTokenReader tokenReader,
+  required LoadAvailableAgentsForSales loadAvailableAgentsForSales,
+  required LoadSalesMonthlyPnlLinesUseCase loadMonthlyPnlLines,
+  required LoadSalesDailyTotalsUseCase loadDailyTotals,
 }) async {
   await tester.pumpWidget(
     Provider<AuthController>.value(
@@ -310,8 +326,17 @@ Future<void> _pumpPage(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          body: SalesMonthlyPnlPage(),
+        home: Scaffold(
+          body: SalesMonthlyPnlPage(
+            sessionService: SalesSessionService(salesPreferences),
+            loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
+              loadAvailableAgentsForSales,
+            ),
+            loadSalesMonthlyPnlLinesUseCase: loadMonthlyPnlLines,
+            loadSalesDailyTotalsUseCase: loadDailyTotals,
+            resolveSalesAgentClientTokenUseCase:
+                ResolveSalesAgentClientTokenUseCase(tokenReader),
+          ),
         ),
       ),
     ),

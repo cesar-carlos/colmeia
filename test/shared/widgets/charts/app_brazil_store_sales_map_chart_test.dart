@@ -533,12 +533,64 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Legenda'), findsOneWidget);
-    expect(find.text('Marker size'), findsNothing);
+    expect(
+      find.byKey(
+        const ValueKey<String>('brazil-store-sales-map-legend-button'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Tamanho do ponto'), findsNothing);
 
     await tester.tap(find.text('Legenda'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Marker size'), findsOneWidget);
+    expect(find.text('Tamanho do ponto'), findsOneWidget);
+  });
+
+  testWidgets('exposes stable selector and diagnostics anchors', (
+    tester,
+  ) async {
+    await _pumpMap(
+      tester,
+      style: const AppBrazilStoreSalesMapStyle(
+        height: 360,
+        showLegend: false,
+        showRegionFilter: false,
+        showMarkerScaleLegend: false,
+        enableZoomPan: false,
+      ),
+      points: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'valid',
+          name: 'Loja Valida',
+          uf: 'MT',
+          city: 'Cuiaba',
+          latitude: -15.6,
+          longitude: -56.1,
+          salesAmount: 10,
+          salesCount: 1,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'invalid',
+          name: 'Loja Invalida',
+          uf: 'MT',
+          city: 'Cuiaba',
+          latitude: -99,
+          longitude: -56.1,
+          salesAmount: 10,
+          salesCount: 1,
+        ),
+      ],
+    );
+
+    expect(
+      find.byKey(const ValueKey<String>('app-region-map-metric-selector')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('brazil-store-sales-map-data-quality')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('fits common mobile map widths without layout overflow', (
@@ -673,6 +725,47 @@ void main() {
     expect(tooltip, contains('12 vendas'));
   });
 
+  testWidgets('state tooltip localizes english copy when locale is en', (
+    tester,
+  ) async {
+    await _pumpMap(
+      tester,
+      locale: const Locale('en'),
+      style: const AppBrazilStoreSalesMapStyle(
+        showLegend: false,
+        showStoreDetail: false,
+        showRegionFilter: false,
+        showMarkerScaleLegend: false,
+        stateLabelMode: AppBrazilStoreSalesStateLabelMode.stateName,
+      ),
+      points: const <AppBrazilStoreSalesPoint>[],
+    );
+
+    final regionMap = tester
+        .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+          find
+              .byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              )
+              .first,
+        );
+    final tooltip = regionMap.metrics.first.tooltipBuilder!(
+      const AppBrazilStoreSalesStateBucket(
+        uf: 'MT',
+        stateName: 'Mato Grosso',
+        regionKey: 'CO',
+        regionName: 'Centro-Oeste',
+        salesAmount: 1200,
+        salesCount: 12,
+        storeCount: 1,
+      ),
+    );
+
+    expect(tooltip, contains('Mato Grosso (MT)'));
+    expect(tooltip, contains('12 sales'));
+  });
+
   testWidgets('pending sales markers use a distinct loading color', (
     tester,
   ) async {
@@ -775,7 +868,6 @@ void main() {
       expect(diagnosticsEmissions, afterFirst);
     },
   );
-
 }
 
 const _baseStyle = AppBrazilStoreSalesMapStyle(
@@ -797,10 +889,12 @@ Future<void> _pumpMap(
   AppBrazilStoreSalesMapStyle style = _baseStyle,
   double width = 720,
   double? height,
+  Locale locale = const Locale('pt', 'BR'),
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.light(),
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
@@ -837,10 +931,12 @@ Future<TestGesture> _hoverFirstStoreMarker(WidgetTester tester) async {
 Future<void> _pumpHoverAnchor(
   WidgetTester tester, {
   required List<AppBrazilStoreSalesPoint> points,
+  Locale locale = const Locale('pt', 'BR'),
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.light(),
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
@@ -867,10 +963,12 @@ Future<void> _pumpHoverAnchor(
 Future<void> _pumpSelectedAnchor(
   WidgetTester tester, {
   required List<AppBrazilStoreSalesPoint> points,
+  Locale locale = const Locale('pt', 'BR'),
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.light(),
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(

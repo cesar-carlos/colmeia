@@ -1,5 +1,7 @@
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   group('AppBrazilStoreSalesMapPreset', () {
@@ -103,6 +105,24 @@ void main() {
       );
       expect(copied.markerMaxSize, 44);
       expect(copied.markerVisual, style.markerVisual);
+    });
+
+    test('allows clearing nullable visual overrides back to null', () {
+      final style = const AppBrazilStoreSalesMapStyle.standard().copyWith(
+        lowValueColor: const Color(0xFF123456),
+        markerColor: const Color(0xFF654321),
+        legendNumberFormat: NumberFormat.compact(),
+      );
+
+      final copied = style.copyWith(
+        lowValueColor: null,
+        markerColor: null,
+        legendNumberFormat: null,
+      );
+
+      expect(copied.lowValueColor, isNull);
+      expect(copied.markerColor, isNull);
+      expect(copied.legendNumberFormat, isNull);
     });
   });
 

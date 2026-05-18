@@ -3,17 +3,16 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
-import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
-import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
@@ -34,7 +33,16 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class SalesLiveMapPage extends StatefulWidget {
-  const SalesLiveMapPage({super.key});
+  const SalesLiveMapPage({
+    required this.sessionService,
+    required this.loadSalesAvailableAgentsUseCase,
+    required this.loadSalesLiveMapUseCase,
+    super.key,
+  });
+
+  final SalesSessionService sessionService;
+  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final LoadSalesLiveMapUseCase loadSalesLiveMapUseCase;
 
   @override
   State<SalesLiveMapPage> createState() => _SalesLiveMapPageState();
@@ -44,8 +52,8 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     with SalesAutoRefreshStateMixin<SalesLiveMapPage> {
   static const int _autoMunicipalityDetailPointThreshold = 200;
 
-  late final SalesPreferences _prefs;
-  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
+  late final SalesSessionService _sessionService;
+  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
   late final LoadSalesLiveMapUseCase _loadLiveMap;
 
   List<OverviewAgentOption> _availableAgents = const <OverviewAgentOption>[];
@@ -61,13 +69,13 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
   @override
   void initState() {
     super.initState();
-    _prefs = getIt<SalesPreferences>();
-    _loadAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
-    _loadLiveMap = getIt<LoadSalesLiveMapUseCase>();
-    final restoredFilter = _prefs.restoreSalesLiveMapFilter();
+    _sessionService = widget.sessionService;
+    _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
+    _loadLiveMap = widget.loadSalesLiveMapUseCase;
+    final restoredFilter = _sessionService.restoreSalesLiveMapFilter();
     _filter = _normalizeRestoredFilter(restoredFilter);
     if (restoredFilter.selectedBranchIds != null) {
-      unawaited(_prefs.persistSalesLiveMapFilter(_filter));
+      unawaited(_sessionService.persistSalesLiveMapFilter(_filter));
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
@@ -121,7 +129,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       _availableAgents = agents;
       _filter = normalizedFilter;
     });
-    unawaited(_prefs.persistSalesLiveMapFilter(normalizedFilter));
+    unawaited(_sessionService.persistSalesLiveMapFilter(normalizedFilter));
     unawaited(_reload());
   }
 
@@ -231,9 +239,9 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
       if (previousResult != null) {
         final mapPayloadUnchanged =
             AppBrazilStoreSalesMapData.pointsContentDigest(
-                  previousResult.points,
-                ) ==
-                AppBrazilStoreSalesMapData.pointsContentDigest(result.points);
+              previousResult.points,
+            ) ==
+            AppBrazilStoreSalesMapData.pointsContentDigest(result.points);
         if (mapPayloadUnchanged &&
             previousResult.salesDataPending == result.salesDataPending &&
             previousResult.loadFailed == result.loadFailed &&
@@ -379,7 +387,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     setState(() {
       _filter = normalizedFilter;
     });
-    unawaited(_prefs.persistSalesLiveMapFilter(normalizedFilter));
+    unawaited(_sessionService.persistSalesLiveMapFilter(normalizedFilter));
     if (!canScheduleSalesAutoRefresh) {
       disableSalesAutoRefresh();
     }
@@ -406,7 +414,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     setState(() {
       _filter = next;
     });
-    unawaited(_prefs.persistSalesLiveMapFilter(next));
+    unawaited(_sessionService.persistSalesLiveMapFilter(next));
     if (!canScheduleSalesAutoRefresh) {
       disableSalesAutoRefresh();
     }
@@ -488,7 +496,8 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
             ],
             enabled: !_loading,
           ),
-          if (_hasSelectedBranchFilter || _hasNonBranchNonDefaultFilter) ...<Widget>[
+          if (_hasSelectedBranchFilter ||
+              _hasNonBranchNonDefaultFilter) ...<Widget>[
             SizedBox(height: tokens.gapSm),
             Align(
               alignment: Alignment.centerLeft,
@@ -711,7 +720,7 @@ class _SalesLiveMapPageState extends State<SalesLiveMapPage>
     setState(() {
       _filter = next;
     });
-    unawaited(_prefs.persistSalesLiveMapFilter(next));
+    unawaited(_sessionService.persistSalesLiveMapFilter(next));
   }
 
   String _periodSummary() {

@@ -49,6 +49,10 @@ enum AppBrazilStoreSalesMapPreset {
 }
 
 extension AppBrazilStoreSalesMapPresetX on AppBrazilStoreSalesMapPreset {
+  @Deprecated(
+    'Use AppBrazilStoreSalesMapPresetLocalizationX.localizedLabel with '
+    'AppLocalizations.',
+  )
   String get label => switch (this) {
     AppBrazilStoreSalesMapPreset.standard => 'Pontos',
     AppBrazilStoreSalesMapPreset.bubble => 'Bolhas',
@@ -57,6 +61,10 @@ extension AppBrazilStoreSalesMapPresetX on AppBrazilStoreSalesMapPreset {
     AppBrazilStoreSalesMapPreset.storeIcon => 'Icone loja',
   };
 
+  @Deprecated(
+    'Use AppBrazilStoreSalesMapPresetLocalizationX.localizedTooltip with '
+    'AppLocalizations.',
+  )
   String get tooltip => switch (this) {
     AppBrazilStoreSalesMapPreset.standard =>
       'Exibe cada loja como ponto individual no mapa.',
@@ -114,11 +122,6 @@ extension AppBrazilStoreSalesMapMetricX on AppBrazilStoreSalesMapMetric {
   String get key => switch (this) {
     AppBrazilStoreSalesMapMetric.revenue => 'revenue',
     AppBrazilStoreSalesMapMetric.salesCount => 'salesCount',
-  };
-
-  String get label => switch (this) {
-    AppBrazilStoreSalesMapMetric.revenue => 'Receita',
-    AppBrazilStoreSalesMapMetric.salesCount => 'Vendas',
   };
 
   num valueForPoint(AppBrazilStoreSalesPoint point) => switch (this) {
@@ -234,7 +237,7 @@ class AppBrazilStoreSalesMapStyle {
     this.selectedMarkerColor,
     this.selectedMarkerStrokeColor,
     this.legendNumberFormat,
-    this.emptyStateMessage = 'Sem lojas para exibir no mapa.',
+    this.emptyStateMessage = defaultEmptyStateMessage,
   });
 
   const AppBrazilStoreSalesMapStyle.standard({
@@ -318,6 +321,9 @@ class AppBrazilStoreSalesMapStyle {
          markerMaxSize: 76,
        );
 
+  static const String defaultEmptyStateMessage =
+      'Sem lojas para exibir no mapa.';
+
   final double height;
   final bool includeEmptyStates;
   final bool showLegend;
@@ -380,13 +386,13 @@ class AppBrazilStoreSalesMapStyle {
     int? maxClusterTooltipStores,
     double? markerMinSize,
     double? markerMaxSize,
-    Color? lowValueColor,
-    Color? highValueColor,
-    Color? markerColor,
-    Color? markerStrokeColor,
-    Color? selectedMarkerColor,
-    Color? selectedMarkerStrokeColor,
-    NumberFormat? legendNumberFormat,
+    Object? lowValueColor = _unset,
+    Object? highValueColor = _unset,
+    Object? markerColor = _unset,
+    Object? markerStrokeColor = _unset,
+    Object? selectedMarkerColor = _unset,
+    Object? selectedMarkerStrokeColor = _unset,
+    Object? legendNumberFormat = _unset,
     String? emptyStateMessage,
   }) {
     return AppBrazilStoreSalesMapStyle(
@@ -427,14 +433,27 @@ class AppBrazilStoreSalesMapStyle {
           maxClusterTooltipStores ?? this.maxClusterTooltipStores,
       markerMinSize: markerMinSize ?? this.markerMinSize,
       markerMaxSize: markerMaxSize ?? this.markerMaxSize,
-      lowValueColor: lowValueColor ?? this.lowValueColor,
-      highValueColor: highValueColor ?? this.highValueColor,
-      markerColor: markerColor ?? this.markerColor,
-      markerStrokeColor: markerStrokeColor ?? this.markerStrokeColor,
-      selectedMarkerColor: selectedMarkerColor ?? this.selectedMarkerColor,
-      selectedMarkerStrokeColor:
-          selectedMarkerStrokeColor ?? this.selectedMarkerStrokeColor,
-      legendNumberFormat: legendNumberFormat ?? this.legendNumberFormat,
+      lowValueColor: identical(lowValueColor, _unset)
+          ? this.lowValueColor
+          : lowValueColor as Color?,
+      highValueColor: identical(highValueColor, _unset)
+          ? this.highValueColor
+          : highValueColor as Color?,
+      markerColor: identical(markerColor, _unset)
+          ? this.markerColor
+          : markerColor as Color?,
+      markerStrokeColor: identical(markerStrokeColor, _unset)
+          ? this.markerStrokeColor
+          : markerStrokeColor as Color?,
+      selectedMarkerColor: identical(selectedMarkerColor, _unset)
+          ? this.selectedMarkerColor
+          : selectedMarkerColor as Color?,
+      selectedMarkerStrokeColor: identical(selectedMarkerStrokeColor, _unset)
+          ? this.selectedMarkerStrokeColor
+          : selectedMarkerStrokeColor as Color?,
+      legendNumberFormat: identical(legendNumberFormat, _unset)
+          ? this.legendNumberFormat
+          : legendNumberFormat as NumberFormat?,
       emptyStateMessage: emptyStateMessage ?? this.emptyStateMessage,
     );
   }
@@ -592,6 +611,8 @@ class AppBrazilStoreSalesMapDiagnostics {
     unknownResolutionCount,
   );
 }
+
+const Object _unset = Object();
 
 class AppBrazilStoreSalesStateBubble {
   const AppBrazilStoreSalesStateBubble({

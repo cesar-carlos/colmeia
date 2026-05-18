@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -101,13 +102,13 @@ class AppRegionMapChartStyle {
     this.legendNumberFormat,
     this.dataLabelTextStyle,
     this.metricSelectorPadding,
-    this.scopeRootLabel = 'Brasil',
-    this.mapLoadingMessage = 'Carregando mapa...',
-    this.emptyStateMessage = 'Nenhum dado territorial para exibir.',
+    this.scopeRootLabel,
+    this.mapLoadingMessage,
+    this.emptyStateMessage,
     this.excludeNativeMapSemanticsOnWindows = true,
     this.mapSemanticsLabel,
-    this.metricGroupLabel = 'Métrica',
-    this.scopeGroupLabel = 'Escopo',
+    this.metricGroupLabel,
+    this.scopeGroupLabel,
     this.showGroupLabels = true,
   });
 
@@ -141,13 +142,13 @@ class AppRegionMapChartStyle {
   final EdgeInsets? metricSelectorPadding;
 
   /// Label for the root scope chip (national / full map view).
-  final String scopeRootLabel;
+  final String? scopeRootLabel;
 
   /// Shown under the progress indicator while the map layer loads.
-  final String mapLoadingMessage;
+  final String? mapLoadingMessage;
 
   /// Shown when the chart has no rows and no custom empty placeholder.
-  final String emptyStateMessage;
+  final String? emptyStateMessage;
 
   /// Workaround for a Syncfusion Maps 33.x + Flutter Windows accessibility
   /// bridge crash while the native map semantics tree is mounted/remounted.
@@ -160,10 +161,10 @@ class AppRegionMapChartStyle {
 
   /// Overline shown above the metric chips. Set [showGroupLabels] to `false`
   /// to hide both labels.
-  final String metricGroupLabel;
+  final String? metricGroupLabel;
 
   /// Overline shown above the scope chips.
-  final String scopeGroupLabel;
+  final String? scopeGroupLabel;
 
   /// Whether to render the overline labels above the chip groups.
   final bool showGroupLabels;
@@ -272,6 +273,13 @@ class AppRegionMapChart<T> extends StatefulWidget {
 }
 
 class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
+  static const ValueKey<String> _drillUpKey = ValueKey<String>(
+    'app-region-map-drill-up',
+  );
+  static const ValueKey<String> _scopeSelectorKey = ValueKey<String>(
+    'app-region-map-scope-selector',
+  );
+
   String? _internalSelectedMetricKey;
 
   bool get _isControlled => widget.selectedMetricKey != null;
@@ -292,19 +300,23 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final resolvedMetric = _resolveSelectedMetric();
+    final metricGroupLabel =
+        widget.style.metricGroupLabel ?? l10n.regionMapMetricGroupLabel;
 
     final showGroupLabels = widget.style.showGroupLabels;
     final metricSelector = _MetricSelector<T>(
       metrics: widget.metrics,
       selectedMetricKey: resolvedMetric.key,
       style: widget.style,
+      semanticLabel: l10n.regionMapMetricSelectorSemanticsLabel,
       onMetricChanged: _handleMetricChanged,
     );
     final labeledMetricSelector = showGroupLabels
         ? _MapControlGroup(
-            label: widget.style.metricGroupLabel,
+            label: metricGroupLabel,
             child: metricSelector,
           )
         : metricSelector;
@@ -335,8 +347,8 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       onPointTap: widget.onPointTap,
     );
 
-    final drillUpButton = _buildDrillUpButton();
-    final scopeNavigator = _buildScopeNavigator();
+    final drillUpButton = _buildDrillUpButton(l10n);
+    final scopeNavigator = _buildScopeNavigator(l10n);
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,7 +417,7 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
     widget.onMetricChanged?.call(event);
   }
 
-  Widget? _buildDrillUpButton() {
+  Widget? _buildDrillUpButton(AppLocalizations l10n) {
     final callback = widget.onDrillUpRequested;
     if (callback == null ||
         widget.currentDrillLevel == AppMapDrillLevel.region) {
@@ -419,17 +431,18 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       AppMapDrillLevel.region => AppMapDrillLevel.region,
     };
     final label = switch (nextLevel) {
-      AppMapDrillLevel.region => 'Voltar para regiões',
-      AppMapDrillLevel.state => 'Voltar para estados',
-      AppMapDrillLevel.city => 'Voltar para cidades',
-      AppMapDrillLevel.custom => 'Voltar',
+      AppMapDrillLevel.region => l10n.regionMapDrillUpToRegionsLabel,
+      AppMapDrillLevel.state => l10n.regionMapDrillUpToStatesLabel,
+      AppMapDrillLevel.city => l10n.regionMapDrillUpToCitiesLabel,
+      AppMapDrillLevel.custom => l10n.regionMapDrillUpLabel,
     };
 
     return Align(
       alignment: Alignment.centerLeft,
       child: Tooltip(
-        message: 'Retornar ao nível anterior do mapa',
+        message: l10n.regionMapDrillUpTooltip,
         child: ActionChip(
+          key: _drillUpKey,
           avatar: const Icon(Icons.arrow_back_rounded, size: 16),
           label: Text(label),
           onPressed: () {
@@ -445,59 +458,69 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
     );
   }
 
-  Widget? _buildScopeNavigator() {
+  Widget? _buildScopeNavigator(AppLocalizations l10n) {
     final callback = widget.onScopeChanged;
     if (callback == null || widget.scopeOptions.isEmpty) {
       return null;
     }
 
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final rootLabel = widget.style.scopeRootLabel;
+    final rootLabel =
+        widget.style.scopeRootLabel ?? l10n.regionMapRootScopeLabel;
+    final scopeGroupLabel =
+        widget.style.scopeGroupLabel ?? l10n.regionMapScopeGroupLabel;
 
-    final navigator = Semantics(
-      label: 'Escopo territorial',
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Wrap(
-          spacing: tokens.gapSm,
-          runSpacing: tokens.gapSm,
-          children: <Widget>[
-            AppChoiceChip(
-              label: rootLabel,
-              selected: widget.activeScopeKey == null,
-              tooltip: 'Ver mapa completo ($rootLabel)',
-              semanticLabel: 'Ver mapa completo $rootLabel',
-              onSelected: () {
-                if (widget.activeScopeKey == null) {
-                  return;
-                }
-                callback(
-                  AppMapScopeChangedEvent(
-                    previousScopeKey: widget.activeScopeKey,
-                    currentScopeKey: null,
-                  ),
-                );
-              },
-            ),
-            for (final option in widget.scopeOptions)
+    final navigator = KeyedSubtree(
+      key: _scopeSelectorKey,
+      child: Semantics(
+        label: l10n.regionMapScopeSemanticsLabel,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Wrap(
+            spacing: tokens.gapSm,
+            runSpacing: tokens.gapSm,
+            children: <Widget>[
               AppChoiceChip(
-                label: option.label,
-                selected: option.key == widget.activeScopeKey,
-                tooltip: 'Focar em ${option.label}',
-                semanticLabel: 'Focar em ${option.label}',
+                label: rootLabel,
+                selected: widget.activeScopeKey == null,
+                tooltip: l10n.regionMapViewFullScopeTooltip(rootLabel),
+                semanticLabel: l10n.regionMapViewFullScopeSemanticLabel(
+                  rootLabel,
+                ),
                 onSelected: () {
-                  if (option.key == widget.activeScopeKey) {
+                  if (widget.activeScopeKey == null) {
                     return;
                   }
                   callback(
                     AppMapScopeChangedEvent(
                       previousScopeKey: widget.activeScopeKey,
-                      currentScopeKey: option.key,
+                      currentScopeKey: null,
                     ),
                   );
                 },
               ),
-          ],
+              for (final option in widget.scopeOptions)
+                AppChoiceChip(
+                  label: option.label,
+                  selected: option.key == widget.activeScopeKey,
+                  tooltip: l10n.regionMapFocusScopeTooltip(option.label),
+                  semanticLabel: l10n.regionMapFocusScopeSemanticLabel(
+                    option.label,
+                  ),
+                  onSelected: () {
+                    if (option.key == widget.activeScopeKey) {
+                      return;
+                    }
+                    callback(
+                      AppMapScopeChangedEvent(
+                        previousScopeKey: widget.activeScopeKey,
+                        currentScopeKey: option.key,
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -506,7 +529,7 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       return navigator;
     }
     return _MapControlGroup(
-      label: widget.style.scopeGroupLabel,
+      label: scopeGroupLabel,
       child: navigator,
     );
   }
@@ -547,41 +570,50 @@ class _MetricSelector<T> extends StatelessWidget {
     required this.metrics,
     required this.selectedMetricKey,
     required this.style,
+    required this.semanticLabel,
     required this.onMetricChanged,
   });
+
+  static const ValueKey<String> _selectorKey = ValueKey<String>(
+    'app-region-map-metric-selector',
+  );
 
   final List<AppMapMetric<T>> metrics;
   final String selectedMetricKey;
   final AppRegionMapChartStyle style;
+  final String semanticLabel;
   final ValueChanged<AppMapMetricChangedEvent> onMetricChanged;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: style.metricSelectorPadding ?? EdgeInsets.zero,
-      child: Semantics(
-        label: 'Métrica do mapa',
-        child: AppSegmentedControl<String>(
-          options: metrics
-              .map(
-                (metric) => AppSegmentedControlOption<String>(
-                  value: metric.key,
-                  label: metric.label,
+      child: KeyedSubtree(
+        key: _selectorKey,
+        child: Semantics(
+          label: semanticLabel,
+          child: AppSegmentedControl<String>(
+            options: metrics
+                .map(
+                  (metric) => AppSegmentedControlOption<String>(
+                    value: metric.key,
+                    label: metric.label,
+                  ),
+                )
+                .toList(growable: false),
+            value: selectedMetricKey,
+            onChanged: (nextMetricKey) {
+              if (nextMetricKey == selectedMetricKey) {
+                return;
+              }
+              onMetricChanged(
+                AppMapMetricChangedEvent(
+                  metricKey: nextMetricKey,
+                  previousMetricKey: selectedMetricKey,
                 ),
-              )
-              .toList(growable: false),
-          value: selectedMetricKey,
-          onChanged: (nextMetricKey) {
-            if (nextMetricKey == selectedMetricKey) {
-              return;
-            }
-            onMetricChanged(
-              AppMapMetricChangedEvent(
-                metricKey: nextMetricKey,
-                previousMetricKey: selectedMetricKey,
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

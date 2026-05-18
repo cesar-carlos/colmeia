@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_shell_route_observer.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/features/client_agents/application/client_agents_page_session_service.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
@@ -29,10 +29,18 @@ import 'package:colmeia/shared/widgets/navigation/app_tab_view.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_filters_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ClientAgentsPage extends StatefulWidget {
-  const ClientAgentsPage({super.key});
+  const ClientAgentsPage({
+    required this.controller,
+    required this.ownerController,
+    required this.pageSessionService,
+    super.key,
+  });
+
+  final ClientAgentsController controller;
+  final ClientAgentsOwnerController ownerController;
+  final ClientAgentsPageSessionService pageSessionService;
 
   @override
   State<ClientAgentsPage> createState() => _ClientAgentsPageState();
@@ -47,7 +55,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   static const Duration _draftPersistenceDebounce = Duration(milliseconds: 350);
   late final ClientAgentsController _controller;
   late final ClientAgentsOwnerController _ownerController;
-  late final SharedPreferences _prefs;
+  late final ClientAgentsPageSessionService _pageSessionService;
   late ClientAgentsPageSessionState _pageSession;
   Timer? _draftPersistenceTimer;
   bool _shellRouteObserverSubscribed = false;
@@ -56,11 +64,10 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   @override
   void initState() {
     super.initState();
-    _prefs = getIt<SharedPreferences>();
-    _controller = getIt<ClientAgentsController>();
-    _ownerController = getIt<ClientAgentsOwnerController>();
-    _pageSession = ClientAgentsPageSessionState.restore(
-      prefs: _prefs,
+    _controller = widget.controller;
+    _ownerController = widget.ownerController;
+    _pageSessionService = widget.pageSessionService;
+    _pageSession = _pageSessionService.restore(
       fallbackTabIndex: _approvedAgentsTabIndex,
       maxTabIndex: _maxTabIndex,
     );
@@ -442,7 +449,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                           );
                         });
                         unawaited(
-                          persistClientAgentsSelectedTabIndex(_prefs, index),
+                          _pageSessionService.persistSelectedTabIndex(index),
                         );
                       },
                       items: items,
@@ -558,9 +565,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                     approvedAgentFilters: values,
                   );
                 });
-                unawaited(
-                  persistClientAgentsApprovedFilters(_prefs, values),
-                );
+                unawaited(_pageSessionService.persistApprovedFilters(values));
                 Navigator.of(context).pop();
               },
               onClear: () {
@@ -570,8 +575,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                   );
                 });
                 unawaited(
-                  persistClientAgentsApprovedFilters(
-                    _prefs,
+                  _pageSessionService.persistApprovedFilters(
                     const <String, Object?>{},
                   ),
                 );
@@ -615,9 +619,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                     requestsFilters: values,
                   );
                 });
-                unawaited(
-                  persistClientAgentsRequestsFilters(_prefs, values),
-                );
+                unawaited(_pageSessionService.persistRequestsFilters(values));
                 Navigator.of(context).pop();
               },
               onClear: () {
@@ -627,8 +629,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                   );
                 });
                 unawaited(
-                  persistClientAgentsRequestsFilters(
-                    _prefs,
+                  _pageSessionService.persistRequestsFilters(
                     const <String, Object?>{},
                   ),
                 );
@@ -642,7 +643,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   }
 
   Future<void> _persistRequestAccessDraftSlots(List<String> slots) {
-    return persistClientAgentsRequestAccessDraftAgentIdSlots(_prefs, slots);
+    return _pageSessionService.persistRequestAccessDraftAgentIdSlots(slots);
   }
 
   void _scheduleDraftPersistence() {

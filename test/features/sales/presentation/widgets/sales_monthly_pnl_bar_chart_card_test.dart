@@ -43,7 +43,8 @@ void main() {
           points: points,
           loadFailed: false,
           isLoading: false,
-          preferences: salesPrefs,
+          initialSession: salesPrefs.restoreMonthlyPnlBarChartPreferences(),
+          persistSession: salesPrefs.persistMonthlyPnlBarChartPreferences,
         ),
       ),
     );

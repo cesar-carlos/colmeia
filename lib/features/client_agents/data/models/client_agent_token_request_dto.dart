@@ -1,3 +1,5 @@
+import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_constraints.dart';
+
 /// Wire body for `PUT /client/me/agents/{agentId}/client-token`.
 ///
 /// Send `clientToken: null` (or an empty/whitespace string, normalized to
@@ -7,7 +9,7 @@ class ClientAgentTokenRequestDto {
 
   /// Maximum length accepted by the server (DB column
   /// `client_agent_accesses.client_token`).
-  static const int maxTokenLength = 512;
+  static const int maxTokenLength = ClientAgentTokenConstraints.maxLength;
 
   /// Raw input. Use [normalized] when serializing or validating; this preserves
   /// the original value for diagnostics.

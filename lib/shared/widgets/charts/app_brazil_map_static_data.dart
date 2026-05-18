@@ -200,22 +200,6 @@ abstract final class AppBrazilMapStaticData {
     'TO': 'NO',
   };
 
-  static const Map<String, String> regionNamesByKey = {
-    'NO': 'Norte',
-    'NE': 'Nordeste',
-    'CO': 'Centro-Oeste',
-    'SE': 'Sudeste',
-    'SU': 'Sul',
-  };
-
-  static const List<AppMapScopeOption> regionScopeOptions = [
-    AppMapScopeOption(key: 'NO', label: 'Norte'),
-    AppMapScopeOption(key: 'NE', label: 'Nordeste'),
-    AppMapScopeOption(key: 'CO', label: 'Centro-Oeste'),
-    AppMapScopeOption(key: 'SE', label: 'Sudeste'),
-    AppMapScopeOption(key: 'SU', label: 'Sul'),
-  ];
-
   static String stateNameForUf(String uf) {
     final normalizedUf = uf.trim().toUpperCase();
     return stateNamesByUf[normalizedUf] ?? normalizedUf;
@@ -223,15 +207,6 @@ abstract final class AppBrazilMapStaticData {
 
   static String? regionKeyForUf(String uf) {
     return regionKeysByUf[uf.trim().toUpperCase()];
-  }
-
-  static String? regionNameForUf(String uf) {
-    final regionKey = regionKeyForUf(uf);
-    if (regionKey == null) {
-      return null;
-    }
-
-    return regionNamesByKey[regionKey];
   }
 }
 

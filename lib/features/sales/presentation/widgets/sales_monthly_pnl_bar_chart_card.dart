@@ -4,7 +4,6 @@ import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_bar_chart_style.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_percent_metrics.dart';
-import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_point_percent_metric.dart';
@@ -30,7 +29,8 @@ class SalesMonthlyPnlBarChartCard extends StatefulWidget {
     required this.points,
     required this.loadFailed,
     required this.isLoading,
-    required this.preferences,
+    required this.initialSession,
+    required this.persistSession,
     super.key,
     this.loadFailureMessage,
     this.onOpenFullscreen,
@@ -40,7 +40,9 @@ class SalesMonthlyPnlBarChartCard extends StatefulWidget {
   final List<SalesMonthlyPnlPoint> points;
   final bool loadFailed;
   final bool isLoading;
-  final SalesPreferences preferences;
+  final SalesMonthlyPnlBarChartPreferences initialSession;
+  final Future<void> Function(SalesMonthlyPnlBarChartPreferences session)
+  persistSession;
   final String? loadFailureMessage;
   final VoidCallback? onOpenFullscreen;
 
@@ -56,11 +58,11 @@ class _SalesMonthlyPnlBarChartCardState
   @override
   void initState() {
     super.initState();
-    _session = widget.preferences.restoreMonthlyPnlBarChartPreferences();
+    _session = widget.initialSession;
   }
 
   Future<void> _persistSession(SalesMonthlyPnlBarChartPreferences next) async {
-    await widget.preferences.persistMonthlyPnlBarChartPreferences(next);
+    await widget.persistSession(next);
   }
 
   void _setSession(SalesMonthlyPnlBarChartPreferences next) {

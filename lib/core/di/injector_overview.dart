@@ -10,6 +10,8 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
@@ -53,5 +55,8 @@ void registerInjectorOverview(GetIt getIt) {
     )
     ..registerLazySingleton<LoadOverviewUseCase>(
       () => LoadOverviewUseCase(getIt<OverviewRepository>()),
+    )
+    ..registerLazySingleton<LoadOverviewOnlineAgentIdsUseCase>(
+      () => LoadOverviewOnlineAgentIdsUseCase(getIt<ClientAgentsRepository>()),
     );
 }

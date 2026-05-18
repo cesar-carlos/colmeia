@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -18,10 +17,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
-import 'package:colmeia/features/sales/data/sales_preferences.dart';
-import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
+import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
@@ -201,7 +200,25 @@ String _salesTrendRangeDescriptorLabel(
 }
 
 class SalesProdutoTendenciaPage extends StatefulWidget {
-  const SalesProdutoTendenciaPage({super.key});
+  const SalesProdutoTendenciaPage({
+    required this.sessionService,
+    required this.loadSalesAvailableAgentsUseCase,
+    required this.resolveSalesAgentClientTokenUseCase,
+    required this.loadTrendUseCase,
+    required this.loadTrendSummaryUseCase,
+    required this.loadGrupoProdutoOptionsUseCase,
+    required this.loadMarcaProdutoOptionsUseCase,
+    super.key,
+  });
+
+  final SalesSessionService sessionService;
+  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
+  final LoadProdutoVendidoTendenciaDeVendaUseCase loadTrendUseCase;
+  final LoadProdutoVendidoTendenciaDeVendaSummaryUseCase
+  loadTrendSummaryUseCase;
+  final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
+  final LoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
 
   @override
   State<SalesProdutoTendenciaPage> createState() =>
@@ -213,9 +230,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   static const String _cardId = 'produto_tendencia_venda';
   static const List<int> _pageSizeOptions = <int>[10, 20, 50, 100];
 
-  late final SalesPreferences _prefs;
-  late final AgentClientTokenReader _clientTokenReader;
-  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
+  late final SalesSessionService _sessionService;
+  late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
+  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
   late final LoadProdutoVendidoTendenciaDeVendaUseCase _loadTrend;
   late final LoadProdutoVendidoTendenciaDeVendaSummaryUseCase _loadTrendSummary;
   late final LoadGrupoProdutoOptionsUseCase _loadGrupoOptions;
@@ -256,18 +273,17 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   @override
   void initState() {
     super.initState();
-    _prefs = getIt<SalesPreferences>();
-    _clientTokenReader = getIt<AgentClientTokenReader>();
-    _loadAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
-    _loadTrend = getIt<LoadProdutoVendidoTendenciaDeVendaUseCase>();
-    _loadTrendSummary =
-        getIt<LoadProdutoVendidoTendenciaDeVendaSummaryUseCase>();
-    _loadGrupoOptions = getIt<LoadGrupoProdutoOptionsUseCase>();
-    _loadMarcaOptions = getIt<LoadMarcaProdutoOptionsUseCase>();
-    _selectedAgentId = _prefs.selectedAgentId;
+    _sessionService = widget.sessionService;
+    _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
+    _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
+    _loadTrend = widget.loadTrendUseCase;
+    _loadTrendSummary = widget.loadTrendSummaryUseCase;
+    _loadGrupoOptions = widget.loadGrupoProdutoOptionsUseCase;
+    _loadMarcaOptions = widget.loadMarcaProdutoOptionsUseCase;
+    _selectedAgentId = _sessionService.selectedAgentId;
 
     final now = DateTime.now();
-    final restored = _prefs.restoreCardFilters(_cardId);
+    final restored = _sessionService.restoreCardFilters(_cardId);
     _periodoAtual =
         _restoreDateRange(
           restored,
@@ -331,8 +347,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       _availableAgents = agents;
       _selectedAgentId = nextSelection;
     });
-    if (nextSelection != _prefs.selectedAgentId) {
-      unawaited(_prefs.setSelectedAgentId(nextSelection));
+    if (nextSelection != _sessionService.selectedAgentId) {
+      unawaited(_sessionService.setSelectedAgentId(nextSelection));
     }
     unawaited(_reload());
   }
@@ -467,16 +483,13 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         _cachedClientTokenAgentId == agentId) {
       return _cachedClientToken;
     }
-    final tokenByAgent = await _clientTokenReader.readMany(
+    final resolved = await _resolveClientTokenUseCase(
       userId: userId,
-      agentIds: <String>[agentId],
+      agentId: agentId,
     );
-    final resolved = tokenByAgent[agentId]?.trim();
     _cachedClientTokenUserId = userId;
     _cachedClientTokenAgentId = agentId;
-    return _cachedClientToken = resolved == null || resolved.isEmpty
-        ? null
-        : resolved;
+    return _cachedClientToken = resolved;
   }
 
   Future<void> _loadDimensionOptions({
@@ -722,14 +735,14 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           ? _optionsLoadedForAgentId
           : null;
     });
-    unawaited(_prefs.setSelectedAgentId(normalizedAgentId));
+    unawaited(_sessionService.setSelectedAgentId(normalizedAgentId));
     unawaited(_persistFilters());
     unawaited(_reload());
     _showFiltersAppliedSnackBar();
   }
 
   Future<void> _persistFilters() {
-    return _prefs.persistCardFilters(_cardId, <String, Object?>{
+    return _sessionService.persistCardFilters(_cardId, <String, Object?>{
       'periodo_atual_start_ms': _periodoAtual.start.millisecondsSinceEpoch,
       'periodo_atual_end_ms': _periodoAtual.end.millisecondsSinceEpoch,
       'periodo_anterior_start_ms':
@@ -1736,11 +1749,7 @@ abstract final class _TrendDetailsTableLayout {
   static double _percentual(AppThemeTokens t) => math.max(104, t.gapMd * 9);
 
   static double minWidth(AppThemeTokens t) =>
-      _product(t) +
-      _classificacao(t) +
-      _grupo(t) +
-      _delta(t) +
-      _percentual(t);
+      _product(t) + _classificacao(t) + _grupo(t) + _delta(t) + _percentual(t);
 
   /// Row [Padding] uses [AppThemeTokens.gapSm] on each horizontal side.
   static double minScrollContentWidth(AppThemeTokens t) =>

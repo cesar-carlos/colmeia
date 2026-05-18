@@ -4,18 +4,17 @@ import 'dart:math' as math;
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
-import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
-import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
@@ -99,7 +98,20 @@ double _resolveSalesMonthlyPnlChartWidth({
 }
 
 class SalesMonthlyPnlPage extends StatefulWidget {
-  const SalesMonthlyPnlPage({super.key});
+  const SalesMonthlyPnlPage({
+    required this.sessionService,
+    required this.loadSalesAvailableAgentsUseCase,
+    required this.loadSalesMonthlyPnlLinesUseCase,
+    required this.loadSalesDailyTotalsUseCase,
+    required this.resolveSalesAgentClientTokenUseCase,
+    super.key,
+  });
+
+  final SalesSessionService sessionService;
+  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final LoadSalesMonthlyPnlLinesUseCase loadSalesMonthlyPnlLinesUseCase;
+  final LoadSalesDailyTotalsUseCase loadSalesDailyTotalsUseCase;
+  final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
 
   @override
   State<SalesMonthlyPnlPage> createState() => _SalesMonthlyPnlPageState();
@@ -107,11 +119,11 @@ class SalesMonthlyPnlPage extends StatefulWidget {
 
 class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     with SalesAutoRefreshStateMixin<SalesMonthlyPnlPage> {
-  late final SalesPreferences _prefs;
-  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
+  late final SalesSessionService _sessionService;
+  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
   late final LoadSalesMonthlyPnlLinesUseCase _loadPnlLines;
   late final LoadSalesDailyTotalsUseCase _loadDailyTotals;
-  late final AgentClientTokenReader _clientTokenReader;
+  late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
 
   String? _selectedAgentId;
   List<OverviewAgentOption> _availableAgents = <OverviewAgentOption>[];
@@ -134,17 +146,18 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
   @override
   void initState() {
     super.initState();
-    _prefs = getIt<SalesPreferences>();
-    _loadAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
-    _loadPnlLines = getIt<LoadSalesMonthlyPnlLinesUseCase>();
-    _loadDailyTotals = getIt<LoadSalesDailyTotalsUseCase>();
-    _clientTokenReader = getIt<AgentClientTokenReader>();
-    _selectedAgentId = _prefs.selectedAgentId;
+    _sessionService = widget.sessionService;
+    _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
+    _loadPnlLines = widget.loadSalesMonthlyPnlLinesUseCase;
+    _loadDailyTotals = widget.loadSalesDailyTotalsUseCase;
+    _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
+    _selectedAgentId = _sessionService.selectedAgentId;
     _anchorYearMonth =
-        _prefs.restoreSalesChartReferenceMonth() ??
+        _sessionService.restoreSalesChartReferenceMonth() ??
         OverviewYearMonth.fromDate(DateTime.now());
-    _dailyTotalsDateRange = _prefs.restoreSalesDailyTotalsUseCustomRange()
-        ? _prefs.restoreSalesDailyTotalsDateRange()
+    _dailyTotalsDateRange =
+        _sessionService.restoreSalesDailyTotalsUseCustomRange()
+        ? _sessionService.restoreSalesDailyTotalsDateRange()
         : null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
@@ -176,8 +189,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
       _availableAgents = agents;
       _selectedAgentId = nextSelection;
     });
-    if (nextSelection != _prefs.selectedAgentId) {
-      unawaited(_prefs.setSelectedAgentId(nextSelection));
+    if (nextSelection != _sessionService.selectedAgentId) {
+      unawaited(_sessionService.setSelectedAgentId(nextSelection));
     }
     unawaited(_reload());
   }
@@ -191,16 +204,13 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
       return _cachedClientToken;
     }
 
-    final tokenByAgent = await _clientTokenReader.readMany(
+    final resolved = await _resolveClientTokenUseCase(
       userId: userId,
-      agentIds: <String>[agentId],
+      agentId: agentId,
     );
-    final resolved = tokenByAgent[agentId]?.trim();
     _cachedClientTokenUserId = userId;
     _cachedClientTokenAgentId = agentId;
-    return _cachedClientToken = resolved == null || resolved.isEmpty
-        ? null
-        : resolved;
+    return _cachedClientToken = resolved;
   }
 
   Future<void> _reload({bool force = false}) =>
@@ -314,12 +324,12 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
       }
       _dailyTotalsDateRange = dailyRange;
     });
-    unawaited(_prefs.setSelectedAgentId(normalizedAgentId));
+    unawaited(_sessionService.setSelectedAgentId(normalizedAgentId));
     if (anchor != null) {
-      unawaited(_prefs.persistSalesChartReferenceMonth(anchor));
+      unawaited(_sessionService.persistSalesChartReferenceMonth(anchor));
     }
     unawaited(
-      _prefs.persistSalesDailyTotalsDateRange(
+      _sessionService.persistSalesDailyTotalsDateRange(
         useCustomRange: dailyRange != null,
         range: dailyRange,
       ),
@@ -430,7 +440,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
       pushSalesMonthlyPnlBarChartFullscreen(
         context: context,
         points: List<SalesMonthlyPnlPoint>.of(_points, growable: false),
-        initialSession: _prefs.restoreMonthlyPnlBarChartPreferences(),
+        initialSession: _sessionService.restoreMonthlyPnlBarChartPreferences(),
         isLoading: _loading && _selectedAgentId != null,
         loadFailed: _chartLoadFailed,
         loadFailureMessage: _chartLoadFailureMessage,
@@ -528,7 +538,10 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
                     loadFailed: _chartLoadFailed,
                     loadFailureMessage: _chartLoadFailureMessage,
                     isLoading: _loading && _selectedAgentId != null,
-                    preferences: _prefs,
+                    initialSession: _sessionService
+                        .restoreMonthlyPnlBarChartPreferences(),
+                    persistSession:
+                        _sessionService.persistMonthlyPnlBarChartPreferences,
                     onOpenFullscreen: _openBarChartFullscreen,
                   ),
                 ),

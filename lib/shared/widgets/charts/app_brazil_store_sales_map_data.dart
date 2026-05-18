@@ -40,15 +40,24 @@ abstract final class AppBrazilStoreSalesMapData {
       h = Object.hash(
         h,
         p.id,
+        p.name,
+        p.fantasyName ?? '',
+        p.branchName ?? '',
+        p.companyCode,
+        p.branchCode,
+        p.agentName ?? '',
         p.salesAmount,
         p.salesCount,
         p.salesDataLoading,
         p.salesDataUnavailable,
+        p.salesDataStatusLabel ?? '',
         p.latitude,
         p.longitude,
         p.uf,
         p.city ?? '',
         p.municipalityCode ?? '',
+        p.locationResolution,
+        p.subtitle ?? '',
       );
     }
     return h;
@@ -56,7 +65,9 @@ abstract final class AppBrazilStoreSalesMapData {
 
   /// Content fingerprint for [AppBrazilStoreSalesMarkerGroup]: instances are
   /// recreated on snapshot rebuilds; point order within a group is ignored.
-  static int markerGroupContentFingerprint(AppBrazilStoreSalesMarkerGroup group) {
+  static int markerGroupContentFingerprint(
+    AppBrazilStoreSalesMarkerGroup group,
+  ) {
     final sorted = List<AppBrazilStoreSalesPoint>.of(group.points)
       ..sort((a, b) => a.id.compareTo(b.id));
     var h = Object.hash(
@@ -193,69 +204,7 @@ abstract final class AppBrazilStoreSalesMapData {
     Iterable<AppBrazilStoreSalesPoint> points, {
     String? regionKey,
   }) {
-    var totalPointCount = 0;
-    var validPointCount = 0;
-    var invalidCoordinateCount = 0;
-    var unknownUfCount = 0;
-    var filteredByRegionCount = 0;
-    var resolvedByProvidedGeoPointCount = 0;
-    var resolvedByIbgeMunicipalityCodeCount = 0;
-    var resolvedByCepCount = 0;
-    var resolvedByCityUfCount = 0;
-    var resolvedByCapitalUfCount = 0;
-    var resolvedByStateUfCount = 0;
-    var unknownResolutionCount = 0;
-
-    for (final point in points) {
-      totalPointCount += 1;
-      if (!isKnownUf(point.uf)) {
-        unknownUfCount += 1;
-        continue;
-      }
-
-      if (!hasValidCoordinates(point)) {
-        invalidCoordinateCount += 1;
-        continue;
-      }
-
-      if (!pointMatchesRegion(point, regionKey)) {
-        filteredByRegionCount += 1;
-        continue;
-      }
-
-      validPointCount += 1;
-      switch (point.locationResolution) {
-        case AppBrazilStoreSalesLocationResolution.providedGeoPoint:
-          resolvedByProvidedGeoPointCount += 1;
-        case AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode:
-          resolvedByIbgeMunicipalityCodeCount += 1;
-        case AppBrazilStoreSalesLocationResolution.cep:
-          resolvedByCepCount += 1;
-        case AppBrazilStoreSalesLocationResolution.cityUf:
-          resolvedByCityUfCount += 1;
-        case AppBrazilStoreSalesLocationResolution.capitalUf:
-          resolvedByCapitalUfCount += 1;
-        case AppBrazilStoreSalesLocationResolution.stateUf:
-          resolvedByStateUfCount += 1;
-        case null:
-          unknownResolutionCount += 1;
-      }
-    }
-
-    return AppBrazilStoreSalesMapDiagnostics(
-      totalPointCount: totalPointCount,
-      validPointCount: validPointCount,
-      invalidCoordinateCount: invalidCoordinateCount,
-      unknownUfCount: unknownUfCount,
-      filteredByRegionCount: filteredByRegionCount,
-      resolvedByProvidedGeoPointCount: resolvedByProvidedGeoPointCount,
-      resolvedByIbgeMunicipalityCodeCount: resolvedByIbgeMunicipalityCodeCount,
-      resolvedByCepCount: resolvedByCepCount,
-      resolvedByCityUfCount: resolvedByCityUfCount,
-      resolvedByCapitalUfCount: resolvedByCapitalUfCount,
-      resolvedByStateUfCount: resolvedByStateUfCount,
-      unknownResolutionCount: unknownResolutionCount,
-    );
+    return prepareSnapshotData(points, regionKey: regionKey).diagnostics;
   }
 
   static List<AppBrazilStoreSalesPoint> filterPointsByRegion(
@@ -553,9 +502,11 @@ abstract final class AppBrazilStoreSalesMapData {
       int? closestIndex;
 
       for (var dLat = -neighborhoodRadius; dLat <= neighborhoodRadius; dLat++) {
-        for (var dLon = -neighborhoodRadius;
-            dLon <= neighborhoodRadius;
-            dLon++) {
+        for (
+          var dLon = -neighborhoodRadius;
+          dLon <= neighborhoodRadius;
+          dLon++
+        ) {
           final key = _proximityGridKey(uf, latCell + dLat, lonCell + dLon);
           for (final idx in grid[key] ?? const <int>[]) {
             final group = groups[idx];
@@ -716,7 +667,7 @@ class _MutableStateBucket {
       uf: uf,
       stateName: AppBrazilMapStaticData.stateNameForUf(uf),
       regionKey: regionKey,
-      regionName: AppBrazilMapStaticData.regionNamesByKey[regionKey] ?? '',
+      regionName: regionKey,
     );
   }
 

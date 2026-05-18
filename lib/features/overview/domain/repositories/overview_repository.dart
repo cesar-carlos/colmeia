@@ -2,15 +2,13 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 
 export 'package:colmeia/features/overview/domain/entities/overview_filter.dart'
     show OverviewAgentOption, OverviewFilter, OverviewYearMonth;
-
-enum OverviewLoadPolicy {
-  defaultLoad,
-  forceRefresh,
-}
+export 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart'
+    show OverviewLoadPolicy;
 
 abstract interface class OverviewRepository {
   Future<AppResult<Overview>> loadOverview({

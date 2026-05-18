@@ -1,5 +1,6 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
+import 'package:colmeia/features/auth/application/auth_login_preferences_service.dart';
 import 'package:colmeia/features/auth/application/usecases/change_password_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/logout_use_case.dart';
@@ -18,9 +19,13 @@ import 'package:colmeia/features/auth/data/repositories/auth_repository_impl.dar
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void registerInjectorAuth(GetIt getIt) {
   getIt
+    ..registerLazySingleton<AuthLoginPreferencesService>(
+      () => AuthLoginPreferencesService(getIt<SharedPreferences>()),
+    )
     ..registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(
         localDataSource: getIt<AuthLocalDataSource>(),

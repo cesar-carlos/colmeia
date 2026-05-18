@@ -887,6 +887,62 @@ class AppLocalizationsEn extends AppLocalizations {
       'Map values reflect the data loaded when you opened fullscreen.';
 
   @override
+  String get regionMapMetricGroupLabel => 'Metric';
+
+  @override
+  String get regionMapScopeGroupLabel => 'Scope';
+
+  @override
+  String get regionMapRootScopeLabel => 'All regions';
+
+  @override
+  String get regionMapLoadingMessage => 'Loading map…';
+
+  @override
+  String get regionMapEmptyStateMessage => 'No territorial data to show.';
+
+  @override
+  String get regionMapMetricSelectorSemanticsLabel => 'Map metric';
+
+  @override
+  String get regionMapScopeSemanticsLabel => 'Territorial scope';
+
+  @override
+  String get regionMapDrillUpToRegionsLabel => 'Back to regions';
+
+  @override
+  String get regionMapDrillUpToStatesLabel => 'Back to states';
+
+  @override
+  String get regionMapDrillUpToCitiesLabel => 'Back to cities';
+
+  @override
+  String get regionMapDrillUpLabel => 'Back';
+
+  @override
+  String get regionMapDrillUpTooltip => 'Return to the previous map level';
+
+  @override
+  String regionMapViewFullScopeTooltip(String label) {
+    return 'Show full map ($label)';
+  }
+
+  @override
+  String regionMapViewFullScopeSemanticLabel(String label) {
+    return 'Show full map $label';
+  }
+
+  @override
+  String regionMapFocusScopeTooltip(String label) {
+    return 'Focus on $label';
+  }
+
+  @override
+  String regionMapFocusScopeSemanticLabel(String label) {
+    return 'Focus on $label';
+  }
+
+  @override
   String get brazilStoreSalesMapMetricGroupLabel => 'Metric';
 
   @override
@@ -906,6 +962,205 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapShowBranchOnMapAction => 'Show on map';
+
+  @override
+  String get brazilStoreSalesMapMetricRevenueShort => 'Revenue';
+
+  @override
+  String get brazilStoreSalesMapMetricSalesShort => 'Sales';
+
+  @override
+  String get brazilStoreSalesMapLegendButton => 'Legend';
+
+  @override
+  String brazilStoreSalesMapStateBucketTooltip(
+    String stateName,
+    String uf,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName / $uf\n$revenue | $salesCount sales | $storeCount stores';
+  }
+
+  @override
+  String brazilStoreSalesMapStateInlineTooltip(
+    String stateName,
+    String uf,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName ($uf) | $revenue | $salesCount sales | $storeCount stores';
+  }
+
+  @override
+  String get brazilStoreSalesMapSemanticsStoreOnMap => 'Store on map';
+
+  @override
+  String get brazilStoreSalesMapSemanticsSalesLoadingSuffix =>
+      ', sales loading';
+
+  @override
+  String get brazilStoreSalesMapSemanticsSalesUnavailableSuffix =>
+      ', sales unavailable';
+
+  @override
+  String brazilStoreSalesMapSemanticsClusterStores(
+    String storeCount,
+    String cityLabel,
+    String revenue,
+    String salesCount,
+    String salesStatusSuffix,
+  ) {
+    return '$storeCount stores in $cityLabel, $revenue, $salesCount sales$salesStatusSuffix';
+  }
+
+  @override
+  String brazilStoreSalesMapSemanticsSingleStore(
+    String storeName,
+    String cityLabel,
+    String revenue,
+    String salesCount,
+    String salesStatusSuffix,
+  ) {
+    return '$storeName, $cityLabel, $revenue, $salesCount sales$salesStatusSuffix';
+  }
+
+  @override
+  String brazilStoreSalesMapSemanticsStateAggregate(
+    String stateName,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName, $revenue, $salesCount sales, $storeCount stores';
+  }
+
+  @override
+  String brazilStoreSalesMapDetailChipSales(String count) {
+    return '$count sales';
+  }
+
+  @override
+  String brazilStoreSalesMapDetailChipBranches(String count) {
+    return '$count branches';
+  }
+
+  @override
+  String brazilStoreSalesMapStateSelectedSubtitle(String uf) {
+    return '$uf selected';
+  }
+
+  @override
+  String brazilStoreSalesMapCarouselPosition(String current, String total) {
+    return '$current of $total';
+  }
+
+  @override
+  String get brazilStoreSalesMapBranchDetailSemanticsLabel =>
+      'Branch details on the map';
+
+  @override
+  String get brazilStoreSalesMapSalesLoadingLabel => 'Loading sales';
+
+  @override
+  String brazilStoreSalesMapDataQualityLead(String count) {
+    return '$count stores not shown';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityInvalidCoords(String count) {
+    return '$count with invalid coordinates';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityUnknownUf(String count) {
+    return '$count with unknown state code';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityOutsideClip(String count) {
+    return '$count outside the map clip';
+  }
+
+  @override
+  String salesLiveMapFilterBranchSummaryLine(
+    String city,
+    String uf,
+    String agentName,
+  ) {
+    return '$city/$uf — Agent $agentName';
+  }
+
+  @override
+  String salesLiveMapFilterBranchCodesLine(
+    String codEmpresa,
+    String codFilial,
+  ) {
+    return 'Company: $codEmpresa  Branch: $codFilial';
+  }
+
+  @override
+  String get brazilStoreSalesMapCloseBranchDetailsTooltip => 'Close details';
+
+  @override
+  String get brazilStoreSalesMapBranchPinnedChip => 'Pinned branch';
+
+  @override
+  String get brazilStoreSalesMapSalesUnavailableFallback => 'Sales unavailable';
+
+  @override
+  String get brazilStoreSalesMapSelectBranchButton => 'Select branch';
+
+  @override
+  String get brazilStoreSalesMapChooseBranchMenuTooltip => 'Choose branch';
+
+  @override
+  String get brazilStoreSalesMapBranchNavigationPreviousTooltip =>
+      'Previous branch';
+
+  @override
+  String get brazilStoreSalesMapBranchNavigationNextTooltip => 'Next branch';
+
+  @override
+  String get brazilStoreSalesMapMarkerGroupTotalTitle => 'Location total';
+
+  @override
+  String get brazilStoreSalesMapDefaultBranchName => 'Unnamed branch';
+
+  @override
+  String brazilStoreSalesMapAgentChipWithName(String agentName) {
+    return 'Agent $agentName';
+  }
+
+  @override
+  String brazilStoreSalesMapIbgeCodeLabel(String code) {
+    return 'IBGE $code';
+  }
+
+  @override
+  String get brazilStoreSalesMapLocationProvidedGeoPoint =>
+      'Branch coordinates';
+
+  @override
+  String get brazilStoreSalesMapLocationIbge => 'IBGE geolocation';
+
+  @override
+  String get brazilStoreSalesMapLocationCep => 'ZIP code geolocation';
+
+  @override
+  String get brazilStoreSalesMapLocationCityUf => 'City/state geolocation';
+
+  @override
+  String get brazilStoreSalesMapLocationCapitalUf => 'State capital';
+
+  @override
+  String get brazilStoreSalesMapLocationStateUf => 'State centroid';
+
+  @override
+  String get brazilStoreSalesMapLocationUnknown =>
+      'Coordinate source not provided';
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -3339,4 +3594,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportFiltersApplyButton => 'Apply';
+
+  @override
+  String get brazilStoreSalesMapCountryLabel => 'Brazil';
+
+  @override
+  String get brazilStoreSalesMapRegionNorth => 'North';
+
+  @override
+  String get brazilStoreSalesMapRegionNortheast => 'Northeast';
+
+  @override
+  String get brazilStoreSalesMapRegionCenterWest => 'Center-West';
+
+  @override
+  String get brazilStoreSalesMapRegionSoutheast => 'Southeast';
+
+  @override
+  String get brazilStoreSalesMapRegionSouth => 'South';
+
+  @override
+  String get brazilStoreSalesMapEmptyState => 'No stores to show on the map.';
+
+  @override
+  String get brazilStoreSalesMapPresetStandardLabel => 'Points';
+
+  @override
+  String get brazilStoreSalesMapPresetBubbleLabel => 'Bubbles';
+
+  @override
+  String get brazilStoreSalesMapPresetMunicipalityBubblesLabel =>
+      'Municipalities';
+
+  @override
+  String get brazilStoreSalesMapPresetStateBubblesLabel => 'State bubbles';
+
+  @override
+  String get brazilStoreSalesMapPresetStoreIconLabel => 'Store icon';
+
+  @override
+  String get brazilStoreSalesMapPresetStandardTooltip =>
+      'Shows each store as an individual point on the map.';
+
+  @override
+  String get brazilStoreSalesMapPresetBubbleTooltip =>
+      'Shows stores as bubbles proportional to the active metric.';
+
+  @override
+  String get brazilStoreSalesMapPresetMunicipalityBubblesTooltip =>
+      'Groups stores by municipality and shows bubbles proportional to the active metric.';
+
+  @override
+  String get brazilStoreSalesMapPresetStateBubblesTooltip =>
+      'Groups stores into bubbles positioned at each state centroid.';
+
+  @override
+  String get brazilStoreSalesMapPresetStoreIconTooltip =>
+      'Shows each store with an operational store icon.';
 }

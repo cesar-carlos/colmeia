@@ -907,6 +907,63 @@ class AppLocalizationsPt extends AppLocalizations {
       'Os valores do mapa refletem os dados carregados ao abrir a tela cheia.';
 
   @override
+  String get regionMapMetricGroupLabel => 'Métrica';
+
+  @override
+  String get regionMapScopeGroupLabel => 'Escopo';
+
+  @override
+  String get regionMapRootScopeLabel => 'Todas as regiões';
+
+  @override
+  String get regionMapLoadingMessage => 'Carregando mapa…';
+
+  @override
+  String get regionMapEmptyStateMessage =>
+      'Nenhum dado territorial para exibir.';
+
+  @override
+  String get regionMapMetricSelectorSemanticsLabel => 'Métrica do mapa';
+
+  @override
+  String get regionMapScopeSemanticsLabel => 'Escopo territorial';
+
+  @override
+  String get regionMapDrillUpToRegionsLabel => 'Voltar para regiões';
+
+  @override
+  String get regionMapDrillUpToStatesLabel => 'Voltar para estados';
+
+  @override
+  String get regionMapDrillUpToCitiesLabel => 'Voltar para cidades';
+
+  @override
+  String get regionMapDrillUpLabel => 'Voltar';
+
+  @override
+  String get regionMapDrillUpTooltip => 'Retornar ao nível anterior do mapa';
+
+  @override
+  String regionMapViewFullScopeTooltip(String label) {
+    return 'Ver mapa completo ($label)';
+  }
+
+  @override
+  String regionMapViewFullScopeSemanticLabel(String label) {
+    return 'Ver mapa completo $label';
+  }
+
+  @override
+  String regionMapFocusScopeTooltip(String label) {
+    return 'Focar em $label';
+  }
+
+  @override
+  String regionMapFocusScopeSemanticLabel(String label) {
+    return 'Focar em $label';
+  }
+
+  @override
   String get brazilStoreSalesMapMetricGroupLabel => 'Métrica';
 
   @override
@@ -926,6 +983,206 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapShowBranchOnMapAction => 'Destacar no mapa';
+
+  @override
+  String get brazilStoreSalesMapMetricRevenueShort => 'Receita';
+
+  @override
+  String get brazilStoreSalesMapMetricSalesShort => 'Vendas';
+
+  @override
+  String get brazilStoreSalesMapLegendButton => 'Legenda';
+
+  @override
+  String brazilStoreSalesMapStateBucketTooltip(
+    String stateName,
+    String uf,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName / $uf\n$revenue | $salesCount vendas | $storeCount lojas';
+  }
+
+  @override
+  String brazilStoreSalesMapStateInlineTooltip(
+    String stateName,
+    String uf,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName ($uf) | $revenue | $salesCount vendas | $storeCount lojas';
+  }
+
+  @override
+  String get brazilStoreSalesMapSemanticsStoreOnMap => 'Loja no mapa';
+
+  @override
+  String get brazilStoreSalesMapSemanticsSalesLoadingSuffix =>
+      ', vendas carregando';
+
+  @override
+  String get brazilStoreSalesMapSemanticsSalesUnavailableSuffix =>
+      ', vendas indisponiveis';
+
+  @override
+  String brazilStoreSalesMapSemanticsClusterStores(
+    String storeCount,
+    String cityLabel,
+    String revenue,
+    String salesCount,
+    String salesStatusSuffix,
+  ) {
+    return '$storeCount lojas em $cityLabel, $revenue, $salesCount vendas$salesStatusSuffix';
+  }
+
+  @override
+  String brazilStoreSalesMapSemanticsSingleStore(
+    String storeName,
+    String cityLabel,
+    String revenue,
+    String salesCount,
+    String salesStatusSuffix,
+  ) {
+    return '$storeName, $cityLabel, $revenue, $salesCount vendas$salesStatusSuffix';
+  }
+
+  @override
+  String brazilStoreSalesMapSemanticsStateAggregate(
+    String stateName,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName, $revenue, $salesCount vendas, $storeCount lojas';
+  }
+
+  @override
+  String brazilStoreSalesMapDetailChipSales(String count) {
+    return '$count vendas';
+  }
+
+  @override
+  String brazilStoreSalesMapDetailChipBranches(String count) {
+    return '$count filiais';
+  }
+
+  @override
+  String brazilStoreSalesMapStateSelectedSubtitle(String uf) {
+    return '$uf selecionado';
+  }
+
+  @override
+  String brazilStoreSalesMapCarouselPosition(String current, String total) {
+    return '$current de $total';
+  }
+
+  @override
+  String get brazilStoreSalesMapBranchDetailSemanticsLabel =>
+      'Detalhes da filial no mapa';
+
+  @override
+  String get brazilStoreSalesMapSalesLoadingLabel => 'Carregando vendas';
+
+  @override
+  String brazilStoreSalesMapDataQualityLead(String count) {
+    return '$count lojas nao exibidas';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityInvalidCoords(String count) {
+    return '$count com coordenada invalida';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityUnknownUf(String count) {
+    return '$count com UF desconhecida';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityOutsideClip(String count) {
+    return '$count fora do recorte';
+  }
+
+  @override
+  String salesLiveMapFilterBranchSummaryLine(
+    String city,
+    String uf,
+    String agentName,
+  ) {
+    return '$city/$uf — Agente $agentName';
+  }
+
+  @override
+  String salesLiveMapFilterBranchCodesLine(
+    String codEmpresa,
+    String codFilial,
+  ) {
+    return 'Empresa: $codEmpresa  Filial: $codFilial';
+  }
+
+  @override
+  String get brazilStoreSalesMapCloseBranchDetailsTooltip => 'Fechar detalhes';
+
+  @override
+  String get brazilStoreSalesMapBranchPinnedChip => 'Filial fixada';
+
+  @override
+  String get brazilStoreSalesMapSalesUnavailableFallback =>
+      'Vendas indisponiveis';
+
+  @override
+  String get brazilStoreSalesMapSelectBranchButton => 'Selecionar filial';
+
+  @override
+  String get brazilStoreSalesMapChooseBranchMenuTooltip => 'Escolher filial';
+
+  @override
+  String get brazilStoreSalesMapBranchNavigationPreviousTooltip =>
+      'Filial anterior';
+
+  @override
+  String get brazilStoreSalesMapBranchNavigationNextTooltip => 'Proxima filial';
+
+  @override
+  String get brazilStoreSalesMapMarkerGroupTotalTitle => 'Total do ponto';
+
+  @override
+  String get brazilStoreSalesMapDefaultBranchName => 'Filial sem nome';
+
+  @override
+  String brazilStoreSalesMapAgentChipWithName(String agentName) {
+    return 'Agente $agentName';
+  }
+
+  @override
+  String brazilStoreSalesMapIbgeCodeLabel(String code) {
+    return 'IBGE $code';
+  }
+
+  @override
+  String get brazilStoreSalesMapLocationProvidedGeoPoint =>
+      'Coordenada da filial';
+
+  @override
+  String get brazilStoreSalesMapLocationIbge => 'Geolocalizacao IBGE';
+
+  @override
+  String get brazilStoreSalesMapLocationCep => 'Geolocalizacao CEP';
+
+  @override
+  String get brazilStoreSalesMapLocationCityUf => 'Geolocalizacao cidade/UF';
+
+  @override
+  String get brazilStoreSalesMapLocationCapitalUf => 'Capital da UF';
+
+  @override
+  String get brazilStoreSalesMapLocationStateUf => 'Centro da UF';
+
+  @override
+  String get brazilStoreSalesMapLocationUnknown =>
+      'Origem da coordenada nao informada';
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -3385,6 +3642,62 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get reportFiltersApplyButton => 'Aplicar';
+
+  @override
+  String get brazilStoreSalesMapCountryLabel => 'Brasil';
+
+  @override
+  String get brazilStoreSalesMapRegionNorth => 'Norte';
+
+  @override
+  String get brazilStoreSalesMapRegionNortheast => 'Nordeste';
+
+  @override
+  String get brazilStoreSalesMapRegionCenterWest => 'Centro-Oeste';
+
+  @override
+  String get brazilStoreSalesMapRegionSoutheast => 'Sudeste';
+
+  @override
+  String get brazilStoreSalesMapRegionSouth => 'Sul';
+
+  @override
+  String get brazilStoreSalesMapEmptyState => 'Sem lojas para exibir no mapa.';
+
+  @override
+  String get brazilStoreSalesMapPresetStandardLabel => 'Pontos';
+
+  @override
+  String get brazilStoreSalesMapPresetBubbleLabel => 'Bolhas';
+
+  @override
+  String get brazilStoreSalesMapPresetMunicipalityBubblesLabel => 'Municipios';
+
+  @override
+  String get brazilStoreSalesMapPresetStateBubblesLabel => 'Bolhas por UF';
+
+  @override
+  String get brazilStoreSalesMapPresetStoreIconLabel => 'Icone loja';
+
+  @override
+  String get brazilStoreSalesMapPresetStandardTooltip =>
+      'Exibe cada loja como ponto individual no mapa.';
+
+  @override
+  String get brazilStoreSalesMapPresetBubbleTooltip =>
+      'Exibe lojas como bolhas proporcionais a metrica ativa.';
+
+  @override
+  String get brazilStoreSalesMapPresetMunicipalityBubblesTooltip =>
+      'Agrupa lojas por municipio e exibe bolhas proporcionais a metrica ativa.';
+
+  @override
+  String get brazilStoreSalesMapPresetStateBubblesTooltip =>
+      'Agrupa as lojas em bolhas posicionadas no centroide de cada UF.';
+
+  @override
+  String get brazilStoreSalesMapPresetStoreIconTooltip =>
+      'Exibe cada loja com icone operacional de unidade.';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -4290,6 +4603,63 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Os valores do mapa refletem os dados carregados ao abrir a tela cheia.';
 
   @override
+  String get regionMapMetricGroupLabel => 'Métrica';
+
+  @override
+  String get regionMapScopeGroupLabel => 'Escopo';
+
+  @override
+  String get regionMapRootScopeLabel => 'Todas as regiões';
+
+  @override
+  String get regionMapLoadingMessage => 'Carregando mapa…';
+
+  @override
+  String get regionMapEmptyStateMessage =>
+      'Nenhum dado territorial para exibir.';
+
+  @override
+  String get regionMapMetricSelectorSemanticsLabel => 'Métrica do mapa';
+
+  @override
+  String get regionMapScopeSemanticsLabel => 'Escopo territorial';
+
+  @override
+  String get regionMapDrillUpToRegionsLabel => 'Voltar para regiões';
+
+  @override
+  String get regionMapDrillUpToStatesLabel => 'Voltar para estados';
+
+  @override
+  String get regionMapDrillUpToCitiesLabel => 'Voltar para cidades';
+
+  @override
+  String get regionMapDrillUpLabel => 'Voltar';
+
+  @override
+  String get regionMapDrillUpTooltip => 'Retornar ao nível anterior do mapa';
+
+  @override
+  String regionMapViewFullScopeTooltip(String label) {
+    return 'Ver mapa completo ($label)';
+  }
+
+  @override
+  String regionMapViewFullScopeSemanticLabel(String label) {
+    return 'Ver mapa completo $label';
+  }
+
+  @override
+  String regionMapFocusScopeTooltip(String label) {
+    return 'Focar em $label';
+  }
+
+  @override
+  String regionMapFocusScopeSemanticLabel(String label) {
+    return 'Focar em $label';
+  }
+
+  @override
   String get brazilStoreSalesMapMetricGroupLabel => 'Métrica';
 
   @override
@@ -4309,6 +4679,206 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get brazilStoreSalesMapShowBranchOnMapAction => 'Destacar no mapa';
+
+  @override
+  String get brazilStoreSalesMapMetricRevenueShort => 'Receita';
+
+  @override
+  String get brazilStoreSalesMapMetricSalesShort => 'Vendas';
+
+  @override
+  String get brazilStoreSalesMapLegendButton => 'Legenda';
+
+  @override
+  String brazilStoreSalesMapStateBucketTooltip(
+    String stateName,
+    String uf,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName / $uf\n$revenue | $salesCount vendas | $storeCount lojas';
+  }
+
+  @override
+  String brazilStoreSalesMapStateInlineTooltip(
+    String stateName,
+    String uf,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName ($uf) | $revenue | $salesCount vendas | $storeCount lojas';
+  }
+
+  @override
+  String get brazilStoreSalesMapSemanticsStoreOnMap => 'Loja no mapa';
+
+  @override
+  String get brazilStoreSalesMapSemanticsSalesLoadingSuffix =>
+      ', vendas carregando';
+
+  @override
+  String get brazilStoreSalesMapSemanticsSalesUnavailableSuffix =>
+      ', vendas indisponiveis';
+
+  @override
+  String brazilStoreSalesMapSemanticsClusterStores(
+    String storeCount,
+    String cityLabel,
+    String revenue,
+    String salesCount,
+    String salesStatusSuffix,
+  ) {
+    return '$storeCount lojas em $cityLabel, $revenue, $salesCount vendas$salesStatusSuffix';
+  }
+
+  @override
+  String brazilStoreSalesMapSemanticsSingleStore(
+    String storeName,
+    String cityLabel,
+    String revenue,
+    String salesCount,
+    String salesStatusSuffix,
+  ) {
+    return '$storeName, $cityLabel, $revenue, $salesCount vendas$salesStatusSuffix';
+  }
+
+  @override
+  String brazilStoreSalesMapSemanticsStateAggregate(
+    String stateName,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  ) {
+    return '$stateName, $revenue, $salesCount vendas, $storeCount lojas';
+  }
+
+  @override
+  String brazilStoreSalesMapDetailChipSales(String count) {
+    return '$count vendas';
+  }
+
+  @override
+  String brazilStoreSalesMapDetailChipBranches(String count) {
+    return '$count filiais';
+  }
+
+  @override
+  String brazilStoreSalesMapStateSelectedSubtitle(String uf) {
+    return '$uf selecionado';
+  }
+
+  @override
+  String brazilStoreSalesMapCarouselPosition(String current, String total) {
+    return '$current de $total';
+  }
+
+  @override
+  String get brazilStoreSalesMapBranchDetailSemanticsLabel =>
+      'Detalhes da filial no mapa';
+
+  @override
+  String get brazilStoreSalesMapSalesLoadingLabel => 'Carregando vendas';
+
+  @override
+  String brazilStoreSalesMapDataQualityLead(String count) {
+    return '$count lojas nao exibidas';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityInvalidCoords(String count) {
+    return '$count com coordenada invalida';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityUnknownUf(String count) {
+    return '$count com UF desconhecida';
+  }
+
+  @override
+  String brazilStoreSalesMapDataQualityOutsideClip(String count) {
+    return '$count fora do recorte';
+  }
+
+  @override
+  String salesLiveMapFilterBranchSummaryLine(
+    String city,
+    String uf,
+    String agentName,
+  ) {
+    return '$city/$uf — Agente $agentName';
+  }
+
+  @override
+  String salesLiveMapFilterBranchCodesLine(
+    String codEmpresa,
+    String codFilial,
+  ) {
+    return 'Empresa: $codEmpresa  Filial: $codFilial';
+  }
+
+  @override
+  String get brazilStoreSalesMapCloseBranchDetailsTooltip => 'Fechar detalhes';
+
+  @override
+  String get brazilStoreSalesMapBranchPinnedChip => 'Filial fixada';
+
+  @override
+  String get brazilStoreSalesMapSalesUnavailableFallback =>
+      'Vendas indisponiveis';
+
+  @override
+  String get brazilStoreSalesMapSelectBranchButton => 'Selecionar filial';
+
+  @override
+  String get brazilStoreSalesMapChooseBranchMenuTooltip => 'Escolher filial';
+
+  @override
+  String get brazilStoreSalesMapBranchNavigationPreviousTooltip =>
+      'Filial anterior';
+
+  @override
+  String get brazilStoreSalesMapBranchNavigationNextTooltip => 'Proxima filial';
+
+  @override
+  String get brazilStoreSalesMapMarkerGroupTotalTitle => 'Total do ponto';
+
+  @override
+  String get brazilStoreSalesMapDefaultBranchName => 'Filial sem nome';
+
+  @override
+  String brazilStoreSalesMapAgentChipWithName(String agentName) {
+    return 'Agente $agentName';
+  }
+
+  @override
+  String brazilStoreSalesMapIbgeCodeLabel(String code) {
+    return 'IBGE $code';
+  }
+
+  @override
+  String get brazilStoreSalesMapLocationProvidedGeoPoint =>
+      'Coordenada da filial';
+
+  @override
+  String get brazilStoreSalesMapLocationIbge => 'Geolocalizacao IBGE';
+
+  @override
+  String get brazilStoreSalesMapLocationCep => 'Geolocalizacao CEP';
+
+  @override
+  String get brazilStoreSalesMapLocationCityUf => 'Geolocalizacao cidade/UF';
+
+  @override
+  String get brazilStoreSalesMapLocationCapitalUf => 'Capital da UF';
+
+  @override
+  String get brazilStoreSalesMapLocationStateUf => 'Centro da UF';
+
+  @override
+  String get brazilStoreSalesMapLocationUnknown =>
+      'Origem da coordenada nao informada';
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -6768,4 +7338,60 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get reportFiltersApplyButton => 'Aplicar';
+
+  @override
+  String get brazilStoreSalesMapCountryLabel => 'Brasil';
+
+  @override
+  String get brazilStoreSalesMapRegionNorth => 'Norte';
+
+  @override
+  String get brazilStoreSalesMapRegionNortheast => 'Nordeste';
+
+  @override
+  String get brazilStoreSalesMapRegionCenterWest => 'Centro-Oeste';
+
+  @override
+  String get brazilStoreSalesMapRegionSoutheast => 'Sudeste';
+
+  @override
+  String get brazilStoreSalesMapRegionSouth => 'Sul';
+
+  @override
+  String get brazilStoreSalesMapEmptyState => 'Sem lojas para exibir no mapa.';
+
+  @override
+  String get brazilStoreSalesMapPresetStandardLabel => 'Pontos';
+
+  @override
+  String get brazilStoreSalesMapPresetBubbleLabel => 'Bolhas';
+
+  @override
+  String get brazilStoreSalesMapPresetMunicipalityBubblesLabel => 'Municípios';
+
+  @override
+  String get brazilStoreSalesMapPresetStateBubblesLabel => 'Bolhas por UF';
+
+  @override
+  String get brazilStoreSalesMapPresetStoreIconLabel => 'Ícone loja';
+
+  @override
+  String get brazilStoreSalesMapPresetStandardTooltip =>
+      'Exibe cada loja como ponto individual no mapa.';
+
+  @override
+  String get brazilStoreSalesMapPresetBubbleTooltip =>
+      'Exibe lojas como bolhas proporcionais à métrica ativa.';
+
+  @override
+  String get brazilStoreSalesMapPresetMunicipalityBubblesTooltip =>
+      'Agrupa lojas por município e exibe bolhas proporcionais à métrica ativa.';
+
+  @override
+  String get brazilStoreSalesMapPresetStateBubblesTooltip =>
+      'Agrupa as lojas em bolhas posicionadas no centroide de cada UF.';
+
+  @override
+  String get brazilStoreSalesMapPresetStoreIconTooltip =>
+      'Exibe cada loja com ícone operacional de unidade.';
 }

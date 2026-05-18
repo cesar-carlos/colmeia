@@ -498,13 +498,20 @@ class _BranchSelectionSubtitle extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Text(
-          '${branch.city}/${branch.uf} - Agente ${branch.agentName}',
+          AppLocalizations.of(context).salesLiveMapFilterBranchSummaryLine(
+            branch.city,
+            branch.uf,
+            branch.agentName,
+          ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: textTheme.bodySmall,
         ),
         Text(
-          'Empresa: ${branch.codEmpresa}  Filial: ${branch.codFilial}',
+          AppLocalizations.of(context).salesLiveMapFilterBranchCodesLine(
+            branch.codEmpresa.toString(),
+            branch.codFilial.toString(),
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: textTheme.bodySmall?.copyWith(

@@ -8,6 +8,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
@@ -23,12 +24,11 @@ import 'package:colmeia/features/client_agents/application/usecases/read_pending
 import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
-import 'package:colmeia/features/client_agents/data/models/client_agent_token_request_dto.dart';
-import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_constraints.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agents_list_page_size.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
@@ -48,7 +48,7 @@ enum ClientAgentsActionFeedbackKind { info, success }
 class ClientAgentsController extends ChangeNotifier {
   ClientAgentsController({
     required AuthController authController,
-    required LocalAgentClientTokenStore clientTokenStore,
+    required ClientAgentTokenDraftStore clientTokenDraftStore,
     required LoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase,
     required LoadClientAccessRequestsUseCase loadAccessRequestsUseCase,
     required LoadClientAccessStatusUseCase loadClientAccessStatusUseCase,
@@ -70,7 +70,7 @@ class ClientAgentsController extends ChangeNotifier {
     RetryAfterGate? syncRetryAfterGate,
     RetryAfterGate? requestAccessRetryAfterGate,
   }) : _authController = authController,
-       _clientTokenStore = clientTokenStore,
+       _clientTokenDraftStore = clientTokenDraftStore,
        _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
        _loadAccessRequestsUseCase = loadAccessRequestsUseCase,
        _loadClientAccessStatusUseCase = loadClientAccessStatusUseCase,
@@ -107,7 +107,7 @@ class ClientAgentsController extends ChangeNotifier {
   static const int _approvedAgentsProbeConcurrency = 4;
 
   final AuthController _authController;
-  final LocalAgentClientTokenStore _clientTokenStore;
+  final ClientAgentTokenDraftStore _clientTokenDraftStore;
   final LoadClientApprovedAgentsUseCase _loadApprovedAgentsUseCase;
   final LoadClientAccessRequestsUseCase _loadAccessRequestsUseCase;
   final LoadClientAccessStatusUseCase _loadClientAccessStatusUseCase;
@@ -373,13 +373,16 @@ class ClientAgentsController extends ChangeNotifier {
       }
       // Server unreachable / forbidden: fall back to local cache below.
     }
-    return _clientTokenStore.read(userId: userId, agentId: trimmedAgentId);
+    return _clientTokenDraftStore.read(
+      userId: userId,
+      agentId: trimmedAgentId,
+    );
   }
 
   /// Persists or clears the local token for a draft row when the agent id is
   /// a valid UUID (used from the request-access form while editing).
   ///
-  /// Tokens longer than [ClientAgentTokenRequestDto.maxTokenLength] are
+  /// Tokens longer than [ClientAgentTokenConstraints.maxLength] are
   /// dropped before touching storage so a value the server would reject
   /// never lands on disk.
   Future<void> persistLocalClientTokenDraftLine({
@@ -395,22 +398,22 @@ class ClientAgentsController extends ChangeNotifier {
       return;
     }
     final token = clientTokenRaw.trim();
-    if (token.length > ClientAgentTokenRequestDto.maxTokenLength) {
+    if (token.length > ClientAgentTokenConstraints.maxLength) {
       AppLogger.warning(
         'Client token draft exceeds server cap; not persisted',
         context: <String, Object?>{
           'operation': 'persistLocalClientTokenDraftLine',
           'agentId': id,
           'length': token.length,
-          'cap': ClientAgentTokenRequestDto.maxTokenLength,
+          'cap': ClientAgentTokenConstraints.maxLength,
         },
       );
       return;
     }
     if (token.isEmpty) {
-      await _clientTokenStore.delete(userId: userId, agentId: id);
+      await _clientTokenDraftStore.delete(userId: userId, agentId: id);
     } else {
-      await _clientTokenStore.write(
+      await _clientTokenDraftStore.write(
         userId: userId,
         agentId: id,
         clientToken: token,
@@ -456,7 +459,7 @@ class ClientAgentsController extends ChangeNotifier {
         continue;
       }
       final token = row.clientTokenRaw.trim();
-      if (token.length > ClientAgentTokenRequestDto.maxTokenLength) {
+      if (token.length > ClientAgentTokenConstraints.maxLength) {
         tokensTooLongIds.add(id);
         continue;
       }
@@ -465,7 +468,7 @@ class ClientAgentsController extends ChangeNotifier {
 
     if (tokensTooLongIds.isNotEmpty) {
       _actionErrorMessage = _s.clientAgentsValidationTokenTooLong(
-        ClientAgentTokenRequestDto.maxTokenLength,
+        ClientAgentTokenConstraints.maxLength,
         tokensTooLongIds.join(', '),
       );
       _notifyListenersIfAlive();
@@ -481,7 +484,7 @@ class ClientAgentsController extends ChangeNotifier {
     // roll back on failure. `null` means "no token previously stored".
     final localSnapshotById = <String, String?>{};
     for (final id in requestedIds) {
-      localSnapshotById[id] = await _clientTokenStore.read(
+      localSnapshotById[id] = await _clientTokenDraftStore.read(
         userId: userId,
         agentId: id,
       );
@@ -589,10 +592,10 @@ class ClientAgentsController extends ChangeNotifier {
     required String token,
   }) async {
     if (token.isEmpty) {
-      await _clientTokenStore.delete(userId: userId, agentId: agentId);
+      await _clientTokenDraftStore.delete(userId: userId, agentId: agentId);
       return;
     }
-    await _clientTokenStore.write(
+    await _clientTokenDraftStore.write(
       userId: userId,
       agentId: agentId,
       clientToken: token,
@@ -606,12 +609,12 @@ class ClientAgentsController extends ChangeNotifier {
     for (final entry in snapshotById.entries) {
       final previous = entry.value;
       if (previous == null || previous.isEmpty) {
-        await _clientTokenStore.delete(
+        await _clientTokenDraftStore.delete(
           userId: userId,
           agentId: entry.key,
         );
       } else {
-        await _clientTokenStore.write(
+        await _clientTokenDraftStore.write(
           userId: userId,
           agentId: entry.key,
           clientToken: previous,
@@ -627,7 +630,7 @@ class ClientAgentsController extends ChangeNotifier {
     required Iterable<String> agentIds,
   }) async {
     for (final agentId in agentIds) {
-      final localToken = await _clientTokenStore.read(
+      final localToken = await _clientTokenDraftStore.read(
         userId: userId,
         agentId: agentId,
       );

@@ -1,0 +1,4 @@
+enum OverviewLoadPolicy {
+  defaultLoad,
+  forceRefresh,
+}

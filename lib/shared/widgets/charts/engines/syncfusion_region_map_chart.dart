@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -185,6 +186,7 @@ class _SyncfusionRegionMapChartState<T>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final chartTheme = AppChartTheme.fromContext(
       context,
       preset: widget.preset,
@@ -206,7 +208,8 @@ class _SyncfusionRegionMapChartState<T>
       // completo). A Syncfusion mantem cache de GeoJSON parseado por URL
       // dentro do MapShapeSource, entao o primeiro mount do SfMaps real ja
       // cobre o caso quente em reaberturas seguintes da mesma view.
-      final loadingLabel = widget.style.mapLoadingMessage;
+      final loadingLabel =
+          widget.style.mapLoadingMessage ?? l10n.regionMapLoadingMessage;
       return _MapSurface(
         height: resolvedHeight,
         background: mapBackground,
@@ -254,7 +257,8 @@ class _SyncfusionRegionMapChartState<T>
     }
 
     if (widget.items.isEmpty) {
-      final emptyLabel = widget.style.emptyStateMessage;
+      final emptyLabel =
+          widget.style.emptyStateMessage ?? l10n.regionMapEmptyStateMessage;
       return _MapSurface(
         height: resolvedHeight,
         background: mapBackground,

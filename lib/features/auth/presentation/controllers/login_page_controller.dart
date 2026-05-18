@@ -1,10 +1,12 @@
 import 'dart:async';
 
-import 'package:colmeia/features/auth/presentation/preferences/auth_login_preference_keys.dart';
+import 'package:colmeia/features/auth/application/auth_login_preferences_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPageController extends ChangeNotifier {
+  LoginPageController(this._preferencesService);
+
+  final AuthLoginPreferencesService _preferencesService;
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
@@ -17,8 +19,7 @@ class LoginPageController extends ChangeNotifier {
   }
 
   Future<void> loadRememberMePreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getBool(AuthLoginPreferenceKeys.rememberMe) ?? false;
+    final stored = _preferencesService.readRememberMe();
     if (_rememberMe != stored) {
       _rememberMe = stored;
       notifyListeners();
@@ -35,7 +36,6 @@ class LoginPageController extends ChangeNotifier {
   }
 
   Future<void> _persistRememberMe(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AuthLoginPreferenceKeys.rememberMe, value);
+    await _preferencesService.persistRememberMe(value: value);
   }
 }

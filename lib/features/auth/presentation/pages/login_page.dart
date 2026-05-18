@@ -20,12 +20,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+  const LoginPage({
+    required this.controller,
+    super.key,
+  });
+
+  final LoginPageController controller;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => LoginPageController(),
+      create: (_) => controller,
       child: const _LoginPageBody(),
     );
   }

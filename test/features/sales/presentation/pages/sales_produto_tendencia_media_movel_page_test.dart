@@ -20,6 +20,9 @@ import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
+import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
@@ -56,6 +59,15 @@ class _MockLoadGrupoProdutoOptionsUseCase extends Mock
 class _MockLoadMarcaProdutoOptionsUseCase extends Mock
     implements LoadMarcaProdutoOptionsUseCase {}
 
+late SalesPreferences _pumpSalesPreferences;
+late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
+late AgentClientTokenReader _pumpTokenReader;
+late LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
+_pumpLoadPageUseCase;
+late LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
+_pumpLoadSummaryUseCase;
+late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoOptionsUseCase;
+
 void main() {
   late _MockAuthController authController;
   late _MockSalesPreferences salesPreferences;
@@ -85,6 +97,12 @@ void main() {
     loadSummaryUseCase = _MockLoadSummaryUseCase();
     loadGrupoOptionsUseCase = _MockLoadGrupoProdutoOptionsUseCase();
     loadMarcaOptionsUseCase = _MockLoadMarcaProdutoOptionsUseCase();
+    _pumpSalesPreferences = salesPreferences;
+    _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
+    _pumpTokenReader = tokenReader;
+    _pumpLoadPageUseCase = loadPageUseCase;
+    _pumpLoadSummaryUseCase = loadSummaryUseCase;
+    _pumpLoadGrupoOptionsUseCase = loadGrupoOptionsUseCase;
 
     when(() => authController.session).thenReturn(
       AuthSession(
@@ -197,6 +215,15 @@ void main() {
       ..registerSingleton<AgentClientTokenReader>(tokenReader)
       ..registerSingleton<LoadAvailableAgentsForSales>(
         loadAvailableAgentsForSales,
+      )
+      ..registerSingleton<SalesSessionService>(
+        SalesSessionService(salesPreferences),
+      )
+      ..registerSingleton<LoadSalesAvailableAgentsUseCase>(
+        LoadSalesAvailableAgentsUseCase(loadAvailableAgentsForSales),
+      )
+      ..registerSingleton<ResolveSalesAgentClientTokenUseCase>(
+        ResolveSalesAgentClientTokenUseCase(tokenReader),
       )
       ..registerSingleton<
         LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
@@ -640,8 +667,18 @@ Future<void> _pumpPage(
         theme: AppTheme.light(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          body: SalesProdutoTendenciaMediaMovelPage(),
+        home: Scaffold(
+          body: SalesProdutoTendenciaMediaMovelPage(
+            sessionService: SalesSessionService(_pumpSalesPreferences),
+            loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
+              _pumpLoadAvailableAgentsForSales,
+            ),
+            resolveSalesAgentClientTokenUseCase:
+                ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
+            loadTrendPageUseCase: _pumpLoadPageUseCase,
+            loadTrendSummaryUseCase: _pumpLoadSummaryUseCase,
+            loadGrupoProdutoOptionsUseCase: _pumpLoadGrupoOptionsUseCase,
+          ),
         ),
       ),
     ),

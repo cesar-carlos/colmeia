@@ -17,6 +17,7 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
@@ -266,7 +267,7 @@ void main() {
 
     controller = ClientAgentsController(
       authController: authController,
-      clientTokenStore: clientTokenStore,
+      clientTokenDraftStore: ClientAgentTokenDraftStore(clientTokenStore),
       loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
       loadAccessRequestsUseCase: loadAccessRequestsUseCase,
       loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
@@ -482,7 +483,7 @@ void main() {
       () async {
         final legacyController = ClientAgentsController(
           authController: authController,
-          clientTokenStore: clientTokenStore,
+          clientTokenDraftStore: ClientAgentTokenDraftStore(clientTokenStore),
           loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
           loadAccessRequestsUseCase: loadAccessRequestsUseCase,
           loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
@@ -542,7 +543,7 @@ void main() {
 
         gatedController = ClientAgentsController(
           authController: authController,
-          clientTokenStore: clientTokenStore,
+          clientTokenDraftStore: ClientAgentTokenDraftStore(clientTokenStore),
           loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
           loadAccessRequestsUseCase: loadAccessRequestsUseCase,
           loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,

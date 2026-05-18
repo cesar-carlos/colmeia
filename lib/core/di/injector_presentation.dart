@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/approve_owner_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
@@ -27,11 +28,10 @@ import 'package:colmeia/features/client_agents/application/usecases/revoke_owner
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
-import 'package:colmeia/features/client_agents/data/storage/local_agent_client_token_store.dart';
-import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_owner_controller.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/user_context/application/usecases/clear_active_store_use_case.dart';
@@ -53,14 +53,14 @@ void registerInjectorPresentation(GetIt getIt) {
     ..registerFactory<OverviewController>(
       () => OverviewController(
         getIt<LoadOverviewUseCase>(),
-        getIt<ClientAgentsRepository>(),
+        getIt<LoadOverviewOnlineAgentIdsUseCase>(),
         agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
       ),
     )
     ..registerFactory<ClientAgentsController>(
       () => ClientAgentsController(
         authController: getIt<AuthController>(),
-        clientTokenStore: getIt<LocalAgentClientTokenStore>(),
+        clientTokenDraftStore: getIt<ClientAgentTokenDraftStore>(),
         loadApprovedAgentsUseCase: getIt<LoadClientApprovedAgentsUseCase>(),
         loadAccessRequestsUseCase: getIt<LoadClientAccessRequestsUseCase>(),
         loadClientAccessStatusUseCase: getIt<LoadClientAccessStatusUseCase>(),

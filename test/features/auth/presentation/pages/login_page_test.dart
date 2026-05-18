@@ -2,6 +2,7 @@ import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
+import 'package:colmeia/features/auth/application/auth_login_preferences_service.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/logout_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/register_use_case.dart';
@@ -11,6 +12,7 @@ import 'package:colmeia/features/auth/domain/entities/client_registration_status
 import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/auth/presentation/controllers/login_page_controller.dart';
 import 'package:colmeia/features/auth/presentation/pages/login_page.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
 import 'package:flutter/material.dart';
@@ -37,10 +39,18 @@ void main() {
     );
   }
 
+  Future<LoginPage> buildLoginPage() async {
+    final prefs = await SharedPreferences.getInstance();
+    return LoginPage(
+      controller: LoginPageController(AuthLoginPreferencesService(prefs)),
+    );
+  }
+
   testWidgets('should show e-mail validation when submitting empty e-mail', (
     tester,
   ) async {
     final auth = buildAuthController();
+    final loginPage = await buildLoginPage();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -48,7 +58,7 @@ void main() {
         darkTheme: AppTheme.dark(),
         home: ChangeNotifierProvider<AuthController>.value(
           value: auth,
-          child: const LoginPage(),
+          child: loginPage,
         ),
       ),
     );
@@ -68,6 +78,7 @@ void main() {
 
   testWidgets('should toggle password visibility', (tester) async {
     final auth = buildAuthController();
+    final loginPage = await buildLoginPage();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -75,7 +86,7 @@ void main() {
         darkTheme: AppTheme.dark(),
         home: ChangeNotifierProvider<AuthController>.value(
           value: auth,
-          child: const LoginPage(),
+          child: loginPage,
         ),
       ),
     );
@@ -98,6 +109,7 @@ void main() {
       restoreSessionUseCase: RestoreSessionUseCase(_FakeAuthRepository()),
       authSessionEvents: AuthSessionEvents(),
     );
+    final loginPage = await buildLoginPage();
 
     await tester.pumpWidget(
       MaterialApp(
@@ -105,7 +117,7 @@ void main() {
         darkTheme: AppTheme.dark(),
         home: ChangeNotifierProvider<AuthController>.value(
           value: auth,
-          child: const LoginPage(),
+          child: loginPage,
         ),
       ),
     );

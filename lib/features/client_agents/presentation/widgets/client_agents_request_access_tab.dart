@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:colmeia/features/client_agents/data/models/client_agent_token_request_dto.dart';
+import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_constraints.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -538,7 +538,7 @@ class _ClientAgentsRequestAccessTabState
         duplicatedAgentIds.add(raw);
       }
       final token = row.clientTokenRaw.trim();
-      if (token.length > ClientAgentTokenRequestDto.maxTokenLength) {
+      if (token.length > ClientAgentTokenConstraints.maxLength) {
         tokensTooLong.add(raw);
       }
     }
@@ -568,7 +568,7 @@ class _ClientAgentsRequestAccessTabState
     if (tokensTooLong.isNotEmpty) {
       setState(() {
         _validationMessage = l10n.clientAgentsValidationTokenTooLong(
-          ClientAgentTokenRequestDto.maxTokenLength,
+          ClientAgentTokenConstraints.maxLength,
           tokensTooLong.join(', '),
         );
         _inputNoteMessage = null;

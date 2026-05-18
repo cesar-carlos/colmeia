@@ -49,7 +49,7 @@ void main() {
         expect(find.text('Pontos'), findsOneWidget);
         expect(find.text('Bolhas'), findsOneWidget);
         expect(find.text('Bolhas por UF'), findsOneWidget);
-        expect(find.text('Icone loja'), findsOneWidget);
+        expect(find.text('Ícone loja'), findsOneWidget);
         expect(find.text('Performance de lojas'), findsOneWidget);
       } finally {
         debugDefaultTargetPlatformOverride = null;
@@ -81,7 +81,7 @@ void main() {
 
         expect(find.text('Mapa com bolhas por UF'), findsOneWidget);
 
-        await tester.tap(find.text('Icone loja'));
+        await tester.tap(find.text('Ícone loja'));
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Mapa com icone de loja'), findsOneWidget);

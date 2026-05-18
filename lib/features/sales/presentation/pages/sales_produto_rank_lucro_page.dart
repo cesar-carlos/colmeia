@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -11,10 +10,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_p
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_sort_by.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
-import 'package:colmeia/features/sales/data/sales_preferences.dart';
-import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
+import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
@@ -37,7 +36,19 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class SalesProdutoRankLucroPage extends StatefulWidget {
-  const SalesProdutoRankLucroPage({super.key});
+  const SalesProdutoRankLucroPage({
+    required this.sessionService,
+    required this.loadSalesAvailableAgentsUseCase,
+    required this.resolveSalesAgentClientTokenUseCase,
+    required this.loadProdutoVendidoProdutoRankLucroUseCase,
+    super.key,
+  });
+
+  final SalesSessionService sessionService;
+  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
+  final LoadProdutoVendidoProdutoRankLucroUseCase
+  loadProdutoVendidoProdutoRankLucroUseCase;
 
   @override
   State<SalesProdutoRankLucroPage> createState() =>
@@ -46,9 +57,9 @@ class SalesProdutoRankLucroPage extends StatefulWidget {
 
 class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
     with SalesAutoRefreshStateMixin<SalesProdutoRankLucroPage> {
-  late final SalesPreferences _prefs;
-  late final AgentClientTokenReader _clientTokenReader;
-  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
+  late final SalesSessionService _sessionService;
+  late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
+  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
   late final LoadProdutoVendidoProdutoRankLucroUseCase _loadRanking;
 
   String? _selectedAgentId;
@@ -78,27 +89,24 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
       return _cachedClientToken;
     }
 
-    final tokenByAgent = await _clientTokenReader.readMany(
+    final resolved = await _resolveClientTokenUseCase(
       userId: userId,
-      agentIds: <String>[agentId],
+      agentId: agentId,
     );
-    final resolved = tokenByAgent[agentId]?.trim();
     _cachedClientTokenUserId = userId;
     _cachedClientTokenAgentId = agentId;
-    return _cachedClientToken = resolved == null || resolved.isEmpty
-        ? null
-        : resolved;
+    return _cachedClientToken = resolved;
   }
 
   @override
   void initState() {
     super.initState();
-    _prefs = getIt<SalesPreferences>();
-    _clientTokenReader = getIt<AgentClientTokenReader>();
-    _loadAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
-    _loadRanking = getIt<LoadProdutoVendidoProdutoRankLucroUseCase>();
-    _selectedAgentId = _prefs.selectedAgentId;
-    final restored = _prefs.restoreProdutoRankLucroFilters();
+    _sessionService = widget.sessionService;
+    _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
+    _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
+    _loadRanking = widget.loadProdutoVendidoProdutoRankLucroUseCase;
+    _selectedAgentId = _sessionService.selectedAgentId;
+    final restored = _sessionService.restoreProdutoRankLucroFilters();
     final defaultRange = _fullMonthInclusiveRange(DateTime.now());
     final restoredPeriod = restored['periodo'];
     final period = restoredPeriod is DateTimeRange
@@ -107,7 +115,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
     final restoredSort = restored['sortBy'] as String?;
     final sortBy =
         restoredSort != null &&
-            SalesPreferences.produtoRankLucroSortByAllowedValues.contains(
+            SalesSessionService.produtoRankLucroSortByAllowedValues.contains(
               restoredSort,
             )
         ? restoredSort
@@ -146,8 +154,8 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
       _availableAgents = agents;
       _selectedAgentId = nextSelection;
     });
-    if (nextSelection != _prefs.selectedAgentId) {
-      unawaited(_prefs.setSelectedAgentId(nextSelection));
+    if (nextSelection != _sessionService.selectedAgentId) {
+      unawaited(_sessionService.setSelectedAgentId(nextSelection));
     }
     unawaited(_reload());
   }
@@ -256,8 +264,8 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
       _selectedAgentId = normalizedAgentId;
       _filters = nextFilters;
     });
-    unawaited(_prefs.setSelectedAgentId(normalizedAgentId));
-    unawaited(_prefs.persistProdutoRankLucroFilters(nextFilters));
+    unawaited(_sessionService.setSelectedAgentId(normalizedAgentId));
+    unawaited(_sessionService.persistProdutoRankLucroFilters(nextFilters));
     unawaited(_reload());
   }
 

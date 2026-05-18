@@ -1,8 +1,10 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/settings/presentation/pages/chart_demo_showcase_card.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -24,6 +26,7 @@ class _AppBrazilStoreSalesMapChartDemoPageState
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final l10n = AppLocalizations.of(context);
     final selectedMapPreset = _selectedMapPreset;
 
     return ListView(
@@ -74,9 +77,10 @@ class _AppBrazilStoreSalesMapChartDemoPageState
                             >(
                               value: preset,
                               label: preset.demoLabel(
+                                l10n,
                                 compact: useCompactLabels,
                               ),
-                              tooltip: preset.tooltip,
+                              tooltip: preset.localizedTooltip(l10n),
                             ),
                       )
                       .toList(growable: false),
@@ -171,14 +175,18 @@ AppBrazilStoreSalesMapPreset _lastSelectedMapPreset =
     AppBrazilStoreSalesMapPreset.standard;
 
 extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
-  String demoLabel({required bool compact}) => switch (this) {
-    AppBrazilStoreSalesMapPreset.standard => compact ? 'Pts' : label,
-    AppBrazilStoreSalesMapPreset.bubble => label,
-    AppBrazilStoreSalesMapPreset.municipalityBubbles =>
-      compact ? 'Mun.' : label,
-    AppBrazilStoreSalesMapPreset.stateBubbles => compact ? 'UF' : label,
-    AppBrazilStoreSalesMapPreset.storeIcon => compact ? 'Loja' : label,
-  };
+  String demoLabel(AppLocalizations l10n, {required bool compact}) =>
+      switch (this) {
+        AppBrazilStoreSalesMapPreset.standard =>
+          compact ? 'Pts' : localizedLabel(l10n),
+        AppBrazilStoreSalesMapPreset.bubble => localizedLabel(l10n),
+        AppBrazilStoreSalesMapPreset.municipalityBubbles =>
+          compact ? 'Mun.' : localizedLabel(l10n),
+        AppBrazilStoreSalesMapPreset.stateBubbles =>
+          compact ? 'UF' : localizedLabel(l10n),
+        AppBrazilStoreSalesMapPreset.storeIcon =>
+          compact ? 'Loja' : localizedLabel(l10n),
+      };
 
   String get demoTitle => switch (this) {
     AppBrazilStoreSalesMapPreset.standard => 'Performance de lojas',

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapshot.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -180,6 +181,81 @@ void main() {
 
       expect(points.map((point) => point.id), <String>['valid']);
     });
+
+    test(
+      'points content digest changes when visible branch metadata changes',
+      () {
+        const basePoint = AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Loja Base',
+          fantasyName: 'Loja Base',
+          branchName: 'Matriz',
+          agentName: 'Agente 1',
+          uf: 'MT',
+          city: 'Cuiaba',
+          municipalityCode: '5103403',
+          latitude: -15.6,
+          longitude: -56.1,
+          salesAmount: 100,
+          salesCount: 1,
+          salesDataStatusLabel: 'Disponivel',
+          locationResolution:
+              AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+          subtitle: 'Empresa 1 - Filial 1',
+        );
+
+        final baseDigest = AppBrazilStoreSalesMapData.pointsContentDigest(
+          const <AppBrazilStoreSalesPoint>[basePoint],
+        );
+        final renamedDigest = AppBrazilStoreSalesMapData.pointsContentDigest(
+          const <AppBrazilStoreSalesPoint>[
+            AppBrazilStoreSalesPoint(
+              id: 'store-1',
+              name: 'Loja Atualizada',
+              fantasyName: 'Loja Atualizada',
+              branchName: 'Matriz',
+              agentName: 'Agente 1',
+              uf: 'MT',
+              city: 'Cuiaba',
+              municipalityCode: '5103403',
+              latitude: -15.6,
+              longitude: -56.1,
+              salesAmount: 100,
+              salesCount: 1,
+              salesDataStatusLabel: 'Disponivel',
+              locationResolution:
+                  AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+              subtitle: 'Empresa 1 - Filial 1',
+            ),
+          ],
+        );
+        final statusDigest = AppBrazilStoreSalesMapData.pointsContentDigest(
+          const <AppBrazilStoreSalesPoint>[
+            AppBrazilStoreSalesPoint(
+              id: 'store-1',
+              name: 'Loja Base',
+              fantasyName: 'Loja Base',
+              branchName: 'Matriz',
+              agentName: 'Agente 1',
+              uf: 'MT',
+              city: 'Cuiaba',
+              municipalityCode: '5103403',
+              latitude: -15.6,
+              longitude: -56.1,
+              salesAmount: 100,
+              salesCount: 1,
+              salesDataStatusLabel: 'Indisponivel',
+              locationResolution:
+                  AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+              subtitle: 'Empresa 1 - Filial 1',
+            ),
+          ],
+        );
+
+        expect(renamedDigest, isNot(baseDigest));
+        expect(statusDigest, isNot(baseDigest));
+      },
+    );
 
     test('builds diagnostics for invalid, unknown and filtered points', () {
       const points = <AppBrazilStoreSalesPoint>[
@@ -556,6 +632,224 @@ void main() {
         AppBrazilStoreSalesMapData.markerGroupContentFingerprint(forward),
         AppBrazilStoreSalesMapData.markerGroupContentFingerprint(reversed),
       );
+    });
+
+    test(
+      'snapshot builder resolves selected store, state and marker range',
+      () {
+        final snapshot = AppBrazilStoreSalesMapSnapshotBuilder.build(
+          const AppBrazilStoreSalesMapSnapshotInput(
+            points: <AppBrazilStoreSalesPoint>[
+              AppBrazilStoreSalesPoint(
+                id: 'sinop',
+                name: 'Loja Sinop',
+                uf: 'MT',
+                city: 'Sinop',
+                latitude: -11.8604,
+                longitude: -55.5091,
+                salesAmount: 100,
+                salesCount: 2,
+              ),
+              AppBrazilStoreSalesPoint(
+                id: 'paulista',
+                name: 'Loja Paulista',
+                uf: 'SP',
+                city: 'Sao Paulo',
+                latitude: -23.5505,
+                longitude: -46.6333,
+                salesAmount: 300,
+                salesCount: 5,
+              ),
+            ],
+            metric: AppBrazilStoreSalesMapMetric.revenue,
+            selectedStoreId: 'paulista',
+            requestedStateKey: 'MT',
+            zoomLevel: 2,
+            style: AppBrazilStoreSalesMapStyle.stateBubbles(height: 320),
+          ),
+          cachedReuseKey: 'reuse-key',
+        );
+
+        expect(snapshot.selectedPoint?.id, 'paulista');
+        expect(snapshot.selectedStateKey, 'SP');
+        expect(snapshot.selectedStateBucket?.uf, 'SP');
+        expect(
+          snapshot.stateBubbleBuckets.map((bucket) => bucket.uf),
+          containsAll(<String>['MT', 'SP']),
+        );
+        expect(snapshot.minMarkerValue, 100);
+        expect(snapshot.maxMarkerValue, 300);
+        expect(snapshot.cachedReuseKey, 'reuse-key');
+      },
+    );
+
+    test('snapshot reuse key is stable for equivalent point content', () {
+      const pointsA = <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'sinop',
+          name: 'Loja Sinop',
+          uf: 'MT',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 100,
+          salesCount: 2,
+        ),
+      ];
+      const pointsB = <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'sinop',
+          name: 'Loja Sinop',
+          uf: 'MT',
+          latitude: -11.8604,
+          longitude: -55.5091,
+          salesAmount: 100,
+          salesCount: 2,
+        ),
+      ];
+
+      final reuseKeyA = AppBrazilStoreSalesMapSnapshotBuilder.buildReuseKey(
+        points: pointsA,
+        fixedBranchIds: const <String>{'a'},
+        filterBranchIds: const <String>{'b'},
+        style: const AppBrazilStoreSalesMapStyle.standard(),
+        metric: AppBrazilStoreSalesMapMetric.revenue,
+        selectedStoreId: 'sinop',
+        requestedStateKey: 'MT',
+        activeRegionKey: null,
+        zoomLevel: 2,
+      );
+      final reuseKeyB = AppBrazilStoreSalesMapSnapshotBuilder.buildReuseKey(
+        points: pointsB,
+        fixedBranchIds: const <String>{'a'},
+        filterBranchIds: const <String>{'b'},
+        style: const AppBrazilStoreSalesMapStyle.standard(),
+        metric: AppBrazilStoreSalesMapMetric.revenue,
+        selectedStoreId: 'sinop',
+        requestedStateKey: 'MT',
+        activeRegionKey: null,
+        zoomLevel: 2,
+      );
+
+      expect(reuseKeyA, reuseKeyB);
+    });
+
+    test(
+      'snapshot builder keeps requested state when selected store is missing',
+      () {
+        final snapshot = AppBrazilStoreSalesMapSnapshotBuilder.build(
+          const AppBrazilStoreSalesMapSnapshotInput(
+            points: <AppBrazilStoreSalesPoint>[
+              AppBrazilStoreSalesPoint(
+                id: 'sinop',
+                name: 'Loja Sinop',
+                uf: 'MT',
+                latitude: -11.8604,
+                longitude: -55.5091,
+                salesAmount: 100,
+                salesCount: 2,
+              ),
+            ],
+            metric: AppBrazilStoreSalesMapMetric.revenue,
+            selectedStoreId: 'missing',
+            requestedStateKey: 'MT',
+            zoomLevel: 2,
+            style: AppBrazilStoreSalesMapStyle.standard(),
+          ),
+          cachedReuseKey: 'missing-selection',
+        );
+
+        expect(snapshot.selectedPoint, isNull);
+        expect(snapshot.selectedMarkerGroup, isNull);
+        expect(snapshot.selectedStateKey, 'MT');
+        expect(snapshot.selectedStateBucket?.uf, 'MT');
+      },
+    );
+
+    test('snapshot builder uses state bubbles without store markers', () {
+      final snapshot = AppBrazilStoreSalesMapSnapshotBuilder.build(
+        const AppBrazilStoreSalesMapSnapshotInput(
+          points: <AppBrazilStoreSalesPoint>[
+            AppBrazilStoreSalesPoint(
+              id: 'sinop',
+              name: 'Loja Sinop',
+              uf: 'MT',
+              latitude: -11.8604,
+              longitude: -55.5091,
+              salesAmount: 100,
+              salesCount: 2,
+            ),
+            AppBrazilStoreSalesPoint(
+              id: 'paulista',
+              name: 'Loja Paulista',
+              uf: 'SP',
+              latitude: -23.5505,
+              longitude: -46.6333,
+              salesAmount: 300,
+              salesCount: 5,
+            ),
+          ],
+          metric: AppBrazilStoreSalesMapMetric.salesCount,
+          zoomLevel: 2,
+          style: AppBrazilStoreSalesMapStyle.stateBubbles(height: 320),
+        ),
+        cachedReuseKey: 'states-only',
+      );
+
+      expect(snapshot.markerGroups, isEmpty);
+      expect(snapshot.stateBubbleBuckets, hasLength(2));
+      expect(snapshot.minMarkerValue, 2);
+      expect(snapshot.maxMarkerValue, 5);
+    });
+
+    test('snapshot builder changes proximity clustering with zoom level', () {
+      const points = <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'a',
+          name: 'Loja A',
+          uf: 'SP',
+          latitude: -23.5505,
+          longitude: -46.6333,
+          salesAmount: 100,
+          salesCount: 1,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'b',
+          name: 'Loja B',
+          uf: 'SP',
+          latitude: -23.5614,
+          longitude: -46.6559,
+          salesAmount: 250,
+          salesCount: 2,
+        ),
+      ];
+
+      final wideZoomSnapshot = AppBrazilStoreSalesMapSnapshotBuilder.build(
+        const AppBrazilStoreSalesMapSnapshotInput(
+          points: points,
+          metric: AppBrazilStoreSalesMapMetric.revenue,
+          zoomLevel: 1.5,
+          style: AppBrazilStoreSalesMapStyle(
+            enableProximityCluster: true,
+            proximityClusterDistanceDegrees: 0.05,
+          ),
+        ),
+        cachedReuseKey: 'wide-zoom',
+      );
+      final closeZoomSnapshot = AppBrazilStoreSalesMapSnapshotBuilder.build(
+        const AppBrazilStoreSalesMapSnapshotInput(
+          points: points,
+          metric: AppBrazilStoreSalesMapMetric.revenue,
+          zoomLevel: 8,
+          style: AppBrazilStoreSalesMapStyle(
+            enableProximityCluster: true,
+            proximityClusterDistanceDegrees: 0.05,
+          ),
+        ),
+        cachedReuseKey: 'close-zoom',
+      );
+
+      expect(wideZoomSnapshot.markerGroups, hasLength(1));
+      expect(closeZoomSnapshot.markerGroups, hasLength(2));
     });
   });
 

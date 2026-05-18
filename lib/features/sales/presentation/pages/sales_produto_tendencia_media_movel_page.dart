@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
@@ -15,10 +14,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
-import 'package:colmeia/features/sales/data/sales_preferences.dart';
-import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
+import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_widgets.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
@@ -33,7 +32,24 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
-  const SalesProdutoTendenciaMediaMovelPage({super.key});
+  const SalesProdutoTendenciaMediaMovelPage({
+    required this.sessionService,
+    required this.loadSalesAvailableAgentsUseCase,
+    required this.resolveSalesAgentClientTokenUseCase,
+    required this.loadTrendPageUseCase,
+    required this.loadTrendSummaryUseCase,
+    required this.loadGrupoProdutoOptionsUseCase,
+    super.key,
+  });
+
+  final SalesSessionService sessionService;
+  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
+  final LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
+  loadTrendPageUseCase;
+  final LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
+  loadTrendSummaryUseCase;
+  final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
 
   @override
   State<SalesProdutoTendenciaMediaMovelPage> createState() =>
@@ -46,9 +62,9 @@ class _SalesProdutoTendenciaMediaMovelPageState
   static const String _cardId = 'produto_tendencia_venda_media_movel';
   static const List<int> _pageSizeOptions = <int>[10, 20, 50, 100];
 
-  late final SalesPreferences _prefs;
-  late final AgentClientTokenReader _clientTokenReader;
-  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
+  late final SalesSessionService _sessionService;
+  late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
+  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
   late final LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
   _loadTrendPage;
   late final LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
@@ -88,17 +104,15 @@ class _SalesProdutoTendenciaMediaMovelPageState
   @override
   void initState() {
     super.initState();
-    _prefs = getIt<SalesPreferences>();
-    _clientTokenReader = getIt<AgentClientTokenReader>();
-    _loadAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
-    _loadTrendPage =
-        getIt<LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase>();
-    _loadTrendSummary =
-        getIt<LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase>();
-    _loadGrupoOptions = getIt<LoadGrupoProdutoOptionsUseCase>();
-    _selectedAgentId = _prefs.selectedAgentId;
+    _sessionService = widget.sessionService;
+    _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
+    _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
+    _loadTrendPage = widget.loadTrendPageUseCase;
+    _loadTrendSummary = widget.loadTrendSummaryUseCase;
+    _loadGrupoOptions = widget.loadGrupoProdutoOptionsUseCase;
+    _selectedAgentId = _sessionService.selectedAgentId;
 
-    final restored = _prefs.restoreCardFilters(_cardId);
+    final restored = _sessionService.restoreCardFilters(_cardId);
     _quantidadeDias =
         _restorePositiveInt(restored['quantidade_dias'])?.clamp(
           1,
@@ -159,8 +173,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
       _availableAgents = agents;
       _selectedAgentId = nextSelection;
     });
-    if (nextSelection != _prefs.selectedAgentId) {
-      unawaited(_prefs.setSelectedAgentId(nextSelection));
+    if (nextSelection != _sessionService.selectedAgentId) {
+      unawaited(_sessionService.setSelectedAgentId(nextSelection));
     }
     unawaited(_reload());
   }
@@ -301,16 +315,13 @@ class _SalesProdutoTendenciaMediaMovelPageState
         _cachedClientTokenAgentId == agentId) {
       return _cachedClientToken;
     }
-    final tokenByAgent = await _clientTokenReader.readMany(
+    final resolved = await _resolveClientTokenUseCase(
       userId: userId,
-      agentIds: <String>[agentId],
+      agentId: agentId,
     );
-    final resolved = tokenByAgent[agentId]?.trim();
     _cachedClientTokenUserId = userId;
     _cachedClientTokenAgentId = agentId;
-    return _cachedClientToken = resolved == null || resolved.isEmpty
-        ? null
-        : resolved;
+    return _cachedClientToken = resolved;
   }
 
   Future<void> _loadDimensionOptions({
@@ -358,7 +369,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
       _selectedAgentId = agentId;
       _page = 1;
     });
-    await _prefs.setSelectedAgentId(agentId);
+    await _sessionService.setSelectedAgentId(agentId);
     if (!mounted) {
       return;
     }
@@ -366,7 +377,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
   }
 
   Future<void> _persistFilters() {
-    return _prefs.persistCardFilters(_cardId, <String, Object?>{
+    return _sessionService.persistCardFilters(_cardId, <String, Object?>{
       'quantidade_dias': _quantidadeDias,
       'search_term': _searchTerm,
       'classificacao': _classificacao,
@@ -418,7 +429,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
       _pageSize = (result['pageSize'] as int?) ?? _pageSize;
       _page = 1;
     });
-    await _prefs.setSelectedAgentId(_selectedAgentId);
+    await _sessionService.setSelectedAgentId(_selectedAgentId);
     await _persistFilters();
     if (!mounted) {
       return;

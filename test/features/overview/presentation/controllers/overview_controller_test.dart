@@ -12,6 +12,7 @@ import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor
 import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/agent_meta/domain/repositories/agent_meta_repository.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -52,7 +53,7 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
-        clientAgentsRepository,
+        LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
       );
 
       await controller.loadOverview(userId: 'demo-user');
@@ -83,7 +84,7 @@ void main() {
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          clientAgentsRepository,
+          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
         );
 
         await controller.loadOverview(userId: 'demo-user');
@@ -133,7 +134,7 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
-        clientAgentsRepository,
+        LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
       );
 
       await controller.loadOverview(userId: 'demo-user');
@@ -168,7 +169,7 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
-        clientAgentsRepository,
+        LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
       );
 
       final firstLoadFuture = controller.loadOverview(userId: 'demo-user');
@@ -216,7 +217,7 @@ void main() {
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          clientAgentsRepository,
+          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
           // Speed up the ticker so the test does not depend on wall
           // clock seconds while still exercising the same code path.
           retryAfterGate: RetryAfterGate(
@@ -263,7 +264,7 @@ void main() {
 
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          clientAgentsRepository,
+          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
           agentRpcCapabilitiesRegistry: registry,
         );
 
@@ -310,7 +311,7 @@ void main() {
 
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          clientAgentsRepository,
+          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
           agentRpcCapabilitiesRegistry: registry,
         );
 
@@ -329,7 +330,7 @@ void main() {
         LoadOverviewUseCase(
           _PendingOverviewRepository(completer.future),
         ),
-        clientAgentsRepository,
+        LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
       );
 
       final loadFuture = controller.loadOverview(userId: 'demo-user');
@@ -375,7 +376,7 @@ void main() {
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          clientAgentsRepository,
+          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
         );
 
         final firstLoad = controller.loadOverview(
@@ -432,7 +433,7 @@ void main() {
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          clientAgentsRepository,
+          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
         );
 
         await controller.loadOverview(userId: 'demo-user');

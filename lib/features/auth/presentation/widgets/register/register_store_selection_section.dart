@@ -1,4 +1,4 @@
-import 'package:colmeia/features/auth/data/register_store_catalog.dart';
+import 'package:colmeia/features/auth/domain/register_store_catalog.dart';
 import 'package:colmeia/features/auth/presentation/widgets/register/register_form_section_title.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';

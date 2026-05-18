@@ -2,6 +2,8 @@ import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
+import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
+import 'package:colmeia/features/client_agents/application/client_agents_page_session_service.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/approve_owner_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
@@ -41,11 +43,18 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void registerInjectorClientAgents(GetIt getIt) {
   getIt
     ..registerLazySingleton<LocalAgentClientTokenStore>(
       () => LocalAgentClientTokenStore(getIt<FlutterSecureStorage>()),
+    )
+    ..registerLazySingleton<ClientAgentTokenDraftStore>(
+      () => ClientAgentTokenDraftStore(getIt<LocalAgentClientTokenStore>()),
+    )
+    ..registerLazySingleton<ClientAgentsPageSessionService>(
+      () => ClientAgentsPageSessionService(getIt<SharedPreferences>()),
     )
     ..registerLazySingleton<AgentClientTokenRepository>(
       () => RemoteAgentClientTokenRepository(

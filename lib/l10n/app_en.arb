@@ -427,6 +427,42 @@
   "@chartFullscreenUnavailableMessage": {"description": "Body shown when the fullscreen chart route is opened without a valid payload."},
   "chartFullscreenDataSnapshotHint": "Map values reflect the data loaded when you opened fullscreen.",
   "@chartFullscreenDataSnapshotHint": {"description": "Short hint appended to fullscreen filter summary for charts that snapshot data (e.g. live map)."},
+  "regionMapMetricGroupLabel": "Metric",
+  "regionMapScopeGroupLabel": "Scope",
+  "regionMapRootScopeLabel": "All regions",
+  "regionMapLoadingMessage": "Loading map…",
+  "regionMapEmptyStateMessage": "No territorial data to show.",
+  "regionMapMetricSelectorSemanticsLabel": "Map metric",
+  "regionMapScopeSemanticsLabel": "Territorial scope",
+  "regionMapDrillUpToRegionsLabel": "Back to regions",
+  "regionMapDrillUpToStatesLabel": "Back to states",
+  "regionMapDrillUpToCitiesLabel": "Back to cities",
+  "regionMapDrillUpLabel": "Back",
+  "regionMapDrillUpTooltip": "Return to the previous map level",
+  "regionMapViewFullScopeTooltip": "Show full map ({label})",
+  "@regionMapViewFullScopeTooltip": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "regionMapViewFullScopeSemanticLabel": "Show full map {label}",
+  "@regionMapViewFullScopeSemanticLabel": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "regionMapFocusScopeTooltip": "Focus on {label}",
+  "@regionMapFocusScopeTooltip": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "regionMapFocusScopeSemanticLabel": "Focus on {label}",
+  "@regionMapFocusScopeSemanticLabel": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
   "brazilStoreSalesMapMetricGroupLabel": "Metric",
   "brazilStoreSalesMapRegionGroupLabel": "Region",
   "brazilStoreSalesMapLoadingMessage": "Loading Brazil map…",
@@ -434,6 +470,137 @@
   "brazilStoreSalesMapLegendRevenuePerState": "Revenue by state",
   "brazilStoreSalesMapLegendSalesPerState": "Sales by state",
   "brazilStoreSalesMapShowBranchOnMapAction": "Show on map",
+  "brazilStoreSalesMapMetricRevenueShort": "Revenue",
+  "brazilStoreSalesMapMetricSalesShort": "Sales",
+  "brazilStoreSalesMapLegendButton": "Legend",
+  "brazilStoreSalesMapStateBucketTooltip": "{stateName} / {uf}\n{revenue} | {salesCount} sales | {storeCount} stores",
+  "@brazilStoreSalesMapStateBucketTooltip": {
+    "placeholders": {
+      "stateName": {"type": "String"},
+      "uf": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "storeCount": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapStateInlineTooltip": "{stateName} ({uf}) | {revenue} | {salesCount} sales | {storeCount} stores",
+  "@brazilStoreSalesMapStateInlineTooltip": {
+    "placeholders": {
+      "stateName": {"type": "String"},
+      "uf": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "storeCount": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSemanticsStoreOnMap": "Store on map",
+  "brazilStoreSalesMapSemanticsSalesLoadingSuffix": ", sales loading",
+  "brazilStoreSalesMapSemanticsSalesUnavailableSuffix": ", sales unavailable",
+  "brazilStoreSalesMapSemanticsClusterStores": "{storeCount} stores in {cityLabel}, {revenue}, {salesCount} sales{salesStatusSuffix}",
+  "@brazilStoreSalesMapSemanticsClusterStores": {
+    "placeholders": {
+      "storeCount": {"type": "String"},
+      "cityLabel": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesStatusSuffix": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSemanticsSingleStore": "{storeName}, {cityLabel}, {revenue}, {salesCount} sales{salesStatusSuffix}",
+  "@brazilStoreSalesMapSemanticsSingleStore": {
+    "placeholders": {
+      "storeName": {"type": "String"},
+      "cityLabel": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesStatusSuffix": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSemanticsStateAggregate": "{stateName}, {revenue}, {salesCount} sales, {storeCount} stores",
+  "@brazilStoreSalesMapSemanticsStateAggregate": {
+    "placeholders": {
+      "stateName": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "storeCount": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapDetailChipSales": "{count} sales",
+  "@brazilStoreSalesMapDetailChipSales": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapDetailChipBranches": "{count} branches",
+  "@brazilStoreSalesMapDetailChipBranches": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapStateSelectedSubtitle": "{uf} selected",
+  "@brazilStoreSalesMapStateSelectedSubtitle": {
+    "placeholders": {"uf": {"type": "String"}}
+  },
+  "brazilStoreSalesMapCarouselPosition": "{current} of {total}",
+  "@brazilStoreSalesMapCarouselPosition": {
+    "placeholders": {
+      "current": {"type": "String"},
+      "total": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapBranchDetailSemanticsLabel": "Branch details on the map",
+  "brazilStoreSalesMapSalesLoadingLabel": "Loading sales",
+  "brazilStoreSalesMapDataQualityLead": "{count} stores not shown",
+  "@brazilStoreSalesMapDataQualityLead": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapDataQualityInvalidCoords": "{count} with invalid coordinates",
+  "@brazilStoreSalesMapDataQualityInvalidCoords": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapDataQualityUnknownUf": "{count} with unknown state code",
+  "@brazilStoreSalesMapDataQualityUnknownUf": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapDataQualityOutsideClip": "{count} outside the map clip",
+  "@brazilStoreSalesMapDataQualityOutsideClip": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "salesLiveMapFilterBranchSummaryLine": "{city}/{uf} — Agent {agentName}",
+  "@salesLiveMapFilterBranchSummaryLine": {
+    "placeholders": {
+      "city": {"type": "String"},
+      "uf": {"type": "String"},
+      "agentName": {"type": "String"}
+    }
+  },
+  "salesLiveMapFilterBranchCodesLine": "Company: {codEmpresa}  Branch: {codFilial}",
+  "@salesLiveMapFilterBranchCodesLine": {
+    "placeholders": {
+      "codEmpresa": {"type": "String"},
+      "codFilial": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapCloseBranchDetailsTooltip": "Close details",
+  "brazilStoreSalesMapBranchPinnedChip": "Pinned branch",
+  "brazilStoreSalesMapSalesUnavailableFallback": "Sales unavailable",
+  "brazilStoreSalesMapSelectBranchButton": "Select branch",
+  "brazilStoreSalesMapChooseBranchMenuTooltip": "Choose branch",
+  "brazilStoreSalesMapBranchNavigationPreviousTooltip": "Previous branch",
+  "brazilStoreSalesMapBranchNavigationNextTooltip": "Next branch",
+  "brazilStoreSalesMapMarkerGroupTotalTitle": "Location total",
+  "brazilStoreSalesMapDefaultBranchName": "Unnamed branch",
+  "brazilStoreSalesMapAgentChipWithName": "Agent {agentName}",
+  "@brazilStoreSalesMapAgentChipWithName": {
+    "placeholders": {"agentName": {"type": "String"}}
+  },
+  "brazilStoreSalesMapIbgeCodeLabel": "IBGE {code}",
+  "@brazilStoreSalesMapIbgeCodeLabel": {
+    "placeholders": {"code": {"type": "String"}}
+  },
+  "brazilStoreSalesMapLocationProvidedGeoPoint": "Branch coordinates",
+  "brazilStoreSalesMapLocationIbge": "IBGE geolocation",
+  "brazilStoreSalesMapLocationCep": "ZIP code geolocation",
+  "brazilStoreSalesMapLocationCityUf": "City/state geolocation",
+  "brazilStoreSalesMapLocationCapitalUf": "State capital",
+  "brazilStoreSalesMapLocationStateUf": "State centroid",
+  "brazilStoreSalesMapLocationUnknown": "Coordinate source not provided",
   "overviewSemanticsPaymentMethodRow": "Payment method {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -1569,5 +1736,22 @@
   "agentStatusPending": "Pending",
   "agentStatusRejected": "Rejected",
   "agentStatusUnknown": "Unknown",
-  "reportFiltersApplyButton": "Apply"
+  "reportFiltersApplyButton": "Apply",
+  "brazilStoreSalesMapCountryLabel": "Brazil",
+  "brazilStoreSalesMapRegionNorth": "North",
+  "brazilStoreSalesMapRegionNortheast": "Northeast",
+  "brazilStoreSalesMapRegionCenterWest": "Center-West",
+  "brazilStoreSalesMapRegionSoutheast": "Southeast",
+  "brazilStoreSalesMapRegionSouth": "South",
+  "brazilStoreSalesMapEmptyState": "No stores to show on the map.",
+  "brazilStoreSalesMapPresetStandardLabel": "Points",
+  "brazilStoreSalesMapPresetBubbleLabel": "Bubbles",
+  "brazilStoreSalesMapPresetMunicipalityBubblesLabel": "Municipalities",
+  "brazilStoreSalesMapPresetStateBubblesLabel": "State bubbles",
+  "brazilStoreSalesMapPresetStoreIconLabel": "Store icon",
+  "brazilStoreSalesMapPresetStandardTooltip": "Shows each store as an individual point on the map.",
+  "brazilStoreSalesMapPresetBubbleTooltip": "Shows stores as bubbles proportional to the active metric.",
+  "brazilStoreSalesMapPresetMunicipalityBubblesTooltip": "Groups stores by municipality and shows bubbles proportional to the active metric.",
+  "brazilStoreSalesMapPresetStateBubblesTooltip": "Groups stores into bubbles positioned at each state centroid.",
+  "brazilStoreSalesMapPresetStoreIconTooltip": "Shows each store with an operational store icon."
 }

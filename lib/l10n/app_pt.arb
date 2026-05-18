@@ -390,6 +390,42 @@
   "chartFullscreenUnavailableTitle": "Gráfico indisponível",
   "chartFullscreenUnavailableMessage": "Não foi possível abrir este gráfico em tela cheia. Volte e tente novamente.",
   "chartFullscreenDataSnapshotHint": "Os valores do mapa refletem os dados carregados ao abrir a tela cheia.",
+  "regionMapMetricGroupLabel": "Métrica",
+  "regionMapScopeGroupLabel": "Escopo",
+  "regionMapRootScopeLabel": "Todas as regiões",
+  "regionMapLoadingMessage": "Carregando mapa…",
+  "regionMapEmptyStateMessage": "Nenhum dado territorial para exibir.",
+  "regionMapMetricSelectorSemanticsLabel": "Métrica do mapa",
+  "regionMapScopeSemanticsLabel": "Escopo territorial",
+  "regionMapDrillUpToRegionsLabel": "Voltar para regiões",
+  "regionMapDrillUpToStatesLabel": "Voltar para estados",
+  "regionMapDrillUpToCitiesLabel": "Voltar para cidades",
+  "regionMapDrillUpLabel": "Voltar",
+  "regionMapDrillUpTooltip": "Retornar ao nível anterior do mapa",
+  "regionMapViewFullScopeTooltip": "Ver mapa completo ({label})",
+  "@regionMapViewFullScopeTooltip": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "regionMapViewFullScopeSemanticLabel": "Ver mapa completo {label}",
+  "@regionMapViewFullScopeSemanticLabel": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "regionMapFocusScopeTooltip": "Focar em {label}",
+  "@regionMapFocusScopeTooltip": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "regionMapFocusScopeSemanticLabel": "Focar em {label}",
+  "@regionMapFocusScopeSemanticLabel": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
   "brazilStoreSalesMapMetricGroupLabel": "Métrica",
   "brazilStoreSalesMapRegionGroupLabel": "Região",
   "brazilStoreSalesMapLoadingMessage": "Carregando mapa do Brasil…",
@@ -397,6 +433,137 @@
   "brazilStoreSalesMapLegendRevenuePerState": "Receita por UF",
   "brazilStoreSalesMapLegendSalesPerState": "Vendas por UF",
   "brazilStoreSalesMapShowBranchOnMapAction": "Destacar no mapa",
+  "brazilStoreSalesMapMetricRevenueShort": "Receita",
+  "brazilStoreSalesMapMetricSalesShort": "Vendas",
+  "brazilStoreSalesMapLegendButton": "Legenda",
+  "brazilStoreSalesMapStateBucketTooltip": "{stateName} / {uf}\n{revenue} | {salesCount} vendas | {storeCount} lojas",
+  "@brazilStoreSalesMapStateBucketTooltip": {
+    "placeholders": {
+      "stateName": {"type": "String"},
+      "uf": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "storeCount": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapStateInlineTooltip": "{stateName} ({uf}) | {revenue} | {salesCount} vendas | {storeCount} lojas",
+  "@brazilStoreSalesMapStateInlineTooltip": {
+    "placeholders": {
+      "stateName": {"type": "String"},
+      "uf": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "storeCount": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSemanticsStoreOnMap": "Loja no mapa",
+  "brazilStoreSalesMapSemanticsSalesLoadingSuffix": ", vendas carregando",
+  "brazilStoreSalesMapSemanticsSalesUnavailableSuffix": ", vendas indisponiveis",
+  "brazilStoreSalesMapSemanticsClusterStores": "{storeCount} lojas em {cityLabel}, {revenue}, {salesCount} vendas{salesStatusSuffix}",
+  "@brazilStoreSalesMapSemanticsClusterStores": {
+    "placeholders": {
+      "storeCount": {"type": "String"},
+      "cityLabel": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesStatusSuffix": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSemanticsSingleStore": "{storeName}, {cityLabel}, {revenue}, {salesCount} vendas{salesStatusSuffix}",
+  "@brazilStoreSalesMapSemanticsSingleStore": {
+    "placeholders": {
+      "storeName": {"type": "String"},
+      "cityLabel": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "salesStatusSuffix": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapSemanticsStateAggregate": "{stateName}, {revenue}, {salesCount} vendas, {storeCount} lojas",
+  "@brazilStoreSalesMapSemanticsStateAggregate": {
+    "placeholders": {
+      "stateName": {"type": "String"},
+      "revenue": {"type": "String"},
+      "salesCount": {"type": "String"},
+      "storeCount": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapDetailChipSales": "{count} vendas",
+  "@brazilStoreSalesMapDetailChipSales": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapDetailChipBranches": "{count} filiais",
+  "@brazilStoreSalesMapDetailChipBranches": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapStateSelectedSubtitle": "{uf} selecionado",
+  "@brazilStoreSalesMapStateSelectedSubtitle": {
+    "placeholders": {"uf": {"type": "String"}}
+  },
+  "brazilStoreSalesMapCarouselPosition": "{current} de {total}",
+  "@brazilStoreSalesMapCarouselPosition": {
+    "placeholders": {
+      "current": {"type": "String"},
+      "total": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapBranchDetailSemanticsLabel": "Detalhes da filial no mapa",
+  "brazilStoreSalesMapSalesLoadingLabel": "Carregando vendas",
+  "brazilStoreSalesMapDataQualityLead": "{count} lojas nao exibidas",
+  "@brazilStoreSalesMapDataQualityLead": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapDataQualityInvalidCoords": "{count} com coordenada invalida",
+  "@brazilStoreSalesMapDataQualityInvalidCoords": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapDataQualityUnknownUf": "{count} com UF desconhecida",
+  "@brazilStoreSalesMapDataQualityUnknownUf": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "brazilStoreSalesMapDataQualityOutsideClip": "{count} fora do recorte",
+  "@brazilStoreSalesMapDataQualityOutsideClip": {
+    "placeholders": {"count": {"type": "String"}}
+  },
+  "salesLiveMapFilterBranchSummaryLine": "{city}/{uf} — Agente {agentName}",
+  "@salesLiveMapFilterBranchSummaryLine": {
+    "placeholders": {
+      "city": {"type": "String"},
+      "uf": {"type": "String"},
+      "agentName": {"type": "String"}
+    }
+  },
+  "salesLiveMapFilterBranchCodesLine": "Empresa: {codEmpresa}  Filial: {codFilial}",
+  "@salesLiveMapFilterBranchCodesLine": {
+    "placeholders": {
+      "codEmpresa": {"type": "String"},
+      "codFilial": {"type": "String"}
+    }
+  },
+  "brazilStoreSalesMapCloseBranchDetailsTooltip": "Fechar detalhes",
+  "brazilStoreSalesMapBranchPinnedChip": "Filial fixada",
+  "brazilStoreSalesMapSalesUnavailableFallback": "Vendas indisponiveis",
+  "brazilStoreSalesMapSelectBranchButton": "Selecionar filial",
+  "brazilStoreSalesMapChooseBranchMenuTooltip": "Escolher filial",
+  "brazilStoreSalesMapBranchNavigationPreviousTooltip": "Filial anterior",
+  "brazilStoreSalesMapBranchNavigationNextTooltip": "Proxima filial",
+  "brazilStoreSalesMapMarkerGroupTotalTitle": "Total do ponto",
+  "brazilStoreSalesMapDefaultBranchName": "Filial sem nome",
+  "brazilStoreSalesMapAgentChipWithName": "Agente {agentName}",
+  "@brazilStoreSalesMapAgentChipWithName": {
+    "placeholders": {"agentName": {"type": "String"}}
+  },
+  "brazilStoreSalesMapIbgeCodeLabel": "IBGE {code}",
+  "@brazilStoreSalesMapIbgeCodeLabel": {
+    "placeholders": {"code": {"type": "String"}}
+  },
+  "brazilStoreSalesMapLocationProvidedGeoPoint": "Coordenada da filial",
+  "brazilStoreSalesMapLocationIbge": "Geolocalizacao IBGE",
+  "brazilStoreSalesMapLocationCep": "Geolocalizacao CEP",
+  "brazilStoreSalesMapLocationCityUf": "Geolocalizacao cidade/UF",
+  "brazilStoreSalesMapLocationCapitalUf": "Capital da UF",
+  "brazilStoreSalesMapLocationStateUf": "Centro da UF",
+  "brazilStoreSalesMapLocationUnknown": "Origem da coordenada nao informada",
   "overviewSemanticsPaymentMethodRow": "Forma de pagamento {label}",
   "@overviewSemanticsPaymentMethodRow": {
     "placeholders": {
@@ -1344,5 +1511,22 @@
   "agentStatusPending": "Pendente",
   "agentStatusRejected": "Rejeitado",
   "agentStatusUnknown": "Desconhecido",
-  "reportFiltersApplyButton": "Aplicar"
+  "reportFiltersApplyButton": "Aplicar",
+  "brazilStoreSalesMapCountryLabel": "Brasil",
+  "brazilStoreSalesMapRegionNorth": "Norte",
+  "brazilStoreSalesMapRegionNortheast": "Nordeste",
+  "brazilStoreSalesMapRegionCenterWest": "Centro-Oeste",
+  "brazilStoreSalesMapRegionSoutheast": "Sudeste",
+  "brazilStoreSalesMapRegionSouth": "Sul",
+  "brazilStoreSalesMapEmptyState": "Sem lojas para exibir no mapa.",
+  "brazilStoreSalesMapPresetStandardLabel": "Pontos",
+  "brazilStoreSalesMapPresetBubbleLabel": "Bolhas",
+  "brazilStoreSalesMapPresetMunicipalityBubblesLabel": "Municipios",
+  "brazilStoreSalesMapPresetStateBubblesLabel": "Bolhas por UF",
+  "brazilStoreSalesMapPresetStoreIconLabel": "Icone loja",
+  "brazilStoreSalesMapPresetStandardTooltip": "Exibe cada loja como ponto individual no mapa.",
+  "brazilStoreSalesMapPresetBubbleTooltip": "Exibe lojas como bolhas proporcionais a metrica ativa.",
+  "brazilStoreSalesMapPresetMunicipalityBubblesTooltip": "Agrupa lojas por municipio e exibe bolhas proporcionais a metrica ativa.",
+  "brazilStoreSalesMapPresetStateBubblesTooltip": "Agrupa as lojas em bolhas posicionadas no centroide de cada UF.",
+  "brazilStoreSalesMapPresetStoreIconTooltip": "Exibe cada loja com icone operacional de unidade."
 }

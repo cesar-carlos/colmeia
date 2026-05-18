@@ -1543,6 +1543,102 @@ abstract class AppLocalizations {
   /// **'Map values reflect the data loaded when you opened fullscreen.'**
   String get chartFullscreenDataSnapshotHint;
 
+  /// No description provided for @regionMapMetricGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get regionMapMetricGroupLabel;
+
+  /// No description provided for @regionMapScopeGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get regionMapScopeGroupLabel;
+
+  /// No description provided for @regionMapRootScopeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All regions'**
+  String get regionMapRootScopeLabel;
+
+  /// No description provided for @regionMapLoadingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading map…'**
+  String get regionMapLoadingMessage;
+
+  /// No description provided for @regionMapEmptyStateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No territorial data to show.'**
+  String get regionMapEmptyStateMessage;
+
+  /// No description provided for @regionMapMetricSelectorSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Map metric'**
+  String get regionMapMetricSelectorSemanticsLabel;
+
+  /// No description provided for @regionMapScopeSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Territorial scope'**
+  String get regionMapScopeSemanticsLabel;
+
+  /// No description provided for @regionMapDrillUpToRegionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to regions'**
+  String get regionMapDrillUpToRegionsLabel;
+
+  /// No description provided for @regionMapDrillUpToStatesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to states'**
+  String get regionMapDrillUpToStatesLabel;
+
+  /// No description provided for @regionMapDrillUpToCitiesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to cities'**
+  String get regionMapDrillUpToCitiesLabel;
+
+  /// No description provided for @regionMapDrillUpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get regionMapDrillUpLabel;
+
+  /// No description provided for @regionMapDrillUpTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to the previous map level'**
+  String get regionMapDrillUpTooltip;
+
+  /// No description provided for @regionMapViewFullScopeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show full map ({label})'**
+  String regionMapViewFullScopeTooltip(String label);
+
+  /// No description provided for @regionMapViewFullScopeSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show full map {label}'**
+  String regionMapViewFullScopeSemanticLabel(String label);
+
+  /// No description provided for @regionMapFocusScopeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus on {label}'**
+  String regionMapFocusScopeTooltip(String label);
+
+  /// No description provided for @regionMapFocusScopeSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus on {label}'**
+  String regionMapFocusScopeSemanticLabel(String label);
+
   /// No description provided for @brazilStoreSalesMapMetricGroupLabel.
   ///
   /// In en, this message translates to:
@@ -1584,6 +1680,285 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show on map'**
   String get brazilStoreSalesMapShowBranchOnMapAction;
+
+  /// No description provided for @brazilStoreSalesMapMetricRevenueShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get brazilStoreSalesMapMetricRevenueShort;
+
+  /// No description provided for @brazilStoreSalesMapMetricSalesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get brazilStoreSalesMapMetricSalesShort;
+
+  /// No description provided for @brazilStoreSalesMapLegendButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Legend'**
+  String get brazilStoreSalesMapLegendButton;
+
+  /// No description provided for @brazilStoreSalesMapStateBucketTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'{stateName} / {uf}\n{revenue} | {salesCount} sales | {storeCount} stores'**
+  String brazilStoreSalesMapStateBucketTooltip(
+    String stateName,
+    String uf,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  );
+
+  /// No description provided for @brazilStoreSalesMapStateInlineTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'{stateName} ({uf}) | {revenue} | {salesCount} sales | {storeCount} stores'**
+  String brazilStoreSalesMapStateInlineTooltip(
+    String stateName,
+    String uf,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  );
+
+  /// No description provided for @brazilStoreSalesMapSemanticsStoreOnMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Store on map'**
+  String get brazilStoreSalesMapSemanticsStoreOnMap;
+
+  /// No description provided for @brazilStoreSalesMapSemanticsSalesLoadingSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **', sales loading'**
+  String get brazilStoreSalesMapSemanticsSalesLoadingSuffix;
+
+  /// No description provided for @brazilStoreSalesMapSemanticsSalesUnavailableSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **', sales unavailable'**
+  String get brazilStoreSalesMapSemanticsSalesUnavailableSuffix;
+
+  /// No description provided for @brazilStoreSalesMapSemanticsClusterStores.
+  ///
+  /// In en, this message translates to:
+  /// **'{storeCount} stores in {cityLabel}, {revenue}, {salesCount} sales{salesStatusSuffix}'**
+  String brazilStoreSalesMapSemanticsClusterStores(
+    String storeCount,
+    String cityLabel,
+    String revenue,
+    String salesCount,
+    String salesStatusSuffix,
+  );
+
+  /// No description provided for @brazilStoreSalesMapSemanticsSingleStore.
+  ///
+  /// In en, this message translates to:
+  /// **'{storeName}, {cityLabel}, {revenue}, {salesCount} sales{salesStatusSuffix}'**
+  String brazilStoreSalesMapSemanticsSingleStore(
+    String storeName,
+    String cityLabel,
+    String revenue,
+    String salesCount,
+    String salesStatusSuffix,
+  );
+
+  /// No description provided for @brazilStoreSalesMapSemanticsStateAggregate.
+  ///
+  /// In en, this message translates to:
+  /// **'{stateName}, {revenue}, {salesCount} sales, {storeCount} stores'**
+  String brazilStoreSalesMapSemanticsStateAggregate(
+    String stateName,
+    String revenue,
+    String salesCount,
+    String storeCount,
+  );
+
+  /// No description provided for @brazilStoreSalesMapDetailChipSales.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sales'**
+  String brazilStoreSalesMapDetailChipSales(String count);
+
+  /// No description provided for @brazilStoreSalesMapDetailChipBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} branches'**
+  String brazilStoreSalesMapDetailChipBranches(String count);
+
+  /// No description provided for @brazilStoreSalesMapStateSelectedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{uf} selected'**
+  String brazilStoreSalesMapStateSelectedSubtitle(String uf);
+
+  /// No description provided for @brazilStoreSalesMapCarouselPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String brazilStoreSalesMapCarouselPosition(String current, String total);
+
+  /// No description provided for @brazilStoreSalesMapBranchDetailSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch details on the map'**
+  String get brazilStoreSalesMapBranchDetailSemanticsLabel;
+
+  /// No description provided for @brazilStoreSalesMapSalesLoadingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading sales'**
+  String get brazilStoreSalesMapSalesLoadingLabel;
+
+  /// No description provided for @brazilStoreSalesMapDataQualityLead.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} stores not shown'**
+  String brazilStoreSalesMapDataQualityLead(String count);
+
+  /// No description provided for @brazilStoreSalesMapDataQualityInvalidCoords.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} with invalid coordinates'**
+  String brazilStoreSalesMapDataQualityInvalidCoords(String count);
+
+  /// No description provided for @brazilStoreSalesMapDataQualityUnknownUf.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} with unknown state code'**
+  String brazilStoreSalesMapDataQualityUnknownUf(String count);
+
+  /// No description provided for @brazilStoreSalesMapDataQualityOutsideClip.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} outside the map clip'**
+  String brazilStoreSalesMapDataQualityOutsideClip(String count);
+
+  /// No description provided for @salesLiveMapFilterBranchSummaryLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{city}/{uf} — Agent {agentName}'**
+  String salesLiveMapFilterBranchSummaryLine(
+    String city,
+    String uf,
+    String agentName,
+  );
+
+  /// No description provided for @salesLiveMapFilterBranchCodesLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Company: {codEmpresa}  Branch: {codFilial}'**
+  String salesLiveMapFilterBranchCodesLine(String codEmpresa, String codFilial);
+
+  /// No description provided for @brazilStoreSalesMapCloseBranchDetailsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Close details'**
+  String get brazilStoreSalesMapCloseBranchDetailsTooltip;
+
+  /// No description provided for @brazilStoreSalesMapBranchPinnedChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned branch'**
+  String get brazilStoreSalesMapBranchPinnedChip;
+
+  /// No description provided for @brazilStoreSalesMapSalesUnavailableFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales unavailable'**
+  String get brazilStoreSalesMapSalesUnavailableFallback;
+
+  /// No description provided for @brazilStoreSalesMapSelectBranchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Select branch'**
+  String get brazilStoreSalesMapSelectBranchButton;
+
+  /// No description provided for @brazilStoreSalesMapChooseBranchMenuTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose branch'**
+  String get brazilStoreSalesMapChooseBranchMenuTooltip;
+
+  /// No description provided for @brazilStoreSalesMapBranchNavigationPreviousTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous branch'**
+  String get brazilStoreSalesMapBranchNavigationPreviousTooltip;
+
+  /// No description provided for @brazilStoreSalesMapBranchNavigationNextTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next branch'**
+  String get brazilStoreSalesMapBranchNavigationNextTooltip;
+
+  /// No description provided for @brazilStoreSalesMapMarkerGroupTotalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Location total'**
+  String get brazilStoreSalesMapMarkerGroupTotalTitle;
+
+  /// No description provided for @brazilStoreSalesMapDefaultBranchName.
+  ///
+  /// In en, this message translates to:
+  /// **'Unnamed branch'**
+  String get brazilStoreSalesMapDefaultBranchName;
+
+  /// No description provided for @brazilStoreSalesMapAgentChipWithName.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent {agentName}'**
+  String brazilStoreSalesMapAgentChipWithName(String agentName);
+
+  /// No description provided for @brazilStoreSalesMapIbgeCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'IBGE {code}'**
+  String brazilStoreSalesMapIbgeCodeLabel(String code);
+
+  /// No description provided for @brazilStoreSalesMapLocationProvidedGeoPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch coordinates'**
+  String get brazilStoreSalesMapLocationProvidedGeoPoint;
+
+  /// No description provided for @brazilStoreSalesMapLocationIbge.
+  ///
+  /// In en, this message translates to:
+  /// **'IBGE geolocation'**
+  String get brazilStoreSalesMapLocationIbge;
+
+  /// No description provided for @brazilStoreSalesMapLocationCep.
+  ///
+  /// In en, this message translates to:
+  /// **'ZIP code geolocation'**
+  String get brazilStoreSalesMapLocationCep;
+
+  /// No description provided for @brazilStoreSalesMapLocationCityUf.
+  ///
+  /// In en, this message translates to:
+  /// **'City/state geolocation'**
+  String get brazilStoreSalesMapLocationCityUf;
+
+  /// No description provided for @brazilStoreSalesMapLocationCapitalUf.
+  ///
+  /// In en, this message translates to:
+  /// **'State capital'**
+  String get brazilStoreSalesMapLocationCapitalUf;
+
+  /// No description provided for @brazilStoreSalesMapLocationStateUf.
+  ///
+  /// In en, this message translates to:
+  /// **'State centroid'**
+  String get brazilStoreSalesMapLocationStateUf;
+
+  /// No description provided for @brazilStoreSalesMapLocationUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinate source not provided'**
+  String get brazilStoreSalesMapLocationUnknown;
 
   /// No description provided for @overviewSemanticsPaymentMethodRow.
   ///
@@ -5510,6 +5885,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Apply'**
   String get reportFiltersApplyButton;
+
+  /// No description provided for @brazilStoreSalesMapCountryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Brazil'**
+  String get brazilStoreSalesMapCountryLabel;
+
+  /// No description provided for @brazilStoreSalesMapRegionNorth.
+  ///
+  /// In en, this message translates to:
+  /// **'North'**
+  String get brazilStoreSalesMapRegionNorth;
+
+  /// No description provided for @brazilStoreSalesMapRegionNortheast.
+  ///
+  /// In en, this message translates to:
+  /// **'Northeast'**
+  String get brazilStoreSalesMapRegionNortheast;
+
+  /// No description provided for @brazilStoreSalesMapRegionCenterWest.
+  ///
+  /// In en, this message translates to:
+  /// **'Center-West'**
+  String get brazilStoreSalesMapRegionCenterWest;
+
+  /// No description provided for @brazilStoreSalesMapRegionSoutheast.
+  ///
+  /// In en, this message translates to:
+  /// **'Southeast'**
+  String get brazilStoreSalesMapRegionSoutheast;
+
+  /// No description provided for @brazilStoreSalesMapRegionSouth.
+  ///
+  /// In en, this message translates to:
+  /// **'South'**
+  String get brazilStoreSalesMapRegionSouth;
+
+  /// No description provided for @brazilStoreSalesMapEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No stores to show on the map.'**
+  String get brazilStoreSalesMapEmptyState;
+
+  /// No description provided for @brazilStoreSalesMapPresetStandardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get brazilStoreSalesMapPresetStandardLabel;
+
+  /// No description provided for @brazilStoreSalesMapPresetBubbleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles'**
+  String get brazilStoreSalesMapPresetBubbleLabel;
+
+  /// No description provided for @brazilStoreSalesMapPresetMunicipalityBubblesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Municipalities'**
+  String get brazilStoreSalesMapPresetMunicipalityBubblesLabel;
+
+  /// No description provided for @brazilStoreSalesMapPresetStateBubblesLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'State bubbles'**
+  String get brazilStoreSalesMapPresetStateBubblesLabel;
+
+  /// No description provided for @brazilStoreSalesMapPresetStoreIconLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Store icon'**
+  String get brazilStoreSalesMapPresetStoreIconLabel;
+
+  /// No description provided for @brazilStoreSalesMapPresetStandardTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows each store as an individual point on the map.'**
+  String get brazilStoreSalesMapPresetStandardTooltip;
+
+  /// No description provided for @brazilStoreSalesMapPresetBubbleTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows stores as bubbles proportional to the active metric.'**
+  String get brazilStoreSalesMapPresetBubbleTooltip;
+
+  /// No description provided for @brazilStoreSalesMapPresetMunicipalityBubblesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups stores by municipality and shows bubbles proportional to the active metric.'**
+  String get brazilStoreSalesMapPresetMunicipalityBubblesTooltip;
+
+  /// No description provided for @brazilStoreSalesMapPresetStateBubblesTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups stores into bubbles positioned at each state centroid.'**
+  String get brazilStoreSalesMapPresetStateBubblesTooltip;
+
+  /// No description provided for @brazilStoreSalesMapPresetStoreIconTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows each store with an operational store icon.'**
+  String get brazilStoreSalesMapPresetStoreIconTooltip;
 }
 
 class _AppLocalizationsDelegate

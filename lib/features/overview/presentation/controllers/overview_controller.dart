@@ -5,13 +5,14 @@ import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
-import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
-import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
 import 'package:flutter/foundation.dart';
@@ -22,7 +23,7 @@ typedef OverviewFailureMessageBuilder = String Function(AppFailure failure);
 class OverviewController extends ChangeNotifier {
   OverviewController(
     this._loadOverviewUseCase,
-    this._clientAgentsRepository, {
+    this._loadOverviewOnlineAgentIdsUseCase, {
     RetryAfterGate? retryAfterGate,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
   }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
@@ -34,7 +35,7 @@ class OverviewController extends ChangeNotifier {
   }
 
   final LoadOverviewUseCase _loadOverviewUseCase;
-  final ClientAgentsRepository _clientAgentsRepository;
+  final LoadOverviewOnlineAgentIdsUseCase _loadOverviewOnlineAgentIdsUseCase;
 
   /// Cool-down gate fed by `Retry-After` hints surfaced by the bridge
   /// (HTTP header, JSON-RPC `error.data.retry_after_ms`). The overview
@@ -551,7 +552,7 @@ class OverviewController extends ChangeNotifier {
   ) async {
     final onlineIds =
         overview.hubPresenceOnlineAgentIdsSnapshot ??
-        await _clientAgentsRepository.loadOnlineAgentIds(userId: userId);
+        await _loadOverviewOnlineAgentIdsUseCase(userId: userId);
 
     if (_disposed || generation != _loadGeneration) {
       return false;

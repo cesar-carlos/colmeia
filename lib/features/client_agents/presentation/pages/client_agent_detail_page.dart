@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
@@ -31,10 +30,12 @@ import 'package:provider/provider.dart';
 class ClientAgentDetailPage extends StatefulWidget {
   const ClientAgentDetailPage({
     required this.agentId,
+    required this.controller,
     super.key,
   });
 
   final String agentId;
+  final ClientAgentDetailController controller;
 
   @override
   State<ClientAgentDetailPage> createState() => _ClientAgentDetailPageState();
@@ -57,7 +58,7 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
   @override
   void initState() {
     super.initState();
-    _controller = getIt<ClientAgentDetailController>();
+    _controller = widget.controller;
   }
 
   @override
@@ -1190,8 +1191,9 @@ class _RecordCard extends StatelessWidget {
             _AgentDetailRow(
               label: l10n.clientAgentFieldProfileUpdatedAt,
               value: AppBrFormatters.shortDateTime(agent.profileUpdatedAt!),
-              clipboardText:
-                  AppBrFormatters.shortDateTime(agent.profileUpdatedAt!),
+              clipboardText: AppBrFormatters.shortDateTime(
+                agent.profileUpdatedAt!,
+              ),
             ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldCreatedAt,
@@ -1223,7 +1225,10 @@ String? _trimmedOrNull(String? value) {
 
 const Duration _kAgentDetailCopySnackDuration = Duration(seconds: 2);
 
-Future<void> _copyAgentDetailFieldValue(BuildContext context, String text) async {
+Future<void> _copyAgentDetailFieldValue(
+  BuildContext context,
+  String text,
+) async {
   await Clipboard.setData(ClipboardData(text: text));
   if (!context.mounted) {
     return;
@@ -1261,8 +1266,9 @@ class _AgentDetailRow extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final l10n = AppLocalizations.of(context);
     final trimmedCopy = clipboardText?.trim();
-    final copyPayload =
-        trimmedCopy != null && trimmedCopy.isNotEmpty ? trimmedCopy : null;
+    final copyPayload = trimmedCopy != null && trimmedCopy.isNotEmpty
+        ? trimmedCopy
+        : null;
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.gapSm),
       child: Column(

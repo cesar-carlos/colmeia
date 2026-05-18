@@ -7,6 +7,7 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
@@ -64,7 +65,7 @@ void main() {
     currentUserContextController = _MockCurrentUserContextController();
     overviewController = OverviewController(
       LoadOverviewUseCase(overviewRepository),
-      clientAgentsRepository,
+      LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
     );
 
     when(() => authController.session).thenReturn(
@@ -268,44 +269,47 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
   });
 
-  testWidgets('progressive below-kpis UI mounts only ready daily sales section', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: Builder(
-            builder: (context) {
-              return SingleChildScrollView(
-                child: OverviewHomeStagedBelowKpis(
-                  tokens: Theme.of(context).extension<AppThemeTokens>()!,
-                  l10n: AppLocalizations.of(context),
-                  showSkeleton: false,
-                  displayOverview: _overview(),
-                  completedSections: const <OverviewProgressiveSection>{
-                    OverviewProgressiveSection.dailySales,
-                  },
-                ),
-              );
-            },
+  testWidgets(
+    'progressive below-kpis UI mounts only ready daily sales section',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) {
+                return SingleChildScrollView(
+                  child: OverviewHomeStagedBelowKpis(
+                    tokens: Theme.of(context).extension<AppThemeTokens>()!,
+                    l10n: AppLocalizations.of(context),
+                    showSkeleton: false,
+                    displayOverview: _overview(),
+                    completedSections: const <OverviewProgressiveSection>{
+                      OverviewProgressiveSection.dailySales,
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pump();
+      await tester.pump();
 
-    expect(find.byType(OverviewDailySalesTrendChart), findsOneWidget);
-    expect(find.text('Daily sales'), findsOneWidget);
-    expect(find.byType(OverviewWeekdaySalesTrendChart), findsNothing);
-    expect(find.text('Last 12 months'), findsNothing);
+      expect(find.byType(OverviewDailySalesTrendChart), findsOneWidget);
+      expect(find.text('Daily sales'), findsOneWidget);
+      expect(find.byType(OverviewWeekdaySalesTrendChart), findsNothing);
+      expect(find.text('Last 12 months'), findsNothing);
 
-    await tester.pump(const Duration(seconds: 2));
-  });
+      await tester.pump(const Duration(seconds: 2));
+    },
+  );
 }
 
 OverviewProgressiveSnapshot _snapshot(Overview overview) {
