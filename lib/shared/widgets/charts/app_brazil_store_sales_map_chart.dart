@@ -16,6 +16,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapsho
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
+import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -830,6 +831,10 @@ class _AppBrazilStoreSalesMapChartState
             initialStoreId: initialStoreId,
             onDismiss: () => unawaited(Navigator.of(sheetContext).maybePop()),
             onClose: () => unawaited(Navigator.of(sheetContext).maybePop()),
+            onClearSelection: () {
+              _clearSelectedMarkerDetail();
+              unawaited(Navigator.of(sheetContext).maybePop());
+            },
             onSelectBranch: (point) {
               unawaited(Navigator.of(sheetContext).maybePop());
               _handleMarkerBranchAction(point: point, index: markerIndex);
@@ -1048,6 +1053,7 @@ class _AppBrazilStoreSalesMapChartState
       metric: _selectedMetric,
       marker: marker,
       onClose: _clearSelectedMarkerDetail,
+      onClearSelection: _clearSelectedMarkerDetail,
       onSelectBranch: (point) =>
           _handleMarkerBranchAction(point: point, index: index),
       selectBranchLabelBuilder: (_) =>
@@ -1521,11 +1527,9 @@ String? _branchNameLabel(AppBrazilStoreSalesPoint point) {
 }
 
 String _agentChipLabel(AppLocalizations l10n, String agentName) {
-  final lower = agentName.toLowerCase();
-  if (lower.startsWith('agente ') || lower.startsWith('agent ')) {
-    return agentName;
-  }
-  return l10n.brazilStoreSalesMapAgentChipWithName(agentName);
+  return l10n.brazilStoreSalesMapAgentChipWithName(
+    appBranchDisplayName(agentName),
+  );
 }
 
 String? _trimmedOrNull(String? value) {

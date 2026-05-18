@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
@@ -9,8 +11,10 @@ import 'package:colmeia/features/sales/application/load_sales_available_agents_u
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
@@ -18,6 +22,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.d
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
@@ -352,7 +357,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('Branch Without Coordinates - Unknown City / MT - Agent Two'),
+      find.text('Branch Without Coordinates - Unknown City / MT - Two'),
       findsOneWidget,
     );
   });
@@ -374,13 +379,13 @@ void main() {
     expect(find.text('Partial tracking'), findsOneWidget);
     expect(
       find.textContaining(
-        'Agents: 3 planned | 3 queried | 1 with sales | 2 without sales',
+        'Branches: 3 planned | 3 queried | 1 with sales | 2 without sales',
       ),
       findsOneWidget,
     );
-    expect(find.text('Agents without sales'), findsOneWidget);
-    expect(find.text('Agent Two'), findsOneWidget);
-    expect(find.text('Agent Three'), findsOneWidget);
+    expect(find.text('Branches without sales'), findsOneWidget);
+    expect(find.text('Two'), findsOneWidget);
+    expect(find.text('Three'), findsOneWidget);
   });
 
   testWidgets('shows unavailable sales branches in the partial panel', (
@@ -494,9 +499,15 @@ void main() {
       when(
         () => salesPreferences.restoreSalesLiveMapFilter(),
       ).thenReturn(
-        const SalesLiveMapFilter(
+        SalesLiveMapFilter(
           selectedAgentIds: <String>{'agent-1'},
-          selectedBranchIds: <String>{'agent-1-1-1'},
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-1',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
         ),
       );
       var callCount = 0;
@@ -535,9 +546,15 @@ void main() {
     when(
       () => salesPreferences.restoreSalesLiveMapFilter(),
     ).thenReturn(
-      const SalesLiveMapFilter(
+      SalesLiveMapFilter(
         selectedAgentIds: <String>{'agent-1'},
-        selectedBranchIds: <String>{'agent-1-1-1'},
+        selectedBranchIds: <SalesLiveMapBranchRef>{
+          const SalesLiveMapBranchRef(
+            agentId: 'agent-1',
+            codEmpresa: 1,
+            codFilial: 1,
+          ),
+        },
       ),
     );
 
@@ -569,9 +586,15 @@ void main() {
       when(
         () => salesPreferences.restoreSalesLiveMapFilter(),
       ).thenReturn(
-        const SalesLiveMapFilter(
+        SalesLiveMapFilter(
           selectedAgentIds: <String>{'agent-1'},
-          selectedBranchIds: <String>{'agent-1-1-1'},
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-1',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
           periodMode: SalesLiveMapPeriodMode.lastSevenDays,
           detailLevel: SalesLiveMapMapDetail.municipalities,
           markerVisual: SalesLiveMapMarkerVisual.bubble,
@@ -655,6 +678,65 @@ void main() {
       expect(chart.selectedStoreId, isNull);
     },
   );
+
+  testWidgets('closes fullscreen after a data filter change', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final router = GoRouter(
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/',
+          builder: (context, state) => ChangeNotifierProvider<SalesLiveMapController>(
+            create: (_) => SalesLiveMapController(
+              sessionService: SalesSessionService(_pumpSalesPreferences),
+              loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
+                _pumpLoadAvailableAgentsForSales,
+              ),
+              loadSalesLiveMapUseCase: _pumpLoadLiveMap,
+            ),
+            child: const Scaffold(body: SalesLiveMapPage()),
+          ),
+        ),
+        ...buildAppChartFullscreenRoutes(),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      Provider<AuthController>.value(
+        value: authController,
+        child: MaterialApp.router(
+          theme: AppTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await _pumpInitialLoad(tester);
+
+    final controller = tester
+        .element(find.byType(SalesLiveMapPage).first)
+        .read<SalesLiveMapController>();
+    final fullscreenFinder = find.byIcon(Icons.open_in_full);
+    await tester.ensureVisible(fullscreenFinder);
+    await tester.pump();
+    await tester.tap(fullscreenFinder);
+    await tester.pumpAndSettle();
+    expect(router.canPop(), isTrue);
+    expect(router.state.matchedLocation, AppRoute.chartFullscreen.path);
+
+    await controller.applyFilter(
+      const SalesLiveMapFilter(
+        periodMode: SalesLiveMapPeriodMode.lastSevenDays,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(router.canPop(), isFalse);
+  });
 }
 
 Future<void> _pumpPage(
@@ -670,12 +752,15 @@ Future<void> _pumpPage(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: SalesLiveMapPage(
-            sessionService: SalesSessionService(_pumpSalesPreferences),
-            loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-              _pumpLoadAvailableAgentsForSales,
+          body: ChangeNotifierProvider<SalesLiveMapController>(
+            create: (_) => SalesLiveMapController(
+              sessionService: SalesSessionService(_pumpSalesPreferences),
+              loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
+                _pumpLoadAvailableAgentsForSales,
+              ),
+              loadSalesLiveMapUseCase: _pumpLoadLiveMap,
             ),
-            loadSalesLiveMapUseCase: _pumpLoadLiveMap,
+            child: const SalesLiveMapPage(),
           ),
         ),
       ),

@@ -964,6 +964,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get brazilStoreSalesMapShowBranchOnMapAction => 'Show on map';
 
   @override
+  String get brazilStoreSalesMapUnpinBranchButton => 'Unpin from map';
+
+  @override
   String get brazilStoreSalesMapMetricRevenueShort => 'Revenue';
 
   @override
@@ -1090,7 +1093,7 @@ class AppLocalizationsEn extends AppLocalizations {
     String uf,
     String agentName,
   ) {
-    return '$city/$uf — Agent $agentName';
+    return '$city/$uf — Branch $agentName';
   }
 
   @override
@@ -1131,7 +1134,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String brazilStoreSalesMapAgentChipWithName(String agentName) {
-    return 'Agent $agentName';
+    return 'Branch $agentName';
   }
 
   @override
@@ -2698,7 +2701,7 @@ class AppLocalizationsEn extends AppLocalizations {
     int salesCount,
     int noSalesCount,
   ) {
-    return 'Agents: $plannedCount planned | $queriedCount queried | $salesCount with sales | $noSalesCount without sales';
+    return 'Branches: $plannedCount planned | $queriedCount queried | $salesCount with sales | $noSalesCount without sales';
   }
 
   @override
@@ -2728,7 +2731,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String salesLiveMapPartialNoSalesAgents(int count) {
-    return '$count agent(s) returned no sales in the period.';
+    return '$count branch(es) returned no sales in the period.';
   }
 
   @override
@@ -2742,7 +2745,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get salesLiveMapNoSalesAgentsTitle => 'Agents without sales';
+  String get salesLiveMapNoSalesAgentsTitle => 'Branches without sales';
 
   @override
   String get salesLiveMapTechnicalDiagnosticsTitle => 'Technical diagnostics';
@@ -2875,7 +2878,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesLiveMapKpiMunicipalitiesOnMap => 'Cities on map';
 
   @override
-  String get salesLiveMapKpiQueriedAgents => 'Queried agents';
+  String get salesLiveMapKpiQueriedAgents => 'Queried branches';
 
   @override
   String get salesBranchFilterLabel => 'BRANCHES';

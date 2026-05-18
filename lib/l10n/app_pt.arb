@@ -433,6 +433,7 @@
   "brazilStoreSalesMapLegendRevenuePerState": "Receita por UF",
   "brazilStoreSalesMapLegendSalesPerState": "Vendas por UF",
   "brazilStoreSalesMapShowBranchOnMapAction": "Destacar no mapa",
+  "brazilStoreSalesMapUnpinBranchButton": "Desfixar no mapa",
   "brazilStoreSalesMapMetricRevenueShort": "Receita",
   "brazilStoreSalesMapMetricSalesShort": "Vendas",
   "brazilStoreSalesMapLegendButton": "Legenda",
@@ -525,7 +526,7 @@
   "@brazilStoreSalesMapDataQualityOutsideClip": {
     "placeholders": {"count": {"type": "String"}}
   },
-  "salesLiveMapFilterBranchSummaryLine": "{city}/{uf} — Agente {agentName}",
+  "salesLiveMapFilterBranchSummaryLine": "{city}/{uf} — Filial {agentName}",
   "@salesLiveMapFilterBranchSummaryLine": {
     "placeholders": {
       "city": {"type": "String"},
@@ -549,7 +550,7 @@
   "brazilStoreSalesMapBranchNavigationNextTooltip": "Proxima filial",
   "brazilStoreSalesMapMarkerGroupTotalTitle": "Total do ponto",
   "brazilStoreSalesMapDefaultBranchName": "Filial sem nome",
-  "brazilStoreSalesMapAgentChipWithName": "Agente {agentName}",
+  "brazilStoreSalesMapAgentChipWithName": "Filial {agentName}",
   "@brazilStoreSalesMapAgentChipWithName": {
     "placeholders": {"agentName": {"type": "String"}}
   },
@@ -1093,7 +1094,7 @@
     }
   },
   "salesLiveMapPartialTitle": "Acompanhamento parcial",
-  "salesLiveMapAgentQuerySummary": "Agentes: {plannedCount} planejado(s) | {queriedCount} consultado(s) | {salesCount} com vendas | {noSalesCount} sem vendas",
+  "salesLiveMapAgentQuerySummary": "Filiais: {plannedCount} planejada(s) | {queriedCount} consultada(s) | {salesCount} com vendas | {noSalesCount} sem vendas",
   "@salesLiveMapAgentQuerySummary": {
     "placeholders": {
       "plannedCount": {"type": "int"},
@@ -1132,7 +1133,7 @@
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapPartialNoSalesAgents": "{count} agente(s) sem vendas no periodo.",
+  "salesLiveMapPartialNoSalesAgents": "{count} filial(is) sem vendas no periodo.",
   "@salesLiveMapPartialNoSalesAgents": {
     "placeholders": {
       "count": {"type": "int"}
@@ -1150,7 +1151,7 @@
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapNoSalesAgentsTitle": "Agentes sem vendas",
+  "salesLiveMapNoSalesAgentsTitle": "Filiais sem vendas",
   "salesLiveMapTechnicalDiagnosticsTitle": "Diagnostico tecnico",
   "salesLiveMapTechnicalDiagnosticsFilters": "Filtros ativos",
   "salesLiveMapTechnicalDiagnosticsQuery": "Diagnostico da consulta",
@@ -1208,7 +1209,7 @@
     }
   },
   "salesLiveMapKpiMunicipalitiesOnMap": "Municipios no mapa",
-  "salesLiveMapKpiQueriedAgents": "Agentes consultados",
+  "salesLiveMapKpiQueriedAgents": "Filiais consultadas",
   "salesHubSubtitle": "Acesse e gerencie informações comerciais por categoria.",
   "salesBranchFilterLabel": "FILIAIS",
   "salesBranchFilterEmptyHint": "Carregue o relatorio para listar as filiais.",

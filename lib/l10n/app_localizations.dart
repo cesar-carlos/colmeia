@@ -1681,6 +1681,12 @@ abstract class AppLocalizations {
   /// **'Show on map'**
   String get brazilStoreSalesMapShowBranchOnMapAction;
 
+  /// No description provided for @brazilStoreSalesMapUnpinBranchButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin from map'**
+  String get brazilStoreSalesMapUnpinBranchButton;
+
   /// No description provided for @brazilStoreSalesMapMetricRevenueShort.
   ///
   /// In en, this message translates to:
@@ -1839,7 +1845,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapFilterBranchSummaryLine.
   ///
   /// In en, this message translates to:
-  /// **'{city}/{uf} — Agent {agentName}'**
+  /// **'{city}/{uf} — Branch {agentName}'**
   String salesLiveMapFilterBranchSummaryLine(
     String city,
     String uf,
@@ -1909,7 +1915,7 @@ abstract class AppLocalizations {
   /// No description provided for @brazilStoreSalesMapAgentChipWithName.
   ///
   /// In en, this message translates to:
-  /// **'Agent {agentName}'**
+  /// **'Branch {agentName}'**
   String brazilStoreSalesMapAgentChipWithName(String agentName);
 
   /// No description provided for @brazilStoreSalesMapIbgeCodeLabel.
@@ -4434,7 +4440,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapAgentQuerySummary.
   ///
   /// In en, this message translates to:
-  /// **'Agents: {plannedCount} planned | {queriedCount} queried | {salesCount} with sales | {noSalesCount} without sales'**
+  /// **'Branches: {plannedCount} planned | {queriedCount} queried | {salesCount} with sales | {noSalesCount} without sales'**
   String salesLiveMapAgentQuerySummary(
     int plannedCount,
     int queriedCount,
@@ -4475,7 +4481,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapPartialNoSalesAgents.
   ///
   /// In en, this message translates to:
-  /// **'{count} agent(s) returned no sales in the period.'**
+  /// **'{count} branch(es) returned no sales in the period.'**
   String salesLiveMapPartialNoSalesAgents(int count);
 
   /// No description provided for @salesLiveMapPartialZeroedBranches.
@@ -4493,7 +4499,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapNoSalesAgentsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Agents without sales'**
+  /// **'Branches without sales'**
   String get salesLiveMapNoSalesAgentsTitle;
 
   /// No description provided for @salesLiveMapTechnicalDiagnosticsTitle.
@@ -4723,7 +4729,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapKpiQueriedAgents.
   ///
   /// In en, this message translates to:
-  /// **'Queried agents'**
+  /// **'Queried branches'**
   String get salesLiveMapKpiQueriedAgents;
 
   /// No description provided for @salesBranchFilterLabel.

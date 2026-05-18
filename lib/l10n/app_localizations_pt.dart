@@ -985,6 +985,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get brazilStoreSalesMapShowBranchOnMapAction => 'Destacar no mapa';
 
   @override
+  String get brazilStoreSalesMapUnpinBranchButton => 'Desfixar no mapa';
+
+  @override
   String get brazilStoreSalesMapMetricRevenueShort => 'Receita';
 
   @override
@@ -1111,7 +1114,7 @@ class AppLocalizationsPt extends AppLocalizations {
     String uf,
     String agentName,
   ) {
-    return '$city/$uf — Agente $agentName';
+    return '$city/$uf — Filial $agentName';
   }
 
   @override
@@ -1153,7 +1156,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String brazilStoreSalesMapAgentChipWithName(String agentName) {
-    return 'Agente $agentName';
+    return 'Filial $agentName';
   }
 
   @override
@@ -2738,7 +2741,7 @@ class AppLocalizationsPt extends AppLocalizations {
     int salesCount,
     int noSalesCount,
   ) {
-    return 'Agentes: $plannedCount planejado(s) | $queriedCount consultado(s) | $salesCount com vendas | $noSalesCount sem vendas';
+    return 'Filiais: $plannedCount planejada(s) | $queriedCount consultada(s) | $salesCount com vendas | $noSalesCount sem vendas';
   }
 
   @override
@@ -2768,7 +2771,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String salesLiveMapPartialNoSalesAgents(int count) {
-    return '$count agente(s) sem vendas no periodo.';
+    return '$count filial(is) sem vendas no periodo.';
   }
 
   @override
@@ -2782,7 +2785,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get salesLiveMapNoSalesAgentsTitle => 'Agentes sem vendas';
+  String get salesLiveMapNoSalesAgentsTitle => 'Filiais sem vendas';
 
   @override
   String get salesLiveMapTechnicalDiagnosticsTitle => 'Diagnostico tecnico';
@@ -2916,7 +2919,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
 
   @override
-  String get salesLiveMapKpiQueriedAgents => 'Agentes consultados';
+  String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
 
   @override
   String get salesBranchFilterLabel => 'FILIAIS';
@@ -4681,6 +4684,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get brazilStoreSalesMapShowBranchOnMapAction => 'Destacar no mapa';
 
   @override
+  String get brazilStoreSalesMapUnpinBranchButton => 'Desfixar no mapa';
+
+  @override
   String get brazilStoreSalesMapMetricRevenueShort => 'Receita';
 
   @override
@@ -4807,7 +4813,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
     String uf,
     String agentName,
   ) {
-    return '$city/$uf — Agente $agentName';
+    return '$city/$uf — Filial $agentName';
   }
 
   @override
@@ -4849,7 +4855,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String brazilStoreSalesMapAgentChipWithName(String agentName) {
-    return 'Agente $agentName';
+    return 'Filial $agentName';
   }
 
   @override
@@ -6434,7 +6440,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
     int salesCount,
     int noSalesCount,
   ) {
-    return 'Agentes: $plannedCount planejado(s) | $queriedCount consultado(s) | $salesCount com vendas | $noSalesCount sem vendas';
+    return 'Filiais: $plannedCount planejada(s) | $queriedCount consultada(s) | $salesCount com vendas | $noSalesCount sem vendas';
   }
 
   @override
@@ -6464,7 +6470,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String salesLiveMapPartialNoSalesAgents(int count) {
-    return '$count agente(s) sem vendas no periodo.';
+    return '$count filial(is) sem vendas no periodo.';
   }
 
   @override
@@ -6478,7 +6484,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
-  String get salesLiveMapNoSalesAgentsTitle => 'Agentes sem vendas';
+  String get salesLiveMapNoSalesAgentsTitle => 'Filiais sem vendas';
 
   @override
   String get salesLiveMapTechnicalDiagnosticsTitle => 'Diagnostico tecnico';
@@ -6612,7 +6618,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
 
   @override
-  String get salesLiveMapKpiQueriedAgents => 'Agentes consultados';
+  String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
 
   @override
   String get salesBranchFilterLabel => 'FILIAIS';

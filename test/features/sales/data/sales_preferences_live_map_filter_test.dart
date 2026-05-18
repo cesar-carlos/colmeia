@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,9 +53,17 @@ void main() {
         await salesPrefs.persistSalesLiveMapFilter(
           SalesLiveMapFilter(
             selectedAgentIds: const <String>{'agent-b', 'agent-a'},
-            selectedBranchIds: const <String>{
-              'agent-a-1-1',
-              'agent-b-1-2',
+            selectedBranchIds: <SalesLiveMapBranchRef>{
+              const SalesLiveMapBranchRef(
+                agentId: 'agent-a',
+                codEmpresa: 1,
+                codFilial: 1,
+              ),
+              const SalesLiveMapBranchRef(
+                agentId: 'agent-b',
+                codEmpresa: 1,
+                codFilial: 2,
+              ),
             },
             periodMode: SalesLiveMapPeriodMode.customRange,
             customDateRange: customRange,
@@ -68,10 +77,21 @@ void main() {
         final restoredRange = restored.resolveDateRange();
 
         expect(restored.selectedAgentIds, <String>{'agent-a', 'agent-b'});
-        expect(restored.selectedBranchIds, <String>{
-          'agent-a-1-1',
-          'agent-b-1-2',
-        });
+        expect(
+          restored.selectedBranchIds,
+          <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-a',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-b',
+              codEmpresa: 1,
+              codFilial: 2,
+            ),
+          },
+        );
         expect(restored.periodMode, SalesLiveMapPeriodMode.customRange);
         expect(restored.detailLevel, SalesLiveMapMapDetail.municipalities);
         expect(restored.markerVisual, SalesLiveMapMarkerVisual.bubble);

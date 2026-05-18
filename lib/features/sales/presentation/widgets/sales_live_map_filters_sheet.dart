@@ -4,6 +4,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
@@ -141,7 +142,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
 
   void _clear() {
     setState(() {
-      _selectedBranchIds = Set<String>.from(_branchIds);
+      _selectedBranchIds = Set<SalesLiveMapBranchRef>.from(_branchIds);
       _periodMode = SalesLiveMapPeriodMode.today;
       _detailLevel = SalesLiveMapMapDetail.branches;
       _markerVisual = SalesLiveMapMarkerVisual.dot;
@@ -502,7 +503,7 @@ class _BranchSelectionSubtitle extends StatelessWidget {
           AppLocalizations.of(context).salesLiveMapFilterBranchSummaryLine(
             branch.city,
             branch.uf,
-            branch.agentName,
+            appBranchDisplayName(branch.agentName),
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,

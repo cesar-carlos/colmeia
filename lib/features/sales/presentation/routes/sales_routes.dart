@@ -13,6 +13,7 @@ import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_daily_totals_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
@@ -23,6 +24,7 @@ import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendenci
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_under_construction_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 List<RouteBase> buildSalesRoutes() {
   final sessionService = getIt<SalesSessionService>();
@@ -40,10 +42,13 @@ List<RouteBase> buildSalesRoutes() {
     GoRoute(
       name: AppRoute.salesMonitoring.name,
       path: AppRoute.salesMonitoring.path,
-      builder: (context, state) => SalesLiveMapPage(
-        sessionService: sessionService,
-        loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
-        loadSalesLiveMapUseCase: getIt<LoadSalesLiveMapUseCase>(),
+      builder: (context, state) => ChangeNotifierProvider<SalesLiveMapController>(
+        create: (_) => SalesLiveMapController(
+          sessionService: sessionService,
+          loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
+          loadSalesLiveMapUseCase: getIt<LoadSalesLiveMapUseCase>(),
+        ),
+        child: const SalesLiveMapPage(),
       ),
     ),
     GoRoute(

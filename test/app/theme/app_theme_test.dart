@@ -111,4 +111,36 @@ void main() {
     expect(darkTokens.success, darkColors.tertiary);
     expect(darkTokens.warning, darkColors.secondary);
   });
+
+  test('desktop theme keeps scrollbar thumb and track always visible', () {
+    final theme = AppTheme.light(platform: TargetPlatform.windows);
+    final scrollbarTheme = theme.scrollbarTheme;
+
+    expect(
+      scrollbarTheme.thumbVisibility?.resolve(const <WidgetState>{}),
+      isTrue,
+    );
+    expect(
+      scrollbarTheme.trackVisibility?.resolve(const <WidgetState>{}),
+      isTrue,
+    );
+    expect(
+      scrollbarTheme.thickness?.resolve(const <WidgetState>{}),
+      12,
+    );
+  });
+
+  test('mobile theme keeps persistent scrollbar disabled', () {
+    final theme = AppTheme.light(platform: TargetPlatform.android);
+    final scrollbarTheme = theme.scrollbarTheme;
+
+    expect(
+      scrollbarTheme.thumbVisibility?.resolve(const <WidgetState>{}),
+      isFalse,
+    );
+    expect(
+      scrollbarTheme.trackVisibility?.resolve(const <WidgetState>{}),
+      isFalse,
+    );
+  });
 }

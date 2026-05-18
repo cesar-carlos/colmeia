@@ -45,7 +45,7 @@ void main() {
     expect(find.text('Casa do Mel'), findsOneWidget);
     expect(find.text('Casa do Mel Matriz'), findsOneWidget);
     expect(find.text('Empresa 1 - Filial 1'), findsNothing);
-    expect(find.text('Agente Tangara'), findsOneWidget);
+    expect(find.text('Filial Tangara'), findsOneWidget);
     expect(find.text(r'R$ 84.246,26'), findsOneWidget);
     expect(find.text('1.568 vendas'), findsOneWidget);
     expect(find.text('Tangara da Serra / MT'), findsOneWidget);
@@ -99,6 +99,7 @@ void main() {
     (
       tester,
     ) async {
+      var clearedSelection = false;
       await _pumpSelectedAnchor(
         tester,
         points: const <AppBrazilStoreSalesPoint>[
@@ -114,6 +115,10 @@ void main() {
             salesCount: 1568,
           ),
         ],
+        onClearSelection: () {
+          clearedSelection = true;
+        },
+        locale: const Locale('en'),
       );
 
       expect(
@@ -121,7 +126,57 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Casa do Mel'), findsOneWidget);
+      expect(find.text('Unpin from map'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-branch-card-select'),
+        ),
+      );
+      await tester.pump();
+
+      expect(clearedSelection, isTrue);
+    },
+  );
+
+  testWidgets(
+    'selected marker detail keeps show-on-map action when browsing another branch in the same group',
+    (tester) async {
+      await _pumpSelectedAnchor(
+        tester,
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Casa do Mel',
+            fantasyName: 'Casa do Mel',
+            uf: 'MT',
+            city: 'Tangara da Serra',
+            latitude: -14.6229,
+            longitude: -57.4933,
+            salesAmount: 84246.26,
+            salesCount: 1568,
+          ),
+          AppBrazilStoreSalesPoint(
+            id: 'store-2',
+            name: 'Mel Norte',
+            fantasyName: 'Mel Norte',
+            uf: 'MT',
+            city: 'Tangara da Serra',
+            latitude: -14.6229,
+            longitude: -57.4933,
+            salesAmount: 4200,
+            salesCount: 88,
+          ),
+        ],
+        locale: const Locale('en'),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+
+      expect(find.text('Mel Norte'), findsOneWidget);
       expect(find.text('Show on map'), findsOneWidget);
+      expect(find.text('Unpin from map'), findsNothing);
     },
   );
 
@@ -217,7 +272,7 @@ void main() {
     expect(find.text(r'R$ 3.421,77'), findsOneWidget);
     expect(find.text('64 vendas'), findsOneWidget);
     expect(find.text('Empresa 7 - Filial 3'), findsNothing);
-    expect(find.text('Agente Norte'), findsOneWidget);
+    expect(find.text('Filial Norte'), findsOneWidget);
   });
 
   testWidgets('hover card shows unavailable sales status', (
@@ -964,6 +1019,7 @@ Future<void> _pumpSelectedAnchor(
   WidgetTester tester, {
   required List<AppBrazilStoreSalesPoint> points,
   Locale locale = const Locale('pt', 'BR'),
+  VoidCallback? onClearSelection,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -978,6 +1034,7 @@ Future<void> _pumpSelectedAnchor(
             selectedStoreId: points.first.id,
             metric: AppBrazilStoreSalesMapMetric.revenue,
             onClose: () {},
+            onClearSelection: onClearSelection,
             onSelectBranch: (_) {},
             selectBranchLabel: 'Show on map',
             marker: Container(

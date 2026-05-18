@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -5,15 +6,27 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 abstract final class AppTheme {
-  static ThemeData light() {
-    return _buildTheme(AppColors.light, AppThemeTokens.light);
+  static ThemeData light({TargetPlatform? platform}) {
+    return _buildTheme(
+      AppColors.light,
+      AppThemeTokens.light,
+      platform: platform,
+    );
   }
 
-  static ThemeData dark() {
-    return _buildTheme(AppColors.dark, AppThemeTokens.dark);
+  static ThemeData dark({TargetPlatform? platform}) {
+    return _buildTheme(
+      AppColors.dark,
+      AppThemeTokens.dark,
+      platform: platform,
+    );
   }
 
-  static ThemeData _buildTheme(AppColors colors, AppThemeTokens tokens) {
+  static ThemeData _buildTheme(
+    AppColors colors,
+    AppThemeTokens tokens, {
+    TargetPlatform? platform,
+  }) {
     final colorScheme = colors.toColorScheme();
     final textTheme = _buildTextTheme(colorScheme);
     final typography = AppTypographyTokens.fromTheme(
@@ -30,14 +43,31 @@ abstract final class AppTheme {
     final ghostBorderSide = BorderSide(
       color: colorScheme.outlineVariant.withValues(alpha: 0.15),
     );
+    final resolvedPlatform = platform ?? defaultTargetPlatform;
+    final persistentDesktopScrollbar = _usesPersistentDesktopScrollbar(
+      resolvedPlatform,
+    );
 
     return ThemeData(
       useMaterial3: true,
+      platform: resolvedPlatform,
       colorScheme: colorScheme,
       textTheme: textTheme,
       primaryTextTheme: textTheme,
       scaffoldBackgroundColor: colors.background,
       extensions: <ThemeExtension<dynamic>>[colors, tokens, typography],
+      scrollbarTheme: ScrollbarThemeData(
+        thumbVisibility: WidgetStatePropertyAll<bool>(
+          persistentDesktopScrollbar,
+        ),
+        trackVisibility: WidgetStatePropertyAll<bool>(
+          persistentDesktopScrollbar,
+        ),
+        thickness: WidgetStatePropertyAll<double>(
+          persistentDesktopScrollbar ? 12 : 10,
+        ),
+        radius: Radius.circular(tokens.formFieldRadius),
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         backgroundColor: colorScheme.surface,
@@ -323,6 +353,17 @@ abstract final class AppTheme {
         }),
       ),
     );
+  }
+
+  static bool _usesPersistentDesktopScrollbar(TargetPlatform platform) {
+    return switch (platform) {
+      TargetPlatform.windows ||
+      TargetPlatform.macOS ||
+      TargetPlatform.linux => true,
+      TargetPlatform.android ||
+      TargetPlatform.fuchsia ||
+      TargetPlatform.iOS => false,
+    };
   }
 
   static TextTheme _buildTextTheme(ColorScheme colorScheme) {

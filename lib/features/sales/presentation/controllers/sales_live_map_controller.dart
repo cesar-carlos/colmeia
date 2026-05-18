@@ -1,14 +1,13 @@
 import 'dart:async';
 
-import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
-import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/foundation.dart';
@@ -117,106 +116,6 @@ class SalesLiveMapController extends ChangeNotifier {
     _state = _state.copyWith(filter: next);
     _notifyListenersIfAlive();
     unawaited(_sessionService.persistSalesLiveMapFilter(next));
-  }
-
-  String filiaisSummary(AppLocalizations l10n) {
-    final branchOptions =
-        _state.result?.branchOptions ?? const <SalesLiveMapBranchOption>[];
-    if (branchOptions.isEmpty) {
-      if (_state.result != null && !_state.isLoading) {
-        return l10n.salesLiveMapAgentsNoneSummary;
-      }
-      return l10n.salesLiveMapAgentsLoadingSummary;
-    }
-    final selected = _state.filter.selectedBranchIds;
-    if (selected == null) {
-      return l10n.salesLiveMapAgentsAllWithTokenSummary(branchOptions.length);
-    }
-    return l10n.salesLiveMapAgentsSelectedSummary(selected.length);
-  }
-
-  String periodSummary(AppLocalizations l10n) {
-    final range = _state.filter.resolveDateRange();
-    final rangeLabel =
-        '${AppBrFormatters.shortDate(range.startInclusive)} a ${AppBrFormatters.shortDate(range.endInclusive)}';
-    return switch (_state.filter.periodMode) {
-      SalesLiveMapPeriodMode.today => l10n.salesLiveMapPeriodToday,
-      SalesLiveMapPeriodMode.lastSevenDays =>
-        l10n.salesLiveMapPeriodLastSevenDays,
-      SalesLiveMapPeriodMode.currentMonth =>
-        l10n.salesLiveMapPeriodCurrentMonth,
-      SalesLiveMapPeriodMode.customRange => rangeLabel,
-    };
-  }
-
-  String detailLabel(AppLocalizations l10n, SalesLiveMapMapDetail detailLevel) {
-    return switch (detailLevel) {
-      SalesLiveMapMapDetail.branches => l10n.salesLiveMapDetailBranches,
-      SalesLiveMapMapDetail.municipalities =>
-        l10n.salesLiveMapDetailMunicipalities,
-      SalesLiveMapMapDetail.states => l10n.salesLiveMapDetailStates,
-    };
-  }
-
-  String visualLabel(
-    AppLocalizations l10n,
-    SalesLiveMapMarkerVisual visual,
-  ) {
-    return switch (visual) {
-      SalesLiveMapMarkerVisual.dot => l10n.salesLiveMapVisualDot,
-      SalesLiveMapMarkerVisual.bubble => l10n.salesLiveMapVisualBubble,
-      SalesLiveMapMarkerVisual.storeIcon => l10n.salesLiveMapVisualStoreIcon,
-    };
-  }
-
-  String mapSubtitle(AppLocalizations l10n) {
-    final range = _state.filter.resolveDateRange();
-    final period =
-        '${AppBrFormatters.shortDate(range.startInclusive)} a ${AppBrFormatters.shortDate(range.endInclusive)}';
-    final result = _state.result;
-    if (result == null || result.salesDataPending) {
-      return l10n.salesLiveMapChartSubtitlePending(period);
-    }
-    final baseSubtitle = l10n.salesLiveMapChartSubtitleLoaded(
-      period,
-      result.mappedBranchCount,
-      result.totalBranchCount,
-    );
-    if (_state.effectiveDetailLevel == SalesLiveMapMapDetail.municipalities &&
-        _state.filter.detailLevel == SalesLiveMapMapDetail.branches) {
-      return '$baseSubtitle ${l10n.salesLiveMapDetailAutoMunicipalities(kSalesLiveMapAutoMunicipalityDetailPointThreshold)}';
-    }
-    return baseSubtitle;
-  }
-
-  String loadErrorMessage(AppLocalizations l10n) {
-    if (_state.sessionExpired) {
-      return l10n.salesLiveMapSessionExpiredMessage;
-    }
-    final result = _state.result;
-    return switch (result?.loadFailureReason) {
-      SalesLiveMapLoadFailureReason.missingClientTokenSetup =>
-        l10n.salesLiveMapMissingClientTokenSetupMessage,
-      null => result?.loadFailureMessage ?? l10n.salesLiveMapLoadErrorRetryMessage,
-    };
-  }
-
-  String liveMapFullscreenFilterSummary(AppLocalizations l10n) {
-    final parts = <String>[
-      '${l10n.salesLiveMapAgentsLabel}: ${filiaisSummary(l10n)}',
-      '${l10n.salesLiveMapPeriodLabel}: ${periodSummary(l10n)}',
-      '${l10n.salesLiveMapDetailLabel}: ${detailLabel(l10n, _state.filter.detailLevel)}',
-    ];
-    if (_state.filter.detailLevel != SalesLiveMapMapDetail.states) {
-      parts.add(
-        '${l10n.salesLiveMapVisualLabel}: ${visualLabel(l10n, _state.filter.markerVisual)}',
-      );
-    } else {
-      parts.add(
-        '${l10n.salesLiveMapMapLabel}: ${visualLabel(l10n, SalesLiveMapMarkerVisual.bubble)}',
-      );
-    }
-    return '${parts.join(' | ')} | ${l10n.chartFullscreenDataSnapshotHint}';
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/foundation.dart';
@@ -26,7 +27,7 @@ class SalesLiveMapPresentationState {
 
   Set<String> get filterBranchStorageKeys =>
       filter.selectedBranchIds
-          ?.map((branch) => branch.toStorageKey())
+          ?.map(SalesLiveMapBranchRefCodec.encode)
           .toSet() ??
       const <String>{};
 

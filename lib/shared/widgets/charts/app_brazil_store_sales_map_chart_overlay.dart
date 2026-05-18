@@ -9,6 +9,7 @@ class AppBrazilStoreSalesSelectedMarkerDetailAnchor extends StatefulWidget {
     required this.marker,
     required this.onClose,
     super.key,
+    this.onClearSelection,
     this.onSelectBranch,
     this.selectBranchLabel,
     this.selectBranchLabelBuilder,
@@ -19,6 +20,7 @@ class AppBrazilStoreSalesSelectedMarkerDetailAnchor extends StatefulWidget {
   final AppBrazilStoreSalesMapMetric metric;
   final Widget marker;
   final VoidCallback onClose;
+  final VoidCallback? onClearSelection;
   final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
   final String? selectBranchLabel;
   final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
@@ -108,6 +110,7 @@ class _SelectedMarkerDetailAnchorState
             selectedStoreId: widget.selectedStoreId,
             metric: widget.metric,
             onClose: widget.onClose,
+            onClearSelection: widget.onClearSelection,
             onSelectBranch: widget.onSelectBranch,
             selectBranchLabel: widget.selectBranchLabel,
             selectBranchLabelBuilder: widget.selectBranchLabelBuilder,
@@ -128,6 +131,7 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
     required this.metric,
     required this.onClose,
     required this.markerGlobalDx,
+    this.onClearSelection,
     this.onSelectBranch,
     this.selectBranchLabel,
     this.selectBranchLabelBuilder,
@@ -139,6 +143,7 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
   final AppBrazilStoreSalesMapMetric metric;
   final VoidCallback onClose;
   final double? markerGlobalDx;
+  final VoidCallback? onClearSelection;
   final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
   final String? selectBranchLabel;
   final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
@@ -176,6 +181,7 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
                   metric: metric,
                   initialStoreId: selectedStoreId,
                   onClose: onClose,
+                  onClearSelection: onClearSelection ?? onClose,
                   onSelectBranch: selectBranch,
                   selectBranchLabel: selectBranchLabel,
                   selectBranchLabelBuilder: selectBranchLabelBuilder,

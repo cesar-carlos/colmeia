@@ -1,5 +1,6 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filters_sheet.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -45,7 +46,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Sinop/MT \u2014 Agent Agent 1'), findsOneWidget);
+    expect(find.text('Sinop/MT \u2014 Branch 1'), findsOneWidget);
     expect(find.text('Company: 1  Branch: 1'), findsOneWidget);
     expect(
       find.text('Sinop/MT - Agente Agent 1 - Empresa 1 - Filial 1'),
@@ -165,7 +166,16 @@ void main() {
     await tester.tap(find.text('Apply filters'));
     await tester.pump();
 
-    expect(appliedFilter?.selectedBranchIds, <String>{'agent-1-1-1'});
+    expect(
+      appliedFilter?.selectedBranchIds,
+      <SalesLiveMapBranchRef>{
+        const SalesLiveMapBranchRef(
+          agentId: 'agent-1',
+          codEmpresa: 1,
+          codFilial: 1,
+        ),
+      },
+    );
     expect(appliedFilter?.selectedAgentIds, <String>{'agent-1'});
   });
 

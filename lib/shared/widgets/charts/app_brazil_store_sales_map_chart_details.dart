@@ -121,8 +121,10 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
     this.initialStoreId,
     this.onClose,
     this.onDismiss,
+    this.onClearSelection,
     this.onSelectBranch,
     this.selectBranchLabel,
+    this.clearSelectionLabel,
     this.selectBranchLabelBuilder,
     this.showTechnicalLocationDetails = true,
   });
@@ -132,8 +134,10 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
   final String? initialStoreId;
   final VoidCallback? onClose;
   final VoidCallback? onDismiss;
+  final VoidCallback? onClearSelection;
   final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
   final String? selectBranchLabel;
+  final String? clearSelectionLabel;
   final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
   final bool showTechnicalLocationDetails;
 
@@ -145,8 +149,10 @@ class _SelectedMarkerGroupDetailCard extends StatelessWidget {
       initialStoreId: initialStoreId,
       onClose: onClose,
       onDismiss: onDismiss,
+      onClearSelection: onClearSelection,
       onSelectBranch: onSelectBranch,
       selectBranchLabel: selectBranchLabel,
+      clearSelectionLabel: clearSelectionLabel,
       selectBranchLabelBuilder: selectBranchLabelBuilder,
       showTechnicalLocationDetails: showTechnicalLocationDetails,
     );
@@ -181,8 +187,10 @@ class _SelectedMarkerBranchCarouselCard extends StatefulWidget {
     this.initialStoreId,
     this.onClose,
     this.onDismiss,
+    this.onClearSelection,
     this.onSelectBranch,
     this.selectBranchLabel,
+    this.clearSelectionLabel,
     this.selectBranchLabelBuilder,
     this.showTechnicalLocationDetails = true,
   });
@@ -192,8 +200,10 @@ class _SelectedMarkerBranchCarouselCard extends StatefulWidget {
   final String? initialStoreId;
   final VoidCallback? onClose;
   final VoidCallback? onDismiss;
+  final VoidCallback? onClearSelection;
   final ValueChanged<AppBrazilStoreSalesPoint>? onSelectBranch;
   final String? selectBranchLabel;
+  final String? clearSelectionLabel;
   final String Function(AppBrazilStoreSalesPoint)? selectBranchLabelBuilder;
   final bool showTechnicalLocationDetails;
 
@@ -262,6 +272,19 @@ class _SelectedMarkerBranchCarouselCardState
   Widget build(BuildContext context) {
     final point = _orderedPoints[_selectedIndex];
     final count = _orderedPoints.length;
+    final selectedStoreId = widget.initialStoreId;
+    final isPinnedPoint =
+        selectedStoreId != null && point.id == selectedStoreId;
+    final branchAction = isPinnedPoint
+        ? widget.onClearSelection
+        : widget.onSelectBranch == null
+        ? null
+        : () => widget.onSelectBranch!(point);
+    final branchActionLabel = isPinnedPoint
+        ? widget.clearSelectionLabel ??
+              AppLocalizations.of(context).brazilStoreSalesMapUnpinBranchButton
+        : widget.selectBranchLabelBuilder?.call(point) ??
+              widget.selectBranchLabel;
 
     return Focus(
       autofocus: defaultTargetPlatform != TargetPlatform.windows,
@@ -283,12 +306,8 @@ class _SelectedMarkerBranchCarouselCardState
                 metric: widget.metric,
               )
             : null,
-        onSelectBranch: widget.onSelectBranch == null
-            ? null
-            : () => widget.onSelectBranch!(point),
-        selectBranchLabel:
-            widget.selectBranchLabelBuilder?.call(point) ??
-            widget.selectBranchLabel,
+        onSelectBranch: branchAction,
+        selectBranchLabel: branchActionLabel,
         navigation: count > 1
             ? _BranchCarouselNavigation(
                 currentIndex: _selectedIndex,

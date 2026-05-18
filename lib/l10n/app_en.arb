@@ -470,6 +470,7 @@
   "brazilStoreSalesMapLegendRevenuePerState": "Revenue by state",
   "brazilStoreSalesMapLegendSalesPerState": "Sales by state",
   "brazilStoreSalesMapShowBranchOnMapAction": "Show on map",
+  "brazilStoreSalesMapUnpinBranchButton": "Unpin from map",
   "brazilStoreSalesMapMetricRevenueShort": "Revenue",
   "brazilStoreSalesMapMetricSalesShort": "Sales",
   "brazilStoreSalesMapLegendButton": "Legend",
@@ -562,7 +563,7 @@
   "@brazilStoreSalesMapDataQualityOutsideClip": {
     "placeholders": {"count": {"type": "String"}}
   },
-  "salesLiveMapFilterBranchSummaryLine": "{city}/{uf} — Agent {agentName}",
+  "salesLiveMapFilterBranchSummaryLine": "{city}/{uf} — Branch {agentName}",
   "@salesLiveMapFilterBranchSummaryLine": {
     "placeholders": {
       "city": {"type": "String"},
@@ -586,7 +587,7 @@
   "brazilStoreSalesMapBranchNavigationNextTooltip": "Next branch",
   "brazilStoreSalesMapMarkerGroupTotalTitle": "Location total",
   "brazilStoreSalesMapDefaultBranchName": "Unnamed branch",
-  "brazilStoreSalesMapAgentChipWithName": "Agent {agentName}",
+  "brazilStoreSalesMapAgentChipWithName": "Branch {agentName}",
   "@brazilStoreSalesMapAgentChipWithName": {
     "placeholders": {"agentName": {"type": "String"}}
   },
@@ -1318,7 +1319,7 @@
     }
   },
   "salesLiveMapPartialTitle": "Partial tracking",
-  "salesLiveMapAgentQuerySummary": "Agents: {plannedCount} planned | {queriedCount} queried | {salesCount} with sales | {noSalesCount} without sales",
+  "salesLiveMapAgentQuerySummary": "Branches: {plannedCount} planned | {queriedCount} queried | {salesCount} with sales | {noSalesCount} without sales",
   "@salesLiveMapAgentQuerySummary": {
     "placeholders": {
       "plannedCount": {"type": "int"},
@@ -1357,7 +1358,7 @@
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapPartialNoSalesAgents": "{count} agent(s) returned no sales in the period.",
+  "salesLiveMapPartialNoSalesAgents": "{count} branch(es) returned no sales in the period.",
   "@salesLiveMapPartialNoSalesAgents": {
     "placeholders": {
       "count": {"type": "int"}
@@ -1375,7 +1376,7 @@
       "count": {"type": "int"}
     }
   },
-  "salesLiveMapNoSalesAgentsTitle": "Agents without sales",
+  "salesLiveMapNoSalesAgentsTitle": "Branches without sales",
   "salesLiveMapTechnicalDiagnosticsTitle": "Technical diagnostics",
   "salesLiveMapTechnicalDiagnosticsFilters": "Active filters",
   "salesLiveMapTechnicalDiagnosticsQuery": "Query diagnostics",
@@ -1433,7 +1434,7 @@
     }
   },
   "salesLiveMapKpiMunicipalitiesOnMap": "Cities on map",
-  "salesLiveMapKpiQueriedAgents": "Queried agents",
+  "salesLiveMapKpiQueriedAgents": "Queried branches",
   "salesBranchFilterLabel": "BRANCHES",
   "salesBranchFilterEmptyHint": "Load the report to list branches.",
   "salesBranchFilterSheetTitle": "Select branches",

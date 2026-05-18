@@ -22,6 +22,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vend
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
 import 'package:colmeia/shared/maps/app_location_models.dart';
@@ -600,9 +601,15 @@ void main() {
 
     final result = await useCase(
       userId: userId,
-      filter: const SalesLiveMapFilter(
+      filter: SalesLiveMapFilter(
         selectedAgentIds: <String>{'agent-a'},
-        selectedBranchIds: <String>{'agent-a-1-1'},
+        selectedBranchIds: <SalesLiveMapBranchRef>{
+          const SalesLiveMapBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 1,
+          ),
+        },
       ),
     );
 
@@ -654,8 +661,14 @@ void main() {
 
     final result = await useCase(
       userId: userId,
-      filter: const SalesLiveMapFilter(
-        selectedBranchIds: <String>{'agent-a-1-1'},
+      filter: SalesLiveMapFilter(
+        selectedBranchIds: <SalesLiveMapBranchRef>{
+          const SalesLiveMapBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 1,
+          ),
+        },
       ),
     );
 
@@ -803,8 +816,14 @@ void main() {
 
       await useCase(
         userId: userId,
-        filter: const SalesLiveMapFilter(
-          selectedBranchIds: <String>{'agent-a-1-1'},
+        filter: SalesLiveMapFilter(
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-a',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
         ),
       );
 
