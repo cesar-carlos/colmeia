@@ -29,6 +29,7 @@ import 'package:colmeia/shared/maps/app_here_geocoding_geocoder.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
 import 'package:colmeia/shared/maps/app_location_resolution_observer.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
+import 'package:colmeia/shared/maps/resolve_postal_address_location_use_case.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -62,6 +63,11 @@ Future<void> registerInjectorCore(GetIt getIt) async {
             hereApiKey: AppEnvironment.hereGeocodingApiKey,
           ),
         ],
+      ),
+    )
+    ..registerLazySingleton<ResolvePostalAddressLocationUseCase>(
+      () => ResolvePostalAddressLocationUseCase(
+        getIt<AppLocationResolver>(),
       ),
     )
     ..registerSingleton<SharedPreferences>(sharedPreferences)

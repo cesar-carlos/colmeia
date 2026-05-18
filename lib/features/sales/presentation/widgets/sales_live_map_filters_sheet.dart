@@ -1,4 +1,5 @@
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -32,7 +33,7 @@ class SalesLiveMapFiltersSheet extends StatefulWidget {
 }
 
 class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
-  late Set<String> _selectedBranchIds;
+  late Set<SalesLiveMapBranchRef> _selectedBranchIds;
   late SalesLiveMapPeriodMode _periodMode;
   late SalesLiveMapMapDetail _detailLevel;
   late SalesLiveMapMarkerVisual _markerVisual;
@@ -42,7 +43,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
   void initState() {
     super.initState();
     final branchIds = _branchIds;
-    _selectedBranchIds = Set<String>.from(
+    _selectedBranchIds = Set<SalesLiveMapBranchRef>.from(
       widget.initialFilter.selectedBranchIds ?? branchIds,
     );
     _periodMode = widget.initialFilter.periodMode;
@@ -62,8 +63,8 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
       .map((agent) => agent.agentId)
       .toSet();
 
-  Set<String> get _branchIds =>
-      widget.availableBranches.map((branch) => branch.id).toSet();
+  Set<SalesLiveMapBranchRef> get _branchIds =>
+      widget.availableBranches.map((branch) => branch.branchRef).toSet();
 
   bool get _hasSelectableBranchData => widget.availableBranches.isNotEmpty;
 
@@ -165,12 +166,12 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
         : Set<String>.unmodifiable(selectedAgents);
   }
 
-  Set<String>? _normalizedSelectedBranchIds() {
+  Set<SalesLiveMapBranchRef>? _normalizedSelectedBranchIds() {
     final branchIds = _branchIds;
     if (branchIds.isEmpty) {
       return _selectedBranchIds.isEmpty
           ? null
-          : Set<String>.unmodifiable(_selectedBranchIds);
+          : Set<SalesLiveMapBranchRef>.unmodifiable(_selectedBranchIds);
     }
     final selectedBranches = _selectedBranchIds
         .where(branchIds.contains)
@@ -178,12 +179,12 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
     if (selectedBranches.length == branchIds.length) {
       return null;
     }
-    return Set<String>.unmodifiable(selectedBranches);
+    return Set<SalesLiveMapBranchRef>.unmodifiable(selectedBranches);
   }
 
-  String? _agentIdForBranchId(String branchId) {
+  String? _agentIdForBranchId(SalesLiveMapBranchRef branchRef) {
     for (final branch in widget.availableBranches) {
-      if (branch.id == branchId) {
+      if (branch.branchRef == branchRef) {
         return branch.agentId;
       }
     }
@@ -193,9 +194,9 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
   void _toggleBranch(SalesLiveMapBranchOption branch, bool? checked) {
     setState(() {
       if (checked ?? false) {
-        _selectedBranchIds.add(branch.id);
+        _selectedBranchIds.add(branch.branchRef);
       } else {
-        _selectedBranchIds.remove(branch.id);
+        _selectedBranchIds.remove(branch.branchRef);
       }
     });
   }
@@ -418,7 +419,7 @@ class _BranchSelectionPanel extends StatelessWidget {
 
   final AppLocalizations l10n;
   final List<SalesLiveMapBranchOption> branches;
-  final Set<String> selectedBranchIds;
+  final Set<SalesLiveMapBranchRef> selectedBranchIds;
   final void Function({
     required SalesLiveMapBranchOption branch,
     required bool? checked,
@@ -465,7 +466,7 @@ class _BranchSelectionPanel extends StatelessWidget {
             CheckboxListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              value: selectedBranchIds.contains(branch.id),
+              value: selectedBranchIds.contains(branch.branchRef),
               onChanged: (checked) => onChanged(
                 branch: branch,
                 checked: checked,

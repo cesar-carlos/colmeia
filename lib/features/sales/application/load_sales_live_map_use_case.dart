@@ -19,6 +19,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_r
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
@@ -1506,7 +1507,7 @@ class LoadSalesLiveMapUseCase {
     }
 
     return aggregates
-        .where((aggregate) => selectedBranchIds.contains(aggregate.id))
+        .where((aggregate) => selectedBranchIds.contains(aggregate.branchRef))
         .toList(growable: false);
   }
 
@@ -1700,6 +1701,12 @@ class _SalesLiveMapBranchAggregate {
   String? salesDataStatusLabel;
 
   String get id => '$agentId-$codEmpresa-$codFilial';
+
+  SalesLiveMapBranchRef get branchRef => SalesLiveMapBranchRef(
+    agentId: agentId,
+    codEmpresa: codEmpresa,
+    codFilial: codFilial,
+  );
 
   String get locationSourceSignature {
     return <String>[

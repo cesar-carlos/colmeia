@@ -1,5 +1,6 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 
 const int kSalesLiveMapMaxCustomRangeInclusiveDays = 31;
@@ -46,7 +47,7 @@ class SalesLiveMapFilter {
   });
 
   final Set<String>? selectedAgentIds;
-  final Set<String>? selectedBranchIds;
+  final Set<SalesLiveMapBranchRef>? selectedBranchIds;
   final SalesLiveMapPeriodMode periodMode;
   final OverviewDateRange? customDateRange;
   final SalesLiveMapMapDetail detailLevel;
@@ -67,14 +68,14 @@ class SalesLiveMapFilter {
         : selectedAgentIds as Set<String>?;
     final nextSelectedBranchIds = selectedBranchIds == _sentinel
         ? this.selectedBranchIds
-        : selectedBranchIds as Set<String>?;
+        : selectedBranchIds as Set<SalesLiveMapBranchRef>?;
     return SalesLiveMapFilter(
       selectedAgentIds: nextSelectedAgentIds == null
           ? null
           : Set<String>.unmodifiable(nextSelectedAgentIds),
       selectedBranchIds: nextSelectedBranchIds == null
           ? null
-          : Set<String>.unmodifiable(nextSelectedBranchIds),
+          : Set<SalesLiveMapBranchRef>.unmodifiable(nextSelectedBranchIds),
       periodMode: periodMode ?? this.periodMode,
       customDateRange: customDateRange == _sentinel
           ? this.customDateRange
@@ -134,38 +135,8 @@ class SalesLiveMapFilter {
     }
 
     return selected
-        .map(_branchRefFromId)
-        .whereType<ResumoTotalVendasMunicipioFilialPeriodoBranchRef>()
+        .map((branchRef) => branchRef.toAgentQueryBranchRef())
         .toList(growable: false);
-  }
-
-  ResumoTotalVendasMunicipioFilialPeriodoBranchRef? _branchRefFromId(
-    String raw,
-  ) {
-    final value = raw.trim();
-    final lastDash = value.lastIndexOf('-');
-    if (lastDash <= 0 || lastDash == value.length - 1) {
-      return null;
-    }
-    final secondLastDash = value.lastIndexOf('-', lastDash - 1);
-    if (secondLastDash <= 0 || secondLastDash == lastDash - 1) {
-      return null;
-    }
-
-    final codEmpresa = int.tryParse(
-      value.substring(secondLastDash + 1, lastDash),
-    );
-    final codFilial = int.tryParse(value.substring(lastDash + 1));
-    final agentId = value.substring(0, secondLastDash).trim();
-    if (agentId.isEmpty || codEmpresa == null || codFilial == null) {
-      return null;
-    }
-
-    return ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
-      agentId: agentId,
-      codEmpresa: codEmpresa,
-      codFilial: codFilial,
-    );
   }
 
   static DateTime _day(DateTime value) {
@@ -193,6 +164,12 @@ class SalesLiveMapBranchOption {
   final String name;
   final String city;
   final String uf;
+
+  SalesLiveMapBranchRef get branchRef => SalesLiveMapBranchRef(
+    agentId: agentId,
+    codEmpresa: codEmpresa,
+    codFilial: codFilial,
+  );
 
   String get subtitle =>
       '$city/$uf - Agente $agentName - Empresa $codEmpresa - Filial $codFilial';

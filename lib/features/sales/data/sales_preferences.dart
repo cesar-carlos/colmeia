@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_daily_totals_range_policy.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
@@ -180,7 +181,7 @@ class SalesPreferences {
     final selectedAgentIds = _salesLiveMapSelectedAgentIdsFromRaw(
       raw['selected_agent_ids'],
     );
-    final selectedBranchIds = _salesLiveMapSelectedAgentIdsFromRaw(
+    final selectedBranchIds = _salesLiveMapSelectedBranchRefsFromRaw(
       raw['selected_branch_ids'],
     );
     final customDateRange = _salesLiveMapCustomRangeFromRaw(
@@ -218,8 +219,10 @@ class SalesPreferences {
     }
     final selectedBranches = filter.selectedBranchIds;
     if (selectedBranches != null && selectedBranches.isNotEmpty) {
-      encoded['selected_branch_ids'] = (List<String>.from(selectedBranches)
-        ..sort());
+      encoded['selected_branch_ids'] = selectedBranches
+          .map((branch) => branch.toStorageKey())
+          .toList(growable: false)
+        ..sort();
     }
     encoded['metric'] = filter.metric.name;
 
@@ -399,6 +402,28 @@ class SalesPreferences {
     }
 
     return ids.isEmpty ? null : Set<String>.unmodifiable(ids);
+  }
+
+  static Set<SalesLiveMapBranchRef>? _salesLiveMapSelectedBranchRefsFromRaw(
+    Object? raw,
+  ) {
+    if (raw is! List) {
+      return null;
+    }
+
+    final refs = <SalesLiveMapBranchRef>{};
+    for (final item in raw) {
+      if (item is! String) {
+        continue;
+      }
+      try {
+        refs.add(SalesLiveMapBranchRef.fromStorageKey(item));
+      } on FormatException {
+        continue;
+      }
+    }
+
+    return refs.isEmpty ? null : Set<SalesLiveMapBranchRef>.unmodifiable(refs);
   }
 
   static OverviewDateRange? _salesLiveMapCustomRangeFromRaw({

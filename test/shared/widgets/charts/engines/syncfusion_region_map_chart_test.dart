@@ -140,6 +140,43 @@ void main() {
     expect(updatedKey, initialKey);
   });
 
+  testWidgets('remounts SfMaps when region metric values change', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const _TestApp(child: _MutableRegionMetricMap()));
+
+    final initialKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('change-region-metric')),
+    );
+    await tester.pump();
+
+    final updatedKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+    expect(updatedKey, isNot(initialKey));
+  });
+
+  testWidgets(
+    'remounts SfMaps when marker coordinates change with same count',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const _TestApp(child: _MutableMarkerCoordinatesRegionMap()),
+      );
+
+      final initialKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+
+      await tester.tap(
+        find.byKey(const ValueKey<String>('change-marker-coordinates')),
+      );
+      await tester.pump();
+
+      final updatedKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+      expect(updatedKey, isNot(initialKey));
+    },
+  );
+
   testWidgets('zooms with mouse wheel on desktop when over the map', (
     tester,
   ) async {
@@ -420,6 +457,93 @@ class _MutableMarkerStyleMapState extends State<_MutableMarkerStyleMap> {
                 color: _selected ? Colors.orange : Colors.blue,
               ),
             ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MutableRegionMetricMap extends StatefulWidget {
+  const _MutableRegionMetricMap();
+
+  @override
+  State<_MutableRegionMetricMap> createState() =>
+      _MutableRegionMetricMapState();
+}
+
+class _MutableRegionMetricMapState extends State<_MutableRegionMetricMap> {
+  var _metricValue = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ElevatedButton(
+          key: const ValueKey<String>('change-region-metric'),
+          onPressed: () {
+            setState(() {
+              _metricValue = 12.0;
+            });
+          },
+          child: const Text('Change region metric'),
+        ),
+        SyncfusionRegionMapChart<String>(
+          items: const <String>['SP'],
+          mapDefinition: AppMapDefinition.memory(
+            sourceBytes: _geoJsonBytes,
+            shapeDataField: 'UF',
+            regionLevel: AppMapRegionLevel.state,
+          ),
+          metric: AppMapMetric<String>(
+            key: 'revenue',
+            label: 'Receita',
+            valueBuilder: (_) => _metricValue,
+          ),
+          regionKeyBuilder: (item) => item,
+          regionLabelBuilder: (item) => item,
+          currentDrillLevel: AppMapDrillLevel.state,
+          style: const AppRegionMapChartStyle(height: 240),
+          preset: AppChartPreset.standard,
+          points: const <AppMapPoint>[
+            AppMapPoint(latitude: -23, longitude: -47),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MutableMarkerCoordinatesRegionMap extends StatefulWidget {
+  const _MutableMarkerCoordinatesRegionMap();
+
+  @override
+  State<_MutableMarkerCoordinatesRegionMap> createState() =>
+      _MutableMarkerCoordinatesRegionMapState();
+}
+
+class _MutableMarkerCoordinatesRegionMapState
+    extends State<_MutableMarkerCoordinatesRegionMap> {
+  var _latitude = -23.0;
+  var _longitude = -47.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ElevatedButton(
+          key: const ValueKey<String>('change-marker-coordinates'),
+          onPressed: () {
+            setState(() {
+              _latitude = -22.5;
+              _longitude = -46.5;
+            });
+          },
+          child: const Text('Change marker coordinates'),
+        ),
+        _TestRegionMap(
+          points: <AppMapPoint>[
+            AppMapPoint(latitude: _latitude, longitude: _longitude),
           ],
         ),
       ],

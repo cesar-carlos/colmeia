@@ -45,8 +45,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Sinop/MT - Agente Agent 1'), findsOneWidget);
-    expect(find.text('Empresa: 1  Filial: 1'), findsOneWidget);
+    expect(find.text('Sinop/MT \u2014 Agent Agent 1'), findsOneWidget);
+    expect(find.text('Company: 1  Branch: 1'), findsOneWidget);
     expect(
       find.text('Sinop/MT - Agente Agent 1 - Empresa 1 - Filial 1'),
       findsNothing,

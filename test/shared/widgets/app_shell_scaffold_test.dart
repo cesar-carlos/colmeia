@@ -4,6 +4,7 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/app_shell_scaffold.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -40,26 +41,30 @@ void main() {
     final router = _buildRouter(
       authController: authController,
       currentUserContextController: currentUserContextController,
-      initialLocation: '/sales/produto_rank_lucro',
+      initialLocation: '/sales',
     );
 
     await tester.pumpWidget(_buildApp(router));
     await tester.pumpAndSettle();
 
-    expect(find.text('sales-card-page'), findsOneWidget);
+    expect(find.text('sales-root-page'), findsOneWidget);
 
     final scaffoldFinder = find.byType(Scaffold).first;
-    tester.state<ScaffoldState>(scaffoldFinder).openDrawer();
+    expect(tester.state<ScaffoldState>(scaffoldFinder).hasDrawer, isTrue);
+
+    router.go('/sales/produto_rank_lucro');
     await tester.pumpAndSettle();
 
-    expect(tester.state<ScaffoldState>(scaffoldFinder).isDrawerOpen, isTrue);
+    expect(find.text('sales-card-page'), findsOneWidget);
+    expect(tester.state<ScaffoldState>(scaffoldFinder).hasDrawer, isFalse);
 
-    await tester.tap(find.byKey(const ValueKey<String>('shell-nav-sales')));
+    await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
 
     expect(find.text('sales-root-page'), findsOneWidget);
     expect(find.text('sales-card-page'), findsNothing);
-    expect(tester.state<ScaffoldState>(scaffoldFinder).isDrawerOpen, isFalse);
+
+    expect(tester.state<ScaffoldState>(scaffoldFinder).hasDrawer, isTrue);
   });
 
   testWidgets('drawer returns to settings root from nested settings content', (
@@ -73,24 +78,135 @@ void main() {
     final router = _buildRouter(
       authController: authController,
       currentUserContextController: currentUserContextController,
-      initialLocation: '/settings/component-demos/app-buttons-demo',
+      initialLocation: '/settings',
     );
 
     await tester.pumpWidget(_buildApp(router));
     await tester.pumpAndSettle();
 
-    expect(find.text('settings-demo-page'), findsOneWidget);
+    expect(find.text('settings-root-page'), findsOneWidget);
 
     final scaffoldFinder = find.byType(Scaffold).first;
-    tester.state<ScaffoldState>(scaffoldFinder).openDrawer();
+    expect(tester.state<ScaffoldState>(scaffoldFinder).hasDrawer, isTrue);
+
+    router.go('/settings/component-demos/app-buttons-demo');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey<String>('shell-nav-settings')));
+    expect(find.text('settings-demo-page'), findsOneWidget);
+    expect(tester.state<ScaffoldState>(scaffoldFinder).hasDrawer, isFalse);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();
 
     expect(find.text('settings-root-page'), findsOneWidget);
     expect(find.text('settings-demo-page'), findsNothing);
-    expect(tester.state<ScaffoldState>(scaffoldFinder).isDrawerOpen, isFalse);
+
+    expect(tester.state<ScaffoldState>(scaffoldFinder).hasDrawer, isTrue);
+  });
+
+  testWidgets(
+    'nested shell route disables scaffold drawer and shows back leading',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800, 1400);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final router = _buildRouter(
+        authController: authController,
+        currentUserContextController: currentUserContextController,
+        initialLocation: '/sales/produto_rank_lucro',
+      );
+
+      await tester.pumpWidget(_buildApp(router));
+      await tester.pumpAndSettle();
+
+      final scaffoldFinder = find.byType(Scaffold).first;
+      expect(tester.state<ScaffoldState>(scaffoldFinder).hasDrawer, isFalse);
+
+      final appBarFinder = find.byType(AppBar);
+      expect(
+        find.descendant(
+          of: appBarFinder,
+          matching: find.byIcon(Icons.arrow_back),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: appBarFinder,
+          matching: find.byIcon(Icons.menu_rounded),
+        ),
+        findsNothing,
+      );
+
+      expect(
+        find.descendant(
+          of: appBarFinder,
+          matching: find.byIcon(Icons.arrow_back_ios_new),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('shell section root exposes scaffold drawer', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(800, 1400);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final router = _buildRouter(
+      authController: authController,
+      currentUserContextController: currentUserContextController,
+      initialLocation: '/sales',
+    );
+
+    await tester.pumpWidget(_buildApp(router));
+    await tester.pumpAndSettle();
+
+    final scaffoldFinder = find.byType(Scaffold).first;
+    expect(tester.state<ScaffoldState>(scaffoldFinder).hasDrawer, isTrue);
+  });
+
+  testWidgets('shell app bar uses iOS-style back chevron on iOS', (
+    tester,
+  ) async {
+    final previousPlatform = debugDefaultTargetPlatformOverride;
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(800, 1400);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final router = _buildRouter(
+        authController: authController,
+        currentUserContextController: currentUserContextController,
+        initialLocation: '/sales/produto_rank_lucro',
+      );
+
+      await tester.pumpWidget(_buildApp(router));
+      await tester.pumpAndSettle();
+
+      final appBarFinder = find.byType(AppBar);
+      expect(
+        find.descendant(
+          of: appBarFinder,
+          matching: find.byIcon(Icons.arrow_back_ios_new),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: appBarFinder,
+          matching: find.byIcon(Icons.arrow_back),
+        ),
+        findsNothing,
+      );
+    } finally {
+      debugDefaultTargetPlatformOverride = previousPlatform;
+    }
   });
 }
 

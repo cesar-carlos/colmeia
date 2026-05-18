@@ -324,7 +324,14 @@ class _SyncfusionRegionMapChartState<T>
     );
     final mapSurfaceStableKey = Object.hash(
       geometryFingerprint,
-      widget.points.length,
+      _itemContentFingerprint(
+        regionKeys: regionKeys,
+        regionLabels: regionLabels,
+        metricValues: metricValues,
+      ),
+      _markerPointsFingerprint(widget.points),
+      widget.selectedRegionKey,
+      widget.metric.key,
     );
     if (_cachedMapSurfaceStableKey != null &&
         _cachedMapSurfaceStableKey != mapSurfaceStableKey) {
@@ -783,6 +790,43 @@ class _SyncfusionRegionMapChartState<T>
       Object.hashAll(regionKeys),
       widget.style.showDataLabels ? Object.hashAll(regionLabels) : 0,
     );
+  }
+
+  int _itemContentFingerprint({
+    required List<String> regionKeys,
+    required List<String> regionLabels,
+    required List<double> metricValues,
+  }) {
+    return Object.hash(
+      widget.items.length,
+      Object.hashAll(regionKeys),
+      Object.hashAll(regionLabels),
+      Object.hashAll(metricValues.map(_stableDoubleFingerprint)),
+    );
+  }
+
+  int _markerPointsFingerprint(List<AppMapPoint> points) {
+    return Object.hashAll(
+      points.map(
+        (point) => Object.hash(
+          _stableDoubleFingerprint(point.latitude),
+          _stableDoubleFingerprint(point.longitude),
+        ),
+      ),
+    );
+  }
+
+  int _stableDoubleFingerprint(double? value) {
+    if (value == null) {
+      return 0;
+    }
+    if (value.isNaN) {
+      return Object.hash('nan', value.sign);
+    }
+    if (value.isInfinite) {
+      return Object.hash('inf', value.isNegative);
+    }
+    return value.toStringAsFixed(6).hashCode;
   }
 
   Color _shapeColorValueForIndex(int index) {

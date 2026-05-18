@@ -10,15 +10,31 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_brand_icon.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_user_avatar.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_user_summary.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+IconData _shellLeadingBackIcon() {
+  if (kIsWeb) {
+    return Icons.arrow_back;
+  }
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.iOS:
+      return Icons.arrow_back_ios_new;
+    case TargetPlatform.android:
+    case TargetPlatform.fuchsia:
+    case TargetPlatform.linux:
+    case TargetPlatform.macOS:
+    case TargetPlatform.windows:
+      return Icons.arrow_back;
+  }
+}
 
 class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   const AppShellAppBar({
     super.key,
     this.primary = true,
     this.showBrandTitle = true,
-    this.showNavigationDrawer = false,
   });
 
   /// When `false`, sits beside the desktop rail in the body (no duplicate
@@ -26,10 +42,6 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool primary;
 
   final bool showBrandTitle;
-
-  /// When the shell uses a [Scaffold.drawer], set `true` so a back action can
-  /// be shown next to the menu without replacing the default drawer control.
-  final bool showNavigationDrawer;
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -50,37 +62,18 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     final showUserDetails = useRail;
     final materialLocalizations = MaterialLocalizations.of(context);
     final showBack = shellSectionBackVisible(context);
-    final compositeBackAndDrawer = showBack && showNavigationDrawer;
     final titleSpacing = showBrandTitle ? 0.0 : tokens.contentSpacing;
 
     final Widget? leading;
     final bool automaticallyImplyLeading;
     final double? leadingWidth;
-    if (compositeBackAndDrawer) {
-      automaticallyImplyLeading = false;
-      leadingWidth = 112;
-      leading = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          IconButton(
-            tooltip: materialLocalizations.backButtonTooltip,
-            onPressed: () => navigateShellSectionUp(context),
-            icon: const Icon(Icons.arrow_back),
-          ),
-          IconButton(
-            tooltip: materialLocalizations.openAppDrawerTooltip,
-            onPressed: () => Scaffold.of(context).openDrawer(),
-            icon: const Icon(Icons.menu_rounded),
-          ),
-        ],
-      );
-    } else if (showBack) {
+    if (showBack) {
       automaticallyImplyLeading = false;
       leadingWidth = null;
       leading = IconButton(
         tooltip: materialLocalizations.backButtonTooltip,
         onPressed: () => navigateShellSectionUp(context),
-        icon: const Icon(Icons.arrow_back),
+        icon: Icon(_shellLeadingBackIcon()),
       );
     } else {
       automaticallyImplyLeading = true;

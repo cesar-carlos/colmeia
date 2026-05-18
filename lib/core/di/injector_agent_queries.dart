@@ -46,6 +46,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/resolve_cadastro_filial_location_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execution_eligibility_checker.dart';
@@ -150,10 +151,16 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_repository.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
+import 'package:colmeia/shared/maps/resolve_postal_address_location_use_case.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 
 void registerInjectorAgentQueries(GetIt getIt) {
+  getIt.registerLazySingleton<ResolveCadastroFilialLocationUseCase>(
+    () => ResolveCadastroFilialLocationUseCase(
+      getIt<ResolvePostalAddressLocationUseCase>(),
+    ),
+  );
   _registerAgentQueryTransport(getIt);
   _registerAgentQueriesRepositoryChain(getIt);
   _registerSingleAgentQueryRepositories(getIt);

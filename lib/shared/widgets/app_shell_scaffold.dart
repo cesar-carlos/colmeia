@@ -1,4 +1,5 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/router/shell_section_navigation.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/layout/app_content_constraint.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
@@ -82,8 +83,8 @@ class AppShellScaffold extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppShellAppBar(showNavigationDrawer: showShellNav),
-      drawer: showShellNav
+      appBar: const AppShellAppBar(),
+      drawer: showShellNav && !shellSectionDrawerSuppressed(context)
           ? AppShellDrawer(
               currentLocation: currentLocation,
               currentRoute: currentRoute,

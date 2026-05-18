@@ -1,4 +1,5 @@
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:flutter/foundation.dart';
 
@@ -25,7 +26,7 @@ class SalesLiveMapDataFilter {
   }
 
   final Set<String>? selectedAgentIds;
-  final Set<String>? selectedBranchIds;
+  final Set<SalesLiveMapBranchRef>? selectedBranchIds;
   final SalesLiveMapPeriodMode periodMode;
   final OverviewDateRange? customDateRange;
 
@@ -49,7 +50,7 @@ class SalesLiveMapDataFilter {
     _orderedHash(selectedBranchIds),
   );
 
-  static bool _setEquals(Set<String>? a, Set<String>? b) {
+  static bool _setEquals<T>(Set<T>? a, Set<T>? b) {
     if (identical(a, b)) {
       return true;
     }
@@ -67,11 +68,13 @@ class SalesLiveMapDataFilter {
     return true;
   }
 
-  static int? _orderedHash(Set<String>? value) {
+  static int? _orderedHash(Set<SalesLiveMapBranchRef>? value) {
     if (value == null) {
       return null;
     }
-    final sorted = value.toList(growable: false)..sort();
+    final sorted = value.map((branch) => branch.toStorageKey()).toList(
+      growable: false,
+    )..sort();
     return Object.hashAll(sorted);
   }
 }
