@@ -15,6 +15,7 @@ constants.
 | `docs/configuration.md` | Socket/relay env vars, rate limits, inflight gates, and payload frame defaults. |
 | `docs/observability.md` | Metrics and logs for bridge latency, socket rooms, relay queues, and troubleshooting. |
 | `docs/nginx_production.md` | Reverse proxy and WebSocket deployment settings. |
+| Colmeia [`docs/bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md) | Colmeia-facing bridge SQL summary: `sql.execute` / `sql.executeBatch`, choosing `multi_result` vs semantic batch vs JSON-RPC batch arrays, overview read-only parallelism (`max_parallel_read_only_batch_items`). Payload examples: `plug_server/docs/snippets/agent_command_performance_options.ts`. |
 
 ## Socket contract used by Colmeia
 
