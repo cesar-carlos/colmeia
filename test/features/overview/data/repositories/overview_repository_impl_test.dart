@@ -2133,16 +2133,6 @@ AgentSqlBatchExecutionResult _batchResult({
   );
 }
 
-Map<String, dynamic> _userRankingBatchRow() {
-  return <String, dynamic>{
-    'CodEmpresa': 1,
-    'CodFilial': 1,
-    'NomeUsuario': 'Caixa',
-    'QtdVendas': 1,
-    'ValorParcela': 100.0,
-  };
-}
-
 Map<String, dynamic> _mainBatchRow() {
   return <String, dynamic>{
     'CodEmpresa': 1,
@@ -2153,6 +2143,16 @@ Map<String, dynamic> _mainBatchRow() {
     'AnoMesDataVenda': '2026/04',
     'CodFormaPagamento': 'PIX',
     'DescricaoFormaPagamento': 'Pix',
+    'QtdVendas': 1,
+    'ValorParcela': 100.0,
+  };
+}
+
+Map<String, dynamic> _userRankingBatchRow() {
+  return <String, dynamic>{
+    'CodEmpresa': 1,
+    'CodFilial': 1,
+    'NomeUsuario': 'Caixa',
     'QtdVendas': 1,
     'ValorParcela': 100.0,
   };

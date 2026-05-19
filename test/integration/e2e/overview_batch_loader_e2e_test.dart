@@ -96,7 +96,7 @@ void main() {
               );
               expect(
                 countingRepository.batchRequests.first.commands.length,
-                1,
+                2,
               );
               expect(
                 countingRepository.batchRequests.every(

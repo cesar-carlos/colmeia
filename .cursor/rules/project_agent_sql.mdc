@@ -23,6 +23,9 @@ Esta rule cobre consultas SQL enviadas ao backend via `sql.execute` ou
   `command.params.sql` nem em `command.params.commands[].sql`
 - Preserve `client_token`, `params` nomeados e `options` do RPC; a
   normalizacao deve mudar apenas o formato da string SQL
+- Nao inclua comentarios SQL em bloco `/* ... */` no texto que sera enviado ao
+  bridge; validadores do agente/hub podem rejeitar como padroes perigosos.
+  Documente colunas opcionais ou notas em dartdoc Dart, nao dentro da string SQL
 - Para `sql.executeBatch`, falhas por item (`ok: false`) fazem parte do
   resultado de dominio; falha RPC/bridge continua virando `Failure`
 

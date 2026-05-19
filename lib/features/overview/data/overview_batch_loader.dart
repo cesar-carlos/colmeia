@@ -47,8 +47,13 @@ import 'package:colmeia/features/overview/data/overview_sql_batch_item_rows_mapp
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:result_dart/result_dart.dart';
 
-/// SQL commands in the overview main batch before section-only batches
-/// (payment-method resumo + per-user resumo for rankings).
+/// SQL commands in the overview main batch before section-only batches.
+///
+/// Runs the payment-method parcel resumo and the per-user parcel resumo with
+/// the same period params. The hub may execute read-only batch items in
+/// parallel via `max_parallel_read_only_batch_items`. If the per-user item
+/// fails or returns no rows, `overview_user_rankings_override_policy` falls
+/// back to payment-method aggregation for operator rankings.
 const int _overviewBatchMainCommandCount = 2;
 
 final class OverviewBatchLoadResult {
@@ -518,16 +523,17 @@ class OverviewBatchLoader {
     required DateTime periodEnd,
   }) {
     final commands = <AgentSqlExecuteBatchCommand>[];
+    final parcelPeriodParams = _parcelPeriodSqlParamsFromPeriodo(
+      ResumoParcelaFormaPagamentoFilter(
+        dataVendaInicio: periodStart,
+        dataVendaFim: periodEnd,
+      ),
+    );
     final main = commands.length;
     commands.add(
       AgentSqlExecuteBatchCommand(
         sql: ResumoParcelaFormaPagamentoSql.query,
-        namedParams: _parcelPeriodSqlParamsFromPeriodo(
-          ResumoParcelaFormaPagamentoFilter(
-            dataVendaInicio: periodStart,
-            dataVendaFim: periodEnd,
-          ),
-        ),
+        namedParams: parcelPeriodParams,
         executionOrder: main,
       ),
     );
@@ -535,12 +541,7 @@ class OverviewBatchLoader {
     commands.add(
       AgentSqlExecuteBatchCommand(
         sql: ResumoParcelaPorUsuarioSql.query,
-        namedParams: _parcelPeriodSqlParamsFromPeriodo(
-          ResumoParcelasPeriodoFilter(
-            dataVendaInicio: periodStart,
-            dataVendaFim: periodEnd,
-          ),
-        ),
+        namedParams: parcelPeriodParams,
         executionOrder: userRanking,
       ),
     );
@@ -631,7 +632,7 @@ class OverviewBatchLoader {
     final userRanking = add(
       ResumoParcelaPorUsuarioSql.query,
       _parcelPeriodSqlParamsFromPeriodo(
-        ResumoParcelasPeriodoFilter(
+        ResumoParcelaFormaPagamentoFilter(
           dataVendaInicio: periodStart,
           dataVendaFim: periodEnd,
         ),
@@ -807,8 +808,8 @@ class OverviewBatchLoader {
       target: target,
       elapsedMs: elapsedMs,
       mainRows: main.rows,
-      userRankingRows: userRanking.rows,
       mainFailure: main.failure,
+      userRankingRows: userRanking.rows,
       userRankingFailure: userRanking.failure,
     );
   }

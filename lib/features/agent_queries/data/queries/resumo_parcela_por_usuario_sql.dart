@@ -6,9 +6,11 @@ import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vend
 /// across multi-payment sales. Same inner slice as
 /// `ResumoParcelaFormaPagamentoSql` for troco semantics.
 ///
-/// **Overview note:** home/overview loads `ResumoParcelaFormaPagamentoSql` in
-/// the main batch; per-user rankings use payment-method aggregation as fallback
-/// when a dedicated per-user batch command is not run.
+/// **Overview note:** the home overview main `sql.executeBatch` runs this
+/// query together with `ResumoParcelaPorUsuarioSql` (same period parameters).
+/// If the per-user batch item fails or returns no rows, operator rankings fall
+/// back to payment-method aggregation in
+/// `overview_user_rankings_override_policy.dart`.
 abstract final class ResumoParcelaPorUsuarioSql {
   static const String _queryHead = '''
     SELECT

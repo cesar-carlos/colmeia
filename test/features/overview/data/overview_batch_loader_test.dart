@@ -80,7 +80,7 @@ void main() {
                 commandCount: 2,
                 rowsByIndex: <int, List<Map<String, dynamic>>>{
                   0: <Map<String, dynamic>>[_mainRow()],
-                  1: <Map<String, dynamic>>[_porUsuarioRow()],
+                  1: <Map<String, dynamic>>[_userRankingRow()],
                 },
               ),
             );
@@ -107,7 +107,8 @@ void main() {
         check(batch.targetResults.length).equals(1);
         final targetResult = batch.targetResults.single;
         check(targetResult.mainRows.single.valorParcela).equals(100);
-        check(targetResult.userRankingRows.single.valorParcela).equals(100);
+        check(targetResult.userRankingRows.single.nomeUsuario).equals('Caixa');
+        check(targetResult.userRankingRows.single.qtdVendas).equals(3);
         check(targetResult.monthlyRows.single.anoMes).equals('2026/04');
         check(targetResult.weekdayRows.single.diaSemanaNumero).equals(2);
         check(targetResult.dailyRows.single.valorTotalDiarioVenda).equals(88);
@@ -203,7 +204,7 @@ void main() {
                 commandCount: 2,
                 rowsByIndex: <int, List<Map<String, dynamic>>>{
                   0: <Map<String, dynamic>>[_mainRow()],
-                  1: <Map<String, dynamic>>[_porUsuarioRow()],
+                  1: <Map<String, dynamic>>[_userRankingRow()],
                 },
               ),
             );
@@ -302,7 +303,7 @@ void main() {
               rowsByIndex: request.commands.length == 2
                   ? <int, List<Map<String, dynamic>>>{
                       0: <Map<String, dynamic>>[_mainRow()],
-                      1: <Map<String, dynamic>>[_porUsuarioRow()],
+                      1: <Map<String, dynamic>>[_userRankingRow()],
                     }
                   : const <int, List<Map<String, dynamic>>>{},
             ),
@@ -590,16 +591,6 @@ AgentSqlBatchExecutionResult _batchResult({
   );
 }
 
-Map<String, dynamic> _porUsuarioRow() {
-  return <String, dynamic>{
-    'CodEmpresa': 1,
-    'CodFilial': 1,
-    'NomeUsuario': 'Caixa',
-    'QtdVendas': 1,
-    'ValorParcela': 100.0,
-  };
-}
-
 Map<String, dynamic> _mainRow() {
   return <String, dynamic>{
     'CodEmpresa': 1,
@@ -612,6 +603,16 @@ Map<String, dynamic> _mainRow() {
     'DescricaoFormaPagamento': 'Pix',
     'QtdVendas': 2,
     'ValorParcela': 100.0,
+  };
+}
+
+Map<String, dynamic> _userRankingRow() {
+  return <String, dynamic>{
+    'CodEmpresa': 1,
+    'CodFilial': 1,
+    'NomeUsuario': 'Caixa',
+    'QtdVendas': 3,
+    'ValorParcela': 90.0,
   };
 }
 

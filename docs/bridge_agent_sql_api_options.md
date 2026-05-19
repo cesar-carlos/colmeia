@@ -85,6 +85,14 @@ Common batch `options`:
 Batch item failures are domain results. Bridge/RPC failures still map to
 transport or repository failures.
 
+## Choosing batch vs `multi_result` vs JSON-RPC batch
+
+| Mechanism | What it does | Colmeia overview |
+|-----------|--------------|------------------|
+| `sql.executeBatch` | Multiple `commands[]`, each with its own `params`; optional `max_parallel_read_only_batch_items` for read-only parallelism (see `plug_server/docs/snippets/agent_command_performance_options.ts`). | Main batch runs **forma pagamento** + **per-user** resumo (`OverviewBatchLoader`); section batch runs monthly/weekday/daily/etc. |
+| `multi_result` | Single `sql.execute`, one SQL string with multiple statements; **cannot** be combined with named `params` or pagination (`plug_server/docs/api_rest_bridge.md`). | **Not used** for overview (all resumo queries use `:named` binds). |
+| JSON-RPC `command: []` | Up to 32 independent RPC objects in one REST body. | Not used for overview batch; relay intentionally accepts a single correlatable RPC per frame. |
+
 ## `payloadFrameCompression`
 
 This field is a bridge policy passed through REST/`agents:command` bodies or
