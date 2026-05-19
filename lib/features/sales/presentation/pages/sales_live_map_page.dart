@@ -666,6 +666,7 @@ class _SalesLiveMapFullscreenChart extends StatelessWidget {
                       filterBranchIds: slice.filterBranchIds,
                       fixedBranchIds: slice.filterBranchIds,
                       style: slice.mapStyle,
+                      isRefreshing: slice.isRefreshing,
                       onMetricChanged: controller.updateMetric,
                       showDesktopBranchSidebar: true,
                       presentationMode: AppBrazilStoreSalesMapPresentationMode
@@ -768,6 +769,7 @@ class _SalesLiveMapInlineChartSection extends StatelessWidget {
           filterBranchIds: slice.filterBranchIds,
           fixedBranchIds: slice.filterBranchIds,
           style: slice.mapStyle,
+          isRefreshing: slice.isRefreshing,
           presentationMode:
               AppBrazilStoreSalesMapPresentationMode.inlineOperational,
           onMetricChanged: controller.updateMetric,
@@ -858,7 +860,7 @@ class _SalesLiveMapBodyStatusSlice {
   ) {
     return _SalesLiveMapBodyStatusSlice(
       state: state,
-      showInitialSkeleton: state.result == null && state.isLoading,
+      showInitialSkeleton: !state.hasVisualResult && state.isLoading,
     );
   }
 
@@ -924,6 +926,7 @@ class _SalesLiveMapMapSlice {
     required this.metric,
     required this.filterBranchIds,
     required this.mapStyle,
+    required this.isRefreshing,
   });
 
   factory _SalesLiveMapMapSlice.fromState(SalesLiveMapPresentationState state) {
@@ -932,11 +935,12 @@ class _SalesLiveMapMapSlice {
     );
     return _SalesLiveMapMapSlice(
       state: state,
-      points: state.result?.points ?? const <AppBrazilStoreSalesPoint>[],
+      points: state.visualResult?.points ?? const <AppBrazilStoreSalesPoint>[],
       mapPayloadDigest: state.mapPayloadDigest,
       metric: state.filter.metric,
       filterBranchIds: filterBranchIds,
       mapStyle: state.mapStyle,
+      isRefreshing: state.isMapRefreshing,
     );
   }
 
@@ -946,6 +950,7 @@ class _SalesLiveMapMapSlice {
   final AppBrazilStoreSalesMapMetric metric;
   final Set<String> filterBranchIds;
   final AppBrazilStoreSalesMapStyle mapStyle;
+  final bool isRefreshing;
 
   @override
   bool operator ==(Object other) {
@@ -953,7 +958,8 @@ class _SalesLiveMapMapSlice {
         other.mapPayloadDigest == mapPayloadDigest &&
         other.metric == metric &&
         setEquals(other.filterBranchIds, filterBranchIds) &&
-        other.mapStyle == mapStyle;
+        other.mapStyle == mapStyle &&
+        other.isRefreshing == isRefreshing;
   }
 
   @override
@@ -962,6 +968,7 @@ class _SalesLiveMapMapSlice {
     metric,
     Object.hashAll(filterBranchIds.toList(growable: false)..sort()),
     mapStyle,
+    isRefreshing,
   );
 }
 

@@ -13,6 +13,7 @@ class SalesLiveMapPresentationState {
     this.filter = const SalesLiveMapFilter(),
     this.availableAgents = const <OverviewAgentOption>[],
     this.result,
+    this.visualResult,
     this.mapPayloadDigest = 0,
     this.isLoading = true,
     this.sessionExpired = false,
@@ -22,6 +23,7 @@ class SalesLiveMapPresentationState {
   final SalesLiveMapFilter filter;
   final List<OverviewAgentOption> availableAgents;
   final SalesLiveMapLoadResult? result;
+  final SalesLiveMapLoadResult? visualResult;
   final int mapPayloadDigest;
   final bool isLoading;
   final bool sessionExpired;
@@ -63,6 +65,10 @@ class SalesLiveMapPresentationState {
 
   bool get canReload =>
       !isLoading && (sessionExpired || availableAgents.isNotEmpty);
+
+  bool get hasVisualResult => visualResult != null;
+
+  bool get isMapRefreshing => isLoading && hasVisualResult;
 
   bool get shouldShowEmptyNotice {
     final currentResult = result;
@@ -132,6 +138,7 @@ class SalesLiveMapPresentationState {
     SalesLiveMapFilter? filter,
     List<OverviewAgentOption>? availableAgents,
     Object? result = _sentinel,
+    Object? visualResult = _sentinel,
     int? mapPayloadDigest,
     bool? isLoading,
     bool? sessionExpired,
@@ -143,6 +150,9 @@ class SalesLiveMapPresentationState {
       result: identical(result, _sentinel)
           ? this.result
           : result as SalesLiveMapLoadResult?,
+      visualResult: identical(visualResult, _sentinel)
+          ? this.visualResult
+          : visualResult as SalesLiveMapLoadResult?,
       mapPayloadDigest: mapPayloadDigest ?? this.mapPayloadDigest,
       isLoading: isLoading ?? this.isLoading,
       sessionExpired: sessionExpired ?? this.sessionExpired,
@@ -160,6 +170,7 @@ class SalesLiveMapPresentationState {
         other.filter == filter &&
         listEquals(other.availableAgents, availableAgents) &&
         identical(other.result, result) &&
+        identical(other.visualResult, visualResult) &&
         other.mapPayloadDigest == mapPayloadDigest &&
         other.isLoading == isLoading &&
         other.sessionExpired == sessionExpired &&
@@ -171,6 +182,7 @@ class SalesLiveMapPresentationState {
     filter,
     Object.hashAll(availableAgents),
     identityHashCode(result),
+    identityHashCode(visualResult),
     mapPayloadDigest,
     isLoading,
     sessionExpired,

@@ -86,6 +86,7 @@ class SalesLiveMapController extends ChangeNotifier {
         filter: restoredFilter,
         availableAgents: const <OverviewAgentOption>[],
         result: sessionExpiredResult,
+        visualResult: sessionExpiredResult,
         mapPayloadDigest: _mapPayloadDigestFor(sessionExpiredResult),
         isLoading: userId != null,
         sessionExpired: userId == null,
@@ -245,11 +246,20 @@ class SalesLiveMapController extends ChangeNotifier {
     final userId = _boundUserId;
     final generation = ++_loadGeneration;
     final cancelToken = SalesLiveMapLoadCancelToken();
-    final hadResultBeforeReload = _state.result != null;
+    final preserveVisualSnapshot =
+        reason != SalesLiveMapReloadReason.filterChange;
+    final preservedVisualResult = preserveVisualSnapshot
+        ? _state.visualResult
+        : null;
     _activeLoadCancelToken = cancelToken;
 
     _setState(
-      _state.copyWith(isLoading: true, sessionExpired: userId == null),
+      _state.copyWith(
+        isLoading: true,
+        sessionExpired: userId == null,
+        visualResult: preservedVisualResult,
+        mapPayloadDigest: _mapPayloadDigestFor(preservedVisualResult),
+      ),
     );
 
     if (userId == null) {
@@ -264,6 +274,7 @@ class SalesLiveMapController extends ChangeNotifier {
         _state.copyWith(
           isLoading: false,
           result: sessionExpiredResult,
+          visualResult: sessionExpiredResult,
           mapPayloadDigest: _mapPayloadDigestFor(sessionExpiredResult),
           sessionExpired: true,
         ),
@@ -289,16 +300,21 @@ class SalesLiveMapController extends ChangeNotifier {
         _setState(_state.copyWith(isLoading: false));
         return SalesLiveMapReloadOutcome.cancelled(result);
       }
-      if (hadResultBeforeReload && result.salesDataPending) {
+      if (preservedVisualResult != null && result.salesDataPending) {
         continue;
       }
 
       final previousResult = _state.result;
-      final nextMapPayloadDigest = _mapPayloadDigestFor(result);
+      final nextVisualResult = _resolveNextVisualResult(
+        incomingResult: result,
+        previousVisualResult: _state.visualResult,
+      );
+      final nextMapPayloadDigest = _mapPayloadDigestFor(nextVisualResult);
       if (previousResult != null) {
         final mapPayloadUnchanged =
             _state.mapPayloadDigest == nextMapPayloadDigest;
         if (mapPayloadUnchanged &&
+            identical(_state.visualResult, nextVisualResult) &&
             previousResult.salesDataPending == result.salesDataPending &&
             previousResult.loadFailed == result.loadFailed &&
             previousResult.refreshedAt == result.refreshedAt) {
@@ -314,6 +330,7 @@ class SalesLiveMapController extends ChangeNotifier {
       _setState(
         _state.copyWith(
           result: result,
+          visualResult: nextVisualResult,
           mapPayloadDigest: nextMapPayloadDigest,
           isLoading: result.salesDataPending,
           sessionExpired: false,
@@ -421,10 +438,27 @@ class SalesLiveMapController extends ChangeNotifier {
     _notifyListenersIfAlive();
   }
 
-  int _mapPayloadDigestFor(SalesLiveMapLoadResult? result) {
-    if (result == null) {
+  SalesLiveMapLoadResult? _resolveNextVisualResult({
+    required SalesLiveMapLoadResult incomingResult,
+    required SalesLiveMapLoadResult? previousVisualResult,
+  }) {
+    if (_shouldUseResultAsVisualSnapshot(incomingResult)) {
+      return incomingResult;
+    }
+    return previousVisualResult;
+  }
+
+  bool _shouldUseResultAsVisualSnapshot(SalesLiveMapLoadResult result) {
+    if (!result.salesDataPending) {
+      return true;
+    }
+    return result.points.isNotEmpty || result.branchOptions.isNotEmpty;
+  }
+
+  int _mapPayloadDigestFor(SalesLiveMapLoadResult? visualResult) {
+    if (visualResult == null) {
       return 0;
     }
-    return AppBrazilStoreSalesMapData.pointsContentDigest(result.points);
+    return AppBrazilStoreSalesMapData.pointsContentDigest(visualResult.points);
   }
 }

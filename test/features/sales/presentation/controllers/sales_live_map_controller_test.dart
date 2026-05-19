@@ -392,6 +392,149 @@ void main() {
     },
   );
 
+  test(
+    'keeps the last visual snapshot while a manual refresh is pending',
+    () async {
+      await controller.bindUser('user-1');
+
+      final stream = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(stream.close);
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) => stream.stream);
+
+      final reloadFuture = controller.reload();
+      await Future<void>.delayed(Duration.zero);
+
+      stream.add(
+        SalesLiveMapLoadResult(
+          points: <AppBrazilStoreSalesPoint>[],
+          branchOptions: <SalesLiveMapBranchOption>[],
+          totalRevenue: 0,
+          totalSalesCount: 0,
+          totalBranchCount: 0,
+          mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
+          queriedAgentCount: 0,
+          plannedAgentCount: 0,
+          failedAgentCount: 0,
+          missingClientTokenAgentCount: 0,
+          skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
+          salesDataPending: true,
+          refreshedAt: DateTime(2026, 5, 9, 12),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.state.isLoading, isTrue);
+      expect(controller.state.result?.salesDataPending, isFalse);
+      expect(controller.state.visualResult?.totalRevenue, 1200);
+      expect(controller.state.hasVisualResult, isTrue);
+
+      stream.add(_resultForRevenue(77));
+      await stream.close();
+      await Future<void>.delayed(Duration.zero);
+
+      expect((await reloadFuture).isCompleted, isTrue);
+      expect(controller.state.visualResult?.totalRevenue, 77);
+    },
+  );
+
+  test(
+    'does not promote an empty pending result to the visual snapshot on first load',
+    () async {
+      final stream = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(stream.close);
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) => stream.stream);
+
+      final bindFuture = controller.bindUser('user-1');
+      await Future<void>.delayed(Duration.zero);
+
+      stream.add(
+        SalesLiveMapLoadResult(
+          points: <AppBrazilStoreSalesPoint>[],
+          branchOptions: <SalesLiveMapBranchOption>[],
+          totalRevenue: 0,
+          totalSalesCount: 0,
+          totalBranchCount: 0,
+          mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
+          queriedAgentCount: 0,
+          plannedAgentCount: 0,
+          failedAgentCount: 0,
+          missingClientTokenAgentCount: 0,
+          skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
+          salesDataPending: true,
+          refreshedAt: DateTime(2026, 5, 9, 12),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.state.result?.salesDataPending, isTrue);
+      expect(controller.state.visualResult, isNull);
+      expect(controller.state.hasVisualResult, isFalse);
+
+      stream.add(_loadedResult());
+      await stream.close();
+      await bindFuture;
+
+      expect(controller.state.visualResult?.totalRevenue, 1200);
+      expect(controller.state.hasVisualResult, isTrue);
+    },
+  );
+
+  test('clears the visual snapshot while a data filter change reloads', () async {
+    await controller.bindUser('user-1');
+
+    final stream = StreamController<SalesLiveMapLoadResult>();
+    addTearDown(stream.close);
+    when(
+      () => loadLiveMap.loadProgressive(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).thenAnswer((_) => stream.stream);
+
+    final reloadFuture = controller.applyFilter(
+      SalesLiveMapFilter(
+        selectedBranchIds: <SalesLiveMapBranchRef>{
+          const SalesLiveMapBranchRef(
+            agentId: 'agent-1',
+            codEmpresa: 1,
+            codFilial: 1,
+          ),
+        },
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.state.isLoading, isTrue);
+    expect(controller.state.visualResult, isNull);
+    expect(controller.state.hasVisualResult, isFalse);
+
+    stream.add(_loadedResult());
+    await stream.close();
+    await reloadFuture;
+
+    expect(controller.state.visualResult, isNotNull);
+  });
+
   test('reload defaults to manual reason', () async {
     await controller.bindUser('user-1');
     clearInteractions(loadLiveMap);

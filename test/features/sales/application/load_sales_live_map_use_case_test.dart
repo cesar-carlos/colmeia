@@ -627,7 +627,7 @@ void main() {
     final result = await useCase(
       userId: userId,
       filter: SalesLiveMapFilter(
-        selectedAgentIds: <String>{'agent-a'},
+        selectedAgentIds: const <String>{'agent-a'},
         selectedBranchIds: <SalesLiveMapBranchRef>{
           const SalesLiveMapBranchRef(
             agentId: 'agent-a',
@@ -789,8 +789,7 @@ void main() {
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
         ),
-      );
-      verification.called(1);
+      )..called(1);
       final captured = verification.captured;
       final catalogFilter = captured[0] as CadastroFilialFilter;
       final selectedAgentIds = captured[1] as Set<String>;
@@ -892,8 +891,7 @@ void main() {
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
         ),
-      );
-      verification.called(1);
+      )..called(1);
       final selectedAgentIds = verification.captured.single as Set<String>;
       check(selectedAgentIds).deepEquals(<String>{'agent-a', 'agent-b'});
     },
@@ -1624,8 +1622,7 @@ void main() {
           scope: captureAny(named: 'scope'),
           now: now,
         ),
-      );
-      readVerification.called(1);
+      )..called(1);
       check(
         readVerification.captured
             .cast<SalesLiveMapCatalogScope>()

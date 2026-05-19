@@ -453,8 +453,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 220));
 
+    final pendingChart = tester.widget<AppBrazilStoreSalesMapChart>(
+      find.byType(AppBrazilStoreSalesMapChart).last,
+    );
+    expect(pendingChart.isRefreshing, isTrue);
     expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNWidgets(2));
     expect(find.byType(AppSkeleton), findsOneWidget);
     expect(find.text('No sales in period'), findsNothing);
 
@@ -464,6 +468,63 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.text('Total revenue'), findsOneWidget);
   });
+
+  testWidgets(
+    'keeps the initial skeleton when the first pending emission has no map snapshot',
+    (tester) async {
+      final controller = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(controller.close);
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) => controller.stream);
+
+      await _pumpPage(tester, authController: authController);
+      await tester.pump();
+      await tester.pump();
+
+      controller.add(
+        SalesLiveMapLoadResult(
+          points: <AppBrazilStoreSalesPoint>[],
+          branchOptions: <SalesLiveMapBranchOption>[],
+          totalRevenue: 0,
+          totalSalesCount: 0,
+          totalBranchCount: 0,
+          mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
+          queriedAgentCount: 0,
+          plannedAgentCount: 0,
+          failedAgentCount: 0,
+          missingClientTokenAgentCount: 0,
+          skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
+          salesDataPending: true,
+          refreshedAt: DateTime(2026, 5, 9, 12),
+        ),
+      );
+      await tester.pump();
+
+      final pendingChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart).last,
+      );
+      expect(pendingChart.subtitle, isNull);
+      expect(pendingChart.points, isEmpty);
+      expect(find.byType(AppSkeleton), findsOneWidget);
+
+      controller.add(_loadedResult());
+      await tester.pump();
+
+      final loadedChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart).last,
+      );
+      expect(loadedChart.subtitle, isNotNull);
+      expect(loadedChart.points, isNotEmpty);
+    },
+  );
 
   testWidgets('does not show the map region selector', (tester) async {
     await _pumpPage(tester, authController: authController);
@@ -855,7 +916,11 @@ void main() {
     await tester.tap(find.text('Refresh now'));
     await tester.pump();
 
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    final refreshingChart = tester.widget<AppBrazilStoreSalesMapChart>(
+      find.byType(AppBrazilStoreSalesMapChart).last,
+    );
+    expect(refreshingChart.isRefreshing, isTrue);
+    expect(find.byType(LinearProgressIndicator), findsNWidgets(2));
     expect(find.text('Total revenue'), findsOneWidget);
     expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
 
@@ -872,7 +937,7 @@ void main() {
         () => salesPreferences.restoreSalesLiveMapFilter(),
       ).thenReturn(
         SalesLiveMapFilter(
-          selectedAgentIds: <String>{'agent-1'},
+          selectedAgentIds: const <String>{'agent-1'},
           selectedBranchIds: <SalesLiveMapBranchRef>{
             const SalesLiveMapBranchRef(
               agentId: 'agent-1',
@@ -921,7 +986,7 @@ void main() {
       () => salesPreferences.restoreSalesLiveMapFilter(),
     ).thenReturn(
       SalesLiveMapFilter(
-        selectedAgentIds: <String>{'agent-1'},
+        selectedAgentIds: const <String>{'agent-1'},
         selectedBranchIds: <SalesLiveMapBranchRef>{
           const SalesLiveMapBranchRef(
             agentId: 'agent-1',
@@ -962,7 +1027,7 @@ void main() {
         () => salesPreferences.restoreSalesLiveMapFilter(),
       ).thenReturn(
         SalesLiveMapFilter(
-          selectedAgentIds: <String>{'agent-1'},
+          selectedAgentIds: const <String>{'agent-1'},
           selectedBranchIds: <SalesLiveMapBranchRef>{
             const SalesLiveMapBranchRef(
               agentId: 'agent-1',

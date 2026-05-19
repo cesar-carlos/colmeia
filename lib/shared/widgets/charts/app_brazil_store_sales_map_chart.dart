@@ -53,6 +53,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.filterBranchIds = const <String>{},
     this.fixedBranchIds = const <String>{},
     this.style = const AppBrazilStoreSalesMapStyle(),
+    this.isRefreshing = false,
     this.onStoreTap,
     this.onStoreClusterTap,
     this.onMunicipalityTap,
@@ -82,6 +83,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   /// Union of external highlights (e.g. filter); drives reuse keys and cleanup.
   final Set<String> fixedBranchIds;
   final AppBrazilStoreSalesMapStyle style;
+  final bool isRefreshing;
   final ValueChanged<AppBrazilStoreSalesPointTapEvent>? onStoreTap;
   final ValueChanged<AppBrazilStoreSalesPointClusterTapEvent>?
   onStoreClusterTap;
@@ -363,6 +365,7 @@ class _AppBrazilStoreSalesMapChartState
               showGroupLabels:
                   !_usesCleanFullscreenChrome && !usesCompactMapChrome,
             ),
+            isRefreshing: widget.isRefreshing,
           ),
           mapOverlay: _buildMapOverlay(
             mapTileHeight: mapTileHeight,

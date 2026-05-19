@@ -330,19 +330,10 @@ class _SyncfusionRegionMapChartState<T>
       regionKeys: regionKeys,
       regionLabels: regionLabels,
     );
-    // Keyed remount is reserved for structural changes that Syncfusion does not
-    // consistently reconcile in place. Visual state such as selection and
-    // metric identity stays out of this key so region highlight / metric
-    // toggles can update without tearing down SfMaps.
-    final mapSurfaceStableKey = Object.hash(
-      geometryFingerprint,
-      _itemContentFingerprint(
-        regionKeys: regionKeys,
-        regionLabels: regionLabels,
-        metricValues: metricValues,
-      ),
-      _markerPointsFingerprint(widget.points),
-    );
+    // Keyed remount is reserved for structural changes in the map base.
+    // Marker/value updates should flow through the existing surface so the
+    // user keeps spatial context during refreshes.
+    final mapSurfaceStableKey = geometryFingerprint;
     final stableKeyChanged =
         _cachedMapSurfaceStableKey != null &&
         _cachedMapSurfaceStableKey != mapSurfaceStableKey;
@@ -922,43 +913,6 @@ class _SyncfusionRegionMapChartState<T>
       Object.hashAll(regionKeys),
       widget.style.showDataLabels ? Object.hashAll(regionLabels) : 0,
     );
-  }
-
-  int _itemContentFingerprint({
-    required List<String> regionKeys,
-    required List<String> regionLabels,
-    required List<double> metricValues,
-  }) {
-    return Object.hash(
-      widget.items.length,
-      Object.hashAll(regionKeys),
-      Object.hashAll(regionLabels),
-      Object.hashAll(metricValues.map(_stableDoubleFingerprint)),
-    );
-  }
-
-  int _markerPointsFingerprint(List<AppMapPoint> points) {
-    return Object.hashAll(
-      points.map(
-        (point) => Object.hash(
-          _stableDoubleFingerprint(point.latitude),
-          _stableDoubleFingerprint(point.longitude),
-        ),
-      ),
-    );
-  }
-
-  int _stableDoubleFingerprint(double? value) {
-    if (value == null) {
-      return 0;
-    }
-    if (value.isNaN) {
-      return Object.hash('nan', value.sign);
-    }
-    if (value.isInfinite) {
-      return Object.hash('inf', value.isNegative);
-    }
-    return value.toStringAsFixed(6).hashCode;
   }
 
   ({double minValue, double maxValue, double range}) _resolveMetricRange(

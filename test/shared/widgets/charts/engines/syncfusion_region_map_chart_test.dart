@@ -114,7 +114,7 @@ void main() {
     }
   });
 
-  testWidgets('remounts SfMaps when marker points change', (tester) async {
+  testWidgets('keeps SfMaps mounted when marker points change', (tester) async {
     await tester.pumpWidget(const _TestApp(child: _MutableMarkerRegionMap()));
 
     final initialKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
@@ -123,7 +123,7 @@ void main() {
     await tester.pump();
 
     final updatedKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
-    expect(updatedKey, isNot(initialKey));
+    expect(updatedKey, initialKey);
   });
 
   testWidgets('keeps SfMaps mounted when only marker style changes', (
@@ -140,7 +140,7 @@ void main() {
     expect(updatedKey, initialKey);
   });
 
-  testWidgets('remounts SfMaps when region metric values change', (
+  testWidgets('keeps SfMaps mounted when region metric values change', (
     tester,
   ) async {
     await tester.pumpWidget(const _TestApp(child: _MutableRegionMetricMap()));
@@ -153,11 +153,11 @@ void main() {
     await tester.pump();
 
     final updatedKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
-    expect(updatedKey, isNot(initialKey));
+    expect(updatedKey, initialKey);
   });
 
   testWidgets(
-    'remounts SfMaps when marker coordinates change with same count',
+    'keeps SfMaps mounted when marker coordinates change with same count',
     (
       tester,
     ) async {
@@ -173,7 +173,7 @@ void main() {
       await tester.pump();
 
       final updatedKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
-      expect(updatedKey, isNot(initialKey));
+      expect(updatedKey, initialKey);
     },
   );
 
@@ -271,7 +271,7 @@ void main() {
   });
 
   testWidgets(
-    'recreates zoom behavior after SfMaps remount before wheel zoom',
+    'keeps zoom behavior working after marker updates without remounting',
     (
       tester,
     ) async {
@@ -305,7 +305,7 @@ void main() {
     },
   );
 
-  testWidgets('preserves manual zoom state across SfMaps remounts', (
+  testWidgets('preserves manual zoom state across marker updates', (
     tester,
   ) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.windows;
