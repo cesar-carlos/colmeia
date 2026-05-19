@@ -5,6 +5,10 @@ import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vend
 /// Used for correct per-operator distinct sale counts and ticket averages
 /// across multi-payment sales. Same inner slice as
 /// `ResumoParcelaFormaPagamentoSql` for troco semantics.
+///
+/// **Overview note:** home/overview loads `ResumoParcelaFormaPagamentoSql` in
+/// the main batch; per-user rankings use payment-method aggregation as fallback
+/// when a dedicated per-user batch command is not run.
 abstract final class ResumoParcelaPorUsuarioSql {
   static const String _queryHead = '''
     SELECT

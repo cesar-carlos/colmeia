@@ -35,32 +35,6 @@ abstract final class ResumoParcelaFormaPagamentoSql {
   /// comment block and can be added here when a new slice needs them.
   static const String _queryMiddleSelect = '''
       SELECT
-        /*
-          Detalhe columns NOT projected (still emitted by
-          ParcelaProdutoVendidoDetalheSql — uncomment in this list when needed):
-            CodProdutoVendido,
-            CodOrigem,
-            CodVendedor,
-            NomeVendedor,
-            CodCliente,
-            NomeCliente,
-            CodGrupoCliente,
-            NomeGrupoCliente,
-            CodMunicipio,
-            NomeMunicipio,
-            UFMunicipio,
-            Bairro,
-            CodRegiao,
-            NomeRegiao,
-            DataEmissao,
-            DataVencimento,
-            NumeroDocumento,
-            NumeroParcela,
-            TipoForma,
-            ValorTotalParcelas,
-            ValorTotalParcelasRateioTroco,
-            ValorTotalTrocoVenda
-        */
         CodEmpresa,
         CodFilial,
         Id,

@@ -14,6 +14,7 @@ import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test_api/scaffolding.dart' show group;
 
 import 'support/e2e_dependency_bootstrap.dart';
@@ -37,6 +38,11 @@ void main() {
           return;
         }
 
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final catalogDiskCache = SalesLiveMapCatalogDiskCache(
+          await SharedPreferences.getInstance(),
+        );
+
         final locationResolver = AppLocationResolver(
           cache: AppLocationGeocodeCache(_E2eMemoryCacheStore()),
           geocoders: const <AppLocationGeocoder>[
@@ -45,7 +51,7 @@ void main() {
         );
         final useCase = LoadSalesLiveMapUseCase(
           getIt<AgentQueryTargetResolver>(),
-          getIt<SalesLiveMapCatalogDiskCache>(),
+          catalogDiskCache,
           getIt<
             LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
           >(),
