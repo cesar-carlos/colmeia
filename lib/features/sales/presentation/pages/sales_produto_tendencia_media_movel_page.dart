@@ -5,6 +5,7 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_summary_use_case.dart';
@@ -18,9 +19,9 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_widgets.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
-import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
@@ -58,7 +59,9 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
 
 class _SalesProdutoTendenciaMediaMovelPageState
     extends State<SalesProdutoTendenciaMediaMovelPage>
-    with SalesAutoRefreshStateMixin<SalesProdutoTendenciaMediaMovelPage> {
+    with
+        AutoRefreshStateMixin<SalesProdutoTendenciaMediaMovelPage>,
+        SalesCardAutoRefreshBinding<SalesProdutoTendenciaMediaMovelPage> {
   static const String _cardId = 'produto_tendencia_venda_media_movel';
   static const List<int> _pageSizeOptions = <int>[10, 20, 50, 100];
 
@@ -179,14 +182,21 @@ class _SalesProdutoTendenciaMediaMovelPageState
     unawaited(_reload());
   }
 
-  Future<void> _reload() => reloadWithSalesAutoRefresh();
+  Future<void> _reload() => reloadWithAutoRefresh();
 
   @override
-  bool get canScheduleSalesAutoRefresh =>
+  SalesSessionService get salesSessionService => _sessionService;
+
+  @override
+  String get salesAutoRefreshCardId =>
+      SalesAutoRefreshCardIds.produtoTendenciaMediaMovel;
+
+  @override
+  bool get canScheduleAutoRefresh =>
       _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
 
   @override
-  Future<void> performSalesAutoRefreshReload() async {
+  Future<void> performAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
@@ -232,7 +242,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
             const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[];
         _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
       });
-      disableSalesAutoRefresh();
+      disableAutoRefresh();
       return;
     }
 
@@ -603,11 +613,11 @@ class _SalesProdutoTendenciaMediaMovelPageState
                   ),
                   SizedBox(height: tokens.gapMd),
                   SalesAutoRefreshActionsRow(
-                    value: salesAutoRefreshInterval,
-                    onChanged: setSalesAutoRefreshInterval,
+                    value: autoRefreshOption,
+                    onChanged: setAutoRefreshOption,
                     onRefreshNow: () => unawaited(_reload()),
-                    enabled: canScheduleSalesAutoRefresh,
-                    lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
+                    enabled: canScheduleAutoRefresh,
+                    lastUpdatedAt: autoRefreshLastUpdatedAt,
                     l10n: l10n,
                   ),
                   if (_selectedAgentId == null ||

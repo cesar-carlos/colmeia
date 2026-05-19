@@ -205,9 +205,12 @@ Para o feed oficial no `.exe` gerado localmente, veja a secao **Feed do auto-upd
 Se a keystore Android ja estiver configurada localmente, valide tambem:
 
 ```powershell
-flutter build apk --release
-flutter build appbundle --release
+python tool/build_android_release.py --apk
+python tool/build_android_release.py --aab
 ```
+
+Esses comandos exportam os artefatos versionados para `installer/dist/` e
+tambem geram os arquivos `.sha256`.
 
 ### 4. Commitar
 

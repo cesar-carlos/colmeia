@@ -44,13 +44,26 @@ flutter run --release
 
 ## Artefatos de release
 
+- **Fluxo local recomendado para exportar para `installer/dist`:**
+
+  ```bash
+  python tool/build_android_release.py --apk
+  python tool/build_android_release.py --aab
+  ```
+
+  Saídas:
+  - `installer/dist/Colmeia-Android-X.Y.Z.apk`
+  - `installer/dist/Colmeia-Android-X.Y.Z.apk.sha256`
+  - `installer/dist/Colmeia-Android-X.Y.Z.aab`
+  - `installer/dist/Colmeia-Android-X.Y.Z.aab.sha256`
+
 - **APK:**
 
   ```bash
   flutter build apk --release
   ```
 
-  Saída típica: `build/app/outputs/flutter-apk/app-release.apk`.
+  Saída bruta do Flutter: `build/app/outputs/flutter-apk/app-release.apk`.
 
 - **App Bundle (Play Store):**
 
@@ -58,7 +71,7 @@ flutter run --release
   flutter build appbundle --release
   ```
 
-  Saída típica: `build/app/outputs/bundle/release/app-release.aab`.
+  Saída bruta do Flutter: `build/app/outputs/bundle/release/app-release.aab`.
 
 ## Assinatura (release)
 

@@ -1,6 +1,7 @@
+import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
+import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 
@@ -63,14 +64,24 @@ class SalesSessionService {
     return _preferences.persistSalesLiveMapFilter(filter);
   }
 
-  SalesAutoRefreshPreference restoreSalesLiveMapAutoRefreshPreference() {
-    return _preferences.restoreSalesLiveMapAutoRefreshPreference();
+  AutoRefreshSnapshot restoreAutoRefreshSnapshot({
+    required String cardId,
+    required AutoRefreshOptionSet optionSet,
+  }) {
+    return _preferences.restoreAutoRefreshSnapshot(
+      cardId: cardId,
+      optionSet: optionSet,
+    );
   }
 
-  Future<void> persistSalesLiveMapAutoRefreshPreference(
-    SalesAutoRefreshPreference preference,
-  ) {
-    return _preferences.persistSalesLiveMapAutoRefreshPreference(preference);
+  Future<void> persistAutoRefreshSnapshot({
+    required String cardId,
+    required AutoRefreshSnapshot snapshot,
+  }) {
+    return _preferences.persistAutoRefreshSnapshot(
+      cardId: cardId,
+      snapshot: snapshot,
+    );
   }
 
   SalesMonthlyPnlBarChartPreferences restoreMonthlyPnlBarChartPreferences() {

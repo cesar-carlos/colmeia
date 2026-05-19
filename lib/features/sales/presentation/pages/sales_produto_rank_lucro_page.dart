@@ -5,6 +5,7 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_row.dart';
@@ -14,8 +15,8 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
-import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
@@ -56,7 +57,9 @@ class SalesProdutoRankLucroPage extends StatefulWidget {
 }
 
 class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
-    with SalesAutoRefreshStateMixin<SalesProdutoRankLucroPage> {
+    with
+        AutoRefreshStateMixin<SalesProdutoRankLucroPage>,
+        SalesCardAutoRefreshBinding<SalesProdutoRankLucroPage> {
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
   late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
@@ -160,14 +163,20 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
     unawaited(_reload());
   }
 
-  Future<void> _reload() => reloadWithSalesAutoRefresh();
+  Future<void> _reload() => reloadWithAutoRefresh();
 
   @override
-  bool get canScheduleSalesAutoRefresh =>
+  SalesSessionService get salesSessionService => _sessionService;
+
+  @override
+  String get salesAutoRefreshCardId => SalesAutoRefreshCardIds.produtoRankLucro;
+
+  @override
+  bool get canScheduleAutoRefresh =>
       _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
 
   @override
-  Future<void> performSalesAutoRefreshReload() async {
+  Future<void> performAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
@@ -203,7 +212,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
         _rows = const <ProdutoVendidoProdutoRankLucroRow>[];
         _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
       });
-      disableSalesAutoRefresh();
+      disableAutoRefresh();
       return;
     }
 
@@ -398,11 +407,11 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
           ),
           SizedBox(height: tokens.gapMd),
           SalesAutoRefreshActionsRow(
-            value: salesAutoRefreshInterval,
-            onChanged: setSalesAutoRefreshInterval,
+            value: autoRefreshOption,
+            onChanged: setAutoRefreshOption,
             onRefreshNow: () => unawaited(_reload()),
-            enabled: canScheduleSalesAutoRefresh,
-            lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
+            enabled: canScheduleAutoRefresh,
+            lastUpdatedAt: autoRefreshLastUpdatedAt,
             l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),

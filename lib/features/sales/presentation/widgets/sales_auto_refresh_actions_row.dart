@@ -1,10 +1,8 @@
-import 'dart:async';
-
-import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_control.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/core/refresh/auto_refresh_option.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/refresh/auto_refresh_actions_row.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -21,8 +19,8 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
     super.key,
   });
 
-  final SalesAutoRefreshInterval? value;
-  final ValueChanged<SalesAutoRefreshInterval?> onChanged;
+  final AutoRefreshOption? value;
+  final ValueChanged<AutoRefreshOption?> onChanged;
   final VoidCallback onRefreshNow;
   final bool enabled;
   final DateTime? lastUpdatedAt;
@@ -32,125 +30,35 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final updatedAt = lastUpdatedAt;
-
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Wrap(
-        alignment: WrapAlignment.end,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: tokens.gapMd,
-        runSpacing: tokens.gapSm,
-        children: <Widget>[
-          if (updatedAt != null)
-            Text(
-              l10n.salesAutoRefreshLastUpdatedAt(
-                DateFormat.Hm(l10n.localeName).format(updatedAt),
-              ),
-              style: theme.appTypography.caption.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+    return AutoRefreshActionsRow(
+      options: SalesAutoRefreshOptions.values,
+      optionLabelBuilder: (option) => option.salesLabel,
+      value: value,
+      onChanged: onChanged,
+      onRefreshNow: onRefreshNow,
+      enabled: enabled,
+      refreshNowLabel: l10n.salesAutoRefreshNow,
+      offLabel: l10n.salesAutoRefreshOff,
+      tooltipLabel: l10n.salesAutoRefreshTooltip,
+      lastUpdatedLabel: lastUpdatedAt == null
+          ? null
+          : l10n.salesAutoRefreshLastUpdatedAt(
+              DateFormat.Hm(l10n.localeName).format(lastUpdatedAt!),
             ),
-          if (value != null && nextDueAt != null)
-            _SalesAutoRefreshCountdownLabel(
-              nextDueAt: nextDueAt!,
-              isBackingOff: isBackingOff,
-              l10n: l10n,
-            ),
-          TextButton.icon(
-            onPressed: enabled ? onRefreshNow : null,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: Text(l10n.salesAutoRefreshNow),
-          ),
-          SalesAutoRefreshControl(
-            value: value,
-            onChanged: onChanged,
-            offLabel: l10n.salesAutoRefreshOff,
-            tooltipLabel: l10n.salesAutoRefreshTooltip,
-            enabled: enabled,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SalesAutoRefreshCountdownLabel extends StatefulWidget {
-  const _SalesAutoRefreshCountdownLabel({
-    required this.nextDueAt,
-    required this.isBackingOff,
-    required this.l10n,
-  });
-
-  final DateTime nextDueAt;
-  final bool isBackingOff;
-  final AppLocalizations l10n;
-
-  @override
-  State<_SalesAutoRefreshCountdownLabel> createState() =>
-      _SalesAutoRefreshCountdownLabelState();
-}
-
-class _SalesAutoRefreshCountdownLabelState
-    extends State<_SalesAutoRefreshCountdownLabel> {
-  Timer? _ticker;
-  DateTime _now = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    _startTicker();
-  }
-
-  @override
-  void didUpdateWidget(covariant _SalesAutoRefreshCountdownLabel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.nextDueAt != widget.nextDueAt) {
-      _now = DateTime.now();
-      _startTicker();
-    }
-  }
-
-  void _startTicker() {
-    _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _now = DateTime.now();
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final remaining = widget.nextDueAt.difference(_now);
-    final clamped = remaining <= Duration.zero ? Duration.zero : remaining;
-    final label = widget.isBackingOff
-        ? widget.l10n.salesAutoRefreshRetryIn(_format(clamped))
-        : widget.l10n.salesAutoRefreshNextIn(_format(clamped));
-    return Text(
-      label,
-      style: theme.appTypography.caption.copyWith(
-        color: widget.isBackingOff
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurfaceVariant,
-        fontWeight: widget.isBackingOff ? FontWeight.w700 : FontWeight.w500,
-      ),
+      nextDueAt: nextDueAt,
+      isBackingOff: isBackingOff,
+      showAutoRefreshControl: AppBreakpoints.isDesktop(context),
+      countdownLabelBuilder: (remaining, {required isBackingOff}) {
+        final formatted = _format(remaining);
+        return isBackingOff
+            ? l10n.salesAutoRefreshRetryIn(formatted)
+            : l10n.salesAutoRefreshNextIn(formatted);
+      },
+      controlKeyPrefix: 'sales-auto-refresh',
     );
   }
 
-  String _format(Duration value) {
+  static String _format(Duration value) {
     final totalSeconds = value.inSeconds;
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;

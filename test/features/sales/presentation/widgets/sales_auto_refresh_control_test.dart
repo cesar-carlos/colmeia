@@ -1,5 +1,6 @@
 import 'package:colmeia/app/theme/app_theme.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
+import 'package:colmeia/core/refresh/auto_refresh_option.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,7 +42,7 @@ void main() {
   });
 
   testWidgets('calls back when an interval is selected', (tester) async {
-    SalesAutoRefreshInterval? selected;
+    AutoRefreshOption? selected;
 
     await _pumpControl(
       tester,
@@ -56,19 +57,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(selected, SalesAutoRefreshInterval.tenMinutes);
+    expect(selected, SalesAutoRefreshOptions.tenMinutes);
   });
 
   testWidgets('calls back with null when turned off', (tester) async {
-    SalesAutoRefreshInterval? selected = SalesAutoRefreshInterval.fiveMinutes;
+    AutoRefreshOption? selected = SalesAutoRefreshOptions.fiveMinutes;
 
     await _pumpControl(
       tester,
-      value: SalesAutoRefreshInterval.fiveMinutes,
+      value: SalesAutoRefreshOptions.fiveMinutes,
       onChanged: (value) => selected = value,
     );
 
-    await tester.tap(find.text(SalesAutoRefreshInterval.fiveMinutes.label));
+    await tester.tap(find.text(SalesAutoRefreshOptions.fiveMinutes.salesLabel));
     await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey<String>('sales-auto-refresh-off')),
@@ -81,8 +82,8 @@ void main() {
 
 Future<void> _pumpControl(
   WidgetTester tester, {
-  required SalesAutoRefreshInterval? value,
-  required ValueChanged<SalesAutoRefreshInterval?> onChanged,
+  required AutoRefreshOption? value,
+  required ValueChanged<AutoRefreshOption?> onChanged,
 }) async {
   await tester.pumpWidget(
     MaterialApp(

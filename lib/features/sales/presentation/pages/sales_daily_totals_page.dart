@@ -4,6 +4,7 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
@@ -11,9 +12,9 @@ import 'package:colmeia/features/sales/application/load_sales_available_agents_u
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
-import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
@@ -46,7 +47,9 @@ class SalesDailyTotalsPage extends StatefulWidget {
 }
 
 class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
-    with SalesAutoRefreshStateMixin<SalesDailyTotalsPage> {
+    with
+        AutoRefreshStateMixin<SalesDailyTotalsPage>,
+        SalesCardAutoRefreshBinding<SalesDailyTotalsPage> {
   late final SalesSessionService _sessionService;
   late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
   late final LoadSalesDailyTotalsUseCase _loadDailyTotals;
@@ -136,14 +139,20 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     return _cachedClientToken = resolved;
   }
 
-  Future<void> _reload() => reloadWithSalesAutoRefresh();
+  Future<void> _reload() => reloadWithAutoRefresh();
 
   @override
-  bool get canScheduleSalesAutoRefresh =>
+  SalesSessionService get salesSessionService => _sessionService;
+
+  @override
+  String get salesAutoRefreshCardId => SalesAutoRefreshCardIds.dailyTotals;
+
+  @override
+  bool get canScheduleAutoRefresh =>
       _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
 
   @override
-  Future<void> performSalesAutoRefreshReload() async {
+  Future<void> performAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
@@ -187,7 +196,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
         _loadFailed = true;
         _loadFailureMessage = authMsg;
       });
-      disableSalesAutoRefresh();
+      disableAutoRefresh();
       return;
     }
 
@@ -323,11 +332,11 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
           ),
           SizedBox(height: tokens.gapMd),
           SalesAutoRefreshActionsRow(
-            value: salesAutoRefreshInterval,
-            onChanged: setSalesAutoRefreshInterval,
+            value: autoRefreshOption,
+            onChanged: setAutoRefreshOption,
             onRefreshNow: () => unawaited(_reload()),
-            enabled: canScheduleSalesAutoRefresh,
-            lastUpdatedAt: salesAutoRefreshLastUpdatedAt,
+            enabled: canScheduleAutoRefresh,
+            lastUpdatedAt: autoRefreshLastUpdatedAt,
             l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),

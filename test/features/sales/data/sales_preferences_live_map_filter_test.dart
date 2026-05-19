@@ -1,10 +1,11 @@
 import 'dart:convert';
 
+import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -118,9 +119,10 @@ void main() {
     });
 
     test('persists and restores live map auto refresh preference', () async {
-      await salesPrefs.persistSalesLiveMapAutoRefreshPreference(
-        SalesAutoRefreshPreference(
-          interval: SalesAutoRefreshInterval.fiveMinutes,
+      await salesPrefs.persistAutoRefreshSnapshot(
+        cardId: SalesPreferences.salesLiveMapCardId,
+        snapshot: AutoRefreshSnapshot(
+          option: SalesAutoRefreshOptions.fiveMinutes,
           lastSuccessfulRefreshAt: DateTime(2026, 5, 9, 12),
           nextDueAt: DateTime(2026, 5, 9, 12, 5),
           remainingDelay: const Duration(minutes: 5),
@@ -128,9 +130,12 @@ void main() {
         ),
       );
 
-      final restored = salesPrefs.restoreSalesLiveMapAutoRefreshPreference();
+      final restored = salesPrefs.restoreAutoRefreshSnapshot(
+        cardId: SalesPreferences.salesLiveMapCardId,
+        optionSet: SalesAutoRefreshOptions.optionSet,
+      );
 
-      expect(restored.interval, SalesAutoRefreshInterval.fiveMinutes);
+      expect(restored.option, SalesAutoRefreshOptions.fiveMinutes);
       expect(restored.lastSuccessfulRefreshAt, DateTime(2026, 5, 9, 12));
       expect(restored.nextDueAt, DateTime(2026, 5, 9, 12, 5));
       expect(restored.remainingDelay, const Duration(minutes: 5));
@@ -138,34 +143,73 @@ void main() {
     });
 
     test('restores auto refresh as disabled when nothing was stored', () {
-      final restored = salesPrefs.restoreSalesLiveMapAutoRefreshPreference();
+      final restored = salesPrefs.restoreAutoRefreshSnapshot(
+        cardId: SalesPreferences.salesLiveMapCardId,
+        optionSet: SalesAutoRefreshOptions.optionSet,
+      );
 
-      expect(restored.interval, isNull);
+      expect(restored.option, isNull);
       expect(restored.lastSuccessfulRefreshAt, isNull);
       expect(restored.nextDueAt, isNull);
       expect(restored.remainingDelay, isNull);
       expect(restored.failureStreak, 0);
     });
 
-    test('restores auto refresh safely when persisted payload is invalid', () async {
+    test('restores legacy interval-based auto refresh payloads', () async {
       await prefs.setString(
         'colmeia_sales_card.${SalesPreferences.salesLiveMapCardId}.auto_refresh',
         jsonEncode(<String, Object?>{
-          'interval': 'invalid',
-          'last_successful_refresh_at_ms': 'bad',
-          'next_due_at_ms': 'bad',
-          'remaining_delay_ms': -1,
-          'failure_streak': -2,
+          'interval': SalesAutoRefreshOptions.tenMinutes.id,
         }),
       );
 
-      final restored = salesPrefs.restoreSalesLiveMapAutoRefreshPreference();
+      final restored = salesPrefs.restoreAutoRefreshSnapshot(
+        cardId: SalesPreferences.salesLiveMapCardId,
+        optionSet: SalesAutoRefreshOptions.optionSet,
+      );
 
-      expect(restored.interval, isNull);
-      expect(restored.lastSuccessfulRefreshAt, isNull);
-      expect(restored.nextDueAt, isNull);
-      expect(restored.remainingDelay, isNull);
-      expect(restored.failureStreak, 0);
+      expect(restored.option, SalesAutoRefreshOptions.tenMinutes);
     });
+
+    test('removes persisted auto refresh state when disabled', () async {
+      await salesPrefs.persistAutoRefreshSnapshot(
+        cardId: SalesPreferences.salesLiveMapCardId,
+        snapshot: AutoRefreshSnapshot.disabled,
+      );
+
+      expect(
+        prefs.getString(
+          'colmeia_sales_card.${SalesPreferences.salesLiveMapCardId}.auto_refresh',
+        ),
+        isNull,
+      );
+    });
+
+    test(
+      'restores auto refresh safely when persisted payload is invalid',
+      () async {
+        await prefs.setString(
+          'colmeia_sales_card.${SalesPreferences.salesLiveMapCardId}.auto_refresh',
+          jsonEncode(<String, Object?>{
+            'interval': 'invalid',
+            'last_successful_refresh_at_ms': 'bad',
+            'next_due_at_ms': 'bad',
+            'remaining_delay_ms': -1,
+            'failure_streak': -2,
+          }),
+        );
+
+        final restored = salesPrefs.restoreAutoRefreshSnapshot(
+          cardId: SalesPreferences.salesLiveMapCardId,
+          optionSet: SalesAutoRefreshOptions.optionSet,
+        );
+
+        expect(restored.option, isNull);
+        expect(restored.lastSuccessfulRefreshAt, isNull);
+        expect(restored.nextDueAt, isNull);
+        expect(restored.remainingDelay, isNull);
+        expect(restored.failureStreak, 0);
+      },
+    );
   });
 }

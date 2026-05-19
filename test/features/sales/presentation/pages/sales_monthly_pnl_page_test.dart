@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -16,6 +17,7 @@ import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
@@ -60,6 +62,8 @@ void main() {
     );
     registerFallbackValue(<String>['agent-1']);
     registerFallbackValue(SalesMonthlyPnlBarChartPreferences.defaults);
+    registerFallbackValue(AutoRefreshSnapshot.disabled);
+    registerFallbackValue(SalesAutoRefreshOptions.optionSet);
   });
 
   setUp(() async {
@@ -108,6 +112,18 @@ void main() {
     ).thenReturn(SalesMonthlyPnlBarChartPreferences.defaults);
     when(
       () => salesPreferences.persistMonthlyPnlBarChartPreferences(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => salesPreferences.restoreAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        optionSet: any(named: 'optionSet'),
+      ),
+    ).thenReturn(AutoRefreshSnapshot.disabled);
+    when(
+      () => salesPreferences.persistAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        snapshot: any(named: 'snapshot'),
+      ),
     ).thenAnswer((_) async {});
 
     when(

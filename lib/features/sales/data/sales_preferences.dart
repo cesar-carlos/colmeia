@@ -1,8 +1,10 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
 import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
+import 'package:colmeia/core/refresh/auto_refresh_option.dart';
+import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
+import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
@@ -66,10 +68,13 @@ class SalesPreferences {
 
   static const String produtoRankLucroCardId = 'produto_rank_lucro';
 
+  static const String salesDailyTotalsCardId = 'daily_totals';
   static const String monthlyPnlCardId = 'monthly_pnl';
   static const String _legacyParcelasMensal12mCardId = 'parcelas_mensal_12m';
   static const String salesLiveMapCardId = 'sales_live_map';
-  static const String _salesLiveMapAutoRefreshSuffix = 'auto_refresh';
+  static const String _autoRefreshSuffix = 'auto_refresh';
+  static const Map<String, Object?> _disabledAutoRefreshSnapshot =
+      <String, Object?>{};
 
   static const int _anchorYearMin = 2000;
   static const int _anchorYearMax = 2100;
@@ -222,10 +227,11 @@ class SalesPreferences {
     }
     final selectedBranches = filter.selectedBranchIds;
     if (selectedBranches != null && selectedBranches.isNotEmpty) {
-      encoded['selected_branch_ids'] = selectedBranches
-          .map(SalesLiveMapBranchRefCodec.encode)
-          .toList(growable: false)
-        ..sort();
+      encoded['selected_branch_ids'] =
+          selectedBranches
+              .map(SalesLiveMapBranchRefCodec.encode)
+              .toList(growable: false)
+            ..sort();
     }
     encoded['metric'] = filter.metric.name;
 
@@ -241,13 +247,19 @@ class SalesPreferences {
     await persistCardFilters(salesLiveMapCardId, encoded);
   }
 
-  SalesAutoRefreshPreference restoreSalesLiveMapAutoRefreshPreference() {
+  AutoRefreshSnapshot restoreAutoRefreshSnapshot({
+    required String cardId,
+    required AutoRefreshOptionSet optionSet,
+  }) {
     final store = PersistedPageSessionStore(
       prefs: _prefs,
-      namespace: 'colmeia_sales_card.$salesLiveMapCardId',
+      namespace: 'colmeia_sales_card.$cardId',
     );
-    final raw = store.restoreJsonMap(suffix: _salesLiveMapAutoRefreshSuffix);
-    final interval = _salesAutoRefreshIntervalFromRaw(raw['interval']);
+    final raw = store.restoreJsonMap(suffix: _autoRefreshSuffix);
+    final option = _autoRefreshOptionFromRaw(
+      raw['option_id'] ?? raw['interval'],
+      optionSet,
+    );
     final refreshedAtMs = raw['last_successful_refresh_at_ms'];
     final nextDueAtMs = raw['next_due_at_ms'];
     final remainingDelayMs = raw['remaining_delay_ms'];
@@ -264,8 +276,8 @@ class SalesPreferences {
     final failureStreak = failureStreakRaw is int && failureStreakRaw >= 0
         ? failureStreakRaw
         : 0;
-    return SalesAutoRefreshPreference(
-      interval: interval,
+    return AutoRefreshSnapshot(
+      option: option,
       lastSuccessfulRefreshAt: lastSuccessfulRefreshAt,
       nextDueAt: nextDueAt,
       remainingDelay: remainingDelay,
@@ -273,34 +285,35 @@ class SalesPreferences {
     );
   }
 
-  Future<void> persistSalesLiveMapAutoRefreshPreference(
-    SalesAutoRefreshPreference preference,
-  ) async {
+  Future<void> persistAutoRefreshSnapshot({
+    required String cardId,
+    required AutoRefreshSnapshot snapshot,
+  }) async {
     final store = PersistedPageSessionStore(
       prefs: _prefs,
-      namespace: 'colmeia_sales_card.$salesLiveMapCardId',
+      namespace: 'colmeia_sales_card.$cardId',
     );
-    final interval = preference.interval;
-    if (interval == null) {
+    final option = snapshot.option;
+    if (option == null) {
       await store.persistJsonMap(
-        suffix: _salesLiveMapAutoRefreshSuffix,
-        value: const <String, Object?>{},
+        suffix: _autoRefreshSuffix,
+        value: _disabledAutoRefreshSnapshot,
       );
       return;
     }
     await store.persistJsonMap(
-      suffix: _salesLiveMapAutoRefreshSuffix,
+      suffix: _autoRefreshSuffix,
       value: <String, Object?>{
-        'interval': interval.name,
-        if (preference.lastSuccessfulRefreshAt != null)
+        'option_id': option.id,
+        if (snapshot.lastSuccessfulRefreshAt != null)
           'last_successful_refresh_at_ms':
-              preference.lastSuccessfulRefreshAt!.millisecondsSinceEpoch,
-        if (preference.nextDueAt != null)
-          'next_due_at_ms': preference.nextDueAt!.millisecondsSinceEpoch,
-        if (preference.remainingDelay != null)
-          'remaining_delay_ms': preference.remainingDelay!.inMilliseconds,
-        if (preference.failureStreak > 0)
-          'failure_streak': preference.failureStreak,
+              snapshot.lastSuccessfulRefreshAt!.millisecondsSinceEpoch,
+        if (snapshot.nextDueAt != null)
+          'next_due_at_ms': snapshot.nextDueAt!.millisecondsSinceEpoch,
+        if (snapshot.remainingDelay != null)
+          'remaining_delay_ms': snapshot.remainingDelay!.inMilliseconds,
+        if (snapshot.failureStreak > 0)
+          'failure_streak': snapshot.failureStreak,
       },
     );
   }
@@ -509,17 +522,13 @@ class SalesPreferences {
     );
   }
 
-  static SalesAutoRefreshInterval? _salesAutoRefreshIntervalFromRaw(
+  static AutoRefreshOption? _autoRefreshOptionFromRaw(
     Object? raw,
+    AutoRefreshOptionSet optionSet,
   ) {
     if (raw is! String) {
       return null;
     }
-    for (final interval in SalesAutoRefreshInterval.values) {
-      if (interval.name == raw) {
-        return interval;
-      }
-    }
-    return null;
+    return optionSet.byId(raw);
   }
 }

@@ -1,16 +1,20 @@
 import 'dart:async';
 
+import 'package:colmeia/app/refresh/app_auto_refresh_support.dart';
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/core/refresh/auto_refresh_option.dart';
+import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
+import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
+import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
-import 'package:colmeia/features/sales/presentation/utils/sales_auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
@@ -62,7 +66,7 @@ class _SalesLiveMapSession extends StatefulWidget {
 }
 
 class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
-    with SalesAutoRefreshStateMixin<_SalesLiveMapSession> {
+    with AutoRefreshStateMixin<_SalesLiveMapSession> {
   late final SalesLiveMapController _controller;
   int _pendingReloadForceCount = 0;
   int _lastCloseFullscreenRequestId = 0;
@@ -74,7 +78,6 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     _controller = context.read<SalesLiveMapController>()
       ..addListener(_handleControllerChanged);
     _lastCloseFullscreenRequestId = _controller.state.closeFullscreenRequestId;
-    restoreSalesAutoRefreshPreference(_controller.restoreAutoRefreshPreference());
     _scheduleInitialize();
   }
 
@@ -104,48 +107,55 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
   }
 
   @override
-  bool get rebuildOnSalesAutoRefreshStateChange => false;
+  bool get rebuildOnAutoRefreshStateChange => false;
 
   @override
-  bool get canScheduleSalesAutoRefresh =>
+  bool get supportsAutoRefresh =>
+      salesAutoRefreshIsAvailableForViewport(context);
+
+  @override
+  RouteObserver<ModalRoute<void>>? get autoRefreshRouteObserver =>
+      AppAutoRefreshSupport.routeObserver;
+
+  @override
+  AutoRefreshStatePersistence get autoRefreshStatePersistence =>
+      _controller.autoRefreshPersistence;
+
+  @override
+  void logAutoRefreshInfo(String message, Map<String, Object?> context) {
+    AppAutoRefreshSupport.logInfo(message, context);
+  }
+
+  @override
+  void logAutoRefreshWarning(String message, Map<String, Object?> context) {
+    AppAutoRefreshSupport.logWarning(message, context);
+  }
+
+  @override
+  bool get canScheduleAutoRefresh =>
       _controller.state.canScheduleAutoRefresh && !_controller.state.isLoading;
 
   Future<void> _reload({bool force = false}) async {
     if (force) {
       _pendingReloadForceCount += 1;
     }
-    await reloadWithSalesAutoRefresh(force: force);
+    await reloadWithAutoRefresh(force: force);
   }
 
   @override
-  Future<void> performSalesAutoRefreshReload() async {
+  Future<void> performAutoRefreshReload() async {
     final force = _pendingReloadForceCount > 0;
     _pendingReloadForceCount = 0;
     await _controller.reload(force: force);
   }
 
   @override
-  DateTime? resolveSalesAutoRefreshCompletedAt() {
+  DateTime? resolveAutoRefreshCompletedAt() {
     final result = _controller.state.result;
     if (result == null || result.loadFailed || result.cancelled) {
       return null;
     }
     return result.refreshedAt;
-  }
-
-  @override
-  void didUpdateSalesAutoRefreshUiState(SalesAutoRefreshUiState state) {
-    unawaited(
-      _controller.persistAutoRefreshPreference(
-        SalesAutoRefreshPreference(
-          interval: state.interval,
-          lastSuccessfulRefreshAt: state.lastUpdatedAt,
-          nextDueAt: state.nextDueAt,
-          remainingDelay: state.remainingDelay,
-          failureStreak: state.failureStreak,
-        ),
-      ),
-    );
   }
 
   void _handleControllerChanged() {
@@ -154,15 +164,15 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     }
     final state = _controller.state;
     if (!state.isLoading && !state.canScheduleAutoRefresh) {
-      disableSalesAutoRefresh();
+      disableAutoRefresh();
     } else {
-      refreshSalesAutoRefreshScheduling();
+      refreshAutoRefreshScheduling();
     }
     final successfulRefreshAt = _resolveSuccessfulRefreshAt(state);
     if (successfulRefreshAt != null &&
         successfulRefreshAt != _lastRecordedSuccessfulRefreshAt) {
       _lastRecordedSuccessfulRefreshAt = successfulRefreshAt;
-      recordSalesAutoRefreshSuccessfulReload(successfulRefreshAt);
+      recordAutoRefreshSuccessfulReload(successfulRefreshAt);
     }
     if (state.closeFullscreenRequestId != _lastCloseFullscreenRequestId) {
       _lastCloseFullscreenRequestId = state.closeFullscreenRequestId;
@@ -240,9 +250,8 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
                         style: styleSnapshot,
                         onMetricChanged: _controller.updateMetric,
                         showDesktopBranchSidebar: true,
-                        presentationMode:
-                            AppBrazilStoreSalesMapPresentationMode
-                                .cleanFullscreen,
+                        presentationMode: AppBrazilStoreSalesMapPresentationMode
+                            .cleanFullscreen,
                       );
                       final maxH = cardConstraints.maxHeight;
                       if (maxH.isFinite && maxH < double.infinity) {
@@ -293,9 +302,9 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
           _SalesLiveMapFilterSection(onOpenFilters: _openFiltersSheet),
           SizedBox(height: tokens.gapMd),
           _SalesLiveMapAutoRefreshSection(
-            onIntervalChanged: setSalesAutoRefreshInterval,
+            onOptionChanged: setAutoRefreshOption,
             onRefreshNow: () => unawaited(_reload()),
-            stateListenable: salesAutoRefreshStateListenable,
+            stateListenable: autoRefreshStateListenable,
           ),
           SizedBox(height: tokens.sectionSpacing),
           _SalesLiveMapBodySection(
@@ -409,20 +418,20 @@ class _SalesLiveMapFilterSection extends StatelessWidget {
 
 class _SalesLiveMapAutoRefreshSection extends StatelessWidget {
   const _SalesLiveMapAutoRefreshSection({
-    required this.onIntervalChanged,
+    required this.onOptionChanged,
     required this.onRefreshNow,
     required this.stateListenable,
   });
 
-  final ValueChanged<SalesAutoRefreshInterval?> onIntervalChanged;
+  final ValueChanged<AutoRefreshOption?> onOptionChanged;
   final VoidCallback onRefreshNow;
-  final ValueListenable<SalesAutoRefreshUiState> stateListenable;
+  final ValueListenable<AutoRefreshUiState> stateListenable;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return ValueListenableBuilder<SalesAutoRefreshUiState>(
+    return ValueListenableBuilder<AutoRefreshUiState>(
       valueListenable: stateListenable,
       builder: (context, refreshState, _) {
         return Selector<SalesLiveMapController, SalesLiveMapPresentationState>(
@@ -432,8 +441,8 @@ class _SalesLiveMapAutoRefreshSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 SalesAutoRefreshActionsRow(
-                  value: refreshState.interval,
-                  onChanged: onIntervalChanged,
+                  value: refreshState.option,
+                  onChanged: onOptionChanged,
                   onRefreshNow: state.canReload ? onRefreshNow : () {},
                   enabled: state.canScheduleAutoRefresh,
                   lastUpdatedAt: refreshState.lastUpdatedAt,
@@ -443,9 +452,9 @@ class _SalesLiveMapAutoRefreshSection extends StatelessWidget {
                 ),
                 if (state.isLoading && state.result != null) ...<Widget>[
                   SizedBox(
-                    height: Theme.of(context)
-                        .extension<AppThemeTokens>()!
-                        .gapSm,
+                    height: Theme.of(
+                      context,
+                    ).extension<AppThemeTokens>()!.gapSm,
                   ),
                   const LinearProgressIndicator(minHeight: 2),
                 ],

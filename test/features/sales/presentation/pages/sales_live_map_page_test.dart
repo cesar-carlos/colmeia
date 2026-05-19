@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -11,10 +12,10 @@ import 'package:colmeia/features/sales/application/load_sales_available_agents_u
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -51,7 +52,8 @@ void main() {
     Provider.debugCheckInvalidValueType = null;
     registerFallbackValue(const SalesLiveMapFilter());
     registerFallbackValue(SalesLiveMapLoadCancelToken());
-    registerFallbackValue(SalesAutoRefreshPreference.disabled);
+    registerFallbackValue(AutoRefreshSnapshot.disabled);
+    registerFallbackValue(SalesAutoRefreshOptions.optionSet);
   });
 
   setUp(() async {
@@ -79,10 +81,16 @@ void main() {
       () => salesPreferences.persistSalesLiveMapFilter(any()),
     ).thenAnswer((_) async {});
     when(
-      () => salesPreferences.restoreSalesLiveMapAutoRefreshPreference(),
-    ).thenReturn(SalesAutoRefreshPreference.disabled);
+      () => salesPreferences.restoreAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        optionSet: any(named: 'optionSet'),
+      ),
+    ).thenReturn(AutoRefreshSnapshot.disabled);
     when(
-      () => salesPreferences.persistSalesLiveMapAutoRefreshPreference(any()),
+      () => salesPreferences.persistAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        snapshot: any(named: 'snapshot'),
+      ),
     ).thenAnswer((_) async {});
     when(
       () => loadAvailableAgentsForSales.call('user-1'),
@@ -133,7 +141,12 @@ void main() {
   testWidgets('reloads the live map after the selected interval', (
     tester,
   ) async {
-    await _pumpPage(tester, authController: authController);
+    await _setDesktopSurface(tester);
+    await _pumpPage(
+      tester,
+      authController: authController,
+      mediaSize: const Size(1400, 900),
+    );
     await _pumpInitialLoad(tester);
     verify(
       () => loadLiveMap.loadProgressive(
@@ -167,17 +180,25 @@ void main() {
   testWidgets(
     'restores the persisted auto-refresh interval and last updated label',
     (tester) async {
+      await _setDesktopSurface(tester);
       when(
-        () => salesPreferences.restoreSalesLiveMapAutoRefreshPreference(),
+        () => salesPreferences.restoreAutoRefreshSnapshot(
+          cardId: any(named: 'cardId'),
+          optionSet: any(named: 'optionSet'),
+        ),
       ).thenReturn(
-        SalesAutoRefreshPreference(
-          interval: SalesAutoRefreshInterval.fiveMinutes,
+        AutoRefreshSnapshot(
+          option: SalesAutoRefreshOptions.fiveMinutes,
           lastSuccessfulRefreshAt: DateTime(2026, 5, 9, 11, 45),
           remainingDelay: const Duration(minutes: 5),
         ),
       );
 
-      await _pumpPage(tester, authController: authController);
+      await _pumpPage(
+        tester,
+        authController: authController,
+        mediaSize: const Size(1400, 900),
+      );
       await _pumpInitialLoad(tester);
 
       expect(find.text('5 min'), findsOneWidget);
@@ -189,11 +210,15 @@ void main() {
   testWidgets(
     'does not advance last updated label when the reload fails',
     (tester) async {
+      await _setDesktopSurface(tester);
       when(
-        () => salesPreferences.restoreSalesLiveMapAutoRefreshPreference(),
+        () => salesPreferences.restoreAutoRefreshSnapshot(
+          cardId: any(named: 'cardId'),
+          optionSet: any(named: 'optionSet'),
+        ),
       ).thenReturn(
-        SalesAutoRefreshPreference(
-          interval: SalesAutoRefreshInterval.fiveMinutes,
+        AutoRefreshSnapshot(
+          option: SalesAutoRefreshOptions.fiveMinutes,
           lastSuccessfulRefreshAt: DateTime(2026, 5, 9, 11, 45),
           remainingDelay: const Duration(minutes: 5),
         ),
@@ -206,7 +231,11 @@ void main() {
         ),
       ).thenAnswer((_) => _streamResult(_failedResult()));
 
-      await _pumpPage(tester, authController: authController);
+      await _pumpPage(
+        tester,
+        authController: authController,
+        mediaSize: const Size(1400, 900),
+      );
       await _pumpInitialLoad(tester);
 
       expect(find.textContaining('Updated 11:45'), findsOneWidget);
@@ -218,6 +247,7 @@ void main() {
   testWidgets('ignores auto-refresh tick while reload is still running', (
     tester,
   ) async {
+    await _setDesktopSurface(tester);
     final completer = Completer<SalesLiveMapLoadResult>();
     when(
       () => loadLiveMap.loadProgressive(
@@ -227,7 +257,11 @@ void main() {
       ),
     ).thenAnswer((_) => _streamFromFuture(completer.future));
 
-    await _pumpPage(tester, authController: authController);
+    await _pumpPage(
+      tester,
+      authController: authController,
+      mediaSize: const Size(1400, 900),
+    );
     await tester.pump();
     await tester.pump();
     verify(
@@ -894,9 +928,15 @@ void main() {
   });
 }
 
+Future<void> _setDesktopSurface(WidgetTester tester) async {
+  await tester.binding.setSurfaceSize(const Size(1400, 900));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+}
+
 Future<void> _pumpPage(
   WidgetTester tester, {
   required AuthController authController,
+  Size? mediaSize,
 }) async {
   await tester.pumpWidget(
     Provider<AuthController>.value(
@@ -906,16 +946,20 @@ Future<void> _pumpPage(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: ChangeNotifierProvider<SalesLiveMapController>(
-            create: (_) => SalesLiveMapController(
-              sessionService: SalesSessionService(_pumpSalesPreferences),
-              loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-                _pumpLoadAvailableAgentsForSales,
+        home: MediaQuery(
+          data: MediaQueryData(size: mediaSize ?? const Size(800, 600)),
+          child: Scaffold(
+            body: ChangeNotifierProvider<SalesLiveMapController>(
+              create: (_) => SalesLiveMapController(
+                sessionService: SalesSessionService(_pumpSalesPreferences),
+                loadSalesAvailableAgentsUseCase:
+                    LoadSalesAvailableAgentsUseCase(
+                      _pumpLoadAvailableAgentsForSales,
+                    ),
+                loadSalesLiveMapUseCase: _pumpLoadLiveMap,
               ),
-              loadSalesLiveMapUseCase: _pumpLoadLiveMap,
+              child: const SalesLiveMapPage(),
             ),
-            child: const SalesLiveMapPage(),
           ),
         ),
       ),

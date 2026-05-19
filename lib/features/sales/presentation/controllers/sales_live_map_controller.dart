@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_auto_refresh_preference.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
@@ -26,8 +27,7 @@ class SalesLiveMapController extends ChangeNotifier {
   final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
   final LoadSalesLiveMapUseCase _loadLiveMap;
 
-  SalesLiveMapPresentationState _state =
-      const SalesLiveMapPresentationState();
+  SalesLiveMapPresentationState _state = const SalesLiveMapPresentationState();
   String? _boundUserId;
   int _loadGeneration = 0;
   SalesLiveMapLoadCancelToken? _activeLoadCancelToken;
@@ -35,17 +35,12 @@ class SalesLiveMapController extends ChangeNotifier {
 
   SalesLiveMapPresentationState get state => _state;
 
-  SalesAutoRefreshPreference restoreAutoRefreshPreference() {
-    return _sessionService.restoreSalesLiveMapAutoRefreshPreference();
-  }
-
-  Future<void> persistAutoRefreshPreference(
-    SalesAutoRefreshPreference preference,
-  ) {
-    return _sessionService.persistSalesLiveMapAutoRefreshPreference(
-      preference,
-    );
-  }
+  AutoRefreshStatePersistence get autoRefreshPersistence =>
+      SalesCardAutoRefreshPersistence(
+        sessionService: _sessionService,
+        cardId: SalesAutoRefreshCardIds.liveMap,
+        optionSet: SalesAutoRefreshOptions.optionSet,
+      );
 
   Future<void> bindUser(String? userId) async {
     if (_boundUserId == userId) {

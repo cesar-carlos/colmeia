@@ -5,6 +5,7 @@ import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
@@ -25,6 +26,7 @@ import 'package:colmeia/features/sales/application/resolve_sales_agent_client_to
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_page.dart';
 import 'package:colmeia/features/sales/presentation/routes/sales_routes.dart';
@@ -84,6 +86,8 @@ void main() {
       const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(quantidadeDias: 7),
     );
     registerFallbackValue(<String>[]);
+    registerFallbackValue(AutoRefreshSnapshot.disabled);
+    registerFallbackValue(SalesAutoRefreshOptions.optionSet);
   });
 
   setUp(() async {
@@ -123,6 +127,18 @@ void main() {
     );
     when(
       () => salesPreferences.persistCardFilters(any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => salesPreferences.restoreAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        optionSet: any(named: 'optionSet'),
+      ),
+    ).thenReturn(AutoRefreshSnapshot.disabled);
+    when(
+      () => salesPreferences.persistAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        snapshot: any(named: 'snapshot'),
+      ),
     ).thenAnswer((_) async {});
 
     when(

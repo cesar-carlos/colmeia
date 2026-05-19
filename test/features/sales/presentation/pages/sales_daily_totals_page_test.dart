@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -13,6 +14,7 @@ import 'package:colmeia/features/sales/application/resolve_sales_agent_client_to
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_daily_totals_page.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -49,6 +51,8 @@ void main() {
       const OverviewYearMonth(year: 2026, month: 5),
     );
     registerFallbackValue(<String>['agent-1']);
+    registerFallbackValue(AutoRefreshSnapshot.disabled);
+    registerFallbackValue(SalesAutoRefreshOptions.optionSet);
   });
 
   setUp(() async {
@@ -88,6 +92,18 @@ void main() {
       () => salesPreferences.persistSalesDailyTotalsDateRange(
         useCustomRange: any(named: 'useCustomRange'),
         range: any(named: 'range'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => salesPreferences.restoreAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        optionSet: any(named: 'optionSet'),
+      ),
+    ).thenReturn(AutoRefreshSnapshot.disabled);
+    when(
+      () => salesPreferences.persistAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        snapshot: any(named: 'snapshot'),
       ),
     ).thenAnswer((_) async {});
     when(
@@ -142,6 +158,7 @@ void main() {
       tokenReader: tokenReader,
       loadAvailableAgentsForSales: loadAvailableAgentsForSales,
       loadDailyTotals: loadDailyTotals,
+      mediaSize: const Size(1400, 900),
     );
     await tester.pump();
     await tester.pump();
@@ -158,6 +175,7 @@ void main() {
   testWidgets('auto-refresh reloads daily totals after selected interval', (
     tester,
   ) async {
+    await _setDesktopSurface(tester);
     await _pumpPage(
       tester,
       authController: authController,
@@ -165,6 +183,7 @@ void main() {
       tokenReader: tokenReader,
       loadAvailableAgentsForSales: loadAvailableAgentsForSales,
       loadDailyTotals: loadDailyTotals,
+      mediaSize: const Size(1400, 900),
     );
     await tester.pumpAndSettle();
 
@@ -199,6 +218,11 @@ void main() {
   });
 }
 
+Future<void> _setDesktopSurface(WidgetTester tester) async {
+  await tester.binding.setSurfaceSize(const Size(1400, 900));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+}
+
 Future<void> _pumpPage(
   WidgetTester tester, {
   required AuthController authController,
@@ -206,6 +230,7 @@ Future<void> _pumpPage(
   required AgentClientTokenReader tokenReader,
   required LoadAvailableAgentsForSales loadAvailableAgentsForSales,
   required LoadSalesDailyTotalsUseCase loadDailyTotals,
+  Size? mediaSize,
 }) async {
   await tester.pumpWidget(
     Provider<AuthController>.value(
@@ -215,15 +240,18 @@ Future<void> _pumpPage(
         locale: const Locale('en'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: SalesDailyTotalsPage(
-            sessionService: SalesSessionService(salesPreferences),
-            loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-              loadAvailableAgentsForSales,
+        home: MediaQuery(
+          data: MediaQueryData(size: mediaSize ?? const Size(800, 600)),
+          child: Scaffold(
+            body: SalesDailyTotalsPage(
+              sessionService: SalesSessionService(salesPreferences),
+              loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
+                loadAvailableAgentsForSales,
+              ),
+              loadSalesDailyTotalsUseCase: loadDailyTotals,
+              resolveSalesAgentClientTokenUseCase:
+                  ResolveSalesAgentClientTokenUseCase(tokenReader),
             ),
-            loadSalesDailyTotalsUseCase: loadDailyTotals,
-            resolveSalesAgentClientTokenUseCase:
-                ResolveSalesAgentClientTokenUseCase(tokenReader),
           ),
         ),
       ),
