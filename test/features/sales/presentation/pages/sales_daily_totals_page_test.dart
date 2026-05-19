@@ -216,6 +216,69 @@ void main() {
       ),
     ).called(1);
   });
+
+  testWidgets(
+    'keeps the selected auto-refresh option when the selected agent lacks local token',
+    (tester) async {
+      await _setDesktopSurface(tester);
+      when(
+        () => salesPreferences.restoreAutoRefreshSnapshot(
+          cardId: any(named: 'cardId'),
+          optionSet: any(named: 'optionSet'),
+        ),
+      ).thenReturn(
+        AutoRefreshSnapshot(
+          option: SalesAutoRefreshOptions.fiveMinutes,
+          lastSuccessfulRefreshAt: DateTime(2026, 5, 9, 11, 45),
+          remainingDelay: const Duration(minutes: 5),
+        ),
+      );
+      when(
+        () => loadAvailableAgentsForSales.call(any()),
+      ).thenAnswer(
+        (_) async => <OverviewAgentOption>[
+          const OverviewAgentOption(
+            agentId: 'agent-1',
+            name: 'Agent One',
+            missingLocalClientToken: true,
+          ),
+        ],
+      );
+      when(
+        () => tokenReader.readMany(
+          userId: any(named: 'userId'),
+          agentIds: any(named: 'agentIds'),
+        ),
+      ).thenAnswer((_) async => <String, String>{});
+
+      await _pumpPage(
+        tester,
+        authController: authController,
+        salesPreferences: salesPreferences,
+        tokenReader: tokenReader,
+        loadAvailableAgentsForSales: loadAvailableAgentsForSales,
+        loadDailyTotals: loadDailyTotals,
+        mediaSize: const Size(1400, 900),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('5 min'), findsOneWidget);
+      expect(find.text('Off'), findsNothing);
+      expect(
+        find.text('Auto-refresh paused: local token required'),
+        findsOneWidget,
+      );
+      verifyNever(
+        () => loadDailyTotals.call(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          anchor: any(named: 'anchor'),
+          dailySaleDateRange: any(named: 'dailySaleDateRange'),
+          clientToken: any(named: 'clientToken'),
+        ),
+      );
+    },
+  );
 }
 
 Future<void> _setDesktopSurface(WidgetTester tester) async {

@@ -10,6 +10,7 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
@@ -52,6 +53,7 @@ void main() {
     Provider.debugCheckInvalidValueType = null;
     registerFallbackValue(const SalesLiveMapFilter());
     registerFallbackValue(SalesLiveMapLoadCancelToken());
+    registerFallbackValue(SalesLiveMapReloadReason.manual);
     registerFallbackValue(AutoRefreshSnapshot.disabled);
     registerFallbackValue(SalesAutoRefreshOptions.optionSet);
   });
@@ -103,6 +105,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => _streamResult(_loadedResult()));
@@ -120,6 +123,7 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: 'user-1',
           filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
       ).called(1);
@@ -132,6 +136,7 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: 'user-1',
           filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
       );
@@ -152,6 +157,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).called(1);
@@ -172,6 +178,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).called(1);
@@ -208,6 +215,87 @@ void main() {
   );
 
   testWidgets(
+    'does not show the next auto-refresh countdown outside desktop viewports',
+    (tester) async {
+      when(
+        () => salesPreferences.restoreAutoRefreshSnapshot(
+          cardId: any(named: 'cardId'),
+          optionSet: any(named: 'optionSet'),
+        ),
+      ).thenReturn(
+        AutoRefreshSnapshot(
+          option: SalesAutoRefreshOptions.fiveMinutes,
+          lastSuccessfulRefreshAt: DateTime(2026, 5, 9, 11, 45),
+          remainingDelay: const Duration(minutes: 5),
+        ),
+      );
+
+      await _pumpPage(
+        tester,
+        authController: authController,
+        mediaSize: const Size(800, 600),
+      );
+      await _pumpInitialLoad(tester);
+
+      expect(find.textContaining('Updated 12:00'), findsOneWidget);
+      expect(find.textContaining('Next in'), findsNothing);
+      expect(find.text('5 min'), findsNothing);
+      expect(
+        find.text('Auto-refresh available on desktop'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'does not advance last updated label while progressive sales data is pending',
+    (tester) async {
+      await _setDesktopSurface(tester);
+      final controller = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(controller.close);
+      when(
+        () => salesPreferences.restoreAutoRefreshSnapshot(
+          cardId: any(named: 'cardId'),
+          optionSet: any(named: 'optionSet'),
+        ),
+      ).thenReturn(
+        AutoRefreshSnapshot(
+          option: SalesAutoRefreshOptions.fiveMinutes,
+          lastSuccessfulRefreshAt: DateTime(2026, 5, 9, 11, 45),
+          remainingDelay: const Duration(minutes: 5),
+        ),
+      );
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) => controller.stream);
+
+      await _pumpPage(
+        tester,
+        authController: authController,
+        mediaSize: const Size(1400, 900),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      controller.add(_pendingMapResult());
+      await tester.pump();
+
+      expect(find.textContaining('Updated 11:45'), findsOneWidget);
+      expect(find.textContaining('Updated 12:00'), findsNothing);
+
+      controller.add(_loadedResult());
+      await tester.pump();
+
+      expect(find.textContaining('Updated 12:00'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'does not advance last updated label when the reload fails',
     (tester) async {
       await _setDesktopSurface(tester);
@@ -227,6 +315,7 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: any(named: 'userId'),
           filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
       ).thenAnswer((_) => _streamResult(_failedResult()));
@@ -244,57 +333,35 @@ void main() {
     },
   );
 
-  testWidgets('ignores auto-refresh tick while reload is still running', (
-    tester,
-  ) async {
-    await _setDesktopSurface(tester);
-    final completer = Completer<SalesLiveMapLoadResult>();
-    when(
-      () => loadLiveMap.loadProgressive(
-        userId: any(named: 'userId'),
-        filter: any(named: 'filter'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    ).thenAnswer((_) => _streamFromFuture(completer.future));
+  testWidgets(
+    'keeps refresh now enabled when auto-refresh scheduling is unavailable',
+    (tester) async {
+      await _setDesktopSurface(tester);
+      when(
+        () => loadAvailableAgentsForSales.call('user-1'),
+      ).thenAnswer(
+        (_) async => const <OverviewAgentOption>[
+          OverviewAgentOption(
+            agentId: 'agent-1',
+            name: 'Branch One',
+            missingLocalClientToken: true,
+          ),
+        ],
+      );
 
-    await _pumpPage(
-      tester,
-      authController: authController,
-      mediaSize: const Size(1400, 900),
-    );
-    await tester.pump();
-    await tester.pump();
-    verify(
-      () => loadLiveMap.loadProgressive(
-        userId: 'user-1',
-        filter: any(named: 'filter'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    ).called(1);
+      await _pumpPage(
+        tester,
+        authController: authController,
+        mediaSize: const Size(1400, 900),
+      );
+      await _pumpInitialLoad(tester);
 
-    await tester.tap(find.text('Off'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-    await tester.tap(
-      find.byKey(const ValueKey<String>('sales-auto-refresh-fiveMinutes')),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
-
-    await tester.pump(const Duration(minutes: 5));
-    await tester.pump();
-
-    verifyNever(
-      () => loadLiveMap.loadProgressive(
-        userId: 'user-1',
-        filter: any(named: 'filter'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    );
-
-    completer.complete(_loadedResult());
-    await tester.pump();
-  });
+      final refreshNowButton = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Refresh now'),
+      );
+      expect(refreshNowButton.onPressed, isNotNull);
+    },
+  );
 
   testWidgets('ignores refresh-now while a reload is still running', (
     tester,
@@ -304,6 +371,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => _streamFromFuture(completer.future));
@@ -315,6 +383,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).called(1);
@@ -326,6 +395,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     );
@@ -350,6 +420,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     );
@@ -369,6 +440,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => controller.stream);
@@ -491,7 +563,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.textContaining('Branches:'), findsNothing);
+      expect(find.textContaining('Branches:'), findsOneWidget);
       expect(
         find.byKey(
           const ValueKey<String>('brazil-store-sales-map-legend-button'),
@@ -501,6 +573,112 @@ void main() {
     },
   );
 
+  testWidgets(
+    'keeps fullscreen open and updates the map when the controller reloads new data',
+    (tester) async {
+      await _setDesktopSurface(tester);
+      var callCount = 0;
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) {
+        callCount += 1;
+        return _streamResult(
+          callCount == 1 ? _loadedResult() : _twoBranchLoadedResult(),
+        );
+      });
+
+      final router = await _pumpPageWithRouter(
+        tester,
+        authController: authController,
+      );
+      await _pumpInitialLoad(tester);
+
+      final controller = tester
+          .element(find.byType(SalesLiveMapPage).first)
+          .read<SalesLiveMapController>();
+      final fullscreenFinder = find.byIcon(Icons.open_in_full);
+      await tester.ensureVisible(fullscreenFinder);
+      await tester.pump();
+      await tester.tap(fullscreenFinder);
+      await tester.pumpAndSettle();
+
+      var fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart).last,
+      );
+      expect(fullscreenChart.points, hasLength(1));
+      expect(
+        find.textContaining('data loaded when you opened fullscreen'),
+        findsNothing,
+      );
+
+      await controller.reload();
+      await tester.pumpAndSettle();
+
+      fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart).last,
+      );
+      expect(fullscreenChart.points, hasLength(2));
+      expect(router.canPop(), isTrue);
+      expect(router.state.matchedLocation, AppRoute.chartFullscreen.path);
+    },
+  );
+
+  testWidgets('auto-refresh keeps reloading while fullscreen is open', (
+    tester,
+  ) async {
+    await _setDesktopSurface(tester);
+    when(
+      () => salesPreferences.restoreAutoRefreshSnapshot(
+        cardId: any(named: 'cardId'),
+        optionSet: any(named: 'optionSet'),
+      ),
+    ).thenReturn(
+      const AutoRefreshSnapshot(
+        option: SalesAutoRefreshOptions.fiveMinutes,
+        remainingDelay: Duration(minutes: 5),
+      ),
+    );
+    final router = await _pumpPageWithRouter(
+      tester,
+      authController: authController,
+    );
+    await _pumpInitialLoad(tester);
+    verify(
+      () => loadLiveMap.loadProgressive(
+        userId: 'user-1',
+        filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).called(1);
+
+    final fullscreenFinder = find.byIcon(Icons.open_in_full);
+    await tester.ensureVisible(fullscreenFinder);
+    await tester.pump();
+    await tester.tap(fullscreenFinder);
+    await tester.pumpAndSettle();
+    clearInteractions(loadLiveMap);
+
+    await tester.pump(const Duration(minutes: 5));
+    await tester.pump();
+
+    verify(
+      () => loadLiveMap.loadProgressive(
+        userId: 'user-1',
+        filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    ).called(1);
+    expect(router.canPop(), isTrue);
+    expect(router.state.matchedLocation, AppRoute.chartFullscreen.path);
+  });
+
   testWidgets('shows explicit empty state when the query returns no sales', (
     tester,
   ) async {
@@ -508,6 +686,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => _streamResult(_emptyResult()));
@@ -531,6 +710,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => _streamResult(_partialUnmappedResult()));
@@ -556,6 +736,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => _streamResult(_partialNoSalesResult()));
@@ -582,6 +763,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => _streamResult(_partialUnavailableSalesResult()));
@@ -639,6 +821,7 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: any(named: 'userId'),
           filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
       );
@@ -654,6 +837,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).called(1);
@@ -663,6 +847,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => _streamFromFuture(reloadCompleter.future));
@@ -702,6 +887,7 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: any(named: 'userId'),
           filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
       ).thenAnswer((_) {
@@ -719,6 +905,7 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: 'user-1',
           filter: captureAny(named: 'filter'),
+          reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
       ).captured.cast<SalesLiveMapFilter>().toList();
@@ -752,6 +939,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: captureAny(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).captured.cast<SalesLiveMapFilter>().toList();
@@ -827,6 +1015,7 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: 'user-1',
           filter: captureAny(named: 'filter'),
+          reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
       ).captured.cast<SalesLiveMapFilter>().toList();
@@ -842,6 +1031,7 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: any(named: 'userId'),
           filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
       ).thenAnswer((_) => _streamResult(_twoBranchLoadedResult()));
@@ -965,6 +1155,50 @@ Future<void> _pumpPage(
       ),
     ),
   );
+}
+
+Future<GoRouter> _pumpPageWithRouter(
+  WidgetTester tester, {
+  required AuthController authController,
+  Size mediaSize = const Size(1400, 900),
+}) async {
+  final router = GoRouter(
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/',
+        builder: (context, state) => MediaQuery(
+          data: MediaQueryData(size: mediaSize),
+          child: ChangeNotifierProvider<SalesLiveMapController>(
+            create: (_) => SalesLiveMapController(
+              sessionService: SalesSessionService(_pumpSalesPreferences),
+              loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
+                _pumpLoadAvailableAgentsForSales,
+              ),
+              loadSalesLiveMapUseCase: _pumpLoadLiveMap,
+            ),
+            child: const Scaffold(body: SalesLiveMapPage()),
+          ),
+        ),
+      ),
+      ...buildAppChartFullscreenRoutes(),
+    ],
+  );
+  addTearDown(router.dispose);
+
+  await tester.pumpWidget(
+    Provider<AuthController>.value(
+      value: authController,
+      child: MaterialApp.router(
+        theme: AppTheme.light(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
+    ),
+  );
+
+  return router;
 }
 
 Future<void> _pumpInitialLoad(WidgetTester tester) async {

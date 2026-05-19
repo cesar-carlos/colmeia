@@ -1506,6 +1506,12 @@
       "time": {"type": "String"}
     }
   },
+  "salesAutoRefreshPaused": "Auto-refresh paused",
+  "salesAutoRefreshPausedLoading": "Auto-refresh paused while loading",
+  "salesAutoRefreshPausedMissingLocalToken": "Auto-refresh paused: local token required",
+  "salesAutoRefreshPausedNoEligibleSelection": "Auto-refresh paused: select an eligible branch",
+  "salesAutoRefreshPausedUnsupportedViewport": "Auto-refresh available on desktop",
+  "salesAutoRefreshPausedHidden": "Auto-refresh paused while this screen is hidden",
   "salesDailyTotalsChartTitle": "Daily sales",
   "salesDailyTotalsChartTitleAmount": "Daily revenue",
   "salesDailyTotalsChartSubtitle": "Totals per calendar day for the selected branch and reference month.",

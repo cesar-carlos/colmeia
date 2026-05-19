@@ -43,42 +43,94 @@ void main() {
             ),
           );
 
-          result.fold(
-            (page) {
-              expect(page.totalCount, greaterThanOrEqualTo(0));
-              expect(page.items.length, lessThanOrEqualTo(20));
-              for (final row in page.items) {
-                expect(row.codEmpresa, greaterThan(0));
-                expect(row.codFilial, greaterThanOrEqualTo(0));
-                expect(row.nomeFilial, isNotEmpty);
-                final cep = row.cep;
-                if (cep != null) {
-                  expect(cep, matches(RegExp(r'^\d+$')));
-                }
-                final municipio = row.nomeMunicipio;
-                if (municipio != null) {
-                  expect(municipio, municipio.trim());
-                  expect(municipio, isNotEmpty);
-                }
-              }
-            },
-            (failure) {
-              expect(
-                failure,
-                isNot(isA<SessionFailure>()),
-                reason:
-                    'Unexpected HTTP 401 after client login '
-                    'â€” check E2E_* values.',
-              );
-              expect(
-                isAcceptableE2eAgentSqlRepositoryFailure(failure),
-                isTrue,
-                reason:
-                    'Repository e2e should return rows, invalid_policy / '
-                    'missing_permission RPC, or transient bridge HTTP 5xx.',
-              );
-            },
+          final page = result.getOrNull();
+          if (page == null) {
+            final failure = result.exceptionOrNull()!;
+            expect(
+              failure,
+              isNot(isA<SessionFailure>()),
+              reason:
+                  'Unexpected HTTP 401 after client login '
+                  'Ã¢â‚¬â€ check E2E_* values.',
+            );
+            expect(
+              isAcceptableE2eAgentSqlRepositoryFailure(failure),
+              isTrue,
+              reason:
+                  'Repository e2e should return rows, invalid_policy / '
+                  'missing_permission RPC, or transient bridge HTTP 5xx.',
+            );
+            return;
+          }
+
+          expect(page.totalCount, greaterThanOrEqualTo(0));
+          expect(page.items.length, lessThanOrEqualTo(20));
+          for (final row in page.items) {
+            expect(row.codEmpresa, greaterThan(0));
+            expect(row.codFilial, greaterThanOrEqualTo(0));
+            expect(row.nomeFilial, isNotEmpty);
+            final cep = row.cep;
+            if (cep != null) {
+              expect(cep, matches(RegExp(r'^\d+$')));
+            }
+            final municipio = row.nomeMunicipio;
+            if (municipio != null) {
+              expect(municipio, municipio.trim());
+              expect(municipio, isNotEmpty);
+            }
+          }
+
+          if (page.items.length < 2) {
+            return;
+          }
+
+          final selectedRows = page.items.take(2).toList(growable: false);
+          final subsetResult = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: CadastroFilialFilter(
+                selectedBranches: selectedRows
+                    .map(
+                      (row) => CadastroFilialBranchRef(
+                        agentId: AppEnvironment.e2eAgentId,
+                        codEmpresa: row.codEmpresa,
+                        codFilial: row.codFilial,
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ),
           );
+
+          final subsetPage = subsetResult.getOrNull();
+          if (subsetPage == null) {
+            final failure = subsetResult.exceptionOrNull()!;
+            expect(
+              failure,
+              isNot(isA<SessionFailure>()),
+              reason:
+                  'Unexpected HTTP 401 after client login '
+                  'Ã¢â‚¬â€ check E2E_* values.',
+            );
+            expect(
+              isAcceptableE2eAgentSqlRepositoryFailure(failure),
+              isTrue,
+              reason:
+                  'Repository e2e should return rows, invalid_policy / '
+                  'missing_permission RPC, or transient bridge HTTP 5xx.',
+            );
+            return;
+          }
+
+          final expectedIds = selectedRows
+              .map((row) => '${row.codEmpresa}:${row.codFilial}')
+              .toSet();
+          final actualIds = subsetPage.items
+              .map((row) => '${row.codEmpresa}:${row.codFilial}')
+              .toSet();
+          expect(actualIds, expectedIds);
         },
       );
     },

@@ -16,6 +16,7 @@ import 'package:colmeia/features/sales/application/load_sales_available_agents_u
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
@@ -59,6 +60,7 @@ class SalesProdutoRankLucroPage extends StatefulWidget {
 class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
     with
         AutoRefreshStateMixin<SalesProdutoRankLucroPage>,
+        SalesSingleAgentAutoRefreshMixin<SalesProdutoRankLucroPage>,
         SalesCardAutoRefreshBinding<SalesProdutoRankLucroPage> {
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
@@ -172,14 +174,20 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
   String get salesAutoRefreshCardId => SalesAutoRefreshCardIds.produtoRankLucro;
 
   @override
-  bool get canScheduleAutoRefresh =>
-      _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
+  String? get autoRefreshSelectedAgentId => _selectedAgentId;
+
+  @override
+  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+
+  @override
+  bool get autoRefreshPageLoading => _loading;
 
   @override
   Future<void> performAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
+    markAutoRefreshCancelled();
 
     setState(() {
       _loading = true;
@@ -212,7 +220,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
         _rows = const <ProdutoVendidoProdutoRankLucroRow>[];
         _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
       });
-      disableAutoRefresh();
+      markAutoRefreshCancelled();
       return;
     }
 
@@ -247,6 +255,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
           _loading = false;
           _error = null;
         });
+        markAutoRefreshSuccess();
       },
       (exception) {
         setState(() {
@@ -254,6 +263,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
           _rows = const <ProdutoVendidoProdutoRankLucroRow>[];
           _error = _failureMessage(exception);
         });
+        markAutoRefreshFailure();
       },
     );
   }
@@ -412,6 +422,8 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
             onRefreshNow: () => unawaited(_reload()),
             enabled: canScheduleAutoRefresh,
             lastUpdatedAt: autoRefreshLastUpdatedAt,
+            isPaused: autoRefreshIsPaused,
+            pauseReason: autoRefreshPauseReason,
             l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),

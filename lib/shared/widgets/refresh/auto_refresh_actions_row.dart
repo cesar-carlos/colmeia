@@ -6,6 +6,8 @@ import 'package:colmeia/shared/widgets/refresh/auto_refresh_countdown_text.dart'
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+enum AutoRefreshStatusTone { neutral, warning }
+
 class AutoRefreshActionsRow extends StatelessWidget {
   const AutoRefreshActionsRow({
     required this.options,
@@ -22,9 +24,13 @@ class AutoRefreshActionsRow extends StatelessWidget {
     this.nextDueAt,
     this.isBackingOff = false,
     this.showAutoRefreshControl = true,
+    this.refreshNowEnabled,
+    this.controlEnabled,
     this.countdownLabelBuilder,
     this.countdownTicker,
     this.controlKeyPrefix = 'auto-refresh',
+    this.statusLabel,
+    this.statusTone = AutoRefreshStatusTone.neutral,
   });
 
   final List<AutoRefreshOption> options;
@@ -40,9 +46,13 @@ class AutoRefreshActionsRow extends StatelessWidget {
   final DateTime? nextDueAt;
   final bool isBackingOff;
   final bool showAutoRefreshControl;
+  final bool? refreshNowEnabled;
+  final bool? controlEnabled;
   final AutoRefreshCountdownLabelBuilder? countdownLabelBuilder;
   final ValueListenable<DateTime>? countdownTicker;
   final String controlKeyPrefix;
+  final String? statusLabel;
+  final AutoRefreshStatusTone statusTone;
 
   @override
   Widget build(BuildContext context) {
@@ -71,8 +81,19 @@ class AutoRefreshActionsRow extends StatelessWidget {
               labelBuilder: countdownLabelBuilder!,
               ticker: countdownTicker,
             ),
+          if (statusLabel != null)
+            Text(
+              statusLabel!,
+              style: theme.appTypography.caption.copyWith(
+                color: switch (statusTone) {
+                  AutoRefreshStatusTone.neutral =>
+                    theme.colorScheme.onSurfaceVariant,
+                  AutoRefreshStatusTone.warning => tokens.warning,
+                },
+              ),
+            ),
           TextButton.icon(
-            onPressed: enabled ? onRefreshNow : null,
+            onPressed: (refreshNowEnabled ?? enabled) ? onRefreshNow : null,
             icon: const Icon(Icons.refresh_rounded, size: 18),
             label: Text(refreshNowLabel),
           ),
@@ -84,7 +105,7 @@ class AutoRefreshActionsRow extends StatelessWidget {
               onChanged: onChanged,
               offLabel: offLabel,
               tooltipLabel: tooltipLabel,
-              enabled: enabled,
+              enabled: controlEnabled ?? enabled,
               keyPrefix: controlKeyPrefix,
             ),
         ],

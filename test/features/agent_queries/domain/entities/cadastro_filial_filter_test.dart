@@ -36,5 +36,34 @@ void main() {
         ).validationError(),
       ).equals('pageSize must be <= ${CadastroFilialFilter.maxPageSize}');
     });
+
+    test('exposes selected branch helpers by agent', () {
+      const filter = CadastroFilialFilter(
+        selectedBranches: <CadastroFilialBranchRef>[
+          CadastroFilialBranchRef(
+            agentId: ' agent-a ',
+            codEmpresa: 1,
+            codFilial: 2,
+          ),
+          CadastroFilialBranchRef(
+            agentId: 'agent-b',
+            codEmpresa: 3,
+            codFilial: 4,
+          ),
+        ],
+      );
+
+      check(filter.hasSelectedBranches).isTrue();
+      check(filter.selectedAgentIds).isNotNull();
+      check(
+        filter.selectedAgentIds!,
+      ).deepEquals(<String>{'agent-a', 'agent-b'});
+      check(
+        filter.branchesForAgent('agent-a').map((branch) => branch.codFilial),
+      ).deepEquals(<int>[2]);
+      check(
+        filter.filterScopeSignature,
+      ).equals('branches=agent-a:1:2,agent-b:3:4');
+    });
   });
 }

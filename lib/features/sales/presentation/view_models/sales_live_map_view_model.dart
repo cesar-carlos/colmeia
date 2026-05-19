@@ -4,6 +4,8 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 
+final String _fullscreenSummarySeparator = ' ${String.fromCharCode(0x00B7)} ';
+
 class SalesLiveMapViewModel {
   SalesLiveMapViewModel._({
     required this.agentsSummary,
@@ -25,7 +27,8 @@ class SalesLiveMapViewModel {
     final visual = state.filter.detailLevel == SalesLiveMapMapDetail.states
         ? SalesLiveMapMarkerVisual.bubble
         : state.filter.markerVisual;
-    final usesMapLabel = state.filter.detailLevel == SalesLiveMapMapDetail.states;
+    final usesMapLabel =
+        state.filter.detailLevel == SalesLiveMapMapDetail.states;
     final visualSummary = _visualLabel(visual, l10n);
     final agentsSummary = _agentsSummary(state, l10n);
     final mapSubtitle = _mapSubtitle(state, l10n);
@@ -45,8 +48,7 @@ class SalesLiveMapViewModel {
       usesMapLabel: usesMapLabel,
       mapSubtitle: mapSubtitle,
       loadErrorMessage: loadErrorMessage,
-      fullscreenFilterSummary:
-          '${filterParts.join(' · ')} · ${l10n.chartFullscreenDataSnapshotHint}',
+      fullscreenFilterSummary: filterParts.join(_fullscreenSummarySeparator),
     );
   }
 
@@ -152,7 +154,8 @@ class SalesLiveMapViewModel {
     return switch (result?.loadFailureReason) {
       SalesLiveMapLoadFailureReason.missingClientTokenSetup =>
         l10n.salesLiveMapMissingClientTokenSetupMessage,
-      null => result?.loadFailureMessage ?? l10n.salesLiveMapLoadErrorRetryMessage,
+      null =>
+        result?.loadFailureMessage ?? l10n.salesLiveMapLoadErrorRetryMessage,
     };
   }
 }

@@ -20,6 +20,7 @@ import 'package:colmeia/features/sales/application/load_sales_available_agents_u
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_widgets.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
@@ -61,6 +62,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
     extends State<SalesProdutoTendenciaMediaMovelPage>
     with
         AutoRefreshStateMixin<SalesProdutoTendenciaMediaMovelPage>,
+        SalesSingleAgentAutoRefreshMixin<SalesProdutoTendenciaMediaMovelPage>,
         SalesCardAutoRefreshBinding<SalesProdutoTendenciaMediaMovelPage> {
   static const String _cardId = 'produto_tendencia_venda_media_movel';
   static const List<int> _pageSizeOptions = <int>[10, 20, 50, 100];
@@ -192,14 +194,20 @@ class _SalesProdutoTendenciaMediaMovelPageState
       SalesAutoRefreshCardIds.produtoTendenciaMediaMovel;
 
   @override
-  bool get canScheduleAutoRefresh =>
-      _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
+  String? get autoRefreshSelectedAgentId => _selectedAgentId;
+
+  @override
+  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+
+  @override
+  bool get autoRefreshPageLoading => _loading;
 
   @override
   Future<void> performAutoRefreshReload() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId;
+    markAutoRefreshCancelled();
 
     setState(() {
       _loading = true;
@@ -242,7 +250,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
             const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[];
         _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
       });
-      disableAutoRefresh();
+      markAutoRefreshCancelled();
       return;
     }
 
@@ -299,6 +307,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
           _error = null;
           _summaryError = summaryResult.fold((_) => null, _failureMessage);
         });
+        markAutoRefreshSuccess();
       },
       (failure) {
         setState(() {
@@ -313,6 +322,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
           _error = _failureMessage(failure);
           _summaryError = null;
         });
+        markAutoRefreshFailure();
       },
     );
   }
@@ -618,6 +628,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
                     onRefreshNow: () => unawaited(_reload()),
                     enabled: canScheduleAutoRefresh,
                     lastUpdatedAt: autoRefreshLastUpdatedAt,
+                    isPaused: autoRefreshIsPaused,
+                    pauseReason: autoRefreshPauseReason,
                     l10n: l10n,
                   ),
                   if (_selectedAgentId == null ||

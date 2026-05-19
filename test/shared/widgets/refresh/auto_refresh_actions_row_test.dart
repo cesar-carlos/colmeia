@@ -51,4 +51,36 @@ void main() {
 
     expect(find.text('0s'), findsOneWidget);
   });
+
+  testWidgets('renders a compact status label when provided', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: AutoRefreshActionsRow(
+            options: const <AutoRefreshOption>[
+              AutoRefreshOption(
+                id: 'fiveMinutes',
+                duration: Duration(minutes: 5),
+              ),
+            ],
+            optionLabelBuilder: (option) => option.id,
+            value: const AutoRefreshOption(
+              id: 'fiveMinutes',
+              duration: Duration(minutes: 5),
+            ),
+            onChanged: (_) {},
+            onRefreshNow: () {},
+            enabled: false,
+            refreshNowLabel: 'Refresh now',
+            offLabel: 'Off',
+            tooltipLabel: 'Auto refresh',
+            statusLabel: 'Auto-refresh paused while loading',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Auto-refresh paused while loading'), findsOneWidget);
+  });
 }

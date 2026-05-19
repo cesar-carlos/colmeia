@@ -7,6 +7,29 @@ import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+enum AutoRefreshReloadResultKind { success, cancelled, failure }
+
+@immutable
+class AutoRefreshReloadResult {
+  const AutoRefreshReloadResult.success(this.refreshedAt)
+    : kind = AutoRefreshReloadResultKind.success;
+
+  const AutoRefreshReloadResult.cancelled()
+    : kind = AutoRefreshReloadResultKind.cancelled,
+      refreshedAt = null;
+
+  const AutoRefreshReloadResult.failure()
+    : kind = AutoRefreshReloadResultKind.failure,
+      refreshedAt = null;
+
+  final AutoRefreshReloadResultKind kind;
+  final DateTime? refreshedAt;
+
+  bool get isSuccess => kind == AutoRefreshReloadResultKind.success;
+
+  bool get isCancelled => kind == AutoRefreshReloadResultKind.cancelled;
+}
+
 mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   late final _AutoRefreshAppLifecycleObserver _autoRefreshAppLifecycleObserver;
   late final _AutoRefreshRouteAware _autoRefreshRouteAware;
@@ -16,9 +39,12 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   Duration? _autoRefreshRemainingDelay;
   int _autoRefreshFailureStreak = 0;
   int _autoRefreshActiveReloads = 0;
+  bool _autoRefreshTickQueuedWhileReloading = false;
   bool _autoRefreshAppVisible = true;
   bool _autoRefreshRouteVisible = true;
   bool _autoRefreshSupported = false;
+  bool _autoRefreshPaused = false;
+  AutoRefreshPauseReason? _autoRefreshPauseReason;
   RouteObserver<ModalRoute<void>>? _autoRefreshSubscribedRouteObserver;
   bool _autoRefreshSnapshotRestored = false;
 
@@ -45,6 +71,15 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   bool get autoRefreshIsBackingOff => _autoRefreshFailureStreak > 0;
 
   @protected
+  bool get autoRefreshReloadInProgress => _autoRefreshActiveReloads > 0;
+
+  @protected
+  bool get autoRefreshIsPaused => _autoRefreshPaused;
+
+  @protected
+  AutoRefreshPauseReason? get autoRefreshPauseReason => _autoRefreshPauseReason;
+
+  @protected
   bool get supportsAutoRefresh => true;
 
   @protected
@@ -60,13 +95,28 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   RouteObserver<ModalRoute<void>>? get autoRefreshRouteObserver => null;
 
   @protected
+  bool get canAutoRefreshWhileRouteHidden => false;
+
+  @protected
   Future<void> performAutoRefreshReload();
 
   @protected
   DateTime? resolveAutoRefreshCompletedAt() => DateTime.now();
 
   @protected
+  AutoRefreshReloadResult resolveAutoRefreshReloadResult() {
+    final completedAt = resolveAutoRefreshCompletedAt();
+    if (completedAt == null) {
+      return const AutoRefreshReloadResult.failure();
+    }
+    return AutoRefreshReloadResult.success(completedAt);
+  }
+
+  @protected
   DateTime get currentAutoRefreshTime => DateTime.now();
+
+  @protected
+  AutoRefreshPauseReason? resolveAutoRefreshPauseReason() => null;
 
   @protected
   void didUpdateAutoRefreshState(AutoRefreshUiState state) {}
@@ -133,6 +183,8 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
     _autoRefreshNextDueAt = null;
     _autoRefreshRemainingDelay = null;
     _autoRefreshFailureStreak = 0;
+    _autoRefreshTickQueuedWhileReloading = false;
+    _setAutoRefreshPaused(false);
     if (autoRefreshOption == null) {
       _publishAutoRefreshUiState();
       return;
@@ -141,11 +193,37 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   }
 
   @protected
+  void pauseAutoRefreshPreservingOption({
+    AutoRefreshPauseReason? reason,
+    bool persistState = true,
+  }) {
+    final pauseReason = reason ?? _resolveCurrentAutoRefreshPauseReason();
+    _setAutoRefreshPaused(
+      true,
+      reason: pauseReason,
+    );
+    _pauseAutoRefreshTimer(
+      persistState: persistState,
+      preserveWallClockDueAt: _shouldKeepWallClockDueAt(pauseReason),
+    );
+  }
+
+  @protected
+  void resumeAutoRefreshIfEligible() {
+    if (_resolveCurrentAutoRefreshPauseReason() != null) {
+      return;
+    }
+    _setAutoRefreshPaused(false);
+    _refreshAutoRefreshScheduling(resetDelayIfIdle: false);
+  }
+
+  @protected
   void setAutoRefreshOption(AutoRefreshOption? option) {
     if (autoRefreshOption == option) {
       return;
     }
     _autoRefreshFailureStreak = 0;
+    _autoRefreshTickQueuedWhileReloading = false;
     if (option == null) {
       _cancelAutoRefreshTimer();
       _autoRefreshRemainingDelay = null;
@@ -168,6 +246,8 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   }) {
     final option = snapshot.option;
     _autoRefreshFailureStreak = snapshot.failureStreak;
+    _autoRefreshTickQueuedWhileReloading = false;
+    _setAutoRefreshPaused(false, notifyExternal: false);
     if (option == null) {
       _autoRefreshNextDueAt = null;
       _autoRefreshRemainingDelay = null;
@@ -210,12 +290,20 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   }
 
   @protected
-  void recordAutoRefreshSuccessfulReload(DateTime refreshedAt) {
+  void recordAutoRefreshSuccessfulReload(
+    DateTime refreshedAt, {
+    bool scheduleNextCycle = true,
+  }) {
     _autoRefreshFailureStreak = 0;
     final option = autoRefreshOption;
     if (option == null) {
       _autoRefreshNextDueAt = null;
       _autoRefreshRemainingDelay = null;
+    } else if (!scheduleNextCycle) {
+      _autoRefreshNextDueAt = currentAutoRefreshTime.subtract(
+        const Duration(milliseconds: 1),
+      );
+      _autoRefreshRemainingDelay = Duration.zero;
     } else {
       _setAutoRefreshNextCycle(
         delay: option.duration,
@@ -229,9 +317,12 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
         'optionId': option?.id,
         'refreshedAt': refreshedAt.toIso8601String(),
         'nextDueAt': _autoRefreshNextDueAt?.toIso8601String(),
+        'queuedTickWhileReloading': _autoRefreshTickQueuedWhileReloading,
       },
     );
-    _refreshAutoRefreshScheduling(resetDelayIfIdle: false);
+    if (scheduleNextCycle || _autoRefreshActiveReloads <= 0) {
+      _refreshAutoRefreshScheduling(resetDelayIfIdle: false);
+    }
   }
 
   @protected
@@ -269,6 +360,7 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
       return;
     }
     if (_autoRefreshActiveReloads > 0) {
+      _queueAutoRefreshTickAfterActiveReload();
       _logAutoRefreshEvent(
         'Auto refresh skipped while reload is active',
         <String, Object?>{
@@ -278,6 +370,7 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
       );
       return;
     }
+    _autoRefreshTickQueuedWhileReloading = false;
     _logAutoRefreshEvent(
       'Auto refresh triggered',
       <String, Object?>{
@@ -286,7 +379,10 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
       },
     );
     try {
-      await _trackAutoRefreshReload(performAutoRefreshReload);
+      await _trackAutoRefreshReload(
+        performAutoRefreshReload,
+        consumedCurrentDueTick: true,
+      );
     } catch (error, stackTrace) {
       FlutterError.reportError(
         FlutterErrorDetails(
@@ -299,18 +395,39 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
   }
 
   Future<void> _trackAutoRefreshReload(
-    Future<void> Function() reload,
-  ) async {
+    Future<void> Function() reload, {
+    bool consumedCurrentDueTick = false,
+  }) async {
+    final queuedTickThreshold = _resolveQueuedTickThreshold(
+      consumedCurrentDueTick: consumedCurrentDueTick,
+    );
     _autoRefreshActiveReloads += 1;
     try {
       await reload();
-      final completedAt = resolveAutoRefreshCompletedAt();
-      if (completedAt != null) {
-        recordAutoRefreshSuccessfulReload(completedAt);
+      if (_didReloadCrossQueuedTickThreshold(queuedTickThreshold)) {
+        _queueAutoRefreshTickAfterActiveReload();
+      }
+      final reloadResult = resolveAutoRefreshReloadResult();
+      _logAutoRefreshEvent(
+        'Auto refresh reload resolved',
+        <String, Object?>{
+          'reloadResultKind': reloadResult.kind.name,
+          'refreshedAt': reloadResult.refreshedAt?.toIso8601String(),
+        },
+      );
+      if (reloadResult.isSuccess && reloadResult.refreshedAt != null) {
+        recordAutoRefreshSuccessfulReload(
+          reloadResult.refreshedAt!,
+          scheduleNextCycle: !_autoRefreshTickQueuedWhileReloading,
+        );
+      } else if (reloadResult.isCancelled) {
+        _recordAutoRefreshCancellation();
       } else {
+        _autoRefreshTickQueuedWhileReloading = false;
         _recordAutoRefreshFailure();
       }
     } on Object {
+      _autoRefreshTickQueuedWhileReloading = false;
       _recordAutoRefreshFailure();
       rethrow;
     } finally {
@@ -319,29 +436,137 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
+  DateTime? _resolveQueuedTickThreshold({
+    required bool consumedCurrentDueTick,
+  }) {
+    final option = autoRefreshOption;
+    final nextDueAt = _autoRefreshNextDueAt;
+    if (option == null || nextDueAt == null) {
+      return null;
+    }
+    final startTime = currentAutoRefreshTime;
+    final effectiveConsumedCurrentDueTick =
+        consumedCurrentDueTick || !startTime.isBefore(nextDueAt);
+    if (!effectiveConsumedCurrentDueTick) {
+      return nextDueAt;
+    }
+    return nextDueAt.add(option.duration);
+  }
+
+  bool _didReloadCrossQueuedTickThreshold(DateTime? queuedTickThreshold) {
+    if (queuedTickThreshold == null) {
+      return false;
+    }
+    return !currentAutoRefreshTime.isBefore(queuedTickThreshold);
+  }
+
+  void _queueAutoRefreshTickAfterActiveReload() {
+    if (_autoRefreshTickQueuedWhileReloading) {
+      return;
+    }
+    _autoRefreshTickQueuedWhileReloading = true;
+    _autoRefreshNextDueAt = currentAutoRefreshTime.subtract(
+      const Duration(milliseconds: 1),
+    );
+    _autoRefreshRemainingDelay = Duration.zero;
+    _publishAutoRefreshUiState();
+  }
+
+  AutoRefreshPauseReason? _resolveCurrentAutoRefreshPauseReason() {
+    if (!mounted) {
+      return null;
+    }
+    if (!_autoRefreshSupported) {
+      return AutoRefreshPauseReason.unsupportedViewport;
+    }
+    if (!_autoRefreshAppVisible) {
+      return AutoRefreshPauseReason.screenHidden;
+    }
+    if (!_autoRefreshRouteVisible && !canAutoRefreshWhileRouteHidden) {
+      return AutoRefreshPauseReason.routeHidden;
+    }
+    final featurePauseReason = resolveAutoRefreshPauseReason();
+    if (featurePauseReason != null) {
+      return featurePauseReason;
+    }
+    if (!canScheduleAutoRefresh) {
+      return AutoRefreshPauseReason.noEligibleSelection;
+    }
+    return null;
+  }
+
+  void _setAutoRefreshPaused(
+    bool paused, {
+    AutoRefreshPauseReason? reason,
+    bool notifyExternal = true,
+  }) {
+    final nextReason = paused ? reason : null;
+    if (_autoRefreshPaused == paused && _autoRefreshPauseReason == nextReason) {
+      return;
+    }
+    final previousPaused = _autoRefreshPaused;
+    final previousReason = _autoRefreshPauseReason;
+    _autoRefreshPaused = paused;
+    _autoRefreshPauseReason = nextReason;
+    _publishAutoRefreshUiState(
+      notifyExternal: notifyExternal,
+      persistState: false,
+    );
+    if (!previousPaused && paused) {
+      _logAutoRefreshEvent(
+        'Auto refresh paused',
+        <String, Object?>{
+          'fromPaused': previousPaused,
+          'previousPauseReason': previousReason?.name,
+          'pauseReason': nextReason?.name,
+        },
+      );
+      return;
+    }
+    if (previousPaused && !paused) {
+      _logAutoRefreshEvent(
+        'Auto refresh resumed',
+        <String, Object?>{
+          'previousPauseReason': previousReason?.name,
+        },
+      );
+      return;
+    }
+    _logAutoRefreshEvent(
+      'Auto refresh pause reason updated',
+      <String, Object?>{
+        'previousPauseReason': previousReason?.name,
+        'pauseReason': nextReason?.name,
+      },
+    );
+  }
+
   bool get _canRunAutoRefreshTimer =>
       mounted &&
       _autoRefreshSupported &&
       _autoRefreshAppVisible &&
-      _autoRefreshRouteVisible &&
+      (_autoRefreshRouteVisible || canAutoRefreshWhileRouteHidden) &&
       canScheduleAutoRefresh;
 
   void _refreshAutoRefreshScheduling({required bool resetDelayIfIdle}) {
-    if (!_canRunAutoRefreshTimer) {
-      _pauseAutoRefreshTimer();
-      return;
-    }
     final option = autoRefreshOption;
     if (option == null) {
+      _setAutoRefreshPaused(false);
       _cancelAutoRefreshTimer();
       _autoRefreshNextDueAt = null;
       _autoRefreshRemainingDelay = null;
       _publishAutoRefreshUiState(notifyExternal: false);
       return;
     }
+    final pauseReason = _resolveCurrentAutoRefreshPauseReason();
+    if (pauseReason != null) {
+      pauseAutoRefreshPreservingOption(reason: pauseReason);
+      return;
+    }
+    _setAutoRefreshPaused(false);
     if (resetDelayIfIdle || _autoRefreshNextDueAt == null) {
       _setAutoRefreshNextCycle(
-        delay: _resolveScheduledDelay(option),
+        delay: _autoRefreshRemainingDelay ?? _resolveScheduledDelay(option),
         anchorTime: currentAutoRefreshTime,
       );
       _publishAutoRefreshUiState();
@@ -385,10 +610,28 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
     _autoRefreshTimer = null;
   }
 
-  void _pauseAutoRefreshTimer() {
+  bool _shouldKeepWallClockDueAt(AutoRefreshPauseReason? reason) {
+    return switch (reason) {
+      AutoRefreshPauseReason.screenHidden ||
+      AutoRefreshPauseReason.routeHidden => true,
+      AutoRefreshPauseReason.unsupportedViewport ||
+      AutoRefreshPauseReason.pageLoading ||
+      AutoRefreshPauseReason.missingLocalToken ||
+      AutoRefreshPauseReason.noEligibleSelection ||
+      null => false,
+    };
+  }
+
+  void _pauseAutoRefreshTimer({
+    bool persistState = true,
+    bool preserveWallClockDueAt = false,
+  }) {
     _cancelAutoRefreshTimer();
     _autoRefreshRemainingDelay = _resolveAutoRefreshRemainingDelay();
-    _publishAutoRefreshUiState();
+    if (!preserveWallClockDueAt) {
+      _autoRefreshNextDueAt = null;
+    }
+    _publishAutoRefreshUiState(persistState: persistState);
   }
 
   void _recordAutoRefreshFailure() {
@@ -416,6 +659,26 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
         'remainingMs': _autoRefreshRemainingDelay?.inMilliseconds,
       },
       true,
+    );
+  }
+
+  void _recordAutoRefreshCancellation() {
+    final option = autoRefreshOption;
+    if (option != null && !_autoRefreshTickQueuedWhileReloading) {
+      _setAutoRefreshNextCycle(
+        delay: option.duration,
+        anchorTime: currentAutoRefreshTime,
+      );
+      _publishAutoRefreshUiState();
+    }
+    _logAutoRefreshEvent(
+      'Auto refresh cancelled',
+      <String, Object?>{
+        'optionId': option?.id,
+        'nextDueAt': _autoRefreshNextDueAt?.toIso8601String(),
+        'remainingMs': _autoRefreshRemainingDelay?.inMilliseconds,
+        'queuedTickWhileReloading': _autoRefreshTickQueuedWhileReloading,
+      },
     );
   }
 
@@ -490,6 +753,8 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
       remainingDelay: _resolveAutoRefreshRemainingDelay(),
       isBackingOff: _autoRefreshFailureStreak > 0,
       failureStreak: _autoRefreshFailureStreak,
+      isPaused: _autoRefreshPaused,
+      pauseReason: _autoRefreshPauseReason,
     );
     _setAutoRefreshUiState(
       nextState,
@@ -509,7 +774,9 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
         previousState.nextDueAt == nextState.nextDueAt &&
         previousState.remainingDelay == nextState.remainingDelay &&
         previousState.isBackingOff == nextState.isBackingOff &&
-        previousState.failureStreak == nextState.failureStreak) {
+        previousState.failureStreak == nextState.failureStreak &&
+        previousState.isPaused == nextState.isPaused &&
+        previousState.pauseReason == nextState.pauseReason) {
       return;
     }
     _autoRefreshUiStateNotifier.value = nextState;
@@ -537,6 +804,10 @@ mixin AutoRefreshStateMixin<T extends StatefulWidget> on State<T> {
     final payload = <String, Object?>{
       'owner': '$T',
       'optionId': autoRefreshOption?.id,
+      'failureStreak': _autoRefreshFailureStreak,
+      'isPaused': _autoRefreshPaused,
+      'pauseReason': _autoRefreshPauseReason?.name,
+      'queuedTickWhileReloading': _autoRefreshTickQueuedWhileReloading,
       ...context,
     };
     if (warning) {

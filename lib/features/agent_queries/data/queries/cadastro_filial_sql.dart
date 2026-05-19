@@ -1,10 +1,27 @@
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
+
 /// Paged branch registration query with total count in one `sql.execute`.
 ///
 /// Reads `Filial` and left-joins `Municipio` for municipality metadata.
-/// Optional filters are bound through named params:
-/// `:codEmpresa`, `:codFilial`, `:startRow`, and `:endRow`.
+/// Pagination is bound through named params `:startRow` and `:endRow`.
+/// Company / branch predicates are validated in Dart and inlined into the SQL
+/// to support exact multi-branch subsets without exhausting the bridge named
+/// parameter budget.
 abstract final class CadastroFilialSql {
-  static const String pagedQuery = '''
+  static String query({
+    Iterable<CadastroFilialBranchRef> branches =
+        const <CadastroFilialBranchRef>[],
+    bool hasSelectedBranches = false,
+    int? codEmpresa,
+    int? codFilial,
+  }) {
+    final branchPredicate = _branchPredicate(
+      branches: branches,
+      hasSelectedBranches: hasSelectedBranches,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+    );
+    return '''
     WITH Base AS (
       SELECT
         f.CodEmpresa,
@@ -23,8 +40,8 @@ abstract final class CadastroFilialSql {
       FROM Filial f
       LEFT JOIN Municipio m ON
         m.CodMunicipio = f.CodMunicipio
-      WHERE f.CodEmpresa = COALESCE(:codEmpresa, f.CodEmpresa)
-        AND f.CodFilial = COALESCE(:codFilial, f.CodFilial)
+      WHERE 1 = 1
+$branchPredicate
     ),
     Tot AS (
       SELECT COUNT(*) AS TotalCount FROM Base
@@ -55,4 +72,61 @@ abstract final class CadastroFilialSql {
     LEFT JOIN Numbered N ON N.Rn BETWEEN :startRow AND :endRow
     ORDER BY COALESCE(N.Rn, 2147483647)
   ''';
+  }
+
+  static String _branchPredicate({
+    required Iterable<CadastroFilialBranchRef> branches,
+    required bool hasSelectedBranches,
+    required int? codEmpresa,
+    required int? codFilial,
+  }) {
+    final byKey = <String, CadastroFilialBranchRef>{};
+    for (final branch in branches) {
+      byKey['${branch.codEmpresa}:${branch.codFilial}'] = branch;
+    }
+    final uniqueBranches = byKey.values.toList(growable: false)
+      ..sort((left, right) {
+        final company = left.codEmpresa.compareTo(right.codEmpresa);
+        if (company != 0) {
+          return company;
+        }
+        return left.codFilial.compareTo(right.codFilial);
+      });
+
+    if (uniqueBranches.isEmpty) {
+      if (hasSelectedBranches) {
+        return '        AND 1 = 0';
+      }
+      final clauses = <String>[];
+      if (codEmpresa != null) {
+        clauses.add('f.CodEmpresa = $codEmpresa');
+      }
+      if (codFilial != null) {
+        clauses.add('f.CodFilial = $codFilial');
+      }
+      if (clauses.isEmpty) {
+        return '';
+      }
+      return '        AND ${clauses.join(' AND ')}';
+    }
+
+    final branchesByCompany = <int, List<int>>{};
+    for (final branch in uniqueBranches) {
+      branchesByCompany
+          .putIfAbsent(branch.codEmpresa, () => <int>[])
+          .add(branch.codFilial);
+    }
+
+    final clauses = branchesByCompany.entries
+        .map((entry) {
+          final filiais = entry.value;
+          if (filiais.length == 1) {
+            return '(f.CodEmpresa = ${entry.key} AND f.CodFilial = ${filiais.single})';
+          }
+          return '(f.CodEmpresa = ${entry.key} '
+              'AND f.CodFilial IN (${filiais.join(', ')}))';
+        })
+        .join(' OR ');
+    return '        AND ($clauses)';
+  }
 }

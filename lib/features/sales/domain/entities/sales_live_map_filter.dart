@@ -2,6 +2,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vend
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:flutter/foundation.dart';
 
 const int kSalesLiveMapMaxCustomRangeInclusiveDays = 31;
 const String kSalesLiveMapDefaultOrigem = 'FrenteLoja';
@@ -35,6 +36,7 @@ enum SalesLiveMapMarkerVisual {
   storeIcon,
 }
 
+@immutable
 class SalesLiveMapFilter {
   const SalesLiveMapFilter({
     this.selectedAgentIds,
@@ -141,6 +143,73 @@ class SalesLiveMapFilter {
 
   static DateTime _day(DateTime value) {
     return DateTime(value.year, value.month, value.day);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is SalesLiveMapFilter &&
+        _setEquals(other.selectedAgentIds, selectedAgentIds) &&
+        _setEquals(other.selectedBranchIds, selectedBranchIds) &&
+        other.periodMode == periodMode &&
+        other.customDateRange == customDateRange &&
+        other.detailLevel == detailLevel &&
+        other.markerVisual == markerVisual &&
+        other.metric == metric;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    periodMode,
+    customDateRange,
+    detailLevel,
+    markerVisual,
+    metric,
+    _orderedStringHash(selectedAgentIds),
+    _orderedBranchHash(selectedBranchIds),
+  );
+
+  static bool _setEquals<T>(Set<T>? a, Set<T>? b) {
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a == null || b == null) {
+      return a == null && b == null;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+    for (final value in a) {
+      if (!b.contains(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static int? _orderedStringHash(Set<String>? value) {
+    if (value == null) {
+      return null;
+    }
+    final sorted = value.toList(growable: false)..sort();
+    return Object.hashAll(sorted);
+  }
+
+  static int? _orderedBranchHash(Set<SalesLiveMapBranchRef>? value) {
+    if (value == null) {
+      return null;
+    }
+    final sorted =
+        value
+            .map(
+              (branchRef) =>
+                  '${branchRef.agentId}:${branchRef.codEmpresa}:${branchRef.codFilial}',
+            )
+            .toList(growable: false)
+          ..sort();
+    return Object.hashAll(sorted);
   }
 }
 

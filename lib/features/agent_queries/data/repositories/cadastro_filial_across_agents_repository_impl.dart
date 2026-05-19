@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
@@ -22,19 +23,28 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     required AgentQueryPlanBuilder planBuilder,
     required AgentQueryExecutor<CadastroFilialRow> executor,
     required LoadCadastroFilialPageUseCase loadCadastroFilial,
+    DateTime Function()? now,
   }) : _targetResolver = targetResolver,
        _planBuilder = planBuilder,
        _executor = executor,
-       _loadCadastroFilial = loadCadastroFilial;
+       _loadCadastroFilial = loadCadastroFilial,
+       _now = now;
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;
   final AgentQueryExecutor<CadastroFilialRow> _executor;
   final LoadCadastroFilialPageUseCase _loadCadastroFilial;
+  final DateTime Function()? _now;
 
   static const String _operation = 'loadCadastroFilialPageAcrossAgents';
   static const String _loadAllOperation = 'loadCadastroFilialAllAcrossAgents';
   static const int _maxAllPagesPerAgent = 400;
+  static const Duration _paginationStallWarningDebounce = Duration(
+    minutes: 15,
+  );
+
+  final Map<String, DateTime> _lastPaginationStallWarningAtByKey =
+      <String, DateTime>{};
 
   @override
   Future<AppResult<CadastroFilialAcrossAgentsPageResult>> loadPage({
@@ -103,6 +113,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
   }) {
+    final paginationStalledAgentIds = <String>{};
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedMapped<
       CadastroFilialAcrossAgentsPageResult,
       CadastroFilialRow
@@ -128,6 +139,9 @@ class CadastroFilialAcrossAgentsRepositoryImpl
               userId: userId,
               agentId: target.agentId,
               filter: filter,
+              onPaginationStalled: () {
+                paginationStalledAgentIds.add(target.agentId);
+              },
               clientToken: target.clientToken,
               bridgeTimeoutMs: plan.bridgeTimeoutMs,
               hubPresenceOnlineAgentIdsSnapshot:
@@ -136,7 +150,10 @@ class CadastroFilialAcrossAgentsRepositoryImpl
                   target.hubConnectedFromApprovedCatalogRow,
             );
           },
-      mapReport: CadastroFilialAcrossAgentsPageResult.fromReport,
+      mapReport: (report) => CadastroFilialAcrossAgentsPageResult.fromReport(
+        report,
+        paginationStalledAgentIds: paginationStalledAgentIds,
+      ),
     );
   }
 
@@ -145,14 +162,17 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     required String userId,
     required String agentId,
     required CadastroFilialFilter filter,
+    required void Function() onPaginationStalled,
     String? clientToken,
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
     final rows = <CadastroFilialRow>[];
+    final seenRowKeys = <String>{};
     var page = 1;
     int? totalCount;
+    var paginationStalled = false;
 
     while (page <= _maxAllPagesPerAgent) {
       final pageFilter = filter.copyWith(
@@ -176,9 +196,30 @@ class CadastroFilialAcrossAgentsRepositoryImpl
       }
 
       totalCount ??= loaded.totalCount;
-      rows.addAll(loaded.items);
+      var newRowCount = 0;
+      for (final row in loaded.items) {
+        if (!seenRowKeys.add(_rowKey(row.codEmpresa, row.codFilial))) {
+          continue;
+        }
+        rows.add(row);
+        newRowCount += 1;
+      }
 
       if (loaded.items.isEmpty) {
+        break;
+      }
+
+      if (newRowCount == 0) {
+        paginationStalled = true;
+        onPaginationStalled();
+        _logPaginationStalled(
+          agentId: agentId,
+          filter: filter,
+          page: page,
+          pageRowCount: loaded.items.length,
+          loadedUniqueRowCount: rows.length,
+          reportedTotalCount: loaded.totalCount,
+        );
         break;
       }
 
@@ -192,8 +233,47 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     return Success<AgentQueryLoadedRows<CadastroFilialRow>, AppFailure>(
       AgentQueryLoadedRows<CadastroFilialRow>(
         rows: rows,
-        sourceRowCount: totalCount ?? rows.length,
+        sourceRowCount: paginationStalled
+            ? rows.length
+            : totalCount ?? rows.length,
       ),
     );
   }
+
+  String _rowKey(int codEmpresa, int codFilial) {
+    return '$codEmpresa:$codFilial';
+  }
+
+  void _logPaginationStalled({
+    required String agentId,
+    required CadastroFilialFilter filter,
+    required int page,
+    required int pageRowCount,
+    required int loadedUniqueRowCount,
+    required int reportedTotalCount,
+  }) {
+    final normalizedAgentId = agentId.trim();
+    final warningKey = '$normalizedAgentId|${filter.filterScopeSignature}';
+    final now = _resolveNow();
+    final lastWarningAt = _lastPaginationStallWarningAtByKey[warningKey];
+    if (lastWarningAt != null &&
+        now.difference(lastWarningAt) < _paginationStallWarningDebounce) {
+      return;
+    }
+    _lastPaginationStallWarningAtByKey[warningKey] = now;
+    AppLogger.warning(
+      'Cadastro filial pagination stalled without new rows',
+      context: <String, Object?>{
+        'operation': _loadAllOperation,
+        'agentId': normalizedAgentId,
+        'filterScopeSignature': filter.filterScopeSignature,
+        'page': page,
+        'pageRowCount': pageRowCount,
+        'loadedUniqueRowCount': loadedUniqueRowCount,
+        'reportedTotalCount': reportedTotalCount,
+      },
+    );
+  }
+
+  DateTime _resolveNow() => _now?.call() ?? DateTime.now();
 }

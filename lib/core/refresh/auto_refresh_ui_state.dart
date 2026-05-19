@@ -2,6 +2,15 @@ import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:flutter/foundation.dart';
 
+enum AutoRefreshPauseReason {
+  unsupportedViewport,
+  screenHidden,
+  routeHidden,
+  pageLoading,
+  missingLocalToken,
+  noEligibleSelection,
+}
+
 @immutable
 class AutoRefreshUiState {
   const AutoRefreshUiState({
@@ -11,6 +20,8 @@ class AutoRefreshUiState {
     this.remainingDelay,
     this.isBackingOff = false,
     this.failureStreak = 0,
+    this.isPaused = false,
+    this.pauseReason,
   });
 
   final AutoRefreshOption? option;
@@ -19,6 +30,8 @@ class AutoRefreshUiState {
   final Duration? remainingDelay;
   final bool isBackingOff;
   final int failureStreak;
+  final bool isPaused;
+  final AutoRefreshPauseReason? pauseReason;
 
   AutoRefreshSnapshot toSnapshot() {
     return AutoRefreshSnapshot(
@@ -37,6 +50,8 @@ class AutoRefreshUiState {
     Object? remainingDelay = _sentinel,
     Object? isBackingOff = _sentinel,
     Object? failureStreak = _sentinel,
+    Object? isPaused = _sentinel,
+    Object? pauseReason = _sentinel,
   }) {
     return AutoRefreshUiState(
       option: identical(option, _sentinel)
@@ -57,6 +72,12 @@ class AutoRefreshUiState {
       failureStreak: identical(failureStreak, _sentinel)
           ? this.failureStreak
           : (failureStreak as int?) ?? 0,
+      isPaused: identical(isPaused, _sentinel)
+          ? this.isPaused
+          : (isPaused as bool?) ?? false,
+      pauseReason: identical(pauseReason, _sentinel)
+          ? this.pauseReason
+          : pauseReason as AutoRefreshPauseReason?,
     );
   }
 }

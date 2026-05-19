@@ -13,6 +13,7 @@ class SalesLiveMapPresentationState {
     this.filter = const SalesLiveMapFilter(),
     this.availableAgents = const <OverviewAgentOption>[],
     this.result,
+    this.mapPayloadDigest = 0,
     this.isLoading = true,
     this.sessionExpired = false,
     this.closeFullscreenRequestId = 0,
@@ -21,6 +22,7 @@ class SalesLiveMapPresentationState {
   final SalesLiveMapFilter filter;
   final List<OverviewAgentOption> availableAgents;
   final SalesLiveMapLoadResult? result;
+  final int mapPayloadDigest;
   final bool isLoading;
   final bool sessionExpired;
   final int closeFullscreenRequestId;
@@ -59,7 +61,8 @@ class SalesLiveMapPresentationState {
     return selected.any(tokenBacked.contains);
   }
 
-  bool get canReload => !isLoading && (sessionExpired || availableAgents.isNotEmpty);
+  bool get canReload =>
+      !isLoading && (sessionExpired || availableAgents.isNotEmpty);
 
   bool get shouldShowEmptyNotice {
     final currentResult = result;
@@ -129,6 +132,7 @@ class SalesLiveMapPresentationState {
     SalesLiveMapFilter? filter,
     List<OverviewAgentOption>? availableAgents,
     Object? result = _sentinel,
+    int? mapPayloadDigest,
     bool? isLoading,
     bool? sessionExpired,
     int? closeFullscreenRequestId,
@@ -139,12 +143,39 @@ class SalesLiveMapPresentationState {
       result: identical(result, _sentinel)
           ? this.result
           : result as SalesLiveMapLoadResult?,
+      mapPayloadDigest: mapPayloadDigest ?? this.mapPayloadDigest,
       isLoading: isLoading ?? this.isLoading,
       sessionExpired: sessionExpired ?? this.sessionExpired,
       closeFullscreenRequestId:
           closeFullscreenRequestId ?? this.closeFullscreenRequestId,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is SalesLiveMapPresentationState &&
+        other.filter == filter &&
+        listEquals(other.availableAgents, availableAgents) &&
+        identical(other.result, result) &&
+        other.mapPayloadDigest == mapPayloadDigest &&
+        other.isLoading == isLoading &&
+        other.sessionExpired == sessionExpired &&
+        other.closeFullscreenRequestId == closeFullscreenRequestId;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    filter,
+    Object.hashAll(availableAgents),
+    identityHashCode(result),
+    mapPayloadDigest,
+    isLoading,
+    sessionExpired,
+    closeFullscreenRequestId,
+  );
 }
 
 const Object _sentinel = Object();

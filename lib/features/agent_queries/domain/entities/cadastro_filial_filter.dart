@@ -3,6 +3,7 @@ class CadastroFilialFilter {
   const CadastroFilialFilter({
     this.codEmpresa,
     this.codFilial,
+    this.selectedBranches = const <CadastroFilialBranchRef>[],
     this.page = 1,
     this.pageSize = defaultPageSize,
   });
@@ -14,18 +15,55 @@ class CadastroFilialFilter {
 
   final int? codEmpresa;
   final int? codFilial;
+  final List<CadastroFilialBranchRef> selectedBranches;
   final int page;
   final int pageSize;
+
+  bool get hasSelectedBranches => selectedBranches.isNotEmpty;
+
+  Set<String>? get selectedAgentIds {
+    if (selectedBranches.isEmpty) {
+      return null;
+    }
+    return Set<String>.unmodifiable(
+      selectedBranches.map((branch) => branch.normalizedAgentId),
+    );
+  }
+
+  List<CadastroFilialBranchRef> branchesForAgent(String agentId) {
+    final normalizedAgentId = agentId.trim();
+    if (normalizedAgentId.isEmpty || selectedBranches.isEmpty) {
+      return const <CadastroFilialBranchRef>[];
+    }
+    return selectedBranches
+        .where((branch) => branch.normalizedAgentId == normalizedAgentId)
+        .toList(growable: false);
+  }
+
+  String get filterScopeSignature {
+    final branchSignature = CadastroFilialBranchRef.signature(selectedBranches);
+    if (branchSignature != '*') {
+      return 'branches=$branchSignature';
+    }
+    return 'empresa=${codEmpresa ?? '*'}|filial=${codFilial ?? '*'}';
+  }
 
   CadastroFilialFilter copyWith({
     int? codEmpresa,
     int? codFilial,
+    Object? selectedBranches = _sentinel,
     int? page,
     int? pageSize,
   }) {
     return CadastroFilialFilter(
       codEmpresa: codEmpresa ?? this.codEmpresa,
       codFilial: codFilial ?? this.codFilial,
+      selectedBranches: selectedBranches == _sentinel
+          ? this.selectedBranches
+          : List<CadastroFilialBranchRef>.unmodifiable(
+              (selectedBranches as Iterable<CadastroFilialBranchRef>?) ??
+                  const <CadastroFilialBranchRef>[],
+            ),
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
     );
@@ -57,6 +95,52 @@ class CadastroFilialFilter {
     if (pageSize > maxPageSize) {
       return 'pageSize must be <= $maxPageSize';
     }
+    for (final branch in selectedBranches) {
+      final error = branch.validationError();
+      if (error != null) {
+        return error;
+      }
+    }
     return null;
   }
 }
+
+class CadastroFilialBranchRef {
+  const CadastroFilialBranchRef({
+    required this.agentId,
+    required this.codEmpresa,
+    required this.codFilial,
+  });
+
+  final String agentId;
+  final int codEmpresa;
+  final int codFilial;
+
+  String get normalizedAgentId => agentId.trim();
+
+  String? validationError() {
+    if (normalizedAgentId.isEmpty) {
+      return 'selectedBranches.agentId must not be empty';
+    }
+    if (codEmpresa <= 0) {
+      return 'selectedBranches.codEmpresa must be greater than zero';
+    }
+    if (codFilial < 0) {
+      return 'selectedBranches.codFilial must be greater than or equal to zero';
+    }
+    return null;
+  }
+
+  static String signature(Iterable<CadastroFilialBranchRef> branches) {
+    final normalized = <String>{
+      for (final branch in branches)
+        '${branch.normalizedAgentId}:${branch.codEmpresa}:${branch.codFilial}',
+    }.toList(growable: false)..sort();
+    if (normalized.isEmpty) {
+      return '*';
+    }
+    return normalized.join(',');
+  }
+}
+
+const Object _sentinel = Object();

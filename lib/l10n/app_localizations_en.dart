@@ -3034,6 +3034,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get salesAutoRefreshPaused => 'Auto-refresh paused';
+
+  @override
+  String get salesAutoRefreshPausedLoading =>
+      'Auto-refresh paused while loading';
+
+  @override
+  String get salesAutoRefreshPausedMissingLocalToken =>
+      'Auto-refresh paused: local token required';
+
+  @override
+  String get salesAutoRefreshPausedNoEligibleSelection =>
+      'Auto-refresh paused: select an eligible branch';
+
+  @override
+  String get salesAutoRefreshPausedUnsupportedViewport =>
+      'Auto-refresh available on desktop';
+
+  @override
+  String get salesAutoRefreshPausedHidden =>
+      'Auto-refresh paused while this screen is hidden';
+
+  @override
   String get salesDailyTotalsChartTitle => 'Daily sales';
 
   @override

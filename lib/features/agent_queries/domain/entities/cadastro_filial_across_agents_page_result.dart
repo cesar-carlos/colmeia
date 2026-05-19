@@ -9,11 +9,13 @@ class CadastroFilialAcrossAgentsPageResult {
   const CadastroFilialAcrossAgentsPageResult({
     required this.report,
     required this.totalCountByAgentId,
+    this.paginationStalledAgentIds = const <String>{},
   });
 
   factory CadastroFilialAcrossAgentsPageResult.fromReport(
-    AgentQueryExecutionReport<CadastroFilialRow> report,
-  ) {
+    AgentQueryExecutionReport<CadastroFilialRow> report, {
+    Set<String> paginationStalledAgentIds = const <String>{},
+  }) {
     final totals = <String, int>{};
     for (final participant in report.participants) {
       if (participant.isSuccess) {
@@ -23,11 +25,15 @@ class CadastroFilialAcrossAgentsPageResult {
     return CadastroFilialAcrossAgentsPageResult(
       report: report,
       totalCountByAgentId: Map<String, int>.unmodifiable(totals),
+      paginationStalledAgentIds: Set<String>.unmodifiable(
+        paginationStalledAgentIds,
+      ),
     );
   }
 
   final AgentQueryExecutionReport<CadastroFilialRow> report;
   final Map<String, int> totalCountByAgentId;
+  final Set<String> paginationStalledAgentIds;
 
   int get totalCount {
     var total = 0;

@@ -1,5 +1,6 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
+import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/refresh/auto_refresh_actions_row.dart';
@@ -14,8 +15,11 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
     required this.enabled,
     required this.lastUpdatedAt,
     required this.l10n,
+    this.refreshNowEnabled,
     this.nextDueAt,
     this.isBackingOff = false,
+    this.isPaused = false,
+    this.pauseReason,
     super.key,
   });
 
@@ -24,8 +28,11 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
   final VoidCallback onRefreshNow;
   final bool enabled;
   final DateTime? lastUpdatedAt;
+  final bool? refreshNowEnabled;
   final DateTime? nextDueAt;
   final bool isBackingOff;
+  final bool isPaused;
+  final AutoRefreshPauseReason? pauseReason;
   final AppLocalizations l10n;
 
   @override
@@ -45,8 +52,13 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
           : l10n.salesAutoRefreshLastUpdatedAt(
               DateFormat.Hm(l10n.localeName).format(lastUpdatedAt!),
             ),
-      nextDueAt: nextDueAt,
+      refreshNowEnabled: refreshNowEnabled,
+      nextDueAt: isPaused ? null : nextDueAt,
       isBackingOff: isBackingOff,
+      statusLabel: _resolveStatusLabel(),
+      statusTone: pauseReason == AutoRefreshPauseReason.missingLocalToken
+          ? AutoRefreshStatusTone.warning
+          : AutoRefreshStatusTone.neutral,
       showAutoRefreshControl: AppBreakpoints.isDesktop(context),
       countdownLabelBuilder: (remaining, {required isBackingOff}) {
         final formatted = _format(remaining);
@@ -56,6 +68,24 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
       },
       controlKeyPrefix: 'sales-auto-refresh',
     );
+  }
+
+  String? _resolveStatusLabel() {
+    if (!isPaused) {
+      return null;
+    }
+    return switch (pauseReason) {
+      AutoRefreshPauseReason.missingLocalToken =>
+        l10n.salesAutoRefreshPausedMissingLocalToken,
+      AutoRefreshPauseReason.noEligibleSelection =>
+        l10n.salesAutoRefreshPausedNoEligibleSelection,
+      AutoRefreshPauseReason.pageLoading => l10n.salesAutoRefreshPausedLoading,
+      AutoRefreshPauseReason.unsupportedViewport =>
+        l10n.salesAutoRefreshPausedUnsupportedViewport,
+      AutoRefreshPauseReason.screenHidden => l10n.salesAutoRefreshPausedHidden,
+      AutoRefreshPauseReason.routeHidden => l10n.salesAutoRefreshPausedHidden,
+      null => l10n.salesAutoRefreshPaused,
+    };
   }
 
   static String _format(Duration value) {

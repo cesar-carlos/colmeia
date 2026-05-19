@@ -242,6 +242,7 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
     required AppBrazilStoreSalesMapMetric metric,
     required String? activeRegionKey,
     required double zoomLevel,
+    int? pointsDigest,
     String? selectedStoreId,
     String? requestedStateKey,
   }) {
@@ -260,7 +261,7 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
       'm=${metric.name}',
       'ak=$activeRegionKey',
       'z=$zoomLevel',
-      'pts=${AppBrazilStoreSalesMapData.pointsContentDigest(points)}',
+      'pts=${pointsDigest ?? AppBrazilStoreSalesMapData.pointsContentDigest(points)}',
     ];
     return parts.join(';');
   }

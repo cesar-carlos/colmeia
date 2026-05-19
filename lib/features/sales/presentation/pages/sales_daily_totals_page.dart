@@ -13,6 +13,7 @@ import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_c
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
@@ -49,6 +50,7 @@ class SalesDailyTotalsPage extends StatefulWidget {
 class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     with
         AutoRefreshStateMixin<SalesDailyTotalsPage>,
+        SalesSingleAgentAutoRefreshMixin<SalesDailyTotalsPage>,
         SalesCardAutoRefreshBinding<SalesDailyTotalsPage> {
   late final SalesSessionService _sessionService;
   late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
@@ -148,8 +150,13 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
   String get salesAutoRefreshCardId => SalesAutoRefreshCardIds.dailyTotals;
 
   @override
-  bool get canScheduleAutoRefresh =>
-      _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
+  String? get autoRefreshSelectedAgentId => _selectedAgentId;
+
+  @override
+  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+
+  @override
+  bool get autoRefreshPageLoading => _loading;
 
   @override
   Future<void> performAutoRefreshReload() async {
@@ -158,6 +165,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     final agentId = _selectedAgentId;
     final anchor = _anchorYearMonth;
     final generation = ++_loadGeneration;
+    markAutoRefreshCancelled();
 
     setState(() {
       _loading = true;
@@ -196,7 +204,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
         _loadFailed = true;
         _loadFailureMessage = authMsg;
       });
-      disableAutoRefresh();
+      markAutoRefreshCancelled();
       return;
     }
 
@@ -217,6 +225,11 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
       _loadFailureMessage = bundle.loadFailureMessage;
       _loading = false;
     });
+    if (bundle.loadFailed) {
+      markAutoRefreshFailure();
+      return;
+    }
+    markAutoRefreshSuccess();
   }
 
   void _onFiltersChanged(Map<String, Object?> next) {
@@ -337,6 +350,8 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
             onRefreshNow: () => unawaited(_reload()),
             enabled: canScheduleAutoRefresh,
             lastUpdatedAt: autoRefreshLastUpdatedAt,
+            isPaused: autoRefreshIsPaused,
+            pauseReason: autoRefreshPauseReason,
             l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),

@@ -1282,6 +1282,12 @@
       "time": {"type": "String"}
     }
   },
+  "salesAutoRefreshPaused": "Atualizacao automatica pausada",
+  "salesAutoRefreshPausedLoading": "Atualizacao automatica pausada durante a carga",
+  "salesAutoRefreshPausedMissingLocalToken": "Atualizacao automatica pausada: token local necessario",
+  "salesAutoRefreshPausedNoEligibleSelection": "Atualizacao automatica pausada: selecione uma filial valida",
+  "salesAutoRefreshPausedUnsupportedViewport": "Atualizacao automatica disponivel no desktop",
+  "salesAutoRefreshPausedHidden": "Atualizacao automatica pausada enquanto a tela estiver oculta",
   "salesDailyTotalsChartTitle": "Vendas por dia",
   "salesDailyTotalsChartTitleAmount": "Faturamento diário",
   "salesDailyTotalsChartSubtitle": "Totais por dia civil na filial e no mês de referência selecionados.",

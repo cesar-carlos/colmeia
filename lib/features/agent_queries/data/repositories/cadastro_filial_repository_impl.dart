@@ -31,6 +31,7 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
+    final trimmedAgentId = agentId.trim();
     final validationError = filter.validationError();
     if (validationError != null) {
       return AgentSqlRepositoryExecution.invalidFilters<
@@ -38,21 +39,26 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
       >(
         message: validationError,
         operation: _operation,
-        agentId: agentId.trim(),
+        agentId: trimmedAgentId,
       );
     }
+
+    final selectedBranches = filter.branchesForAgent(trimmedAgentId);
 
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
       requestingUserId: userId,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: CadastroFilialSql.pagedQuery,
+      sql: CadastroFilialSql.query(
+        branches: selectedBranches,
+        hasSelectedBranches: filter.hasSelectedBranches,
+        codEmpresa: filter.codEmpresa,
+        codFilial: filter.codFilial,
+      ),
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
       namedParams: <String, Object?>{
-        'codEmpresa': filter.codEmpresa,
-        'codFilial': filter.codFilial,
         'startRow': filter.startRow,
         'endRow': filter.endRow,
       },
@@ -67,7 +73,7 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
       operation: _operation,
-      agentId: agentId.trim(),
+      agentId: trimmedAgentId,
       unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
       mapExecution: _mapPagedExecution,
     );

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
+import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,6 +60,75 @@ void main() {
     expect(reloadCount, 0);
   });
 
+  testWidgets('pauses without clearing the selected option', (tester) async {
+    final persistence = _FakeAutoRefreshStatePersistence(
+      restoredSnapshot: AutoRefreshSnapshot(
+        option: SalesAutoRefreshOptions.fiveMinutes,
+        lastSuccessfulRefreshAt: DateTime(2026, 5, 18, 11, 55),
+        remainingDelay: const Duration(minutes: 2),
+      ),
+    );
+
+    await _pumpHarness(
+      tester,
+      onReload: () async {},
+      restoredSnapshot: persistence.restoredSnapshot,
+      canScheduleAutoRefresh: false,
+      persistence: persistence,
+      pauseReasonResolver: () => AutoRefreshPauseReason.noEligibleSelection,
+    );
+
+    expect(
+      _harnessState(tester).autoRefreshOption,
+      SalesAutoRefreshOptions.fiveMinutes,
+    );
+    expect(_harnessState(tester).debugIsPaused, isTrue);
+    expect(
+      _harnessState(tester).debugPauseReason,
+      AutoRefreshPauseReason.noEligibleSelection,
+    );
+    expect(
+      persistence.persistedSnapshots.every(
+        (snapshot) => snapshot.option != null,
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('resumes with the preserved remaining delay', (tester) async {
+    var reloadCount = 0;
+    var canSchedule = false;
+
+    await _pumpHarness(
+      tester,
+      onReload: () async => reloadCount += 1,
+      restoredSnapshot: const AutoRefreshSnapshot(
+        option: SalesAutoRefreshOptions.fiveMinutes,
+        remainingDelay: Duration(minutes: 2),
+      ),
+      canScheduleResolver: () => canSchedule,
+      pauseReasonResolver: () =>
+          canSchedule ? null : AutoRefreshPauseReason.noEligibleSelection,
+    );
+
+    expect(_harnessState(tester).debugIsPaused, isTrue);
+
+    _harnessState(tester).advanceAutoRefreshClock(const Duration(minutes: 1));
+    canSchedule = true;
+    _harnessState(tester).refreshScheduler();
+    await tester.pump();
+
+    expect(_harnessState(tester).debugIsPaused, isFalse);
+
+    await _pumpAndAdvance(tester, const Duration(minutes: 1, seconds: 59));
+    expect(reloadCount, 0);
+
+    await _pumpAndAdvance(tester, const Duration(seconds: 1));
+    await tester.pump();
+
+    expect(reloadCount, 1);
+  });
+
   testWidgets('reloads after the selected interval elapses', (tester) async {
     var reloadCount = 0;
 
@@ -79,7 +149,7 @@ void main() {
     expect(reloadCount, 1);
   });
 
-  testWidgets('does not start an overlapping auto-refresh reload', (
+  testWidgets('queues the elapsed auto-refresh tick while reload is active', (
     tester,
   ) async {
     var reloadCount = 0;
@@ -89,7 +159,10 @@ void main() {
       tester,
       onReload: () {
         reloadCount += 1;
-        return completer.future;
+        if (reloadCount == 1) {
+          return completer.future;
+        }
+        return Future<void>.value();
       },
     );
 
@@ -102,7 +175,6 @@ void main() {
 
     completer.complete();
     await tester.pump();
-    await _pumpAndAdvance(tester, const Duration(minutes: 5));
     await tester.pump();
 
     expect(reloadCount, 2);
@@ -263,6 +335,38 @@ void main() {
     expect(reloadCount, 1);
   });
 
+  testWidgets(
+    'route observer can keep scheduling while the route is hidden when explicitly allowed',
+    (tester) async {
+      var reloadCount = 0;
+      final routeObserver = RouteObserver<ModalRoute<void>>();
+
+      await _pumpHarness(
+        tester,
+        onReload: () async => reloadCount += 1,
+        routeObserver: routeObserver,
+        allowRouteHiddenAutoRefresh: true,
+      );
+
+      await tester.tap(find.byKey(const ValueKey<String>('set-five-minutes')));
+      await tester.pump();
+      await _pumpAndAdvance(tester, const Duration(minutes: 4));
+
+      unawaited(
+        Navigator.of(_harnessState(tester).context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => const Scaffold(body: Text('next')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _pumpAndAdvance(tester, const Duration(minutes: 1));
+      await tester.pump();
+
+      expect(reloadCount, 1);
+    },
+  );
+
   testWidgets('restores an overdue nextDueAt and refreshes immediately', (
     tester,
   ) async {
@@ -317,6 +421,26 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(reloadCount, 2);
+    expect(_harnessState(tester).debugFailureStreak, 0);
+    expect(_harnessState(tester).debugIsBackingOff, isFalse);
+  });
+
+  testWidgets('cancelled auto-refresh does not enter backoff', (tester) async {
+    var reloadCount = 0;
+
+    await _pumpHarness(
+      tester,
+      onReload: () async => reloadCount += 1,
+      resolveReloadResult: () => const AutoRefreshReloadResult.cancelled(),
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('set-five-minutes')));
+    await tester.pump();
+    await _pumpAndAdvance(tester, const Duration(minutes: 5));
+    await tester.pump();
+    await tester.pump();
+
+    expect(reloadCount, 1);
     expect(_harnessState(tester).debugFailureStreak, 0);
     expect(_harnessState(tester).debugIsBackingOff, isFalse);
   });
@@ -468,10 +592,14 @@ Future<void> _pumpHarness(
   _FakeAutoRefreshStatePersistence? persistence,
   bool supportsAutoRefresh = true,
   bool canScheduleAutoRefresh = true,
+  bool Function()? canScheduleResolver,
   RouteObserver<ModalRoute<void>>? routeObserver,
   RouteObserver<ModalRoute<void>>? Function()? routeObserverResolver,
+  bool allowRouteHiddenAutoRefresh = false,
   _AutoRefreshLogRecorder? logRecorder,
   DateTime? Function()? resolveCompletedAt,
+  AutoRefreshReloadResult Function()? resolveReloadResult,
+  AutoRefreshPauseReason? Function()? pauseReasonResolver,
 }) async {
   final resolvedPersistence =
       (persistence ??
@@ -490,10 +618,14 @@ Future<void> _pumpHarness(
         persistence: resolvedPersistence,
         supportsAutoRefresh: supportsAutoRefresh,
         canScheduleAutoRefresh: canScheduleAutoRefresh,
+        canScheduleResolver: canScheduleResolver,
         routeObserver: routeObserver,
         routeObserverResolver: routeObserverResolver,
+        allowRouteHiddenAutoRefresh: allowRouteHiddenAutoRefresh,
         logRecorder: logRecorder,
         resolveCompletedAt: resolveCompletedAt,
+        resolveReloadResult: resolveReloadResult,
+        pauseReasonResolver: pauseReasonResolver,
       ),
     ),
   );
@@ -521,20 +653,28 @@ class _AutoRefreshHarness extends StatefulWidget {
     required this.persistence,
     required this.supportsAutoRefresh,
     required this.canScheduleAutoRefresh,
+    this.canScheduleResolver,
     this.routeObserver,
     this.routeObserverResolver,
+    this.allowRouteHiddenAutoRefresh = false,
     this.logRecorder,
     this.resolveCompletedAt,
+    this.resolveReloadResult,
+    this.pauseReasonResolver,
   });
 
   final Future<void> Function() onReload;
   final _FakeAutoRefreshStatePersistence persistence;
   final bool supportsAutoRefresh;
   final bool canScheduleAutoRefresh;
+  final bool Function()? canScheduleResolver;
   final RouteObserver<ModalRoute<void>>? routeObserver;
   final RouteObserver<ModalRoute<void>>? Function()? routeObserverResolver;
+  final bool allowRouteHiddenAutoRefresh;
   final _AutoRefreshLogRecorder? logRecorder;
   final DateTime? Function()? resolveCompletedAt;
+  final AutoRefreshReloadResult Function()? resolveReloadResult;
+  final AutoRefreshPauseReason? Function()? pauseReasonResolver;
 
   @override
   State<_AutoRefreshHarness> createState() => _AutoRefreshHarnessState();
@@ -548,7 +688,8 @@ class _AutoRefreshHarnessState extends State<_AutoRefreshHarness>
   bool get supportsAutoRefresh => widget.supportsAutoRefresh;
 
   @override
-  bool get canScheduleAutoRefresh => widget.canScheduleAutoRefresh;
+  bool get canScheduleAutoRefresh =>
+      widget.canScheduleResolver?.call() ?? widget.canScheduleAutoRefresh;
 
   @override
   AutoRefreshStatePersistence get autoRefreshStatePersistence =>
@@ -559,11 +700,18 @@ class _AutoRefreshHarnessState extends State<_AutoRefreshHarness>
       widget.routeObserverResolver?.call() ?? widget.routeObserver;
 
   @override
+  bool get canAutoRefreshWhileRouteHidden => widget.allowRouteHiddenAutoRefresh;
+
+  @override
   DateTime get currentAutoRefreshTime => _now;
 
   int get debugFailureStreak => autoRefreshFailureStreak;
 
   bool get debugIsBackingOff => autoRefreshIsBackingOff;
+
+  bool get debugIsPaused => autoRefreshIsPaused;
+
+  AutoRefreshPauseReason? get debugPauseReason => autoRefreshPauseReason;
 
   @override
   void logAutoRefreshInfo(String message, Map<String, Object?> context) {
@@ -584,8 +732,26 @@ class _AutoRefreshHarnessState extends State<_AutoRefreshHarness>
     return currentAutoRefreshTime;
   }
 
+  @override
+  AutoRefreshReloadResult resolveAutoRefreshReloadResult() {
+    final resolver = widget.resolveReloadResult;
+    if (resolver != null) {
+      return resolver();
+    }
+    return super.resolveAutoRefreshReloadResult();
+  }
+
+  @override
+  AutoRefreshPauseReason? resolveAutoRefreshPauseReason() {
+    return widget.pauseReasonResolver?.call();
+  }
+
   void advanceAutoRefreshClock(Duration duration) {
     _now = _now.add(duration);
+  }
+
+  void refreshScheduler() {
+    refreshAutoRefreshScheduling();
   }
 
   @override

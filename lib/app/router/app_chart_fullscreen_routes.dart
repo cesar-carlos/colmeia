@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 typedef AppChartFullscreenBuilder = Widget Function(BuildContext context);
+typedef AppChartFullscreenHeaderBuilder = Widget Function(BuildContext context);
 
 final class AppChartFullscreenRouteData implements AppRouteData {
   const AppChartFullscreenRouteData();
@@ -24,6 +25,7 @@ final class AppChartFullscreenRouteData implements AppRouteData {
 final class AppChartFullscreenRouteExtra {
   const AppChartFullscreenRouteExtra({
     required this.chartBuilder,
+    this.headerBuilder,
     this.title,
     this.subtitle,
     this.filterSummary,
@@ -33,6 +35,7 @@ final class AppChartFullscreenRouteExtra {
   });
 
   final AppChartFullscreenBuilder chartBuilder;
+  final AppChartFullscreenHeaderBuilder? headerBuilder;
   final String? title;
   final String? subtitle;
   final String? filterSummary;
@@ -92,6 +95,8 @@ Widget _buildChartFullscreenRoute(BuildContext context, GoRouterState state) {
   }
 
   Widget chart = Builder(builder: payload.chartBuilder);
+  final headerBuilder = payload.headerBuilder;
+  final header = headerBuilder == null ? null : Builder(builder: headerBuilder);
   final semanticsLabel = payload.chartSemanticsLabel?.trim();
   if (semanticsLabel != null && semanticsLabel.isNotEmpty) {
     chart = Semantics(
@@ -101,6 +106,7 @@ Widget _buildChartFullscreenRoute(BuildContext context, GoRouterState state) {
   }
 
   return AppChartFullscreenScaffold(
+    header: header,
     title: payload.title,
     subtitle: payload.subtitle,
     filterSummary: payload.filterSummary,

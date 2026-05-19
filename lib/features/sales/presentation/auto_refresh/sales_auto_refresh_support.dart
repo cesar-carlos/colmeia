@@ -4,6 +4,7 @@ import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:flutter/material.dart';
 
@@ -60,6 +61,22 @@ extension SalesAutoRefreshOptionLabel on AutoRefreshOption {
 bool salesAutoRefreshIsAvailableForViewport(BuildContext context) =>
     AppBreakpoints.isDesktop(context);
 
+bool salesAutoRefreshCanScheduleSelectedAgent({
+  required String? selectedAgentId,
+  required List<OverviewAgentOption> availableAgents,
+}) {
+  final trimmedAgentId = selectedAgentId?.trim();
+  if (trimmedAgentId == null || trimmedAgentId.isEmpty) {
+    return false;
+  }
+  for (final agent in availableAgents) {
+    if (agent.agentId == trimmedAgentId) {
+      return !agent.missingLocalClientToken;
+    }
+  }
+  return false;
+}
+
 mixin SalesCardAutoRefreshBinding<T extends StatefulWidget> on State<T> {
   @protected
   bool get supportsAutoRefresh =>
@@ -85,12 +102,18 @@ mixin SalesCardAutoRefreshBinding<T extends StatefulWidget> on State<T> {
 
   @protected
   void logAutoRefreshInfo(String message, Map<String, Object?> context) {
-    AppAutoRefreshSupport.logInfo(message, context);
+    AppAutoRefreshSupport.logInfo(message, <String, Object?>{
+      'cardId': salesAutoRefreshCardId,
+      ...context,
+    });
   }
 
   @protected
   void logAutoRefreshWarning(String message, Map<String, Object?> context) {
-    AppAutoRefreshSupport.logWarning(message, context);
+    AppAutoRefreshSupport.logWarning(message, <String, Object?>{
+      'cardId': salesAutoRefreshCardId,
+      ...context,
+    });
   }
 }
 

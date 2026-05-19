@@ -14,6 +14,7 @@ class AppChartFullscreenScaffold extends StatelessWidget {
   const AppChartFullscreenScaffold({
     required this.child,
     super.key,
+    this.header,
     this.title,
     this.subtitle,
     this.filterSummary,
@@ -22,6 +23,7 @@ class AppChartFullscreenScaffold extends StatelessWidget {
   });
 
   final Widget child;
+  final Widget? header;
   final String? title;
   final String? subtitle;
   final String? filterSummary;
@@ -68,7 +70,9 @@ class AppChartFullscreenScaffold extends StatelessWidget {
     final resolvedFilterSummary = filterSummary?.trim();
     final hasFilterSummary =
         resolvedFilterSummary != null && resolvedFilterSummary.isNotEmpty;
-    final hasHeader = hasTitle || hasSubtitle || hasFilterSummary;
+    final resolvedHeader = header;
+    final hasHeader =
+        resolvedHeader != null || hasTitle || hasSubtitle || hasFilterSummary;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final horizontalInset = screenWidth < 600
         ? tokens.gapXs
@@ -115,11 +119,12 @@ class AppChartFullscreenScaffold extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   if (hasHeader) ...<Widget>[
-                    _AppChartFullscreenHeader(
-                      title: resolvedTitle,
-                      subtitle: resolvedSubtitle,
-                      filterSummary: resolvedFilterSummary,
-                    ),
+                    resolvedHeader ??
+                        AppChartFullscreenHeader(
+                          title: resolvedTitle,
+                          subtitle: resolvedSubtitle,
+                          filterSummary: resolvedFilterSummary,
+                        ),
                     SizedBox(height: tokens.contentSpacing),
                   ],
                   Expanded(child: child),
@@ -133,11 +138,12 @@ class AppChartFullscreenScaffold extends StatelessWidget {
   }
 }
 
-class _AppChartFullscreenHeader extends StatelessWidget {
-  const _AppChartFullscreenHeader({
+class AppChartFullscreenHeader extends StatelessWidget {
+  const AppChartFullscreenHeader({
     required this.title,
     required this.subtitle,
     required this.filterSummary,
+    super.key,
   });
 
   final String? title;

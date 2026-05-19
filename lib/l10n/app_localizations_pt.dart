@@ -3080,6 +3080,29 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get salesAutoRefreshPaused => 'Atualizacao automatica pausada';
+
+  @override
+  String get salesAutoRefreshPausedLoading =>
+      'Atualizacao automatica pausada durante a carga';
+
+  @override
+  String get salesAutoRefreshPausedMissingLocalToken =>
+      'Atualizacao automatica pausada: token local necessario';
+
+  @override
+  String get salesAutoRefreshPausedNoEligibleSelection =>
+      'Atualizacao automatica pausada: selecione uma filial valida';
+
+  @override
+  String get salesAutoRefreshPausedUnsupportedViewport =>
+      'Atualizacao automatica disponivel no desktop';
+
+  @override
+  String get salesAutoRefreshPausedHidden =>
+      'Atualizacao automatica pausada enquanto a tela estiver oculta';
+
+  @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';
 
   @override
@@ -6853,6 +6876,29 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String salesAutoRefreshRetryIn(String time) {
     return 'Nova tentativa em $time';
   }
+
+  @override
+  String get salesAutoRefreshPaused => 'Atualizacao automatica pausada';
+
+  @override
+  String get salesAutoRefreshPausedLoading =>
+      'Atualizacao automatica pausada durante a carga';
+
+  @override
+  String get salesAutoRefreshPausedMissingLocalToken =>
+      'Atualizacao automatica pausada: token local necessario';
+
+  @override
+  String get salesAutoRefreshPausedNoEligibleSelection =>
+      'Atualizacao automatica pausada: selecione uma filial valida';
+
+  @override
+  String get salesAutoRefreshPausedUnsupportedViewport =>
+      'Atualizacao automatica disponivel no desktop';
+
+  @override
+  String get salesAutoRefreshPausedHidden =>
+      'Atualizacao automatica pausada enquanto a tela estiver oculta';
 
   @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';

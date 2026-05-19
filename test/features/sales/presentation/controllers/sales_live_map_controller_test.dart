@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
@@ -30,6 +31,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const SalesLiveMapFilter());
     registerFallbackValue(SalesLiveMapLoadCancelToken());
+    registerFallbackValue(SalesLiveMapReloadReason.manual);
   });
 
   setUp(() {
@@ -54,6 +56,7 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: any(named: 'userId'),
         filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
     ).thenAnswer((_) => Stream<SalesLiveMapLoadResult>.value(_loadedResult()));
@@ -67,95 +70,159 @@ void main() {
     );
   });
 
-  test('bindUser normalizes stale branch selection before first load', () async {
-    when(
-      () => salesPreferences.restoreSalesLiveMapFilter(),
-    ).thenReturn(
-      SalesLiveMapFilter(
-        selectedAgentIds: const <String>{'agent-1'},
-        selectedBranchIds: <SalesLiveMapBranchRef>{
-          const SalesLiveMapBranchRef(
-            agentId: 'agent-1',
-            codEmpresa: 1,
-            codFilial: 1,
-          ),
-        },
-      ),
-    );
+  test(
+    'bindUser normalizes stale branch selection before first load',
+    () async {
+      when(
+        () => salesPreferences.restoreSalesLiveMapFilter(),
+      ).thenReturn(
+        SalesLiveMapFilter(
+          selectedAgentIds: const <String>{'agent-1'},
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-1',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
+        ),
+      );
 
-    await controller.bindUser('user-1');
+      await controller.bindUser('user-1');
 
-    expect(controller.state.filter.selectedBranchIds, isNull);
-    expect(controller.state.filter.selectedAgentIds, isNull);
+      expect(controller.state.filter.selectedBranchIds, isNull);
+      expect(controller.state.filter.selectedAgentIds, isNull);
 
-    final persistedFilters = verify(
-      () => salesPreferences.persistSalesLiveMapFilter(captureAny()),
-    ).captured.cast<SalesLiveMapFilter>();
-    expect(persistedFilters.first.selectedBranchIds, isNull);
-    expect(persistedFilters.first.selectedAgentIds, isNull);
+      final persistedFilters = verify(
+        () => salesPreferences.persistSalesLiveMapFilter(captureAny()),
+      ).captured.cast<SalesLiveMapFilter>();
+      expect(persistedFilters.first.selectedBranchIds, isNull);
+      expect(persistedFilters.first.selectedAgentIds, isNull);
 
-    verify(
-      () => loadLiveMap.loadProgressive(
-        userId: 'user-1',
-        filter: any(named: 'filter'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    ).called(1);
-  });
+      verify(
+        () => loadLiveMap.loadProgressive(
+          userId: 'user-1',
+          filter: any(named: 'filter'),
+          reason: SalesLiveMapReloadReason.initial,
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).called(1);
+    },
+  );
 
-  test('updateMetric persists the filter without triggering a reload', () async {
-    await controller.bindUser('user-1');
-    clearInteractions(loadLiveMap);
+  test(
+    'applyFilter skips equivalent state updates and does not notify listeners',
+    () async {
+      await controller.bindUser('user-1');
+      clearInteractions(salesPreferences);
+      clearInteractions(loadLiveMap);
+      var listenerCount = 0;
+      controller.addListener(() => listenerCount += 1);
 
-    controller.updateMetric(AppBrazilStoreSalesMapMetric.salesCount);
+      await controller.applyFilter(controller.state.filter);
 
-    expect(
-      controller.state.filter.metric,
-      AppBrazilStoreSalesMapMetric.salesCount,
-    );
-    verifyNever(
-      () => loadLiveMap.loadProgressive(
-        userId: any(named: 'userId'),
-        filter: any(named: 'filter'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    );
-    final persistedFilters = verify(
-      () => salesPreferences.persistSalesLiveMapFilter(captureAny()),
-    ).captured.cast<SalesLiveMapFilter>();
-    expect(
-      persistedFilters.last.metric,
-      AppBrazilStoreSalesMapMetric.salesCount,
-    );
-  });
+      expect(listenerCount, 0);
+      verifyNever(
+        () => salesPreferences.persistSalesLiveMapFilter(any()),
+      );
+      verifyNever(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
+    },
+  );
 
-  test('applyFilter with visual-only changes does not trigger a reload', () async {
-    await controller.bindUser('user-1');
-    clearInteractions(loadLiveMap);
+  test(
+    'updateMetric persists the filter without triggering a reload',
+    () async {
+      await controller.bindUser('user-1');
+      clearInteractions(loadLiveMap);
 
-    await controller.applyFilter(
-      const SalesLiveMapFilter(
-        detailLevel: SalesLiveMapMapDetail.municipalities,
-        markerVisual: SalesLiveMapMarkerVisual.bubble,
-      ),
-    );
+      controller.updateMetric(AppBrazilStoreSalesMapMetric.salesCount);
 
-    expect(
-      controller.state.filter.detailLevel,
-      SalesLiveMapMapDetail.municipalities,
-    );
-    expect(
-      controller.state.filter.markerVisual,
-      SalesLiveMapMarkerVisual.bubble,
-    );
-    verifyNever(
-      () => loadLiveMap.loadProgressive(
-        userId: any(named: 'userId'),
-        filter: any(named: 'filter'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    );
-  });
+      expect(
+        controller.state.filter.metric,
+        AppBrazilStoreSalesMapMetric.salesCount,
+      );
+      verifyNever(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
+      final persistedFilters = verify(
+        () => salesPreferences.persistSalesLiveMapFilter(captureAny()),
+      ).captured.cast<SalesLiveMapFilter>();
+      expect(
+        persistedFilters.last.metric,
+        AppBrazilStoreSalesMapMetric.salesCount,
+      );
+    },
+  );
+
+  test(
+    'updateMetric skips equivalent values without notifying listeners',
+    () async {
+      await controller.bindUser('user-1');
+      clearInteractions(salesPreferences);
+      clearInteractions(loadLiveMap);
+      var listenerCount = 0;
+      controller
+        ..addListener(() => listenerCount += 1)
+        ..updateMetric(controller.state.filter.metric);
+
+      expect(listenerCount, 0);
+      verifyNever(
+        () => salesPreferences.persistSalesLiveMapFilter(any()),
+      );
+      verifyNever(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'applyFilter with visual-only changes does not trigger a reload',
+    () async {
+      await controller.bindUser('user-1');
+      clearInteractions(loadLiveMap);
+
+      await controller.applyFilter(
+        const SalesLiveMapFilter(
+          detailLevel: SalesLiveMapMapDetail.municipalities,
+          markerVisual: SalesLiveMapMarkerVisual.bubble,
+        ),
+      );
+
+      expect(
+        controller.state.filter.detailLevel,
+        SalesLiveMapMapDetail.municipalities,
+      );
+      expect(
+        controller.state.filter.markerVisual,
+        SalesLiveMapMarkerVisual.bubble,
+      );
+      verifyNever(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
+    },
+  );
 
   test(
     'clearSelectedBranches resets branch scope, reloads, and requests fullscreen close',
@@ -188,11 +255,15 @@ void main() {
         () => loadLiveMap.loadProgressive(
           userId: 'user-1',
           filter: captureAny(named: 'filter'),
+          reason: captureAny(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
-      ).captured.cast<SalesLiveMapFilter>();
-      expect(capturedFilters.single.selectedBranchIds, isNull);
-      expect(capturedFilters.single.selectedAgentIds, isNull);
+      ).captured;
+      final capturedFilter = capturedFilters[0] as SalesLiveMapFilter;
+      final capturedReason = capturedFilters[1] as SalesLiveMapReloadReason;
+      expect(capturedFilter.selectedBranchIds, isNull);
+      expect(capturedFilter.selectedAgentIds, isNull);
+      expect(capturedReason, SalesLiveMapReloadReason.filterChange);
     },
   );
 
@@ -232,73 +303,113 @@ void main() {
       () => loadLiveMap.loadProgressive(
         userId: 'user-1',
         filter: captureAny(named: 'filter'),
+        reason: captureAny(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
       ),
-    ).captured.cast<SalesLiveMapFilter>();
-    expect(capturedFilters.single.selectedBranchIds, isNull);
-    expect(capturedFilters.single.selectedAgentIds, isNull);
+    ).captured;
+    final capturedFilter = capturedFilters[0] as SalesLiveMapFilter;
+    final capturedReason = capturedFilters[1] as SalesLiveMapReloadReason;
+    expect(capturedFilter.selectedBranchIds, isNull);
+    expect(capturedFilter.selectedAgentIds, isNull);
+    expect(capturedReason, SalesLiveMapReloadReason.filterChange);
   });
 
-  test('canScheduleAutoRefresh is false when all agents miss local token', () async {
-    when(
-      () => loadAvailableAgentsForSales.call('user-1'),
-    ).thenAnswer(
-      (_) async => const <OverviewAgentOption>[
-        OverviewAgentOption(
-          agentId: 'agent-1',
-          name: 'Agent One',
-          missingLocalClientToken: true,
-        ),
-      ],
-    );
-
-    await controller.bindUser('user-1');
-
-    expect(controller.state.canScheduleAutoRefresh, isFalse);
-  });
-
-  test('reload(force: true) cancels the previous generation and keeps the latest result', () async {
-    await controller.bindUser('user-1');
-
-    final firstStream = StreamController<SalesLiveMapLoadResult>();
-    final secondStream = StreamController<SalesLiveMapLoadResult>();
-    addTearDown(firstStream.close);
-    addTearDown(secondStream.close);
-
-    var progressiveCallCount = 0;
-    final capturedTokens = <SalesLiveMapLoadCancelToken>[];
-    when(
-      () => loadLiveMap.loadProgressive(
-        userId: any(named: 'userId'),
-        filter: any(named: 'filter'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    ).thenAnswer((invocation) {
-      progressiveCallCount += 1;
-      capturedTokens.add(
-        invocation.namedArguments[#cancelToken] as SalesLiveMapLoadCancelToken,
+  test(
+    'canScheduleAutoRefresh is false when all agents miss local token',
+    () async {
+      when(
+        () => loadAvailableAgentsForSales.call('user-1'),
+      ).thenAnswer(
+        (_) async => const <OverviewAgentOption>[
+          OverviewAgentOption(
+            agentId: 'agent-1',
+            name: 'Agent One',
+            missingLocalClientToken: true,
+          ),
+        ],
       );
-      if (progressiveCallCount == 1) {
-        return firstStream.stream;
-      }
-      return secondStream.stream;
-    });
 
-    unawaited(controller.reload());
-    await Future<void>.delayed(Duration.zero);
-    unawaited(controller.reload(force: true));
-    await Future<void>.delayed(Duration.zero);
+      await controller.bindUser('user-1');
 
-    expect(capturedTokens, hasLength(2));
-    expect(capturedTokens.first.isCancelled, isTrue);
+      expect(controller.state.canScheduleAutoRefresh, isFalse);
+    },
+  );
 
-    firstStream.add(_resultForRevenue(10));
-    await Future<void>.delayed(Duration.zero);
-    expect(controller.state.result?.totalRevenue, _loadedResult().totalRevenue);
+  test(
+    'reload(force: true) cancels the previous generation and keeps the latest result',
+    () async {
+      await controller.bindUser('user-1');
 
-    secondStream.add(_resultForRevenue(99));
-    await Future<void>.delayed(Duration.zero);
-    expect(controller.state.result?.totalRevenue, 99);
+      final firstStream = StreamController<SalesLiveMapLoadResult>();
+      final secondStream = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(firstStream.close);
+      addTearDown(secondStream.close);
+
+      var progressiveCallCount = 0;
+      final capturedTokens = <SalesLiveMapLoadCancelToken>[];
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((invocation) {
+        progressiveCallCount += 1;
+        capturedTokens.add(
+          invocation.namedArguments[#cancelToken]
+              as SalesLiveMapLoadCancelToken,
+        );
+        if (progressiveCallCount == 1) {
+          return firstStream.stream;
+        }
+        return secondStream.stream;
+      });
+
+      final firstReload = controller.reload();
+      await Future<void>.delayed(Duration.zero);
+      final secondReload = controller.reload(force: true);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(capturedTokens, hasLength(2));
+      expect(capturedTokens.first.isCancelled, isTrue);
+
+      firstStream.add(_resultForRevenue(10));
+      await firstStream.close();
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        controller.state.result?.totalRevenue,
+        _loadedResult().totalRevenue,
+      );
+
+      secondStream.add(_resultForRevenue(99));
+      await secondStream.close();
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.state.result?.totalRevenue, 99);
+
+      expect((await firstReload).isSuperseded, isTrue);
+      expect((await secondReload).isCompleted, isTrue);
+    },
+  );
+
+  test('reload defaults to manual reason', () async {
+    await controller.bindUser('user-1');
+    clearInteractions(loadLiveMap);
+
+    await controller.reload();
+
+    final verification = verify(
+      () => loadLiveMap.loadProgressive(
+        userId: 'user-1',
+        filter: any(named: 'filter'),
+        reason: captureAny(named: 'reason'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    )..called(1);
+    expect(
+      verification.captured.single,
+      SalesLiveMapReloadReason.manual,
+    );
   });
 }
 

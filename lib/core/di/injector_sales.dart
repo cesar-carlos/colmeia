@@ -9,6 +9,7 @@ import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_c
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
@@ -52,6 +53,9 @@ void registerInjectorSales(GetIt getIt) {
     ..registerLazySingleton<SalesLiveMapCatalogDiskCache>(
       () => SalesLiveMapCatalogDiskCache(getIt<SharedPreferences>()),
     )
+    ..registerLazySingleton<SalesLiveMapRefreshMetrics>(
+      SalesLiveMapRefreshMetrics.new,
+    )
     ..registerFactory<LoadSalesLiveMapUseCase>(
       () => LoadSalesLiveMapUseCase(
         getIt<AgentQueryTargetResolver>(),
@@ -61,6 +65,7 @@ void registerInjectorSales(GetIt getIt) {
         AppBrazilStoreSalesPointResolver(
           locationResolver: getIt<AppLocationResolver>(),
         ),
+        refreshMetrics: getIt<SalesLiveMapRefreshMetrics>(),
       ),
     );
 }

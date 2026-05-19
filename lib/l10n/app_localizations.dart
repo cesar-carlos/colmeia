@@ -4972,6 +4972,42 @@ abstract class AppLocalizations {
   /// **'Retry in {time}'**
   String salesAutoRefreshRetryIn(String time);
 
+  /// No description provided for @salesAutoRefreshPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh paused'**
+  String get salesAutoRefreshPaused;
+
+  /// No description provided for @salesAutoRefreshPausedLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh paused while loading'**
+  String get salesAutoRefreshPausedLoading;
+
+  /// No description provided for @salesAutoRefreshPausedMissingLocalToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh paused: local token required'**
+  String get salesAutoRefreshPausedMissingLocalToken;
+
+  /// No description provided for @salesAutoRefreshPausedNoEligibleSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh paused: select an eligible branch'**
+  String get salesAutoRefreshPausedNoEligibleSelection;
+
+  /// No description provided for @salesAutoRefreshPausedUnsupportedViewport.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh available on desktop'**
+  String get salesAutoRefreshPausedUnsupportedViewport;
+
+  /// No description provided for @salesAutoRefreshPausedHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-refresh paused while this screen is hidden'**
+  String get salesAutoRefreshPausedHidden;
+
   /// No description provided for @salesDailyTotalsChartTitle.
   ///
   /// In en, this message translates to:

@@ -5,6 +5,7 @@ import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
@@ -13,6 +14,31 @@ import 'package:colmeia/features/sales/presentation/state/sales_live_map_present
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/foundation.dart';
+
+enum SalesLiveMapReloadOutcomeKind { completed, cancelled, superseded }
+
+@immutable
+class SalesLiveMapReloadOutcome {
+  const SalesLiveMapReloadOutcome._(this.kind, this.result);
+
+  const SalesLiveMapReloadOutcome.completed([SalesLiveMapLoadResult? result])
+    : this._(SalesLiveMapReloadOutcomeKind.completed, result);
+
+  const SalesLiveMapReloadOutcome.cancelled([SalesLiveMapLoadResult? result])
+    : this._(SalesLiveMapReloadOutcomeKind.cancelled, result);
+
+  const SalesLiveMapReloadOutcome.superseded([SalesLiveMapLoadResult? result])
+    : this._(SalesLiveMapReloadOutcomeKind.superseded, result);
+
+  final SalesLiveMapReloadOutcomeKind kind;
+  final SalesLiveMapLoadResult? result;
+
+  bool get isCompleted => kind == SalesLiveMapReloadOutcomeKind.completed;
+
+  bool get isCancelled => kind == SalesLiveMapReloadOutcomeKind.cancelled;
+
+  bool get isSuperseded => kind == SalesLiveMapReloadOutcomeKind.superseded;
+}
 
 class SalesLiveMapController extends ChangeNotifier {
   SalesLiveMapController({
@@ -52,14 +78,19 @@ class SalesLiveMapController extends ChangeNotifier {
     final restoredFilter = _normalizeRestoredFilter(
       _sessionService.restoreSalesLiveMapFilter(),
     );
-    _state = _state.copyWith(
-      filter: restoredFilter,
-      availableAgents: const <OverviewAgentOption>[],
-      result: userId == null ? _sessionExpiredResult() : null,
-      isLoading: userId != null,
-      sessionExpired: userId == null,
+    final sessionExpiredResult = userId == null
+        ? _sessionExpiredResult()
+        : null;
+    _setState(
+      _state.copyWith(
+        filter: restoredFilter,
+        availableAgents: const <OverviewAgentOption>[],
+        result: sessionExpiredResult,
+        mapPayloadDigest: _mapPayloadDigestFor(sessionExpiredResult),
+        isLoading: userId != null,
+        sessionExpired: userId == null,
+      ),
     );
-    _notifyListenersIfAlive();
 
     if (restoredFilter.selectedBranchIds != null) {
       unawaited(_sessionService.persistSalesLiveMapFilter(restoredFilter));
@@ -70,28 +101,35 @@ class SalesLiveMapController extends ChangeNotifier {
     await _loadAgents(userId);
   }
 
-  Future<void> reload({bool force = false}) async {
+  Future<SalesLiveMapReloadOutcome> reload({
+    bool force = false,
+    SalesLiveMapReloadReason reason = SalesLiveMapReloadReason.manual,
+  }) async {
     if (force) {
       _activeLoadCancelToken?.cancel();
     }
-    await _performReload();
+    return _performReload(reason: reason);
   }
 
   Future<void> applyFilter(SalesLiveMapFilter filter) async {
     final normalizedFilter = _normalizeFilterForSelectedBranches(filter);
+    if (_state.filter == normalizedFilter && !_state.sessionExpired) {
+      return;
+    }
     final previousData = _state.filter.dataFilter;
     final nextData = normalizedFilter.dataFilter;
 
-    _state = _state.copyWith(
-      filter: normalizedFilter,
-      sessionExpired: false,
+    _setState(
+      _state.copyWith(
+        filter: normalizedFilter,
+        sessionExpired: false,
+      ),
     );
-    _notifyListenersIfAlive();
     unawaited(_sessionService.persistSalesLiveMapFilter(normalizedFilter));
 
     if (previousData != nextData) {
       _requestCloseFullscreenAfterDataChanged();
-      await reload(force: true);
+      await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
     }
   }
 
@@ -100,20 +138,24 @@ class SalesLiveMapController extends ChangeNotifier {
       selectedAgentIds: null,
       selectedBranchIds: null,
     );
-    _state = _state.copyWith(filter: next, sessionExpired: false);
-    _notifyListenersIfAlive();
+    if (_state.filter == next && !_state.sessionExpired) {
+      return;
+    }
+    _setState(_state.copyWith(filter: next, sessionExpired: false));
     unawaited(_sessionService.persistSalesLiveMapFilter(next));
     _requestCloseFullscreenAfterDataChanged();
-    await reload(force: true);
+    await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
   }
 
   Future<void> clearSavedFilters() async {
     const next = SalesLiveMapFilter();
-    _state = _state.copyWith(filter: next, sessionExpired: false);
-    _notifyListenersIfAlive();
+    if (_state.filter == next && !_state.sessionExpired) {
+      return;
+    }
+    _setState(_state.copyWith(filter: next, sessionExpired: false));
     unawaited(_sessionService.persistSalesLiveMapFilter(next));
     _requestCloseFullscreenAfterDataChanged();
-    await reload(force: true);
+    await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
   }
 
   void updateMetric(AppBrazilStoreSalesMapMetric metric) {
@@ -121,8 +163,7 @@ class SalesLiveMapController extends ChangeNotifier {
       return;
     }
     final next = _state.filter.copyWith(metric: metric);
-    _state = _state.copyWith(filter: next);
-    _notifyListenersIfAlive();
+    _setState(_state.copyWith(filter: next));
     unawaited(_sessionService.persistSalesLiveMapFilter(next));
   }
 
@@ -160,14 +201,15 @@ class SalesLiveMapController extends ChangeNotifier {
         selectedAgentIds: _state.filter.selectedAgentIds,
       ),
     );
-    _state = _state.copyWith(
-      availableAgents: agents,
-      filter: normalizedFilter,
-      sessionExpired: false,
+    _setState(
+      _state.copyWith(
+        availableAgents: agents,
+        filter: normalizedFilter,
+        sessionExpired: false,
+      ),
     );
-    _notifyListenersIfAlive();
     unawaited(_sessionService.persistSalesLiveMapFilter(normalizedFilter));
-    await reload();
+    await reload(reason: SalesLiveMapReloadReason.initial);
   }
 
   Set<String>? _normalizeSelectedAgentIds({
@@ -197,91 +239,98 @@ class SalesLiveMapController extends ChangeNotifier {
     return Set<String>.unmodifiable(reconciled);
   }
 
-  Future<void> _performReload() async {
+  Future<SalesLiveMapReloadOutcome> _performReload({
+    required SalesLiveMapReloadReason reason,
+  }) async {
     final userId = _boundUserId;
     final generation = ++_loadGeneration;
     final cancelToken = SalesLiveMapLoadCancelToken();
     final hadResultBeforeReload = _state.result != null;
     _activeLoadCancelToken = cancelToken;
 
-    _state = _state.copyWith(isLoading: true, sessionExpired: userId == null);
-    _notifyListenersIfAlive();
+    _setState(
+      _state.copyWith(isLoading: true, sessionExpired: userId == null),
+    );
 
     if (userId == null) {
       if (generation != _loadGeneration) {
-        return;
+        return SalesLiveMapReloadOutcome.superseded(_state.result);
       }
       if (identical(_activeLoadCancelToken, cancelToken)) {
         _activeLoadCancelToken = null;
       }
-      _state = _state.copyWith(
-        isLoading: false,
-        result: _sessionExpiredResult(),
-        sessionExpired: true,
+      final sessionExpiredResult = _sessionExpiredResult();
+      _setState(
+        _state.copyWith(
+          isLoading: false,
+          result: sessionExpiredResult,
+          mapPayloadDigest: _mapPayloadDigestFor(sessionExpiredResult),
+          sessionExpired: true,
+        ),
       );
-      _notifyListenersIfAlive();
-      return;
+      return SalesLiveMapReloadOutcome.completed(_state.result);
     }
 
     var emittedAnyResult = false;
     await for (final result in _loadLiveMap.loadProgressive(
       userId: userId,
       filter: _state.filter,
+      reason: reason,
       cancelToken: cancelToken,
     )) {
       if (generation != _loadGeneration) {
-        return;
+        return SalesLiveMapReloadOutcome.superseded(_state.result);
       }
       emittedAnyResult = true;
       if (result.cancelled) {
         if (identical(_activeLoadCancelToken, cancelToken)) {
           _activeLoadCancelToken = null;
         }
-        _state = _state.copyWith(isLoading: false);
-        _notifyListenersIfAlive();
-        return;
+        _setState(_state.copyWith(isLoading: false));
+        return SalesLiveMapReloadOutcome.cancelled(result);
       }
       if (hadResultBeforeReload && result.salesDataPending) {
         continue;
       }
 
       final previousResult = _state.result;
+      final nextMapPayloadDigest = _mapPayloadDigestFor(result);
       if (previousResult != null) {
         final mapPayloadUnchanged =
-            AppBrazilStoreSalesMapData.pointsContentDigest(
-              previousResult.points,
-            ) ==
-            AppBrazilStoreSalesMapData.pointsContentDigest(result.points);
+            _state.mapPayloadDigest == nextMapPayloadDigest;
         if (mapPayloadUnchanged &&
             previousResult.salesDataPending == result.salesDataPending &&
             previousResult.loadFailed == result.loadFailed &&
             previousResult.refreshedAt == result.refreshedAt) {
           if (_state.isLoading != result.salesDataPending) {
-            _state = _state.copyWith(isLoading: result.salesDataPending);
-            _notifyListenersIfAlive();
+            _setState(
+              _state.copyWith(isLoading: result.salesDataPending),
+            );
           }
           continue;
         }
       }
 
-      _state = _state.copyWith(
-        result: result,
-        isLoading: result.salesDataPending,
-        sessionExpired: false,
+      _setState(
+        _state.copyWith(
+          result: result,
+          mapPayloadDigest: nextMapPayloadDigest,
+          isLoading: result.salesDataPending,
+          sessionExpired: false,
+        ),
       );
-      _notifyListenersIfAlive();
     }
 
     if (generation != _loadGeneration) {
-      return;
+      return SalesLiveMapReloadOutcome.superseded(_state.result);
     }
     if (identical(_activeLoadCancelToken, cancelToken)) {
       _activeLoadCancelToken = null;
     }
     if (!emittedAnyResult) {
-      _state = _state.copyWith(isLoading: false);
-      _notifyListenersIfAlive();
+      _setState(_state.copyWith(isLoading: false));
     }
+    return SalesLiveMapReloadOutcome.completed(_state.result);
   }
 
   SalesLiveMapFilter _normalizeFilterForSelectedBranches(
@@ -328,10 +377,11 @@ class SalesLiveMapController extends ChangeNotifier {
   }
 
   void _requestCloseFullscreenAfterDataChanged() {
-    _state = _state.copyWith(
-      closeFullscreenRequestId: _state.closeFullscreenRequestId + 1,
+    _setState(
+      _state.copyWith(
+        closeFullscreenRequestId: _state.closeFullscreenRequestId + 1,
+      ),
     );
-    _notifyListenersIfAlive();
   }
 
   void _notifyListenersIfAlive() {
@@ -362,4 +412,19 @@ class SalesLiveMapController extends ChangeNotifier {
   }
 
   bool get _shouldTracePerformance => kDebugMode || kProfileMode;
+
+  void _setState(SalesLiveMapPresentationState nextState) {
+    if (_state == nextState) {
+      return;
+    }
+    _state = nextState;
+    _notifyListenersIfAlive();
+  }
+
+  int _mapPayloadDigestFor(SalesLiveMapLoadResult? result) {
+    if (result == null) {
+      return 0;
+    }
+    return AppBrazilStoreSalesMapData.pointsContentDigest(result.points);
+  }
 }

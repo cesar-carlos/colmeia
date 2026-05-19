@@ -11,6 +11,7 @@ import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
@@ -28,6 +29,7 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_scaffold.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -69,8 +71,15 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     with AutoRefreshStateMixin<_SalesLiveMapSession> {
   late final SalesLiveMapController _controller;
   int _pendingReloadForceCount = 0;
+  SalesLiveMapReloadReason? _pendingReloadReason;
   int _lastCloseFullscreenRequestId = 0;
+  AutoRefreshReloadResult _lastAutoRefreshReloadResult =
+      const AutoRefreshReloadResult.cancelled();
   DateTime? _lastRecordedSuccessfulRefreshAt;
+  bool _wasControllerLoading = false;
+  DateTime? _controllerReloadQueuedTickThreshold;
+  bool _liveMapFullscreenOpen = false;
+  _SalesLiveMapSchedulingSlice? _lastSchedulingSlice;
 
   @override
   void initState() {
@@ -118,71 +127,177 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       AppAutoRefreshSupport.routeObserver;
 
   @override
+  bool get canAutoRefreshWhileRouteHidden => _liveMapFullscreenOpen;
+
+  @override
   AutoRefreshStatePersistence get autoRefreshStatePersistence =>
       _controller.autoRefreshPersistence;
 
   @override
   void logAutoRefreshInfo(String message, Map<String, Object?> context) {
-    AppAutoRefreshSupport.logInfo(message, context);
+    AppAutoRefreshSupport.logInfo(message, <String, Object?>{
+      'cardId': SalesAutoRefreshCardIds.liveMap,
+      ...context,
+    });
   }
 
   @override
   void logAutoRefreshWarning(String message, Map<String, Object?> context) {
-    AppAutoRefreshSupport.logWarning(message, context);
+    AppAutoRefreshSupport.logWarning(message, <String, Object?>{
+      'cardId': SalesAutoRefreshCardIds.liveMap,
+      ...context,
+    });
   }
 
   @override
   bool get canScheduleAutoRefresh =>
       _controller.state.canScheduleAutoRefresh && !_controller.state.isLoading;
 
+  @override
+  AutoRefreshPauseReason? resolveAutoRefreshPauseReason() {
+    final state = _controller.state;
+    if (state.isLoading) {
+      return AutoRefreshPauseReason.pageLoading;
+    }
+    final availableAgents = state.availableAgents;
+    if (availableAgents.isEmpty) {
+      return AutoRefreshPauseReason.noEligibleSelection;
+    }
+    final tokenBackedAgentIds = availableAgents
+        .where((agent) => !agent.missingLocalClientToken)
+        .map((agent) => agent.agentId)
+        .toSet();
+    if (tokenBackedAgentIds.isEmpty) {
+      return AutoRefreshPauseReason.missingLocalToken;
+    }
+    final selectedAgentIds = state.filter.selectedAgentIds;
+    if (selectedAgentIds == null) {
+      return null;
+    }
+    if (selectedAgentIds.any(tokenBackedAgentIds.contains)) {
+      return null;
+    }
+    final selectedSet = selectedAgentIds.toSet();
+    final selectedAgents = availableAgents
+        .where((agent) => selectedSet.contains(agent.agentId))
+        .toList(growable: false);
+    if (selectedAgents.isNotEmpty &&
+        selectedAgents.every((agent) => agent.missingLocalClientToken)) {
+      return AutoRefreshPauseReason.missingLocalToken;
+    }
+    return AutoRefreshPauseReason.noEligibleSelection;
+  }
+
   Future<void> _reload({bool force = false}) async {
     if (force) {
       _pendingReloadForceCount += 1;
     }
+    _pendingReloadReason = SalesLiveMapReloadReason.manual;
     await reloadWithAutoRefresh(force: force);
   }
 
   @override
   Future<void> performAutoRefreshReload() async {
     final force = _pendingReloadForceCount > 0;
+    final reason = _pendingReloadReason ?? SalesLiveMapReloadReason.autoRefresh;
     _pendingReloadForceCount = 0;
-    await _controller.reload(force: force);
+    _pendingReloadReason = null;
+    final outcome = await _controller.reload(force: force, reason: reason);
+    final result = outcome.result;
+    if (outcome.isCancelled || outcome.isSuperseded) {
+      _lastAutoRefreshReloadResult = const AutoRefreshReloadResult.cancelled();
+      return;
+    }
+    if (result == null ||
+        result.loadFailed ||
+        result.cancelled ||
+        result.salesDataPending ||
+        result.refreshedAt == null) {
+      _lastAutoRefreshReloadResult = const AutoRefreshReloadResult.failure();
+      return;
+    }
+    _lastAutoRefreshReloadResult = AutoRefreshReloadResult.success(
+      result.refreshedAt,
+    );
   }
 
   @override
-  DateTime? resolveAutoRefreshCompletedAt() {
-    final result = _controller.state.result;
-    if (result == null || result.loadFailed || result.cancelled) {
-      return null;
-    }
-    return result.refreshedAt;
-  }
+  AutoRefreshReloadResult resolveAutoRefreshReloadResult() =>
+      _lastAutoRefreshReloadResult;
 
   void _handleControllerChanged() {
     if (!mounted) {
       return;
     }
     final state = _controller.state;
+    final wasControllerLoading = _wasControllerLoading;
+    if (state.isLoading &&
+        !wasControllerLoading &&
+        !autoRefreshReloadInProgress) {
+      _controllerReloadQueuedTickThreshold =
+          _resolveQueuedTickThresholdForControllerReload();
+    }
+    if (state.isLoading) {
+      _lastRecordedSuccessfulRefreshAt = null;
+    }
     if (!state.isLoading && !state.canScheduleAutoRefresh) {
-      disableAutoRefresh();
-    } else {
+      _controllerReloadQueuedTickThreshold = null;
+    }
+    final schedulingSlice = _SalesLiveMapSchedulingSlice.fromState(state);
+    if (_lastSchedulingSlice != schedulingSlice) {
+      _lastSchedulingSlice = schedulingSlice;
       refreshAutoRefreshScheduling();
     }
     final successfulRefreshAt = _resolveSuccessfulRefreshAt(state);
     if (successfulRefreshAt != null &&
+        !autoRefreshReloadInProgress &&
         successfulRefreshAt != _lastRecordedSuccessfulRefreshAt) {
+      final shouldQueueElapsedTick =
+          _didControllerReloadCrossQueuedTickThreshold();
       _lastRecordedSuccessfulRefreshAt = successfulRefreshAt;
-      recordAutoRefreshSuccessfulReload(successfulRefreshAt);
+      _controllerReloadQueuedTickThreshold = null;
+      recordAutoRefreshSuccessfulReload(
+        successfulRefreshAt,
+        scheduleNextCycle: !shouldQueueElapsedTick,
+      );
+    } else if (!state.isLoading && wasControllerLoading) {
+      _controllerReloadQueuedTickThreshold = null;
     }
+    _wasControllerLoading = state.isLoading;
     if (state.closeFullscreenRequestId != _lastCloseFullscreenRequestId) {
       _lastCloseFullscreenRequestId = state.closeFullscreenRequestId;
       _maybePopChartFullscreenAfterDataChanged();
     }
   }
 
+  DateTime? _resolveQueuedTickThresholdForControllerReload() {
+    final option = autoRefreshOption;
+    final nextDueAt = autoRefreshNextDueAt;
+    if (option == null || nextDueAt == null) {
+      return null;
+    }
+    final startTime = currentAutoRefreshTime;
+    if (startTime.isBefore(nextDueAt)) {
+      return nextDueAt;
+    }
+    return nextDueAt.add(option.duration);
+  }
+
+  bool _didControllerReloadCrossQueuedTickThreshold() {
+    final threshold = _controllerReloadQueuedTickThreshold;
+    if (threshold == null) {
+      return false;
+    }
+    return !currentAutoRefreshTime.isBefore(threshold);
+  }
+
   DateTime? _resolveSuccessfulRefreshAt(SalesLiveMapPresentationState state) {
     final result = state.result;
-    if (result == null || result.loadFailed || result.cancelled) {
+    if (result == null ||
+        result.loadFailed ||
+        result.cancelled ||
+        result.salesDataPending ||
+        state.isLoading) {
       return null;
     }
     return result.refreshedAt;
@@ -206,67 +321,42 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     );
   }
 
-  void _openLiveMapFullscreen(
-    SalesLiveMapPresentationState state,
-    SalesLiveMapViewModel viewModel,
-  ) {
+  void _openLiveMapFullscreen() {
+    if (_liveMapFullscreenOpen) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
-    final pointsSnapshot = List<AppBrazilStoreSalesPoint>.of(
-      state.result?.points ?? const <AppBrazilStoreSalesPoint>[],
-      growable: false,
-    );
-    final filterBranchIdsSnapshot = Set<String>.from(
-      state.filterBranchStorageKeys,
-    );
-    final initialMetricSnapshot = state.filter.metric;
-    final styleSnapshot = state.mapStyle;
+    _setLiveMapFullscreenOpen(true);
 
     unawaited(
-      context.pushChartFullscreen<void>(
-        extra: AppChartFullscreenRouteExtra(
-          title: l10n.salesLiveMapChartTitle,
-          subtitle: viewModel.mapSubtitle,
-          chartSemanticsLabel: l10n.salesLiveMapChartTitle,
-          chartBuilder: (_) {
-            return LayoutBuilder(
-              builder: (context, _) {
-                final tokens = Theme.of(
-                  context,
-                ).extension<AppThemeTokens>()!;
-                return AppSectionCard(
-                  padding: EdgeInsets.fromLTRB(
-                    tokens.contentSpacing,
-                    tokens.contentSpacing,
-                    tokens.contentSpacing,
-                    0,
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, cardConstraints) {
-                      Widget chart = AppBrazilStoreSalesMapChart(
-                        points: pointsSnapshot,
-                        initialMetric: initialMetricSnapshot,
-                        filterBranchIds: filterBranchIdsSnapshot,
-                        fixedBranchIds: filterBranchIdsSnapshot,
-                        style: styleSnapshot,
-                        onMetricChanged: _controller.updateMetric,
-                        showDesktopBranchSidebar: true,
-                        presentationMode: AppBrazilStoreSalesMapPresentationMode
-                            .cleanFullscreen,
-                      );
-                      final maxH = cardConstraints.maxHeight;
-                      if (maxH.isFinite && maxH < double.infinity) {
-                        chart = SizedBox(height: maxH, child: chart);
-                      }
-                      return chart;
-                    },
-                  ),
-                );
-              },
-            );
-          },
-        ),
-      ),
+      context
+          .pushChartFullscreen<void>(
+            extra: AppChartFullscreenRouteExtra(
+              chartSemanticsLabel: l10n.salesLiveMapChartTitle,
+              headerBuilder: (_) =>
+                  _SalesLiveMapFullscreenHeader(controller: _controller),
+              chartBuilder: (_) =>
+                  _SalesLiveMapFullscreenChart(controller: _controller),
+            ),
+          )
+          .whenComplete(() {
+            if (!mounted) {
+              return;
+            }
+            _setLiveMapFullscreenOpen(false);
+          }),
     );
+  }
+
+  void _setLiveMapFullscreenOpen(bool isOpen) {
+    if (_liveMapFullscreenOpen == isOpen) {
+      return;
+    }
+    _liveMapFullscreenOpen = isOpen;
+    if (!mounted) {
+      return;
+    }
+    refreshAutoRefreshScheduling();
   }
 
   void _maybePopChartFullscreenAfterDataChanged() {
@@ -430,27 +520,36 @@ class _SalesLiveMapAutoRefreshSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final autoRefreshSupported = salesAutoRefreshIsAvailableForViewport(
+      context,
+    );
 
     return ValueListenableBuilder<AutoRefreshUiState>(
       valueListenable: stateListenable,
       builder: (context, refreshState, _) {
-        return Selector<SalesLiveMapController, SalesLiveMapPresentationState>(
-          selector: (_, controller) => controller.state,
-          builder: (context, state, _) {
+        return Selector<SalesLiveMapController, _SalesLiveMapAutoRefreshSlice>(
+          selector: (_, controller) =>
+              _SalesLiveMapAutoRefreshSlice.fromState(controller.state),
+          builder: (context, slice, _) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 SalesAutoRefreshActionsRow(
                   value: refreshState.option,
                   onChanged: onOptionChanged,
-                  onRefreshNow: state.canReload ? onRefreshNow : () {},
-                  enabled: state.canScheduleAutoRefresh,
+                  onRefreshNow: slice.canReload ? onRefreshNow : () {},
+                  enabled: slice.canScheduleAutoRefresh,
+                  refreshNowEnabled: slice.canReload,
                   lastUpdatedAt: refreshState.lastUpdatedAt,
-                  nextDueAt: refreshState.nextDueAt,
+                  nextDueAt: autoRefreshSupported
+                      ? refreshState.nextDueAt
+                      : null,
                   isBackingOff: refreshState.isBackingOff,
+                  isPaused: refreshState.isPaused,
+                  pauseReason: refreshState.pauseReason,
                   l10n: l10n,
                 ),
-                if (state.isLoading && state.result != null) ...<Widget>[
+                if (slice.showReloadProgress) ...<Widget>[
                   SizedBox(
                     height: Theme.of(
                       context,
@@ -474,80 +573,396 @@ class _SalesLiveMapBodySection extends StatelessWidget {
   });
 
   final VoidCallback onRetryReload;
-  final void Function(
-    SalesLiveMapPresentationState state,
-    SalesLiveMapViewModel viewModel,
-  )
-  onOpenFullscreen;
+  final VoidCallback onOpenFullscreen;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
 
-    return Selector<SalesLiveMapController, SalesLiveMapPresentationState>(
-      selector: (_, controller) => controller.state,
-      builder: (context, state, _) {
-        final controller = context.read<SalesLiveMapController>();
-        final result = state.result;
-        final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
-
-        if (result == null && state.isLoading) {
+    return Selector<SalesLiveMapController, _SalesLiveMapBodyStatusSlice>(
+      selector: (_, controller) =>
+          _SalesLiveMapBodyStatusSlice.fromState(controller.state),
+      builder: (context, slice, _) {
+        if (slice.showInitialSkeleton) {
           return _SalesLiveMapInitialSkeleton();
         }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (result != null)
-              AppSkeleton(
-                enabled: result.salesDataPending,
-                child: SalesLiveMapKpiGrid(result: result),
-              ),
-            if (result != null &&
-                !result.salesDataPending &&
-                result.hasPartialIssue) ...<Widget>[
-              SizedBox(height: tokens.gapMd),
-              _SalesLiveMapAttentionPanel(result: result),
-            ],
-            if (result?.loadFailed ?? false) ...<Widget>[
-              SizedBox(height: tokens.gapMd),
-              AppInlineErrorPanel(
-                title: l10n.salesLiveMapLoadErrorTitle,
-                message: viewModel.loadErrorMessage,
-                onRetry: state.canReload ? onRetryReload : null,
-              ),
-            ],
-            if (state.shouldShowEmptyNotice && result != null) ...<Widget>[
-              SizedBox(height: tokens.gapMd),
-              _SalesLiveMapEmptyNotice(
-                result: result,
-                hasSelectedBranches: state.hasSelectedBranchFilter,
-                onClearSelectedBranches: () => unawaited(
-                  controller.clearSelectedBranches(),
-                ),
-                l10n: l10n,
-              ),
-            ],
+            _SalesLiveMapBodyStatusContent(
+              slice: slice,
+              onRetryReload: onRetryReload,
+            ),
             SizedBox(height: tokens.sectionSpacing),
-            AppBrazilStoreSalesMapChart(
-              title: l10n.salesLiveMapChartTitle,
-              subtitle: viewModel.mapSubtitle,
-              points: result?.points ?? const <AppBrazilStoreSalesPoint>[],
-              initialMetric: state.filter.metric,
-              filterBranchIds: state.filterBranchStorageKeys,
-              fixedBranchIds: state.filterBranchStorageKeys,
-              style: state.mapStyle,
-              presentationMode:
-                  AppBrazilStoreSalesMapPresentationMode.inlineOperational,
-              onMetricChanged: controller.updateMetric,
-              onOpenFullscreen: () => onOpenFullscreen(state, viewModel),
+            _SalesLiveMapInlineChartSection(
+              onOpenFullscreen: onOpenFullscreen,
             ),
           ],
         );
       },
     );
   }
+}
+
+class _SalesLiveMapFullscreenHeader extends StatelessWidget {
+  const _SalesLiveMapFullscreenHeader({required this.controller});
+
+  final SalesLiveMapController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<SalesLiveMapController>.value(
+      value: controller,
+      child:
+          Selector<SalesLiveMapController, _SalesLiveMapFullscreenHeaderSlice>(
+            selector: (_, controller) =>
+                _SalesLiveMapFullscreenHeaderSlice.fromState(controller.state),
+            builder: (context, slice, _) {
+              final l10n = AppLocalizations.of(context);
+              final viewModel = SalesLiveMapViewModel.fromState(
+                slice.state,
+                l10n,
+              );
+              return AppChartFullscreenHeader(
+                title: l10n.salesLiveMapChartTitle,
+                subtitle: viewModel.mapSubtitle,
+                filterSummary: viewModel.fullscreenFilterSummary,
+              );
+            },
+          ),
+    );
+  }
+}
+
+class _SalesLiveMapFullscreenChart extends StatelessWidget {
+  const _SalesLiveMapFullscreenChart({required this.controller});
+
+  final SalesLiveMapController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<SalesLiveMapController>.value(
+      value: controller,
+      child: Selector<SalesLiveMapController, _SalesLiveMapMapSlice>(
+        selector: (_, controller) =>
+            _SalesLiveMapMapSlice.fromState(controller.state),
+        builder: (context, slice, _) {
+          return LayoutBuilder(
+            builder: (context, _) {
+              final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+              return AppSectionCard(
+                padding: EdgeInsets.fromLTRB(
+                  tokens.contentSpacing,
+                  tokens.contentSpacing,
+                  tokens.contentSpacing,
+                  0,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, cardConstraints) {
+                    Widget chart = AppBrazilStoreSalesMapChart(
+                      points: slice.points,
+                      initialMetric: slice.metric,
+                      filterBranchIds: slice.filterBranchIds,
+                      fixedBranchIds: slice.filterBranchIds,
+                      style: slice.mapStyle,
+                      onMetricChanged: controller.updateMetric,
+                      showDesktopBranchSidebar: true,
+                      presentationMode: AppBrazilStoreSalesMapPresentationMode
+                          .cleanFullscreen,
+                    );
+                    final maxH = cardConstraints.maxHeight;
+                    if (maxH.isFinite && maxH < double.infinity) {
+                      chart = SizedBox(height: maxH, child: chart);
+                    }
+                    return chart;
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SalesLiveMapBodyStatusContent extends StatelessWidget {
+  const _SalesLiveMapBodyStatusContent({
+    required this.slice,
+    required this.onRetryReload,
+  });
+
+  final _SalesLiveMapBodyStatusSlice slice;
+  final VoidCallback onRetryReload;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final controller = context.read<SalesLiveMapController>();
+    final state = slice.state;
+    final result = state.result;
+    final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (result != null)
+          AppSkeleton(
+            enabled: result.salesDataPending,
+            child: SalesLiveMapKpiGrid(result: result),
+          ),
+        if (result != null &&
+            !result.salesDataPending &&
+            result.hasPartialIssue)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.gapMd),
+            child: _SalesLiveMapAttentionPanel(result: result),
+          ),
+        if (result?.loadFailed ?? false)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.gapMd),
+            child: AppInlineErrorPanel(
+              title: l10n.salesLiveMapLoadErrorTitle,
+              message: viewModel.loadErrorMessage,
+              onRetry: state.canReload ? onRetryReload : null,
+            ),
+          ),
+        if (state.shouldShowEmptyNotice && result != null)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.gapMd),
+            child: _SalesLiveMapEmptyNotice(
+              result: result,
+              hasSelectedBranches: state.hasSelectedBranchFilter,
+              onClearSelectedBranches: () => unawaited(
+                controller.clearSelectedBranches(),
+              ),
+              l10n: l10n,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _SalesLiveMapInlineChartSection extends StatelessWidget {
+  const _SalesLiveMapInlineChartSection({required this.onOpenFullscreen});
+
+  final VoidCallback onOpenFullscreen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<SalesLiveMapController, _SalesLiveMapMapSlice>(
+      selector: (_, controller) =>
+          _SalesLiveMapMapSlice.fromState(controller.state),
+      builder: (context, slice, _) {
+        final l10n = AppLocalizations.of(context);
+        final controller = context.read<SalesLiveMapController>();
+        final viewModel = SalesLiveMapViewModel.fromState(slice.state, l10n);
+        return AppBrazilStoreSalesMapChart(
+          title: l10n.salesLiveMapChartTitle,
+          subtitle: viewModel.mapSubtitle,
+          points: slice.points,
+          initialMetric: slice.metric,
+          filterBranchIds: slice.filterBranchIds,
+          fixedBranchIds: slice.filterBranchIds,
+          style: slice.mapStyle,
+          presentationMode:
+              AppBrazilStoreSalesMapPresentationMode.inlineOperational,
+          onMetricChanged: controller.updateMetric,
+          onOpenFullscreen: onOpenFullscreen,
+        );
+      },
+    );
+  }
+}
+
+@immutable
+class _SalesLiveMapSchedulingSlice {
+  const _SalesLiveMapSchedulingSlice({
+    required this.isLoading,
+    required this.canScheduleAutoRefresh,
+  });
+
+  factory _SalesLiveMapSchedulingSlice.fromState(
+    SalesLiveMapPresentationState state,
+  ) {
+    return _SalesLiveMapSchedulingSlice(
+      isLoading: state.isLoading,
+      canScheduleAutoRefresh: state.canScheduleAutoRefresh,
+    );
+  }
+
+  final bool isLoading;
+  final bool canScheduleAutoRefresh;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesLiveMapSchedulingSlice &&
+        other.isLoading == isLoading &&
+        other.canScheduleAutoRefresh == canScheduleAutoRefresh;
+  }
+
+  @override
+  int get hashCode => Object.hash(isLoading, canScheduleAutoRefresh);
+}
+
+@immutable
+class _SalesLiveMapAutoRefreshSlice {
+  const _SalesLiveMapAutoRefreshSlice({
+    required this.canReload,
+    required this.canScheduleAutoRefresh,
+    required this.showReloadProgress,
+  });
+
+  factory _SalesLiveMapAutoRefreshSlice.fromState(
+    SalesLiveMapPresentationState state,
+  ) {
+    return _SalesLiveMapAutoRefreshSlice(
+      canReload: state.canReload,
+      canScheduleAutoRefresh: state.canScheduleAutoRefresh,
+      showReloadProgress: state.isLoading && state.result != null,
+    );
+  }
+
+  final bool canReload;
+  final bool canScheduleAutoRefresh;
+  final bool showReloadProgress;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesLiveMapAutoRefreshSlice &&
+        other.canReload == canReload &&
+        other.canScheduleAutoRefresh == canScheduleAutoRefresh &&
+        other.showReloadProgress == showReloadProgress;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    canReload,
+    canScheduleAutoRefresh,
+    showReloadProgress,
+  );
+}
+
+@immutable
+class _SalesLiveMapBodyStatusSlice {
+  const _SalesLiveMapBodyStatusSlice({
+    required this.state,
+    required this.showInitialSkeleton,
+  });
+
+  factory _SalesLiveMapBodyStatusSlice.fromState(
+    SalesLiveMapPresentationState state,
+  ) {
+    return _SalesLiveMapBodyStatusSlice(
+      state: state,
+      showInitialSkeleton: state.result == null && state.isLoading,
+    );
+  }
+
+  final SalesLiveMapPresentationState state;
+  final bool showInitialSkeleton;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesLiveMapBodyStatusSlice &&
+        identical(other.state.result, state.result) &&
+        other.state.isLoading == state.isLoading &&
+        other.state.sessionExpired == state.sessionExpired &&
+        other.state.canReload == state.canReload &&
+        other.state.hasSelectedBranchFilter == state.hasSelectedBranchFilter &&
+        other.showInitialSkeleton == showInitialSkeleton;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    identityHashCode(state.result),
+    state.isLoading,
+    state.sessionExpired,
+    state.canReload,
+    state.hasSelectedBranchFilter,
+    showInitialSkeleton,
+  );
+}
+
+@immutable
+class _SalesLiveMapFullscreenHeaderSlice {
+  const _SalesLiveMapFullscreenHeaderSlice({required this.state});
+
+  factory _SalesLiveMapFullscreenHeaderSlice.fromState(
+    SalesLiveMapPresentationState state,
+  ) {
+    return _SalesLiveMapFullscreenHeaderSlice(state: state);
+  }
+
+  final SalesLiveMapPresentationState state;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesLiveMapFullscreenHeaderSlice &&
+        identical(other.state.result, state.result) &&
+        other.state.filter == state.filter &&
+        other.state.isLoading == state.isLoading;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    identityHashCode(state.result),
+    state.filter,
+    state.isLoading,
+  );
+}
+
+@immutable
+class _SalesLiveMapMapSlice {
+  const _SalesLiveMapMapSlice({
+    required this.state,
+    required this.points,
+    required this.mapPayloadDigest,
+    required this.metric,
+    required this.filterBranchIds,
+    required this.mapStyle,
+  });
+
+  factory _SalesLiveMapMapSlice.fromState(SalesLiveMapPresentationState state) {
+    final filterBranchIds = Set<String>.unmodifiable(
+      state.filterBranchStorageKeys,
+    );
+    return _SalesLiveMapMapSlice(
+      state: state,
+      points: state.result?.points ?? const <AppBrazilStoreSalesPoint>[],
+      mapPayloadDigest: state.mapPayloadDigest,
+      metric: state.filter.metric,
+      filterBranchIds: filterBranchIds,
+      mapStyle: state.mapStyle,
+    );
+  }
+
+  final SalesLiveMapPresentationState state;
+  final List<AppBrazilStoreSalesPoint> points;
+  final int mapPayloadDigest;
+  final AppBrazilStoreSalesMapMetric metric;
+  final Set<String> filterBranchIds;
+  final AppBrazilStoreSalesMapStyle mapStyle;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesLiveMapMapSlice &&
+        other.mapPayloadDigest == mapPayloadDigest &&
+        other.metric == metric &&
+        setEquals(other.filterBranchIds, filterBranchIds) &&
+        other.mapStyle == mapStyle;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    mapPayloadDigest,
+    metric,
+    Object.hashAll(filterBranchIds.toList(growable: false)..sort()),
+    mapStyle,
+  );
 }
 
 class _SalesLiveMapInitialSkeleton extends StatelessWidget {

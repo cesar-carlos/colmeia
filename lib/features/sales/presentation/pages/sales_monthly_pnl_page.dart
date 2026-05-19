@@ -17,6 +17,7 @@ import 'package:colmeia/features/sales/application/resolve_sales_agent_client_to
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
@@ -121,6 +122,7 @@ class SalesMonthlyPnlPage extends StatefulWidget {
 class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     with
         AutoRefreshStateMixin<SalesMonthlyPnlPage>,
+        SalesSingleAgentAutoRefreshMixin<SalesMonthlyPnlPage>,
         SalesCardAutoRefreshBinding<SalesMonthlyPnlPage> {
   late final SalesSessionService _sessionService;
   late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
@@ -226,8 +228,13 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
   String get salesAutoRefreshCardId => SalesAutoRefreshCardIds.monthlyPnl;
 
   @override
-  bool get canScheduleAutoRefresh =>
-      _selectedAgentId != null && _selectedAgentId!.trim().isNotEmpty;
+  String? get autoRefreshSelectedAgentId => _selectedAgentId;
+
+  @override
+  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+
+  @override
+  bool get autoRefreshPageLoading => _loading;
 
   @override
   Future<void> performAutoRefreshReload() async {
@@ -236,6 +243,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     final agentId = _selectedAgentId;
     final anchor = _anchorYearMonth;
     final generation = ++_chartLoadGeneration;
+    markAutoRefreshCancelled();
 
     setState(() {
       _loading = true;
@@ -282,7 +290,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         _dailyChartLoadFailed = true;
         _dailyChartLoadFailureMessage = authMsg;
       });
-      disableAutoRefresh();
+      markAutoRefreshCancelled();
       return;
     }
 
@@ -316,6 +324,11 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
       _dailyChartLoadFailureMessage = dailyBundle.loadFailureMessage;
       _loading = false;
     });
+    if (bundle.loadFailed || dailyBundle.loadFailed) {
+      markAutoRefreshFailure();
+      return;
+    }
+    markAutoRefreshSuccess();
   }
 
   void _onFiltersChanged(Map<String, Object?> next) {
@@ -516,6 +529,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
             onRefreshNow: () => unawaited(_reload()),
             enabled: canScheduleAutoRefresh,
             lastUpdatedAt: autoRefreshLastUpdatedAt,
+            isPaused: autoRefreshIsPaused,
+            pauseReason: autoRefreshPauseReason,
             l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),

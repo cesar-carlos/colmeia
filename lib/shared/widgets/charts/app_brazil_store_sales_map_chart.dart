@@ -123,6 +123,8 @@ class _AppBrazilStoreSalesMapChartState
   AppBrazilStoreSalesMapDiagnostics? _lastEmittedDiagnostics;
   AppBrazilStoreSalesMapSnapshotData? _snapshotData;
   _BrazilStoreSalesMapSnapshot? _snapshot;
+  List<AppBrazilStoreSalesPoint>? _cachedPointsDigestSource;
+  int? _cachedPointsDigest;
   Timer? _viewportClusterDebounceTimer;
   double? _pendingViewportClusterZoomLevel;
   Timer? _previewClearTimer;
@@ -642,9 +644,9 @@ class _AppBrazilStoreSalesMapChartState
     return _desktopBranchSidebarTopInset +
         (cleanMode ? 0 : tokens.gapXs) +
         _resolvedFloatingMapControlsHeight(
-      context,
-      cleanMode: cleanMode,
-    );
+          context,
+          cleanMode: cleanMode,
+        );
   }
 
   double _resolvedDesktopBranchSidebarMaxHeight({
@@ -933,6 +935,7 @@ class _AppBrazilStoreSalesMapChartState
   }
 
   String _computeSnapshotDataReuseKey() {
+    final pointsDigest = _resolvePointsDigest();
     return AppBrazilStoreSalesMapSnapshotBuilder.buildReuseKey(
       points: widget.points,
       fixedBranchIds: widget.fixedBranchIds,
@@ -941,7 +944,20 @@ class _AppBrazilStoreSalesMapChartState
       metric: _selectedMetric,
       activeRegionKey: _activeRegionKey,
       zoomLevel: _currentZoomLevel,
+      pointsDigest: pointsDigest,
     );
+  }
+
+  int _resolvePointsDigest() {
+    final points = widget.points;
+    if (identical(_cachedPointsDigestSource, points) &&
+        _cachedPointsDigest != null) {
+      return _cachedPointsDigest!;
+    }
+    final digest = AppBrazilStoreSalesMapData.pointsContentDigest(points);
+    _cachedPointsDigestSource = points;
+    _cachedPointsDigest = digest;
+    return digest;
   }
 
   AppBrazilStoreSalesMapSnapshotData _resolveSnapshotData(

@@ -97,15 +97,168 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(captured.sql).equals(CadastroFilialSql.pagedQuery);
-    check(captured.namedParams['codEmpresa']).equals(1);
-    check(captured.namedParams['codFilial']).equals(2);
+    check(captured.sql).equals(
+      CadastroFilialSql.query(codEmpresa: 1, codFilial: 2),
+    );
+    check(captured.sql).contains('f.CodEmpresa = 1');
+    check(captured.sql).contains('f.CodFilial = 2');
     check(captured.namedParams['startRow']).equals(11);
     check(captured.namedParams['endRow']).equals(20);
+    check(captured.namedParams.containsKey('codEmpresa')).isFalse();
+    check(captured.namedParams.containsKey('codFilial')).isFalse();
     check(captured.clientToken).equals('tok');
     check(captured.bridgeTimeoutMs).equals(5000);
     check(captured.useRelay).isTrue();
   });
+
+  test('builds exact selected-branch SQL for one branch', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-a',
+      filter: const CadastroFilialFilter(
+        selectedBranches: <CadastroFilialBranchRef>[
+          CadastroFilialBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 7,
+          ),
+        ],
+      ),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+    check(captured.sql).contains('(f.CodEmpresa = 1 AND f.CodFilial = 7)');
+    check(captured.namedParams.keys.toSet()).deepEquals(
+      <String>{'startRow', 'endRow'},
+    );
+  });
+
+  test('builds exact selected-branch SQL with IN for same company', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-a',
+      filter: const CadastroFilialFilter(
+        selectedBranches: <CadastroFilialBranchRef>[
+          CadastroFilialBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 7,
+          ),
+          CadastroFilialBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 2,
+          ),
+          CadastroFilialBranchRef(
+            agentId: 'agent-b',
+            codEmpresa: 5,
+            codFilial: 9,
+          ),
+        ],
+      ),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+    check(captured.sql).contains('f.CodFilial IN (2, 7)');
+    check(captured.sql).not((it) => it.contains('CodEmpresa = 5'));
+  });
+
+  test('builds exact selected-branch SQL across multiple companies', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-a',
+      filter: const CadastroFilialFilter(
+        selectedBranches: <CadastroFilialBranchRef>[
+          CadastroFilialBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 2,
+          ),
+          CadastroFilialBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 3,
+            codFilial: 4,
+          ),
+        ],
+      ),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+    check(captured.sql).contains(
+      '(f.CodEmpresa = 1 AND f.CodFilial = 2) OR '
+      '(f.CodEmpresa = 3 AND f.CodFilial = 4)',
+    );
+  });
+
+  test(
+    'generates AND 1 = 0 when selected branches do not match the agent',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
+
+      await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-a',
+        filter: const CadastroFilialFilter(
+          selectedBranches: <CadastroFilialBranchRef>[
+            CadastroFilialBranchRef(
+              agentId: 'agent-b',
+              codEmpresa: 1,
+              codFilial: 2,
+            ),
+          ],
+        ),
+      );
+
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(captured.sql).contains('AND 1 = 0');
+    },
+  );
 
   test('maps branch rows and totalCount', () async {
     when(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
@@ -21,7 +22,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vend
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_catalog_scope.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
@@ -32,6 +36,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resol
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockLoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
     extends Mock
@@ -70,6 +75,7 @@ void main() {
   late _MockLoadCadastroFilialAcrossAgentsUseCase loadCadastroAcrossAgents;
   late _MockAgentQueryTargetResolver targetResolver;
   late _MockSalesLiveMapCatalogDiskCache catalogDiskCache;
+  late SalesLiveMapRefreshMetrics refreshMetrics;
   late _MemoryCacheStore cacheStore;
   late _StaticBrazilTestGeocoder geocoder;
   late LoadSalesLiveMapUseCase useCase;
@@ -97,6 +103,7 @@ void main() {
         ),
       ),
     );
+    registerFallbackValue(SalesLiveMapCatalogScope.fullAgent());
   });
 
   setUp(() {
@@ -105,6 +112,7 @@ void main() {
     loadCadastroAcrossAgents = _MockLoadCadastroFilialAcrossAgentsUseCase();
     targetResolver = _MockAgentQueryTargetResolver();
     catalogDiskCache = _MockSalesLiveMapCatalogDiskCache();
+    refreshMetrics = SalesLiveMapRefreshMetrics();
     _stubCatalogFailure(loadCadastroAcrossAgents);
     when(
       () => targetResolver.resolve(
@@ -119,18 +127,14 @@ void main() {
     when(
       () => catalogDiskCache.readIfFresh(
         userId: any(named: 'userId'),
-        selectedAgentIds: any(named: 'selectedAgentIds'),
-        codEmpresa: any(named: 'codEmpresa'),
-        codFilial: any(named: 'codFilial'),
+        scope: any(named: 'scope'),
         now: any(named: 'now'),
       ),
     ).thenReturn(null);
     when(
       () => catalogDiskCache.write(
         userId: any(named: 'userId'),
-        selectedAgentIds: any(named: 'selectedAgentIds'),
-        codEmpresa: any(named: 'codEmpresa'),
-        codFilial: any(named: 'codFilial'),
+        scope: any(named: 'scope'),
         now: any(named: 'now'),
         result: any(named: 'result'),
       ),
@@ -148,9 +152,30 @@ void main() {
       loadAcrossAgents,
       loadCadastroAcrossAgents,
       AppBrazilStoreSalesPointResolver(locationResolver: locationResolver),
+      refreshMetrics: refreshMetrics,
       now: () => now,
     );
   });
+
+  LoadSalesLiveMapUseCase buildUseCaseWithDiskCache(
+    SalesLiveMapCatalogDiskCache diskCache, {
+    SalesLiveMapRefreshMetrics? metrics,
+  }) {
+    final locationResolver = AppLocationResolver(
+      cache: AppLocationGeocodeCache(_MemoryCacheStore()),
+      geocoders: <AppLocationGeocoder>[geocoder],
+      now: () => now,
+    );
+    return LoadSalesLiveMapUseCase(
+      targetResolver,
+      diskCache,
+      loadAcrossAgents,
+      loadCadastroAcrossAgents,
+      AppBrazilStoreSalesPointResolver(locationResolver: locationResolver),
+      refreshMetrics: metrics,
+      now: () => now,
+    );
+  }
 
   test('agrega varias linhas da mesma filial em um ponto', () async {
     _stubReport(
@@ -631,10 +656,7 @@ void main() {
         participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
           _catalogParticipant(
             'agent-a',
-            rows: <CadastroFilialRow>[
-              _catalogRow(nomeFilial: 'Loja 1'),
-              _catalogRow(codFilial: 2, nomeFilial: 'Loja 2'),
-            ],
+            rows: <CadastroFilialRow>[_catalogRow(nomeFilial: 'Loja 1')],
           ),
         ],
       ),
@@ -694,10 +716,188 @@ void main() {
     ).captured;
     final catalogFilter = captured[0] as CadastroFilialFilter;
     final selectedAgentIds = captured[1] as Set<String>;
-    check(catalogFilter.codEmpresa).equals(1);
-    check(catalogFilter.codFilial).equals(1);
+    check(
+      catalogFilter.selectedBranches,
+    ).has((branches) => branches.length, 'length').equals(1);
+    final branch = catalogFilter.selectedBranches.single;
+    check(branch.agentId).equals('agent-a');
+    check(branch.codEmpresa).equals(1);
+    check(branch.codFilial).equals(1);
     check(selectedAgentIds).deepEquals(<String>{'agent-a'});
   });
+
+  test(
+    'consulta catalogo uma vez quando varias filiais do mesmo agente estao selecionadas',
+    () async {
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow(nomeFilial: 'Loja 1')],
+            ),
+          ],
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      await useCase(
+        userId: userId,
+        filter: SalesLiveMapFilter(
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-a',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-a',
+              codEmpresa: 1,
+              codFilial: 2,
+            ),
+          },
+        ),
+      );
+
+      final verification = verify(
+        () => loadCadastroAcrossAgents.loadAll(
+          userId: 'user-1',
+          filter: captureAny(named: 'filter'),
+          selectedAgentIds: captureAny(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+        ),
+      );
+      verification.called(1);
+      final captured = verification.captured;
+      final catalogFilter = captured[0] as CadastroFilialFilter;
+      final selectedAgentIds = captured[1] as Set<String>;
+      check(
+        catalogFilter.selectedBranches
+            .map(
+              (branch) =>
+                  '${branch.agentId}:${branch.codEmpresa}:${branch.codFilial}',
+            )
+            .toList(),
+      ).deepEquals(<String>['agent-a:1:1', 'agent-a:1:2']);
+      check(selectedAgentIds).deepEquals(<String>{'agent-a'});
+    },
+  );
+
+  test(
+    'deriva um unico escopo de agentes do catalogo a partir das filiais selecionadas',
+    () async {
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[
+            _target('agent-a'),
+            _target('agent-b'),
+          ],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow(nomeFilial: 'Loja A')],
+            ),
+            _catalogParticipant(
+              'agent-b',
+              rows: <CadastroFilialRow>[
+                _catalogRow(nomeFilial: 'Loja B'),
+              ],
+            ),
+          ],
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[
+            _target('agent-a'),
+            _target('agent-b'),
+          ],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+                _participant(
+                  'agent-b',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 220, qtdVendas: 4),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final result = await useCase(
+        userId: userId,
+        filter: SalesLiveMapFilter(
+          selectedAgentIds: const <String>{'agent-a', 'agent-b', 'agent-c'},
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-a',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-b',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
+        ),
+      );
+
+      check(result.branchOptions.map((branch) => branch.id).toSet()).deepEquals(
+        <String>{'agent-a-1-1', 'agent-b-1-1'},
+      );
+
+      final verification = verify(
+        () => loadCadastroAcrossAgents.loadAll(
+          userId: 'user-1',
+          filter: any(named: 'filter'),
+          selectedAgentIds: captureAny(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+        ),
+      );
+      verification.called(1);
+      final selectedAgentIds = verification.captured.single as Set<String>;
+      check(selectedAgentIds).deepEquals(<String>{'agent-a', 'agent-b'});
+    },
+  );
 
   test('repassa apenas agentes selecionados para reduzir consulta', () async {
     _stubReport(
@@ -1342,6 +1542,558 @@ void main() {
       check(second.points.single.branchCode).equals(1);
       check(second.points.single.agentName).equals('Agente agent-a');
       check(geocoder.lookups).has((it) => it.length, 'length').equals(1);
+    },
+  );
+
+  test(
+    'hidrata o cache em memoria e evita nova consulta de catalogo apos snapshot fresco em disco',
+    () async {
+      final diskCatalog = CadastroFilialAcrossAgentsPageResult.fromReport(
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow()],
+            ),
+          ],
+        ),
+      );
+      var diskEnabled = true;
+      final exactScope = SalesLiveMapCatalogScope.branchSubset(
+        selectedBranches: const <CadastroFilialBranchRef>[
+          CadastroFilialBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 1,
+          ),
+        ],
+      );
+      when(
+        () => catalogDiskCache.readIfFresh(
+          userId: any(named: 'userId'),
+          scope: any(named: 'scope'),
+          now: any(named: 'now'),
+        ),
+      ).thenAnswer((invocation) {
+        final scope =
+            invocation.namedArguments[#scope] as SalesLiveMapCatalogScope;
+        if (diskEnabled && scope.storageKey == exactScope.storageKey) {
+          return diskCatalog;
+        }
+        return null;
+      });
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final filter = SalesLiveMapFilter(
+        selectedAgentIds: const <String>{'agent-a', 'agent-b'},
+        selectedBranchIds: <SalesLiveMapBranchRef>{
+          const SalesLiveMapBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 1,
+          ),
+        },
+      );
+
+      await useCase(userId: userId, filter: filter);
+      diskEnabled = false;
+      await useCase(userId: userId, filter: filter);
+
+      final readVerification = verify(
+        () => catalogDiskCache.readIfFresh(
+          userId: 'user-1',
+          scope: captureAny(named: 'scope'),
+          now: now,
+        ),
+      );
+      readVerification.called(1);
+      check(
+        readVerification.captured
+            .cast<SalesLiveMapCatalogScope>()
+            .map((scope) => scope.storageKey)
+            .toList(),
+      ).deepEquals(
+        <String>[exactScope.storageKey],
+      );
+      verifyNever(
+        () => loadCadastroAcrossAgents.loadAll(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+        ),
+      );
+      verify(
+        () => loadAcrossAgents.call(
+          userId: 'user-1',
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+        ),
+      ).called(2);
+      check(refreshMetrics.latest).isNotNull();
+      check(refreshMetrics.latest!.catalogSource).equals(
+        SalesLiveMapCatalogSource.memory,
+      );
+      check(refreshMetrics.latest!.reloadReason).equals(
+        SalesLiveMapReloadReason.manual,
+      );
+    },
+  );
+
+  test(
+    'reutiliza snapshot v2 fullAgent do disk cache para atender branchSubset com broaderCacheFiltered',
+    () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final realDiskCache = SalesLiveMapCatalogDiskCache(prefs);
+      final localMetrics = SalesLiveMapRefreshMetrics();
+      final localUseCase = buildUseCaseWithDiskCache(
+        realDiskCache,
+        metrics: localMetrics,
+      );
+      final fullScope = SalesLiveMapCatalogScope.fullAgent(
+        agentIds: const <String>{'agent-a'},
+      );
+      await realDiskCache.write(
+        userId: userId,
+        scope: fullScope,
+        now: now,
+        result: CadastroFilialAcrossAgentsPageResult.fromReport(
+          _catalogReport(
+            plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+            participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+              _catalogParticipant(
+                'agent-a',
+                rows: <CadastroFilialRow>[
+                  _catalogRow(nomeFilial: 'Loja 1'),
+                  _catalogRow(codFilial: 2, nomeFilial: 'Loja 2'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final result = await localUseCase(
+        userId: userId,
+        filter: SalesLiveMapFilter(
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-a',
+              codEmpresa: 1,
+              codFilial: 2,
+            ),
+          },
+        ),
+        reason: SalesLiveMapReloadReason.autoRefresh,
+      );
+
+      check(
+        result.branchOptions.map((branch) => branch.id).toList(),
+      ).deepEquals(
+        <String>['agent-a-1-2'],
+      );
+      verifyNever(
+        () => loadCadastroAcrossAgents.loadAll(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+        ),
+      );
+      check(localMetrics.latest).isNotNull();
+      check(localMetrics.latest!.catalogSource).equals(
+        SalesLiveMapCatalogSource.broaderCacheFiltered,
+      );
+      check(localMetrics.latest!.reloadReason).equals(
+        SalesLiveMapReloadReason.autoRefresh,
+      );
+    },
+  );
+
+  test('decodifica snapshot v2 branchSubset exato do disk cache', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final prefs = await SharedPreferences.getInstance();
+    final realDiskCache = SalesLiveMapCatalogDiskCache(prefs);
+    final localMetrics = SalesLiveMapRefreshMetrics();
+    final localUseCase = buildUseCaseWithDiskCache(
+      realDiskCache,
+      metrics: localMetrics,
+    );
+    final scope = SalesLiveMapCatalogScope.branchSubset(
+      selectedBranches: const <CadastroFilialBranchRef>[
+        CadastroFilialBranchRef(
+          agentId: 'agent-a',
+          codEmpresa: 1,
+          codFilial: 1,
+        ),
+      ],
+    );
+    await realDiskCache.write(
+      userId: userId,
+      scope: scope,
+      now: now,
+      result: CadastroFilialAcrossAgentsPageResult.fromReport(
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow(nomeFilial: 'Loja 1')],
+            ),
+          ],
+        ),
+      ),
+    );
+    _stubReport(
+      loadAcrossAgents,
+      _report(
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+        participants:
+            <
+              AgentQueryExecutionParticipant<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
+            >[
+              _participant(
+                'agent-a',
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                  _row(totalVenda: 100),
+                ],
+              ),
+            ],
+      ),
+    );
+
+    final result = await localUseCase(
+      userId: userId,
+      filter: SalesLiveMapFilter(
+        selectedBranchIds: <SalesLiveMapBranchRef>{
+          const SalesLiveMapBranchRef(
+            agentId: 'agent-a',
+            codEmpresa: 1,
+            codFilial: 1,
+          ),
+        },
+      ),
+    );
+
+    check(result.branchOptions.map((branch) => branch.id).toSet()).deepEquals(
+      <String>{'agent-a-1-1'},
+    );
+    verifyNever(
+      () => loadCadastroAcrossAgents.loadAll(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+        preResolvedResolution: any(named: 'preResolvedResolution'),
+      ),
+    );
+    check(localMetrics.latest).isNotNull();
+    check(localMetrics.latest!.catalogSource).equals(
+      SalesLiveMapCatalogSource.disk,
+    );
+  });
+
+  test('decodifica snapshot legacy v1 como fullAgent do disk cache', () async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final prefs = await SharedPreferences.getInstance();
+    final agentSignature = SalesLiveMapCatalogDiskCache.agentSignature(
+      const <String>{'agent-a'},
+    );
+    final legacyKey =
+        'colmeia_sales_live_map_catalog_v1.$userId|1|1|$agentSignature';
+    await prefs.setString(
+      legacyKey,
+      jsonEncode(<String, Object?>{
+        'v': 1,
+        'cachedAtMs': now.millisecondsSinceEpoch,
+        'participants': <Object?>[
+          <String, Object?>{
+            'agentId': 'agent-a',
+            'displayName': 'Agente agent-a',
+            'elapsedMs': 0,
+            'rows': <Object?>[
+              <String, Object?>{
+                'ce': 1,
+                'cf': 1,
+                'nf': 'Loja 1',
+                'fa': 'Fantasia 1',
+                'cp': '78000123',
+                'nm': 'Cuiaba',
+                'uf': 'MT',
+                'ib': '5103403',
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    final realDiskCache = SalesLiveMapCatalogDiskCache(prefs);
+    final localMetrics = SalesLiveMapRefreshMetrics();
+    final localUseCase = buildUseCaseWithDiskCache(
+      realDiskCache,
+      metrics: localMetrics,
+    );
+    _stubReport(
+      loadAcrossAgents,
+      _report(
+        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+        participants:
+            <
+              AgentQueryExecutionParticipant<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
+            >[
+              _participant(
+                'agent-a',
+                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                  _row(totalVenda: 100),
+                ],
+              ),
+            ],
+      ),
+    );
+
+    final result = await localUseCase(
+      userId: userId,
+      filter: const SalesLiveMapFilter(
+        selectedAgentIds: <String>{'agent-a'},
+      ),
+    );
+
+    check(result.branchOptions.map((branch) => branch.id).toSet()).deepEquals(
+      <String>{'agent-a-1-1'},
+    );
+    verifyNever(
+      () => loadCadastroAcrossAgents.loadAll(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+        preResolvedResolution: any(named: 'preResolvedResolution'),
+      ),
+    );
+    check(localMetrics.latest).isNotNull();
+    check(localMetrics.latest!.catalogSource).equals(
+      SalesLiveMapCatalogSource.disk,
+    );
+  });
+
+  test(
+    'nao grava nem reutiliza snapshot parcial como catalogo global de um escopo mais amplo',
+    () async {
+      final diskEntries = <String, CadastroFilialAcrossAgentsPageResult>{};
+      when(
+        () => catalogDiskCache.readIfFresh(
+          userId: any(named: 'userId'),
+          scope: any(named: 'scope'),
+          now: any(named: 'now'),
+        ),
+      ).thenAnswer((invocation) {
+        final scope =
+            invocation.namedArguments[#scope] as SalesLiveMapCatalogScope;
+        return diskEntries[scope.storageKey];
+      });
+      when(
+        () => catalogDiskCache.write(
+          userId: any(named: 'userId'),
+          scope: any(named: 'scope'),
+          now: any(named: 'now'),
+          result: any(named: 'result'),
+        ),
+      ).thenAnswer((invocation) async {
+        final scope =
+            invocation.namedArguments[#scope] as SalesLiveMapCatalogScope;
+        final result =
+            invocation.namedArguments[#result]
+                as CadastroFilialAcrossAgentsPageResult;
+        diskEntries[scope.storageKey] = result;
+      });
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow()],
+            ),
+          ],
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      await useCase(
+        userId: userId,
+        filter: SalesLiveMapFilter(
+          selectedAgentIds: const <String>{'agent-a', 'agent-b'},
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-a',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
+        ),
+      );
+
+      check(diskEntries.keys).deepEquals(
+        <String>[
+          SalesLiveMapCatalogScope.branchSubset(
+            selectedBranches: const <CadastroFilialBranchRef>[
+              CadastroFilialBranchRef(
+                agentId: 'agent-a',
+                codEmpresa: 1,
+                codFilial: 1,
+              ),
+            ],
+          ).storageKey,
+        ],
+      );
+
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[
+            _target('agent-a'),
+            _target('agent-b'),
+          ],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow(nomeFilial: 'Loja A')],
+            ),
+            _catalogParticipant(
+              'agent-b',
+              rows: <CadastroFilialRow>[
+                _catalogRow(nomeFilial: 'Loja B'),
+              ],
+            ),
+          ],
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[
+            _target('agent-a'),
+            _target('agent-b'),
+          ],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+                _participant(
+                  'agent-b',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 200),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      final result = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(
+          selectedAgentIds: <String>{'agent-a', 'agent-b'},
+        ),
+      );
+
+      check(result.branchOptions.map((branch) => branch.id).toSet()).deepEquals(
+        <String>{'agent-a-1-1', 'agent-b-1-1'},
+      );
+      verify(
+        () => loadCadastroAcrossAgents.loadAll(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+        ),
+      ).called(2);
     },
   );
 
