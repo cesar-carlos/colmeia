@@ -157,6 +157,9 @@ def command_for(
         flutter_bin,
         "test",
         str(target.path.relative_to(ROOT)),
+        "--tags",
+        "e2e",
+        "--concurrency=1",
         *TRANSPORT_DEFINES[transport],
     ]
 

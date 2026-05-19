@@ -15,4 +15,5 @@ enum AgentQueryKey {
   resumoVendasDiariasOptsVendedor,
   resumoVendasDiariasOptsBairro,
   resumoVendasDiariasOptsMunicipio,
+  resumoVendasDiariasOptsBatch,
 }

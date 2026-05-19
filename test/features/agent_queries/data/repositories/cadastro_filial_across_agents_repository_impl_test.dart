@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
@@ -211,8 +213,9 @@ void main() {
       ).thenAnswer((invocation) async {
         final filter =
             invocation.namedArguments[#filter] as CadastroFilialFilter;
-        final start = ((filter.page - 1) * filter.pageSize) + 1;
-        final end = filter.page == 1 ? filter.pageSize : 150;
+        const totalCount = 150;
+        final start = filter.offset + 1;
+        final end = math.min(filter.offset + filter.pageSize, totalCount);
         return Success<CadastroFilialPageResult, AppFailure>(
           CadastroFilialPageResult(
             items: <CadastroFilialRow>[
@@ -223,7 +226,7 @@ void main() {
                   nomeFilial: 'Filial $i',
                 ),
             ],
-            totalCount: 150,
+            totalCount: totalCount,
           ),
         );
       });
@@ -257,9 +260,7 @@ void main() {
           ),
         ),
       ).captured.cast<CadastroFilialFilter>();
-      check(captured.map((filter) => filter.page).toList()).deepEquals(
-        <int>[1, 2],
-      );
+      check(captured.map((filter) => filter.page).toList()).deepEquals(<int>[1]);
       check(captured.map((filter) => filter.pageSize).toSet()).deepEquals(
         <int>{CadastroFilialFilter.maxPageSize},
       );
@@ -317,8 +318,7 @@ void main() {
           ),
         ),
       ).thenAnswer((invocation) async {
-        final filter =
-            invocation.namedArguments[#filter] as CadastroFilialFilter;
+        const totalCount = 700;
         final rows = <CadastroFilialRow>[
           for (var i = 1; i <= CadastroFilialFilter.maxPageSize; i++)
             CadastroFilialRow(
@@ -327,18 +327,10 @@ void main() {
               nomeFilial: 'Filial $i',
             ),
         ];
-        if (filter.page == 1) {
-          return Success<CadastroFilialPageResult, AppFailure>(
-            CadastroFilialPageResult(
-              items: rows,
-              totalCount: 150,
-            ),
-          );
-        }
         return Success<CadastroFilialPageResult, AppFailure>(
           CadastroFilialPageResult(
             items: rows,
-            totalCount: 150,
+            totalCount: totalCount,
           ),
         );
       });
@@ -388,6 +380,7 @@ void main() {
   test(
     'loadAll keeps paginating when the next page overlaps but still adds new rows',
     () async {
+      const expectedTotalCount = 600;
       final targetWithToken = _target('agent-a', clientToken: 'tok-a');
       final resolution = AgentQueryTargetResolution(
         consideredApprovedTargets: <AgentQueryTarget>[targetWithToken],
@@ -438,6 +431,7 @@ void main() {
       ).thenAnswer((invocation) async {
         final filter =
             invocation.namedArguments[#filter] as CadastroFilialFilter;
+        const totalCount = expectedTotalCount;
         if (filter.page == 1) {
           return Success<CadastroFilialPageResult, AppFailure>(
             CadastroFilialPageResult(
@@ -449,21 +443,21 @@ void main() {
                     nomeFilial: 'Filial $i',
                   ),
               ],
-              totalCount: 150,
+              totalCount: totalCount,
             ),
           );
         }
         return Success<CadastroFilialPageResult, AppFailure>(
           CadastroFilialPageResult(
             items: <CadastroFilialRow>[
-              for (var i = 51; i <= 150; i++)
+              for (var i = 251; i <= totalCount; i++)
                 CadastroFilialRow(
                   codEmpresa: 1,
                   codFilial: i,
                   nomeFilial: 'Filial $i',
                 ),
             ],
-            totalCount: 150,
+            totalCount: totalCount,
           ),
         );
       });
@@ -478,13 +472,15 @@ void main() {
       check(page.report.mergedRows)
           .has((rows) => rows.length, 'length')
           .equals(
-            150,
+            expectedTotalCount,
           );
       check(
         page.report.mergedRows.map((row) => row.codFilial).toSet(),
-      ).has((it) => it.length, 'length').equals(150);
-      check(page.totalCountByAgentId['agent-a']).equals(150);
-      check(page.report.participants.single.sourceRowCount).equals(150);
+      ).has((it) => it.length, 'length').equals(expectedTotalCount);
+      check(page.totalCountByAgentId['agent-a']).equals(expectedTotalCount);
+      check(page.report.participants.single.sourceRowCount).equals(
+        expectedTotalCount,
+      );
       final captured = verify(
         () => loadCadastroFilial(
           userId: 'user-1',
@@ -588,7 +584,7 @@ void main() {
                     nomeFilial: 'Filial $i',
                   ),
               ],
-              totalCount: 150,
+              totalCount: 700,
             ),
           );
         }
@@ -602,7 +598,7 @@ void main() {
                   nomeFilial: 'Filial $i',
                 ),
             ],
-            totalCount: 150,
+            totalCount: 700,
           ),
         );
       });

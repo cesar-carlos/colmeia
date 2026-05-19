@@ -9,13 +9,13 @@ import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_summary_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_screen_data.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -49,11 +49,8 @@ class _MockAgentClientTokenReader extends Mock
 class _MockLoadAvailableAgentsForSales extends Mock
     implements LoadAvailableAgentsForSales {}
 
-class _MockLoadPageUseCase extends Mock
-    implements LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase {}
-
-class _MockLoadSummaryUseCase extends Mock
-    implements LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase {}
+class _MockLoadTrendScreenUseCase extends Mock
+    implements LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase {}
 
 class _MockLoadGrupoProdutoOptionsUseCase extends Mock
     implements LoadGrupoProdutoOptionsUseCase {}
@@ -64,10 +61,8 @@ class _MockLoadMarcaProdutoOptionsUseCase extends Mock
 late SalesPreferences _pumpSalesPreferences;
 late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
 late AgentClientTokenReader _pumpTokenReader;
-late LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
-_pumpLoadPageUseCase;
-late LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
-_pumpLoadSummaryUseCase;
+late LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
+    _pumpLoadTrendScreenUseCase;
 late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoOptionsUseCase;
 
 void main() {
@@ -75,8 +70,7 @@ void main() {
   late _MockSalesPreferences salesPreferences;
   late _MockAgentClientTokenReader tokenReader;
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
-  late _MockLoadPageUseCase loadPageUseCase;
-  late _MockLoadSummaryUseCase loadSummaryUseCase;
+  late _MockLoadTrendScreenUseCase loadTrendScreenUseCase;
   late _MockLoadGrupoProdutoOptionsUseCase loadGrupoOptionsUseCase;
   late _MockLoadMarcaProdutoOptionsUseCase loadMarcaOptionsUseCase;
 
@@ -97,15 +91,13 @@ void main() {
     salesPreferences = _MockSalesPreferences();
     tokenReader = _MockAgentClientTokenReader();
     loadAvailableAgentsForSales = _MockLoadAvailableAgentsForSales();
-    loadPageUseCase = _MockLoadPageUseCase();
-    loadSummaryUseCase = _MockLoadSummaryUseCase();
+    loadTrendScreenUseCase = _MockLoadTrendScreenUseCase();
     loadGrupoOptionsUseCase = _MockLoadGrupoProdutoOptionsUseCase();
     loadMarcaOptionsUseCase = _MockLoadMarcaProdutoOptionsUseCase();
     _pumpSalesPreferences = salesPreferences;
     _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
     _pumpTokenReader = tokenReader;
-    _pumpLoadPageUseCase = loadPageUseCase;
-    _pumpLoadSummaryUseCase = loadSummaryUseCase;
+    _pumpLoadTrendScreenUseCase = loadTrendScreenUseCase;
     _pumpLoadGrupoOptionsUseCase = loadGrupoOptionsUseCase;
 
     when(() => authController.session).thenReturn(
@@ -160,39 +152,32 @@ void main() {
     );
 
     when(
-      () => loadPageUseCase.call(
+      () => loadTrendScreenUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
       ),
     ).thenAnswer(
       (_) async =>
           const Success<
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+            ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
             AppFailure
           >(
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-              items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-              totalCount: 0,
+            ProdutoVendidoTendenciaDeVendaMediaMovelScreenData(
+              page: ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+                items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+                totalCount: 0,
+              ),
+              summaryRows: <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
             ),
-          ),
-    );
-
-    when(
-      () => loadSummaryUseCase.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-      ),
-    ).thenAnswer(
-      (_) async =>
-          const Success<
-            List<ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>,
-            AppFailure
-          >(
-            <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
           ),
     );
 
@@ -241,14 +226,9 @@ void main() {
       ..registerSingleton<ResolveSalesAgentClientTokenUseCase>(
         ResolveSalesAgentClientTokenUseCase(tokenReader),
       )
-      ..registerSingleton<
-        LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
-      >(
-        loadPageUseCase,
+      ..registerSingleton<LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase>(
+        loadTrendScreenUseCase,
       )
-      ..registerSingleton<
-        LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
-      >(loadSummaryUseCase)
       ..registerSingleton<LoadGrupoProdutoOptionsUseCase>(
         loadGrupoOptionsUseCase,
       )
@@ -278,34 +258,29 @@ void main() {
     );
   });
 
-  testWidgets('shows loading indicators while summary and detail load', (
+  testWidgets('shows loading indicators while trend screen loads', (
     tester,
   ) async {
-    final detailCompleter =
+    final screenCompleter =
         Completer<
-          AppResult<ProdutoVendidoTendenciaDeVendaMediaMovelPageResult>
-        >();
-    final summaryCompleter =
-        Completer<
-          AppResult<List<ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>>
+          AppResult<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData>
         >();
 
     when(
-      () => loadPageUseCase.call(
+      () => loadTrendScreenUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
       ),
-    ).thenAnswer((_) => detailCompleter.future);
-    when(
-      () => loadSummaryUseCase.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-      ),
-    ).thenAnswer((_) => summaryCompleter.future);
+    ).thenAnswer((_) => screenCompleter.future);
 
     await _pumpPage(tester, authController: authController);
     await tester.pump();
@@ -315,40 +290,44 @@ void main() {
     expect(find.text('Executive summary'), findsOneWidget);
     expect(find.text('Detailed rows'), findsOneWidget);
 
-    detailCompleter.complete(
+    screenCompleter.complete(
       const Success<
-        ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
         AppFailure
       >(
-        ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-          items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-          totalCount: 0,
+        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData(
+          page: ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+            items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+            totalCount: 0,
+          ),
+          summaryRows: <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
         ),
-      ),
-    );
-    summaryCompleter.complete(
-      const Success<
-        List<ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>,
-        AppFailure
-      >(
-        <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
       ),
     );
     await tester.pumpAndSettle();
   });
 
-  testWidgets('shows inline error when detail loading fails', (tester) async {
+  testWidgets('shows inline error when trend screen loading fails', (
+    tester,
+  ) async {
     when(
-      () => loadPageUseCase.call(
+      () => loadTrendScreenUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
       ),
     ).thenAnswer(
       (_) async =>
           const Failure<
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+            ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
             AppFailure
           >(
             UnknownFailure(
@@ -364,41 +343,27 @@ void main() {
     expect(find.text('Test detail error'), findsOneWidget);
   });
 
-  testWidgets('shows summary-unavailable notice when summary loading fails', (
+  testWidgets('shows inline error when trend screen returns failure', (
     tester,
   ) async {
     when(
-      () => loadPageUseCase.call(
+      () => loadTrendScreenUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-      ),
-    ).thenAnswer(
-      (_) async =>
-          Success<
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
-            AppFailure
-          >(
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-              items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[
-                _row(codProduto: 1, nomeProduto: 'Product A'),
-              ],
-              totalCount: 1,
-            ),
-          ),
-    );
-    when(
-      () => loadSummaryUseCase.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
       ),
     ).thenAnswer(
       (_) async =>
           const Failure<
-            List<ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>,
+            ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
             AppFailure
           >(
             UnknownFailure(
@@ -411,65 +376,59 @@ void main() {
     await _pumpPage(tester, authController: authController);
     await tester.pumpAndSettle();
 
-    expect(find.text('Summary unavailable'), findsOneWidget);
+    expect(find.text('Summary error'), findsOneWidget);
     expect(find.text('Executive summary'), findsNothing);
-    expect(find.text('Product A'), findsWidgets);
+    expect(find.text('Product A'), findsNothing);
   });
 
   testWidgets('renders dashboard and details when loaded', (tester) async {
     when(
-      () => loadPageUseCase.call(
+      () => loadTrendScreenUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
       ),
     ).thenAnswer(
       (_) async =>
           Success<
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+            ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
             AppFailure
           >(
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-              items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[
-                _row(codProduto: 1, nomeProduto: 'Product A'),
-                _row(
-                  codProduto: 2,
-                  nomeProduto: 'Product B',
+            ProdutoVendidoTendenciaDeVendaMediaMovelScreenData(
+              page: ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+                items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[
+                  _row(codProduto: 1, nomeProduto: 'Product A'),
+                  _row(
+                    codProduto: 2,
+                    nomeProduto: 'Product B',
+                    classificacao: 'CAINDO',
+                    diferenca: -2,
+                    tendenciaPercentual: -15,
+                  ),
+                ],
+                totalCount: 2,
+              ),
+              summaryRows: const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[
+                ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
+                  classificacao: 'CRESCENDO',
+                  quantidadeProdutos: 1,
+                  impactoLiquido: 4,
+                ),
+                ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
                   classificacao: 'CAINDO',
-                  diferenca: -2,
-                  tendenciaPercentual: -15,
+                  quantidadeProdutos: 1,
+                  impactoLiquido: -2,
                 ),
               ],
-              totalCount: 2,
             ),
-          ),
-    );
-    when(
-      () => loadSummaryUseCase.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-      ),
-    ).thenAnswer(
-      (_) async =>
-          const Success<
-            List<ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>,
-            AppFailure
-          >(
-            <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[
-              ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
-                classificacao: 'CRESCENDO',
-                quantidadeProdutos: 1,
-                impactoLiquido: 4,
-              ),
-              ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
-                classificacao: 'CAINDO',
-                quantidadeProdutos: 1,
-                impactoLiquido: -2,
-              ),
-            ],
           ),
     );
 
@@ -525,11 +484,18 @@ void main() {
     ).called(greaterThanOrEqualTo(1));
 
     final capturedFilters = verify(
-      () => loadPageUseCase.call(
+      () => loadTrendScreenUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: captureAny(named: 'filter'),
         clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
       ),
     ).captured;
 
@@ -567,46 +533,40 @@ void main() {
 
   testWidgets('supports pagination with totalCount', (tester) async {
     when(
-      () => loadPageUseCase.call(
+      () => loadTrendScreenUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
       ),
     ).thenAnswer(
       (_) async =>
           Success<
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+            ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
             AppFailure
           >(
-            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-              items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[
-                _row(codProduto: 1, nomeProduto: 'Product A'),
-              ],
-              totalCount: 25,
-            ),
-          ),
-    );
-    when(
-      () => loadSummaryUseCase.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-      ),
-    ).thenAnswer(
-      (_) async =>
-          const Success<
-            List<ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>,
-            AppFailure
-          >(
-            <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[
-              ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
-                classificacao: 'CRESCENDO',
-                quantidadeProdutos: 25,
-                impactoLiquido: 80,
+            ProdutoVendidoTendenciaDeVendaMediaMovelScreenData(
+              page: ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+                items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[
+                  _row(codProduto: 1, nomeProduto: 'Product A'),
+                ],
+                totalCount: 25,
               ),
-            ],
+              summaryRows: const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[
+                ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
+                  classificacao: 'CRESCENDO',
+                  quantidadeProdutos: 25,
+                  impactoLiquido: 80,
+                ),
+              ],
+            ),
           ),
     );
 
@@ -691,8 +651,7 @@ Future<void> _pumpPage(
             ),
             resolveSalesAgentClientTokenUseCase:
                 ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
-            loadTrendPageUseCase: _pumpLoadPageUseCase,
-            loadTrendSummaryUseCase: _pumpLoadSummaryUseCase,
+            loadTrendScreenUseCase: _pumpLoadTrendScreenUseCase,
             loadGrupoProdutoOptionsUseCase: _pumpLoadGrupoOptionsUseCase,
           ),
         ),

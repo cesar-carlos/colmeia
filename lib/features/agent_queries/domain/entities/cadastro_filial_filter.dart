@@ -11,7 +11,8 @@ class CadastroFilialFilter {
   static const int defaultPageSize = 20;
 
   /// Upper bound for page size (safety on agent `max_rows` and payload).
-  static const int maxPageSize = 100;
+  /// Must stay <= `AgentQueriesBoundedResultMaxRows.cadastroFilialPage`.
+  static const int maxPageSize = 500;
 
   final int? codEmpresa;
   final int? codFilial;

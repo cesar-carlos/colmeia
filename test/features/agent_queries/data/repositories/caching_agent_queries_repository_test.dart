@@ -129,6 +129,90 @@ void main() {
       check(caching.cacheSize).equals(2);
     },
   );
+
+  test('should cache identical successful batch requests inside ttl', () async {
+    final delegate = _SequenceAgentQueriesRepository();
+    final caching = CachingAgentQueriesRepository(delegate: delegate);
+    delegate.enqueueBatch(_successBatchResult());
+
+    const batchRequest = AgentSqlExecuteBatchRequest(
+      agentId: 'agent-1',
+      commands: <AgentSqlExecuteBatchCommand>[
+        AgentSqlExecuteBatchCommand(sql: 'SELECT 1', executionOrder: 0),
+      ],
+      clientToken: 'token-1',
+    );
+
+    final first = await caching.executeSqlBatch(batchRequest);
+    final second = await caching.executeSqlBatch(batchRequest);
+
+    check(first.getOrNull()?.successfulCommands).equals(1);
+    check(second.getOrNull()?.successfulCommands).equals(1);
+    check(delegate.batchCallCount).equals(1);
+    check(caching.batchCacheHits).equals(1);
+    check(caching.batchCacheMisses).equals(1);
+  });
+
+  test('should not cache failed batch responses', () async {
+    final delegate = _SequenceAgentQueriesRepository();
+    final caching = CachingAgentQueriesRepository(delegate: delegate);
+    delegate
+      ..enqueueBatch(
+        const Failure<AgentSqlBatchExecutionResult, AppFailure>(
+          UnknownFailure(message: 'batch failed'),
+        ),
+      )
+      ..enqueueBatch(_successBatchResult());
+
+    const batchRequest = AgentSqlExecuteBatchRequest(
+      agentId: 'agent-1',
+      commands: <AgentSqlExecuteBatchCommand>[
+        AgentSqlExecuteBatchCommand(sql: 'SELECT 1', executionOrder: 0),
+      ],
+    );
+
+    final first = await caching.executeSqlBatch(batchRequest);
+    final second = await caching.executeSqlBatch(batchRequest);
+
+    check(first.isError()).isTrue();
+    check(second.isSuccess()).isTrue();
+    check(delegate.batchCallCount).equals(2);
+    check(caching.batchCacheMisses).equals(2);
+    check(caching.batchCacheHits).equals(0);
+  });
+
+  test('evicts oldest across sql and batch when combined size exceeds max', () async {
+    final delegate = _SequenceAgentQueriesRepository();
+    final caching = CachingAgentQueriesRepository(
+      delegate: delegate,
+      maxCacheSize: 2,
+    );
+    delegate
+      ..enqueue(_successResult(rowCount: 1))
+      ..enqueueBatch(_successBatchResult())
+      ..enqueue(_successResult(rowCount: 2))
+      ..enqueue(_successResult(rowCount: 3));
+
+    await caching.executeSql(_request('SELECT a'));
+    await caching.executeSqlBatch(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'agent-1',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'BATCH', executionOrder: 0),
+        ],
+      ),
+    );
+    check(caching.cacheSize).equals(2);
+
+    await caching.executeSql(_request('SELECT b'));
+    check(caching.cacheSize).equals(2);
+    check(delegate.callCount).equals(2);
+    check(delegate.batchCallCount).equals(1);
+
+    final reloadedA = await caching.executeSql(_request('SELECT a'));
+    check(reloadedA.getOrNull()?.rowCount).equals(3);
+    check(delegate.callCount).equals(3);
+  });
 }
 
 AgentSqlExecuteRequest _request(String sql) {
@@ -156,11 +240,18 @@ final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
   final Duration delay;
   final List<AppResult<AgentSqlExecutionResult>> _results =
       <AppResult<AgentSqlExecutionResult>>[];
+  final List<AppResult<AgentSqlBatchExecutionResult>> _batchResults =
+      <AppResult<AgentSqlBatchExecutionResult>>[];
 
   int callCount = 0;
+  int batchCallCount = 0;
 
   void enqueue(AppResult<AgentSqlExecutionResult> result) {
     _results.add(result);
+  }
+
+  void enqueueBatch(AppResult<AgentSqlBatchExecutionResult> result) {
+    _batchResults.add(result);
   }
 
   @override
@@ -178,6 +269,30 @@ final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
     AgentSqlExecuteBatchRequest request,
   ) async {
-    throw UnimplementedError();
+    batchCallCount++;
+    if (delay > Duration.zero) {
+      await Future<void>.delayed(delay);
+    }
+    return _batchResults.removeAt(0);
   }
+}
+
+AppResult<AgentSqlBatchExecutionResult> _successBatchResult() {
+  return const Success<AgentSqlBatchExecutionResult, AppFailure>(
+    AgentSqlBatchExecutionResult(
+      items: <AgentSqlBatchExecutionItem>[
+        AgentSqlBatchExecutionItem(
+          index: 0,
+          ok: true,
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{'n': 1},
+          ],
+          rowCount: 1,
+        ),
+      ],
+      totalCommands: 1,
+      successfulCommands: 1,
+      failedCommands: 0,
+    ),
+  );
 }

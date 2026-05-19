@@ -22,6 +22,9 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 ///
 /// Only successful results are cached. Failures propagate immediately without
 /// caching to allow retries and circuit breaker logic to operate normally.
+///
+/// [executeSqlBatch] uses [AgentQueriesRequestKey.buildBatch] for the same TTL
+/// and combined LRU budget as single-query cache entries.
 class CachingAgentQueriesRepository implements AgentQueriesRepository {
   CachingAgentQueriesRepository({
     required AgentQueriesRepository delegate,
@@ -37,10 +40,13 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   final Duration _cacheTtl;
   final int _maxCacheSize;
 
-  final Map<String, _CacheEntry> _cache = <String, _CacheEntry>{};
+  final Map<String, _SqlCacheEntry> _sqlCache = <String, _SqlCacheEntry>{};
+  final Map<String, _BatchCacheEntry> _batchCache = <String, _BatchCacheEntry>{};
 
   int _cacheHits = 0;
   int _cacheMisses = 0;
+  int _batchCacheHits = 0;
+  int _batchCacheMisses = 0;
 
   /// Visible for testing and observability.
   int get cacheHits => _cacheHits;
@@ -49,16 +55,22 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   int get cacheMisses => _cacheMisses;
 
   /// Visible for testing and observability.
-  int get cacheSize => _cache.length;
+  int get batchCacheHits => _batchCacheHits;
+
+  /// Visible for testing and observability.
+  int get batchCacheMisses => _batchCacheMisses;
+
+  /// Visible for testing and observability.
+  int get cacheSize => _sqlCache.length + _batchCache.length;
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
     AgentSqlExecuteRequest request,
   ) async {
-    final key = _buildKey(request);
+    final key = AgentQueriesRequestKey.build(request);
     final now = DateTime.now();
 
-    final entry = _cache[key];
+    final entry = _sqlCache[key];
     if (entry != null && now.difference(entry.cachedAt) <= _cacheTtl) {
       _cacheHits++;
       AppLogger.debug(
@@ -78,14 +90,12 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     final result = await _delegate.executeSql(request);
 
     if (result.isSuccess()) {
-      _cache[key] = _CacheEntry(
+      _sqlCache[key] = _SqlCacheEntry(
         result: result,
         cachedAt: DateTime.now(),
       );
 
-      if (_cache.length > _maxCacheSize) {
-        _evictOldest();
-      }
+      _evictOldestIfOverBudget();
     }
 
     return result;
@@ -94,58 +104,113 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
     AgentSqlExecuteBatchRequest request,
-  ) {
-    // Batch payloads are intentionally heterogeneous in v1, so caching them
-    // would need a dedicated key and freshness policy per command set.
-    return _delegate.executeSqlBatch(request);
+  ) async {
+    final key = AgentQueriesRequestKey.buildBatch(request);
+    final now = DateTime.now();
+
+    final entry = _batchCache[key];
+    if (entry != null && now.difference(entry.cachedAt) <= _cacheTtl) {
+      _batchCacheHits++;
+      AppLogger.debug(
+        'Cache hit for SQL batch',
+        context: <String, Object?>{
+          'operation': 'executeAgentSqlBatch',
+          'agentId': request.trimmedAgentId,
+          'batchCacheHits': _batchCacheHits,
+          'batchCacheMisses': _batchCacheMisses,
+          'age': now.difference(entry.cachedAt).inMilliseconds,
+        },
+      );
+      return entry.result;
+    }
+
+    _batchCacheMisses++;
+    final result = await _delegate.executeSqlBatch(request);
+
+    if (result.isSuccess()) {
+      _batchCache[key] = _BatchCacheEntry(
+        result: result,
+        cachedAt: DateTime.now(),
+      );
+
+      _evictOldestIfOverBudget();
+    }
+
+    return result;
   }
 
-  void _evictOldest() {
-    if (_cache.isEmpty) {
-      return;
-    }
-
-    String? oldestKey;
-    DateTime? oldestTime;
-
-    for (final entry in _cache.entries) {
-      if (oldestTime == null || entry.value.cachedAt.isBefore(oldestTime)) {
-        oldestTime = entry.value.cachedAt;
-        oldestKey = entry.key;
+  void _evictOldestIfOverBudget() {
+    while (_sqlCache.length + _batchCache.length > _maxCacheSize) {
+      if (_sqlCache.isEmpty && _batchCache.isEmpty) {
+        break;
       }
-    }
 
-    if (oldestKey != null) {
-      _cache.remove(oldestKey);
+      String? keyToRemove;
+      var removeBatch = false;
+      DateTime? oldestAt;
+
+      for (final e in _sqlCache.entries) {
+        if (oldestAt == null || e.value.cachedAt.isBefore(oldestAt)) {
+          oldestAt = e.value.cachedAt;
+          keyToRemove = e.key;
+          removeBatch = false;
+        }
+      }
+      for (final e in _batchCache.entries) {
+        if (oldestAt == null || e.value.cachedAt.isBefore(oldestAt)) {
+          oldestAt = e.value.cachedAt;
+          keyToRemove = e.key;
+          removeBatch = true;
+        }
+      }
+
+      if (keyToRemove == null) {
+        break;
+      }
+      if (removeBatch) {
+        _batchCache.remove(keyToRemove);
+      } else {
+        _sqlCache.remove(keyToRemove);
+      }
+
       AppLogger.debug(
         'Evicted oldest cache entry (LRU)',
         context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'cacheSize': _cache.length,
+          'operation': 'CachingAgentQueriesRepository',
+          'cacheSize': cacheSize,
           'maxCacheSize': _maxCacheSize,
         },
       );
     }
   }
 
-  String _buildKey(AgentSqlExecuteRequest request) {
-    return AgentQueriesRequestKey.build(request);
-  }
-
   /// Clears all cached entries. Useful for testing or explicit cache busting.
   void clear() {
-    _cache.clear();
+    _sqlCache.clear();
+    _batchCache.clear();
     _cacheHits = 0;
     _cacheMisses = 0;
+    _batchCacheHits = 0;
+    _batchCacheMisses = 0;
   }
 }
 
-class _CacheEntry {
-  _CacheEntry({
+class _SqlCacheEntry {
+  _SqlCacheEntry({
     required this.result,
     required this.cachedAt,
   });
 
   final AppResult<AgentSqlExecutionResult> result;
+  final DateTime cachedAt;
+}
+
+class _BatchCacheEntry {
+  _BatchCacheEntry({
+    required this.result,
+    required this.cachedAt,
+  });
+
+  final AppResult<AgentSqlBatchExecutionResult> result;
   final DateTime cachedAt;
 }

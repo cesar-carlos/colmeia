@@ -21,9 +21,9 @@ void main() {
         queriesDir
             .listSync()
             .whereType<File>()
-            .where((File f) => f.path.endsWith('_sql.dart'))
+            .where((f) => f.path.endsWith('_sql.dart'))
             .toList()
-          ..sort((File a, File b) => a.path.compareTo(b.path));
+          ..sort((a, b) => a.path.compareTo(b.path));
 
     expect(
       sqlSources.length,
@@ -36,7 +36,7 @@ void main() {
       final text = file.readAsStringSync();
       for (final literal in _sqlStringLiteralsFromSource(text)) {
         if (literal.contains('/*')) {
-          violations.add('${file.uri.pathSegments.last}: …${literal}…');
+          violations.add('${file.uri.pathSegments.last}: …$literal…');
         }
       }
     }

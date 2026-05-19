@@ -52,7 +52,9 @@ top-level body:
 Common `options`:
 
 - `timeout_ms`: bridge/agent timeout in milliseconds.
-- `max_rows`: result guardrail for bounded reports.
+- `max_rows`: result guardrail for bounded reports. The cadastro filial
+  catalog uses the same cap as `CadastroFilialFilter.maxPageSize` (500) per
+  `sql.execute` so `loadAll` across agents paginates in larger chunks.
 - `page`, `page_size`, `cursor`: pagination fields when applicable.
 - `execution_mode`: agent-specific execution behavior.
 - `prefer_db_streaming`: bridge hint for DB-side streaming when the agent

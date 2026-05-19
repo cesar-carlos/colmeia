@@ -192,6 +192,52 @@ void main() {
           },
         );
       });
+
+      test(
+        'loadPageAndSummary returns page and summary in one batch round-trip',
+        () async {
+          final missingKeys = missingE2eRepositoryKeys();
+          if (missingKeys.isNotEmpty) {
+            /// E2E: explain skip when repository keys are not configured.
+            // ignore: avoid_print
+            print(
+              'SKIP produto_vendido_tendencia_de_venda_media_movel_repository_e2e '
+              '(batch): missing ${missingKeys.join(', ')}.',
+            );
+            return;
+          }
+
+          final repository =
+              getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>();
+
+          final result = await runE2eAppResultWithHubRetry(
+            () => repository.loadPageAndSummary(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
+                quantidadeDias: 7,
+                pageSize: 10,
+              ),
+            ),
+            actionLabel: 'produto_vendido_tendencia_media_movel_batch',
+          );
+
+          result.fold(
+            (data) {
+              checkPageInvariants(data.page.items, data.page.totalCount, 10);
+              checkSummaryInvariants(data.summaryRows);
+            },
+            (failure) {
+              expect(failure, isNot(isA<SessionFailure>()));
+              expect(
+                isAcceptableE2eAgentSqlRepositoryFailure(failure),
+                isTrue,
+              );
+            },
+          );
+        },
+      );
     },
     tags: <String>['e2e'],
   );

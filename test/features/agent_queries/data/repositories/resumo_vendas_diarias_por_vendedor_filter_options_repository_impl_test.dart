@@ -5,6 +5,8 @@ import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diaria
 import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diarias_por_vendedor_vendedor_options_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/resumo_vendas_diarias_suggestion_sql_params.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -27,6 +29,14 @@ void main() {
       const AgentSqlExecuteRequest(
         agentId: 'fallback-agent',
         sql: 'SELECT 1',
+      ),
+    );
+    registerFallbackValue(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'fallback-agent',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
       ),
     );
   });
@@ -287,4 +297,81 @@ void main() {
     check(result.getOrThrow().single.codVendedor).equals(3);
     check(result.getOrThrow().single.nomeVendedor).equals('Lia');
   });
+
+  test(
+    'loadAllFilterOptions sends one executeSqlBatch with three commands',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'CodVendedor': 9,
+                    'NomeVendedor': 'Zoe',
+                  },
+                ],
+                rowCount: 1,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: true,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{'NomeBairro': 'Centro'},
+                ],
+                rowCount: 1,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 2,
+                ok: true,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{'NomeMunicipio': 'Sao Paulo'},
+                ],
+                rowCount: 1,
+              ),
+            ],
+            totalCommands: 3,
+            successfulCommands: 3,
+            failedCommands: 0,
+          ),
+        ),
+      );
+
+      final result = await repository.loadAllFilterOptions(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        dataVendaInicio: dataInicio,
+        dataVendaFim: dataFim,
+      );
+
+      check(result.isSuccess()).isTrue();
+      final bundle = result.getOrThrow();
+      check(bundle.vendedorOptions.single.codVendedor).equals(9);
+      check(bundle.bairroOptions.single.value).equals('Centro');
+      check(bundle.municipioOptions.single.value).equals('Sao Paulo');
+
+      verifyNever(() => agentQueriesRepository.executeSql(any()));
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSqlBatch(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteBatchRequest;
+      check(captured.commands).length.equals(3);
+      check(captured.commands[0].sql).equals(
+        ResumoVendasDiariasPorVendedorVendedorOptionsSql.query,
+      );
+      check(captured.commands[1].sql).equals(
+        ResumoVendasDiariasPorVendedorBairroOptionsSql.query,
+      );
+      check(captured.commands[2].sql).equals(
+        ResumoVendasDiariasPorVendedorMunicipioOptionsSql.query,
+      );
+      check(captured.useRelay).isTrue();
+    },
+  );
 }

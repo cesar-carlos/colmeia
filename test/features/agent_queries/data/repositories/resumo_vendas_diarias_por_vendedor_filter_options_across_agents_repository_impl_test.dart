@@ -13,8 +13,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.d
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_filter_options_batch.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,6 +35,9 @@ class _MockLoadBairroOptions extends Mock
 class _MockLoadMunicipioOptions extends Mock
     implements LoadResumoVendasDiariasPorVendedorMunicipioOptionsUseCase {}
 
+class _MockFilterOptionsRepository extends Mock
+    implements ResumoVendasDiariasPorVendedorFilterOptionsRepository {}
+
 void main() {
   late _MockTargetResolver targetResolver;
   late _MockPlanBuilder planBuilder;
@@ -40,6 +45,9 @@ void main() {
   vendedorExecutor;
   late AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>
   textExecutor;
+  late AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
+  allOptionsBatchExecutor;
+  late _MockFilterOptionsRepository filterOptionsRepository;
   late _MockLoadVendedorOptions loadVendedorOptions;
   late _MockLoadBairroOptions loadBairroOptions;
   late _MockLoadMunicipioOptions loadMunicipioOptions;
@@ -58,6 +66,7 @@ void main() {
       ),
     );
     registerFallbackValue(AgentQueryKey.resumoVendasDiariasOptsVendedor);
+    registerFallbackValue(AgentQueryKey.resumoVendasDiariasOptsBatch);
     registerFallbackValue(AgentQueryExecutionStrategy.mergeAll);
   });
 
@@ -68,6 +77,9 @@ void main() {
         AgentQueryExecutor<ResumoVendasDiariasPorVendedorVendedorOption>();
     textExecutor =
         AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>();
+    allOptionsBatchExecutor =
+        AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>();
+    filterOptionsRepository = _MockFilterOptionsRepository();
     loadVendedorOptions = _MockLoadVendedorOptions();
     loadBairroOptions = _MockLoadBairroOptions();
     loadMunicipioOptions = _MockLoadMunicipioOptions();
@@ -77,6 +89,8 @@ void main() {
           planBuilder: planBuilder,
           vendedorExecutor: vendedorExecutor,
           textExecutor: textExecutor,
+          allOptionsBatchExecutor: allOptionsBatchExecutor,
+          filterOptionsRepository: filterOptionsRepository,
           loadVendedorOptions: loadVendedorOptions,
           loadBairroOptions: loadBairroOptions,
           loadMunicipioOptions: loadMunicipioOptions,
@@ -741,6 +755,150 @@ void main() {
             bridgeTimeoutMs: 90000,
           ),
         ).called(1);
+      },
+    );
+  });
+
+  group('loadAllOptions (batch per agent)', () {
+    test(
+      'uses batch query key and one filter repository call per planned target',
+      () async {
+        final targetA = _target('agent-a', clientToken: 'tok-a');
+        final targetB = _target('agent-b', clientToken: 'tok-b');
+        final resolution = AgentQueryTargetResolution(
+          consideredApprovedTargets: <AgentQueryTarget>[targetA, targetB],
+          missingClientTokenTargets: const <AgentQueryTarget>[],
+          consideredApprovedAgentCount: 2,
+        );
+        final plan = AgentQueryPlan(
+          queryKey: AgentQueryKey.resumoVendasDiariasOptsBatch,
+          strategy: AgentQueryExecutionStrategy.mergeAll,
+          consideredApprovedAgentCount: 2,
+          plannedTargets: <AgentQueryTarget>[targetA, targetB],
+          missingClientTokenTargets: const <AgentQueryTarget>[],
+          bridgeTimeoutMs: 120000,
+        );
+
+        when(
+          () => targetResolver.resolve(
+            userId: any(named: 'userId'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              Success<AgentQueryTargetResolution, AppFailure>(resolution),
+        );
+        when(
+          () => planBuilder.build(
+            queryKey: any(named: 'queryKey'),
+            strategy: any(named: 'strategy'),
+            resolution: any(named: 'resolution'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
+
+        when(
+          () => filterOptionsRepository.loadAllFilterOptions(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+            dataVendaInicio: any(named: 'dataVendaInicio'),
+            dataVendaFim: any(named: 'dataVendaFim'),
+            searchTerm: any(named: 'searchTerm'),
+            limit: any(named: 'limit'),
+            clientToken: any(named: 'clientToken'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: any(
+              named: 'hubConnectedFromApprovedCatalogRow',
+            ),
+          ),
+        ).thenAnswer((invocation) async {
+          final agentId = invocation.namedArguments[#agentId] as String;
+          return Success<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
+              AppFailure>(
+            ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch(
+              vendedorOptions: <ResumoVendasDiariasPorVendedorVendedorOption>[
+                ResumoVendasDiariasPorVendedorVendedorOption(
+                  codVendedor: agentId == 'agent-a' ? 1 : 2,
+                  nomeVendedor: agentId,
+                ),
+              ],
+              bairroOptions: const <ResumoVendasDiariasPorVendedorTextOption>[],
+              municipioOptions: const <ResumoVendasDiariasPorVendedorTextOption>[],
+            ),
+          );
+        });
+
+        final result = await repository.loadAllOptions(
+          userId: 'user-1',
+          dataVendaInicio: dataInicio,
+          dataVendaFim: dataFim,
+        );
+
+        check(result.isSuccess()).isTrue();
+        final merged = result.getOrThrow().vendedorOptions;
+        check(merged).length.equals(2);
+
+        verify(
+          () => planBuilder.build(
+            queryKey: AgentQueryKey.resumoVendasDiariasOptsBatch,
+            strategy: any(named: 'strategy'),
+            resolution: any(named: 'resolution'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).called(1);
+        verify(
+          () => filterOptionsRepository.loadAllFilterOptions(
+            userId: 'user-1',
+            agentId: 'agent-a',
+            dataVendaInicio: dataInicio,
+            dataVendaFim: dataFim,
+            searchTerm: any(named: 'searchTerm'),
+            limit: 40,
+            clientToken: 'tok-a',
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: any(
+              named: 'hubConnectedFromApprovedCatalogRow',
+            ),
+          ),
+        ).called(1);
+        verify(
+          () => filterOptionsRepository.loadAllFilterOptions(
+            userId: 'user-1',
+            agentId: 'agent-b',
+            dataVendaInicio: dataInicio,
+            dataVendaFim: dataFim,
+            searchTerm: any(named: 'searchTerm'),
+            limit: 40,
+            clientToken: 'tok-b',
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: any(
+              named: 'hubConnectedFromApprovedCatalogRow',
+            ),
+          ),
+        ).called(1);
+        verifyNever(
+          () => loadVendedorOptions(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+            dataVendaInicio: any(named: 'dataVendaInicio'),
+            dataVendaFim: any(named: 'dataVendaFim'),
+            searchTerm: any(named: 'searchTerm'),
+            limit: any(named: 'limit'),
+            clientToken: any(named: 'clientToken'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          ),
+        );
       },
     );
   });

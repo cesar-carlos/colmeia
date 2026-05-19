@@ -7,8 +7,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_summary_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
@@ -38,8 +37,7 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
     required this.sessionService,
     required this.loadSalesAvailableAgentsUseCase,
     required this.resolveSalesAgentClientTokenUseCase,
-    required this.loadTrendPageUseCase,
-    required this.loadTrendSummaryUseCase,
+    required this.loadTrendScreenUseCase,
     required this.loadGrupoProdutoOptionsUseCase,
     super.key,
   });
@@ -47,10 +45,8 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
   final SalesSessionService sessionService;
   final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
-  final LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
-  loadTrendPageUseCase;
-  final LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
-  loadTrendSummaryUseCase;
+  final LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
+  loadTrendScreenUseCase;
   final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
 
   @override
@@ -70,10 +66,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
   late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
-  late final LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
-  _loadTrendPage;
-  late final LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
-  _loadTrendSummary;
+  late final LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
+  _loadTrendScreen;
   late final LoadGrupoProdutoOptionsUseCase _loadGrupoOptions;
 
   String? _selectedAgentId;
@@ -112,8 +106,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
     _sessionService = widget.sessionService;
     _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
     _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
-    _loadTrendPage = widget.loadTrendPageUseCase;
-    _loadTrendSummary = widget.loadTrendSummaryUseCase;
+    _loadTrendScreen = widget.loadTrendScreenUseCase;
     _loadGrupoOptions = widget.loadGrupoProdutoOptionsUseCase;
     _selectedAgentId = _sessionService.selectedAgentId;
 
@@ -275,37 +268,25 @@ class _SalesProdutoTendenciaMediaMovelPageState
       pageSize: _pageSize,
     );
 
-    final pageFuture = _loadTrendPage(
+    final screenResult = await _loadTrendScreen(
       userId: userId,
       agentId: trimmedAgentId,
       filter: filter,
       clientToken: clientToken,
     );
-    final summaryFuture = _loadTrendSummary(
-      userId: userId,
-      agentId: trimmedAgentId,
-      filter: filter,
-      clientToken: clientToken,
-    );
-
-    final pageResult = await pageFuture;
-    final summaryResult = await summaryFuture;
 
     if (!mounted) {
       return;
     }
 
-    pageResult.fold(
-      (page) {
+    screenResult.fold(
+      (data) {
         setState(() {
-          _pageResult = page;
-          _summaryRows = summaryResult.fold(
-            (rows) => rows,
-            (_) => const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
-          );
+          _pageResult = data.page;
+          _summaryRows = data.summaryRows;
           _loading = false;
           _error = null;
-          _summaryError = summaryResult.fold((_) => null, _failureMessage);
+          _summaryError = null;
         });
         markAutoRefreshSuccess();
       },

@@ -168,6 +168,11 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
+    // Catalog spike (PR4): Option A (single unbounded SQL) is not used here
+    // because the hub still enforces `max_rows`. Option C (parallel pages)
+    // adds bridge concurrency risk. We use Option B: raise page chunk size
+    // (see `CadastroFilialFilter.maxPageSize` + `cadastroFilialPage`) so each
+    // agent needs fewer sequential `loadCadastroFilialPage` calls for `loadAll`.
     final rows = <CadastroFilialRow>[];
     final seenRowKeys = <String>{};
     var page = 1;

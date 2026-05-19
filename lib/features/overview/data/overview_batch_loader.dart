@@ -3,6 +3,7 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_options.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_por_usuario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_dia_semana_row_model.dart';
@@ -443,10 +444,9 @@ class OverviewBatchLoader {
         clientToken: target.clientToken,
         useRelay: true,
         bridgeTimeoutMs: planBridgeTimeoutMs,
-        options: AgentSqlExecuteBatchOptions(
+        options: AgentSqlReadOnlyBatchOptions.dashboard(
           sqlTimeoutMs: overviewBatchSqlTimeoutMs,
           maxRows: overviewBatchMaxRows,
-          transaction: false,
           maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
       ),
@@ -490,10 +490,9 @@ class OverviewBatchLoader {
         clientToken: target.clientToken,
         useRelay: true,
         bridgeTimeoutMs: planBridgeTimeoutMs,
-        options: AgentSqlExecuteBatchOptions(
+        options: AgentSqlReadOnlyBatchOptions.dashboard(
           sqlTimeoutMs: overviewBatchSqlTimeoutMs,
           maxRows: overviewBatchMaxRows,
-          transaction: false,
           maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
       ),

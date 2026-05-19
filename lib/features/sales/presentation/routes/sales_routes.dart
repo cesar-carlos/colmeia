@@ -3,8 +3,7 @@ import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_summary_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
@@ -119,13 +118,9 @@ List<RouteBase> buildSalesRoutes() {
             loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
             resolveSalesAgentClientTokenUseCase:
                 resolveSalesAgentClientTokenUseCase,
-            loadTrendPageUseCase:
+            loadTrendScreenUseCase:
                 getIt<
-                  LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
-                >(),
-            loadTrendSummaryUseCase:
-                getIt<
-                  LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
+                  LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
                 >(),
             loadGrupoProdutoOptionsUseCase:
                 getIt<LoadGrupoProdutoOptionsUseCase>(),

@@ -3,6 +3,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_media_movel_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_media_movel_summary_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_media_movel_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -30,6 +32,14 @@ void main() {
       const AgentSqlExecuteRequest(
         agentId: 'fallback-agent',
         sql: 'SELECT 1',
+      ),
+    );
+    registerFallbackValue(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'fallback-agent',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
       ),
     );
   });
@@ -299,4 +309,56 @@ void main() {
     check(row.quantidadeProdutos).equals(4);
     check(row.impactoLiquido).equals(-22.5);
   });
+
+  test(
+    'loadPageAndSummary uses single executeSqlBatch with page and summary',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{'TotalCount': 0},
+                ],
+                rowCount: 1,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+            ],
+            totalCommands: 2,
+            successfulCommands: 2,
+            failedCommands: 0,
+          ),
+        ),
+      );
+
+      final result = await repository.loadPageAndSummary(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: buildValidFilter(),
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrThrow().page.totalCount).equals(0);
+      check(result.getOrThrow().summaryRows).isEmpty();
+
+      verifyNever(() => agentQueriesRepository.executeSql(any()));
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSqlBatch(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteBatchRequest;
+      check(captured.commands).length.equals(2);
+      check(captured.useRelay).isTrue();
+    },
+  );
 }

@@ -52,7 +52,10 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   static const int municipioListPage = 100;
 
   /// One page of branch registration rows.
-  static const int cadastroFilialPage = 100;
+  /// Branch catalog pages (`cadastro_filial`). Kept aligned with
+  /// `CadastroFilialFilter.maxPageSize` so ROW_NUMBER windows and `max_rows`
+  /// stay consistent for `loadAll` pagination (see `docs/bridge_agent_sql_api_options.md`).
+  static const int cadastroFilialPage = 500;
 
   /// Full product-group catalog (`GrupoProduto`) ordered by name.
   static const int grupoProdutoOptions = 2000;

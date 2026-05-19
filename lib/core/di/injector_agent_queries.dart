@@ -12,6 +12,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_marca_p
 import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
@@ -41,6 +42,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_all_filter_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_municipio_options_across_agents_use_case.dart';
@@ -114,6 +116,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_filter_options_batch.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
@@ -388,13 +391,21 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
       getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>(),
     ),
   );
-  getIt.registerLazySingleton<
-    LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
-  >(
-    () => LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase(
-      getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>(),
-    ),
-  );
+  getIt
+    ..registerLazySingleton<
+      LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase
+    >(
+      () => LoadProdutoVendidoTendenciaDeVendaMediaMovelSummaryUseCase(
+        getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>(),
+      ),
+    )
+    ..registerLazySingleton<
+      LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
+    >(
+      () => LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase(
+        getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>(),
+      ),
+    );
 
   _registerSingle<
     ProdutoVendidoTendenciaDeVendaRepository,
@@ -880,6 +891,12 @@ void _registerFilterOptionsRepositories(GetIt getIt) {
       AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>.new,
     )
     ..registerLazySingleton<
+      AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
+    >(
+      AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
+          .new,
+    )
+    ..registerLazySingleton<
       ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository
     >(
       () =>
@@ -896,6 +913,14 @@ void _registerFilterOptionsRepositories(GetIt getIt) {
                 getIt<
                   AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>
                 >(),
+            allOptionsBatchExecutor:
+                getIt<
+                  AgentQueryExecutor<
+                    ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
+                  >
+                >(),
+            filterOptionsRepository:
+                getIt<ResumoVendasDiariasPorVendedorFilterOptionsRepository>(),
             loadVendedorOptions:
                 getIt<
                   LoadResumoVendasDiariasPorVendedorVendedorOptionsUseCase
@@ -936,6 +961,15 @@ void _registerFilterOptionsRepositories(GetIt getIt) {
               ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository
             >(),
           ),
+    )
+    ..registerLazySingleton<
+      LoadResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgentsUseCase
+    >(
+      () => LoadResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgentsUseCase(
+        getIt<
+          ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository
+        >(),
+      ),
     );
 }
 
