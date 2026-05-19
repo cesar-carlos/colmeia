@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_por_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
@@ -16,6 +17,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.d
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
@@ -32,10 +34,12 @@ import 'package:colmeia/features/overview/data/datasources/overview_local_dataso
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_daily_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_monthly_parcel_mapper.dart';
+import 'package:colmeia/features/overview/data/mappers/overview_user_ranking_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_user_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
+import 'package:colmeia/features/overview/data/overview_user_rankings_override_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -122,6 +126,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required OverviewLocalDataSource localDataSource,
     required ResumoParcelaFormaPagamentoAcrossAgentsRepository
     resumoAcrossAgentsRepository,
+    required LoadResumoParcelaPorUsuarioAcrossAgentsUseCase
+    loadResumoParcelaPorUsuarioAcrossAgents,
     required LoadResumoParcelasMensalAcrossAgentsUseCase
     loadResumoParcelasMensalAcrossAgents,
     required LoadResumoParcelasDiaSemanaAcrossAgentsUseCase
@@ -139,6 +145,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     DateTime Function()? now,
   }) : _localDataSource = localDataSource,
        _resumoAcrossAgentsRepository = resumoAcrossAgentsRepository,
+       _loadResumoParcelaPorUsuarioAcrossAgents =
+           loadResumoParcelaPorUsuarioAcrossAgents,
        _loadResumoParcelasMensalAcrossAgents =
            loadResumoParcelasMensalAcrossAgents,
        _loadResumoParcelasDiaSemanaAcrossAgents =
@@ -158,6 +166,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
   final OverviewLocalDataSource _localDataSource;
   final ResumoParcelaFormaPagamentoAcrossAgentsRepository
   _resumoAcrossAgentsRepository;
+  final LoadResumoParcelaPorUsuarioAcrossAgentsUseCase
+  _loadResumoParcelaPorUsuarioAcrossAgents;
   final LoadResumoParcelasMensalAcrossAgentsUseCase
   _loadResumoParcelasMensalAcrossAgents;
   final LoadResumoParcelasDiaSemanaAcrossAgentsUseCase
@@ -330,13 +340,40 @@ class OverviewRepositoryImpl implements OverviewRepository {
     >?
     weekdayUserBridgeFuture;
     try {
-      final reportResult = await _resumoAcrossAgentsRepository.load(
-        userId: userId,
-        filter: _resumoFilter(period),
-        selectedAgentIds: filter.selectedAgentIds,
-        strategy: executionStrategy,
-      );
+      final waited = await Future.wait([
+        _resumoAcrossAgentsRepository.load(
+          userId: userId,
+          filter: _resumoFilter(period),
+          selectedAgentIds: filter.selectedAgentIds,
+          strategy: executionStrategy,
+        ),
+        _loadResumoParcelaPorUsuarioAcrossAgents(
+          userId: userId,
+          filter: _resumoFilter(period),
+          selectedAgentIds: filter.selectedAgentIds,
+          strategy: executionStrategy,
+        ),
+      ]);
+      final reportResult =
+          waited[0]
+              as AppResult<
+                AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>
+              >;
+      final userPorResult =
+          waited[1]
+              as AppResult<
+                AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>
+              >;
       final report = reportResult.getOrNull();
+      final userRankingsOverride =
+          overviewUserRankingsOverrideFromAcrossAgentsResult(
+            userPorResult: userPorResult,
+            paymentMergedRows:
+                report?.mergedRows ?? const <ResumoParcelaFormaPagamentoRow>[],
+            userId: userId,
+            rowLabels: resolvedRowLabels,
+            operation: 'loadOverview',
+          );
       if (report != null && report.consideredApprovedAgentCount > 0) {
         weekdayUserBridgeFuture =
             _loadResumoParcelasDiaSemanaUsuarioAcrossAgents(
@@ -397,6 +434,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         partialQueryFailureDetails: overviewPartialFailuresFromParticipants(
           report.participants,
         ),
+        userRankingsOverride: userRankingsOverride,
       );
 
       final completedSections = <OverviewProgressiveSection>{
@@ -724,6 +762,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
         }
 
         var shouldSaveFinalOverview = report.consideredApprovedAgentCount > 0;
+        final batchUserRankingsOverride =
+            overviewUserRankingsOverrideFromBatchTargetResults(
+              batchResults: batchResults,
+              paymentMergedRows: report.mergedRows,
+              userId: userId,
+              rowLabels: resolvedRowLabels,
+              operation: 'loadOverviewProgressivelyBatch',
+            );
         var overview = _buildOverview(
           _mapOverviewRows(report.mergedRows),
           rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
@@ -806,6 +852,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           ],
           hubPresenceOnlineAgentIdsSnapshot:
               loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
+          userRankingsOverride: batchUserRankingsOverride,
         );
 
         if (report.requiresClientTokenSetup && sourceAgentIds != null) {
@@ -2055,6 +2102,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<OverviewAgentQueryFailureDetail> partialQueryFailureDetails =
         const <OverviewAgentQueryFailureDetail>[],
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    List<OverviewUserRanking>? userRankingsOverride,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final userBuckets = <String, _UserAggregate>{};
@@ -2079,15 +2127,23 @@ class OverviewRepositoryImpl implements OverviewRepository {
           )
           .add(row.qtdVendas, row.valorParcela);
 
-      final userKey = _normalizeUserKey(row.nomeUsuario, rowLabels);
-      userBuckets
-          .putIfAbsent(
-            userKey,
-            () => _UserAggregate(
-              userName: _resolveUserName(row.nomeUsuario, rowLabels),
-            ),
-          )
-          .add(row.qtdVendas, row.valorParcela);
+      if (userRankingsOverride == null) {
+        final userKey = overviewUserRankingNormalizeKey(
+          row.nomeUsuario,
+          rowLabels,
+        );
+        userBuckets
+            .putIfAbsent(
+              userKey,
+              () => _UserAggregate(
+                userName: overviewUserRankingDisplayName(
+                  row.nomeUsuario,
+                  rowLabels,
+                ),
+              ),
+            )
+            .add(row.qtdVendas, row.valorParcela);
+      }
     }
 
     final paymentMethods =
@@ -2128,6 +2184,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           ..sort(_compareAgents);
 
     final userRankings =
+        userRankingsOverride ??
         userBuckets.values
             .map(
               (item) => OverviewUserRanking(
@@ -2199,16 +2256,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
     }
     final code = row.codFormaPagamento.trim();
     return code.isEmpty ? labels.unknownPaymentMethodLabel : code;
-  }
-
-  String _resolveUserName(String rawUserName, OverviewLoadLabels labels) {
-    final normalized = rawUserName.trim();
-    return normalized.isEmpty ? labels.unknownUserNameLabel : normalized;
-  }
-
-  String _normalizeUserKey(String rawUserName, OverviewLoadLabels labels) {
-    final normalized = _resolveUserName(rawUserName, labels);
-    return normalized.toLowerCase();
   }
 
   static int _compareBreakdowns(

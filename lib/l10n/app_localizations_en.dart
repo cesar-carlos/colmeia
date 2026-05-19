@@ -780,6 +780,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewKpiAvgTicket => 'Average ticket';
 
   @override
+  String get overviewUserRankingChartSemanticsExtra =>
+      'Each bar shows total revenue and average ticket for that operator.';
+
+  @override
   String get overviewKpiPaymentMethodCount => 'Payment methods';
 
   @override

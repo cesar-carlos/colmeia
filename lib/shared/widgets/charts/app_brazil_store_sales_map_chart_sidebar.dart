@@ -634,6 +634,7 @@ class _DesktopBranchSidebarItem extends StatelessWidget {
       label: [
         rankLabel,
         entry.displayName,
+        if (entry.secondaryDisplayName != null) entry.secondaryDisplayName!,
         entry.cityUfLabel,
         if (statusLabel != null) statusLabel else amountLabel,
       ].join(', '),
@@ -732,6 +733,18 @@ class _DesktopBranchSidebarItem extends StatelessWidget {
                     ],
                   ),
                   SizedBox(height: tokens.gapXs * 0.5),
+                  if (entry.secondaryDisplayName != null) ...[
+                    Text(
+                      entry.secondaryDisplayName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: tokens.gapXs * 0.5),
+                  ],
                   Text(
                     entry.cityUfLabel,
                     maxLines: 1,

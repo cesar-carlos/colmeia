@@ -797,6 +797,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewKpiAvgTicket => 'Ticket medio';
 
   @override
+  String get overviewUserRankingChartSemanticsExtra =>
+      'Cada barra mostra o faturamento total e o ticket medio daquele operador.';
+
+  @override
   String get overviewKpiPaymentMethodCount => 'Formas de pagamento';
 
   @override
@@ -4593,6 +4597,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewKpiAvgTicket => 'Ticket medio';
+
+  @override
+  String get overviewUserRankingChartSemanticsExtra =>
+      'Cada barra mostra o faturamento total e o ticket medio daquele operador.';
 
   @override
   String get overviewKpiPaymentMethodCount => 'Formas de pagamento';

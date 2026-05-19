@@ -67,7 +67,9 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     wrapXAxisCharsPerLine: isRanking || isWeekday || isDaily || isPayment
         ? 11
         : 12,
-    wrapXAxisMaxLines: isRanking || isWeekday || isDaily || isPayment ? 3 : 2,
+    wrapXAxisMaxLines: isRanking
+        ? 4
+        : (isWeekday || isDaily || isPayment ? 3 : 2),
     chartPadding: isRanking || isWeekday || isDaily || isPayment
         ? EdgeInsets.only(bottom: tokens.gapSm)
         : null,
@@ -82,10 +84,13 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
     minPlottedValueShareOfMax: isRanking
         ? 0.03
         : (isWeekdayOrDaily ? 0.06 : 0.045),
+    chartSemanticsCoordinatorNotice: isRanking
+        ? l10n.overviewUserRankingChartSemanticsExtra
+        : null,
     height:
         heightOverride ??
         (isRanking
-            ? tokens.chartStandardHeight + tokens.contentSpacing * 2
+            ? tokens.chartStandardHeight + tokens.contentSpacing * 3
             : (isPayment
                   ? tokens.chartStandardHeight + tokens.contentSpacing * 2
                   : (isWeekdayOrDaily

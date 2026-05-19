@@ -22,6 +22,9 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Payment method × month × user (and similar); overview forma pagamento.
   static const int resumoParcelaFormaPagamento = 5000;
 
+  /// Company, branch, and sale user — one bucket per operator per branch.
+  static const int resumoParcelaPorUsuario = 5000;
+
   /// Same cardinality as `resumoParcelaFormaPagamento` (por-mes report).
   static const int resumoParcelasFormaPagamentoPorMes = 5000;
 

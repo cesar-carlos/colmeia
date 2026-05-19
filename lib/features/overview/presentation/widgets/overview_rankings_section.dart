@@ -10,6 +10,26 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:flutter/material.dart';
 
+String _overviewUserRankingTooltip(
+  AppLocalizations l10n,
+  OverviewUserRanking u,
+  num barValue,
+) {
+  final v = barValue.toDouble();
+  return '${u.userName}: ${AppBrFormatters.currency(v)}\n'
+      '${l10n.overviewKpiAvgTicket}: ${AppBrFormatters.currency(u.averageTicket)}';
+}
+
+String _overviewUserRankingDataLabel(
+  AppLocalizations l10n,
+  OverviewUserRanking u,
+  num barValue,
+) {
+  final v = barValue.toDouble();
+  return '${AppBrFormatters.compactCurrency(v)}\n'
+      '${l10n.overviewKpiAvgTicket}: ${AppBrFormatters.currency(u.averageTicket)}';
+}
+
 class OverviewRankingsSection extends StatefulWidget {
   const OverviewRankingsSection({
     required this.l10n,
@@ -229,9 +249,9 @@ class OverviewUserRankingCard extends StatelessWidget {
                     labelBuilder: (u) => u.userName,
                     valueBuilder: (u) => u.totalAmount,
                     tooltipLabelBuilder: (u, v) =>
-                        '${u.userName}: ${AppBrFormatters.currency(v)}',
+                        _overviewUserRankingTooltip(l10n, u, v),
                     dataLabelBuilder: (u, v) =>
-                        AppBrFormatters.compactCurrency(v),
+                        _overviewUserRankingDataLabel(l10n, u, v),
                     style: overviewHomeComparisonBarChartStyle(
                       tokens: fullscreenTokens,
                       kind: OverviewHomeBarChartKind.ranking,
@@ -267,8 +287,9 @@ class OverviewUserRankingCard extends StatelessWidget {
       labelBuilder: (u) => u.userName,
       valueBuilder: (u) => u.totalAmount,
       tooltipLabelBuilder: (u, v) =>
-          '${u.userName}: ${AppBrFormatters.currency(v)}',
-      dataLabelBuilder: (u, v) => AppBrFormatters.compactCurrency(v),
+          _overviewUserRankingTooltip(l10n, u, v),
+      dataLabelBuilder: (u, v) =>
+          _overviewUserRankingDataLabel(l10n, u, v),
       style: overviewHomeComparisonBarChartStyle(
         tokens: tokens,
         kind: OverviewHomeBarChartKind.ranking,

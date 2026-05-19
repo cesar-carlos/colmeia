@@ -74,12 +74,13 @@ void main() {
           final request =
               invocation.positionalArguments.single
                   as AgentSqlExecuteBatchRequest;
-          if (request.commands.length == 1) {
+          if (request.commands.length == 2) {
             return Success<AgentSqlBatchExecutionResult, AppFailure>(
               _batchResult(
-                commandCount: 1,
+                commandCount: 2,
                 rowsByIndex: <int, List<Map<String, dynamic>>>{
                   0: <Map<String, dynamic>>[_mainRow()],
+                  1: <Map<String, dynamic>>[_porUsuarioRow()],
                 },
               ),
             );
@@ -106,6 +107,7 @@ void main() {
         check(batch.targetResults.length).equals(1);
         final targetResult = batch.targetResults.single;
         check(targetResult.mainRows.single.valorParcela).equals(100);
+        check(targetResult.userRankingRows.single.valorParcela).equals(100);
         check(targetResult.monthlyRows.single.anoMes).equals('2026/04');
         check(targetResult.weekdayRows.single.diaSemanaNumero).equals(2);
         check(targetResult.dailyRows.single.valorTotalDiarioVenda).equals(88);
@@ -148,7 +150,7 @@ void main() {
         check(
           mainRequest.commands.map((command) => command.executionOrder),
         ).deepEquals(
-          <int>[0],
+          <int>[0, 1],
         );
         check(
           sectionRequest.commands.map((command) => command.executionOrder),
@@ -195,12 +197,13 @@ void main() {
           final request =
               invocation.positionalArguments.single
                   as AgentSqlExecuteBatchRequest;
-          if (request.commands.length == 1) {
+          if (request.commands.length == 2) {
             return Success<AgentSqlBatchExecutionResult, AppFailure>(
               _batchResult(
-                commandCount: 1,
+                commandCount: 2,
                 rowsByIndex: <int, List<Map<String, dynamic>>>{
                   0: <Map<String, dynamic>>[_mainRow()],
+                  1: <Map<String, dynamic>>[_porUsuarioRow()],
                 },
               ),
             );
@@ -296,9 +299,10 @@ void main() {
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
               commandCount: request.commands.length,
-              rowsByIndex: request.commands.length == 1
+              rowsByIndex: request.commands.length == 2
                   ? <int, List<Map<String, dynamic>>>{
                       0: <Map<String, dynamic>>[_mainRow()],
+                      1: <Map<String, dynamic>>[_porUsuarioRow()],
                     }
                   : const <int, List<Map<String, dynamic>>>{},
             ),
@@ -411,7 +415,7 @@ void main() {
           growable: false,
         );
         for (final request in requests.take(2)) {
-          check(request.commands.length).equals(1);
+          check(request.commands.length).equals(2);
         }
         for (final request in requests.skip(2)) {
           check(request.commands.length).equals(5);
@@ -584,6 +588,16 @@ AgentSqlBatchExecutionResult _batchResult({
       ),
     ),
   );
+}
+
+Map<String, dynamic> _porUsuarioRow() {
+  return <String, dynamic>{
+    'CodEmpresa': 1,
+    'CodFilial': 1,
+    'NomeUsuario': 'Caixa',
+    'QtdVendas': 1,
+    'ValorParcela': 100.0,
+  };
 }
 
 Map<String, dynamic> _mainRow() {

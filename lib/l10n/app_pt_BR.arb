@@ -337,6 +337,7 @@
   "overviewKpiTotalRevenue": "Faturamento total",
   "overviewKpiSales": "Vendas",
   "overviewKpiAvgTicket": "Ticket medio",
+  "overviewUserRankingChartSemanticsExtra": "Cada barra mostra o faturamento total e o ticket medio daquele operador.",
   "overviewKpiPaymentMethodCount": "Formas de pagamento",
   "overviewPaymentMixTitle": "Mix por forma de pagamento",
   "overviewPaymentMixSubtitle": "Participacao percentual no faturamento do periodo.",

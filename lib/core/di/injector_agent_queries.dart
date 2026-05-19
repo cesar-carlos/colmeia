@@ -19,6 +19,8 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_por_usuario_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_por_usuario_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_anual_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_anual_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
@@ -73,6 +75,8 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_por_usuario_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_por_usuario_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_anual_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_anual_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_dia_semana_across_agents_repository_impl.dart';
@@ -101,6 +105,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_executi
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
@@ -126,6 +131,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcel
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_por_usuario_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_por_usuario_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_anual_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_anual_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_across_agents_repository.dart';
@@ -421,6 +428,19 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
   );
 
   _registerSingle<
+    ResumoParcelaPorUsuarioRepository,
+    LoadResumoParcelaPorUsuarioUseCase
+  >(
+    getIt,
+    repo: () => ResumoParcelaPorUsuarioRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoParcelaPorUsuarioUseCase(
+      getIt<ResumoParcelaPorUsuarioRepository>(),
+    ),
+  );
+
+  _registerSingle<
     ResumoParcelaFormaPagamentoDiarioRepository,
     LoadResumoParcelaFormaPagamentoDiarioUseCase
   >(
@@ -565,6 +585,9 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>>(
       AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>.new,
     )
+    ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaPorUsuarioRow>>(
+      AgentQueryExecutor<ResumoParcelaPorUsuarioRow>.new,
+    )
     ..registerLazySingleton<AgentQueryExecutor<ResumoVendaProdutoDiarioRow>>(
       AgentQueryExecutor<ResumoVendaProdutoDiarioRow>.new,
     )
@@ -623,6 +646,19 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
     ..registerLazySingleton<LoadResumoParcelaFormaPagamentoAcrossAgentsUseCase>(
       () => LoadResumoParcelaFormaPagamentoAcrossAgentsUseCase(
         getIt<ResumoParcelaFormaPagamentoAcrossAgentsRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ResumoParcelaPorUsuarioAcrossAgentsRepository>(
+      () => ResumoParcelaPorUsuarioAcrossAgentsRepositoryImpl(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor: getIt<AgentQueryExecutor<ResumoParcelaPorUsuarioRow>>(),
+        loadResumo: getIt<LoadResumoParcelaPorUsuarioUseCase>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelaPorUsuarioAcrossAgentsUseCase>(
+      () => LoadResumoParcelaPorUsuarioAcrossAgentsUseCase(
+        getIt<ResumoParcelaPorUsuarioAcrossAgentsRepository>(),
       ),
     )
     ..registerLazySingleton<

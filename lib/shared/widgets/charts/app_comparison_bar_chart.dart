@@ -90,6 +90,7 @@ class AppComparisonBarChartStyle {
     this.dataLabelBackgroundColor,
     this.enableTapHighlight = false,
     this.tapHighlightDimmedOpacity = 0.35,
+    this.chartSemanticsCoordinatorNotice,
   });
 
   /// Solid color applied to all bars when [AppComparisonBarChart.colorBuilder]
@@ -351,6 +352,10 @@ class AppComparisonBarChartStyle {
   /// Opacity applied to non-selected bars while [enableTapHighlight] is active.
   /// Defaults to `0.35`; set lower to dim more, `1.0` to disable the dim.
   final double tapHighlightDimmedOpacity;
+
+  /// Optional extra sentence appended to the coordinator [Semantics] label for
+  /// the chart body (after plot-floor / extreme-spread notices when present).
+  final String? chartSemanticsCoordinatorNotice;
 }
 
 /// Structured payload emitted when the user taps a bar.
@@ -586,6 +591,10 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     final spreadNotice = extremeSpreadAccessibilityNotice?.trim();
     if (hasExtremeSpread && spreadNotice != null && spreadNotice.isNotEmpty) {
       semanticsParts.add(spreadNotice);
+    }
+    final coordinatorExtra = style.chartSemanticsCoordinatorNotice?.trim();
+    if (coordinatorExtra != null && coordinatorExtra.isNotEmpty) {
+      semanticsParts.add(coordinatorExtra);
     }
     final semanticsCoordinatorLabel = semanticsParts.isEmpty
         ? null

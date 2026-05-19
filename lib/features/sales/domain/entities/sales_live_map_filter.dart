@@ -220,9 +220,10 @@ class SalesLiveMapBranchOption {
     required this.agentName,
     required this.codEmpresa,
     required this.codFilial,
-    required this.name,
+    required this.registrationName,
     required this.city,
     required this.uf,
+    this.fantasyName,
   });
 
   final String id;
@@ -230,9 +231,12 @@ class SalesLiveMapBranchOption {
   final String agentName;
   final int codEmpresa;
   final int codFilial;
-  final String name;
+  final String registrationName;
   final String city;
   final String uf;
+  final String? fantasyName;
+
+  String get name => registrationName;
 
   SalesLiveMapBranchRef get branchRef => SalesLiveMapBranchRef(
     agentId: agentId,

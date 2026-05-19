@@ -8,6 +8,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:flutter/material.dart';
@@ -161,7 +162,7 @@ class SalesBranchPickerControl extends StatelessWidget {
         Semantics(
           button: true,
           label: hasSelection
-              ? '${branchCopy.label}: ${selectedBranch.name}'
+              ? '${branchCopy.label}: ${_branchPrimaryName(selectedBranch)}'
               : branchCopy.selectionEmpty,
           child: InkWell(
             onTap: enabled ? openSheet : null,
@@ -169,7 +170,9 @@ class SalesBranchPickerControl extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
               child: Text(
-                hasSelection ? selectedBranch.name : branchCopy.selectionEmpty,
+                hasSelection
+                    ? _branchPrimaryName(selectedBranch)
+                    : branchCopy.selectionEmpty,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: typography.body.copyWith(
@@ -380,7 +383,10 @@ class _SalesBranchSelectionSheetState
     final result = q.isEmpty
         ? branches
         : branches
-              .where((branch) => branch.name.toLowerCase().contains(q))
+              .where(
+                (branch) =>
+                    _branchSearchTokens(branch).toLowerCase().contains(q),
+              )
               .toList(growable: false);
     _memoBranchesListIdentity = branches;
     _memoFilterQuery = q;
@@ -653,7 +659,7 @@ class _SalesBranchSheetCheckboxRow extends StatelessWidget {
         ],
         Expanded(
           child: Text(
-            branch.name,
+            _branchPrimaryName(branch),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(color: nameColor),
@@ -700,4 +706,12 @@ Color _salesBranchNameColor(
     AgentConnectionStatus.online ||
     AgentConnectionStatus.unknown => scheme.onSurface,
   };
+}
+
+String _branchPrimaryName(OverviewAgentOption branch) {
+  return resolveAppBranchDisplayModel(fallbackName: branch.name).primaryName;
+}
+
+String _branchSearchTokens(OverviewAgentOption branch) {
+  return resolveAppBranchDisplayModel(fallbackName: branch.name).searchTokens;
 }

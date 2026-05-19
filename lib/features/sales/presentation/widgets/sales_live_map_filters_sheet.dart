@@ -4,6 +4,8 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
+import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
@@ -408,7 +410,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
   }
 }
 
-class _BranchSelectionPanel extends StatelessWidget {
+class _BranchSelectionPanel extends StatefulWidget {
   const _BranchSelectionPanel({
     required this.l10n,
     required this.branches,
@@ -430,13 +432,54 @@ class _BranchSelectionPanel extends StatelessWidget {
   final VoidCallback onClearSelection;
 
   @override
+  State<_BranchSelectionPanel> createState() => _BranchSelectionPanelState();
+}
+
+class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  String? get _normalizedQuery =>
+      AppLocationLookupNormalizer.normalizeAddressLine(_searchController.text);
+
+  List<SalesLiveMapBranchOption> get _filteredBranches {
+    final normalizedQuery = _normalizedQuery;
+    final branches = widget.branches;
+    if (normalizedQuery == null || normalizedQuery.isEmpty) {
+      return branches;
+    }
+    return branches.where((branch) {
+      final searchTokens = resolveAppBranchDisplayModel(
+        registrationName: branch.registrationName,
+        fantasyName: branch.fantasyName,
+        fallbackName: branch.registrationName,
+        extraSearchTerms: <String>[
+          branch.city,
+          branch.uf,
+          branch.agentName,
+        ],
+      ).searchTokens;
+      final normalizedTokens = AppLocationLookupNormalizer.normalizeAddressLine(
+        searchTokens,
+      );
+      return normalizedTokens?.contains(normalizedQuery) ?? false;
+    }).toList(growable: false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    if (branches.isEmpty) {
+    final filteredBranches = _filteredBranches;
+    if (widget.branches.isEmpty) {
       return AppInlineErrorPanel(
         tone: AppInlinePanelTone.informational,
-        message: l10n.salesLiveMapBranchesLoadBeforeSelection,
+        message: widget.l10n.salesLiveMapBranchesLoadBeforeSelection,
       );
     }
 
@@ -451,34 +494,57 @@ class _BranchSelectionPanel extends StatelessWidget {
             runSpacing: tokens.gapXs,
             children: <Widget>[
               TextButton.icon(
-                onPressed: onSelectAllBranches,
+                onPressed: widget.onSelectAllBranches,
                 icon: const Icon(Icons.done_all_rounded),
-                label: Text(l10n.salesLiveMapSelectAllTokenBacked),
+                label: Text(widget.l10n.salesLiveMapSelectAllTokenBacked),
               ),
               TextButton.icon(
-                onPressed: selectedBranchIds.isEmpty ? null : onClearSelection,
+                onPressed: widget.selectedBranchIds.isEmpty
+                    ? null
+                    : widget.onClearSelection,
                 icon: const Icon(Icons.remove_done_rounded),
-                label: Text(l10n.salesLiveMapClearSelection),
+                label: Text(widget.l10n.salesLiveMapClearSelection),
               ),
             ],
           ),
           SizedBox(height: tokens.gapXs),
-          for (final branch in branches)
-            CheckboxListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              value: selectedBranchIds.contains(branch.branchRef),
-              onChanged: (checked) => onChanged(
-                branch: branch,
-                checked: checked,
+          AppTextField(
+            controller: _searchController,
+            hintText: widget.l10n.brazilStoreSalesMapSidebarSearchPlaceholder,
+            prefixIcon: Icons.search_rounded,
+            density: AppTextFieldDensity.compact,
+            semanticsLabel:
+                widget.l10n.brazilStoreSalesMapSidebarSearchSemanticsLabel,
+            textInputAction: TextInputAction.search,
+            onChanged: (_) => setState(() {}),
+          ),
+          SizedBox(height: tokens.gapSm),
+          if (filteredBranches.isEmpty)
+            AppInlineErrorPanel(
+              tone: AppInlinePanelTone.informational,
+              message: widget.l10n.brazilStoreSalesMapSidebarSearchEmptyStateMessage,
+            )
+          else
+            for (final branch in filteredBranches)
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                value: widget.selectedBranchIds.contains(branch.branchRef),
+                onChanged: (checked) => widget.onChanged(
+                  branch: branch,
+                  checked: checked,
+                ),
+                title: Text(
+                  resolveAppBranchDisplayModel(
+                    registrationName: branch.registrationName,
+                    fantasyName: branch.fantasyName,
+                    fallbackName: branch.registrationName,
+                  ).primaryName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: _BranchSelectionSubtitle(branch: branch),
               ),
-              title: Text(
-                branch.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: _BranchSelectionSubtitle(branch: branch),
-            ),
         ],
       ),
     );
@@ -494,11 +560,25 @@ class _BranchSelectionSubtitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final display = resolveAppBranchDisplayModel(
+      registrationName: branch.registrationName,
+      fantasyName: branch.fantasyName,
+      fallbackName: branch.registrationName,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
+        if (display.secondaryName != null)
+          Text(
+            display.secondaryName!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
         Text(
           AppLocalizations.of(context).salesLiveMapFilterBranchSummaryLine(
             branch.city,

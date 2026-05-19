@@ -369,6 +369,8 @@
   "overviewKpiTotalRevenue": "Total revenue",
   "overviewKpiSales": "Sales",
   "overviewKpiAvgTicket": "Average ticket",
+  "overviewUserRankingChartSemanticsExtra": "Each bar shows total revenue and average ticket for that operator.",
+  "@overviewUserRankingChartSemanticsExtra": {"description": "Screen reader context for the overview operator ranking bar chart (revenue plus average ticket)."},
   "overviewKpiPaymentMethodCount": "Payment methods",
   "overviewPaymentMixTitle": "Mix by payment method",
   "overviewPaymentMixSubtitle": "Percentage share of revenue in the period.",

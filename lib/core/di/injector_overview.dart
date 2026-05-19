@@ -1,6 +1,7 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_por_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
@@ -38,6 +39,8 @@ void registerInjectorOverview(GetIt getIt) {
         localDataSource: getIt<OverviewLocalDataSource>(),
         resumoAcrossAgentsRepository:
             getIt<ResumoParcelaFormaPagamentoAcrossAgentsRepository>(),
+        loadResumoParcelaPorUsuarioAcrossAgents:
+            getIt<LoadResumoParcelaPorUsuarioAcrossAgentsUseCase>(),
         loadResumoParcelasMensalAcrossAgents:
             getIt<LoadResumoParcelasMensalAcrossAgentsUseCase>(),
         loadResumoParcelasDiaSemanaAcrossAgents:

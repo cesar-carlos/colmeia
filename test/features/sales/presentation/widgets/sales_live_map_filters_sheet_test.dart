@@ -32,7 +32,7 @@ void main() {
                     agentName: 'Agent 1',
                     codEmpresa: 1,
                     codFilial: 1,
-                    name: 'Branch 1',
+                    registrationName: 'Branch 1',
                     city: 'Sinop',
                     uf: 'MT',
                   ),
@@ -54,9 +54,9 @@ void main() {
     );
   });
 
-  testWidgets('applies selected municipality detail and marker visual', (
-    tester,
-  ) async {
+  testWidgets(
+    'applies municipality detail and marker visual from the current selection',
+    (tester) async {
     SalesLiveMapFilter? appliedFilter;
 
     await tester.pumpWidget(
@@ -83,12 +83,15 @@ void main() {
                     agentName: 'Branch with token',
                     codEmpresa: 1,
                     codFilial: 1,
-                    name: 'Branch with token',
+                    registrationName: 'Branch with token',
                     city: 'Sinop',
                     uf: 'MT',
                   ),
                 ],
-                initialFilter: const SalesLiveMapFilter(),
+                initialFilter: const SalesLiveMapFilter(
+                  detailLevel: SalesLiveMapMapDetail.municipalities,
+                  markerVisual: SalesLiveMapMarkerVisual.bubble,
+                ),
                 onApply: (filter) => appliedFilter = filter,
               ),
             );
@@ -97,18 +100,62 @@ void main() {
       ),
     );
 
-    await tester.scrollUntilVisible(find.text('Cities'), 240);
-    await tester.tap(find.text('Cities'));
-    await tester.pump();
-    await tester.scrollUntilVisible(find.text('Bubbles'), 240);
-    await tester.tap(find.text('Bubbles'));
-    await tester.pump();
     await tester.tap(find.text('Apply filters'));
     await tester.pump();
 
     expect(appliedFilter?.detailLevel, SalesLiveMapMapDetail.municipalities);
     expect(appliedFilter?.markerVisual, SalesLiveMapMarkerVisual.bubble);
   });
+
+  testWidgets(
+    'shows fantasy as secondary info and finds branches by fantasy search',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: SalesLiveMapFiltersSheet(
+                  l10n: AppLocalizations.of(context),
+                  availableAgents: const <OverviewAgentOption>[
+                    OverviewAgentOption(agentId: 'agent-1', name: 'Agent 1'),
+                  ],
+                  availableBranches: const <SalesLiveMapBranchOption>[
+                    SalesLiveMapBranchOption(
+                      id: 'agent-1-1-1',
+                      agentId: 'agent-1',
+                      agentName: 'Agent 1',
+                      codEmpresa: 1,
+                      codFilial: 1,
+                      registrationName: 'Filial Centro',
+                      fantasyName: 'Casa do Mel Centro',
+                      city: 'Sinop',
+                      uf: 'MT',
+                    ),
+                  ],
+                  initialFilter: const SalesLiveMapFilter(),
+                  onApply: (_) {},
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      expect(find.text('Filial Centro'), findsOneWidget);
+      expect(find.text('Casa do Mel Centro'), findsOneWidget);
+
+      await tester.enterText(find.byType(EditableText).first, 'Casa do Mel');
+      await tester.pump();
+
+      expect(find.text('Filial Centro'), findsOneWidget);
+      expect(find.text('Casa do Mel Centro'), findsOneWidget);
+    },
+  );
 
   testWidgets('applies selected branch ids and matching agent ids', (
     tester,
@@ -137,7 +184,7 @@ void main() {
                     agentName: 'Agent 1',
                     codEmpresa: 1,
                     codFilial: 1,
-                    name: 'Branch 1',
+                    registrationName: 'Branch 1',
                     city: 'Sinop',
                     uf: 'MT',
                   ),
@@ -147,7 +194,7 @@ void main() {
                     agentName: 'Agent 2',
                     codEmpresa: 1,
                     codFilial: 2,
-                    name: 'Branch 2',
+                    registrationName: 'Branch 2',
                     city: 'Cuiaba',
                     uf: 'MT',
                   ),

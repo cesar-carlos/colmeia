@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
+import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 
@@ -14,6 +15,7 @@ class AppBrazilStoreSalesVisibleBranchListItem {
     required this.id,
     required this.point,
     required this.displayName,
+    required this.secondaryDisplayName,
     required this.cityUfLabel,
     required this.searchIndexText,
     required this.salesAmount,
@@ -24,6 +26,7 @@ class AppBrazilStoreSalesVisibleBranchListItem {
   final String id;
   final AppBrazilStoreSalesPoint point;
   final String displayName;
+  final String? secondaryDisplayName;
   final String cityUfLabel;
   final String searchIndexText;
   final double salesAmount;
@@ -343,7 +346,7 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
     final entries = <AppBrazilStoreSalesVisibleBranchListItem>[
       for (final point in points)
         () {
-          final displayName = _displayNameForPoint(
+          final display = _displayForPoint(
             point,
             defaultBranchName: defaultBranchName,
           );
@@ -351,11 +354,17 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
           return AppBrazilStoreSalesVisibleBranchListItem(
             id: point.id,
             point: point,
-            displayName: displayName,
+            displayName: display.primaryName,
+            secondaryDisplayName: display.secondaryName,
             cityUfLabel: cityUfLabel,
             searchIndexText:
                 AppLocationLookupNormalizer.normalizeAddressLine(
-                  '$displayName $cityUfLabel',
+                  resolveAppBranchDisplayModel(
+                    registrationName: point.branchName,
+                    fantasyName: point.fantasyName,
+                    fallbackName: point.name,
+                    extraSearchTerms: <String>[cityUfLabel],
+                  ).searchTokens,
                 ) ??
                 point.id,
             salesAmount: point.salesAmount,
@@ -393,13 +402,15 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
     return AppBrazilStoreSalesVisibleBranchListItemState.regular;
   }
 
-  static String _displayNameForPoint(
+  static AppBranchDisplayModel _displayForPoint(
     AppBrazilStoreSalesPoint point, {
     required String defaultBranchName,
   }) {
-    return _trimmedOrNull(point.fantasyName) ??
-        _trimmedOrNull(point.name) ??
-        defaultBranchName;
+    return resolveAppBranchDisplayModel(
+      registrationName: point.branchName,
+      fantasyName: point.fantasyName,
+      fallbackName: _trimmedOrNull(point.name) ?? defaultBranchName,
+    );
   }
 
   static String _cityUfLabelForPoint(AppBrazilStoreSalesPoint point) {

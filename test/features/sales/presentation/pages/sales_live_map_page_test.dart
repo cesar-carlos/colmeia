@@ -1107,8 +1107,14 @@ void main() {
       await tester.tap(find.byIcon(Icons.filter_list_rounded));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(Checkbox).at(1));
+      await tester.scrollUntilVisible(
+        find.text('Branch Two'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(find.text('Branch Two'));
       await tester.pump();
+      await tester.ensureVisible(find.text('Apply filters'));
       await tester.tap(find.text('Apply filters'));
       await tester.pumpAndSettle();
 
@@ -1313,7 +1319,7 @@ SalesLiveMapLoadResult _twoBranchLoadedResult() {
         agentName: 'Branch One',
         codEmpresa: 1,
         codFilial: 1,
-        name: 'Branch One',
+        registrationName: 'Branch One',
         city: 'Cuiaba',
         uf: 'MT',
       ),
@@ -1323,7 +1329,7 @@ SalesLiveMapLoadResult _twoBranchLoadedResult() {
         agentName: 'Branch One',
         codEmpresa: 1,
         codFilial: 2,
-        name: 'Branch Two',
+        registrationName: 'Branch Two',
         city: 'Sinop',
         uf: 'MT',
       ),
@@ -1365,7 +1371,7 @@ SalesLiveMapLoadResult _loadedResult() {
         agentName: 'Branch One',
         codEmpresa: 1,
         codFilial: 1,
-        name: 'Branch One',
+        registrationName: 'Branch One',
         city: 'Cuiaba',
         uf: 'MT',
       ),
@@ -1408,7 +1414,7 @@ SalesLiveMapLoadResult _pendingMapResult() {
         agentName: 'Branch One',
         codEmpresa: 1,
         codFilial: 1,
-        name: 'Branch One',
+        registrationName: 'Branch One',
         city: 'Cuiaba',
         uf: 'MT',
       ),
@@ -1451,7 +1457,7 @@ SalesLiveMapLoadResult _partialUnmappedResult() {
         agentName: 'Agent One',
         codEmpresa: 1,
         codFilial: 1,
-        name: 'Branch One',
+        registrationName: 'Branch One',
         city: 'Cuiaba',
         uf: 'MT',
       ),
@@ -1461,7 +1467,7 @@ SalesLiveMapLoadResult _partialUnmappedResult() {
         agentName: 'Agent Two',
         codEmpresa: 1,
         codFilial: 2,
-        name: 'Branch Without Coordinates',
+        registrationName: 'Branch Without Coordinates',
         city: 'Unknown City',
         uf: 'MT',
       ),
@@ -1473,7 +1479,7 @@ SalesLiveMapLoadResult _partialUnmappedResult() {
         agentName: 'Agent Two',
         codEmpresa: 1,
         codFilial: 2,
-        name: 'Branch Without Coordinates',
+        registrationName: 'Branch Without Coordinates',
         city: 'Unknown City',
         uf: 'MT',
       ),
@@ -1515,7 +1521,7 @@ SalesLiveMapLoadResult _partialNoSalesResult() {
         agentName: 'Agent One',
         codEmpresa: 1,
         codFilial: 1,
-        name: 'Branch One',
+        registrationName: 'Branch One',
         city: 'Cuiaba',
         uf: 'MT',
       ),
@@ -1563,7 +1569,7 @@ SalesLiveMapLoadResult _partialUnavailableSalesResult() {
         agentName: 'Agent One',
         codEmpresa: 1,
         codFilial: 1,
-        name: 'Branch One',
+        registrationName: 'Branch One',
         city: 'Cuiaba',
         uf: 'MT',
       ),

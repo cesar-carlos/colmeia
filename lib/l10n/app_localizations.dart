@@ -1363,6 +1363,12 @@ abstract class AppLocalizations {
   /// **'Average ticket'**
   String get overviewKpiAvgTicket;
 
+  /// Screen reader context for the overview operator ranking bar chart (revenue plus average ticket).
+  ///
+  /// In en, this message translates to:
+  /// **'Each bar shows total revenue and average ticket for that operator.'**
+  String get overviewUserRankingChartSemanticsExtra;
+
   /// No description provided for @overviewKpiPaymentMethodCount.
   ///
   /// In en, this message translates to:

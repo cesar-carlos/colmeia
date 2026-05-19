@@ -7,6 +7,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
+import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
@@ -2068,26 +2069,32 @@ int _compareBranchPoints(
 }
 
 String _branchOrdinalName(AppBrazilStoreSalesPoint point) {
-  return _trimmedOrNull(point.fantasyName) ??
-      _trimmedOrNull(point.name) ??
-      point.id;
+  return _branchDisplayModel(point).primaryName;
 }
 
 String _branchDisplayNameUi(
   BuildContext context,
   AppBrazilStoreSalesPoint point,
 ) {
-  return _trimmedOrNull(point.fantasyName) ??
-      _trimmedOrNull(point.name) ??
-      AppLocalizations.of(context).brazilStoreSalesMapDefaultBranchName;
+  return resolveAppBranchDisplayModel(
+    registrationName: point.branchName,
+    fantasyName: point.fantasyName,
+    fallbackName:
+        _trimmedOrNull(point.name) ??
+        AppLocalizations.of(context).brazilStoreSalesMapDefaultBranchName,
+  ).primaryName;
 }
 
 String? _branchNameLabel(AppBrazilStoreSalesPoint point) {
-  final branchName = _trimmedOrNull(point.branchName);
-  if (branchName == null || branchName == _branchOrdinalName(point)) {
-    return null;
-  }
-  return branchName;
+  return _branchDisplayModel(point).secondaryName;
+}
+
+AppBranchDisplayModel _branchDisplayModel(AppBrazilStoreSalesPoint point) {
+  return resolveAppBranchDisplayModel(
+    registrationName: point.branchName,
+    fantasyName: point.fantasyName,
+    fallbackName: _trimmedOrNull(point.name) ?? point.id,
+  );
 }
 
 String _agentChipLabel(AppLocalizations l10n, String agentName) {

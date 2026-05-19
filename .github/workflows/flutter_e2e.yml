@@ -119,6 +119,7 @@ jobs:
           flutter test
           test/integration/e2e/agent_sql_bridge_e2e_test.dart
           test/integration/e2e/overview_batch_loader_e2e_test.dart
+          test/integration/e2e/resumo_parcela_por_usuario_repository_e2e_test.dart
           --concurrency=1
           --reporter expanded
           $DART_DEFINES

@@ -42,8 +42,8 @@ void main() {
       selectedStoreId: 'store-1',
     );
 
-    expect(find.text('Casa do Mel'), findsOneWidget);
     expect(find.text('Casa do Mel Matriz'), findsOneWidget);
+    expect(find.text('Casa do Mel'), findsOneWidget);
     expect(find.text('Empresa 1 - Filial 1'), findsNothing);
     expect(find.text('Filial Tangara'), findsOneWidget);
     expect(find.text(r'R$ 84.246,26'), findsOneWidget);
@@ -106,6 +106,8 @@ void main() {
         find.text(r'2 filiais visiveis · R$ 14.000,00'),
         findsOneWidget,
       );
+      expect(find.text('Filial Sao Paulo'), findsOneWidget);
+      expect(find.text('Filial Cuiaba'), findsOneWidget);
       expect(find.text('Mel Sao Paulo'), findsOneWidget);
       expect(find.text('Mel Cuiaba'), findsOneWidget);
       expect(find.text('Sao Paulo / SP'), findsOneWidget);
@@ -113,8 +115,8 @@ void main() {
       expect(find.text(r'R$ 9.800,00'), findsOneWidget);
       expect(find.text(r'R$ 4.200,00'), findsOneWidget);
 
-      final saoPauloTop = tester.getTopLeft(find.text('Mel Sao Paulo')).dy;
-      final cuiabaTop = tester.getTopLeft(find.text('Mel Cuiaba')).dy;
+      final saoPauloTop = tester.getTopLeft(find.text('Filial Sao Paulo')).dy;
+      final cuiabaTop = tester.getTopLeft(find.text('Filial Cuiaba')).dy;
       expect(saoPauloTop, lessThan(cuiabaTop));
       final sidebarRect = tester.getRect(
         find.byKey(
@@ -150,7 +152,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Mel Cuiaba'), findsWidgets);
+      expect(find.text('Filial Cuiaba'), findsWidgets);
       final selectedCard = find.descendant(
         of: cuiabaItem,
         matching: find.byType(DecoratedBox),
@@ -486,13 +488,14 @@ void main() {
         find.byKey(
           const ValueKey<String>('brazil-store-sales-map-sidebar-search'),
         ),
-        'porto',
+        'mel sul',
       );
       await tester.pump();
 
+      expect(find.text('Filial Porto Alegre'), findsOneWidget);
       expect(find.text('Mel Sul'), findsOneWidget);
-      expect(find.text('Mel Sao Paulo'), findsNothing);
-      expect(find.text('Mel Cuiaba'), findsNothing);
+      expect(find.text('Filial Sao Paulo'), findsNothing);
+      expect(find.text('Filial Cuiaba'), findsNothing);
       expect(find.text('1 filial visivel'), findsOneWidget);
       expect(find.text(r'Total no recorte: R$ 7.300,00'), findsOneWidget);
     },
@@ -873,7 +876,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Casa do Mel Jardim'), findsOneWidget);
+    expect(find.text('Jardim'), findsOneWidget);
     expect(find.text('Tangara da Serra / MT'), findsOneWidget);
     expect(find.text(r'R$ 24.246,26'), findsOneWidget);
     expect(find.text('468 vendas'), findsOneWidget);
@@ -915,7 +918,7 @@ void main() {
       find.byKey(const ValueKey<String>('brazil-store-sales-branch-card')),
       findsOneWidget,
     );
-    expect(find.text('Mel Sinop'), findsOneWidget);
+    expect(find.text('Filial cadastro'), findsOneWidget);
     expect(find.text('Sinop / MT'), findsOneWidget);
     expect(find.text(r'R$ 3.421,77'), findsOneWidget);
     expect(find.text('64 vendas'), findsOneWidget);
@@ -948,6 +951,7 @@ void main() {
     final gesture = await _hoverFirstStoreMarker(tester);
     addTearDown(gesture.removePointer);
 
+    expect(find.text('Filial sem venda disponivel'), findsOneWidget);
     expect(find.text('Mel Sinop'), findsOneWidget);
     expect(find.text('0 vendas'), findsOneWidget);
     expect(find.text('Vendas indisponiveis'), findsOneWidget);
@@ -977,6 +981,7 @@ void main() {
     final gesture = await _hoverFirstStoreMarker(tester);
     addTearDown(gesture.removePointer);
 
+    expect(find.text('Filial carregando'), findsOneWidget);
     expect(find.text('Mel Sinop'), findsOneWidget);
     expect(find.text('Carregando vendas'), findsOneWidget);
     expect(find.text(r'R$ 0,00'), findsNothing);
@@ -1025,7 +1030,7 @@ void main() {
     final gesture = await _hoverFirstStoreMarker(tester);
     addTearDown(gesture.removePointer);
 
-    expect(find.text('Mel Centro'), findsOneWidget);
+    expect(find.text('Matriz'), findsOneWidget);
     expect(find.text('1 de 2'), findsWidgets);
 
     await tester.tap(
@@ -1033,7 +1038,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Mel Norte'), findsOneWidget);
+    expect(find.text('Filial 2'), findsOneWidget);
     expect(find.text(r'R$ 1.421,77'), findsOneWidget);
     expect(find.text('44 vendas'), findsOneWidget);
     expect(find.text('2 de 2'), findsWidgets);
@@ -1148,11 +1153,11 @@ void main() {
 
     final gesture = await _hoverFirstStoreMarker(tester);
     addTearDown(gesture.removePointer);
-    expect(find.text('Mel Centro'), findsOneWidget);
+    expect(find.text('Matriz'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump();
-    expect(find.text('Mel Norte'), findsOneWidget);
+    expect(find.text('Filial 2'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
@@ -1192,6 +1197,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 220));
 
     expect(cardFinder, findsOneWidget);
+    expect(find.text('Filial cadastro'), findsOneWidget);
     expect(find.text('Mel Sinop'), findsOneWidget);
   });
 

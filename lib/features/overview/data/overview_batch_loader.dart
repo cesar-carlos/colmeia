@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/application/orchestration/agent_q
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model.dart';
+import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_por_usuario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_dia_semana_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_dia_semana_usuario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_mensal_row_model.dart';
@@ -12,6 +13,7 @@ import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_
 import 'package:colmeia/features/agent_queries/data/models/resumo_total_diario_vendas_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
@@ -29,6 +31,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
@@ -43,6 +46,10 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/overview/data/overview_sql_batch_item_rows_mapper.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:result_dart/result_dart.dart';
+
+/// SQL commands in the overview main batch before section-only batches
+/// (payment-method resumo + per-user resumo for rankings).
+const int _overviewBatchMainCommandCount = 2;
 
 final class OverviewBatchLoadResult {
   const OverviewBatchLoadResult({
@@ -81,6 +88,7 @@ final class OverviewBatchTargetResult {
     required this.target,
     required this.elapsedMs,
     this.mainRows = const <ResumoParcelaFormaPagamentoRow>[],
+    this.userRankingRows = const <ResumoParcelaPorUsuarioRow>[],
     this.monthlyRows = const <ResumoParcelasMensalRow>[],
     this.weekdayRows = const <ResumoParcelasDiaSemanaRow>[],
     this.dailyRows = const <ResumoTotalDiarioVendasRow>[],
@@ -89,6 +97,7 @@ final class OverviewBatchTargetResult {
     this.lucratividadeMensalRows =
         const <ResumoProdutoVendaLucratividadeMensalRow>[],
     this.mainFailure,
+    this.userRankingFailure,
     this.monthlyFailure,
     this.weekdayFailure,
     this.dailyFailure,
@@ -100,6 +109,7 @@ final class OverviewBatchTargetResult {
   final AgentQueryTarget target;
   final int elapsedMs;
   final List<ResumoParcelaFormaPagamentoRow> mainRows;
+  final List<ResumoParcelaPorUsuarioRow> userRankingRows;
   final List<ResumoParcelasMensalRow> monthlyRows;
   final List<ResumoParcelasDiaSemanaRow> weekdayRows;
   final List<ResumoTotalDiarioVendasRow> dailyRows;
@@ -107,6 +117,7 @@ final class OverviewBatchTargetResult {
   final List<ResumoProdutoVendaLucratividadeRow> lucratividadeRows;
   final List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalRows;
   final AppFailure? mainFailure;
+  final AppFailure? userRankingFailure;
   final AppFailure? monthlyFailure;
   final AppFailure? weekdayFailure;
   final AppFailure? dailyFailure;
@@ -116,6 +127,7 @@ final class OverviewBatchTargetResult {
 
   bool get hasAnyFailure =>
       mainFailure != null ||
+      userRankingFailure != null ||
       monthlyFailure != null ||
       weekdayFailure != null ||
       dailyFailure != null ||
@@ -135,6 +147,7 @@ final class OverviewBatchTargetResult {
 final class _OverviewBatchCommandIndexes {
   const _OverviewBatchCommandIndexes({
     required this.main,
+    required this.userRanking,
     required this.monthly,
     required this.weekday,
     required this.daily,
@@ -144,6 +157,7 @@ final class _OverviewBatchCommandIndexes {
   });
 
   final int main;
+  final int userRanking;
   final int monthly;
   final int weekday;
   final int daily;
@@ -153,9 +167,13 @@ final class _OverviewBatchCommandIndexes {
 }
 
 final class _OverviewMainBatchCommandIndexes {
-  const _OverviewMainBatchCommandIndexes({required this.main});
+  const _OverviewMainBatchCommandIndexes({
+    required this.main,
+    required this.userRanking,
+  });
 
   final int main;
+  final int userRanking;
 }
 
 final class _OverviewSectionBatchCommandIndexes {
@@ -513,9 +531,25 @@ class OverviewBatchLoader {
         executionOrder: main,
       ),
     );
+    final userRanking = commands.length;
+    commands.add(
+      AgentSqlExecuteBatchCommand(
+        sql: ResumoParcelaPorUsuarioSql.query,
+        namedParams: _parcelPeriodSqlParamsFromPeriodo(
+          ResumoParcelasPeriodoFilter(
+            dataVendaInicio: periodStart,
+            dataVendaFim: periodEnd,
+          ),
+        ),
+        executionOrder: userRanking,
+      ),
+    );
     return _OverviewMainBatchCommands(
       commands: commands,
-      indexes: _OverviewMainBatchCommandIndexes(main: main),
+      indexes: _OverviewMainBatchCommandIndexes(
+        main: main,
+        userRanking: userRanking,
+      ),
     );
   }
 
@@ -535,7 +569,10 @@ class OverviewBatchLoader {
       dailyTotalFilter: dailyTotalFilter,
       includeLucratividadeMensal: includeLucratividadeMensal,
     );
-    final commands = full.commands.skip(1).toList(growable: false);
+    final commands = full.commands
+        .skip(_overviewBatchMainCommandCount)
+        .toList(growable: false);
+    const mainOffset = _overviewBatchMainCommandCount;
     for (var i = 0; i < commands.length; i++) {
       final command = commands[i];
       commands[i] = AgentSqlExecuteBatchCommand(
@@ -547,14 +584,14 @@ class OverviewBatchLoader {
     return _OverviewSectionBatchCommands(
       commands: commands,
       indexes: _OverviewSectionBatchCommandIndexes(
-        monthly: full.indexes.monthly - 1,
-        weekday: full.indexes.weekday - 1,
-        daily: full.indexes.daily - 1,
-        weekdayUser: full.indexes.weekdayUser - 1,
-        lucratividade: full.indexes.lucratividade - 1,
+        monthly: full.indexes.monthly - mainOffset,
+        weekday: full.indexes.weekday - mainOffset,
+        daily: full.indexes.daily - mainOffset,
+        weekdayUser: full.indexes.weekdayUser - mainOffset,
+        lucratividade: full.indexes.lucratividade - mainOffset,
         lucratividadeMensal: full.indexes.lucratividadeMensal == null
             ? null
-            : full.indexes.lucratividadeMensal! - 1,
+            : full.indexes.lucratividadeMensal! - mainOffset,
       ),
     );
   }
@@ -586,6 +623,15 @@ class OverviewBatchLoader {
       ResumoParcelaFormaPagamentoSql.query,
       _parcelPeriodSqlParamsFromPeriodo(
         ResumoParcelaFormaPagamentoFilter(
+          dataVendaInicio: periodStart,
+          dataVendaFim: periodEnd,
+        ),
+      ),
+    );
+    final userRanking = add(
+      ResumoParcelaPorUsuarioSql.query,
+      _parcelPeriodSqlParamsFromPeriodo(
+        ResumoParcelasPeriodoFilter(
           dataVendaInicio: periodStart,
           dataVendaFim: periodEnd,
         ),
@@ -640,6 +686,7 @@ class OverviewBatchLoader {
       commands: commands,
       indexes: _OverviewBatchCommandIndexes(
         main: main,
+        userRanking: userRanking,
         monthly: monthly,
         weekday: weekday,
         daily: daily,
@@ -750,12 +797,19 @@ class OverviewBatchLoader {
       indexes.main,
       (row) => ResumoParcelaFormaPagamentoRowModel.fromMap(row).toEntity(),
     );
+    final userRanking = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
+      byIndex,
+      indexes.userRanking,
+      (row) => ResumoParcelaPorUsuarioRowModel.fromMap(row).toEntity(),
+    );
 
     return OverviewBatchTargetResult(
       target: target,
       elapsedMs: elapsedMs,
       mainRows: main.rows,
+      userRankingRows: userRanking.rows,
       mainFailure: main.failure,
+      userRankingFailure: userRanking.failure,
     );
   }
 
@@ -843,6 +897,7 @@ class OverviewBatchLoader {
             target: main.target,
             elapsedMs: main.elapsedMs + sections.elapsedMs,
             mainRows: main.mainRows,
+            userRankingRows: main.userRankingRows,
             monthlyRows: sections.monthlyRows,
             weekdayRows: sections.weekdayRows,
             dailyRows: sections.dailyRows,
@@ -850,6 +905,7 @@ class OverviewBatchLoader {
             lucratividadeRows: sections.lucratividadeRows,
             lucratividadeMensalRows: sections.lucratividadeMensalRows,
             mainFailure: main.mainFailure,
+            userRankingFailure: main.userRankingFailure,
             monthlyFailure: sections.monthlyFailure,
             weekdayFailure: sections.weekdayFailure,
             dailyFailure: sections.dailyFailure,

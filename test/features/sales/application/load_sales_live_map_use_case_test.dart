@@ -228,6 +228,7 @@ void main() {
     check(result.totalBranchCount).equals(1);
     check(result.mappedBranchCount).equals(1);
     check(result.mappedMunicipalityCount).equals(1);
+    check(result.branchOptions.single.name).equals('Cadastro matriz');
     check(result.branchOptions.map((branch) => branch.id).toList()).deepEquals(
       <String>['agent-a-1-1'],
     );
@@ -329,7 +330,7 @@ void main() {
     check(result.noSalesBranchCount).equals(1);
     check(result.salesUnavailableBranchCount).equals(0);
     check(result.points.single.salesDataUnavailable).isFalse();
-    check(result.branchOptions.single.name).equals('Loja matriz');
+    check(result.branchOptions.single.name).equals('Cadastro sem venda');
   });
 
   test(

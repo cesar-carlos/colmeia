@@ -581,7 +581,7 @@ SalesLiveMapLoadResult _resultForRevenue(double revenue) {
         agentName: 'Agent One',
         codEmpresa: 1,
         codFilial: 1,
-        name: 'Branch One',
+        registrationName: 'Branch One',
         city: 'Cuiaba',
         uf: 'MT',
       ),

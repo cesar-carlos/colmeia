@@ -23,6 +23,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filte
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_kpi_grid.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
@@ -1218,7 +1219,15 @@ class _SalesLiveMapUnmappedBranchesList extends StatelessWidget {
 
   String _unmappedBranchLabel(SalesLiveMapBranchOption branch) {
     final location = '${branch.city} / ${branch.uf}';
-    return '${branch.name} - $location - ${appBranchDisplayName(branch.agentName)}';
+    final display = resolveAppBranchDisplayModel(
+      registrationName: branch.registrationName,
+      fantasyName: branch.fantasyName,
+      fallbackName: branch.registrationName,
+    );
+    final primary = display.primaryName;
+    final secondary = display.secondaryName;
+    final nameLabel = secondary == null ? primary : '$primary - $secondary';
+    return '$nameLabel - $location - ${appBranchDisplayName(branch.agentName)}';
   }
 }
 

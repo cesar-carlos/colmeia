@@ -1835,6 +1835,14 @@ class _SalesLiveMapBranchAggregate {
     return nomeFilial;
   }
 
+  String get registrationName {
+    final branch = nomeFilial.trim();
+    if (branch.isNotEmpty) {
+      return branch;
+    }
+    return name;
+  }
+
   void add(ResumoTotalVendasMunicipioFilialPeriodoRow row) {
     totalVenda += row.totalVenda;
     qtdVendas += row.qtdVendas;
@@ -1883,7 +1891,8 @@ class _SalesLiveMapBranchAggregate {
       agentName: agentName,
       codEmpresa: codEmpresa,
       codFilial: codFilial,
-      name: name,
+      registrationName: registrationName,
+      fantasyName: _trimmedOrNull(nomeFantasiaFilial),
       city: _branchCityLabel,
       uf: _branchUfLabel,
     );

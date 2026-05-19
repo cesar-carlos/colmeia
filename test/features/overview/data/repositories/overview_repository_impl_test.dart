@@ -4,6 +4,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_por_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_across_agents_use_case.dart';
@@ -21,11 +22,13 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
@@ -56,6 +59,9 @@ class _MockOverviewLocalDataSource extends Mock
 class _MockResumoAcrossAgentsRepository extends Mock
     implements ResumoParcelaFormaPagamentoAcrossAgentsRepository {}
 
+class _MockLoadResumoParcelaPorUsuarioAcrossAgents extends Mock
+    implements LoadResumoParcelaPorUsuarioAcrossAgentsUseCase {}
+
 class _MockLoadResumoParcelasMensalAcrossAgents extends Mock
     implements LoadResumoParcelasMensalAcrossAgentsUseCase {}
 
@@ -83,6 +89,8 @@ class _MockAgentQueriesRepository extends Mock
 void main() {
   late _MockOverviewLocalDataSource local;
   late _MockResumoAcrossAgentsRepository resumoAcrossAgentsRepository;
+  late _MockLoadResumoParcelaPorUsuarioAcrossAgents
+  loadResumoParcelaPorUsuarioAcrossAgents;
   late _MockLoadResumoParcelasMensalAcrossAgents
   loadResumoParcelasMensalAcrossAgents;
   late _MockLoadResumoParcelasDiaSemanaAcrossAgents
@@ -114,6 +122,12 @@ void main() {
         commands: <AgentSqlExecuteBatchCommand>[
           AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
         ],
+      ),
+    );
+    registerFallbackValue(
+      ResumoParcelasPeriodoFilter(
+        dataVendaInicio: DateTime(2026, 3, 10),
+        dataVendaFim: DateTime(2026, 4, 8),
       ),
     );
     registerFallbackValue(
@@ -167,6 +181,8 @@ void main() {
   setUp(() {
     local = _MockOverviewLocalDataSource();
     resumoAcrossAgentsRepository = _MockResumoAcrossAgentsRepository();
+    loadResumoParcelaPorUsuarioAcrossAgents =
+        _MockLoadResumoParcelaPorUsuarioAcrossAgents();
     loadResumoParcelasMensalAcrossAgents =
         _MockLoadResumoParcelasMensalAcrossAgents();
     loadResumoParcelasDiaSemanaAcrossAgents =
@@ -214,6 +230,22 @@ void main() {
           const Success<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
             <ResumoProdutoVendaLucratividadeRow>[],
           ),
+    );
+    when(
+      () => loadResumoParcelaPorUsuarioAcrossAgents(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        selectedAgentIds: any(named: 'selectedAgentIds'),
+        strategy: any(named: 'strategy'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        raceMaxSources: any(named: 'raceMaxSources'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          Success<
+            AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>,
+            AppFailure
+          >(_emptyUserPorReport()),
     );
     when(
       () => loadResumoParcelasMensalAcrossAgents(
@@ -297,6 +329,8 @@ void main() {
     return OverviewRepositoryImpl(
       localDataSource: local,
       resumoAcrossAgentsRepository: resumoAcrossAgentsRepository,
+      loadResumoParcelaPorUsuarioAcrossAgents:
+          loadResumoParcelaPorUsuarioAcrossAgents,
       loadResumoParcelasMensalAcrossAgents:
           loadResumoParcelasMensalAcrossAgents,
       loadResumoParcelasDiaSemanaAcrossAgents:
@@ -354,9 +388,10 @@ void main() {
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
               commandCount: request.commands.length,
-              rowsByIndex: request.commands.length == 1
+              rowsByIndex: request.commands.length == 2
                   ? <int, List<Map<String, dynamic>>>{
                       0: <Map<String, dynamic>>[_mainBatchRow()],
+                      1: <Map<String, dynamic>>[_userRankingBatchRow()],
                     }
                   : const <int, List<Map<String, dynamic>>>{},
             ),
@@ -394,7 +429,7 @@ void main() {
         check(capturedRequests.length).equals(2);
         check(capturedRequests[0].agentId).equals('agent-1');
         check(capturedRequests[0].clientToken).equals('token-1');
-        check(capturedRequests[0].commands.length).equals(1);
+        check(capturedRequests[0].commands.length).equals(2);
         check(capturedRequests[0].useRelay).isTrue();
         check(
           capturedRequests[0].options?.maxParallelReadOnlyBatchItems,
@@ -439,12 +474,13 @@ void main() {
           final request =
               invocation.positionalArguments.single
                   as AgentSqlExecuteBatchRequest;
-          if (request.commands.length == 1) {
+          if (request.commands.length == 2) {
             return Success<AgentSqlBatchExecutionResult, AppFailure>(
               _batchResult(
-                commandCount: 1,
+                commandCount: 2,
                 rowsByIndex: <int, List<Map<String, dynamic>>>{
                   0: <Map<String, dynamic>>[_mainBatchRow()],
+                  1: <Map<String, dynamic>>[_userRankingBatchRow()],
                 },
               ),
             );
@@ -501,7 +537,7 @@ void main() {
           () => batchAgentQueriesRepository.executeSqlBatch(any()),
         ).thenAnswer(
           (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
-            _batchResult(commandCount: 1, failedIndexes: const <int>{0}),
+            _batchResult(commandCount: 2, failedIndexes: const <int>{0}),
           ),
         );
 
@@ -563,9 +599,10 @@ void main() {
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
               commandCount: request.commands.length,
-              rowsByIndex: request.commands.length == 1
+              rowsByIndex: request.commands.length == 2
                   ? <int, List<Map<String, dynamic>>>{
                       0: <Map<String, dynamic>>[_mainBatchRow()],
+                      1: <Map<String, dynamic>>[_userRankingBatchRow()],
                     }
                   : const <int, List<Map<String, dynamic>>>{},
             ),
@@ -589,7 +626,7 @@ void main() {
           growable: false,
         );
         for (final request in requests.take(2)) {
-          check(request.commands.length).equals(1);
+          check(request.commands.length).equals(2);
         }
         for (final request in requests.skip(2)) {
           check(request.commands.length).equals(5);
@@ -627,6 +664,22 @@ void main() {
     test(
       'aggregates rows into correct KPIs and persists sorted source ids',
       () async {
+        when(
+          () => loadResumoParcelaPorUsuarioAcrossAgents(
+            userId: any(named: 'userId'),
+            filter: any(named: 'filter'),
+            selectedAgentIds: any(named: 'selectedAgentIds'),
+            strategy: any(named: 'strategy'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            raceMaxSources: any(named: 'raceMaxSources'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              Success<
+                AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>,
+                AppFailure
+              >(_aggregateUserPorReportForTwoCashiers()),
+        );
         _stubLoad(
           resumoAcrossAgentsRepository,
           Success<
@@ -696,6 +749,11 @@ void main() {
         check(overview.agentRankings.first.totalAmount).equals(1980);
         check(overview.userRankings.first.userName).equals('Caixa 01');
         check(overview.userRankings.first.totalAmount).equals(1500);
+        check(overview.userRankings.first.totalSalesCount).equals(1);
+        check(overview.userRankings.first.averageTicket).equals(1500);
+        check(overview.userRankings[1].userName).equals('Caixa 02');
+        check(overview.userRankings[1].totalSalesCount).equals(8);
+        check(overview.userRankings[1].averageTicket).equals(60);
 
         verify(
           () => loadResumoParcelasMensalAcrossAgents(
@@ -1810,6 +1868,55 @@ void _stubLoad(
   ).thenAnswer((_) async => result);
 }
 
+AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow> _emptyUserPorReport() {
+  return const AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>(
+    queryKey: AgentQueryKey.resumoParcelaPorUsuario,
+    strategy: AgentQueryExecutionStrategy.mergeAll,
+    consideredApprovedAgentCount: 0,
+    plannedTargets: <AgentQueryTarget>[],
+    missingClientTokenTargets: <AgentQueryTarget>[],
+    participants: <AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>>[],
+    totalElapsedMs: 0,
+  );
+}
+
+AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>
+_aggregateUserPorReportForTwoCashiers() {
+  return AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>(
+    queryKey: AgentQueryKey.resumoParcelaPorUsuario,
+    strategy: AgentQueryExecutionStrategy.mergeAll,
+    consideredApprovedAgentCount: 1,
+    plannedTargets: <AgentQueryTarget>[
+      _target('agent-42', name: 'Agente 42'),
+    ],
+    missingClientTokenTargets: const <AgentQueryTarget>[],
+    participants: <AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>>[
+      const AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>(
+        agentId: 'agent-42',
+        displayName: 'Agente 42',
+        rows: <ResumoParcelaPorUsuarioRow>[
+          ResumoParcelaPorUsuarioRow(
+            codEmpresa: 1,
+            codFilial: 1,
+            nomeUsuario: 'Caixa 01',
+            qtdVendas: 1,
+            valorParcela: 1500,
+          ),
+          ResumoParcelaPorUsuarioRow(
+            codEmpresa: 1,
+            codFilial: 1,
+            nomeUsuario: 'Caixa 02',
+            qtdVendas: 8,
+            valorParcela: 480,
+          ),
+        ],
+        elapsedMs: 5,
+      ),
+    ],
+    totalElapsedMs: 5,
+  );
+}
+
 AgentQueryExecutionReport<ResumoParcelasMensalRow> _emptyMensalReport() {
   return const AgentQueryExecutionReport<ResumoParcelasMensalRow>(
     queryKey: AgentQueryKey.resumoParcelasMensal,
@@ -2024,6 +2131,16 @@ AgentSqlBatchExecutionResult _batchResult({
       ),
     ),
   );
+}
+
+Map<String, dynamic> _userRankingBatchRow() {
+  return <String, dynamic>{
+    'CodEmpresa': 1,
+    'CodFilial': 1,
+    'NomeUsuario': 'Caixa',
+    'QtdVendas': 1,
+    'ValorParcela': 100.0,
+  };
 }
 
 Map<String, dynamic> _mainBatchRow() {
