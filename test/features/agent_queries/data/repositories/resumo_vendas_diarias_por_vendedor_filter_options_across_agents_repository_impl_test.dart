@@ -97,6 +97,8 @@ void main() {
         );
   });
 
+  tearDown(resetMocktailState);
+
   group('date range validation', () {
     test('should reject inverted range without resolving targets', () async {
       final result = await repository.loadVendedorOptions(
@@ -763,6 +765,12 @@ void main() {
     test(
       'uses batch query key and one filter repository call per planned target',
       () async {
+        final expectedPerAgent =
+            ResumoVendasDiariasSuggestionSqlParams.perAgentSuggestionFetchLimit(
+              mergeResultLimit:
+                  ResumoVendasDiariasSuggestionSqlParams.defaultLimit,
+              plannedTargetCount: 2,
+            );
         final targetA = _target('agent-a', clientToken: 'tok-a');
         final targetB = _target('agent-b', clientToken: 'tok-b');
         final resolution = AgentQueryTargetResolution(
@@ -845,10 +853,8 @@ void main() {
         verify(
           () => planBuilder.build(
             queryKey: AgentQueryKey.resumoVendasDiariasOptsBatch,
-            strategy: any(named: 'strategy'),
-            resolution: any(named: 'resolution'),
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            raceMaxSources: any(named: 'raceMaxSources'),
+            strategy: AgentQueryExecutionStrategy.mergeAll,
+            resolution: resolution,
           ),
         ).called(1);
         verify(
@@ -857,16 +863,9 @@ void main() {
             agentId: 'agent-a',
             dataVendaInicio: dataInicio,
             dataVendaFim: dataFim,
-            searchTerm: any(named: 'searchTerm'),
-            limit: 40,
+            limit: expectedPerAgent,
             clientToken: 'tok-a',
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: any(
-              named: 'hubConnectedFromApprovedCatalogRow',
-            ),
+            bridgeTimeoutMs: 120000,
           ),
         ).called(1);
         verify(
@@ -875,16 +874,9 @@ void main() {
             agentId: 'agent-b',
             dataVendaInicio: dataInicio,
             dataVendaFim: dataFim,
-            searchTerm: any(named: 'searchTerm'),
-            limit: 40,
+            limit: expectedPerAgent,
             clientToken: 'tok-b',
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: any(
-              named: 'hubConnectedFromApprovedCatalogRow',
-            ),
+            bridgeTimeoutMs: 120000,
           ),
         ).called(1);
         verifyNever(
