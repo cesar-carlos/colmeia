@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -32,6 +33,14 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
       _schedulePeriodicLog();
     }
   }
+
+  CachingAgentQueriesRepository? _sqlCache;
+
+  CachingAgentQueriesRepository? get sqlCache => _sqlCache;
+
+  /// Wired after the outer [CachingAgentQueriesRepository] is constructed so
+  /// periodic logs can include SQL cache counters without a DI cycle.
+  set sqlCache(CachingAgentQueriesRepository cache) => _sqlCache = cache;
 
   final AgentQueriesRepository _delegate;
   final Duration _metricsLogInterval;
@@ -225,26 +234,44 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
       }
     }
 
+    final p95ByOperation = _p95DurationMsByOperation(_metrics);
+
+    final logContext = <String, Object?>{
+      'operation': 'executeAgentSql',
+      'successCount': _successCount,
+      'failureCount': _failureCount,
+      'successRate': _successCount / (_successCount + _failureCount),
+      'avgSuccessDurationMs': averageSuccessDuration.inMilliseconds,
+      'avgFailureDurationMs': averageFailureDuration.inMilliseconds,
+      'countsByOperation': countsByOperation,
+      'countsByRoute': countsByRoute,
+      'countsByRelayMode': countsByRelayMode,
+      'avgDurationMsByRoute': _averageDurationMsByKey(
+        totals: durationByRoute,
+        counts: countsByRoute,
+      ),
+      'p95DurationMsByOperation': p95ByOperation,
+      'failuresByType': failuresByType,
+      'httpStatusCodes': statusCodes,
+      'rpcErrorCodes': rpcCodes,
+    };
+
+    final cache = _sqlCache;
+    if (cache != null) {
+      final hits = cache.cacheHits;
+      final misses = cache.cacheMisses;
+      final denom = hits + misses;
+      logContext['sqlCacheHits'] = hits;
+      logContext['sqlCacheMisses'] = misses;
+      logContext['sqlBatchCacheHits'] = cache.batchCacheHits;
+      logContext['sqlBatchCacheMisses'] = cache.batchCacheMisses;
+      logContext['sqlCacheSize'] = cache.cacheSize;
+      logContext['sqlCacheHitRate'] = denom == 0 ? null : hits / denom;
+    }
+
     AppLogger.info(
       'Agent SQL execution metrics',
-      context: <String, Object?>{
-        'operation': 'executeAgentSql',
-        'successCount': _successCount,
-        'failureCount': _failureCount,
-        'successRate': _successCount / (_successCount + _failureCount),
-        'avgSuccessDurationMs': averageSuccessDuration.inMilliseconds,
-        'avgFailureDurationMs': averageFailureDuration.inMilliseconds,
-        'countsByOperation': countsByOperation,
-        'countsByRoute': countsByRoute,
-        'countsByRelayMode': countsByRelayMode,
-        'avgDurationMsByRoute': _averageDurationMsByKey(
-          totals: durationByRoute,
-          counts: countsByRoute,
-        ),
-        'failuresByType': failuresByType,
-        'httpStatusCodes': statusCodes,
-        'rpcErrorCodes': rpcCodes,
-      },
+      context: logContext,
     );
 
     _lastLoggedAt = now;
@@ -302,6 +329,20 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
       for (final entry in totals.entries)
         entry.key: entry.value.inMilliseconds ~/ (counts[entry.key] ?? 1),
     };
+  }
+
+  static Map<String, int> _p95DurationMsByOperation(List<_MetricEntry> entries) {
+    final byOp = <String, List<int>>{};
+    for (final entry in entries) {
+      (byOp[entry.operation] ??= <int>[]).add(entry.duration.inMilliseconds);
+    }
+    final out = <String, int>{};
+    for (final e in byOp.entries) {
+      final sorted = List<int>.of(e.value)..sort();
+      final idx = (sorted.length * 0.95).ceil().clamp(1, sorted.length) - 1;
+      out[e.key] = sorted[idx];
+    }
+    return out;
   }
 }
 

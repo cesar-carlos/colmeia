@@ -15,7 +15,12 @@ import 'package:get_it/get_it.dart';
 void registerInjectorOverview(GetIt getIt) {
   getIt
     ..registerLazySingleton<OverviewLocalDataSource>(
-      () => OverviewLocalDataSource(getIt<AppCacheStore>()),
+      () => OverviewLocalDataSource(
+        getIt<AppCacheStore>(),
+        maxCacheAge: Duration(
+          milliseconds: AppEnvironment.overviewCacheMaxAgeMs,
+        ),
+      ),
     )
     ..registerLazySingleton<OverviewBatchLoader>(
       () => OverviewBatchLoader(

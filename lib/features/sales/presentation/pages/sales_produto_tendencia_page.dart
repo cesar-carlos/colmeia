@@ -10,8 +10,7 @@ import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_summary_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
@@ -206,8 +205,7 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
     required this.sessionService,
     required this.loadSalesAvailableAgentsUseCase,
     required this.resolveSalesAgentClientTokenUseCase,
-    required this.loadTrendUseCase,
-    required this.loadTrendSummaryUseCase,
+    required this.loadTrendScreenUseCase,
     required this.loadGrupoProdutoOptionsUseCase,
     required this.loadMarcaProdutoOptionsUseCase,
     super.key,
@@ -216,9 +214,7 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
   final SalesSessionService sessionService;
   final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
-  final LoadProdutoVendidoTendenciaDeVendaUseCase loadTrendUseCase;
-  final LoadProdutoVendidoTendenciaDeVendaSummaryUseCase
-  loadTrendSummaryUseCase;
+  final LoadProdutoVendidoTendenciaDeVendaScreenUseCase loadTrendScreenUseCase;
   final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
   final LoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
 
@@ -238,8 +234,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
   late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
-  late final LoadProdutoVendidoTendenciaDeVendaUseCase _loadTrend;
-  late final LoadProdutoVendidoTendenciaDeVendaSummaryUseCase _loadTrendSummary;
+  late final LoadProdutoVendidoTendenciaDeVendaScreenUseCase _loadTrendScreen;
   late final LoadGrupoProdutoOptionsUseCase _loadGrupoOptions;
   late final LoadMarcaProdutoOptionsUseCase _loadMarcaOptions;
 
@@ -281,8 +276,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     _sessionService = widget.sessionService;
     _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
     _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
-    _loadTrend = widget.loadTrendUseCase;
-    _loadTrendSummary = widget.loadTrendSummaryUseCase;
+    _loadTrendScreen = widget.loadTrendScreenUseCase;
     _loadGrupoOptions = widget.loadGrupoProdutoOptionsUseCase;
     _loadMarcaOptions = widget.loadMarcaProdutoOptionsUseCase;
     _selectedAgentId = _sessionService.selectedAgentId;
@@ -449,34 +443,23 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       periodoAnteriorFim: _periodoAnterior.end,
     );
 
-    final detailFuture = _loadTrend(
+    final screenResult = await _loadTrendScreen(
       userId: userId,
       agentId: trimmedAgentId,
-      filter: detailFilter,
+      pageFilter: detailFilter,
+      summaryFilter: summaryFilter,
       clientToken: clientToken,
     );
-    final summaryFuture = _loadTrendSummary(
-      userId: userId,
-      agentId: trimmedAgentId,
-      filter: summaryFilter,
-      clientToken: clientToken,
-    );
-    final result = await detailFuture;
-    final summaryResult = await summaryFuture;
 
     if (!mounted) {
       return;
     }
 
-    result.fold(
-      (rows) {
-        final resolvedSummary = summaryResult.fold(
-          (summaryRows) => summaryRows,
-          (_) => _buildSummaryRowsFallback(rows),
-        );
+    screenResult.fold(
+      (data) {
         setState(() {
-          _rows = rows;
-          _summaryRows = resolvedSummary;
+          _rows = data.rows;
+          _summaryRows = data.summaryRows;
           _loading = false;
           _error = null;
         });
@@ -910,28 +893,6 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       labels.add('${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel');
     }
     return labels;
-  }
-
-  List<ProdutoVendidoTendenciaDeVendaSummaryRow> _buildSummaryRowsFallback(
-    List<ProdutoVendidoTendenciaDeVendaRow> rows,
-  ) {
-    final counts = <String, int>{};
-    final impactByClassificacao = <String, double>{};
-    for (final row in rows) {
-      final key = row.classificacao.trim().toUpperCase();
-      counts[key] = (counts[key] ?? 0) + 1;
-      impactByClassificacao[key] =
-          (impactByClassificacao[key] ?? 0) + row.diferenca;
-    }
-    return counts.entries
-        .map(
-          (entry) => ProdutoVendidoTendenciaDeVendaSummaryRow(
-            classificacao: entry.key,
-            quantidadeProdutos: entry.value,
-            impactoLiquido: impactByClassificacao[entry.key] ?? 0,
-          ),
-        )
-        .toList(growable: false);
   }
 
   @override

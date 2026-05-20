@@ -104,13 +104,13 @@ void main() {
       when(() => delegate.executeSql(any())).thenAnswer((_) async {
         callCount++;
         if (callCount == 1) {
-          return Failure<AgentSqlExecutionResult, AppFailure>(
+          return const Failure<AgentSqlExecutionResult, AppFailure>(
             RpcFailure(
               message: 'Agent protocol negotiation is not ready',
               userMessage: 'Busy',
               rpcCode: null,
               retryable: false,
-              context: const <String, Object?>{
+              context: <String, Object?>{
                 'code': 'SERVICE_UNAVAILABLE',
               },
             ),

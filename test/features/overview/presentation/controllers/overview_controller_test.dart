@@ -443,6 +443,28 @@ void main() {
         ).deepEquals(<String>['Alpha', 'Bravo']);
       },
     );
+
+    test(
+      'clears isLoadingInitial after summary progressive snapshot before isFinal',
+      () async {
+        final secondStage = Completer<void>();
+        final repository = _GatedProgressiveOverviewRepository(secondStage);
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
+        );
+
+        final loadFuture = controller.loadOverview(userId: 'demo-user');
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        check(controller.isLoadingInitial).isFalse();
+        check(controller.overview).isNotNull();
+
+        secondStage.complete();
+        await loadFuture;
+        check(controller.isLoadingInitial).isFalse();
+        check(controller.hasContent).isTrue();
+      },
+    );
   });
 }
 
@@ -457,6 +479,52 @@ Overview _overviewWithAgent(String agentId, String displayName) {
       ),
     ],
   );
+}
+
+class _GatedProgressiveOverviewRepository implements OverviewRepository {
+  _GatedProgressiveOverviewRepository(this._secondStage);
+
+  final Completer<void> _secondStage;
+
+  @override
+  Future<AppResult<Overview>> loadOverview({
+    required String userId,
+    OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
+    OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
+  }) {
+    throw UnsupportedError('use loadOverviewProgressively');
+  }
+
+  @override
+  Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
+    required String userId,
+    OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
+    OverviewFilter filter = const OverviewFilter(),
+    OverviewLoadLabels? rowLabels,
+  }) async* {
+    final overview = _overview('Pix');
+    final allSections = OverviewProgressiveSection.values.toSet();
+    yield Success<OverviewProgressiveSnapshot, AppFailure>(
+      OverviewProgressiveSnapshot(
+        overview: overview,
+        completedSections: {OverviewProgressiveSection.summary},
+        pendingSections: allSections.difference({
+          OverviewProgressiveSection.summary,
+        }),
+        isFinal: false,
+      ),
+    );
+    await _secondStage.future;
+    yield Success<OverviewProgressiveSnapshot, AppFailure>(
+      OverviewProgressiveSnapshot(
+        overview: overview,
+        completedSections: allSections,
+        pendingSections: const <OverviewProgressiveSection>{},
+        isFinal: true,
+      ),
+    );
+  }
 }
 
 class _PendingOverviewRepository implements OverviewRepository {

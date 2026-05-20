@@ -29,6 +29,7 @@ class SalesLiveMapRefreshMetricEvent {
     required this.paginationStalledAgentIds,
     required this.partialFailure,
     required this.loadFailed,
+    this.partialIssueBreakdown,
   });
 
   final DateTime recordedAt;
@@ -48,6 +49,10 @@ class SalesLiveMapRefreshMetricEvent {
   final Set<String> paginationStalledAgentIds;
   final bool partialFailure;
   final bool loadFailed;
+
+  /// When [partialFailure] is true, lists which load-result flags contributed
+  /// (same keys as `partialIssueFlagBreakdown` on the live-map load result).
+  final List<String>? partialIssueBreakdown;
 
   Map<String, Object?> toLogContext() {
     return <String, Object?>{
@@ -69,6 +74,8 @@ class SalesLiveMapRefreshMetricEvent {
       ),
       'partialFailure': partialFailure,
       'loadFailed': loadFailed,
+      if (partialIssueBreakdown != null && partialIssueBreakdown!.isNotEmpty)
+        'partialIssueBreakdown': partialIssueBreakdown,
     };
   }
 }

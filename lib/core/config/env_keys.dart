@@ -47,6 +47,10 @@ abstract final class EnvKeys {
   static const String agentSqlRestMaxInflightPerAgent =
       'AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT';
 
+  /// Max age in milliseconds for the Hive-backed overview snapshot used for
+  /// offline fallback and fast home reopen. Default 30 minutes.
+  static const String overviewCacheMaxAgeMs = 'OVERVIEW_CACHE_MAX_AGE_MS';
+
   // ----- Socket channel (PR-A: infraestrutura de conexão) -----
 
   /// `rest` (default) | `socket`. Selects the agent commands transport.

@@ -14,6 +14,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_summary_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_across_agents_use_case.dart';
@@ -279,13 +280,20 @@ void _registerAgentQueriesRepositoryChain(GetIt getIt) {
             AppEnvironment.agentSqlRestMaxInflightPerAgent,
       );
 
+      final cache = chain.cachingRepository;
       AppLogger.info(
         'AgentQueriesRepository decorator chain initialized',
         context: <String, Object?>{
           'decorators': chain.decorators,
           'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
+          'agentSqlCacheTtlMs': AppEnvironment.agentSqlCacheTtlMs,
           'agentSqlRestMaxInflightPerAgent':
               AppEnvironment.agentSqlRestMaxInflightPerAgent,
+          'sqlCacheHits': cache.cacheHits,
+          'sqlCacheMisses': cache.cacheMisses,
+          'sqlBatchCacheHits': cache.batchCacheHits,
+          'sqlBatchCacheMisses': cache.batchCacheMisses,
+          'sqlCacheSize': cache.cacheSize,
         },
       );
 
@@ -423,11 +431,17 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
       getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
     ),
   );
-  getIt.registerLazySingleton<LoadProdutoVendidoTendenciaDeVendaSummaryUseCase>(
-    () => LoadProdutoVendidoTendenciaDeVendaSummaryUseCase(
-      getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
-    ),
-  );
+  getIt
+    ..registerLazySingleton<LoadProdutoVendidoTendenciaDeVendaSummaryUseCase>(
+      () => LoadProdutoVendidoTendenciaDeVendaSummaryUseCase(
+        getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
+      ),
+    )
+    ..registerLazySingleton<LoadProdutoVendidoTendenciaDeVendaScreenUseCase>(
+      () => LoadProdutoVendidoTendenciaDeVendaScreenUseCase(
+        getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
+      ),
+    );
 
   _registerSingle<
     ResumoParcelaFormaPagamentoRepository,
@@ -925,10 +939,14 @@ void _registerFilterOptionsRepositories(GetIt getIt) {
       ),
     )
     ..registerLazySingleton<
-      AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
+      AgentQueryExecutor<
+        ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
+      >
     >(
       () =>
-          AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>(
+          AgentQueryExecutor<
+            ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
+          >(
             mergeAllConcurrency: mergeAllConcurrency,
           ),
     )
@@ -1001,11 +1019,12 @@ void _registerFilterOptionsRepositories(GetIt getIt) {
     ..registerLazySingleton<
       LoadResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgentsUseCase
     >(
-      () => LoadResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgentsUseCase(
-        getIt<
-          ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository
-        >(),
-      ),
+      () =>
+          LoadResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgentsUseCase(
+            getIt<
+              ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository
+            >(),
+          ),
     );
 }
 

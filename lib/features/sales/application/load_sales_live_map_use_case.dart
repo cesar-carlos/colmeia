@@ -107,6 +107,24 @@ class SalesLiveMapLoadResult {
       noSalesAgentOptions.isNotEmpty ||
       unmappedBranchOptions.isNotEmpty ||
       mappedBranchCount < totalBranchCount;
+
+  /// Which [hasPartialIssue] predicates are true (stable keys for logs / E2E).
+  Map<String, bool> get partialIssueFlagBreakdown => <String, bool>{
+    'failedAgentCount': failedAgentCount > 0,
+    'missingClientTokenAgentCount': missingClientTokenAgentCount > 0,
+    'skippedOfflineAgentCount': skippedOfflineAgentCount > 0,
+    'rowCapReachedAgentCount': rowCapReachedAgentCount > 0,
+    'failedCatalogAgentCount': failedCatalogAgentCount > 0,
+    'failedSalesAgentCount': failedSalesAgentCount > 0,
+    'noSalesAgentOptions': noSalesAgentOptions.isNotEmpty,
+    'unmappedBranchOptions': unmappedBranchOptions.isNotEmpty,
+    'mappedBranchCountBelowTotal': mappedBranchCount < totalBranchCount,
+  };
+
+  List<String> get partialIssueActiveKeys => partialIssueFlagBreakdown.entries
+      .where((e) => e.value)
+      .map((e) => e.key)
+      .toList(growable: false);
 }
 
 enum SalesLiveMapLoadFailureReason { missingClientTokenSetup }
@@ -532,6 +550,9 @@ class LoadSalesLiveMapUseCase {
           catalogPage?.paginationStalledAgentIds ?? const <String>{},
       partialFailure: mapped.result.hasPartialIssue,
       loadFailed: mapped.result.loadFailed,
+      partialIssueBreakdown: mapped.result.hasPartialIssue
+          ? mapped.result.partialIssueActiveKeys
+          : null,
     );
     _recordRefreshMetric(metricEvent);
     _logTrace(

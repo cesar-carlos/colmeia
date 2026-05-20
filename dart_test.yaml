@@ -15,6 +15,15 @@
 # on a typical dev machine against the bundled API (hub-dependent). Command:
 #   flutter test test/integration/e2e/ --concurrency=1
 #
+# E2E env A/B (copy knobs into assets/env/local.env; change one variable per run):
+# | Run | Transport | Knob changed | Wall-clock | Notes (503, skips) |
+# |-----|-----------|--------------|------------|----------------------|
+# | 0   | rest      | (baseline)   | ~81 s      | socket smoke skipped |
+# | 1   | socket    | (baseline)   | ~89 s      | relay smoke runs      |
+# Compare both transports in one go:
+#   python tool/compare_e2e_transports.py --scope suite --transport both --timeout-seconds 180
+# Optional: E2E_LOG_TRANSIENT=1 to count negotiation/503 mappings.
+#
 # Socket + relay hits the real hub with longer tail latency than REST-only;
 # the default 30s test timeout caused false failures (tearDown disposed relay
 # while work was still in flight). Tag timeout keeps VM E2E stable.

@@ -186,6 +186,15 @@ abstract final class AppEnvironment {
         fallback: defaultAgentSqlRestMaxInflightPerAgent,
       ).clamp(0, 64);
 
+  /// Hive overview snapshot TTL for `OverviewLocalDataSource` reads.
+  static const int defaultOverviewCacheMaxAgeMs = 1800000;
+
+  static int get overviewCacheMaxAgeMs => AppEnvironmentResolution.resolveInt(
+    fromDefine: const String.fromEnvironment(EnvKeys.overviewCacheMaxAgeMs),
+    fromDotenv: _dotenvMaybe(EnvKeys.overviewCacheMaxAgeMs),
+    fallback: defaultOverviewCacheMaxAgeMs,
+  ).clamp(60000, 86400000);
+
   /// Agent bridge + client-auth data for a full stack e2e run.
   static bool get hasE2eAgentBridgeCredentials =>
       hasE2eAgentQueryCredentials && hasE2eClientLoginCredentials;

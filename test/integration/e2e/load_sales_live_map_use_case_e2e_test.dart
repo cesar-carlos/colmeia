@@ -90,6 +90,14 @@ void main() {
             expect(point.salesCount, 0);
           }
         }
+        if (result.hasPartialIssue) {
+          // E2E: surface partialIssueActiveKeys in CLI when diagnosing hub/geo data.
+          // ignore: avoid_print
+          print(
+            'E2E load_sales_live_map partialIssueActiveKeys: '
+            '${result.partialIssueActiveKeys}',
+          );
+        }
       });
     },
     tags: <String>['e2e'],

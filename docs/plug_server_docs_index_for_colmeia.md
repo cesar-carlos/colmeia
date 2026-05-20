@@ -93,3 +93,23 @@ When plug_server changes socket or bridge behavior:
 5. For REST-only fleets, validate `AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT`
    against hub rate limits and `503` / negotiation warm-up behavior (see
    `RetryingAgentQueriesRepository` cooperative retries).
+
+## Colmeia — socket production rollout checklist
+
+Use this as a gate before changing Colmeia production
+`AGENT_BRIDGE_TRANSPORT` from `rest` to `socket` (dedicated PR; do not mix with
+unrelated perf tuning):
+
+1. **E2E:** `flutter test test/integration/e2e/ --concurrency=1` green for the
+   socket profile (see `.github/workflows/flutter_e2e.yml` and
+   `tool/compare_e2e_transports.py`).
+2. **Hub / edge:** Sticky sessions for Socket.IO (nginx upstream or
+   `X-Hub-Instance-Id`); `SOCKET_CONSUMER_ROLES` and relay prerequisites per
+   `docs/configuration.md` and `docs/nginx_production.md` in plug_server.
+3. **Staging:** Flip transport in staging env; watch `503`, relay timeouts,
+   and `namespace forbidden`; compare REST vs socket wall-clock where useful.
+4. **Production:** Flip `default.env` only after sign-off; keep
+   `RestInflightAgentQueriesRepository` for REST and REST fallback paths.
+
+Optional after stable rollout: `SOCKET_BATCH_ENABLED`, relay/stream tuning
+already documented in `docs/bridge_agent_sql_api_options.md`.

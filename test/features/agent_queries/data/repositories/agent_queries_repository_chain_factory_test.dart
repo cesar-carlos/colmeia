@@ -1,7 +1,9 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_chain_factory.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_evaluation.dart';
@@ -45,10 +47,11 @@ void main() {
         remoteDataSource: _FakeAgentQueriesRemoteDataSource(),
         eligibility: _AllowingEligibility(),
         maxCacheSize: 50,
-        agentSqlRestMaxInflightPerAgent: 0,
       );
 
       check(chain.repository).isA<GatedAgentQueriesRepository>();
+      check(chain.metricsRepository).isA<MetricsAgentQueriesRepository>();
+      check(chain.cachingRepository).isA<CachingAgentQueriesRepository>();
       check(chain.decorators).deepEquals(<String>[
         'GatedAgentQueriesRepository',
         'CircuitBreakerAgentQueriesRepository',
@@ -73,6 +76,8 @@ void main() {
       );
 
       check(chain.repository).isA<GatedAgentQueriesRepository>();
+      check(chain.metricsRepository).isA<MetricsAgentQueriesRepository>();
+      check(chain.cachingRepository).isA<CachingAgentQueriesRepository>();
       check(chain.decorators).deepEquals(<String>[
         'GatedAgentQueriesRepository',
         'CircuitBreakerAgentQueriesRepository',

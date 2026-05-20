@@ -1,12 +1,18 @@
+import 'dart:convert';
+
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/cache/app_kv_cache_key_prefixes.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 
 class OverviewLocalDataSource {
-  OverviewLocalDataSource(this._cacheStore);
+  OverviewLocalDataSource(
+    this._cacheStore, {
+    required Duration maxCacheAge,
+  }) : _maxCacheAge = maxCacheAge;
 
   final AppCacheStore _cacheStore;
+  final Duration _maxCacheAge;
 
   Future<OverviewModel?> readOverview({
     required String userId,
@@ -17,6 +23,21 @@ class OverviewLocalDataSource {
     }
 
     try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic> && decoded['v'] == 2) {
+        final savedAt = DateTime.tryParse(
+          decoded['savedAt'] as String? ?? '',
+        );
+        if (savedAt != null &&
+            DateTime.now().difference(savedAt) > _maxCacheAge) {
+          return null;
+        }
+        final payload = decoded['payload'];
+        if (payload is! String || payload.isEmpty) {
+          return null;
+        }
+        return OverviewModel.decode(payload);
+      }
       return OverviewModel.decode(raw);
     } on Object catch (error, stackTrace) {
       AppLogger.warning(
@@ -36,9 +57,14 @@ class OverviewLocalDataSource {
     required String userId,
     required OverviewModel overview,
   }) {
+    final envelope = <String, Object?>{
+      'v': 2,
+      'savedAt': DateTime.now().toUtc().toIso8601String(),
+      'payload': overview.encode(),
+    };
     return _cacheStore.putString(
       key: _cacheKey(userId),
-      value: overview.encode(),
+      value: jsonEncode(envelope),
     );
   }
 

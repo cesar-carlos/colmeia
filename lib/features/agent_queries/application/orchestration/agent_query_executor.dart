@@ -179,6 +179,27 @@ class AgentQueryExecutor<Row> {
       totalElapsedMs: totalStopwatch.elapsedMilliseconds,
     );
 
+    final failureTypes = <String, int>{};
+    for (final p in resolvedParticipants) {
+      final f = p.failure;
+      if (f != null) {
+        final name = f.runtimeType.toString();
+        failureTypes[name] = (failureTypes[name] ?? 0) + 1;
+      }
+    }
+    AppLogger.info(
+      'Agent query mergeAll wave completed',
+      context: <String, Object?>{
+        'queryKey': plan.queryKey.name,
+        'mergeAllConcurrency': mergeAllConcurrency,
+        'consideredApprovedAgentCount': plan.consideredApprovedAgentCount,
+        'targetCount': plan.plannedTargets.length,
+        'failureCount': failureTypes.values.fold<int>(0, (a, b) => a + b),
+        'failureTypes': failureTypes,
+        'totalElapsedMs': totalStopwatch.elapsedMilliseconds,
+      },
+    );
+
     AppFailure? firstFailure;
     for (final participant in resolvedParticipants) {
       firstFailure ??= participant.failure;

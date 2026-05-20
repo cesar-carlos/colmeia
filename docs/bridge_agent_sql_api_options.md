@@ -155,5 +155,62 @@ mode isolates slow tests; suite mode measures the full stack with one Flutter
 test process and better captures socket session reuse:
 
 ```powershell
-python tool/compare_e2e_transports.py --scope suite --timeout-seconds 180
+python tool/compare_e2e_transports.py --scope suite --transport both --timeout-seconds 180
 ```
+
+### E2E env A/B (performance tuning)
+
+1. Copy the performance block from `assets/env/.env.example` into
+   `assets/env/local.env` (gitignored).
+2. Change **one** variable per run (`AGENT_SQL_CACHE_TTL_MS`,
+   `AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS`,
+   `AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT`, etc.).
+3. Run `flutter test test/integration/e2e/ --concurrency=1` and/or the
+   comparator above; optionally set `E2E_LOG_TRANSIENT=1` in the process
+   environment to print mapped hub transient lines.
+4. Append a row to the table in `dart_test.yaml` (E2E env A/B section) so the
+   repo keeps a reproducible measurement log.
+
+### Product trend (`produto_tendencia_venda`)
+
+The sales product trend card loads paged rows and the KPI summary in one
+`sql.executeBatch` round-trip via
+`ProdutoVendidoTendenciaDeVendaRepository.loadPageAndSummary` (wired through
+`LoadProdutoVendidoTendenciaDeVendaScreenUseCase`). Call sites that need only one
+half can still use `loadAll` or `loadSummary` alone.
+
+### Dashboard Hive TTL (`OVERVIEW_CACHE_MAX_AGE_MS`)
+
+Overview snapshots use `OverviewLocalDataSource` with `savedAt` plus
+`AppEnvironment.overviewCacheMaxAgeMs` (documented in `assets/env/.env.example`).
+Other heavy report screens can reuse the same JSON envelope pattern without
+putting TTL on `AppCacheStore` itself.
+
+## `mergeAll` executor matrix (reference)
+
+`AgentQueryExecutor.mergeAllConcurrency` defaults to **16** in
+[`agent_query_executor.dart`](lib/features/agent_queries/application/orchestration/agent_query_executor.dart)
+when a call site omits the parameter. Colmeia overrides that default only where
+executors are registered in
+[`injector_agent_queries.dart`](lib/core/di/injector_agent_queries.dart).
+
+**Transport (`AGENT_BRIDGE_TRANSPORT`):** merge-all waves run on top of the
+shared `AgentQueriesRepository` chain (REST, socket, or socket+REST fallback).
+Concurrency caps affect how many per-agent bridge calls are in flight per wave;
+they do not switch transport.
+
+| Registration block | `mergeAllConcurrency` | Row / option types (executor `T`) |
+| --- | --- | --- |
+| `_registerAcrossAgentQueryRepositories` | **8** | `ResumoParcelaFormaPagamentoRow`, `ResumoParcelaPorUsuarioRow`, `ResumoVendaProdutoDiarioRow`, `ResumoParcelasDiaSemanaRow`, `ResumoParcelasDiaSemanaUsuarioRow`, `ResumoParcelasAnualRow`, `ResumoParcelasFormaPagamentoPorMesRow`, `ResumoParcelasMensalRow`, `ResumoVendasDiariasPorVendedorRow`, `ResumoTotalDiarioVendasRow`, `CadastroFilialRow`, `ResumoTotalVendasMunicipioFilialDiarioRow`, `ResumoTotalVendasMunicipioFilialPeriodoRow` |
+| `_registerFilterOptionsRepositories` | **8** | `ResumoVendasDiariasPorVendedorVendedorOption`, `ResumoVendasDiariasPorVendedorTextOption`, `ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch` |
+
+When changing concurrency, compare `MetricsAgentQueriesRepository` logs and
+E2E wall-clock; see the E2E env A/B section above.
+
+### Residual `sql.execute` audit — product trend
+
+[`produto_vendido_tendencia_de_venda_repository_impl.dart`](lib/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart)
+uses at most **one** `AgentSqlRepositoryExecution.execute` per public method
+(`loadAll`, `loadSummary`). The combined UI path uses **`loadPageAndSummary`**
+only, which performs a **single** `executeSqlBatch` (page + summary) and does
+not stack duplicate `execute` calls in one function.

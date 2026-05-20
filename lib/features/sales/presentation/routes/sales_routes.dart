@@ -4,8 +4,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_p
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_summary_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
@@ -41,14 +40,15 @@ List<RouteBase> buildSalesRoutes() {
     GoRoute(
       name: AppRoute.salesMonitoring.name,
       path: AppRoute.salesMonitoring.path,
-      builder: (context, state) => ChangeNotifierProvider<SalesLiveMapController>(
-        create: (_) => SalesLiveMapController(
-          sessionService: sessionService,
-          loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
-          loadSalesLiveMapUseCase: getIt<LoadSalesLiveMapUseCase>(),
-        ),
-        child: const SalesLiveMapPage(),
-      ),
+      builder: (context, state) =>
+          ChangeNotifierProvider<SalesLiveMapController>(
+            create: (_) => SalesLiveMapController(
+              sessionService: sessionService,
+              loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
+              loadSalesLiveMapUseCase: getIt<LoadSalesLiveMapUseCase>(),
+            ),
+            child: const SalesLiveMapPage(),
+          ),
     ),
     GoRoute(
       name: AppRoute.salesCard.name,
@@ -101,10 +101,8 @@ List<RouteBase> buildSalesRoutes() {
             loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
             resolveSalesAgentClientTokenUseCase:
                 resolveSalesAgentClientTokenUseCase,
-            loadTrendUseCase:
-                getIt<LoadProdutoVendidoTendenciaDeVendaUseCase>(),
-            loadTrendSummaryUseCase:
-                getIt<LoadProdutoVendidoTendenciaDeVendaSummaryUseCase>(),
+            loadTrendScreenUseCase:
+                getIt<LoadProdutoVendidoTendenciaDeVendaScreenUseCase>(),
             loadGrupoProdutoOptionsUseCase:
                 getIt<LoadGrupoProdutoOptionsUseCase>(),
             loadMarcaProdutoOptionsUseCase:

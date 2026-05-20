@@ -448,6 +448,11 @@ class OverviewController extends ChangeNotifier {
         _completedOverviewSections = snapshot.completedSections;
         _errorMessage = null;
         _errorDiagnosticBody = null;
+        if (snapshot.completedSections.contains(
+          OverviewProgressiveSection.summary,
+        )) {
+          _isLoadingInitial = false;
+        }
         if (snapshot.isFinal) {
           _loadedOverviewSignature = signature;
           AppLogger.info(

@@ -16,12 +16,21 @@ class AgentQueriesRepositoryChain {
   const AgentQueriesRepositoryChain({
     required this.repository,
     required this.decorators,
+    required this.metricsRepository,
+    required this.cachingRepository,
   });
 
   final AgentQueriesRepository repository;
 
   /// Outermost-to-innermost chain names, useful for logs and tests.
   final List<String> decorators;
+
+  /// Inner metrics decorator (latency / periodic logs). Same instance the
+  /// chain wires below [CachingAgentQueriesRepository].
+  final MetricsAgentQueriesRepository metricsRepository;
+
+  /// In-memory SQL result cache wired outside [MetricsAgentQueriesRepository].
+  final CachingAgentQueriesRepository cachingRepository;
 }
 
 abstract final class AgentQueriesRepositoryChainFactory {
@@ -65,6 +74,7 @@ abstract final class AgentQueriesRepositoryChainFactory {
       cacheTtl: cacheTtl,
       maxCacheSize: maxCacheSize,
     );
+    metrics.sqlCache = caching;
 
     final circuitBreaker = CircuitBreakerAgentQueriesRepository(
       delegate: caching,
@@ -91,6 +101,8 @@ abstract final class AgentQueriesRepositoryChainFactory {
     return AgentQueriesRepositoryChain(
       repository: gated,
       decorators: decorators,
+      metricsRepository: metrics,
+      cachingRepository: caching,
     );
   }
 }
